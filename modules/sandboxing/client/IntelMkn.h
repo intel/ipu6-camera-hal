@@ -1,0 +1,54 @@
+/*
+ * Copyright (C) 2019-2020 Intel Corporation.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#pragma once
+
+#include <ia_mkn_encoder.h>
+#include <ia_mkn_types.h>
+#include <ia_types.h>
+
+#include <vector>
+
+#include "IntelAlgoCommon.h"
+#include "modules/sandboxing/IPCIntelMkn.h"
+
+namespace icamera {
+class IntelMkn {
+ public:
+    IntelMkn();
+    ~IntelMkn();
+
+    ia_mkn* init(ia_mkn_config_bits mkn_config_bits, size_t mkn_section_1_size,
+                 size_t mkn_section_2_size);
+    void deinit(ia_mkn* pMkn);
+
+    int prepare(ia_mkn* pMkn, ia_mkn_trg data_target, ia_binary_data* pBinaryData);
+    int enable(ia_mkn* pMkn, bool enable_data_collection);
+
+ private:
+    IPCIntelMkn mIpc;
+    IntelAlgoCommon mCommon;
+
+    bool mInitialized;
+
+    ShmMemInfo mMemInit;
+    ShmMemInfo mMemDeinit;
+    ShmMemInfo mMemPrepare;
+    ShmMemInfo mMemEnable;
+
+    std::vector<ShmMem> mMems;
+};
+}  // namespace icamera

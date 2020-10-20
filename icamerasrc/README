@@ -1,0 +1,174 @@
+#
+#  GStreamer
+#  Copyright (C) 2016-2017 Intel Corporation
+#
+#  Permission is hereby granted, free of charge, to any person obtaining a
+#  copy of this software and associated documentation files (the "Software"),
+#  to deal in the Software without restriction, including without limitation
+#  the rights to use, copy, modify, merge, publish, distribute, sublicense,
+#  and/or sell copies of the Software, and to permit persons to whom the
+#  Software is furnished to do so, subject to the following conditions:
+#
+#  The above copyright notice and this permission notice shall be included in
+#  all copies or substantial portions of the Software.
+#
+#  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+#  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+#  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+#  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+#  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+#  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+#  DEALINGS IN THE SOFTWARE.
+#
+#  Alternatively, the contents of this file may be used under the
+#  GNU Lesser General Public License Version 2.1 (the "LGPL"), in
+#  which case the following provisions apply instead of the ones
+#  mentioned above:
+#
+#  This library is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU Library General Public
+#  License as published by the Free Software Foundation; either
+#  version 2 of the License, or (at your option) any later version.
+#
+#  This library is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#  Library General Public License for more details.
+#
+#  You should have received a copy of the GNU Library General Public
+#  License along with this library; if not, write to the
+#  Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+#  Boston, MA 02111-1307, USA.
+#
+
+User Guide
+        1. Setup environment
+        2. Configure icamerasrc
+        3. Build icamerasrc with Makefile
+        4. Build and install icamerasrc RPM
+        5. Run Gstreamer pipeline with icamerasrc
+
+Important Notes:
+    1. The icamerasrc can't be compiled without some dependancy packages
+    2. Please get the dependacy packages from your correct contacts.
+        See "Prerequisite packages:" for more information.
+    3. Match the "RPM" with the source code in this repo.
+        For example, this is the commit message.
+            Update for 17WW23 release
+            Release for 17WW23: icamerasrc-1.0.0-912.9fb2898.x86_64.rpm
+        It means the code of this commit match the RPM release of "9fb2898".
+        So if your RPM is "9fb2898", you can use this commit code to build.
+
+Setup environment
+=============
+
+    System requirements:
+        Ubuntu 14.04 or 16.04
+        glib-2.0
+        gobject-2.0
+        gstreamer-1.0(Version 1.7.9 is preferred)
+        autoconf
+        libtool
+
+    Prerequisite packages:
+        aiqb
+        libiaaiq
+        libiacss
+        libcamhal
+
+    Install prerequisite prerequisite packages:
+        sudo rpm -ivh *.rpm --nodeps
+
+    Source toolchain:
+        source <abs path of your toolchain script>
+
+Configure icamerasrc
+=============
+
+        autoreconf --install
+
+    Strongly recommend to assign location to 'LIBCAMHAL_INSTALL_DIR' and 'ICAMERASRC_INSTALL_DIR',
+    otherwise icamerasrc will find header files and libs of libcamhal in default location:
+        "/usr/include" and  "/usr/lib"
+    which might be unsafe locations for certain toolchain that cause configure failure.
+    (e.g. export LIBCAMHAL_INSTALL_DIR=<abs_path>/libcamhal,
+     the subdirectory of $LIBCAMHAL_INSTALL_DIR should be including:
+      1.include/
+      2.include/api
+      3.include/utils
+      4.include/lib)
+
+    then start configuring:
+        CPPFLAGS="-I$LIBCAMHAL_INSTALL_DIR/include/ -I$LIBCAMHAL_INSTALL_DIR/include/api -I$LIBCAMHAL_INSTALL_DIR/include/utils " LDFLAGS="-L$LIBCAMHAL_INSTALL_DIR/lib/" CFLAGS="-O2" CXXFLAGS="-O2" ./configure ${CONFIGURE_FLAGS} --prefix=$ICAMERASRC_INSTALL_DIR DEFAULT_CAMERA=0
+
+Build icamerasrc with Makefile
+=============
+
+        make clean
+
+        make -j
+
+        sudo make install
+
+Build and install icamerasrc RPM
+=============
+
+    This step is taken after building successed
+
+    Build RPM:
+        make rpm (RPM package is generated in rpm/)
+
+    Install RPM:
+        rpm -ivh icamerasrc-*.rpm
+
+Run Gstreamer pipeline with icamerasrc
+=============
+
+    To capture from tpg @YUYV_1080p:
+        gst-launch-1.0 icamerasrc device-name=tpg ! video/x-raw,format=YUY2,width=1920,height=1080 ! vaapipostproc ! vaapisink
+
+    To capture from mondello @UYVY_1080p:
+        gst-launch-1.0 icamerasrc device-name=mondello ! video/x-raw,format=UYVY,width=1080,height=1080 ! vaapipostproc ! vaapisink
+
+    To capture from mondello @UYVY_1080i:
+        gst-launch-1.0 icamerasrc device-name=mondello interlace-mode=alternate deinterlace_method=sw_bob ! video/x-raw,format=UYVY,width=1920,height=1080 ! vaapipostproc ! vaapisink
+
+    To capture from imx185 @NV12_1080p:
+        gst-launch-1.0 icamerasrc device-name=imx185 ! video/x-raw,format=NV12,width=1920,height=1080 ! vaapipostproc ! vaapisink
+
+    To capture from Dual mondello @UYVY_1080P + @UYVY_720p:
+        gst-launch-1.0 icamerasrc device-name=mondello ! video/x-raw,format=UYVY,width=1920,height=1080 ! filesink location=stream1_1080p \
+                       icamerasrc device-name=mondello-2 ! video/x-raw,format=UYVY,width=1280,height=720 ! filesink location=stream2_720p
+
+    To capture from Virtual Channel @UYVY_1080P + @UYVY_720P + @UYVY_576p + @UYVY_640x480p
+        gst-launch-1.0 icamerasrc num-vc=4 device-name=aggregator ! video/x-raw,format=UYVY,width=1920,height=1080 ! filesink location=stream1_1080p \
+                       icamerasrc num-vc=4 device-name=aggregator-2 ! video/x-raw,format=UYVY,width=1280,height=720 ! filesink location=stream2_720p \
+                       icamerasrc num-vc=4 device-name=aggregator-3 ! video/x-raw,format=UYVY,width=720,height=576 ! filesink location=stream3_576p \
+                       icamerasrc num-vc=4 device-name=aggregator-4 ! video/x-raw,format=UYVY,width=640,height=480 ! filesink location=stream4_vga
+
+    To capture from multi-stream(start multiple streams with one sensor) @NV12_1080p + @NV12_1080p
+        (2 output streams: 1 from src pad: "src", 1 from request pad: "video_0")
+        gst-launch-1.0 icamerasrc device-name=imx185 name=t t.src ! queue ! video/x-raw,format=NV12,width=1920,height=1080 ! vaapipostproc ! vaapisink \
+                                                     t.video_0 ! queue ! video/x-raw,format=NV12,width=1920,height=1080 ! vaapipostproc ! vaapisink
+
+        (3 output streams: 1 from src pad: "src", 2 frome request pads: "video_0", "video_1")
+        gst-launch-1.0 icamerasrc device-name=imx185 name=t t.src ! queue ! video/x-raw,format=NV12,width=1920,height=1080 ! vaapipostproc ! vaapisink \
+                                                     t.video_0 ! queue ! video/x-raw,format=NV12,width=1920,height=1080 ! vaapipostproc ! vaapisink \
+                                                     t.video_1 ! queue ! video/x-raw,format=NV12,width=1920,height=1080 ! vaapipostproc ! vaapisink
+
+    To capture 3 still streams (src pad be set still by src-stream-usage):
+        gst-launch-1.0 icamerasrc device-name=ar0234_barcode src-stream-usage=2 num-buffers=1 name=t t.src ! video/x-raw,format=NV12,width=1280,height=960 ! filesink location=./still_0.yuv \
+        t.still_0 ! video/x-raw,format=NV12,width=640, height=480 ! filesink location=./still_1.yuv \
+        t.still_1 ! video/x-raw,format=NV12,width=320,height=240 ! filesink location=./still_2.yuv
+
+    To capture 3 still streams and 1 video stream out (src pad is be set to still, then the first 3 pad are still, the last request src pad is video).
+        gst-launch-1.0 icamerasrc device-name=ar0234_barcode src-stream-usage=2 num-buffers=1 name=t t.src ! video/x-raw,format=NV12,width=1280,height=960 ! filesink location=./still_0.yuv \
+        t.still_0 ! video/x-raw,format=NV12,width=640, height=480 ! filesink location=./still_1.yuv \
+        t.still_1 ! video/x-raw,format=NV12,width=320,height=240 ! filesink location=./still_2.yuv \
+        t.video_2 ! video/x-raw,format=NV12,width=1280,height=960 ! filesink location=./video.yuv
+
+    To capture 3 still streams and 1 video stream out (src pad is video, the other request src pads are still).
+        gst-launch-1.0 icamerasrc device-name=ar0234_barcode num-buffers=1 name=t t.src ! video/x-raw,format=NV12,width=1280,height=960 ! filesink location=./video.yuv \
+        t.still_0 ! video/x-raw,format=NV12,width=1280, height=960 ! filesink location=./still_0.yuv \
+        t.still_1 ! video/x-raw,format=NV12,width=640,height=480 ! filesink location=./still_1.yuv \
+        t.still_2 ! video/x-raw,format=NV12,width=320,height=240 ! filesink location=./still_2.yuv
