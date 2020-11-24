@@ -235,8 +235,8 @@ const uint8_t EXIF_GPS_IMG_DIRECTION = 0x20;
 #define EXIF_DEF_FNUMBER_NUM 26      /* 2.6 */
 #define EXIF_DEF_FNUMBER_DEN 10
 #define EXIF_DEF_EXPOSURE_PROGRAM 3 /* aperture priority */
-#define EXIF_DEF_FOCAL_LEN_NUM 278  /* 2.78mm */
-#define EXIF_DEF_FOCAL_LEN_DEN 100
+#define EXIF_DEF_FOCAL_LEN_NUM 2780  /* 2.78mm */
+#define EXIF_DEF_FOCAL_LEN_DEN 1000
 #define EXIF_DEF_FLASH 0                 /* O: off, 1: on*/
 #define EXIF_FLASH_FORCED_ON 1 << 3;     /* mode description */
 #define EXIF_FLASH_FORCED_OFF 1 << 4;    /* mode description */

@@ -274,7 +274,7 @@ private:
     int setupLink(MediaPad *source, MediaPad *sink, uint32_t flags);
 
     //set up MediaCtlConf info.
-    int setMediaMcCtl(int cameraId, std::vector <McCtl> ctls);
+    void setMediaMcCtl(int cameraId, std::vector <McCtl> ctls);
     int setMediaMcLink(std::vector <McLink> links);
     int setFormat(int cameraId, const McFormat *format,
             int targetWidth, int targetHeight, int field);

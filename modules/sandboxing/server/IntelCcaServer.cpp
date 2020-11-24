@@ -135,14 +135,15 @@ status_t IntelCcaServer::runAIC(void* pData, int dataSize) {
 
     intel_cca_run_aic_data* params = static_cast<intel_cca_run_aic_data*>(pData);
 
-    bool retVal = unflattenProgramGroup(&params->inParams.program_group);
+    bool retVal = unflattenProgramGroup(&params->inParams->program_group);
     CheckError(retVal != true, UNKNOWN_ERROR, "@%s, unflattenProgramGroup fails", __func__);
 
     ia_err ret = mCca->runAIC(params->frameId, params->inParams, &params->palOutData);
-    CheckError(ret != ia_err_none, UNKNOWN_ERROR, "@%s, mCca->runAIC fails", __func__);
+    CheckError(ret != ia_err_none && ret != ia_err_not_run, ret,
+               "@%s, mCca->runAIC fails", __func__);
     LOG2("@%s, ret:%d", __func__, ret);
 
-    return OK;
+    return ret;
 }
 
 status_t IntelCcaServer::getCMC(void* pData, int dataSize) {

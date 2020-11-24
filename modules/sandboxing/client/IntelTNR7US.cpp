@@ -84,26 +84,37 @@ int IntelTNR7US::init(int width, int height, TnrType type) {
 }
 
 int IntelTNR7US::runTnrFrame(const void* inBufAddr, void* outBufAddr, uint32_t inBufSize,
-                             uint32_t outBufSize, Tnr7Param* tnrParam) {
+                             uint32_t outBufSize, Tnr7Param* tnrParam, int fd) {
     LOG1("%s type:%d", __func__, mTnrType);
     CheckError(!inBufAddr || !outBufAddr || !tnrParam, UNKNOWN_ERROR,
                "@%s, invalid data buffer or parameter buffer", __func__);
     int32_t inHandle = mCommon.getShmMemHandle(const_cast<void*>(inBufAddr), GPU_ALGO_SHM);
     CheckError(inHandle < 0, UNKNOWN_ERROR, "@%s, can't find inBuf handle", __func__);
-
-    int32_t refHandle = mCommon.getShmMemHandle(static_cast<void*>(outBufAddr), GPU_ALGO_SHM);
-    CheckError(refHandle < 0, UNKNOWN_ERROR, "@%s, can't find refBuf handle", __func__);
     CheckError(mParamMems.mAddr != tnrParam, UNKNOWN_ERROR, "@%s, invalid tnr parameter", __func__);
 
+    if (fd >= 0) {
+        LOG1("%s type:%d using usr buffer fd: %d", __func__, mTnrType, fd);
+        mTnrRequestInfo->outHandle = mCommon.registerGbmBuffer(fd, GPU_ALGO_SHM);
+    } else {
+        mTnrRequestInfo->outHandle =
+            mCommon.getShmMemHandle(static_cast<void*>(outBufAddr), GPU_ALGO_SHM);
+    }
+    CheckError(mTnrRequestInfo->outHandle < 0, UNKNOWN_ERROR, "@%s, can't init outBuf handle",
+               __func__);
+
     mTnrRequestInfo->inHandle = inHandle;
-    mTnrRequestInfo->outHandle = refHandle;
     mTnrRequestInfo->paramHandle = mParamMems.mHandle;
     mTnrRequestInfo->type = mTnrType;
     mTnrRequestInfo->cameraId = mCameraId;
+    mTnrRequestInfo->outBufFd = fd;
 
     int32_t requestHandle =
         mCommon.getShmMemHandle(static_cast<void*>(mTnrRequestInfo), GPU_ALGO_SHM);
     bool ret = mCommon.requestSync(IPC_GPU_TNR_RUN_FRAME, requestHandle);
+
+    if (fd >= 0) {
+        mCommon.deregisterGbmBuffer(mTnrRequestInfo->outHandle, GPU_ALGO_SHM);
+    }
 
     CheckError(!ret, OK, "@%s, run tnr fails", __func__);
 
@@ -162,11 +173,12 @@ Tnr7Param* IntelTNR7US::allocTnr7ParamBuf() {
     return reinterpret_cast<Tnr7Param*>(mParamMems.mAddr);
 }
 
-int IntelTNR7US::asyncParamUpdate(int gain) {
+int IntelTNR7US::asyncParamUpdate(int gain, bool forceUpdate) {
     LOG1("%s type:%d", __func__, mTnrType);
     mTnrRequestInfo->gain = gain;
     mTnrRequestInfo->type = mTnrType;
     mTnrRequestInfo->cameraId = mCameraId;
+    mTnrRequestInfo->isForceUpdate = forceUpdate;
 
     int32_t requestHandle =
         mCommon.getShmMemHandle(static_cast<void*>(mTnrRequestInfo), GPU_ALGO_SHM);

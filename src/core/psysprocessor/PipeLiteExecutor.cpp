@@ -591,13 +591,6 @@ int PipeLiteExecutor::processNewFrame()
     v4l2_buffer_t inV4l2Buf = *inBuf->getV4L2Buffer().Get();
     TuningMode tuningMode = mPSysDag->getTuningMode(inBufSequence);
 
-    // Enable RAW DUMP to get the MakerNote from jpeg
-    if (CameraDump::isDumpTypeEnable(DUMP_JPEG_BUFFER)) {
-        if (mName.find("still") != std::string::npos) {
-            CameraDump::dumpImage(mCameraId, inBuffers[MAIN_PORT], M_PSYS, MAIN_PORT);
-        }
-    }
-
     LOG2("%s:Id:%d run pipe start for buffer:%ld", mName.c_str(), mCameraId, inBufSequence);
 
     if (PlatformData::isEnableFrameSyncCheck(mCameraId)) {

@@ -103,7 +103,8 @@ int PlatformData::init() {
                             staticCfg->mCameras[i].mSupportedTuningConfig,
                             staticCfg->mCameras[i].mLardTagsConfig,
                             staticCfg->mCameras[i].mNvmDirectory,
-                            staticCfg->mCameras[i].mMaxNvmDataSize);
+                            staticCfg->mCameras[i].mMaxNvmDataSize,
+                            staticCfg->mCameras[i].mCameraModuleToAiqbMap);
         getInstance()->mAiqInitData.push_back(aiqInitData);
     }
 
@@ -216,6 +217,11 @@ int PlatformData::faceEngineRunningIntervalNoFace(int cameraId)
 bool PlatformData::isFaceEngineSyncRunning(int cameraId)
 {
     return getInstance()->mStaticCfg.mCameras[cameraId].mFaceEngineRunningSync;
+}
+
+unsigned int PlatformData::getMaxFaceDetectionNumber(int cameraId)
+{
+    return getInstance()->mStaticCfg.mCameras[cameraId].mMaxFaceDetectionNumber;
 }
 
 bool PlatformData::isDvsSupported(int cameraId)
@@ -1312,15 +1318,15 @@ void PlatformData::updateMakernoteTimeStamp(int cameraId, int64_t sequence, uint
     CheckError(cameraId >= static_cast<int>(getInstance()->mAiqInitData.size()), VOID_VALUE,
                "@%s, bad cameraId:%d", __func__, cameraId);
 
-    return getInstance()->mAiqInitData[cameraId]->updateMakernoteTimeStamp(sequence, timestamp);
+    getInstance()->mAiqInitData[cameraId]->updateMakernoteTimeStamp(sequence, timestamp);
 }
 
-void  PlatformData::acquireMakernoteData(int cameraId, uint64_t timestamp, Parameters *param)
+void PlatformData::acquireMakernoteData(int cameraId, uint64_t timestamp, Parameters *param)
 {
     CheckError(cameraId >= static_cast<int>(getInstance()->mAiqInitData.size()), VOID_VALUE,
                "@%s, bad cameraId:%d", __func__, cameraId);
 
-    return getInstance()->mAiqInitData[cameraId]->acquireMakernoteData(timestamp, param);
+    getInstance()->mAiqInitData[cameraId]->acquireMakernoteData(timestamp, param);
 }
 
 int PlatformData::getScalerInfo(int cameraId, int32_t streamId,
@@ -1384,4 +1390,10 @@ bool PlatformData::isStillTnrPrior()
 {
     return getInstance()->mStaticCfg.mCommonConfig.isStillTnrPrior;
 }
+
+bool PlatformData::isTnrParamForceUpdate()
+{
+    return getInstance()->mStaticCfg.mCommonConfig.isTnrParamForceUpdate;
+}
+
 } // namespace icamera

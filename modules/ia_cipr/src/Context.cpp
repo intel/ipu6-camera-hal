@@ -224,9 +224,13 @@ Result Context::registerBuffer(MemoryDesc* mem) {
         ioc_buffer->flags |= IPU_BUFFER_FLAG_DMA_HANDLE;
     }
 
+#ifdef IPU_SYSVER_ipu6v3
+    ioc_buffer->flags |= IPU_BUFFER_FLAG_NO_FLUSH;
+#else
     if (mem->flags & MemoryFlag::NoFlush) {
         ioc_buffer->flags |= IPU_BUFFER_FLAG_NO_FLUSH;
     }
+#endif
 
     res = doIoctl(static_cast<int>(IPU_IOC_MAPBUF),
                   reinterpret_cast<void*>((intptr_t)ioc_buffer->base.fd));

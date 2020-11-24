@@ -73,7 +73,6 @@ AiqCore::AiqCore(int cameraId) :
 
     // init LscOffGrid to 1.0f
     std::fill(std::begin(mLscOffGrid), std::end(mLscOffGrid), 1.0f);
-
 }
 
 AiqCore::~AiqCore() {
@@ -420,6 +419,7 @@ int AiqCore::runAiq(AiqResult *aiqResult) {
     ret = runAiqPlus(aiqResult);
     CheckError(ret != OK, ret, "runAiqPlus failed, ret: %d", ret);
 
+    mLastEvShift = mIntel3AParameter->mAeParams.ev_shift;
     aiqResult->mTimestamp = mTimestamp;
     return OK;
 }
@@ -456,20 +456,11 @@ int AiqCore::runAiqPlus(AiqResult *aiqResult) {
     LOG3A("@%s, aiqResult:%p", __func__, aiqResult);
     CheckError(!aiqResult, BAD_VALUE, "@%s, aiqResult is nullptr", __func__);
 
-    int algoType = IMAGING_ALGO_GBCE | IMAGING_ALGO_PA | IMAGING_ALGO_SA;
-
-    int ret = OK;
-    if (algoType & IMAGING_ALGO_GBCE) {
-        ret |= runGbce(&aiqResult->mGbceResults);
-    }
-    if (algoType & IMAGING_ALGO_PA) {
-        ret |= runPa(&aiqResult->mPaResults, &aiqResult->mAwbResults,
-                     aiqResult->mAeResults.exposures[0].exposure,
-                     &aiqResult->mPreferredAcm);
-    }
-    if ((algoType & IMAGING_ALGO_SA) && (mShadingMode != SHADING_MODE_OFF)) {
-        ret |= runSa(&aiqResult->mSaResults, &aiqResult->mAwbResults, aiqResult->mLensShadingMap);
-    }
+    int ret = runGbce(&aiqResult->mGbceResults);
+    ret |= runPa(&aiqResult->mPaResults, &aiqResult->mAwbResults,
+                 aiqResult->mAeResults.exposures[0].exposure,
+                 &aiqResult->mPreferredAcm);
+    ret |= runSa(&aiqResult->mSaResults, &aiqResult->mAwbResults, aiqResult->mLensShadingMap);
 
     return ret;
 }
@@ -494,10 +485,6 @@ int AiqCore::runAe(ia_aiq_ae_results* aeResults) {
             ia_err iaErr = intelAiq->aeRun(&mIntel3AParameter->mAeParams, &newAeResults);
             ret = AiqUtils::convertError(iaErr);
             CheckError(ret != OK || !newAeResults, ret, "Error running AE, ret: %d", ret);
-        }
-
-        if (newAeResults->exposures[0].converged) {
-            mLastEvShift = mIntel3AParameter->mAeParams.ev_shift;
         }
     }
 
@@ -609,6 +596,9 @@ int AiqCore::runGbce(ia_aiq_gbce_results *gbceResults) {
     LOG3A("%s, gbceResults:%p", __func__, gbceResults);
     CheckError(!gbceResults, BAD_VALUE, "@%s, gbceResults is nullptr", __func__);
 
+    // Don't run gbce if AE lock and ev shift isn't changed
+    if (mAeForceLock && mGbceParams.ev_shift == mLastEvShift) return OK;
+
     PERF_CAMERA_ATRACE();
     ia_aiq_gbce_results *newGbceResults = nullptr;
 
@@ -618,7 +608,8 @@ int AiqCore::runGbce(ia_aiq_gbce_results *gbceResults) {
         PERF_CAMERA_ATRACE_PARAM1_IMAGING("intelAiq->gbceRun", 1);
         ia_err iaErr = intelAiq->gbceRun(&mGbceParams, &newGbceResults);
         int ret = AiqUtils::convertError(iaErr);
-        CheckError(ret != OK, ret, "@%s, gbceRun fails, ret: %d", __func__, ret);
+        CheckError(ret != OK || !newGbceResults, ret, "@%s, gbceRun fails, ret: %d",
+                   __func__, ret);
     }
 
     return AiqUtils::deepCopyGbceResults(*newGbceResults, gbceResults);
@@ -832,10 +823,11 @@ int AiqCore::runSa(ia_aiq_sa_results_v1 *saResults,
     CheckError(!saResults || !awbResults || !lensShadingMap, BAD_VALUE,
                "@%s, Bad input values", __func__);
 
+    if (mShadingMode == SHADING_MODE_OFF) return OK;
+
     PERF_CAMERA_ATRACE();
     int ret = OK;
     ia_aiq_sa_results_v1 *newSaResults = nullptr;
-
     mSaParams.awb_results = awbResults;
 
     IntelAiq* intelAiq = mIntelAiqHandle[mTuningMode];

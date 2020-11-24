@@ -55,7 +55,6 @@ private:
         PSYS_SCALE_CSC,
         PSYS_WEAVING_SCALE,
         PSYS_WEAVING_SCALE_CSC,
-        PSYS_FISHEYE,
         PSYS_MONO_DS,
     } mPsysUsage;
 

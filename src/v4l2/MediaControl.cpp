@@ -721,18 +721,19 @@ const char *MediaControl::padType2String(unsigned flag)
     return "Unknown";
 }
 
-int MediaControl::setMediaMcCtl(int cameraId, vector <McCtl> ctls)
+void MediaControl::setMediaMcCtl(int cameraId, vector <McCtl> ctls)
 {
     for (auto &ctl : ctls) {
         MediaEntity *entity = getEntityById(ctl.entity);
         V4L2Subdevice* subDev = V4l2DeviceFactory::getSubDev(cameraId, entity->devname);
-        int ret = subDev->SetControl(ctl.ctlCmd, ctl.ctlValue);
         LOG2("set Ctl %s [%d] cmd %s [0x%08x] value %d", ctl.entityName.c_str(), ctl.entity,
-                ctl.ctlName.c_str(), ctl.ctlCmd, ctl.ctlValue);
-        CheckError(ret != OK, ret, "set Ctl %s [%d] cmd %s [0x%08x] value %d failed.",
-                ctl.entityName.c_str(), ctl.entity, ctl.ctlName.c_str(), ctl.ctlCmd, ctl.ctlValue);
+             ctl.ctlName.c_str(), ctl.ctlCmd, ctl.ctlValue);
+        if (subDev->SetControl(ctl.ctlCmd, ctl.ctlValue) != OK) {
+            LOGW("set Ctl %s [%d] cmd %s [0x%08x] value %d failed.",
+                 ctl.entityName.c_str(), ctl.entity, ctl.ctlName.c_str(),
+                 ctl.ctlCmd, ctl.ctlValue);
+        }
     }
-    return 0;
 }
 
 int MediaControl::setMediaMcLink(vector <McLink> links)
@@ -742,14 +743,11 @@ int MediaControl::setMediaMcLink(vector <McLink> links)
               link.srcEntityName.c_str(), link.srcEntity, link.srcPad, link.sinkEntityName.c_str(),
               link.sinkEntity, link.sinkPad, link.enable);
         int ret = setupLink(link.srcEntity, link.srcPad, link.sinkEntity, link.sinkPad, link.enable);
-        if (ret < 0) {
-            LOGE("setup Link %s [%d:%d] ==> %s [%dx%d] enable %d failed.",
-                link.srcEntityName.c_str(), link.srcEntity, link.srcPad, link.sinkEntityName.c_str(),
-                link.sinkEntity, link.sinkPad, link.enable);
-            return ret;
-        }
+        CheckError(ret < 0, ret, "setup Link %s [%d:%d] ==> %s [%dx%d] enable %d failed.",
+                   link.srcEntityName.c_str(), link.srcEntity, link.srcPad,
+                   link.sinkEntityName.c_str(), link.sinkEntity, link.sinkPad, link.enable);
     }
-    return 0;
+    return OK;
 }
 
 int MediaControl::setFormat(int cameraId, const McFormat *format, int targetWidth, int targetHeight, int field)
@@ -882,8 +880,9 @@ int MediaControl::mediaCtlSetup(int cameraId, MediaCtlConf *mc, int width, int h
 {
     LOG1("%s, cameraId:%d", __func__, cameraId);
     /* Setup controls in format Configuration */
-    int ret = setMediaMcCtl(cameraId, mc->ctls);
-    CheckError(ret != OK, ret, "set MediaCtlConf McCtl failed: ret=%d", ret);
+    setMediaMcCtl(cameraId, mc->ctls);
+
+    int ret = OK;
 
     /* Set format & selection in format Configuration */
     for (auto &fmt : mc->formats) {

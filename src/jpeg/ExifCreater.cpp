@@ -70,6 +70,7 @@ exif_status ExifCreater::makeExif(void* exifOut, exif_attribute_t* exifInfo, siz
 
     // 2 Exif Identifier Code & TIFF Header
     pCur += 4;  // Skip 4 Byte for APP1 marker and length
+
     unsigned char ExifIdentifierCode[6] = {0x45, 0x78, 0x69, 0x66, 0x00, 0x00};
     MEMCPY_S(pCur, sizeof(ExifIdentifierCode), ExifIdentifierCode, sizeof(ExifIdentifierCode));
     pCur += 6;

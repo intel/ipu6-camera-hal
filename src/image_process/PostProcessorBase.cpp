@@ -230,14 +230,19 @@ void JpegProcess::fillEncodeInfo(const shared_ptr<camera3::Camera3Buffer> &inBuf
     package.inputStride = inBuf->stride();
     package.inputFormat = inBuf->v4l2Fmt();
     package.inputSize = inBuf->size();
-    package.inputBufferHandle = static_cast<void*>(inBuf->getBufferHandle());
-    package.inputData = inBuf->data();
+
+    if (inBuf->getBufferType() == camera3::BUF_TYPE_HANDLE &&
+        outBuf->getBufferType() == camera3::BUF_TYPE_HANDLE) {
+        package.inputBufferHandle = static_cast<void*>(inBuf->getBufferHandle());
+        package.outputBufferHandle = static_cast<void*>(outBuf->getBufferHandle());
+    } else {
+        package.inputData = inBuf->data();
+        package.outputData = outBuf->data();
+    }
 
     package.outputWidth = outBuf->width();
     package.outputHeight = outBuf->height();
     package.outputSize = outBuf->size();
-    package.outputBufferHandle = static_cast<void*>(outBuf->getBufferHandle());
-    package.outputData = outBuf->data();
 }
 
 status_t JpegProcess::doPostProcessing(const shared_ptr<camera3::Camera3Buffer> &inBuf,
@@ -310,7 +315,6 @@ status_t JpegProcess::doPostProcessing(const shared_ptr<camera3::Camera3Buffer> 
     isEncoded = mJpegEncoder->doJpegEncode(&finalEncodePackage);
     CheckError(!isEncoded, UNKNOWN_ERROR, "@%s, Failed to encode main image", __func__);
     mJpegMaker->writeExifData(&finalEncodePackage);
-
     attachJpegBlob(finalEncodePackage);
 
     return OK;

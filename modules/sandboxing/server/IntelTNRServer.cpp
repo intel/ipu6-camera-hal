@@ -89,19 +89,20 @@ int IntelTNRServer::prepareSurface(void* pData, int dataSize, int cameraId, TnrT
 }
 
 int IntelTNRServer::runTnrFrame(const void* inBufAddr, void* outBufAddr, uint32_t inBufSize,
-                                uint32_t outBufSize, void* tnrParam, int cameraId, TnrType type) {
+                                uint32_t outBufSize, void* tnrParam, int cameraId, TnrType type,
+                                int outBufFd) {
     int key = getIndex(cameraId, type);
     CheckError((mIntelTNRMap.find(key) == mIntelTNRMap.end()), UNKNOWN_ERROR,
                "%s, IntelTNR type:%d is nullptr", __func__, type);
     return mIntelTNRMap[key]->runTnrFrame(inBufAddr, outBufAddr, inBufSize, outBufSize,
-                                          static_cast<Tnr7Param*>(tnrParam));
+                                          static_cast<Tnr7Param*>(tnrParam), outBufFd);
 }
 
-int IntelTNRServer::asyncParamUpdate(int cameraId, int gain, TnrType type) {
+int IntelTNRServer::asyncParamUpdate(int cameraId, int gain, TnrType type, bool forceUpdate) {
     int key = getIndex(cameraId, type);
     CheckError((mIntelTNRMap.find(key) == mIntelTNRMap.end()), UNKNOWN_ERROR,
                "%s, IntelTNR type:%d is nullptr", __func__, type);
-    return mIntelTNRMap[key]->asyncParamUpdate(gain);
+    return mIntelTNRMap[key]->asyncParamUpdate(gain, forceUpdate);
 }
 
 }  // namespace icamera

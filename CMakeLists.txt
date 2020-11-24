@@ -99,11 +99,6 @@ if (USE_PG_LITE_PIPE)
         add_definitions(-DUSE_PG_LITE_PIPE)
 endif() #USE_PG_LITE_PIPE
 
-CHECK_CXX_COMPILER_FLAG(-Wno-error=class-memaccess COMPILER_SUPPORT_W_CLASS_MEMACCESS)
-if (COMPILER_SUPPORT_W_CLASS_MEMACCESS)
-    add_compile_options(-Wno-error=class-memaccess)
-endif()
-
 if (CAL_BUILD)
     message("Chrome enabled ")
     add_definitions(-DCAL_BUILD)

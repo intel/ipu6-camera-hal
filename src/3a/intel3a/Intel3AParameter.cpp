@@ -443,6 +443,13 @@ void Intel3AParameter::updatePaResult(ia_aiq_pa_results_v1* paResult) {
 
     if (!mUseManualColorMatrix) return;
 
+    if (VALID_COLOR_GAINS(mColorGains.color_gains_rggb)) {
+        paResult->color_gains.r  = mColorGains.color_gains_rggb[0];
+        paResult->color_gains.gr = mColorGains.color_gains_rggb[1];
+        paResult->color_gains.gb = mColorGains.color_gains_rggb[2];
+        paResult->color_gains.b  = mColorGains.color_gains_rggb[3];
+    }
+
     // Override color_conversion_matrix and color_gains
     // when application requires manual color transform.
     MEMCPY_S(&(paResult->color_conversion_matrix), sizeof(paResult->color_conversion_matrix),
@@ -702,7 +709,6 @@ void Intel3AParameter::updateAfParameterForAfTriggerStart()
         case AF_MODE_AUTO:
         case AF_MODE_MACRO:
             // Start user af scan in this frame.
-            mAfParams.frame_use = ia_aiq_frame_use_still;
             mAfParams.focus_mode = ia_aiq_af_operation_mode_auto;
             mAfParams.trigger_new_search = true;
             break;

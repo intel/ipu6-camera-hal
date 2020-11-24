@@ -1,19 +1,25 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-<!-- Copyright (c) 2020 Intel Corporation
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+    INTEL CONFIDENTIAL
+    Copyright (c) 2018 Intel Corporation. All Rights Reserved.
 
-     Licensed under the Apache License, Version 2.0 (the "License");
-     you may not use this file except in compliance with the License.
-     You may obtain a copy of the License at
+    The source code contained or described herein and all documents related to
+    the source code ("Material") are owned by Intel Corporation or its suppliers
+    or licensors. Title to the Material remains with Intel Corporation or its
+    suppliers and licensors. The Material contains trade secrets and proprietary
+    and confidential information of Intel or its suppliers and licensors. The
+    Material is protected by worldwide copyright and trade secret laws and
+    treaty provisions. No part of the Material may be used, copied, reproduced,
+    modified, published, uploaded, posted, transmitted, distributed, or
+    disclosed in any way without Intel's prior express written permission.
 
-          http://www.apache.org/licenses/LICENSE-2.0
-
-     Unless required by applicable law or agreed to in writing, software
-     distributed under the License is distributed on an "AS IS" BASIS,
-     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-     See the License for the specific language governing permissions and
-     limitations under the License.
+    No license under any patent, copyright, trade secret or other intellectual
+    property right is granted to or conferred upon you by disclosure or delivery
+    of the Materials, either expressly, by implication, inducement, estoppel or
+    otherwise. Any license under such intellectual property rights must be
+    express and approved by Intel in writing.
 -->
-<graph_descriptor version="IPU6_20200714">
+<graph_descriptor version="IPU6_20200802">
   <kernel_descriptor name="ipu6_kernel_descriptor.xml" />
   <routing_descriptor name="ipu6_routing_info.xml" />
   <nodes>
@@ -3726,6 +3732,2146 @@
       <klink destination="sc_outputscaler_ppp:yuv420" source="spa_pp:bayer" />
       <!--Kernel Links end-->
     </node>
+    <node name="isa_lb_ir_video_bayer" pg_id="187" stream_id="60001" subsystem="psys" type="program_group">
+      <!-- INPUT ports -->
+      <port content_type="program" direction="0" id="2" name="prog_init" />
+      <port content_type="program" direction="0" id="3" name="prog_ctrl_init" />
+      <!-- data terminals ports -->
+      <port direction="0" id="4" name="input" />
+      <port direction="0" id="28" name="short_exp" />
+      <port direction="0" id="29" name="medium_exp" />
+      <port direction="0" id="30" name="ext_pdaf_stats" />
+      <!-- params terminals ports -->
+      <port content_type="param_cached" direction="0" id="1" name="params" />
+      <port content_type="spatial" direction="0" id="5" name="blc_spatial" />
+      <port content_type="spatial" direction="0" id="6" name="lsc_spatial" />
+      <port content_type="spatial" direction="0" id="7" name="gamma_star_grid" />
+      <!-- OUTPUT ports -->
+      <!-- data ports -->
+      <port direction="1" format="YUV420_10_PL" id="8" name="main" />
+      <port direction="1" format="GRBG_12_V" id="9" name="fr_bayer" />
+      <port direction="1" format="YUV420_8_SP" id="10" name="scaled_yuv" />
+      <port direction="1" format="GRBG_12_LI" id="11" name="sis_a" />
+      <port direction="1" format="GRBG_12_LI" id="12" name="sis_b" />
+      <port direction="1" format="YUV420_8_SP" id="13" name="fr_yuv" />
+      <port direction="1" format="IR" id="14" name="ir_md" />
+      <!-- parameter terminals ports -->
+      <!-- 3A ports -->
+      <port content_type="param_cached" direction="1" id="21" name="ae_stats" />
+      <port content_type="spatial" direction="1" id="15" name="af_stats" />
+      <port content_type="spatial" direction="1" id="16" name="awb_stats" />
+      <port content_type="spatial" direction="1" id="17" name="pdaf_stats" />
+      <!-- DVS ports -->
+      <port content_type="spatial" direction="1" id="18" name="dvs_mv_l0" />
+      <port content_type="spatial" direction="1" id="19" name="dvs_mv_l1" />
+      <port content_type="spatial" direction="1" id="20" name="dvs_mv_l2" />
+      <port content_type="program" direction="0" id="22" name="dvs_fe_in_l0" />
+      <port content_type="program" direction="0" id="23" name="dvs_fe_in_l1" />
+      <port content_type="program" direction="0" id="24" name="dvs_fe_in_l2" />
+      <port content_type="param_cached" direction="1" id="25" name="dvs_fe_out_l0" />
+      <port content_type="param_cached" direction="1" id="26" name="dvs_fe_out_l1" />
+      <port content_type="param_cached" direction="1" id="27" name="dvs_fe_out_l2" />
+      <!--Input Ports links to kernels-->
+      <klink destination="mux_pdaf_stat_1_0:0" source="ext_pdaf_stats" />
+      <klink destination="pixelformatter:inbayer" source="input" />
+      <!--Output Ports links to kernels-->
+      <klink destination="scaled_yuv" source="packer_isa_yuv_b:output" />
+      <klink destination="main" source="vertical_padding_1_0:output_image" />
+      <klink destination="sis_b" source="pxl_crop_sis_b:output" />
+      <klink destination="sis_a" source="pxl_crop_sis_a:output" />
+      <klink destination="fr_yuv" source="packer_isa_yuv_c:output" />
+      <klink destination="dvs_mv_l0" source="dvsstatistics_2:output0" />
+      <klink destination="ae_stats" source="aestatistics_2_0:output" />
+      <klink destination="af_stats" source="af_awb_frstatistics_2_0:output" />
+      <klink destination="pdaf_stats" source="pafstatistics_1:output" />
+      <klink destination="awb_stats" source="awbstatistics_2_0:output" />
+      <!--Routing Elements - start-->
+      <demux active_output="0" idx="1" name="de_mux_input_main_1_0" />
+      <demux active_output="1" idx="2" name="de_mux_lsc_1_0" />
+      <mux active_input="0" idx="3" name="mux_vca_1_0" />
+      <mux active_input="1" idx="5" name="mux_ae_1_0" />
+      <demux active_output="0" idx="6" name="de_mux_dmsc_1_0" />
+      <mux active_input="0" idx="8" name="mux_dmsc_1_0" />
+      <split name="awbinputsplitter" />
+      <split name="yuv420splitter2" />
+      <split name="dpcinternalsplitter" />
+      <mux active_input="0" idx="11" name="mux_dol_1_0" />
+      <demux active_output="0" idx="12" name="de_mux_lin_1_0" />
+      <split name="splitter[4]" />
+      <mux active_input="1" idx="13" name="mux_wb_1_0" />
+      <mux active_input="0" idx="14" name="mux_vcsc_1_0" />
+      <demux active_output="0" idx="16" name="de_mux_gs_1_0" />
+      <mux active_input="1" idx="18" name="mux_af_1_0" />
+      <demux active_output="0" idx="20" name="bnlm_fa" />
+      <split name="dvsstat_splitter" />
+      <split name="bayersplitter4_2" />
+      <mux active_input="0" idx="21" name="mux_dpc_1_0" />
+      <mux active_input="0" idx="22" name="mux_lsc_1_0" />
+      <mux active_input="0" idx="23" name="mux_dvs" />
+      <split name="b2i_splitter" />
+      <mux active_input="1" idx="25" name="mux_gltm_1_0" />
+      <mux active_input="0" idx="26" name="mux_gltm_in" />
+      <mux active_input="1" idx="27" name="mux_rgbs_1_0" />
+      <demux active_output="0" idx="28" name="de_mux_isa_bayer_1_0" />
+      <mux active_input="1" idx="29" name="mux_bnlm_1_0" />
+      <split name="bayersplitter4" />
+      <mux active_input="0" idx="31" name="mux_iefd_1_0" />
+      <demux active_output="0" idx="32" name="de_mux_vca_1_0" />
+      <demux active_output="1" idx="33" name="de_mux_bnlm_1_0" />
+      <mux active_input="0" idx="34" name="mux_gs_1_0" />
+      <demux active_output="1" idx="35" name="de_mux_dpc_1_0" />
+      <mux active_input="0" idx="37" name="mux_pdaf_stat_1_0" />
+      <!--Routing Elements - end-->
+      <!--Kernels - start-->
+      <kernel enabled="1" idx="1" name="espa_isa_sis_a" pal_uuid="59281" rcb="0" />
+      <kernel enabled="1" idx="2" name="espa_isa_sis_b" pal_uuid="52347" rcb="0" />
+      <kernel enabled="1" idx="3" name="ycbcrcombine" pal_uuid="0" rcb="0" />
+      <kernel enabled="1" idx="4" name="pxl_crop_sis_a" pal_uuid="38128" rcb="1" />
+      <kernel enabled="1" idx="5" name="linearization2_0" pal_uuid="10326" rcb="0" />
+      <kernel enabled="1" idx="6" name="pxl_crop_sis_b" pal_uuid="3437" rcb="1" />
+      <kernel enabled="1" idx="7" name="pixelformatter" pal_uuid="41023" rcb="1" />
+      <kernel enabled="1" idx="8" name="dpc_2_0" pal_uuid="5679" rcb="1" />
+      <kernel enabled="1" idx="9" name="packer_isa_yuv_b" pal_uuid="5000" rcb="0" />
+      <kernel enabled="1" idx="10" name="bxt_acm" pal_uuid="13506" rcb="0" />
+      <kernel enabled="1" idx="11" name="espa_isa_bayer_a" pal_uuid="1326" rcb="0" />
+      <kernel enabled="1" idx="12" name="awbstatistics_2_0" pal_uuid="33260" rcb="0" />
+      <kernel enabled="1" idx="13" name="pxl_crop_yuv_c" pal_uuid="64756" rcb="1" />
+      <kernel enabled="2" idx="14" name="strm_crop_psa_c" pal_uuid="12123" rcb="1" />
+      <kernel enabled="2" idx="15" name="strm_crop_psa_d" pal_uuid="44733" rcb="1" />
+      <kernel enabled="2" idx="16" name="strm_crop_psa_e" pal_uuid="1739" rcb="1" />
+      <kernel enabled="2" idx="17" name="strm_crop_psa_f" pal_uuid="40056" rcb="0" />
+      <kernel enabled="1" idx="18" name="pxl_crop_yuv_b" pal_uuid="33476" rcb="1" />
+      <kernel enabled="1" idx="19" name="strm_crop_psa_h" pal_uuid="42698" rcb="1" />
+      <kernel enabled="1" idx="20" name="b2i_dm_1_0" pal_uuid="64138" rcb="0" />
+      <kernel enabled="2" idx="21" name="pxl_crop_yuv_a" pal_uuid="9082" rcb="1" />
+      <kernel enabled="2" idx="22" name="sve_1_0" pal_uuid="11000" rcb="0" />
+      <kernel enabled="1" idx="23" name="espa_isa_yuv_c" pal_uuid="45072" rcb="0" />
+      <kernel enabled="1" idx="24" name="espa_isa_yuv_b" pal_uuid="58945" rcb="0" />
+      <kernel enabled="2" idx="25" name="espa_isa_yuv_a" pal_uuid="33409" rcb="0" />
+      <kernel enabled="2" idx="26" name="linearization2_0_c" pal_uuid="28552" rcb="0" />
+      <kernel enabled="2" idx="27" name="linearization2_0_b" pal_uuid="42416" rcb="0" />
+      <kernel enabled="1" idx="28" name="bxt_vcsc_stills" pal_uuid="21171" rcb="0" />
+      <kernel enabled="1" idx="29" name="sis_1_0_b" pal_uuid="7487" rcb="1" />
+      <kernel enabled="1" idx="30" name="lsc_1_1" pal_uuid="16882" rcb="0" />
+      <kernel enabled="2" idx="31" name="espa_psa_e" pal_uuid="40191" rcb="0" />
+      <kernel enabled="1" idx="32" name="sis_1_0_a" pal_uuid="44134" rcb="1" />
+      <kernel enabled="2" idx="33" name="espa_psa_c" pal_uuid="41410" rcb="0" />
+      <kernel enabled="2" idx="34" name="pix_crop_ir_md" pal_uuid="54005" rcb="1" />
+      <kernel enabled="1" idx="35" name="gammastar_1" pal_uuid="42751" rcb="0" />
+      <kernel enabled="1" idx="36" name="espa_psa_h" pal_uuid="11266" rcb="0" />
+      <kernel enabled="1" idx="37" name="bxt_vcr2" pal_uuid="5194" rcb="0" />
+      <kernel enabled="0" idx="38" name="bxt_gridbaseob" pal_uuid="46517" rcb="0" />
+      <kernel enabled="1" idx="39" name="xnr_5_2" pal_uuid="58858" rcb="0" />
+      <kernel enabled="2" idx="40" name="bxt_norm_lin_c" pal_uuid="20905" rcb="0" />
+      <kernel enabled="2" idx="41" name="bxt_blc_b" pal_uuid="26932" rcb="0" />
+      <kernel enabled="1" idx="42" name="bxt_csc" pal_uuid="31704" rcb="0" />
+      <kernel enabled="2" idx="43" name="padder_yuv_a" pal_uuid="40136" rcb="1" />
+      <kernel enabled="1" idx="44" name="padder_yuv_b" pal_uuid="49213" rcb="1" />
+      <kernel enabled="1" idx="45" name="padder_yuv_c" pal_uuid="23317" rcb="1" />
+      <kernel enabled="1" idx="46" name="ccm_3a_2_0" pal_uuid="62344" rcb="1" />
+      <kernel enabled="2" idx="47" name="bxt_blc_c" pal_uuid="18168" rcb="0" />
+      <kernel enabled="2" idx="48" name="espa_psa_4" pal_uuid="36228" rcb="0" />
+      <kernel enabled="2" idx="49" name="x2i_md_1_0" pal_uuid="59520" rcb="1" />
+      <kernel enabled="1" idx="50" name="espa_psa_1" pal_uuid="11719" rcb="0" />
+      <kernel enabled="1" idx="51" name="b2i_sie_1_0" pal_uuid="58817" rcb="0" />
+      <kernel enabled="1" idx="52" name="bxt_applycorrection" pal_uuid="45482" rcb="0" />
+      <kernel enabled="1" idx="53" name="packer_isa_yuv_c" pal_uuid="27259" rcb="0" />
+      <kernel enabled="1" idx="54" name="padder_bayer_a" pal_uuid="19728" rcb="1" />
+      <kernel enabled="2" idx="55" name="packer_isa_yuv_a" pal_uuid="3683" rcb="0" />
+      <kernel enabled="1" idx="56" name="pxl_crop_bayer_a" pal_uuid="34076" rcb="1" />
+      <kernel enabled="1" idx="57" name="dvsstatistics_2" pal_uuid="37235" rcb="0" />
+      <kernel enabled="1" idx="58" name="sc_iefd_v2" pal_uuid="7320" rcb="0" />
+      <kernel enabled="2" idx="59" name="packer_isa_bayer_a" pal_uuid="13215" rcb="0" />
+      <kernel enabled="1" idx="60" name="b2i_bnr_1_0" pal_uuid="8682" rcb="0" />
+      <kernel enabled="1" idx="61" name="af_awb_frstatistics_2_0" pal_uuid="13395" rcb="0" />
+      <kernel enabled="2" idx="62" name="rgb_ir_2_0" pal_uuid="14488" rcb="1" />
+      <kernel enabled="1" idx="63" name="glim_1_0" pal_uuid="55620" rcb="0" />
+      <kernel enabled="1" idx="64" name="strm_crop_sis_b" pal_uuid="49322" rcb="1" />
+      <kernel enabled="1" idx="65" name="strm_crop_sis_a" pal_uuid="9544" rcb="1" />
+      <kernel enabled="1" idx="66" name="espa_isa_wb" pal_uuid="63427" rcb="0" />
+      <kernel enabled="1" idx="67" name="bxt_blc" pal_uuid="11700" rcb="0" />
+      <kernel enabled="2" idx="68" name="bxt_gridbaseob_b" pal_uuid="28979" rcb="0" />
+      <kernel enabled="2" idx="69" name="bxt_gridbaseob_c" pal_uuid="18935" rcb="0" />
+      <kernel enabled="2" idx="70" name="espa_psa_f" pal_uuid="56948" rcb="0" />
+      <kernel enabled="1" idx="71" name="bxt_norm_lin" pal_uuid="64791" rcb="0" />
+      <kernel enabled="2" idx="72" name="bxt_norm_lin_b" pal_uuid="1034" rcb="0" />
+      <kernel enabled="1" idx="73" name="gltm_1_0" pal_uuid="60649" rcb="0" />
+      <kernel enabled="2" idx="74" name="pixelformatter_c" pal_uuid="3081" rcb="1" />
+      <kernel enabled="2" idx="75" name="pixelformatter_b" pal_uuid="54735" rcb="1" />
+      <kernel enabled="1" idx="76" name="bxt_ccm" pal_uuid="16559" rcb="0" />
+      <kernel enabled="1" idx="77" name="vertical_padding_1_0" pal_uuid="54484" rcb="1" />
+      <kernel enabled="1" idx="78" name="b2i_ds_1_0_1" pal_uuid="20739" rcb="1" />
+      <kernel enabled="2" idx="79" name="b2i_ds_1_0_0" pal_uuid="10497" rcb="1" />
+      <kernel enabled="2" idx="80" name="espa_psa_d" pal_uuid="19387" rcb="0" />
+      <kernel enabled="1" idx="81" name="pafstatistics_1" pal_uuid="47216" rcb="0" />
+      <kernel enabled="2" idx="82" name="strm_crop_psa_g" pal_uuid="46549" rcb="1" />
+      <kernel enabled="1" idx="83" name="bxt_demosaic" pal_uuid="48695" rcb="0" />
+      <kernel enabled="1" idx="84" name="lca_1_0" pal_uuid="25352" rcb="0" />
+      <kernel enabled="1" idx="85" name="bxt_disparity" pal_uuid="55093" rcb="0" />
+      <kernel enabled="2" idx="86" name="espa_psa_g" pal_uuid="17153" rcb="0" />
+      <kernel enabled="2" idx="87" name="dol_1_0" pal_uuid="11842" rcb="0" />
+      <kernel enabled="1" idx="88" name="aestatistics_2_0" pal_uuid="26055" rcb="0" />
+      <kernel enabled="2" idx="89" name="espa_isa_ir_md" pal_uuid="37592" rcb="0" />
+      <kernel enabled="1" idx="90" name="gammatm_v3" pal_uuid="57496" rcb="0" />
+      <kernel enabled="1" idx="91" metadata="1,0,0,0" name="bnlm_3_2" pal_uuid="48964" rcb="0" />
+      <kernel enabled="1" idx="92" name="bxt_wb" pal_uuid="32398" rcb="0" />
+      <!--Kernels - end-->
+      <!--Kernel Links start-->
+      <klink destination="pxl_crop_sis_a:input" source="espa_isa_sis_a:output" />
+      <klink destination="pxl_crop_sis_b:input" source="espa_isa_sis_b:output" />
+      <klink destination="espa_psa_h:input" source="ycbcrcombine:ycbcr" />
+      <klink destination="mux_dol_1_0:0" source="de_mux_input_main_1_0:0" />
+      <klink destination="mux_dpc_1_0:0" source="de_mux_lsc_1_0:1" />
+      <klink destination="de_mux_input_main_1_0:input" source="linearization2_0:output" />
+      <klink destination="bxt_vcr2:yuv_444_or_420_in" source="mux_vca_1_0:output" />
+      <klink destination="bxt_norm_lin:inbayer" source="pixelformatter:outbayer" />
+      <klink destination="bxt_applycorrection:dpc_pixel_buffer_s16" source="dpc_2_0:outputbuffer" />
+      <klink destination="de_mux_vca_1_0:input" source="bxt_acm:rgb" />
+      <klink destination="ccm_3a_2_0:input" source="mux_ae_1_0:output" />
+      <klink destination="padder_bayer_a:input" source="espa_isa_bayer_a:output" />
+      <klink destination="packer_isa_yuv_c:input" source="pxl_crop_yuv_c:output" />
+      <klink destination="packer_isa_yuv_b:input" source="pxl_crop_yuv_b:output" />
+      <klink destination="vertical_padding_1_0:input_image" source="strm_crop_psa_h:output" />
+      <klink destination="b2i_sie_1_0:input" source="b2i_dm_1_0:output" />
+      <klink destination="mux_vcsc_1_0:0" source="de_mux_dmsc_1_0:0" />
+      <klink destination="bxt_demosaic:raw_image" source="mux_dmsc_1_0:output" />
+      <klink destination="padder_yuv_c:input" source="espa_isa_yuv_c:output" />
+      <klink destination="padder_yuv_b:input" source="espa_isa_yuv_b:output" />
+      <klink destination="de_mux_lin_1_0:input" source="awbinputsplitter:4" />
+      <klink destination="sc_iefd_v2:input" source="yuv420splitter2:output1" />
+      <klink destination="ycbcrcombine:cbcr" source="yuv420splitter2:output2" />
+      <klink destination="mux_gltm_1_0:1" source="bxt_vcsc_stills:ycbcr" />
+      <klink destination="espa_isa_sis_b:input" source="sis_1_0_b:output" />
+      <klink destination="de_mux_lsc_1_0:input" source="lsc_1_1:bayer" />
+      <klink destination="espa_isa_sis_a:input" source="sis_1_0_a:output" />
+      <klink destination="bxt_disparity:bayer" source="dpcinternalsplitter:1" />
+      <klink destination="dpc_2_0:input" source="dpcinternalsplitter:2" />
+      <klink destination="bxt_applycorrection:input_image_s16" source="dpcinternalsplitter:3" />
+      <klink destination="de_mux_gs_1_0:input" source="gammastar_1:output" />
+      <klink destination="strm_crop_psa_h:input" source="espa_psa_h:output" />
+      <klink destination="bxt_ccm:rgb_or_yuv444" source="bxt_vcr2:yuv_444_out" />
+      <klink destination="awbinputsplitter:input" source="mux_dol_1_0:output" />
+      <klink destination="mux_lsc_1_0:0" source="de_mux_lin_1_0:0" />
+      <klink destination="linearization2_0:input" source="bxt_gridbaseob:bayer" />
+      <klink destination="mux_vca_1_0:0" source="xnr_5_2:output" />
+      <klink destination="dvsstat_splitter:input" source="splitter[4]:1" />
+      <klink destination="bayersplitter4:input" source="mux_wb_1_0:output" />
+      <klink destination="splitter[4]:input" source="bxt_csc:ycbcr" />
+      <klink destination="pxl_crop_yuv_b:input" source="padder_yuv_b:output" />
+      <klink destination="pxl_crop_yuv_c:input" source="padder_yuv_c:output" />
+      <klink destination="bxt_vcsc_stills:srgb" source="mux_vcsc_1_0:output" />
+      <klink destination="gammatm_v3:input" source="de_mux_gs_1_0:0" />
+      <klink destination="aestatistics_2_0:bayer_s16" source="ccm_3a_2_0:output" />
+      <klink destination="bnlm_3_2:input" source="espa_psa_1:output" />
+      <klink destination="b2i_splitter:input" source="b2i_sie_1_0:output" />
+      <klink destination="de_mux_dpc_1_0:input" source="bxt_applycorrection:output_image" />
+      <klink destination="pxl_crop_bayer_a:input" source="padder_bayer_a:output" />
+      <klink destination="de_mux_isa_bayer_1_0:input" source="pxl_crop_bayer_a:output" />
+      <klink destination="af_awb_frstatistics_2_0:bayer_s16" source="mux_af_1_0:output" />
+      <klink destination="ycbcrcombine:y" source="sc_iefd_v2:output" />
+      <klink destination="b2i_dm_1_0:input" source="b2i_bnr_1_0:output" />
+      <klink destination="bxt_acm:rgb" source="glim_1_0:output" />
+      <klink destination="sis_1_0_b:input" source="strm_crop_sis_b:output" />
+      <klink destination="sis_1_0_a:input" source="strm_crop_sis_a:output" />
+      <klink destination="bxt_wb:inbayer" source="espa_isa_wb:output" />
+      <klink destination="bxt_gridbaseob:bayer" source="bxt_blc:bayer" />
+      <klink destination="de_mux_bnlm_1_0:input" source="bnlm_fa:0" />
+      <klink destination="mux_iefd_1_0:0" source="dvsstat_splitter:1" />
+      <klink destination="mux_dvs:0" source="dvsstat_splitter:2" />
+      <klink destination="b2i_bnr_1_0:input" source="bayersplitter4_2:1" />
+      <klink destination="espa_isa_bayer_a:input" source="bayersplitter4_2:2" />
+      <klink destination="strm_crop_sis_a:input" source="bayersplitter4_2:3" />
+      <klink destination="strm_crop_sis_b:input" source="bayersplitter4_2:4" />
+      <klink destination="dpcinternalsplitter:input" source="mux_dpc_1_0:output" />
+      <klink destination="bxt_blc:bayer" source="bxt_norm_lin:outbayer" />
+      <klink destination="lsc_1_1:bayer" source="mux_lsc_1_0:output" />
+      <klink destination="xnr_5_2:input" source="gltm_1_0:output" />
+      <klink destination="dvsstatistics_2:y_s14" source="mux_dvs:output" />
+      <klink destination="glim_1_0:input" source="bxt_ccm:srgb_or_yuv444" />
+      <klink destination="espa_isa_yuv_b:input" source="b2i_ds_1_0_1:scaled_output" />
+      <klink destination="de_mux_dmsc_1_0:input" source="bxt_demosaic:rgb_image" />
+      <klink destination="bayersplitter4_2:input" source="lca_1_0:output" />
+      <klink destination="bxt_applycorrection:gdc_grgb_delta_buffer_s16" source="bxt_disparity:output_buffer" />
+      <klink destination="b2i_ds_1_0_1:input" source="b2i_splitter:2" />
+      <klink destination="espa_isa_yuv_c:input" source="b2i_splitter:3" />
+      <klink destination="mux_gltm_in:0" source="mux_gltm_1_0:output" />
+      <klink destination="gltm_1_0:input" source="mux_gltm_in:output" />
+      <klink destination="awbstatistics_2_0:bayer_s16" source="mux_rgbs_1_0:output" />
+      <klink destination="mux_bnlm_1_0:1" source="de_mux_isa_bayer_1_0:0" />
+      <klink destination="espa_psa_1:input" source="mux_bnlm_1_0:output" />
+      <klink destination="mux_ae_1_0:1" source="bayersplitter4:1" />
+      <klink destination="mux_af_1_0:1" source="bayersplitter4:2" />
+      <klink destination="mux_rgbs_1_0:1" source="bayersplitter4:3" />
+      <klink destination="espa_isa_wb:input" source="bayersplitter4:4" />
+      <klink destination="yuv420splitter2:input" source="mux_iefd_1_0:output" />
+      <klink destination="mux_gs_1_0:0" source="de_mux_vca_1_0:0" />
+      <klink destination="mux_dmsc_1_0:0" source="de_mux_bnlm_1_0:1" />
+      <klink destination="bxt_csc:srgb" source="gammatm_v3:output" />
+      <klink destination="gammastar_1:input" source="mux_gs_1_0:output" />
+      <klink destination="mux_wb_1_0:1" source="de_mux_dpc_1_0:1" />
+      <klink destination="bnlm_fa:input" source="bnlm_3_2:output" />
+      <klink destination="lca_1_0:input" source="bxt_wb:outbayer" />
+      <klink destination="pafstatistics_1:bayer_s16" source="mux_pdaf_stat_1_0:output" />
+      <!--Kernel Links end-->
+      <cipf rbm="0x9332D54D4265A91AA69A646489" />
+    </node>
+    <node name="isa_lb_ir_video" pg_id="187" stream_id="60001" subsystem="psys" type="program_group">
+      <!-- INPUT ports -->
+      <port content_type="program" direction="0" id="2" name="prog_init" />
+      <port content_type="program" direction="0" id="3" name="prog_ctrl_init" />
+      <!-- data terminals ports -->
+      <port direction="0" id="4" name="input" />
+      <port direction="0" id="28" name="short_exp" />
+      <port direction="0" id="29" name="medium_exp" />
+      <port direction="0" id="30" name="ext_pdaf_stats" />
+      <!-- params terminals ports -->
+      <port content_type="param_cached" direction="0" id="1" name="params" />
+      <port content_type="spatial" direction="0" id="5" name="blc_spatial" />
+      <port content_type="spatial" direction="0" id="6" name="lsc_spatial" />
+      <port content_type="spatial" direction="0" id="7" name="gamma_star_grid" />
+      <!-- OUTPUT ports -->
+      <!-- data ports -->
+      <port direction="1" format="YUV420_10_PL" id="8" name="main" />
+      <port direction="1" format="GRBG_12_V" id="9" name="fr_bayer" />
+      <port direction="1" format="YUV420_8_SP" id="10" name="scaled_yuv" />
+      <port direction="1" format="GRBG_12_LI" id="11" name="sis_a" />
+      <port direction="1" format="GRBG_12_LI" id="12" name="sis_b" />
+      <port direction="1" format="YUV420_8_SP" id="13" name="fr_yuv" />
+      <port direction="1" format="IR" id="14" name="ir_md" />
+      <!-- parameter terminals ports -->
+      <!-- 3A ports -->
+      <port content_type="param_cached" direction="1" id="21" name="ae_stats" />
+      <port content_type="spatial" direction="1" id="15" name="af_stats" />
+      <port content_type="spatial" direction="1" id="16" name="awb_stats" />
+      <port content_type="spatial" direction="1" id="17" name="pdaf_stats" />
+      <!-- DVS ports -->
+      <port content_type="spatial" direction="1" id="18" name="dvs_mv_l0" />
+      <port content_type="spatial" direction="1" id="19" name="dvs_mv_l1" />
+      <port content_type="spatial" direction="1" id="20" name="dvs_mv_l2" />
+      <port content_type="program" direction="0" id="22" name="dvs_fe_in_l0" />
+      <port content_type="program" direction="0" id="23" name="dvs_fe_in_l1" />
+      <port content_type="program" direction="0" id="24" name="dvs_fe_in_l2" />
+      <port content_type="param_cached" direction="1" id="25" name="dvs_fe_out_l0" />
+      <port content_type="param_cached" direction="1" id="26" name="dvs_fe_out_l1" />
+      <port content_type="param_cached" direction="1" id="27" name="dvs_fe_out_l2" />
+      <!--Input Ports links to kernels-->
+      <klink destination="mux_pdaf_stat_1_0:0" source="ext_pdaf_stats" />
+      <klink destination="pixelformatter:inbayer" source="input" />
+      <!--Output Ports links to kernels-->
+      <klink destination="scaled_yuv" source="packer_isa_yuv_b:output" />
+      <klink destination="ir_md" source="pix_crop_ir_md:output" />
+      <klink destination="main" source="vertical_padding_1_0:output_image" />
+      <klink destination="sis_b" source="pxl_crop_sis_b:output" />
+      <klink destination="sis_a" source="pxl_crop_sis_a:output" />
+      <klink destination="fr_yuv" source="packer_isa_yuv_c:output" />
+      <klink destination="dvs_mv_l0" source="dvsstatistics_2:output0" />
+      <klink destination="ae_stats" source="aestatistics_2_0:output" />
+      <klink destination="af_stats" source="af_awb_frstatistics_2_0:output" />
+      <klink destination="pdaf_stats" source="pafstatistics_1:output" />
+      <klink destination="fr_bayer" source="bayerddrsplitter:2" />
+      <klink destination="awb_stats" source="awbstatistics_2_0:output" />
+      <!--Routing Elements - start-->
+      <demux active_output="0" idx="1" name="de_mux_input_main_1_0" />
+      <demux active_output="0" idx="2" name="de_mux_lsc_1_0" />
+      <mux active_input="0" idx="3" name="mux_vca_1_0" />
+      <mux active_input="1" idx="5" name="mux_ae_1_0" />
+      <demux active_output="0" idx="7" name="de_mux_md_1_0" />
+      <demux active_output="1" idx="9" name="de_mux_isa_yuv420_1_0" />
+      <split name="awbinputsplitter" />
+      <split name="yuv420splitter2" />
+      <mux active_input="1" idx="10" name="mux_x2b_1_0" />
+      <split name="dpcinternalsplitter" />
+      <mux active_input="0" idx="11" name="mux_dol_1_0" />
+      <demux active_output="1" idx="12" name="de_mux_lin_1_0" />
+      <split name="splitter[4]" />
+      <mux active_input="0" idx="13" name="mux_wb_1_0" />
+      <mux active_input="0" idx="15" name="mux_x2b_meta_1_0" />
+      <demux active_output="0" idx="16" name="de_mux_gs_1_0" />
+      <mux active_input="1" idx="18" name="mux_af_1_0" />
+      <mux active_input="0" idx="19" name="mux_x2b_bp_1_0" />
+      <demux active_output="0" idx="20" name="bnlm_fa" />
+      <split name="dvsstat_splitter" />
+      <split name="bayersplitter4_2" />
+      <mux active_input="1" idx="21" name="mux_dpc_1_0" />
+      <mux active_input="2" idx="22" name="mux_lsc_1_0" />
+      <mux active_input="0" idx="23" name="mux_dvs" />
+      <split name="bayerddrsplitter" />
+      <demux active_output="0" idx="24" name="de_mux_x2b_1_0" />
+      <split name="b2i_splitter" />
+      <mux active_input="0" idx="25" name="mux_gltm_1_0" />
+      <mux active_input="0" idx="26" name="mux_gltm_in" />
+      <mux active_input="0" idx="27" name="mux_rgbs_1_0" />
+      <demux active_output="1" idx="28" name="de_mux_isa_bayer_1_0" />
+      <mux active_input="0" idx="29" name="mux_bnlm_1_0" />
+      <split name="bayersplitter4" />
+      <mux active_input="0" idx="30" name="mux_x2b_bayer_1_0" />
+      <mux active_input="0" idx="31" name="mux_iefd_1_0" />
+      <demux active_output="0" idx="32" name="de_mux_vca_1_0" />
+      <demux active_output="0" idx="33" name="de_mux_bnlm_1_0" />
+      <mux active_input="0" idx="34" name="mux_gs_1_0" />
+      <demux active_output="2" idx="35" name="de_mux_dpc_1_0" />
+      <demux active_output="0" idx="36" name="de_mux_x2b_bp_1_0" />
+      <mux active_input="0" idx="37" name="mux_pdaf_stat_1_0" />
+      <!--Routing Elements - end-->
+      <!--Kernels - start-->
+      <kernel enabled="1" idx="1" name="espa_isa_sis_a" pal_uuid="59281" rcb="0" />
+      <kernel enabled="1" idx="2" name="espa_isa_sis_b" pal_uuid="52347" rcb="0" />
+      <kernel enabled="1" idx="3" name="ycbcrcombine" pal_uuid="0" rcb="0" />
+      <kernel enabled="1" idx="4" name="pxl_crop_sis_a" pal_uuid="38128" rcb="1" />
+      <kernel enabled="1" idx="5" name="linearization2_0" pal_uuid="10326" rcb="0" />
+      <kernel enabled="1" idx="6" name="pxl_crop_sis_b" pal_uuid="3437" rcb="1" />
+      <kernel enabled="1" idx="7" name="pixelformatter" pal_uuid="41023" rcb="1" />
+      <kernel enabled="1" idx="8" name="dpc_2_0" pal_uuid="5679" rcb="1" />
+      <kernel enabled="1" idx="9" name="packer_isa_yuv_b" pal_uuid="5000" rcb="0" />
+      <kernel enabled="1" idx="10" name="bxt_acm" pal_uuid="13506" rcb="0" />
+      <kernel enabled="1" idx="11" name="espa_isa_bayer_a" pal_uuid="1326" rcb="0" />
+      <kernel enabled="1" idx="12" name="awbstatistics_2_0" pal_uuid="33260" rcb="0" />
+      <kernel enabled="1" idx="13" name="pxl_crop_yuv_c" pal_uuid="64756" rcb="1" />
+      <kernel enabled="2" idx="14" name="strm_crop_psa_c" pal_uuid="12123" rcb="1" />
+      <kernel enabled="2" idx="15" name="strm_crop_psa_d" pal_uuid="44733" rcb="1" />
+      <kernel enabled="2" idx="16" name="strm_crop_psa_e" pal_uuid="1739" rcb="1" />
+      <kernel enabled="2" idx="17" name="strm_crop_psa_f" pal_uuid="40056" rcb="0" />
+      <kernel enabled="1" idx="18" name="pxl_crop_yuv_b" pal_uuid="33476" rcb="1" />
+      <kernel enabled="1" idx="19" name="strm_crop_psa_h" pal_uuid="42698" rcb="1" />
+      <kernel enabled="1" idx="20" name="b2i_dm_1_0" pal_uuid="64138" rcb="0" />
+      <kernel enabled="1" idx="21" name="pxl_crop_yuv_a" pal_uuid="9082" rcb="1" />
+      <kernel enabled="2" idx="22" name="sve_1_0" pal_uuid="11000" rcb="0" />
+      <kernel enabled="1" idx="23" name="espa_isa_yuv_c" pal_uuid="45072" rcb="0" />
+      <kernel enabled="1" idx="24" name="espa_isa_yuv_b" pal_uuid="58945" rcb="0" />
+      <kernel enabled="1" idx="25" name="espa_isa_yuv_a" pal_uuid="33409" rcb="0" />
+      <kernel enabled="2" idx="26" name="linearization2_0_c" pal_uuid="28552" rcb="0" />
+      <kernel enabled="2" idx="27" name="linearization2_0_b" pal_uuid="42416" rcb="0" />
+      <kernel enabled="2" idx="28" name="bxt_vcsc_stills" pal_uuid="21171" rcb="0" />
+      <kernel enabled="1" idx="29" name="sis_1_0_b" pal_uuid="7487" rcb="1" />
+      <kernel enabled="1" idx="30" name="lsc_1_1" pal_uuid="16882" rcb="0" />
+      <kernel enabled="2" idx="31" name="espa_psa_e" pal_uuid="40191" rcb="0" />
+      <kernel enabled="1" idx="32" name="sis_1_0_a" pal_uuid="44134" rcb="1" />
+      <kernel enabled="2" idx="33" name="espa_psa_c" pal_uuid="41410" rcb="0" />
+      <kernel enabled="1" idx="34" name="pix_crop_ir_md" pal_uuid="54005" rcb="1" />
+      <kernel enabled="1" idx="35" name="gammastar_1" pal_uuid="42751" rcb="0" />
+      <kernel enabled="1" idx="36" name="espa_psa_h" pal_uuid="11266" rcb="0" />
+      <kernel enabled="1" idx="37" name="bxt_vcr2" pal_uuid="5194" rcb="0" />
+      <kernel enabled="0" idx="38" name="bxt_gridbaseob" pal_uuid="46517" rcb="0" />
+      <kernel enabled="1" idx="39" name="xnr_5_2" pal_uuid="58858" rcb="0" />
+      <kernel enabled="2" idx="40" name="bxt_norm_lin_c" pal_uuid="20905" rcb="0" />
+      <kernel enabled="2" idx="41" name="bxt_blc_b" pal_uuid="26932" rcb="0" />
+      <kernel enabled="1" idx="42" name="bxt_csc" pal_uuid="31704" rcb="0" />
+      <kernel enabled="1" idx="43" name="padder_yuv_a" pal_uuid="40136" rcb="1" />
+      <kernel enabled="1" idx="44" name="padder_yuv_b" pal_uuid="49213" rcb="1" />
+      <kernel enabled="1" idx="45" name="padder_yuv_c" pal_uuid="23317" rcb="1" />
+      <kernel enabled="1" idx="46" name="ccm_3a_2_0" pal_uuid="62344" rcb="1" />
+      <kernel enabled="2" idx="47" name="bxt_blc_c" pal_uuid="18168" rcb="0" />
+      <kernel enabled="2" idx="48" name="espa_psa_4" pal_uuid="36228" rcb="0" />
+      <kernel enabled="1" idx="49" name="x2i_md_1_0" pal_uuid="59520" rcb="1" />
+      <kernel enabled="1" idx="50" name="espa_psa_1" pal_uuid="11719" rcb="0" />
+      <kernel enabled="0" idx="51" name="b2i_sie_1_0" pal_uuid="58817" rcb="0" />
+      <kernel enabled="1" idx="52" name="bxt_applycorrection" pal_uuid="45482" rcb="0" />
+      <kernel enabled="1" idx="53" name="packer_isa_yuv_c" pal_uuid="27259" rcb="0" />
+      <kernel enabled="1" idx="54" name="padder_bayer_a" pal_uuid="19728" rcb="1" />
+      <kernel enabled="1" idx="55" name="packer_isa_yuv_a" pal_uuid="3683" rcb="0" />
+      <kernel enabled="1" idx="56" name="pxl_crop_bayer_a" pal_uuid="34076" rcb="1" />
+      <kernel enabled="1" idx="57" name="dvsstatistics_2" pal_uuid="37235" rcb="0" />
+      <kernel enabled="1" idx="58" name="sc_iefd_v2" pal_uuid="7320" rcb="0" />
+      <kernel enabled="1" idx="59" name="packer_isa_bayer_a" pal_uuid="13215" rcb="0" />
+      <kernel enabled="0" idx="60" name="b2i_bnr_1_0" pal_uuid="8682" rcb="0" />
+      <kernel enabled="1" idx="61" name="af_awb_frstatistics_2_0" pal_uuid="13395" rcb="0" />
+      <kernel enabled="1" idx="62" name="rgb_ir_2_0" pal_uuid="14488" rcb="1" />
+      <kernel enabled="1" idx="63" name="glim_1_0" pal_uuid="55620" rcb="0" />
+      <kernel enabled="1" idx="64" name="strm_crop_sis_b" pal_uuid="49322" rcb="1" />
+      <kernel enabled="1" idx="65" name="strm_crop_sis_a" pal_uuid="9544" rcb="1" />
+      <kernel enabled="1" idx="66" name="espa_isa_wb" pal_uuid="63427" rcb="0" />
+      <kernel enabled="1" idx="67" name="bxt_blc" pal_uuid="11700" rcb="0" />
+      <kernel enabled="2" idx="68" name="bxt_gridbaseob_b" pal_uuid="28979" rcb="0" />
+      <kernel enabled="2" idx="69" name="bxt_gridbaseob_c" pal_uuid="18935" rcb="0" />
+      <kernel enabled="2" idx="70" name="espa_psa_f" pal_uuid="56948" rcb="0" />
+      <kernel enabled="1" idx="71" name="bxt_norm_lin" pal_uuid="64791" rcb="0" />
+      <kernel enabled="2" idx="72" name="bxt_norm_lin_b" pal_uuid="1034" rcb="0" />
+      <kernel enabled="1" idx="73" name="gltm_1_0" pal_uuid="60649" rcb="0" />
+      <kernel enabled="2" idx="74" name="pixelformatter_c" pal_uuid="3081" rcb="1" />
+      <kernel enabled="2" idx="75" name="pixelformatter_b" pal_uuid="54735" rcb="1" />
+      <kernel enabled="1" idx="76" name="bxt_ccm" pal_uuid="16559" rcb="0" />
+      <kernel enabled="1" idx="77" name="vertical_padding_1_0" pal_uuid="54484" rcb="1" />
+      <kernel enabled="1" idx="78" name="b2i_ds_1_0_1" pal_uuid="20739" rcb="1" />
+      <kernel enabled="1" idx="79" name="b2i_ds_1_0_0" pal_uuid="10497" rcb="1" />
+      <kernel enabled="2" idx="80" name="espa_psa_d" pal_uuid="19387" rcb="0" />
+      <kernel enabled="1" idx="81" name="pafstatistics_1" pal_uuid="47216" rcb="0" />
+      <kernel enabled="2" idx="82" name="strm_crop_psa_g" pal_uuid="46549" rcb="1" />
+      <kernel enabled="2" idx="83" name="bxt_demosaic" pal_uuid="48695" rcb="0" />
+      <kernel enabled="1" idx="84" name="lca_1_0" pal_uuid="25352" rcb="0" />
+      <kernel enabled="1" idx="85" name="bxt_disparity" pal_uuid="55093" rcb="0" />
+      <kernel enabled="2" idx="86" name="espa_psa_g" pal_uuid="17153" rcb="0" />
+      <kernel enabled="2" idx="87" name="dol_1_0" pal_uuid="11842" rcb="0" />
+      <kernel enabled="1" idx="88" name="aestatistics_2_0" pal_uuid="26055" rcb="0" />
+      <kernel enabled="1" idx="89" name="espa_isa_ir_md" pal_uuid="37592" rcb="0" />
+      <kernel enabled="1" idx="90" name="gammatm_v3" pal_uuid="57496" rcb="0" />
+      <kernel enabled="1" idx="91" metadata="2,0,0,0" name="bnlm_3_2" pal_uuid="48964" rcb="0" />
+      <kernel enabled="1" idx="92" name="bxt_wb" pal_uuid="32398" rcb="0" />
+      <!--Kernels - end-->
+      <!--Kernel Links start-->
+      <klink destination="pxl_crop_sis_a:input" source="espa_isa_sis_a:output" />
+      <klink destination="pxl_crop_sis_b:input" source="espa_isa_sis_b:output" />
+      <klink destination="espa_psa_h:input" source="ycbcrcombine:ycbcr" />
+      <klink destination="mux_dol_1_0:0" source="de_mux_input_main_1_0:0" />
+      <klink destination="mux_wb_1_0:0" source="de_mux_lsc_1_0:0" />
+      <klink destination="de_mux_input_main_1_0:input" source="linearization2_0:output" />
+      <klink destination="bxt_vcr2:yuv_444_or_420_in" source="mux_vca_1_0:output" />
+      <klink destination="bxt_norm_lin:inbayer" source="pixelformatter:outbayer" />
+      <klink destination="bxt_applycorrection:dpc_pixel_buffer_s16" source="dpc_2_0:outputbuffer" />
+      <klink destination="de_mux_vca_1_0:input" source="bxt_acm:rgb" />
+      <klink destination="ccm_3a_2_0:input" source="mux_ae_1_0:output" />
+      <klink destination="padder_bayer_a:input" source="espa_isa_bayer_a:output" />
+      <klink destination="packer_isa_yuv_c:input" source="pxl_crop_yuv_c:output" />
+      <klink destination="packer_isa_yuv_b:input" source="pxl_crop_yuv_b:output" />
+      <klink destination="vertical_padding_1_0:input_image" source="strm_crop_psa_h:output" />
+      <klink destination="b2i_sie_1_0:input" source="b2i_dm_1_0:output" />
+      <klink destination="packer_isa_yuv_a:input" source="pxl_crop_yuv_a:output" />
+      <klink destination="rgb_ir_2_0:input" source="de_mux_md_1_0:0" />
+      <klink destination="padder_yuv_c:input" source="espa_isa_yuv_c:output" />
+      <klink destination="padder_yuv_b:input" source="espa_isa_yuv_b:output" />
+      <klink destination="padder_yuv_a:input" source="espa_isa_yuv_a:output" />
+      <klink destination="mux_bnlm_1_0:0" source="de_mux_isa_yuv420_1_0:1" />
+      <klink destination="mux_rgbs_1_0:0" source="awbinputsplitter:3" />
+      <klink destination="de_mux_lin_1_0:input" source="awbinputsplitter:4" />
+      <klink destination="sc_iefd_v2:input" source="yuv420splitter2:output1" />
+      <klink destination="ycbcrcombine:cbcr" source="yuv420splitter2:output2" />
+      <klink destination="x2i_md_1_0:input" source="mux_x2b_1_0:output" />
+      <klink destination="espa_isa_sis_b:input" source="sis_1_0_b:output" />
+      <klink destination="de_mux_lsc_1_0:input" source="lsc_1_1:bayer" />
+      <klink destination="espa_isa_sis_a:input" source="sis_1_0_a:output" />
+      <klink destination="bxt_disparity:bayer" source="dpcinternalsplitter:1" />
+      <klink destination="dpc_2_0:input" source="dpcinternalsplitter:2" />
+      <klink destination="bxt_applycorrection:input_image_s16" source="dpcinternalsplitter:3" />
+      <klink destination="de_mux_gs_1_0:input" source="gammastar_1:output" />
+      <klink destination="strm_crop_psa_h:input" source="espa_psa_h:output" />
+      <klink destination="bxt_ccm:rgb_or_yuv444" source="bxt_vcr2:yuv_444_out" />
+      <klink destination="awbinputsplitter:input" source="mux_dol_1_0:output" />
+      <klink destination="mux_dpc_1_0:1" source="de_mux_lin_1_0:1" />
+      <klink destination="linearization2_0:input" source="bxt_gridbaseob:bayer" />
+      <klink destination="mux_vca_1_0:0" source="xnr_5_2:output" />
+      <klink destination="dvsstat_splitter:input" source="splitter[4]:1" />
+      <klink destination="bayersplitter4:input" source="mux_wb_1_0:output" />
+      <klink destination="splitter[4]:input" source="bxt_csc:ycbcr" />
+      <klink destination="pxl_crop_yuv_a:input" source="padder_yuv_a:output" />
+      <klink destination="pxl_crop_yuv_b:input" source="padder_yuv_b:output" />
+      <klink destination="pxl_crop_yuv_c:input" source="padder_yuv_c:output" />
+      <klink destination="espa_isa_ir_md:input" source="mux_x2b_meta_1_0:output" />
+      <klink destination="gammatm_v3:input" source="de_mux_gs_1_0:0" />
+      <klink destination="aestatistics_2_0:bayer_s16" source="ccm_3a_2_0:output" />
+      <klink destination="de_mux_x2b_bp_1_0:input" source="x2i_md_1_0:bayer" />
+      <klink destination="bnlm_3_2:input" source="espa_psa_1:output" />
+      <klink destination="b2i_splitter:input" source="b2i_sie_1_0:output" />
+      <klink destination="de_mux_dpc_1_0:input" source="bxt_applycorrection:output_image" />
+      <klink destination="pxl_crop_bayer_a:input" source="padder_bayer_a:output" />
+      <klink destination="de_mux_isa_yuv420_1_0:input" source="packer_isa_yuv_a:output" />
+      <klink destination="de_mux_isa_bayer_1_0:input" source="pxl_crop_bayer_a:output" />
+      <klink destination="af_awb_frstatistics_2_0:bayer_s16" source="mux_af_1_0:output" />
+      <klink destination="ycbcrcombine:y" source="sc_iefd_v2:output" />
+      <klink destination="bayerddrsplitter:input" source="packer_isa_bayer_a:output" />
+      <klink destination="b2i_dm_1_0:input" source="b2i_bnr_1_0:output" />
+      <klink destination="mux_x2b_bayer_1_0:0" source="rgb_ir_2_0:bayer" />
+      <klink destination="mux_x2b_meta_1_0:0" source="rgb_ir_2_0:ir" />
+      <klink destination="bxt_acm:rgb" source="glim_1_0:output" />
+      <klink destination="sis_1_0_b:input" source="strm_crop_sis_b:output" />
+      <klink destination="sis_1_0_a:input" source="strm_crop_sis_a:output" />
+      <klink destination="bxt_wb:inbayer" source="espa_isa_wb:output" />
+      <klink destination="bxt_gridbaseob:bayer" source="bxt_blc:bayer" />
+      <klink destination="de_mux_x2b_1_0:input" source="mux_x2b_bp_1_0:output" />
+      <klink destination="de_mux_bnlm_1_0:input" source="bnlm_fa:0" />
+      <klink destination="mux_iefd_1_0:0" source="dvsstat_splitter:1" />
+      <klink destination="mux_dvs:0" source="dvsstat_splitter:2" />
+      <klink destination="b2i_bnr_1_0:input" source="bayersplitter4_2:1" />
+      <klink destination="espa_isa_bayer_a:input" source="bayersplitter4_2:2" />
+      <klink destination="strm_crop_sis_a:input" source="bayersplitter4_2:3" />
+      <klink destination="strm_crop_sis_b:input" source="bayersplitter4_2:4" />
+      <klink destination="dpcinternalsplitter:input" source="mux_dpc_1_0:output" />
+      <klink destination="bxt_blc:bayer" source="bxt_norm_lin:outbayer" />
+      <klink destination="lsc_1_1:bayer" source="mux_lsc_1_0:output" />
+      <klink destination="xnr_5_2:input" source="gltm_1_0:output" />
+      <klink destination="dvsstatistics_2:y_s14" source="mux_dvs:output" />
+      <klink destination="glim_1_0:input" source="bxt_ccm:srgb_or_yuv444" />
+      <klink destination="espa_isa_yuv_b:input" source="b2i_ds_1_0_1:scaled_output" />
+      <klink destination="espa_isa_yuv_a:input" source="b2i_ds_1_0_0:scaled_output" />
+      <klink destination="bayersplitter4_2:input" source="lca_1_0:output" />
+      <klink destination="bxt_applycorrection:gdc_grgb_delta_buffer_s16" source="bxt_disparity:output_buffer" />
+      <klink destination="mux_lsc_1_0:2" source="de_mux_x2b_1_0:0" />
+      <klink destination="b2i_ds_1_0_0:input" source="b2i_splitter:1" />
+      <klink destination="b2i_ds_1_0_1:input" source="b2i_splitter:2" />
+      <klink destination="espa_isa_yuv_c:input" source="b2i_splitter:3" />
+      <klink destination="mux_gltm_in:0" source="mux_gltm_1_0:output" />
+      <klink destination="pix_crop_ir_md:input" source="espa_isa_ir_md:output" />
+      <klink destination="gltm_1_0:input" source="mux_gltm_in:output" />
+      <klink destination="awbstatistics_2_0:bayer_s16" source="mux_rgbs_1_0:output" />
+      <klink destination="packer_isa_bayer_a:input" source="de_mux_isa_bayer_1_0:1" />
+      <klink destination="espa_psa_1:input" source="mux_bnlm_1_0:output" />
+      <klink destination="mux_ae_1_0:1" source="bayersplitter4:1" />
+      <klink destination="mux_af_1_0:1" source="bayersplitter4:2" />
+      <klink destination="espa_isa_wb:input" source="bayersplitter4:4" />
+      <klink destination="mux_x2b_bp_1_0:0" source="mux_x2b_bayer_1_0:output" />
+      <klink destination="yuv420splitter2:input" source="mux_iefd_1_0:output" />
+      <klink destination="mux_gs_1_0:0" source="de_mux_vca_1_0:0" />
+      <klink destination="mux_gltm_1_0:0" source="de_mux_bnlm_1_0:0" />
+      <klink destination="bxt_csc:srgb" source="gammatm_v3:output" />
+      <klink destination="gammastar_1:input" source="mux_gs_1_0:output" />
+      <klink destination="mux_x2b_1_0:1" source="de_mux_dpc_1_0:2" />
+      <klink destination="bnlm_fa:input" source="bnlm_3_2:output" />
+      <klink destination="de_mux_md_1_0:input" source="de_mux_x2b_bp_1_0:0" />
+      <klink destination="lca_1_0:input" source="bxt_wb:outbayer" />
+      <klink destination="pafstatistics_1:bayer_s16" source="mux_pdaf_stat_1_0:output" />
+      <!--Kernel Links end-->
+      <cipf rbm="0x2CD534B542655299A699989262" />
+    </node>
+    <node name="post_gdc_ir_video" pg_id="189" stream_id="60001" subsystem="psys" type="program_group">
+      <!-- data terminals: ports -->
+      <port direction="0" id="1" name="input" />
+      <port direction="1" format="YUV420_8_SP" id="2" name="main">
+        <options attribute="format">
+          <!-- These metadata options map to the enum defined in ofa_format_t-->
+          <option value="YUV420_8_PL,YUV420_8_PL_C">
+            <!-- settings applied when switching to IYUV/I420! the metadata[1] maps to type ofa_format_t enum-->
+            <apply>
+              <post_gdc_ir_video>
+                <ofa_2_mp metadata="0,0,0,0">
+                  <input bpp="8" />
+                </ofa_2_mp>
+                <gdc5>
+                  <input bpp="8" />
+                </gdc5>
+                <tnr_6_0>
+                  <input bpp="8" />
+                </tnr_6_0>
+                <mrc_1_0>
+                  <input bpp="8" />
+                </mrc_1_0>
+              </post_gdc_ir_video>
+            </apply>
+          </option>
+          <option value="YUV420_8_PL_REV">
+            <!-- settings applied when switching to YV12! -->
+            <apply>
+              <post_gdc_ir_video>
+                <ofa_2_mp metadata="0,1,0,0">
+                  <input bpp="8" />
+                </ofa_2_mp>
+                <gdc5>
+                  <input bpp="8" />
+                </gdc5>
+                <tnr_6_0>
+                  <input bpp="8" />
+                </tnr_6_0>
+                <mrc_1_0>
+                  <input bpp="8" />
+                </mrc_1_0>
+              </post_gdc_ir_video>
+            </apply>
+          </option>
+          <option value="YUV420_8_SP,YUV420_8_SP_C">
+            <!-- settings applied when switching to NV12! -->
+            <apply>
+              <post_gdc_ir_video>
+                <ofa_2_mp metadata="0,2,0,0">
+                  <input bpp="8" />
+                </ofa_2_mp>
+                <gdc5>
+                  <input bpp="8" />
+                </gdc5>
+                <tnr_6_0>
+                  <input bpp="8" />
+                </tnr_6_0>
+                <mrc_1_0>
+                  <input bpp="8" />
+                </mrc_1_0>
+              </post_gdc_ir_video>
+            </apply>
+          </option>
+          <option value="YUV420_8_SP_REV">
+            <!-- settings applied when switching to NV21 -->
+            <apply>
+              <post_gdc_ir_video>
+                <ofa_2_mp metadata="0,3,0,0">
+                  <input bpp="8" />
+                </ofa_2_mp>
+                <gdc5>
+                  <input bpp="8" />
+                </gdc5>
+                <tnr_6_0>
+                  <input bpp="8" />
+                </tnr_6_0>
+                <mrc_1_0>
+                  <input bpp="8" />
+                </mrc_1_0>
+              </post_gdc_ir_video>
+            </apply>
+          </option>
+          <option value="YUV420_8_SP_LINE">
+            <!-- settings applied when switching to M420 -->
+            <apply>
+              <post_gdc_ir_video>
+                <ofa_2_mp metadata="0,4,0,0">
+                  <input bpp="8" />
+                </ofa_2_mp>
+                <gdc5>
+                  <input bpp="8" />
+                </gdc5>
+                <tnr_6_0>
+                  <input bpp="8" />
+                </tnr_6_0>
+                <mrc_1_0>
+                  <input bpp="8" />
+                </mrc_1_0>
+              </post_gdc_ir_video>
+            </apply>
+          </option>
+          <option value="YUV422_8_P64">
+            <!-- settings applied when switching to YUY2 -->
+            <apply>
+              <post_gdc_ir_video>
+                <ofa_2_mp metadata="0,5,0,0">
+                  <input bpp="8" />
+                </ofa_2_mp>
+                <gdc5>
+                  <input bpp="8" />
+                </gdc5>
+                <tnr_6_0>
+                  <input bpp="8" />
+                </tnr_6_0>
+                <mrc_1_0>
+                  <input bpp="8" />
+                </mrc_1_0>
+              </post_gdc_ir_video>
+            </apply>
+          </option>
+          <option value="YUV422_8_SP">
+            <!-- settings applied when switching to NV16-->
+            <apply>
+              <post_gdc_ir_video>
+                <ofa_2_mp metadata="0,6,0,0">
+                  <input bpp="8" />
+                </ofa_2_mp>
+                <gdc5>
+                  <input bpp="8" />
+                </gdc5>
+                <tnr_6_0>
+                  <input bpp="8" />
+                </tnr_6_0>
+                <mrc_1_0>
+                  <input bpp="8" />
+                </mrc_1_0>
+              </post_gdc_ir_video>
+            </apply>
+          </option>
+          <option value="YUV422_8_SP_REV">
+            <!-- settings applied when switching to NV61-->
+            <apply>
+              <post_gdc_ir_video>
+                <ofa_2_mp metadata="0,7,0,0">
+                  <input bpp="8" />
+                </ofa_2_mp>
+                <gdc5>
+                  <input bpp="8" />
+                </gdc5>
+                <tnr_6_0>
+                  <input bpp="8" />
+                </tnr_6_0>
+                <mrc_1_0>
+                  <input bpp="8" />
+                </mrc_1_0>
+              </post_gdc_ir_video>
+            </apply>
+          </option>
+          <option value="YUV420_10_SP,YUV420_10_SP_C">
+            <!-- settings applied when switching to P010-->
+            <apply>
+              <post_gdc_ir_video>
+                <ofa_2_mp metadata="0,15,0,0">
+                  <input bpp="10" />
+                </ofa_2_mp>
+                <gdc5>
+                  <input bpp="10" />
+                </gdc5>
+                <tnr_6_0>
+                  <input bpp="10" />
+                </tnr_6_0>
+                <mrc_1_0>
+                  <input bpp="10" />
+                </mrc_1_0>
+              </post_gdc_ir_video>
+            </apply>
+          </option>
+          <option value="TileYUV420_8_SP,TileYUV420_8_SP_C">
+            <!-- settings applied when switching to nv12 tiled-->
+            <apply>
+              <post_gdc_ir_video>
+                <ofa_2_mp metadata="0,10,0,0">
+                  <input bpp="8" />
+                </ofa_2_mp>
+                <gdc5>
+                  <input bpp="8" />
+                </gdc5>
+                <tnr_6_0>
+                  <input bpp="8" />
+                </tnr_6_0>
+                <mrc_1_0>
+                  <input bpp="8" />
+                </mrc_1_0>
+              </post_gdc_ir_video>
+            </apply>
+          </option>
+          <option value="YUV420_16_SP,YUV420_12_SP,YUV420_12_SP_C">
+            <!-- settings applied when switching to P016-->
+            <apply>
+              <post_gdc_ir_video>
+                <ofa_2_mp metadata="0,16,0,0">
+                  <input bpp="12" />
+                </ofa_2_mp>
+                <gdc5>
+                  <input bpp="12" />
+                </gdc5>
+                <tnr_6_0>
+                  <input bpp="12" />
+                </tnr_6_0>
+                <mrc_1_0>
+                  <input bpp="12" />
+                </mrc_1_0>
+              </post_gdc_ir_video>
+            </apply>
+          </option>
+          <option value="YUV420_12_SP_LSB">
+            <!-- settings applied when switching to P016-->
+            <apply>
+              <post_gdc_ir_video>
+                <ofa_2_mp metadata="0,12,0,0">
+                  <input bpp="12" />
+                </ofa_2_mp>
+                <gdc5>
+                  <input bpp="12" />
+                </gdc5>
+                <tnr_6_0>
+                  <input bpp="12" />
+                </tnr_6_0>
+                <mrc_1_0>
+                  <input bpp="12" />
+                </mrc_1_0>
+              </post_gdc_ir_video>
+            </apply>
+          </option>
+          <option value="YUV420_10_SP_LSB">
+            <!-- settings applied when switching to P010_LSB -->
+            <apply>
+              <post_gdc_ir_video>
+                <ofa_2_mp metadata="0,11,0,0">
+                  <input bpp="10" />
+                </ofa_2_mp>
+                <gdc5>
+                  <input bpp="10" />
+                </gdc5>
+                <tnr_6_0>
+                  <input bpp="10" />
+                </tnr_6_0>
+                <mrc_1_0>
+                  <input bpp="10" />
+                </mrc_1_0>
+              </post_gdc_ir_video>
+            </apply>
+          </option>
+          <option value="TileYUV420_10_SP_LSB">
+            <!-- settings applied when switching to P010 Tile LSB-->
+            <apply>
+              <post_gdc_ir_video>
+                <ofa_2_mp metadata="0,13,0,0">
+                  <input bpp="10" />
+                </ofa_2_mp>
+                <gdc5>
+                  <input bpp="10" />
+                </gdc5>
+                <tnr_6_0>
+                  <input bpp="10" />
+                </tnr_6_0>
+                <mrc_1_0>
+                  <input bpp="10" />
+                </mrc_1_0>
+              </post_gdc_ir_video>
+            </apply>
+          </option>
+          <option value="TileYUV420_12_SP_LSB">
+            <!-- settings applied when switching to P012 Tile LSB-->
+            <apply>
+              <post_gdc_ir_video>
+                <ofa_2_mp metadata="0,14,0,0">
+                  <input bpp="12" />
+                </ofa_2_mp>
+                <gdc5>
+                  <input bpp="12" />
+                </gdc5>
+                <tnr_6_0>
+                  <input bpp="12" />
+                </tnr_6_0>
+                <mrc_1_0>
+                  <input bpp="12" />
+                </mrc_1_0>
+              </post_gdc_ir_video>
+            </apply>
+          </option>
+          <option value="TileYUV420_10_SP,TileYUV420_10_SP_C">
+            <!-- settings applied when switching to P010 Tile MSB-->
+            <apply>
+              <post_gdc_ir_video>
+                <ofa_2_mp metadata="0,17,0,0">
+                  <input bpp="10" />
+                </ofa_2_mp>
+                <gdc5>
+                  <input bpp="10" />
+                </gdc5>
+                <tnr_6_0>
+                  <input bpp="10" />
+                </tnr_6_0>
+                <mrc_1_0>
+                  <input bpp="10" />
+                </mrc_1_0>
+              </post_gdc_ir_video>
+            </apply>
+          </option>
+          <option value="TileYUV420_12_SP,TileYUV420_12_SP_C">
+            <!-- settings applied when switching to P012 Tile MSB-->
+            <apply>
+              <post_gdc_ir_video>
+                <ofa_2_mp metadata="0,18,0,0">
+                  <input bpp="12" />
+                </ofa_2_mp>
+                <gdc5>
+                  <input bpp="12" />
+                </gdc5>
+                <tnr_6_0>
+                  <input bpp="12" />
+                </tnr_6_0>
+                <mrc_1_0>
+                  <input bpp="12" />
+                </mrc_1_0>
+              </post_gdc_ir_video>
+            </apply>
+          </option>
+        </options>
+      </port>
+      <port direction="1" format="YUV420_8_SP" id="3" name="display">
+        <options attribute="format">
+          <!-- These metadata options map to the enum defined in ofa_format_t-->
+          <!-- These metadata options map to the enum defined in ofa_format_t-->
+          <option value="YUV420_8_PL,YUV420_8_PL_C">
+            <!-- settings applied when switching to IYUV/I420! the metadata[1] maps to type ofa_format_t enum-->
+            <apply>
+              <post_gdc_ir_video>
+                <ofa_2_dp metadata="0,0,0,0">
+                  <input bpp="8" />
+                </ofa_2_dp>
+                <gdc5>
+                  <input bpp="8" />
+                </gdc5>
+                <tnr_6_0>
+                  <input bpp="8" />
+                </tnr_6_0>
+                <mrc_1_0>
+                  <input bpp="8" />
+                </mrc_1_0>
+              </post_gdc_ir_video>
+            </apply>
+          </option>
+          <option value="YUV420_8_PL_REV">
+            <!-- settings applied when switching to YV12! -->
+            <apply>
+              <post_gdc_ir_video>
+                <ofa_2_dp metadata="0,1,0,0">
+                  <input bpp="8" />
+                </ofa_2_dp>
+                <gdc5>
+                  <input bpp="8" />
+                </gdc5>
+                <tnr_6_0>
+                  <input bpp="8" />
+                </tnr_6_0>
+                <mrc_1_0>
+                  <input bpp="8" />
+                </mrc_1_0>
+              </post_gdc_ir_video>
+            </apply>
+          </option>
+          <option value="YUV420_8_SP,YUV420_8_SP_C">
+            <!-- settings applied when switching to NV12! -->
+            <apply>
+              <post_gdc_ir_video>
+                <ofa_2_dp metadata="0,2,0,0">
+                  <input bpp="8" />
+                </ofa_2_dp>
+                <gdc5>
+                  <input bpp="8" />
+                </gdc5>
+                <tnr_6_0>
+                  <input bpp="8" />
+                </tnr_6_0>
+                <mrc_1_0>
+                  <input bpp="8" />
+                </mrc_1_0>
+              </post_gdc_ir_video>
+            </apply>
+          </option>
+          <option value="YUV420_8_SP_REV">
+            <!-- settings applied when switching to NV21 -->
+            <apply>
+              <post_gdc_ir_video>
+                <ofa_2_dp metadata="0,3,0,0">
+                  <input bpp="8" />
+                </ofa_2_dp>
+                <gdc5>
+                  <input bpp="8" />
+                </gdc5>
+                <tnr_6_0>
+                  <input bpp="8" />
+                </tnr_6_0>
+                <mrc_1_0>
+                  <input bpp="8" />
+                </mrc_1_0>
+              </post_gdc_ir_video>
+            </apply>
+          </option>
+          <option value="YUV420_8_SP_LINE">
+            <!-- settings applied when switching to M420 -->
+            <apply>
+              <post_gdc_ir_video>
+                <ofa_2_dp metadata="0,4,0,0">
+                  <input bpp="8" />
+                </ofa_2_dp>
+                <gdc5>
+                  <input bpp="8" />
+                </gdc5>
+                <tnr_6_0>
+                  <input bpp="8" />
+                </tnr_6_0>
+                <mrc_1_0>
+                  <input bpp="8" />
+                </mrc_1_0>
+              </post_gdc_ir_video>
+            </apply>
+          </option>
+          <option value="YUV422_8_P64">
+            <!-- settings applied when switching to YUY2 -->
+            <apply>
+              <post_gdc_ir_video>
+                <ofa_2_dp metadata="0,5,0,0">
+                  <input bpp="8" />
+                </ofa_2_dp>
+                <gdc5>
+                  <input bpp="8" />
+                </gdc5>
+                <tnr_6_0>
+                  <input bpp="8" />
+                </tnr_6_0>
+                <mrc_1_0>
+                  <input bpp="8" />
+                </mrc_1_0>
+              </post_gdc_ir_video>
+            </apply>
+          </option>
+          <option value="YUV422_8_SP">
+            <!-- settings applied when switching to NV16-->
+            <apply>
+              <post_gdc_ir_video>
+                <ofa_2_dp metadata="0,6,0,0">
+                  <input bpp="8" />
+                </ofa_2_dp>
+                <gdc5>
+                  <input bpp="8" />
+                </gdc5>
+                <tnr_6_0>
+                  <input bpp="8" />
+                </tnr_6_0>
+                <mrc_1_0>
+                  <input bpp="8" />
+                </mrc_1_0>
+              </post_gdc_ir_video>
+            </apply>
+          </option>
+          <option value="YUV422_8_SP_REV">
+            <!-- settings applied when switching to NV61-->
+            <apply>
+              <post_gdc_ir_video>
+                <ofa_2_dp metadata="0,7,0,0">
+                  <input bpp="8" />
+                </ofa_2_dp>
+                <gdc5>
+                  <input bpp="8" />
+                </gdc5>
+                <tnr_6_0>
+                  <input bpp="8" />
+                </tnr_6_0>
+                <mrc_1_0>
+                  <input bpp="8" />
+                </mrc_1_0>
+              </post_gdc_ir_video>
+            </apply>
+          </option>
+          <option value="YUV420_10_SP,YUV420_10_SP_C">
+            <!-- settings applied when switching to P010-->
+            <apply>
+              <post_gdc_ir_video>
+                <ofa_2_dp metadata="0,15,0,0">
+                  <input bpp="10" />
+                </ofa_2_dp>
+                <gdc5>
+                  <input bpp="10" />
+                </gdc5>
+                <tnr_6_0>
+                  <input bpp="10" />
+                </tnr_6_0>
+                <mrc_1_0>
+                  <input bpp="10" />
+                </mrc_1_0>
+              </post_gdc_ir_video>
+            </apply>
+          </option>
+          <option value="TileYUV420_8_SP,TileYUV420_8_SP_C">
+            <!-- settings applied when switching to nv12 tiled-->
+            <apply>
+              <post_gdc_ir_video>
+                <ofa_2_dp metadata="0,10,0,0">
+                  <input bpp="8" />
+                </ofa_2_dp>
+                <gdc5>
+                  <input bpp="8" />
+                </gdc5>
+                <tnr_6_0>
+                  <input bpp="8" />
+                </tnr_6_0>
+                <mrc_1_0>
+                  <input bpp="8" />
+                </mrc_1_0>
+              </post_gdc_ir_video>
+            </apply>
+          </option>
+          <option value="YUV420_16_SP,YUV420_12_SP,YUV420_12_SP_C">
+            <!-- settings applied when switching to P016-->
+            <apply>
+              <post_gdc_ir_video>
+                <ofa_2_dp metadata="0,16,0,0">
+                  <input bpp="12" />
+                </ofa_2_dp>
+                <gdc5>
+                  <input bpp="12" />
+                </gdc5>
+                <tnr_6_0>
+                  <input bpp="12" />
+                </tnr_6_0>
+                <mrc_1_0>
+                  <input bpp="12" />
+                </mrc_1_0>
+              </post_gdc_ir_video>
+            </apply>
+          </option>
+          <option value="YUV420_12_SP_LSB">
+            <!-- settings applied when switching to P016-->
+            <apply>
+              <post_gdc_ir_video>
+                <ofa_2_dp metadata="0,12,0,0">
+                  <input bpp="12" />
+                </ofa_2_dp>
+                <gdc5>
+                  <input bpp="12" />
+                </gdc5>
+                <tnr_6_0>
+                  <input bpp="12" />
+                </tnr_6_0>
+                <mrc_1_0>
+                  <input bpp="12" />
+                </mrc_1_0>
+              </post_gdc_ir_video>
+            </apply>
+          </option>
+          <option value="YUV420_10_SP_LSB">
+            <!-- settings applied when switching to P010_LSB -->
+            <apply>
+              <post_gdc_ir_video>
+                <ofa_2_dp metadata="0,11,0,0">
+                  <input bpp="10" />
+                </ofa_2_dp>
+                <gdc5>
+                  <input bpp="10" />
+                </gdc5>
+                <tnr_6_0>
+                  <input bpp="10" />
+                </tnr_6_0>
+                <mrc_1_0>
+                  <input bpp="10" />
+                </mrc_1_0>
+              </post_gdc_ir_video>
+            </apply>
+          </option>
+          <option value="TileYUV420_10_SP_LSB">
+            <!-- settings applied when switching to P010 Tile LSB-->
+            <apply>
+              <post_gdc_ir_video>
+                <ofa_2_dp metadata="0,13,0,0">
+                  <input bpp="10" />
+                </ofa_2_dp>
+                <gdc5>
+                  <input bpp="10" />
+                </gdc5>
+                <tnr_6_0>
+                  <input bpp="10" />
+                </tnr_6_0>
+                <mrc_1_0>
+                  <input bpp="10" />
+                </mrc_1_0>
+              </post_gdc_ir_video>
+            </apply>
+          </option>
+          <option value="TileYUV420_12_SP_LSB">
+            <!-- settings applied when switching to P012 Tile LSB-->
+            <apply>
+              <post_gdc_ir_video>
+                <ofa_2_dp metadata="0,14,0,0">
+                  <input bpp="12" />
+                </ofa_2_dp>
+                <gdc5>
+                  <input bpp="12" />
+                </gdc5>
+                <tnr_6_0>
+                  <input bpp="12" />
+                </tnr_6_0>
+                <mrc_1_0>
+                  <input bpp="12" />
+                </mrc_1_0>
+              </post_gdc_ir_video>
+            </apply>
+          </option>
+          <option value="TileYUV420_10_SP,TileYUV420_10_SP_C">
+            <!-- settings applied when switching to P010 Tile MSB-->
+            <apply>
+              <post_gdc_ir_video>
+                <ofa_2_dp metadata="0,17,0,0">
+                  <input bpp="10" />
+                </ofa_2_dp>
+                <gdc5>
+                  <input bpp="10" />
+                </gdc5>
+                <tnr_6_0>
+                  <input bpp="10" />
+                </tnr_6_0>
+                <mrc_1_0>
+                  <input bpp="10" />
+                </mrc_1_0>
+              </post_gdc_ir_video>
+            </apply>
+          </option>
+          <option value="TileYUV420_12_SP,TileYUV420_12_SP_C">
+            <!-- settings applied when switching to P012 Tile MSB-->
+            <apply>
+              <post_gdc_ir_video>
+                <ofa_2_dp metadata="0,18,0,0">
+                  <input bpp="12" />
+                </ofa_2_dp>
+                <gdc5>
+                  <input bpp="12" />
+                </gdc5>
+                <tnr_6_0>
+                  <input bpp="12" />
+                </tnr_6_0>
+                <mrc_1_0>
+                  <input bpp="12" />
+                </mrc_1_0>
+              </post_gdc_ir_video>
+            </apply>
+          </option>
+        </options>
+      </port>
+      <port direction="1" format="YUV420_8_SP" id="4" name="postproc">
+        <options attribute="format">
+          <!-- These metadata options map to the enum defined in ofa_format_t-->
+          <option value="YUV420_8_PL">
+            <!-- settings applied when switching to IYUV/I420! the metadata[1] maps to type ofa_format_t enum-->
+            <apply>
+              <post_gdc_ir_video>
+                <ofa_2_ppp metadata="0,0,0,0">
+                  <input bpp="8" />
+                </ofa_2_ppp>
+                <gdc5>
+                  <input bpp="8" />
+                </gdc5>
+                <tnr_6_0>
+                  <input bpp="8" />
+                </tnr_6_0>
+                <mrc_1_0>
+                  <input bpp="8" />
+                </mrc_1_0>
+              </post_gdc_ir_video>
+            </apply>
+          </option>
+          <option value="YUV420_8_PL_REV">
+            <!-- settings applied when switching to YV12! -->
+            <apply>
+              <post_gdc_ir_video>
+                <ofa_2_ppp metadata="0,1,0,0">
+                  <input bpp="8" />
+                </ofa_2_ppp>
+                <gdc5>
+                  <input bpp="8" />
+                </gdc5>
+                <tnr_6_0>
+                  <input bpp="8" />
+                </tnr_6_0>
+                <mrc_1_0>
+                  <input bpp="8" />
+                </mrc_1_0>
+              </post_gdc_ir_video>
+            </apply>
+          </option>
+          <option value="YUV420_8_SP">
+            <!-- settings applied when switching to NV12! -->
+            <apply>
+              <post_gdc_ir_video>
+                <ofa_2_ppp metadata="0,2,0,0">
+                  <input bpp="8" />
+                </ofa_2_ppp>
+                <gdc5>
+                  <input bpp="8" />
+                </gdc5>
+                <tnr_6_0>
+                  <input bpp="8" />
+                </tnr_6_0>
+                <mrc_1_0>
+                  <input bpp="8" />
+                </mrc_1_0>
+              </post_gdc_ir_video>
+            </apply>
+          </option>
+          <option value="YUV420_8_SP_REV">
+            <!-- settings applied when switching to NV21 -->
+            <apply>
+              <post_gdc_ir_video>
+                <ofa_2_ppp metadata="0,3,0,0">
+                  <input bpp="8" />
+                </ofa_2_ppp>
+                <gdc5>
+                  <input bpp="8" />
+                </gdc5>
+                <tnr_6_0>
+                  <input bpp="8" />
+                </tnr_6_0>
+                <mrc_1_0>
+                  <input bpp="8" />
+                </mrc_1_0>
+              </post_gdc_ir_video>
+            </apply>
+          </option>
+          <option value="YUV420_8_SP_LINE">
+            <!-- settings applied when switching to M420 -->
+            <apply>
+              <post_gdc_ir_video>
+                <ofa_2_ppp metadata="0,4,0,0">
+                  <input bpp="8" />
+                </ofa_2_ppp>
+                <gdc5>
+                  <input bpp="8" />
+                </gdc5>
+                <tnr_6_0>
+                  <input bpp="8" />
+                </tnr_6_0>
+                <mrc_1_0>
+                  <input bpp="8" />
+                </mrc_1_0>
+              </post_gdc_ir_video>
+            </apply>
+          </option>
+          <option value="YUV422_8_P64">
+            <!-- settings applied when switching to YUV422_8_P64 -->
+            <apply>
+              <post_gdc_ir_video>
+                <ofa_2_ppp metadata="0,5,0,0">
+                  <input bpp="8" />
+                </ofa_2_ppp>
+                <gdc5>
+                  <input bpp="8" />
+                </gdc5>
+                <tnr_6_0>
+                  <input bpp="8" />
+                </tnr_6_0>
+                <mrc_1_0>
+                  <input bpp="8" />
+                </mrc_1_0>
+              </post_gdc_ir_video>
+            </apply>
+          </option>
+          <option value="YUV422_8_SP">
+            <!-- settings applied when switching to NV16-->
+            <apply>
+              <post_gdc_ir_video>
+                <ofa_2_ppp metadata="0,6,0,0">
+                  <input bpp="8" />
+                </ofa_2_ppp>
+                <gdc5>
+                  <input bpp="8" />
+                </gdc5>
+                <tnr_6_0>
+                  <input bpp="8" />
+                </tnr_6_0>
+                <mrc_1_0>
+                  <input bpp="8" />
+                </mrc_1_0>
+              </post_gdc_ir_video>
+            </apply>
+          </option>
+          <option value="YUV422_8_SP_REV">
+            <!-- settings applied when switching to NV61-->
+            <apply>
+              <post_gdc_ir_video>
+                <ofa_2_ppp metadata="0,7,0,0">
+                  <input bpp="8" />
+                </ofa_2_ppp>
+                <gdc5>
+                  <input bpp="8" />
+                </gdc5>
+                <tnr_6_0>
+                  <input bpp="8" />
+                </tnr_6_0>
+                <mrc_1_0>
+                  <input bpp="8" />
+                </mrc_1_0>
+              </post_gdc_ir_video>
+            </apply>
+          </option>
+          <option value="YUV420_10_SP">
+            <!-- settings applied when switching to P010-->
+            <apply>
+              <post_gdc_ir_video>
+                <ofa_2_ppp metadata="0,15,0,0">
+                  <input bpp="10" />
+                </ofa_2_ppp>
+                <gdc5>
+                  <input bpp="10" />
+                </gdc5>
+                <tnr_6_0>
+                  <input bpp="10" />
+                </tnr_6_0>
+                <mrc_1_0>
+                  <input bpp="10" />
+                </mrc_1_0>
+              </post_gdc_ir_video>
+            </apply>
+          </option>
+          <option value="YUV420_16_SP,YUV420_12_SP">
+            <!-- settings applied when switching to P016-->
+            <apply>
+              <post_gdc_ir_video>
+                <ofa_2_ppp metadata="0,16,0,0">
+                  <input bpp="12" />
+                </ofa_2_ppp>
+                <gdc5>
+                  <input bpp="12" />
+                </gdc5>
+                <tnr_6_0>
+                  <input bpp="12" />
+                </tnr_6_0>
+                <mrc_1_0>
+                  <input bpp="12" />
+                </mrc_1_0>
+              </post_gdc_ir_video>
+            </apply>
+          </option>
+          <option value="YUV420_12_SP_LSB">
+            <!-- settings applied when switching to P016-->
+            <apply>
+              <post_gdc_ir_video>
+                <ofa_2_ppp metadata="0,12,0,0">
+                  <input bpp="12" />
+                </ofa_2_ppp>
+                <gdc5>
+                  <input bpp="12" />
+                </gdc5>
+                <tnr_6_0>
+                  <input bpp="12" />
+                </tnr_6_0>
+                <mrc_1_0>
+                  <input bpp="12" />
+                </mrc_1_0>
+              </post_gdc_ir_video>
+            </apply>
+          </option>
+          <option value="YUV420_10_SP_LSB">
+            <!-- settings applied when switching to P010_LSB -->
+            <apply>
+              <post_gdc_ir_video>
+                <ofa_2_ppp metadata="0,11,0,0">
+                  <input bpp="10" />
+                </ofa_2_ppp>
+                <gdc5>
+                  <input bpp="10" />
+                </gdc5>
+                <tnr_6_0>
+                  <input bpp="10" />
+                </tnr_6_0>
+                <mrc_1_0>
+                  <input bpp="10" />
+                </mrc_1_0>
+              </post_gdc_ir_video>
+            </apply>
+          </option>
+        </options>
+      </port>
+      <port direction="0" format="YUV420_8_SP" id="5" name="tnr_ref_in" private="1" />
+      <port direction="1" format="YUV420_8_SP" id="7" name="tnr_ref_out" private="1" />
+      <!-- data ports end -->
+      <!-- parameter terminals ports -->
+      <!-- parameter ports end -->
+      <!-- kernels end -->
+      <!--Input Ports links to kernels-->
+      <klink destination="gdc5:YUV_420_in" source="input" />
+      <!--Output Ports links to kernels-->
+      <klink destination="postproc" source="ofa_2_ppp:output2" />
+      <klink destination="main" source="ofa_2_mp:output0" />
+      <klink destination="display" source="ofa_2_dp:output1" />
+      <!--Routing Elements - start-->
+      <mux active_input="0" idx="1" name="mux_ofa" />
+      <split name="bb_splitter" />
+      <demux active_output="0" idx="2" name="demux_gdc" />
+      <split name="splitter" />
+      <!--Routing Elements - end-->
+      <!--Kernels - start-->
+      <kernel enabled="1" idx="1" name="gdc5" pal_uuid="41165" rcb="1" />
+      <kernel enabled="1" idx="2" name="sc_outputscaler_dp" pal_uuid="5852" rcb="1" />
+      <kernel enabled="1" idx="3" name="ofa_2_mp" pal_uuid="16233" rcb="1" metadata="0,2,0,0" />
+      <kernel enabled="1" idx="4" name="ofa_2_dp" pal_uuid="18275" rcb="1" />
+      <kernel enabled="1" idx="5" name="tnr_6_0" pal_uuid="64565" rcb="1" />
+      <kernel enabled="1" idx="6" name="spa_dp" pal_uuid="0" rcb="0" />
+      <kernel enabled="1" idx="7" name="pme_1_0" pal_uuid="51711" rcb="0" />
+      <kernel enabled="1" idx="8" name="sc_outputscaler_ppp" pal_uuid="60118" rcb="1" />
+      <kernel enabled="1" idx="9" name="mrc_1_0" pal_uuid="57534" rcb="0" />
+      <kernel enabled="1" idx="10" name="ofa_2_ppp" pal_uuid="16427" rcb="1" metadata="0,2,0,0" />
+      <kernel enabled="1" idx="11" name="spa_pp" pal_uuid="0" rcb="0" />
+      <!--Kernels - end-->
+      <!--Kernel Links start-->
+      <klink destination="demux_gdc:input" source="gdc5:yuv_420_out" />
+      <klink destination="ofa_2_dp:yuv_420_in_dp" source="sc_outputscaler_dp:yuv420" />
+      <klink destination="splitter:input" source="mux_ofa:output" />
+      <klink destination="pme_1_0:base_image" source="bb_splitter:1" />
+      <klink destination="mrc_1_0:input" source="bb_splitter:2" />
+      <klink destination="bb_splitter:input" source="demux_gdc:0" />
+      <klink destination="mux_ofa:0" source="tnr_6_0:output_main" />
+      <klink destination="sc_outputscaler_dp:yuv420" source="spa_dp:bayer" />
+      <klink destination="mrc_1_0:tetragons_main" source="pme_1_0:dest_blocks" />
+      <klink destination="mrc_1_0:ref_coordinates_main" source="pme_1_0:dest_grid" />
+      <klink destination="ofa_2_mp:yuv_420_in_mp" source="splitter:1" />
+      <klink destination="spa_dp:bayer" source="splitter:2" />
+      <klink destination="spa_pp:bayer" source="splitter:3" />
+      <klink destination="ofa_2_ppp:yuv_420_in_ppp" source="sc_outputscaler_ppp:yuv420" />
+      <klink destination="tnr_6_0:aligned_rec_sim_in" source="mrc_1_0:aligned_rec_sim_out" />
+      <klink destination="tnr_6_0:aligned_ref_image" source="mrc_1_0:aligned_ref_image" />
+      <klink destination="tnr_6_0:alignment_conf" source="mrc_1_0:alignment_conf" />
+      <klink destination="tnr_6_0:motion" source="mrc_1_0:motion_out" />
+      <klink destination="tnr_6_0:noise_model" source="mrc_1_0:noise_model" />
+      <klink destination="tnr_6_0:input" source="mrc_1_0:passthrough" />
+      <klink destination="sc_outputscaler_ppp:yuv420" source="spa_pp:bayer" />
+      <!--Kernel Links end-->
+    </node>
+    <node name="isa_lb_ir_stills" pg_id="187" stream_id="60000" subsystem="psys" type="program_group">
+      <!-- INPUT ports -->
+      <port content_type="program" direction="0" id="2" name="prog_init" />
+      <port content_type="program" direction="0" id="3" name="prog_ctrl_init" />
+      <!-- data terminals ports -->
+      <port direction="0" id="4" name="input" />
+      <port direction="0" id="28" name="short_exp" />
+      <port direction="0" id="29" name="medium_exp" />
+      <port direction="0" id="30" name="ext_pdaf_stats" />
+      <!-- params terminals ports -->
+      <port content_type="param_cached" direction="0" id="1" name="params" />
+      <port content_type="spatial" direction="0" id="5" name="blc_spatial" />
+      <port content_type="spatial" direction="0" id="6" name="lsc_spatial" />
+      <port content_type="spatial" direction="0" id="7" name="gamma_star_grid" />
+      <!-- OUTPUT ports -->
+      <!-- data ports -->
+      <port direction="1" format="YUV420_10_PL" id="8" name="main" />
+      <port direction="1" format="GRBG_12_V" id="9" name="fr_bayer" />
+      <port direction="1" format="YUV420_8_SP" id="10" name="scaled_yuv" />
+      <port direction="1" enabled="0" format="GRBG_12_LI" id="11" name="sis_a" />
+      <port direction="1" enabled="0" format="GRBG_12_LI" id="12" name="sis_b" />
+      <port direction="1" format="YUV420_8_SP" id="13" name="fr_yuv" />
+      <port direction="1" format="IR" id="14" name="ir_md" />
+      <!-- parameter terminals ports -->
+      <!-- 3A ports -->
+      <port content_type="param_cached" direction="1" id="21" name="ae_stats" />
+      <port content_type="spatial" direction="1" id="15" name="af_stats" />
+      <port content_type="spatial" direction="1" id="16" name="awb_stats" />
+      <port content_type="spatial" direction="1" id="17" name="pdaf_stats" />
+      <!-- DVS ports -->
+      <port content_type="spatial" direction="1" id="18" name="dvs_mv_l0" />
+      <port content_type="spatial" direction="1" id="19" name="dvs_mv_l1" />
+      <port content_type="spatial" direction="1" id="20" name="dvs_mv_l2" />
+      <port content_type="program" direction="0" id="22" name="dvs_fe_in_l0" />
+      <port content_type="program" direction="0" id="23" name="dvs_fe_in_l1" />
+      <port content_type="program" direction="0" id="24" name="dvs_fe_in_l2" />
+      <port content_type="param_cached" direction="1" id="25" name="dvs_fe_out_l0" />
+      <port content_type="param_cached" direction="1" id="26" name="dvs_fe_out_l1" />
+      <port content_type="param_cached" direction="1" id="27" name="dvs_fe_out_l2" />
+      <!--Input Ports links to kernels-->
+      <klink destination="mux_pdaf_stat_1_0:0" source="ext_pdaf_stats" />
+      <klink destination="pixelformatter:inbayer" source="input" />
+      <!--Output Ports links to kernels-->
+      <klink destination="scaled_yuv" source="packer_isa_yuv_b:output" />
+      <klink destination="ir_md" source="pix_crop_ir_md:output" />
+      <klink destination="main" source="vertical_padding_1_0:output_image" />
+      <klink destination="sis_b" source="pxl_crop_sis_b:output" />
+      <klink destination="sis_a" source="pxl_crop_sis_a:output" />
+      <klink destination="fr_yuv" source="packer_isa_yuv_c:output" />
+      <klink destination="dvs_mv_l0" source="dvsstatistics_2:output0" />
+      <klink destination="ae_stats" source="aestatistics_2_0:output" />
+      <klink destination="af_stats" source="af_awb_frstatistics_2_0:output" />
+      <klink destination="pdaf_stats" source="pafstatistics_1:output" />
+      <klink destination="awb_stats" source="awbstatistics_2_0:output" />
+      <!--Routing Elements - start-->
+      <demux active_output="0" idx="1" name="de_mux_input_main_1_0" />
+      <demux active_output="0" idx="2" name="de_mux_lsc_1_0" />
+      <mux active_input="0" idx="3" name="mux_vca_1_0" />
+      <mux active_input="1" idx="5" name="mux_ae_1_0" />
+      <demux active_output="0" idx="6" name="de_mux_dmsc_1_0" />
+      <demux active_output="0" idx="7" name="de_mux_md_1_0" />
+      <mux active_input="0" idx="8" name="mux_dmsc_1_0" />
+      <split name="awbinputsplitter" />
+      <split name="yuv420splitter2" />
+      <mux active_input="1" idx="10" name="mux_x2b_1_0" />
+      <split name="dpcinternalsplitter" />
+      <mux active_input="0" idx="11" name="mux_dol_1_0" />
+      <demux active_output="1" idx="12" name="de_mux_lin_1_0" />
+      <split name="splitter[4]" />
+      <mux active_input="0" idx="13" name="mux_wb_1_0" />
+      <mux active_input="0" idx="14" name="mux_vcsc_1_0" />
+      <mux active_input="0" idx="15" name="mux_x2b_meta_1_0" />
+      <demux active_output="0" idx="16" name="de_mux_gs_1_0" />
+      <mux active_input="1" idx="18" name="mux_af_1_0" />
+      <mux active_input="0" idx="19" name="mux_x2b_bp_1_0" />
+      <demux active_output="0" idx="20" name="bnlm_fa" />
+      <split name="dvsstat_splitter" />
+      <split name="bayersplitter4_2" />
+      <mux active_input="1" idx="21" name="mux_dpc_1_0" />
+      <mux active_input="2" idx="22" name="mux_lsc_1_0" />
+      <mux active_input="0" idx="23" name="mux_dvs" />
+      <demux active_output="0" idx="24" name="de_mux_x2b_1_0" />
+      <split name="b2i_splitter" />
+      <mux active_input="1" idx="25" name="mux_gltm_1_0" />
+      <mux active_input="0" idx="26" name="mux_gltm_in" />
+      <mux active_input="0" idx="27" name="mux_rgbs_1_0" />
+      <demux active_output="0" idx="28" name="de_mux_isa_bayer_1_0" />
+      <mux active_input="1" idx="29" name="mux_bnlm_1_0" />
+      <split name="bayersplitter4" />
+      <mux active_input="0" idx="30" name="mux_x2b_bayer_1_0" />
+      <mux active_input="0" idx="31" name="mux_iefd_1_0" />
+      <demux active_output="0" idx="32" name="de_mux_vca_1_0" />
+      <demux active_output="1" idx="33" name="de_mux_bnlm_1_0" />
+      <mux active_input="0" idx="34" name="mux_gs_1_0" />
+      <demux active_output="2" idx="35" name="de_mux_dpc_1_0" />
+      <demux active_output="0" idx="36" name="de_mux_x2b_bp_1_0" />
+      <mux active_input="0" idx="37" name="mux_pdaf_stat_1_0" />
+      <!--Routing Elements - end-->
+      <!--Kernels - start-->
+      <kernel enabled="1" idx="1" name="espa_isa_sis_a" pal_uuid="59281" rcb="0" />
+      <kernel enabled="1" idx="2" name="espa_isa_sis_b" pal_uuid="52347" rcb="0" />
+      <kernel enabled="1" idx="3" name="ycbcrcombine" pal_uuid="0" rcb="0" />
+      <kernel enabled="1" idx="4" name="pxl_crop_sis_a" pal_uuid="38128" rcb="1" />
+      <kernel enabled="1" idx="5" name="linearization2_0" pal_uuid="10326" rcb="0" />
+      <kernel enabled="1" idx="6" name="pxl_crop_sis_b" pal_uuid="3437" rcb="1" />
+      <kernel enabled="1" idx="7" name="pixelformatter" pal_uuid="41023" rcb="1" />
+      <kernel enabled="1" idx="8" name="dpc_2_0" pal_uuid="5679" rcb="1" />
+      <kernel enabled="1" idx="9" name="packer_isa_yuv_b" pal_uuid="5000" rcb="0" />
+      <kernel enabled="1" idx="10" name="bxt_acm" pal_uuid="13506" rcb="0" />
+      <kernel enabled="1" idx="11" name="espa_isa_bayer_a" pal_uuid="1326" rcb="0" />
+      <kernel enabled="1" idx="12" name="awbstatistics_2_0" pal_uuid="33260" rcb="0" />
+      <kernel enabled="1" idx="13" name="pxl_crop_yuv_c" pal_uuid="64756" rcb="1" />
+      <kernel enabled="2" idx="14" name="strm_crop_psa_c" pal_uuid="12123" rcb="1" />
+      <kernel enabled="2" idx="15" name="strm_crop_psa_d" pal_uuid="44733" rcb="1" />
+      <kernel enabled="2" idx="16" name="strm_crop_psa_e" pal_uuid="1739" rcb="1" />
+      <kernel enabled="2" idx="17" name="strm_crop_psa_f" pal_uuid="40056" rcb="0" />
+      <kernel enabled="1" idx="18" name="pxl_crop_yuv_b" pal_uuid="33476" rcb="1" />
+      <kernel enabled="1" idx="19" name="strm_crop_psa_h" pal_uuid="42698" rcb="1" />
+      <kernel enabled="1" idx="20" name="b2i_dm_1_0" pal_uuid="64138" rcb="0" />
+      <kernel enabled="2" idx="21" name="pxl_crop_yuv_a" pal_uuid="9082" rcb="1" />
+      <kernel enabled="2" idx="22" name="sve_1_0" pal_uuid="11000" rcb="0" />
+      <kernel enabled="1" idx="23" name="espa_isa_yuv_c" pal_uuid="45072" rcb="0" />
+      <kernel enabled="1" idx="24" name="espa_isa_yuv_b" pal_uuid="58945" rcb="0" />
+      <kernel enabled="2" idx="25" name="espa_isa_yuv_a" pal_uuid="33409" rcb="0" />
+      <kernel enabled="2" idx="26" name="linearization2_0_c" pal_uuid="28552" rcb="0" />
+      <kernel enabled="2" idx="27" name="linearization2_0_b" pal_uuid="42416" rcb="0" />
+      <kernel enabled="1" idx="28" name="bxt_vcsc_stills" pal_uuid="21171" rcb="0" />
+      <kernel enabled="1" idx="29" name="sis_1_0_b" pal_uuid="7487" rcb="1" />
+      <kernel enabled="1" idx="30" name="lsc_1_1" pal_uuid="16882" rcb="0" />
+      <kernel enabled="2" idx="31" name="espa_psa_e" pal_uuid="40191" rcb="0" />
+      <kernel enabled="1" idx="32" name="sis_1_0_a" pal_uuid="44134" rcb="1" />
+      <kernel enabled="2" idx="33" name="espa_psa_c" pal_uuid="41410" rcb="0" />
+      <kernel enabled="1" idx="34" name="pix_crop_ir_md" pal_uuid="54005" rcb="1" />
+      <kernel enabled="1" idx="35" name="gammastar_1" pal_uuid="42751" rcb="0" />
+      <kernel enabled="1" idx="36" name="espa_psa_h" pal_uuid="11266" rcb="0" />
+      <kernel enabled="1" idx="37" name="bxt_vcr2" pal_uuid="5194" rcb="0" />
+      <kernel enabled="0" idx="38" name="bxt_gridbaseob" pal_uuid="46517" rcb="0" />
+      <kernel enabled="1" idx="39" name="xnr_5_2" pal_uuid="58858" rcb="0" />
+      <kernel enabled="2" idx="40" name="bxt_norm_lin_c" pal_uuid="20905" rcb="0" />
+      <kernel enabled="2" idx="41" name="bxt_blc_b" pal_uuid="26932" rcb="0" />
+      <kernel enabled="1" idx="42" name="bxt_csc" pal_uuid="31704" rcb="0" />
+      <kernel enabled="2" idx="43" name="padder_yuv_a" pal_uuid="40136" rcb="1" />
+      <kernel enabled="1" idx="44" name="padder_yuv_b" pal_uuid="49213" rcb="1" />
+      <kernel enabled="1" idx="45" name="padder_yuv_c" pal_uuid="23317" rcb="1" />
+      <kernel enabled="1" idx="46" name="ccm_3a_2_0" pal_uuid="62344" rcb="1" />
+      <kernel enabled="2" idx="47" name="bxt_blc_c" pal_uuid="18168" rcb="0" />
+      <kernel enabled="2" idx="48" name="espa_psa_4" pal_uuid="36228" rcb="0" />
+      <kernel enabled="1" idx="49" name="x2i_md_1_0" pal_uuid="59520" rcb="1" />
+      <kernel enabled="1" idx="50" name="espa_psa_1" pal_uuid="11719" rcb="0" />
+      <kernel enabled="1" idx="51" name="b2i_sie_1_0" pal_uuid="58817" rcb="0" />
+      <kernel enabled="1" idx="52" name="bxt_applycorrection" pal_uuid="45482" rcb="0" />
+      <kernel enabled="1" idx="53" name="packer_isa_yuv_c" pal_uuid="27259" rcb="0" />
+      <kernel enabled="1" idx="54" name="padder_bayer_a" pal_uuid="19728" rcb="1" />
+      <kernel enabled="2" idx="55" name="packer_isa_yuv_a" pal_uuid="3683" rcb="0" />
+      <kernel enabled="1" idx="56" name="pxl_crop_bayer_a" pal_uuid="34076" rcb="1" />
+      <kernel enabled="1" idx="57" name="dvsstatistics_2" pal_uuid="37235" rcb="0" />
+      <kernel enabled="1" idx="58" name="sc_iefd_v2" pal_uuid="7320" rcb="0" />
+      <kernel enabled="2" idx="59" name="packer_isa_bayer_a" pal_uuid="13215" rcb="0" />
+      <kernel enabled="1" idx="60" name="b2i_bnr_1_0" pal_uuid="8682" rcb="0" />
+      <kernel enabled="1" idx="61" name="af_awb_frstatistics_2_0" pal_uuid="13395" rcb="0" />
+      <kernel enabled="1" idx="62" name="rgb_ir_2_0" pal_uuid="14488" rcb="1" />
+      <kernel enabled="1" idx="63" name="glim_1_0" pal_uuid="55620" rcb="0" />
+      <kernel enabled="1" idx="64" name="strm_crop_sis_b" pal_uuid="49322" rcb="1" />
+      <kernel enabled="1" idx="65" name="strm_crop_sis_a" pal_uuid="9544" rcb="1" />
+      <kernel enabled="1" idx="66" name="espa_isa_wb" pal_uuid="63427" rcb="0" />
+      <kernel enabled="1" idx="67" name="bxt_blc" pal_uuid="11700" rcb="0" />
+      <kernel enabled="2" idx="68" name="bxt_gridbaseob_b" pal_uuid="28979" rcb="0" />
+      <kernel enabled="2" idx="69" name="bxt_gridbaseob_c" pal_uuid="18935" rcb="0" />
+      <kernel enabled="2" idx="70" name="espa_psa_f" pal_uuid="56948" rcb="0" />
+      <kernel enabled="1" idx="71" name="bxt_norm_lin" pal_uuid="64791" rcb="0" />
+      <kernel enabled="2" idx="72" name="bxt_norm_lin_b" pal_uuid="1034" rcb="0" />
+      <kernel enabled="1" idx="73" name="gltm_1_0" pal_uuid="60649" rcb="0" />
+      <kernel enabled="2" idx="74" name="pixelformatter_c" pal_uuid="3081" rcb="1" />
+      <kernel enabled="2" idx="75" name="pixelformatter_b" pal_uuid="54735" rcb="1" />
+      <kernel enabled="1" idx="76" name="bxt_ccm" pal_uuid="16559" rcb="0" />
+      <kernel enabled="1" idx="77" name="vertical_padding_1_0" pal_uuid="54484" rcb="1" />
+      <kernel enabled="1" idx="78" name="b2i_ds_1_0_1" pal_uuid="20739" rcb="1" />
+      <kernel enabled="2" idx="79" name="b2i_ds_1_0_0" pal_uuid="10497" rcb="1" />
+      <kernel enabled="2" idx="80" name="espa_psa_d" pal_uuid="19387" rcb="0" />
+      <kernel enabled="1" idx="81" name="pafstatistics_1" pal_uuid="47216" rcb="0" />
+      <kernel enabled="2" idx="82" name="strm_crop_psa_g" pal_uuid="46549" rcb="1" />
+      <kernel enabled="1" idx="83" name="bxt_demosaic" pal_uuid="48695" rcb="0" />
+      <kernel enabled="1" idx="84" name="lca_1_0" pal_uuid="25352" rcb="0" />
+      <kernel enabled="1" idx="85" name="bxt_disparity" pal_uuid="55093" rcb="0" />
+      <kernel enabled="2" idx="86" name="espa_psa_g" pal_uuid="17153" rcb="0" />
+      <kernel enabled="2" idx="87" name="dol_1_0" pal_uuid="11842" rcb="0" />
+      <kernel enabled="1" idx="88" name="aestatistics_2_0" pal_uuid="26055" rcb="0" />
+      <kernel enabled="1" idx="89" name="espa_isa_ir_md" pal_uuid="37592" rcb="0" />
+      <kernel enabled="1" idx="90" name="gammatm_v3" pal_uuid="57496" rcb="0" />
+      <kernel enabled="1" idx="91" metadata="1,0,0,0" name="bnlm_3_2" pal_uuid="48964" rcb="0" />
+      <kernel enabled="1" idx="92" name="bxt_wb" pal_uuid="32398" rcb="0" />
+      <!--Kernels - end-->
+      <!--Kernel Links start-->
+      <klink destination="pxl_crop_sis_a:input" source="espa_isa_sis_a:output" />
+      <klink destination="pxl_crop_sis_b:input" source="espa_isa_sis_b:output" />
+      <klink destination="espa_psa_h:input" source="ycbcrcombine:ycbcr" />
+      <klink destination="mux_dol_1_0:0" source="de_mux_input_main_1_0:0" />
+      <klink destination="mux_wb_1_0:0" source="de_mux_lsc_1_0:0" />
+      <klink destination="de_mux_input_main_1_0:input" source="linearization2_0:output" />
+      <klink destination="bxt_vcr2:yuv_444_or_420_in" source="mux_vca_1_0:output" />
+      <klink destination="bxt_norm_lin:inbayer" source="pixelformatter:outbayer" />
+      <klink destination="bxt_applycorrection:dpc_pixel_buffer_s16" source="dpc_2_0:outputbuffer" />
+      <klink destination="de_mux_vca_1_0:input" source="bxt_acm:rgb" />
+      <klink destination="ccm_3a_2_0:input" source="mux_ae_1_0:output" />
+      <klink destination="padder_bayer_a:input" source="espa_isa_bayer_a:output" />
+      <klink destination="packer_isa_yuv_c:input" source="pxl_crop_yuv_c:output" />
+      <klink destination="packer_isa_yuv_b:input" source="pxl_crop_yuv_b:output" />
+      <klink destination="vertical_padding_1_0:input_image" source="strm_crop_psa_h:output" />
+      <klink destination="b2i_sie_1_0:input" source="b2i_dm_1_0:output" />
+      <klink destination="mux_vcsc_1_0:0" source="de_mux_dmsc_1_0:0" />
+      <klink destination="rgb_ir_2_0:input" source="de_mux_md_1_0:0" />
+      <klink destination="bxt_demosaic:raw_image" source="mux_dmsc_1_0:output" />
+      <klink destination="padder_yuv_c:input" source="espa_isa_yuv_c:output" />
+      <klink destination="padder_yuv_b:input" source="espa_isa_yuv_b:output" />
+      <klink destination="mux_rgbs_1_0:0" source="awbinputsplitter:3" />
+      <klink destination="de_mux_lin_1_0:input" source="awbinputsplitter:4" />
+      <klink destination="sc_iefd_v2:input" source="yuv420splitter2:output1" />
+      <klink destination="ycbcrcombine:cbcr" source="yuv420splitter2:output2" />
+      <klink destination="mux_gltm_1_0:1" source="bxt_vcsc_stills:ycbcr" />
+      <klink destination="x2i_md_1_0:input" source="mux_x2b_1_0:output" />
+      <klink destination="espa_isa_sis_b:input" source="sis_1_0_b:output" />
+      <klink destination="de_mux_lsc_1_0:input" source="lsc_1_1:bayer" />
+      <klink destination="espa_isa_sis_a:input" source="sis_1_0_a:output" />
+      <klink destination="bxt_disparity:bayer" source="dpcinternalsplitter:1" />
+      <klink destination="dpc_2_0:input" source="dpcinternalsplitter:2" />
+      <klink destination="bxt_applycorrection:input_image_s16" source="dpcinternalsplitter:3" />
+      <klink destination="de_mux_gs_1_0:input" source="gammastar_1:output" />
+      <klink destination="strm_crop_psa_h:input" source="espa_psa_h:output" />
+      <klink destination="bxt_ccm:rgb_or_yuv444" source="bxt_vcr2:yuv_444_out" />
+      <klink destination="awbinputsplitter:input" source="mux_dol_1_0:output" />
+      <klink destination="mux_dpc_1_0:1" source="de_mux_lin_1_0:1" />
+      <klink destination="linearization2_0:input" source="bxt_gridbaseob:bayer" />
+      <klink destination="mux_vca_1_0:0" source="xnr_5_2:output" />
+      <klink destination="dvsstat_splitter:input" source="splitter[4]:1" />
+      <klink destination="bayersplitter4:input" source="mux_wb_1_0:output" />
+      <klink destination="splitter[4]:input" source="bxt_csc:ycbcr" />
+      <klink destination="pxl_crop_yuv_b:input" source="padder_yuv_b:output" />
+      <klink destination="pxl_crop_yuv_c:input" source="padder_yuv_c:output" />
+      <klink destination="bxt_vcsc_stills:srgb" source="mux_vcsc_1_0:output" />
+      <klink destination="espa_isa_ir_md:input" source="mux_x2b_meta_1_0:output" />
+      <klink destination="gammatm_v3:input" source="de_mux_gs_1_0:0" />
+      <klink destination="aestatistics_2_0:bayer_s16" source="ccm_3a_2_0:output" />
+      <klink destination="de_mux_x2b_bp_1_0:input" source="x2i_md_1_0:bayer" />
+      <klink destination="bnlm_3_2:input" source="espa_psa_1:output" />
+      <klink destination="b2i_splitter:input" source="b2i_sie_1_0:output" />
+      <klink destination="de_mux_dpc_1_0:input" source="bxt_applycorrection:output_image" />
+      <klink destination="pxl_crop_bayer_a:input" source="padder_bayer_a:output" />
+      <klink destination="de_mux_isa_bayer_1_0:input" source="pxl_crop_bayer_a:output" />
+      <klink destination="af_awb_frstatistics_2_0:bayer_s16" source="mux_af_1_0:output" />
+      <klink destination="ycbcrcombine:y" source="sc_iefd_v2:output" />
+      <klink destination="b2i_dm_1_0:input" source="b2i_bnr_1_0:output" />
+      <klink destination="mux_x2b_bayer_1_0:0" source="rgb_ir_2_0:bayer" />
+      <klink destination="mux_x2b_meta_1_0:0" source="rgb_ir_2_0:ir" />
+      <klink destination="bxt_acm:rgb" source="glim_1_0:output" />
+      <klink destination="sis_1_0_b:input" source="strm_crop_sis_b:output" />
+      <klink destination="sis_1_0_a:input" source="strm_crop_sis_a:output" />
+      <klink destination="bxt_wb:inbayer" source="espa_isa_wb:output" />
+      <klink destination="bxt_gridbaseob:bayer" source="bxt_blc:bayer" />
+      <klink destination="de_mux_x2b_1_0:input" source="mux_x2b_bp_1_0:output" />
+      <klink destination="de_mux_bnlm_1_0:input" source="bnlm_fa:0" />
+      <klink destination="mux_iefd_1_0:0" source="dvsstat_splitter:1" />
+      <klink destination="mux_dvs:0" source="dvsstat_splitter:2" />
+      <klink destination="b2i_bnr_1_0:input" source="bayersplitter4_2:1" />
+      <klink destination="espa_isa_bayer_a:input" source="bayersplitter4_2:2" />
+      <klink destination="strm_crop_sis_a:input" source="bayersplitter4_2:3" />
+      <klink destination="strm_crop_sis_b:input" source="bayersplitter4_2:4" />
+      <klink destination="dpcinternalsplitter:input" source="mux_dpc_1_0:output" />
+      <klink destination="bxt_blc:bayer" source="bxt_norm_lin:outbayer" />
+      <klink destination="lsc_1_1:bayer" source="mux_lsc_1_0:output" />
+      <klink destination="xnr_5_2:input" source="gltm_1_0:output" />
+      <klink destination="dvsstatistics_2:y_s14" source="mux_dvs:output" />
+      <klink destination="glim_1_0:input" source="bxt_ccm:srgb_or_yuv444" />
+      <klink destination="espa_isa_yuv_b:input" source="b2i_ds_1_0_1:scaled_output" />
+      <klink destination="de_mux_dmsc_1_0:input" source="bxt_demosaic:rgb_image" />
+      <klink destination="bayersplitter4_2:input" source="lca_1_0:output" />
+      <klink destination="bxt_applycorrection:gdc_grgb_delta_buffer_s16" source="bxt_disparity:output_buffer" />
+      <klink destination="mux_lsc_1_0:2" source="de_mux_x2b_1_0:0" />
+      <klink destination="b2i_ds_1_0_1:input" source="b2i_splitter:2" />
+      <klink destination="espa_isa_yuv_c:input" source="b2i_splitter:3" />
+      <klink destination="mux_gltm_in:0" source="mux_gltm_1_0:output" />
+      <klink destination="pix_crop_ir_md:input" source="espa_isa_ir_md:output" />
+      <klink destination="gltm_1_0:input" source="mux_gltm_in:output" />
+      <klink destination="awbstatistics_2_0:bayer_s16" source="mux_rgbs_1_0:output" />
+      <klink destination="mux_bnlm_1_0:1" source="de_mux_isa_bayer_1_0:0" />
+      <klink destination="espa_psa_1:input" source="mux_bnlm_1_0:output" />
+      <klink destination="mux_ae_1_0:1" source="bayersplitter4:1" />
+      <klink destination="mux_af_1_0:1" source="bayersplitter4:2" />
+      <klink destination="espa_isa_wb:input" source="bayersplitter4:4" />
+      <klink destination="mux_x2b_bp_1_0:0" source="mux_x2b_bayer_1_0:output" />
+      <klink destination="yuv420splitter2:input" source="mux_iefd_1_0:output" />
+      <klink destination="mux_gs_1_0:0" source="de_mux_vca_1_0:0" />
+      <klink destination="mux_dmsc_1_0:0" source="de_mux_bnlm_1_0:1" />
+      <klink destination="bxt_csc:srgb" source="gammatm_v3:output" />
+      <klink destination="gammastar_1:input" source="mux_gs_1_0:output" />
+      <klink destination="mux_x2b_1_0:1" source="de_mux_dpc_1_0:2" />
+      <klink destination="bnlm_fa:input" source="bnlm_3_2:output" />
+      <klink destination="de_mux_md_1_0:input" source="de_mux_x2b_bp_1_0:0" />
+      <klink destination="lca_1_0:input" source="bxt_wb:outbayer" />
+      <klink destination="pafstatistics_1:bayer_s16" source="mux_pdaf_stat_1_0:output" />
+      <!--Kernel Links end-->
+      <cipf rbm="0x933534B542655299A69998A262" />
+    </node>
+    <node name="isa_lb_rgbir_video_bayer" pg_id="187" stream_id="60001" subsystem="psys" type="program_group">
+      <!-- INPUT ports -->
+      <port content_type="program" direction="0" id="2" name="prog_init" />
+      <port content_type="program" direction="0" id="3" name="prog_ctrl_init" />
+      <!-- data terminals ports -->
+      <port direction="0" id="4" name="input" />
+      <port direction="0" id="28" name="short_exp" />
+      <port direction="0" id="29" name="medium_exp" />
+      <port direction="0" id="30" name="ext_pdaf_stats" />
+      <!-- params terminals ports -->
+      <port content_type="param_cached" direction="0" id="1" name="params" />
+      <port content_type="spatial" direction="0" id="5" name="blc_spatial" />
+      <port content_type="spatial" direction="0" id="6" name="lsc_spatial" />
+      <port content_type="spatial" direction="0" id="7" name="gamma_star_grid" />
+      <!-- OUTPUT ports -->
+      <!-- data ports -->
+      <port direction="1" format="YUV420_10_PL" id="8" name="main" />
+      <port direction="1" format="GRBG_12_V" id="9" name="fr_bayer" />
+      <port direction="1" format="YUV420_8_SP" id="10" name="scaled_yuv" />
+      <port direction="1" format="GRBG_12_LI" id="11" name="sis_a" />
+      <port direction="1" format="GRBG_12_LI" id="12" name="sis_b" />
+      <port direction="1" format="YUV420_8_SP" id="13" name="fr_yuv" />
+      <port direction="1" format="IR" id="14" name="ir_md" />
+      <!-- parameter terminals ports -->
+      <!-- 3A ports -->
+      <port content_type="param_cached" direction="1" id="21" name="ae_stats" />
+      <port content_type="spatial" direction="1" id="15" name="af_stats" />
+      <port content_type="spatial" direction="1" id="16" name="awb_stats" />
+      <port content_type="spatial" direction="1" id="17" name="pdaf_stats" />
+      <!-- DVS ports -->
+      <port content_type="spatial" direction="1" id="18" name="dvs_mv_l0" />
+      <port content_type="spatial" direction="1" id="19" name="dvs_mv_l1" />
+      <port content_type="spatial" direction="1" id="20" name="dvs_mv_l2" />
+      <port content_type="program" direction="0" id="22" name="dvs_fe_in_l0" />
+      <port content_type="program" direction="0" id="23" name="dvs_fe_in_l1" />
+      <port content_type="program" direction="0" id="24" name="dvs_fe_in_l2" />
+      <port content_type="param_cached" direction="1" id="25" name="dvs_fe_out_l0" />
+      <port content_type="param_cached" direction="1" id="26" name="dvs_fe_out_l1" />
+      <port content_type="param_cached" direction="1" id="27" name="dvs_fe_out_l2" />
+      <!--Input Ports links to kernels-->
+      <klink destination="mux_pdaf_stat_1_0:0" source="ext_pdaf_stats" />
+      <klink destination="pixelformatter:inbayer" source="input" />
+      <!--Output Ports links to kernels-->
+      <klink destination="scaled_yuv" source="packer_isa_yuv_b:output" />
+      <klink destination="ir_md" source="pix_crop_ir_md:output" />
+      <klink destination="main" source="vertical_padding_1_0:output_image" />
+      <klink destination="sis_b" source="pxl_crop_sis_b:output" />
+      <klink destination="sis_a" source="pxl_crop_sis_a:output" />
+      <klink destination="fr_yuv" source="packer_isa_yuv_c:output" />
+      <klink destination="dvs_mv_l0" source="dvsstatistics_2:output0" />
+      <klink destination="ae_stats" source="aestatistics_2_0:output" />
+      <klink destination="af_stats" source="af_awb_frstatistics_2_0:output" />
+      <klink destination="pdaf_stats" source="pafstatistics_1:output" />
+      <klink destination="awb_stats" source="awbstatistics_2_0:output" />
+      <!--Routing Elements - start-->
+      <demux active_output="0" idx="1" name="de_mux_input_main_1_0" />
+      <demux active_output="0" idx="2" name="de_mux_lsc_1_0" />
+      <mux active_input="0" idx="3" name="mux_vca_1_0" />
+      <mux active_input="1" idx="5" name="mux_ae_1_0" />
+      <demux active_output="0" idx="6" name="de_mux_dmsc_1_0" />
+      <demux active_output="0" idx="7" name="de_mux_md_1_0" />
+      <mux active_input="0" idx="8" name="mux_dmsc_1_0" />
+      <split name="awbinputsplitter" />
+      <split name="yuv420splitter2" />
+      <mux active_input="1" idx="10" name="mux_x2b_1_0" />
+      <split name="dpcinternalsplitter" />
+      <mux active_input="0" idx="11" name="mux_dol_1_0" />
+      <demux active_output="1" idx="12" name="de_mux_lin_1_0" />
+      <split name="splitter[4]" />
+      <mux active_input="0" idx="13" name="mux_wb_1_0" />
+      <mux active_input="0" idx="14" name="mux_vcsc_1_0" />
+      <mux active_input="0" idx="15" name="mux_x2b_meta_1_0" />
+      <demux active_output="0" idx="16" name="de_mux_gs_1_0" />
+      <mux active_input="1" idx="18" name="mux_af_1_0" />
+      <mux active_input="0" idx="19" name="mux_x2b_bp_1_0" />
+      <demux active_output="0" idx="20" name="bnlm_fa" />
+      <split name="dvsstat_splitter" />
+      <split name="bayersplitter4_2" />
+      <mux active_input="1" idx="21" name="mux_dpc_1_0" />
+      <mux active_input="2" idx="22" name="mux_lsc_1_0" />
+      <mux active_input="0" idx="23" name="mux_dvs" />
+      <demux active_output="0" idx="24" name="de_mux_x2b_1_0" />
+      <split name="b2i_splitter" />
+      <mux active_input="1" idx="25" name="mux_gltm_1_0" />
+      <mux active_input="0" idx="26" name="mux_gltm_in" />
+      <mux active_input="0" idx="27" name="mux_rgbs_1_0" />
+      <demux active_output="0" idx="28" name="de_mux_isa_bayer_1_0" />
+      <mux active_input="1" idx="29" name="mux_bnlm_1_0" />
+      <split name="bayersplitter4" />
+      <mux active_input="0" idx="30" name="mux_x2b_bayer_1_0" />
+      <mux active_input="0" idx="31" name="mux_iefd_1_0" />
+      <demux active_output="0" idx="32" name="de_mux_vca_1_0" />
+      <demux active_output="1" idx="33" name="de_mux_bnlm_1_0" />
+      <mux active_input="0" idx="34" name="mux_gs_1_0" />
+      <demux active_output="2" idx="35" name="de_mux_dpc_1_0" />
+      <demux active_output="0" idx="36" name="de_mux_x2b_bp_1_0" />
+      <mux active_input="0" idx="37" name="mux_pdaf_stat_1_0" />
+      <!--Routing Elements - end-->
+      <!--Kernels - start-->
+      <kernel enabled="1" idx="1" name="espa_isa_sis_a" pal_uuid="59281" rcb="0" />
+      <kernel enabled="1" idx="2" name="espa_isa_sis_b" pal_uuid="52347" rcb="0" />
+      <kernel enabled="1" idx="3" name="ycbcrcombine" pal_uuid="0" rcb="0" />
+      <kernel enabled="1" idx="4" name="pxl_crop_sis_a" pal_uuid="38128" rcb="1" />
+      <kernel enabled="1" idx="5" name="linearization2_0" pal_uuid="10326" rcb="0" />
+      <kernel enabled="1" idx="6" name="pxl_crop_sis_b" pal_uuid="3437" rcb="1" />
+      <kernel enabled="1" idx="7" name="pixelformatter" pal_uuid="41023" rcb="1" />
+      <kernel enabled="1" idx="8" name="dpc_2_0" pal_uuid="5679" rcb="1" />
+      <kernel enabled="1" idx="9" name="packer_isa_yuv_b" pal_uuid="5000" rcb="0" />
+      <kernel enabled="1" idx="10" name="bxt_acm" pal_uuid="13506" rcb="0" />
+      <kernel enabled="1" idx="11" name="espa_isa_bayer_a" pal_uuid="1326" rcb="0" />
+      <kernel enabled="1" idx="12" name="awbstatistics_2_0" pal_uuid="33260" rcb="0" />
+      <kernel enabled="1" idx="13" name="pxl_crop_yuv_c" pal_uuid="64756" rcb="1" />
+      <kernel enabled="2" idx="14" name="strm_crop_psa_c" pal_uuid="12123" rcb="1" />
+      <kernel enabled="2" idx="15" name="strm_crop_psa_d" pal_uuid="44733" rcb="1" />
+      <kernel enabled="2" idx="16" name="strm_crop_psa_e" pal_uuid="1739" rcb="1" />
+      <kernel enabled="2" idx="17" name="strm_crop_psa_f" pal_uuid="40056" rcb="0" />
+      <kernel enabled="1" idx="18" name="pxl_crop_yuv_b" pal_uuid="33476" rcb="1" />
+      <kernel enabled="1" idx="19" name="strm_crop_psa_h" pal_uuid="42698" rcb="1" />
+      <kernel enabled="1" idx="20" name="b2i_dm_1_0" pal_uuid="64138" rcb="0" />
+      <kernel enabled="2" idx="21" name="pxl_crop_yuv_a" pal_uuid="9082" rcb="1" />
+      <kernel enabled="2" idx="22" name="sve_1_0" pal_uuid="11000" rcb="0" />
+      <kernel enabled="1" idx="23" name="espa_isa_yuv_c" pal_uuid="45072" rcb="0" />
+      <kernel enabled="1" idx="24" name="espa_isa_yuv_b" pal_uuid="58945" rcb="0" />
+      <kernel enabled="2" idx="25" name="espa_isa_yuv_a" pal_uuid="33409" rcb="0" />
+      <kernel enabled="2" idx="26" name="linearization2_0_c" pal_uuid="28552" rcb="0" />
+      <kernel enabled="2" idx="27" name="linearization2_0_b" pal_uuid="42416" rcb="0" />
+      <kernel enabled="1" idx="28" name="bxt_vcsc_stills" pal_uuid="21171" rcb="0" />
+      <kernel enabled="1" idx="29" name="sis_1_0_b" pal_uuid="7487" rcb="1" />
+      <kernel enabled="1" idx="30" name="lsc_1_1" pal_uuid="16882" rcb="0" />
+      <kernel enabled="2" idx="31" name="espa_psa_e" pal_uuid="40191" rcb="0" />
+      <kernel enabled="1" idx="32" name="sis_1_0_a" pal_uuid="44134" rcb="1" />
+      <kernel enabled="2" idx="33" name="espa_psa_c" pal_uuid="41410" rcb="0" />
+      <kernel enabled="1" idx="34" name="pix_crop_ir_md" pal_uuid="54005" rcb="1" />
+      <kernel enabled="1" idx="35" name="gammastar_1" pal_uuid="42751" rcb="0" />
+      <kernel enabled="1" idx="36" name="espa_psa_h" pal_uuid="11266" rcb="0" />
+      <kernel enabled="1" idx="37" name="bxt_vcr2" pal_uuid="5194" rcb="0" />
+      <kernel enabled="0" idx="38" name="bxt_gridbaseob" pal_uuid="46517" rcb="0" />
+      <kernel enabled="1" idx="39" name="xnr_5_2" pal_uuid="58858" rcb="0" />
+      <kernel enabled="2" idx="40" name="bxt_norm_lin_c" pal_uuid="20905" rcb="0" />
+      <kernel enabled="2" idx="41" name="bxt_blc_b" pal_uuid="26932" rcb="0" />
+      <kernel enabled="1" idx="42" name="bxt_csc" pal_uuid="31704" rcb="0" />
+      <kernel enabled="2" idx="43" name="padder_yuv_a" pal_uuid="40136" rcb="1" />
+      <kernel enabled="1" idx="44" name="padder_yuv_b" pal_uuid="49213" rcb="1" />
+      <kernel enabled="1" idx="45" name="padder_yuv_c" pal_uuid="23317" rcb="1" />
+      <kernel enabled="1" idx="46" name="ccm_3a_2_0" pal_uuid="62344" rcb="1" />
+      <kernel enabled="2" idx="47" name="bxt_blc_c" pal_uuid="18168" rcb="0" />
+      <kernel enabled="2" idx="48" name="espa_psa_4" pal_uuid="36228" rcb="0" />
+      <kernel enabled="1" idx="49" name="x2i_md_1_0" pal_uuid="59520" rcb="1" />
+      <kernel enabled="1" idx="50" name="espa_psa_1" pal_uuid="11719" rcb="0" />
+      <kernel enabled="1" idx="51" name="b2i_sie_1_0" pal_uuid="58817" rcb="0" />
+      <kernel enabled="1" idx="52" name="bxt_applycorrection" pal_uuid="45482" rcb="0" />
+      <kernel enabled="1" idx="53" name="packer_isa_yuv_c" pal_uuid="27259" rcb="0" />
+      <kernel enabled="1" idx="54" name="padder_bayer_a" pal_uuid="19728" rcb="1" />
+      <kernel enabled="2" idx="55" name="packer_isa_yuv_a" pal_uuid="3683" rcb="0" />
+      <kernel enabled="1" idx="56" name="pxl_crop_bayer_a" pal_uuid="34076" rcb="1" />
+      <kernel enabled="1" idx="57" name="dvsstatistics_2" pal_uuid="37235" rcb="0" />
+      <kernel enabled="1" idx="58" name="sc_iefd_v2" pal_uuid="7320" rcb="0" />
+      <kernel enabled="2" idx="59" name="packer_isa_bayer_a" pal_uuid="13215" rcb="0" />
+      <kernel enabled="1" idx="60" name="b2i_bnr_1_0" pal_uuid="8682" rcb="0" />
+      <kernel enabled="1" idx="61" name="af_awb_frstatistics_2_0" pal_uuid="13395" rcb="0" />
+      <kernel enabled="1" idx="62" name="rgb_ir_2_0" pal_uuid="14488" rcb="1" />
+      <kernel enabled="1" idx="63" name="glim_1_0" pal_uuid="55620" rcb="0" />
+      <kernel enabled="1" idx="64" name="strm_crop_sis_b" pal_uuid="49322" rcb="1" />
+      <kernel enabled="1" idx="65" name="strm_crop_sis_a" pal_uuid="9544" rcb="1" />
+      <kernel enabled="1" idx="66" name="espa_isa_wb" pal_uuid="63427" rcb="0" />
+      <kernel enabled="1" idx="67" name="bxt_blc" pal_uuid="11700" rcb="0" />
+      <kernel enabled="2" idx="68" name="bxt_gridbaseob_b" pal_uuid="28979" rcb="0" />
+      <kernel enabled="2" idx="69" name="bxt_gridbaseob_c" pal_uuid="18935" rcb="0" />
+      <kernel enabled="2" idx="70" name="espa_psa_f" pal_uuid="56948" rcb="0" />
+      <kernel enabled="1" idx="71" name="bxt_norm_lin" pal_uuid="64791" rcb="0" />
+      <kernel enabled="2" idx="72" name="bxt_norm_lin_b" pal_uuid="1034" rcb="0" />
+      <kernel enabled="1" idx="73" name="gltm_1_0" pal_uuid="60649" rcb="0" />
+      <kernel enabled="2" idx="74" name="pixelformatter_c" pal_uuid="3081" rcb="1" />
+      <kernel enabled="2" idx="75" name="pixelformatter_b" pal_uuid="54735" rcb="1" />
+      <kernel enabled="1" idx="76" name="bxt_ccm" pal_uuid="16559" rcb="0" />
+      <kernel enabled="1" idx="77" name="vertical_padding_1_0" pal_uuid="54484" rcb="1" />
+      <kernel enabled="1" idx="78" name="b2i_ds_1_0_1" pal_uuid="20739" rcb="1" />
+      <kernel enabled="2" idx="79" name="b2i_ds_1_0_0" pal_uuid="10497" rcb="1" />
+      <kernel enabled="2" idx="80" name="espa_psa_d" pal_uuid="19387" rcb="0" />
+      <kernel enabled="1" idx="81" name="pafstatistics_1" pal_uuid="47216" rcb="0" />
+      <kernel enabled="2" idx="82" name="strm_crop_psa_g" pal_uuid="46549" rcb="1" />
+      <kernel enabled="1" idx="83" name="bxt_demosaic" pal_uuid="48695" rcb="0" />
+      <kernel enabled="1" idx="84" name="lca_1_0" pal_uuid="25352" rcb="0" />
+      <kernel enabled="1" idx="85" name="bxt_disparity" pal_uuid="55093" rcb="0" />
+      <kernel enabled="2" idx="86" name="espa_psa_g" pal_uuid="17153" rcb="0" />
+      <kernel enabled="2" idx="87" name="dol_1_0" pal_uuid="11842" rcb="0" />
+      <kernel enabled="1" idx="88" name="aestatistics_2_0" pal_uuid="26055" rcb="0" />
+      <kernel enabled="1" idx="89" name="espa_isa_ir_md" pal_uuid="37592" rcb="0" />
+      <kernel enabled="1" idx="90" name="gammatm_v3" pal_uuid="57496" rcb="0" />
+      <kernel enabled="1" idx="91" metadata="1,0,0,0" name="bnlm_3_2" pal_uuid="48964" rcb="0" />
+      <kernel enabled="1" idx="92" name="bxt_wb" pal_uuid="32398" rcb="0" />
+      <!--Kernels - end-->
+      <!--Kernel Links start-->
+      <klink destination="pxl_crop_sis_a:input" source="espa_isa_sis_a:output" />
+      <klink destination="pxl_crop_sis_b:input" source="espa_isa_sis_b:output" />
+      <klink destination="espa_psa_h:input" source="ycbcrcombine:ycbcr" />
+      <klink destination="mux_dol_1_0:0" source="de_mux_input_main_1_0:0" />
+      <klink destination="mux_wb_1_0:0" source="de_mux_lsc_1_0:0" />
+      <klink destination="de_mux_input_main_1_0:input" source="linearization2_0:output" />
+      <klink destination="bxt_vcr2:yuv_444_or_420_in" source="mux_vca_1_0:output" />
+      <klink destination="bxt_norm_lin:inbayer" source="pixelformatter:outbayer" />
+      <klink destination="bxt_applycorrection:dpc_pixel_buffer_s16" source="dpc_2_0:outputbuffer" />
+      <klink destination="de_mux_vca_1_0:input" source="bxt_acm:rgb" />
+      <klink destination="ccm_3a_2_0:input" source="mux_ae_1_0:output" />
+      <klink destination="padder_bayer_a:input" source="espa_isa_bayer_a:output" />
+      <klink destination="packer_isa_yuv_c:input" source="pxl_crop_yuv_c:output" />
+      <klink destination="packer_isa_yuv_b:input" source="pxl_crop_yuv_b:output" />
+      <klink destination="vertical_padding_1_0:input_image" source="strm_crop_psa_h:output" />
+      <klink destination="b2i_sie_1_0:input" source="b2i_dm_1_0:output" />
+      <klink destination="mux_vcsc_1_0:0" source="de_mux_dmsc_1_0:0" />
+      <klink destination="rgb_ir_2_0:input" source="de_mux_md_1_0:0" />
+      <klink destination="bxt_demosaic:raw_image" source="mux_dmsc_1_0:output" />
+      <klink destination="padder_yuv_c:input" source="espa_isa_yuv_c:output" />
+      <klink destination="padder_yuv_b:input" source="espa_isa_yuv_b:output" />
+      <klink destination="mux_rgbs_1_0:0" source="awbinputsplitter:3" />
+      <klink destination="de_mux_lin_1_0:input" source="awbinputsplitter:4" />
+      <klink destination="sc_iefd_v2:input" source="yuv420splitter2:output1" />
+      <klink destination="ycbcrcombine:cbcr" source="yuv420splitter2:output2" />
+      <klink destination="mux_gltm_1_0:1" source="bxt_vcsc_stills:ycbcr" />
+      <klink destination="x2i_md_1_0:input" source="mux_x2b_1_0:output" />
+      <klink destination="espa_isa_sis_b:input" source="sis_1_0_b:output" />
+      <klink destination="de_mux_lsc_1_0:input" source="lsc_1_1:bayer" />
+      <klink destination="espa_isa_sis_a:input" source="sis_1_0_a:output" />
+      <klink destination="bxt_disparity:bayer" source="dpcinternalsplitter:1" />
+      <klink destination="dpc_2_0:input" source="dpcinternalsplitter:2" />
+      <klink destination="bxt_applycorrection:input_image_s16" source="dpcinternalsplitter:3" />
+      <klink destination="de_mux_gs_1_0:input" source="gammastar_1:output" />
+      <klink destination="strm_crop_psa_h:input" source="espa_psa_h:output" />
+      <klink destination="bxt_ccm:rgb_or_yuv444" source="bxt_vcr2:yuv_444_out" />
+      <klink destination="awbinputsplitter:input" source="mux_dol_1_0:output" />
+      <klink destination="mux_dpc_1_0:1" source="de_mux_lin_1_0:1" />
+      <klink destination="linearization2_0:input" source="bxt_gridbaseob:bayer" />
+      <klink destination="mux_vca_1_0:0" source="xnr_5_2:output" />
+      <klink destination="dvsstat_splitter:input" source="splitter[4]:1" />
+      <klink destination="bayersplitter4:input" source="mux_wb_1_0:output" />
+      <klink destination="splitter[4]:input" source="bxt_csc:ycbcr" />
+      <klink destination="pxl_crop_yuv_b:input" source="padder_yuv_b:output" />
+      <klink destination="pxl_crop_yuv_c:input" source="padder_yuv_c:output" />
+      <klink destination="bxt_vcsc_stills:srgb" source="mux_vcsc_1_0:output" />
+      <klink destination="espa_isa_ir_md:input" source="mux_x2b_meta_1_0:output" />
+      <klink destination="gammatm_v3:input" source="de_mux_gs_1_0:0" />
+      <klink destination="aestatistics_2_0:bayer_s16" source="ccm_3a_2_0:output" />
+      <klink destination="de_mux_x2b_bp_1_0:input" source="x2i_md_1_0:bayer" />
+      <klink destination="bnlm_3_2:input" source="espa_psa_1:output" />
+      <klink destination="b2i_splitter:input" source="b2i_sie_1_0:output" />
+      <klink destination="de_mux_dpc_1_0:input" source="bxt_applycorrection:output_image" />
+      <klink destination="pxl_crop_bayer_a:input" source="padder_bayer_a:output" />
+      <klink destination="de_mux_isa_bayer_1_0:input" source="pxl_crop_bayer_a:output" />
+      <klink destination="af_awb_frstatistics_2_0:bayer_s16" source="mux_af_1_0:output" />
+      <klink destination="ycbcrcombine:y" source="sc_iefd_v2:output" />
+      <klink destination="b2i_dm_1_0:input" source="b2i_bnr_1_0:output" />
+      <klink destination="mux_x2b_bayer_1_0:0" source="rgb_ir_2_0:bayer" />
+      <klink destination="mux_x2b_meta_1_0:0" source="rgb_ir_2_0:ir" />
+      <klink destination="bxt_acm:rgb" source="glim_1_0:output" />
+      <klink destination="sis_1_0_b:input" source="strm_crop_sis_b:output" />
+      <klink destination="sis_1_0_a:input" source="strm_crop_sis_a:output" />
+      <klink destination="bxt_wb:inbayer" source="espa_isa_wb:output" />
+      <klink destination="bxt_gridbaseob:bayer" source="bxt_blc:bayer" />
+      <klink destination="de_mux_x2b_1_0:input" source="mux_x2b_bp_1_0:output" />
+      <klink destination="de_mux_bnlm_1_0:input" source="bnlm_fa:0" />
+      <klink destination="mux_iefd_1_0:0" source="dvsstat_splitter:1" />
+      <klink destination="mux_dvs:0" source="dvsstat_splitter:2" />
+      <klink destination="b2i_bnr_1_0:input" source="bayersplitter4_2:1" />
+      <klink destination="espa_isa_bayer_a:input" source="bayersplitter4_2:2" />
+      <klink destination="strm_crop_sis_a:input" source="bayersplitter4_2:3" />
+      <klink destination="strm_crop_sis_b:input" source="bayersplitter4_2:4" />
+      <klink destination="dpcinternalsplitter:input" source="mux_dpc_1_0:output" />
+      <klink destination="bxt_blc:bayer" source="bxt_norm_lin:outbayer" />
+      <klink destination="lsc_1_1:bayer" source="mux_lsc_1_0:output" />
+      <klink destination="xnr_5_2:input" source="gltm_1_0:output" />
+      <klink destination="dvsstatistics_2:y_s14" source="mux_dvs:output" />
+      <klink destination="glim_1_0:input" source="bxt_ccm:srgb_or_yuv444" />
+      <klink destination="espa_isa_yuv_b:input" source="b2i_ds_1_0_1:scaled_output" />
+      <klink destination="de_mux_dmsc_1_0:input" source="bxt_demosaic:rgb_image" />
+      <klink destination="bayersplitter4_2:input" source="lca_1_0:output" />
+      <klink destination="bxt_applycorrection:gdc_grgb_delta_buffer_s16" source="bxt_disparity:output_buffer" />
+      <klink destination="mux_lsc_1_0:2" source="de_mux_x2b_1_0:0" />
+      <klink destination="b2i_ds_1_0_1:input" source="b2i_splitter:2" />
+      <klink destination="espa_isa_yuv_c:input" source="b2i_splitter:3" />
+      <klink destination="mux_gltm_in:0" source="mux_gltm_1_0:output" />
+      <klink destination="pix_crop_ir_md:input" source="espa_isa_ir_md:output" />
+      <klink destination="gltm_1_0:input" source="mux_gltm_in:output" />
+      <klink destination="awbstatistics_2_0:bayer_s16" source="mux_rgbs_1_0:output" />
+      <klink destination="mux_bnlm_1_0:1" source="de_mux_isa_bayer_1_0:0" />
+      <klink destination="espa_psa_1:input" source="mux_bnlm_1_0:output" />
+      <klink destination="mux_ae_1_0:1" source="bayersplitter4:1" />
+      <klink destination="mux_af_1_0:1" source="bayersplitter4:2" />
+      <klink destination="espa_isa_wb:input" source="bayersplitter4:4" />
+      <klink destination="mux_x2b_bp_1_0:0" source="mux_x2b_bayer_1_0:output" />
+      <klink destination="yuv420splitter2:input" source="mux_iefd_1_0:output" />
+      <klink destination="mux_gs_1_0:0" source="de_mux_vca_1_0:0" />
+      <klink destination="mux_dmsc_1_0:0" source="de_mux_bnlm_1_0:1" />
+      <klink destination="bxt_csc:srgb" source="gammatm_v3:output" />
+      <klink destination="gammastar_1:input" source="mux_gs_1_0:output" />
+      <klink destination="mux_x2b_1_0:1" source="de_mux_dpc_1_0:2" />
+      <klink destination="bnlm_fa:input" source="bnlm_3_2:output" />
+      <klink destination="de_mux_md_1_0:input" source="de_mux_x2b_bp_1_0:0" />
+      <klink destination="lca_1_0:input" source="bxt_wb:outbayer" />
+      <klink destination="pafstatistics_1:bayer_s16" source="mux_pdaf_stat_1_0:output" />
+      <!--Kernel Links end-->
+      <cipf rbm="0x933534B542655299A69998A262" />
+    </node>
     <sink name="video0" id="20" is_modifyable_by_user="true" />
     <sink name="video1" id="21" is_modifyable_by_user="true" />
     <sink name="video2" id="22" is_modifyable_by_user="true" />
@@ -3833,6 +5979,87 @@
       <connection source="post_gdc_stills:main" sink="still0" />
       <connection source="post_gdc_stills:display" sink="still1" />
       <connection source="post_gdc_stills:postproc" sink="still2" />
+    </graph>
+    <graph id="100204" name="RGB_IR sensor - full pipe v8s8" pdaf_type="0,1,2" sensor="RGB_IR" flow="sdv" processing="bayer" stills_bpp="8" video_bpp="8">
+      <apply target="isa_lb_rgbir_video_bayer:x2i_md_1_0:enabled" value="0" />
+      <connection source="sensor:port_0" sink="csi_be:input" />
+      <connection source="csi_be:paf" sink="isa_lb_rgbir_video_bayer:ext_pdaf_stats" />
+      <connection source="csi_be:output" sink="isa_lb_rgbir_video_bayer:input" />
+      <!-- bpp overrides for preview/video branch -->
+      <!--apply target="isa_lb_rgbir_video_bayer:main:format" value="YUV420_8_PL" -->
+      <apply target="isa_lb_rgbir_video_bayer:espa_psa_h:input:bpp" value="13" />
+      <apply target="isa_lb_rgbir_video_bayer:espa_psa_h:output:bpp" value="8" />
+      <apply target="post_gdc_video_bayer:gdc5:input:bpp" value="8" />
+      <apply target="post_gdc_video_bayer:gdc5:output:bpp" value="8" />
+      <apply target="post_gdc_video_bayer:tnr_6_0:output:bpp" value="8" />
+      <apply target="post_gdc_video_bayer:tnr_6_0:input:bpp" value="8" />
+      <apply target="post_gdc_video_bayer:mrc_1_0:output:bpp" value="8" />
+      <apply target="post_gdc_video_bayer:mrc_1_0:input:bpp" value="8" />
+      <apply target="post_gdc_video_bayer:ofa_2_mp:input:bpp" value="8" />
+      <apply target="post_gdc_video_bayer:ofa_2_dp:input:bpp" value="8" />
+      <apply target="post_gdc_video_bayer:ofa_2_ppp:input:bpp" value="8" />
+      <!-- preview/video branch -->
+      <connection source="isa_lb_rgbir_video_bayer:sis_a" sink="sis_a" />
+      <connection source="isa_lb_rgbir_video_bayer:sis_b" sink="sis_b" />
+      <connection source="isa_lb_rgbir_video_bayer:main" sink="post_gdc_video_bayer:input" />
+      <connection source="post_gdc_video_bayer:main" sink="video0" />
+      <connection source="post_gdc_video_bayer:display" sink="video1" />
+      <connection source="post_gdc_video_bayer:postproc" sink="video2" />
+      <!-- still branch -->
+      <!-- bpp overrides for still branch -->
+      <!-- apply target="isa_lb_ir_stills:main:format" value="YUV420_8_PL" -->
+      <apply target="isa_lb_ir_stills:espa_psa_h:input:bpp" value="13" />
+      <apply target="isa_lb_ir_stills:espa_psa_h:output:bpp" value="8" />
+      <apply target="post_gdc_stills:gdc5:input:bpp" value="8" />
+      <apply target="post_gdc_stills:gdc5:output:bpp" value="8" />
+      <apply target="post_gdc_stills:tnr_6_0:output:bpp" value="8" />
+      <apply target="post_gdc_stills:tnr_6_0:input:bpp" value="8" />
+      <apply target="post_gdc_stills:mrc_1_0:output:bpp" value="8" />
+      <apply target="post_gdc_stills:mrc_1_0:input:bpp" value="8" />
+      <apply target="post_gdc_stills:ofa_2_mp:input:bpp" value="8" />
+      <apply target="post_gdc_stills:ofa_2_dp:input:bpp" value="8" />
+      <apply target="post_gdc_stills:ofa_2_ppp:input:bpp" value="8" />
+      <apply target="isa_lb_ir_stills:x2i_md_1_0:enabled" value="0" />
+      <connection source="csi_be:output" sink="isa_lb_ir_stills:input" />
+      <connection source="isa_lb_ir_stills:main" sink="post_gdc_stills:input" />
+      <connection source="post_gdc_stills:main" sink="still0" />
+      <connection source="post_gdc_stills:display" sink="still1" />
+      <connection source="post_gdc_stills:postproc" sink="still2" />
+      <!-- apply target="isa_lb_video_bayer:main:format" value="YUV420_8_PL" -->
+      <apply target="isa_lb_video_bayer:espa_psa_h:input:bpp" value="13" />
+      <apply target="isa_lb_video_bayer:espa_psa_h:output:bpp" value="8" />
+      <apply target="post_gdc_ir_video:gdc5:input:bpp" value="8" />
+      <apply target="post_gdc_ir_video:gdc5:output:bpp" value="8" />
+      <apply target="post_gdc_ir_video:tnr_6_0:output:bpp" value="8" />
+      <apply target="post_gdc_ir_video:tnr_6_0:input:bpp" value="8" />
+      <apply target="post_gdc_ir_video:mrc_1_0:output:bpp" value="8" />
+      <apply target="post_gdc_ir_video:mrc_1_0:input:bpp" value="8" />
+      <apply target="post_gdc_ir_video:ofa_2_mp:input:bpp" value="8" />
+      <apply target="post_gdc_ir_video:ofa_2_dp:input:bpp" value="8" />
+      <apply target="post_gdc_ir_video:ofa_2_ppp:input:bpp" value="8" />
+      <!--disabling kernels for ISA_LB PG when handling IR data-->
+      <apply target="isa_lb_video_bayer:bxt_blc:enabled" value="0" />
+      <apply target="isa_lb_video_bayer:bxt_applycorrection:enabled" value="0" />
+      <apply target="isa_lb_video_bayer:bxt_disparity:enabled" value="0" />
+      <apply target="isa_lb_video_bayer:linearization2_0:enabled" value="0" />
+      <apply target="isa_lb_video_bayer:bxt_norm_lin:enabled" value="0" />
+      <apply target="isa_lb_video_bayer:dpc_2_0:enabled" value="0" />
+      <apply target="isa_lb_video_bayer:lca_1_0:enabled" value="0" />
+      <apply target="isa_lb_video_bayer:b2i_dm_1_0:enabled" value="0" />
+      <apply target="isa_lb_video_bayer:bxt_wb:enabled" value="0" />
+      <apply target="isa_lb_video_bayer:bxt_acm:enabled" value="0" />
+      <apply target="isa_lb_video_bayer:bxt_demosaic:enabled" value="0" />
+      <apply target="isa_lb_video_bayer:bxt_ccm:enabled" value="1" />
+      <apply target="isa_lb_video_bayer:bxt_csc:enabled" value="1" />
+      <apply target="isa_lb_video_bayer:gammatm_v3:enabled" value="0" />
+      <apply target="isa_lb_video_bayer:gammastar_1:enabled" value="0" />
+      <apply target="isa_lb_video_bayer:stream_id" value="60002" />
+      <apply target="isa_lb_video_bayer:lsc_1_1:metadata" value="1,0,0,0" />
+      <apply target="post_gdc_ir_video:stream_id" value="60002" />
+      <connection source="isa_lb_rgbir_video_bayer:ir_md" sink="isa_lb_video_bayer:input" />
+      <connection source="isa_lb_video_bayer:main" sink="post_gdc_ir_video:input" />
+      <connection source="post_gdc_ir_video:main" sink="ir0" />
+      <connection source="post_gdc_ir_video:display" sink="ir0" />
     </graph>
   </graphs>
 </graph_descriptor>

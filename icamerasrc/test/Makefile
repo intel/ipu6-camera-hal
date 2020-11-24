@@ -74,8 +74,8 @@ LDFLAGS += -L${PRE_BUILD_DIR}/lib/ \
 #hardening-check
 CXXFLAGS+=-fstack-protector -fPIE -fPIC -D_FORTIFY_SOURCE=2 -Wformat -Wformat-security
 LDFLAGS+= -fPIE -fPIC -D_FORTIFY_SOURCE=2 -Wformat -Wformat-security -Wl,-z,relro -Wl,-z,now
-ifeq ($(CHROME_SLIM_INTERFACE), ON)
-CXXFLAGS+= -DCHROME_SLIM_INTERFACE
+ifeq ($(CHROME_SLIM_CAMHAL), ON)
+CXXFLAGS+= -DCHROME_SLIM_CAMHAL
 endif
 
 casedir=cases/api

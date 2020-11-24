@@ -122,6 +122,7 @@ class Camera3Buffer {
     int status() { return mUserBuffer.status; }
     camera3_stream_t* getStream() { return mUserBuffer.stream; }
     icamera::camera_buffer_t getHalBuffer() { return mHalBuffer; }
+    Camera3BufferType getBufferType() const { return mType; }
 
  private:
     icamera::status_t lock(int flags);

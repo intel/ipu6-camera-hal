@@ -14,14 +14,14 @@ See the License for the specific language governing permissions and
 	limitations under the License.
 	-->
 <graph_settings version="IPU6_20200802.0.1.0.245.1.2020.8.10.17.44.28">
-<sensor_modes sensor_name="ov01a1s" csi_port="0" metadata="0" interlaced="0" bayer_order="GRBG">
+<sensor_modes sensor_name="tpg_ipu6" csi_port="0" metadata="0" interlaced="0" bayer_order="GRBG">
     <available_bit_per_pixel>
         <bpp value="10"/>
     </available_bit_per_pixel>
     <pll_configs>
         <pll_config bpp="0" pixel_rate_csi="0" pixel_rate="0" id="0"/>
     </pll_configs>
-    <sensor_mode name="ov01a1s_full" id="0" width="1312" height="800" fps="30" min_llp="0" min_fll="0" min_fps="0" max_out_width="1312" max_out_height="800" bpp="10" sensor_type="BAYER" pdaf_type="PDAFNone" flip_h="0" flip_v="0" conversion_gain="1" dol_mode="NoDol">
+    <sensor_mode name="tpg_ipu6_full" id="0" width="1312" height="800" fps="30" min_llp="0" min_fll="0" min_fps="0" max_out_width="1312" max_out_height="800" bpp="10" sensor_type="BAYER" pdaf_type="PDAFNone" flip_h="0" flip_v="0" conversion_gain="1" dol_mode="NoDol">
         <pixel_array>
             <input width="1312" height="800" left="0" top="0"/>
             <output width="1312" height="800" left="0" top="0"/>
@@ -68,7 +68,7 @@ See the License for the specific language governing permissions and
   <video0 width="320" height="240" stream_id="60001" bpp="8" format="Linear" />
   <sis_b width="128" height="96" stream_id="60001" />
   <sis_a width="320" height="200" stream_id="60001" />
-  <sensor vflip="0" hflip="0" mode_id="ov01a1s_full">
+  <sensor vflip="0" hflip="0" mode_id="tpg_ipu6_full">
             <port_0 format="BG10" width="1312" height="800" />
         </sensor>
   <csi_be>
@@ -152,7 +152,7 @@ See the License for the specific language governing permissions and
   <video0 width="640" height="480" stream_id="60001" bpp="8" format="Linear" />
   <sis_b width="128" height="96" stream_id="60001" />
   <sis_a width="320" height="200" stream_id="60001" />
-  <sensor vflip="0" hflip="0" mode_id="ov01a1s_full">
+  <sensor vflip="0" hflip="0" mode_id="tpg_ipu6_full">
             <port_0 format="BG10" width="1312" height="800" />
         </sensor>
   <csi_be>
@@ -236,7 +236,7 @@ See the License for the specific language governing permissions and
   <video0 width="1280" height="720" stream_id="60001" bpp="8" format="Linear" />
   <sis_b width="160" height="92" stream_id="60001" />
   <sis_a width="320" height="200" stream_id="60001" />
-  <sensor vflip="0" hflip="0" mode_id="ov01a1s_full">
+  <sensor vflip="0" hflip="0" mode_id="tpg_ipu6_full">
             <port_0 format="BG10" width="1312" height="800" />
         </sensor>
   <csi_be>
@@ -317,7 +317,7 @@ See the License for the specific language governing permissions and
   <video0 width="320" height="240" stream_id="60001" bpp="8" format="Linear" />
   <sis_b width="128" height="96" stream_id="60001" />
   <sis_a width="320" height="200" stream_id="60001" />
-  <sensor vflip="0" hflip="0" mode_id="ov01a1s_full">
+  <sensor vflip="0" hflip="0" mode_id="tpg_ipu6_full">
             <port_0 format="BG10" width="1312" height="800" />
         </sensor>
   <csi_be>
@@ -411,7 +411,7 @@ See the License for the specific language governing permissions and
   <video0 width="640" height="480" stream_id="60001" bpp="8" format="Linear" />
   <sis_b width="128" height="96" stream_id="60001" />
   <sis_a width="320" height="200" stream_id="60001" />
-  <sensor vflip="0" hflip="0" mode_id="ov01a1s_full">
+  <sensor vflip="0" hflip="0" mode_id="tpg_ipu6_full">
             <port_0 format="BG10" width="1312" height="800" />
         </sensor>
   <csi_be>
@@ -505,7 +505,7 @@ See the License for the specific language governing permissions and
   <video0 width="640" height="480" stream_id="60001" bpp="8" format="Linear" />
   <sis_b width="128" height="96" stream_id="60001" />
   <sis_a width="320" height="200" stream_id="60001" />
-  <sensor vflip="0" hflip="0" mode_id="ov01a1s_full">
+  <sensor vflip="0" hflip="0" mode_id="tpg_ipu6_full">
             <port_0 format="BG10" width="1312" height="800" />
         </sensor>
   <csi_be>
@@ -599,7 +599,7 @@ See the License for the specific language governing permissions and
   <video0 width="1280" height="720" stream_id="60001" bpp="8" format="Linear" />
   <sis_b width="160" height="92" stream_id="60001" />
   <sis_a width="320" height="200" stream_id="60001" />
-  <sensor vflip="0" hflip="0" mode_id="ov01a1s_full">
+  <sensor vflip="0" hflip="0" mode_id="tpg_ipu6_full">
             <port_0 format="BG10" width="1312" height="800" />
         </sensor>
   <csi_be>
@@ -689,7 +689,7 @@ See the License for the specific language governing permissions and
   <video0 width="1280" height="720" stream_id="60001" bpp="8" format="Linear" />
   <sis_b width="160" height="92" stream_id="60001" />
   <sis_a width="320" height="200" stream_id="60001" />
-  <sensor vflip="0" hflip="0" mode_id="ov01a1s_full">
+  <sensor vflip="0" hflip="0" mode_id="tpg_ipu6_full">
             <port_0 format="BG10" width="1312" height="800" />
         </sensor>
   <csi_be>
@@ -779,7 +779,7 @@ See the License for the specific language governing permissions and
   <video0 width="1280" height="720" stream_id="60001" bpp="8" format="Linear" />
   <sis_b width="160" height="92" stream_id="60001" />
   <sis_a width="320" height="200" stream_id="60001" />
-  <sensor vflip="0" hflip="0" mode_id="ov01a1s_full">
+  <sensor vflip="0" hflip="0" mode_id="tpg_ipu6_full">
             <port_0 format="BG10" width="1312" height="800" />
         </sensor>
   <csi_be>
@@ -867,7 +867,7 @@ See the License for the specific language governing permissions and
 <settings key="8009" id="100200" active_outputs="1" dvs="0" power_factor="0" fps="30" flow="StillsDuringVideo" flip_v="0" flip_h="0" pdaf_type="0">
   <still0 width="320" height="240" stream_id="60000" bpp="8" format="Linear" />
   <sis_a_stills_only width="256" height="192" stream_id="60000" />
-  <sensor vflip="0" hflip="0" mode_id="ov01a1s_full">
+  <sensor vflip="0" hflip="0" mode_id="tpg_ipu6_full">
             <port_0 format="BG10" width="1312" height="800" />
         </sensor>
   <csi_be>
@@ -937,7 +937,7 @@ See the License for the specific language governing permissions and
 <settings key="8010" id="100200" active_outputs="1" dvs="0" power_factor="0" fps="30" flow="StillsDuringVideo" flip_v="0" flip_h="0" pdaf_type="0">
   <still0 width="640" height="480" stream_id="60000" bpp="8" format="Linear" />
   <sis_a_stills_only width="256" height="192" stream_id="60000" />
-  <sensor vflip="0" hflip="0" mode_id="ov01a1s_full">
+  <sensor vflip="0" hflip="0" mode_id="tpg_ipu6_full">
             <port_0 format="BG10" width="1312" height="800" />
         </sensor>
   <csi_be>
@@ -1007,7 +1007,7 @@ See the License for the specific language governing permissions and
 <settings key="8011" id="100200" active_outputs="1" dvs="0" power_factor="0" fps="30" flow="StillsDuringVideo" flip_v="0" flip_h="0" pdaf_type="0" golden="true">
   <still0 width="1280" height="720" stream_id="60000" bpp="8" format="Linear" />
   <sis_a_stills_only width="320" height="184" stream_id="60000" />
-  <sensor vflip="0" hflip="0" mode_id="ov01a1s_full">
+  <sensor vflip="0" hflip="0" mode_id="tpg_ipu6_full">
             <port_0 format="BG10" width="1312" height="800" />
         </sensor>
   <csi_be>
@@ -1074,7 +1074,7 @@ See the License for the specific language governing permissions and
   <still1 width="320" height="240" stream_id="60000" bpp="8" format="Linear" />
   <still0 width="320" height="240" stream_id="60000" bpp="8" format="Linear" />
   <sis_a_stills_only width="256" height="192" stream_id="60000" />
-  <sensor vflip="0" hflip="0" mode_id="ov01a1s_full">
+  <sensor vflip="0" hflip="0" mode_id="tpg_ipu6_full">
             <port_0 format="BG10" width="1312" height="800" />
         </sensor>
   <csi_be>
@@ -1154,7 +1154,7 @@ See the License for the specific language governing permissions and
   <still1 width="320" height="240" stream_id="60000" bpp="8" format="Linear" />
   <still0 width="640" height="480" stream_id="60000" bpp="8" format="Linear" />
   <sis_a_stills_only width="256" height="192" stream_id="60000" />
-  <sensor vflip="0" hflip="0" mode_id="ov01a1s_full">
+  <sensor vflip="0" hflip="0" mode_id="tpg_ipu6_full">
             <port_0 format="BG10" width="1312" height="800" />
         </sensor>
   <csi_be>
@@ -1234,7 +1234,7 @@ See the License for the specific language governing permissions and
   <still1 width="640" height="480" stream_id="60000" bpp="8" format="Linear" />
   <still0 width="640" height="480" stream_id="60000" bpp="8" format="Linear" />
   <sis_a_stills_only width="256" height="192" stream_id="60000" />
-  <sensor vflip="0" hflip="0" mode_id="ov01a1s_full">
+  <sensor vflip="0" hflip="0" mode_id="tpg_ipu6_full">
             <port_0 format="BG10" width="1312" height="800" />
         </sensor>
   <csi_be>
@@ -1314,7 +1314,7 @@ See the License for the specific language governing permissions and
   <still1 width="320" height="240" stream_id="60000" bpp="8" format="Linear" />
   <still0 width="1280" height="720" stream_id="60000" bpp="8" format="Linear" />
   <sis_a_stills_only width="320" height="184" stream_id="60000" />
-  <sensor vflip="0" hflip="0" mode_id="ov01a1s_full">
+  <sensor vflip="0" hflip="0" mode_id="tpg_ipu6_full">
             <port_0 format="BG10" width="1312" height="800" />
         </sensor>
   <csi_be>
@@ -1390,7 +1390,7 @@ See the License for the specific language governing permissions and
   <still1 width="640" height="480" stream_id="60000" bpp="8" format="Linear" />
   <still0 width="1280" height="720" stream_id="60000" bpp="8" format="Linear" />
   <sis_a_stills_only width="320" height="184" stream_id="60000" />
-  <sensor vflip="0" hflip="0" mode_id="ov01a1s_full">
+  <sensor vflip="0" hflip="0" mode_id="tpg_ipu6_full">
             <port_0 format="BG10" width="1312" height="800" />
         </sensor>
   <csi_be>
@@ -1466,7 +1466,7 @@ See the License for the specific language governing permissions and
   <still1 width="1280" height="720" stream_id="60000" bpp="8" format="Linear" />
   <still0 width="1280" height="720" stream_id="60000" bpp="8" format="Linear" />
   <sis_a_stills_only width="320" height="184" stream_id="60000" />
-  <sensor vflip="0" hflip="0" mode_id="ov01a1s_full">
+  <sensor vflip="0" hflip="0" mode_id="tpg_ipu6_full">
             <port_0 format="BG10" width="1312" height="800" />
         </sensor>
   <csi_be>

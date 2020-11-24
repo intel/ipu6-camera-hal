@@ -357,7 +357,7 @@ int PGCommon::createCommands()
     }
 
     CIPR::PSysEventConfig eventCfg = {};
-    eventCfg.timeout = kEventTimeout;
+    eventCfg.timeout = kEventTimeout * SLOWLY_MULTIPLIER;
     mEvent = new CIPR::Event(eventCfg);
 
     return OK;
@@ -508,7 +508,6 @@ int PGCommon::calcFragmentCount(int overlap)
         // Calc fragment count for terminal (only for horizontal direction)
         int maxFragmentWidth = size[IA_CSS_COL_DIMENSION];
         FrameInfo config;
-        CLEAR(config);
         if (mTerminalFrameInfos.find(termIdx) != mTerminalFrameInfos.end()) {
             config = mTerminalFrameInfos[termIdx];
         }
@@ -871,14 +870,14 @@ int PGCommon::allocateTnrSimBuffers() {
 
         std::vector<ia_binary_data> payloads;
         ia_binary_data payload = {nullptr, mParamPayload[inId].size};
-        for (int i = 0; i < bufferCount; i++) {
+        for (int32_t i = 0; i < bufferCount; i++) {
             payloads.push_back(payload);
         }
         int ret = mPGParamAdapt->allocatePayloads(payloads.size(), payloads.data());
         CheckError(ret != OK, NO_MEMORY, "%s, allocate for term pair %d fail", __func__, inId);
 
         // Register all buffers and clear
-        for (int i = 0; i < bufferCount; i++) {
+        for (int32_t i = 0; i < bufferCount; i++) {
             CIPR::Buffer* ciprBuf = registerUserBuffer(payloads[i].size, payloads[i].data);
             CheckError(!ciprBuf, NO_MEMORY, "%s, register %d:%p for term pair %d fails",
                        __func__, i, payloads[i].data, inId);

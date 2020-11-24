@@ -189,9 +189,9 @@ dnl set proper LDFLAGS for plugins
 GST_PLUGIN_LDFLAGS='-module -avoid-version -export-symbols-regex [_]*\(gst_\|Gst\|GST_\).*'
 AC_SUBST(GST_PLUGIN_LDFLAGS)
 
-AC_MSG_CHECKING([check if CHROME_SLIM_INTERFACE is ON])
-AS_IF([test "x${CHROME_SLIM_INTERFACE}" = "xON" ], AC_MSG_RESULT([yes]), AC_MSG_RESULT([no]))
-AM_CONDITIONAL([CHROME_SLIM_INTERFACE_TEST], [test "x${CHROME_SLIM_INTERFACE}" = "xON"])
+AC_MSG_CHECKING([check if CHROME_SLIM_CAMHAL is ON])
+AS_IF([test "x${CHROME_SLIM_CAMHAL}" = "xON" ], AC_MSG_RESULT([yes]), AC_MSG_RESULT([no]))
+AM_CONDITIONAL([USE_CHROME_SLIM_CAMHAL], [test "x${CHROME_SLIM_CAMHAL}" = "xON"])
 
 AC_CONFIG_FILES([Makefile
                  src/Makefile

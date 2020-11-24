@@ -67,7 +67,7 @@
 #include "gstcamera3ainterface.h"
 #include "gstcameraispinterface.h"
 #include "gstcameradewarpinginterface.h"
-#ifndef CHROME_SLIM_INTERFACE
+#ifndef CHROME_SLIM_CAMHAL
 #include "gstcamerawfovinterface.h"
 #endif
 #include "utils.h"
@@ -160,7 +160,7 @@ enum
 static void gst_camerasrc_3a_interface_init (GstCamerasrc3AInterface *iface);
 static void gst_camerasrc_isp_interface_init (GstCamerasrcIspInterface *ispIface);
 static void gst_camerasrc_dewarping_interface_init (GstCamerasrcDewarpingInterface *dewarpingIface);
-#ifndef CHROME_SLIM_INTERFACE
+#ifndef CHROME_SLIM_CAMHAL
 static void gst_camerasrc_wfov_interface_init (GstCamerasrcWFOVInterface *wfovIface);
 
 G_DEFINE_TYPE_WITH_CODE (Gstcamerasrc, gst_camerasrc, GST_TYPE_CAM_PUSH_SRC,
@@ -272,7 +272,7 @@ static gboolean gst_camerasrc_get_ltm_tuning_data (GstCamerasrcIsp *camIsp, void
 static gboolean gst_camerasrc_set_dewarping_mode (GstCamerasrcDewarping *camDewarping, camera_fisheye_dewarping_mode_t mode);
 static gboolean gst_camerasrc_get_dewarping_mode (GstCamerasrcDewarping *camDewarping, camera_fisheye_dewarping_mode_t &mode);
 
-#ifndef CHROME_SLIM_INTERFACE
+#ifndef CHROME_SLIM_CAMHAL
 static gboolean gst_camerasrc_get_wfov_mode (GstCamerasrcWFOV *camWFOV, uint8_t &mode);
 static gboolean gst_camerasrc_get_sensor_mount_type (GstCamerasrcWFOV *camWFOV, camera_mount_type_t &mount_type);
 static gboolean gst_camerasrc_set_view_projection (GstCamerasrcWFOV *camWFOV, camera_view_projection_t projection);
@@ -1290,7 +1290,7 @@ gst_camerasrc_dewarping_interface_init (GstCamerasrcDewarpingInterface *dewarpin
   dewarpingIface->get_dewarping_mode = gst_camerasrc_get_dewarping_mode;
 }
 
-#ifndef CHROME_SLIM_INTERFACE
+#ifndef CHROME_SLIM_CAMHAL
 static void
 gst_camerasrc_wfov_interface_init (GstCamerasrcWFOVInterface *wfovIface)
 {
@@ -1703,7 +1703,7 @@ gst_camerasrc_analyze_isp_control(Gstcamerasrc *src, const char *bin_name)
     offset += isp_header->size;
 
     (src->isp_control_tags)->insert(isp_header->uuid);
-#ifndef CHROME_SLIM_INTERFACE
+#ifndef CHROME_SLIM_CAMHAL
     src->param->setIspControl(isp_header->uuid, data);
     g_message("%s, the isp control uuid: %d, size: %d, offset: %d",
                 __func__, isp_header->uuid, isp_header->size, offset);
@@ -1746,7 +1746,7 @@ gst_camerasrc_set_ltm_tuning_data_from_file(Gstcamerasrc *src, const char *bin_n
   }
   g_message("%s, The ltm tuning data length %d", __func__, len);
 
-#ifndef CHROME_SLIM_INTERFACE
+#ifndef CHROME_SLIM_CAMHAL
   src->param->setLtmTuningData(buffer);
 #endif
   delete[] buffer;
@@ -2653,7 +2653,7 @@ gst_camerasrc_start(GstCamBaseSrc *basesrc)
     return FALSE;
   }
   camerasrc->camera_init = true;
-#ifndef CHROME_SLIM_INTERFACE
+#ifndef CHROME_SLIM_CAMHAL
   ret = camera_device_open(camerasrc->device_id, camerasrc->num_vc);
 #else
   ret = camera_device_open(camerasrc->device_id);
@@ -3605,7 +3605,7 @@ static gboolean gst_camerasrc_set_isp_control (GstCamerasrcIsp *camIsp, unsigned
   } else {
     (camerasrc->isp_control_tags)->insert(tag);
   }
-#ifndef CHROME_SLIM_INTERFACE
+#ifndef CHROME_SLIM_CAMHAL
   ret = camerasrc->param->setIspControl(tag, data);
 #endif
   g_message("Enter %s", __func__);
@@ -3622,7 +3622,7 @@ static gboolean gst_camerasrc_set_isp_control (GstCamerasrcIsp *camIsp, unsigned
 */
 static gboolean gst_camerasrc_get_isp_control (GstCamerasrcIsp *camIsp, unsigned int tag, void * data)
 {
-#ifndef CHROME_SLIM_INTERFACE
+#ifndef CHROME_SLIM_CAMHAL
   int ret = 0;
   Parameters param;
   Gstcamerasrc *camerasrc = GST_CAMERASRC(camIsp);
@@ -3644,7 +3644,7 @@ static gboolean gst_camerasrc_get_isp_control (GstCamerasrcIsp *camIsp, unsigned
  */
 static gboolean gst_camerasrc_apply_isp_control (GstCamerasrcIsp *camIsp)
 {
-#ifndef CHROME_SLIM_INTERFACE
+#ifndef CHROME_SLIM_CAMHAL
   int ret = 0;
   Gstcamerasrc *camerasrc = GST_CAMERASRC(camIsp);
 
@@ -3666,7 +3666,7 @@ static gboolean gst_camerasrc_apply_isp_control (GstCamerasrcIsp *camIsp)
 */
 static gboolean gst_camerasrc_get_ltm_tuning_data(GstCamerasrcIsp *camIsp, void *data)
 {
-#ifndef CHROME_SLIM_INTERFACE
+#ifndef CHROME_SLIM_CAMHAL
   int ret = 0;
   Parameters param;
   Gstcamerasrc *camerasrc = GST_CAMERASRC(camIsp);
@@ -3689,7 +3689,7 @@ static gboolean gst_camerasrc_get_ltm_tuning_data(GstCamerasrcIsp *camIsp, void 
 */
 static gboolean gst_camerasrc_set_ltm_tuning_data(GstCamerasrcIsp *camIsp, void *data)
 {
-#ifndef CHROME_SLIM_INTERFACE
+#ifndef CHROME_SLIM_CAMHAL
   int ret = 0;
   Gstcamerasrc *camerasrc = GST_CAMERASRC(camIsp);
   g_message("Enter %s", __func__);
@@ -3741,7 +3741,7 @@ static gboolean gst_camerasrc_get_dewarping_mode (GstCamerasrcDewarping *camDewa
   return (ret == 0 ? TRUE : FALSE);
 }
 
-#ifndef CHROME_SLIM_INTERFACE
+#ifndef CHROME_SLIM_CAMHAL
 /* Get the WFOV mode if enabled or not, view set operations are only available when WFOV mode is enabled
  *
 * param[in]        camWFOV       Camera Source handle
@@ -3942,7 +3942,7 @@ static gboolean gst_camerasrc_get_camera_rotation(GstCamerasrcWFOV *camWFOV, cam
 
   return (ret == 0 ? TRUE : FALSE);
 }
-#endif //CHROME_SLIM_INTERFACE
+#endif //CHROME_SLIM_CAMHAL
 
 /* entry point to initialize the plug-in
  * initialize the plug-in itself

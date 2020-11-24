@@ -99,13 +99,14 @@ void IntelGPUAlgoServer::handleRequest(const MsgReq& msg) {
             }
 
             status = mTNR.runTnrFrame(inBuffer.addr, outBuffer.addr, inBuffer.size, outBuffer.size,
-                                      paramBuffer.addr, requestInfo->cameraId, requestInfo->type);
+                                      paramBuffer.addr, requestInfo->cameraId, requestInfo->type,
+                                      requestInfo->outBufFd);
             break;
         }
         case IPC_GPU_TNR_PARAM_UPDATE: {
             TnrRequestInfo* requestInfo = static_cast<TnrRequestInfo*>(addr);
-            status =
-                mTNR.asyncParamUpdate(requestInfo->cameraId, requestInfo->gain, requestInfo->type);
+            status = mTNR.asyncParamUpdate(requestInfo->cameraId, requestInfo->gain,
+                                           requestInfo->type, requestInfo->isForceUpdate);
             break;
         }
         case IPC_GPU_TNR_DEINIT: {

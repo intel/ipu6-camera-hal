@@ -68,8 +68,8 @@ class IntelAlgoClient : public camera_algorithm_callback_ops_t {
 
     int32_t registerBuffer(int bufferFd, void* addr, ShmMemUsage usage = CPU_ALGO_SHM);
     void deregisterBuffer(int32_t bufferHandle, ShmMemUsage usage = CPU_ALGO_SHM);
-    int32_t registerGbmBuffer(int bufferFd);
-    void deregisterGbmBuffer(int32_t bufferHandle);
+    int32_t registerGbmBuffer(int bufferFd, ShmMemUsage usage = CPU_ALGO_SHM);
+    void deregisterGbmBuffer(int32_t bufferHandle, ShmMemUsage usage = CPU_ALGO_SHM);
     int32_t getBufferHandle(void* addr, ShmMemUsage usage = CPU_ALGO_SHM);
 
  private:

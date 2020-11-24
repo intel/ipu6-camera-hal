@@ -40,7 +40,7 @@
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
  * Boston, MA 02111-1307, USA.
  */
-#ifndef CHROME_SLIM_INTERFACE
+#ifndef CHROME_SLIM_CAMHAL
 #ifndef __GST_CAMERASRC_WFOV_INTERFACE_H__
 #define __GST_CAMERASRC_WFOV_INTERFACE_H__
 
@@ -164,4 +164,4 @@ GType gst_camerasrc_wfov_interface_get_type(void);
 G_END_DECLS
 
 #endif /* __GST_CAMERASRC_WFOV_INTERFACE_H__ */
-#endif // CHROME_SLIM_INTERFACE
+#endif // CHROME_SLIM_CAMHAL

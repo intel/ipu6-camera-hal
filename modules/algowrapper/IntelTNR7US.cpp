@@ -18,6 +18,9 @@
 
 #include "modules/algowrapper/IntelTNR7US.h"
 
+#include <base/bind.h>
+#include <base/threading/thread.h>
+
 #include <string>
 
 #include "iutils/CameraLog.h"
@@ -98,48 +101,50 @@ int IntelTNR7US::prepareSurface(void* bufAddr, int size) {
 }
 
 int IntelTNR7US::runTnrFrame(const void* inBufAddr, void* outBufAddr, uint32_t inBufSize,
-                             uint32_t outBufSize, Tnr7Param* tnrParam) {
+                             uint32_t outBufSize, Tnr7Param* tnrParam, int fd) {
     PERF_CAMERA_ATRACE();
     TRACE_LOG_PROCESS("IntelTNR7US", "runTnrFrame");
     LOG1("%s mCameraId %d, type %d", __func__, mCameraId, mTnrType);
     CheckError(inBufAddr == nullptr || outBufAddr == nullptr || tnrParam == nullptr, UNKNOWN_ERROR,
                "@%s, buffer is nullptr", __func__);
-    if (tnrParam->bc.is_first_frame) {
-        /* when outBufAddr is from client, it is the reference buffer for next frame */
-        MEMCPY_S(outBufAddr, outBufSize, inBufAddr, inBufSize);
-    }
 
     CmSurface2DUP* inSurface = getBufferCMSurface(const_cast<void*>(inBufAddr));
     CheckError(!inSurface, UNKNOWN_ERROR, "Failed to get CMSurface for input buffer");
 
-    // the outBuf is reference buffer ptr, get the it's surface
-    CmSurface2DUP* refOutSurface = getBufferCMSurface(outBufAddr);
-    CheckError(refOutSurface == nullptr, UNKNOWN_ERROR,
-               "Failed to get CMSurface for output buffer");
+    CmSurface2DUP* outSurface = nullptr;
+    if (fd >= 0) {
+        outSurface = createCMSurface(outBufAddr);
+    } else {
+        outSurface = getBufferCMSurface(outBufAddr);
+    }
+    CheckError(outSurface == nullptr, UNKNOWN_ERROR, "Failed to get CMSurface for output buffer");
 
     /* call Tnr api to run tnr for the inSurface and store the result in refOutSurface */
-    int ret = run_tnr7us_frame(mWidth, mHeight, mWidth, inSurface, refOutSurface, &tnrParam->scale,
+    int ret = run_tnr7us_frame(mWidth, mHeight, mWidth, inSurface, outSurface, &tnrParam->scale,
                                &tnrParam->ims, &tnrParam->bc, &tnrParam->blend, false, mTnrType);
-
+    if (fd >= 0) {
+        destroyCMSurface(outSurface);
+    }
     CheckError(ret != OK, UNKNOWN_ERROR, "tnr7us process failed");
 
     return OK;
 }
 
-int IntelTNR7US::asyncParamUpdate(int gain) {
+int IntelTNR7US::asyncParamUpdate(int gain, bool forceUpdate) {
     LOG1("%s gain: %d", __func__, gain);
 
     if (mThread->task_runner()) {
         mThread->task_runner()->PostTask(
-            FROM_HERE, base::Bind(&IntelTNR7US::handleParamUpdate, base::Unretained(this), gain));
+            FROM_HERE,
+            base::Bind(&IntelTNR7US::handleParamUpdate, base::Unretained(this), gain, forceUpdate));
     }
     return OK;
 }
 
-void IntelTNR7US::handleParamUpdate(int gain) {
+void IntelTNR7US::handleParamUpdate(int gain, bool forceUpdate) {
     LOG1("%s gain: %d", __func__, gain);
     // gain value is from AE expore analog_gain * digital_gain
-    tnr7usParamUpdate(gain, false, mTnrType);
+    tnr7usParamUpdate(gain, forceUpdate, mTnrType);
 }
 
 CmSurface2DUP* IntelTNR7US::getBufferCMSurface(void* bufAddr) {

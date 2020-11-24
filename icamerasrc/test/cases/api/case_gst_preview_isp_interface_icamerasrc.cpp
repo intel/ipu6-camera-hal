@@ -43,7 +43,7 @@
 
 #include <string.h>
 #include "case_gst_common.h"
-#ifndef CHROME_SLIM_INTERFACE
+#ifndef CHROME_SLIM_CAMHAL
 /* Example to send struct to interface */
 TEST(CameraSrcTest, gst_preview_icamerasrc_isp_control_wb_gains)
 {
@@ -889,4 +889,4 @@ TEST(CameraSrcTest, gst_preview_icamerasrc_ltm_tuning_data)
   ret = do_pipline(&check);
   ASSERT_EQ(ret, 0);
 }
-#endif //CHROME_SLIM_INTERFACE
+#endif //CHROME_SLIM_CAMHAL

@@ -51,5 +51,7 @@ typedef struct TnrRequestInfo {
     int cameraId;
     TnrType type;
     int gain;
+    int outBufFd;
+    bool isForceUpdate;
 } TnrRequestInfo;
 }  // namespace icamera

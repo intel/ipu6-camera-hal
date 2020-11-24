@@ -66,17 +66,29 @@ void IntelCca::releaseInstance(int cameraId, TuningMode mode) {
 IntelCca::IntelCca() {
     LOG2("@%s", __func__);
 
-    mIntelCCA = std::unique_ptr<cca::IntelCCA>(new cca::IntelCCA);
+    mIntelCCA = nullptr;
 }
 
 IntelCca::~IntelCca() {
     LOG2("@%s", __func__);
+    releaseIntelCCA();
 }
 
+cca::IntelCCA* IntelCca::getIntelCCA() {
+    if (mIntelCCA == nullptr) {
+        mIntelCCA = new cca::IntelCCA();
+    }
+    return mIntelCCA;
+}
+
+void IntelCca::releaseIntelCCA() {
+    delete mIntelCCA;
+    mIntelCCA = nullptr;
+}
 ia_err IntelCca::init(const cca::cca_init_params& initParams) {
     LOG2("@%s, bitmap:%d", __func__, initParams.bitmap);
 
-    ia_err ret = mIntelCCA->init(initParams);
+    ia_err ret = getIntelCCA()->init(initParams);
     LOG2("@%s, ret:%d", __func__, ret);
 
     return ret;
@@ -85,7 +97,7 @@ ia_err IntelCca::init(const cca::cca_init_params& initParams) {
 ia_err IntelCca::setStatsParams(const cca::cca_stats_params& params) {
     LOG2("@%s", __func__);
 
-    ia_err ret = mIntelCCA->setStatsParams(params);
+    ia_err ret = getIntelCCA()->setStatsParams(params);
     LOG2("@%s, ret:%d", __func__, ret);
 
     return ret;
@@ -96,7 +108,7 @@ ia_err IntelCca::runAEC(uint64_t frameId, const cca::cca_ae_input_params& params
     LOG2("@%s", __func__);
     CheckError(!results, ia_err_argument, "@%s, results is nullptr", __func__);
 
-    ia_err ret = mIntelCCA->runAEC(frameId, params, results);
+    ia_err ret = getIntelCCA()->runAEC(frameId, params, results);
     LOG2("@%s, ret:%d", __func__, ret);
 
     return ret;
@@ -107,7 +119,7 @@ ia_err IntelCca::runAIQ(uint64_t frameId, const cca::cca_aiq_params& params,
     LOG2("@%s", __func__);
     CheckError(!results, ia_err_argument, "@%s, results is nullptr", __func__);
 
-    ia_err ret = mIntelCCA->runAIQ(frameId, params, results);
+    ia_err ret = getIntelCCA()->runAIQ(frameId, params, results);
     LOG2("@%s, ret:%d", __func__, ret);
 
     return ret;
@@ -116,7 +128,7 @@ ia_err IntelCca::runAIQ(uint64_t frameId, const cca::cca_aiq_params& params,
 ia_err IntelCca::runLTM(uint64_t frameId, const cca::cca_ltm_input_params& params) {
     LOG2("@%s", __func__);
 
-    ia_err ret = mIntelCCA->runLTM(frameId, params);
+    ia_err ret = getIntelCCA()->runLTM(frameId, params);
     LOG2("@%s, ret:%d", __func__, ret);
 
     return ret;
@@ -125,7 +137,7 @@ ia_err IntelCca::runLTM(uint64_t frameId, const cca::cca_ltm_input_params& param
 ia_err IntelCca::updateZoom(const cca::cca_dvs_zoom& params) {
     LOG2("@%s", __func__);
 
-    ia_err ret = mIntelCCA->updateZoom(params);
+    ia_err ret = getIntelCCA()->updateZoom(params);
     LOG2("@%s, ret:%d", __func__, ret);
 
     return ret;
@@ -134,19 +146,24 @@ ia_err IntelCca::updateZoom(const cca::cca_dvs_zoom& params) {
 ia_err IntelCca::runDVS(uint64_t frameId) {
     LOG2("@%s", __func__);
 
-    ia_err ret = mIntelCCA->runDVS(frameId);
+    ia_err ret = getIntelCCA()->runDVS(frameId);
     LOG2("@%s, ret:%d", __func__, ret);
 
     return ret;
 }
 
-ia_err IntelCca::runAIC(uint64_t frameId, const cca::cca_pal_input_params& params,
+ia_err IntelCca::runAIC(uint64_t frameId, const cca::cca_pal_input_params* params,
                         ia_binary_data* pal) {
     LOG2("@%s", __func__);
+    CheckError(!params, ia_err_argument, "@%s, params is nullptr", __func__);
     CheckError(!pal, ia_err_argument, "@%s, pal is nullptr", __func__);
 
-    ia_err ret = mIntelCCA->runAIC(frameId, params, pal);
-    LOG2("@%s, ret:%d", __func__, ret);
+    ia_err ret = getIntelCCA()->runAIC(frameId, *params, pal);
+
+    // if PAL doesn't run, set output size to 0
+    if (ret == ia_err_not_run) pal->size = 0;
+
+    LOG2("@%s, ret:%d, pal result size: %d", __func__, ret, pal->size);
 
     return ret;
 }
@@ -155,7 +172,7 @@ ia_err IntelCca::getCMC(cca::cca_cmc* cmc) {
     LOG2("@%s", __func__);
     CheckError(!cmc, ia_err_argument, "@%s, cmc is nullptr", __func__);
 
-    ia_err ret = mIntelCCA->getCMC(*cmc);
+    ia_err ret = getIntelCCA()->getCMC(*cmc);
     LOG2("@%s, ret:%d", __func__, ret);
 
     return ret;
@@ -165,7 +182,7 @@ ia_err IntelCca::getMKN(ia_mkn_trg type, cca::cca_mkn* mkn) {
     LOG2("@%s", __func__);
     CheckError(!mkn, ia_err_argument, "@%s, mkn is nullptr", __func__);
 
-    ia_err ret = mIntelCCA->getMKN(type, *mkn);
+    ia_err ret = getIntelCCA()->getMKN(type, *mkn);
     LOG2("@%s, ret:%d", __func__, ret);
 
     return ret;
@@ -175,7 +192,7 @@ ia_err IntelCca::getAiqd(cca::cca_aiqd* aiqd) {
     LOG2("@%s", __func__);
     CheckError(!aiqd, ia_err_argument, "@%s, aiqd is nullptr", __func__);
 
-    ia_err ret = mIntelCCA->getAiqd(*aiqd);
+    ia_err ret = getIntelCCA()->getAiqd(*aiqd);
     LOG2("@%s, ret:%d", __func__, ret);
 
     return ret;
@@ -184,7 +201,7 @@ ia_err IntelCca::getAiqd(cca::cca_aiqd* aiqd) {
 ia_err IntelCca::updateTuning(uint8_t lardTags, const ia_lard_input_params& lardParams) {
     LOG2("@%s", __func__);
 
-    ia_err ret = mIntelCCA->updateTuning(lardTags, lardParams);
+    ia_err ret = getIntelCCA()->updateTuning(lardTags, lardParams);
     LOG2("@%s, ret:%d", __func__, ret);
 
     return ret;
@@ -193,29 +210,30 @@ ia_err IntelCca::updateTuning(uint8_t lardTags, const ia_lard_input_params& lard
 void IntelCca::deinit() {
     LOG2("@%s", __func__);
 
-    mIntelCCA->deinit();
+    getIntelCCA()->deinit();
+    releaseIntelCCA();
 }
 
 void IntelCca::getVersion(std::string* version) {
     LOG2("@%s", __func__);
     CheckError(!version, VOID_VALUE, "@%s, version is nullptr", __func__);
 
-    *version = std::string(mIntelCCA->getVersion());
+    *version = std::string(getIntelCCA()->getVersion());
 }
 
 ia_err IntelCca::decodeStats(uint64_t statsPointer, uint32_t statsSize,
                              ia_isp_bxt_statistics_query_results_t* results) {
-    LOG2("@%s, statsPointer: 0x%x, statsSize:%d", __func__, statsPointer, statsSize);
+    LOG2("@%s, statsPointer: 0x%lu, statsSize:%d", __func__, statsPointer, statsSize);
     CheckError(!results, ia_err_argument, "@%s, results is nullptr", __func__);
 
-    ia_err ret = mIntelCCA->decodeStats(statsPointer, statsSize, results);
+    ia_err ret = getIntelCCA()->decodeStats(statsPointer, statsSize, results);
     LOG2("@%s, ret:%d", __func__, ret);
 
     return ret;
 }
 
 uint32_t IntelCca::getPalDataSize(const cca::cca_program_group& programGroup) {
-    uint32_t size = mIntelCCA->getPalSize(programGroup);
+    uint32_t size = getIntelCCA()->getPalSize(programGroup);
     LOG2("@%s, pal data size: %zu", __func__, size);
 
     return size;

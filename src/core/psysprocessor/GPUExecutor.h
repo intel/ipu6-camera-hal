@@ -36,14 +36,14 @@ class PSysDAG;
 class GPUExecutor : public PipeLiteExecutor {
  public:
     GPUExecutor(int cameraId, const ExecutorPolicy& policy, std::vector<std::string> exclusivePGs,
-                PSysDAG* psysDag, std::shared_ptr<IGraphConfig> gc);
+                PSysDAG* psysDag, std::shared_ptr<IGraphConfig> gc, bool useTnrOutBuffer);
     virtual ~GPUExecutor();
     virtual int start();
     virtual int initPipe();
     virtual void stop();
 
     // fetch TNR reference buffer for user output, return true if found successfully
-    virtual bool fetchTnrRefBuffer(int64_t seq, std::shared_ptr<CameraBuffer> buf);
+    virtual bool fetchTnrOutBuffer(int64_t seq, std::shared_ptr<CameraBuffer> buf);
 
  private:
     int createPGs();
@@ -51,7 +51,7 @@ class GPUExecutor : public PipeLiteExecutor {
     void releaseBuffers();
     int processNewFrame();
     int updateTnrISPConfig(Tnr7Param* pbuffer, uint32_t sequence);
-    int allocTnrRefBufs(uint32_t bufSize);
+    int allocTnrOutBufs(uint32_t bufSize);
     int dumpTnrParameters(uint32_t sequence);
     int runTnrFrame(const std::shared_ptr<CameraBuffer>& inBuf,
                     std::shared_ptr<CameraBuffer> outbuf);
@@ -60,13 +60,14 @@ class GPUExecutor : public PipeLiteExecutor {
     Tnr7Param* mTnr7usParam;
     std::unique_ptr<IntelTNR7US> mIntelTNR;
     uint32_t mLastSequence;
+    bool mUseInternalTnrBuffer;
     /* the lock is used for protecting GPU resource, every thread running GPU calculation
      * should require this lock. */
     static std::mutex mGPULock;
-    int mRefBufferSize;
-    std::mutex mTnrRefBufMapLock;  // used to guard mTnrRefBufMap
+    int mOutBufferSize;
+    std::mutex mTnrOutBufMapLock;  // used to guard mTnrOutBufMap
     // first: sequence of source buffer, second: the reference buffer address
-    std::map<int64_t, void*> mTnrRefBufMap;
+    std::map<int64_t, void*> mTnrOutBufMap;
 
     DISALLOW_COPY_AND_ASSIGN(GPUExecutor);
 };

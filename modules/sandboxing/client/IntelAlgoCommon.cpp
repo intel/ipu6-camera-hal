@@ -56,18 +56,18 @@ bool IntelAlgoCommon::allocShmMem(const std::string& name, int size, ShmMemInfo*
     return true;
 }
 
-int32_t IntelAlgoCommon::registerGbmBuffer(int bufferFd) {
+int32_t IntelAlgoCommon::registerGbmBuffer(int bufferFd, ShmMemUsage usage) {
     LOGIPC("@%s, bufferFd:%d", __func__, bufferFd);
     CheckError(mClient == nullptr, -1, "@%s, mClient is nullptr", __func__);
 
-    return mClient->registerGbmBuffer(bufferFd);
+    return mClient->registerGbmBuffer(bufferFd, usage);
 }
 
-void IntelAlgoCommon::deregisterGbmBuffer(int32_t bufferHandle) {
+void IntelAlgoCommon::deregisterGbmBuffer(int32_t bufferHandle, ShmMemUsage usage) {
     LOGIPC("@%s, bufferHandle:%d", __func__, bufferHandle);
     CheckError(mClient == nullptr, VOID_VALUE, "@%s, mClient is nullptr", __func__);
 
-    mClient->deregisterGbmBuffer(bufferHandle);
+    mClient->deregisterGbmBuffer(bufferHandle, usage);
 }
 
 bool IntelAlgoCommon::requestSync(IPC_CMD cmd, int32_t handle) {

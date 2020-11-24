@@ -206,7 +206,6 @@ private:
     float mLscGridRGGB[DEFAULT_LSC_GRID_SIZE * 4];
     size_t mLscGridRGGBLen;
     float mLastEvShift;
-
 };
 
 } /* namespace icamera */

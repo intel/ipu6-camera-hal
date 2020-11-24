@@ -48,7 +48,7 @@ public:
     virtual int initPipe();
     void notifyStop();
 
-    virtual bool fetchTnrRefBuffer(int64_t seq, std::shared_ptr<CameraBuffer> buf) { return false; }
+    virtual bool fetchTnrOutBuffer(int64_t seq, std::shared_ptr<CameraBuffer> buf) { return false; }
     int releaseStatsBuffer(const std::shared_ptr<CameraBuffer> &statsBuf);
 
     void setStreamId(int streamId) { mStreamId = streamId; }

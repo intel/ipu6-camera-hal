@@ -78,8 +78,8 @@ libgsticamerasrc_la_CPPFLAGS = \
     -I$(top_srcdir)/src/interfaces \
     -DDEFAULT_PROP_DEVICE_ID=$(DEFAULT_PROP_DEVICE_ID)
 
-if CHROME_SLIM_INTERFACE_TEST
-libgsticamerasrc_la_CPPFLAGS += -DCHROME_SLIM_INTERFACE
+if USE_CHROME_SLIM_CAMHAL
+libgsticamerasrc_la_CPPFLAGS += -DCHROME_SLIM_CAMHAL
 endif
 
 # for hardening-check

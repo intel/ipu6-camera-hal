@@ -177,7 +177,7 @@ class IntelPGParam {
     };
 
     struct IpuPgRequirements {
-        IpuPgRequirements() {}
+        IpuPgRequirements() { CLEAR(terminals); }
         uint32_t terminalCount = 0;
         IpuPgTerminaRequirements terminals[IPU_MAX_TERMINAL_COUNT];
     };

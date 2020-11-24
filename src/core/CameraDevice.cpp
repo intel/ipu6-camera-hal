@@ -484,12 +484,6 @@ bool CameraDevice::isProcessorNeeded(const stream_config_t *streamList,
     int ret = mParameter.getCropRegion(cropRegion);
     if ((ret == OK) && (cropRegion.flag == 1)) return true;
 
-    camera_fisheye_dewarping_mode_t dewarping_mode = FISHEYE_DEWARPING_OFF;
-    mParameter.getFisheyeDewarpingMode(dewarping_mode);
-    if (dewarping_mode > FISHEYE_DEWARPING_OFF) {
-        return true;
-    }
-
     if (producerConfig.field != V4L2_FIELD_ANY) {
         camera_deinterlace_mode_t mode = DEINTERLACE_OFF;
         mParameter.getDeinterlaceMode(mode);

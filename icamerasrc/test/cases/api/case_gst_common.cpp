@@ -352,7 +352,7 @@ static GstPadProbeReturn callback_check_property(GstPad *padsrc, GstPadProbeInfo
   return GST_PAD_PROBE_PASS;
 }
 
-#ifndef CHROME_SLIM_INTERFACE
+#ifndef CHROME_SLIM_CAMHAL
 void print_tnr5_21_t(struct camera_control_isp_tnr5_21_t *data)
 {
 
@@ -436,7 +436,7 @@ void print_bnlm_t(struct camera_control_isp_bnlm_t *data)
   g_print("data->wmaxminth       %d\n",data->wmaxminth     );
   g_print("data->rad_enable      %d\n",data->rad_enable    );
 }
-#endif //CHROME_SLIM_INTERFACE
+#endif //CHROME_SLIM_CAMHAL
 
 int get_random_value(int min,int max)
 {
@@ -446,7 +446,7 @@ int get_random_value(int min,int max)
   return (rand()%(max+1 - min)) + min;
 }
 
-#ifndef CHROME_SLIM_INTERFACE
+#ifndef CHROME_SLIM_CAMHAL
 void print_sc_iefd_t(struct camera_control_isp_sc_iefd_t *data)
 {
   for(int j = 0; j < 2; j++) {
@@ -581,7 +581,7 @@ void print_xnr_dss_t(struct camera_control_isp_xnr_dss_t *data)
     g_print("blnd_hf_power_y        %d\n",data->blnd_hf_power_y     );
     g_print("blnd_hf_power_c        %d\n",data->blnd_hf_power_c     );
 }
-#endif //CHROME_SLIM_INTERFACE
+#endif //CHROME_SLIM_CAMHAL
 
 static GstPadProbeReturn callback_check_dewarping_interface_dewarping_mode_switch(GstPad *padsrc, GstPadProbeInfo *info, gpointer user_data)
 {
@@ -601,7 +601,7 @@ static GstPadProbeReturn callback_check_dewarping_interface_dewarping_mode_switc
   return GST_PAD_PROBE_PASS;
 }
 
-#ifndef CHROME_SLIM_INTERFACE
+#ifndef CHROME_SLIM_CAMHAL
 // Call isp control interface
 static GstPadProbeReturn callback_check_isp_interface(GstPad *padsrc, GstPadProbeInfo *info, gpointer user_data)
 {
@@ -723,7 +723,7 @@ static GstPadProbeReturn callback_check_isp_interface(GstPad *padsrc, GstPadProb
 
   return GST_PAD_PROBE_PASS;
 }
-#endif //CHROME_SLIM_INTERFACE
+#endif //CHROME_SLIM_CAMHAL
 
 //call 3a interface
 static GstPadProbeReturn callback_check_3a_interface(GstPad *padsrc, GstPadProbeInfo *info, gpointer user_data)
@@ -874,7 +874,7 @@ int do_pipline(CheckField *check)
         data.test_dewarping_mode_switch = true;
     }
 
-#ifndef CHROME_SLIM_INTERFACE
+#ifndef CHROME_SLIM_CAMHAL
     if (check && check->check_wfov) {
         data.test_wfov = true;
         data.set_projection = check->set_projection;
@@ -884,7 +884,7 @@ int do_pipline(CheckField *check)
         data.projection = check->projection;
         data.fine_adjustments = check->fine_adjustments;
     }
-#endif //CHROME_SLIM_INTERFACE
+#endif //CHROME_SLIM_CAMHAL
 
     //create pipeline, elements, and set the property
     pipeline = gst_pipeline_new ("pipeline");
@@ -916,12 +916,12 @@ int do_pipline(CheckField *check)
                 data.camdewarping_iface = GST_CAMERASRC_DEWARPING_GET_INTERFACE(data.camdewarping);
             }
             
-#ifndef CHROME_SLIM_INTERFACE
+#ifndef CHROME_SLIM_CAMHAL
             if (check->check_wfov) {
                 data.camwfov = GST_CAMERASRC_WFOV(g_elements[i]);
                 data.camwfov_iface = GST_CAMERASRC_WFOV_GET_INTERFACE(data.camwfov);
             }
-#endif //CHROME_SLIM_INTERFACE
+#endif //CHROME_SLIM_CAMHAL
         }
 
         if (g_plugin[i].pro_attrs != NULL)
@@ -976,18 +976,18 @@ int do_pipline(CheckField *check)
                    callback_check_3a_interface, &data, NULL);
         }
 
-#ifndef CHROME_SLIM_INTERFACE
+#ifndef CHROME_SLIM_CAMHAL
         //add a probe to update and call isp interface
         if(data.test_isp_control) {
           gst_pad_add_probe(pad, GST_PAD_PROBE_TYPE_BUFFER,
                    callback_check_isp_interface, &data, NULL);
         }
-#endif  //CHROME_SLIM_INTERFACE
+#endif  //CHROME_SLIM_CAMHAL
         if(data.test_dewarping_mode_switch) {
           gst_pad_add_probe(pad, GST_PAD_PROBE_TYPE_BUFFER,
                    callback_check_dewarping_interface_dewarping_mode_switch, &data, NULL);
         }
-#ifndef CHROME_SLIM_INTERFACE
+#ifndef CHROME_SLIM_CAMHAL
         if(data.test_wfov) {
 	        gboolean ret;
           ret = data.camwfov_iface->get_wfov_mode(data.camwfov, data.wfov_mode);
@@ -1029,7 +1029,7 @@ int do_pipline(CheckField *check)
           }
       }
       gst_object_unref(pad);
-#endif  //CHROME_SLIM_INTERFACE
+#endif  //CHROME_SLIM_CAMHAL
     }
 
     bus = gst_pipeline_get_bus(GST_PIPELINE(pipeline));

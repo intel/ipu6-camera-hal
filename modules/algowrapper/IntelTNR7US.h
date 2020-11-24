@@ -24,6 +24,7 @@ extern "C" {
 #include "ia_pal_types_isp_parameters_autogen.h"
 }
 
+#include "CameraBuffer.h"
 #include "PlatformData.h"
 #include "TNRCommon.h"
 
@@ -64,15 +65,15 @@ class IntelTNR7US {
      * \param inBufAddr: input image buffer
      * \param outBufAddr: tnr output
      * \param tnrParam: tnr parameters from ISP
+     * \param fd: user output buffer file handle
      */
     int runTnrFrame(const void* inBufAddr, void* outBufAddr, uint32_t inBufSize,
-                    uint32_t outBufSize, Tnr7Param* tnrParam);
-
+                    uint32_t outBufSize, Tnr7Param* tnrParam, int fd = -1);
     Tnr7Param* allocTnr7ParamBuf();
     void* allocCamBuf(uint32_t bufSize, int id);
     void freeAllBufs();
     int prepareSurface(void* bufAddr, int size);
-    int asyncParamUpdate(int gain);
+    int asyncParamUpdate(int gain, bool forceUpdate);
 
  private:
     /* tnr api use CmSurface2DUP object as data buffer, call this api to create
@@ -82,7 +83,7 @@ class IntelTNR7US {
     // get the CmSurface object of the bufAddr in mCMSurfaceMap
     CmSurface2DUP* getBufferCMSurface(void* bufAddr);
     /* call tnr7us API to update params */
-    void handleParamUpdate(int gain);
+    void handleParamUpdate(int gain, bool forceUpdate);
 
  private:
     int mCameraId;

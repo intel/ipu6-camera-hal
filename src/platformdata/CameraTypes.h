@@ -178,12 +178,14 @@ struct CommonConfig {
     std::vector<std::string> availableSensors;
     bool isGpuTnrEnabled;
     bool isStillTnrPrior;
+    bool isTnrParamForceUpdate;
     int cameraNumber;
 
     CommonConfig() {
         xmlVersion = 1.0;
         isGpuTnrEnabled = false;
         isStillTnrPrior = true;
+        isTnrParamForceUpdate = false;
         cameraNumber = -1;
     }
 };

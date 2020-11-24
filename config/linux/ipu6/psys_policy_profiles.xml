@@ -33,4 +33,13 @@ limitations under the License.
 
         <pipe_executor name="ipu6_full_still"  pgs="isa_lb_stills,post_gdc_stills"/>
     </graph>
+
+    <graph id="100204">
+        <!-- op_modes: 0-disabled, 2-coupled. see ia_cipf_css.h in libiacss -->
+        <pipe_executor name="ipu6_full_video"  pgs="isa_lb_video_bayer,post_gdc_ir_video"/>
+        <pipe_executor name="ipu6_full_video1"  pgs="isa_lb_rgbir_video_bayer"/>
+        <pipe_executor name="ipu6_full_video2"  pgs="post_gdc_video_bayer"/>
+
+        <pipe_executor name="ipu6_full_still"  pgs="isa_lb_ir_stills,post_gdc_stills"/>
+    </graph>
 </PsysPolicyConfig>

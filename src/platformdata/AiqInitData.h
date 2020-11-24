@@ -20,6 +20,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 #include "iutils/Errors.h"
 #include "iutils/Utils.h"
@@ -137,15 +138,39 @@ private:
 };//end CpfConf
 
 /**
+ * Camera Module Information
+ *
+ * Camera Module Information is gotten from the EEPROM, which needs to be programmed with
+ * an identification block located in the last 32 bytes of the EEPROM.
+ */
+struct CameraModuleInfo
+{
+    char mOsInfo[4];
+    uint16_t mCRC;
+    uint8_t mVersion;
+    uint8_t mLengthOfFields;
+    uint16_t mDataFormat;
+    uint16_t mModuleProduct;
+    char mModuleVendor[2];
+    char mSensorVendor[2];
+    uint16_t mSensorModel;
+    uint8_t mI2cAddress;
+    uint8_t mReserved[13];
+};
+#define CAMERA_MODULE_INFO_OFFSET 32
+#define CAMERA_MODULE_INFO_SIZE 32
+
+/**
   * CPF file operation class
 */
 class CpfStore
 {
 public:
-    CpfStore(const std::string& sensorName,
-             const std::string& camCfgDir,
+    CpfStore(const std::string& sensorName, const std::string& camCfgDir,
              const std::vector<TuningConfig>& tuningCfg,
-             const std::vector<LardTagConfig>& lardTagCfg);
+             const std::vector<LardTagConfig>& lardTagCfg,
+             const std::string& nvmPath,
+             std::unordered_map<std::string, std::string> camModuleToAiqbMap);
     virtual ~CpfStore();
 
     /**
@@ -168,6 +193,7 @@ public:
 private:
     DISALLOW_COPY_AND_ASSIGN(CpfStore);
 
+    int getCameraModuleFromEEPROM(const std::string& nvmPath, std::string* cameraModule);
     int findConfigFile(const std::string& camCfgDir, std::string* cpfPathName);
     int loadConf(const std::string& camCfgDir, const std::string& aiqbName);
 
@@ -187,7 +213,8 @@ class AiqInitData {
                 const std::vector<TuningConfig>& tuningCfg,
                 const std::vector<LardTagConfig>& lardTagCfg,
                 const std::string& nvmDir,
-                int maxNvmSize);
+                int maxNvmSize,
+                const std::unordered_map<std::string, std::string>& camModuleToAiqbMap);
     ~AiqInitData();
 
     // cpf and cmc
@@ -217,11 +244,14 @@ class AiqInitData {
  private:
     std::string mSensorName;
     std::string mCamCfgDir;
-    std::string mNvmDir;
+    std::string mNvmPath;
     int mMaxNvmSize;
     std::vector<TuningConfig> mTuningCfg;
     std::vector<LardTagConfig> mLardTagCfg;
     CpfStore* mCpfStore;
+
+    /* key: camera module info, value: aiqb name */
+    std::unordered_map<std::string, std::string> mCameraModuleToAiqbMap;
 
     // NVM data
     std::unique_ptr <char[]> mNvmDataBuf;

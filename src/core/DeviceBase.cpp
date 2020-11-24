@@ -424,6 +424,7 @@ bool MainDevice::needQueueBack(shared_ptr<CameraBuffer> buffer)
         // On STR2MMIO error, enqueue this buffer back to V4L2 before notifying the
         // listener/consumer and return
         needSkipFrame = true;
+        LOGW("%s: buffer error, sequence %ld", buffer->getSequence());
     }
     if (PlatformData::isEnableFrameSyncCheck(mCameraId)) {
         struct camera_buf_info sharedCamBufInfo;

@@ -17,6 +17,7 @@
 #define LOG_TAG "AiqInitData"
 
 #include <sys/stat.h>
+#include <unordered_map>
 
 #include "iutils/CameraLog.h"
 #include "AiqInitData.h"
@@ -258,10 +259,11 @@ bool CpfConf::isTagValid(unsigned int tag, unsigned int count, const unsigned in
     return false;
 }
 
-CpfStore::CpfStore(const std::string& sensorName,
-                   const std::string& camCfgDir,
+CpfStore::CpfStore(const std::string& sensorName, const std::string& camCfgDir,
                    const std::vector<TuningConfig>& tuningCfg,
-                   const std::vector<LardTagConfig>& lardTagCfg)
+                   const std::vector<LardTagConfig>& lardTagCfg,
+                   const std::string& nvmPath,
+                   std::unordered_map<std::string, std::string> camModuleToAiqbMap)
 {
     LOG1("@%s:Sensor Name = %s", __func__, sensorName.c_str());
 
@@ -278,10 +280,22 @@ CpfStore::CpfStore(const std::string& sensorName,
             continue;
         }
 
-        if (mCpfData.find(cfg.aiqbName) == mCpfData.end()) {
+        std::string aiqbName(cfg.aiqbName);
+        if (!camModuleToAiqbMap.empty()) {
+            std::string cameraModule;
+            int ret = getCameraModuleFromEEPROM(nvmPath, &cameraModule);
+            if (ret == OK) {
+                if (camModuleToAiqbMap.find(cameraModule) != camModuleToAiqbMap.end()) {
+                    aiqbName.assign(camModuleToAiqbMap[cameraModule]);
+                    LOG1("@%s, aiqb name %s", __func__, aiqbName.c_str());
+                }
+            }
+        }
+
+        if (mCpfData.find(aiqbName) == mCpfData.end()) {
             // Obtain the configurations
-            if (loadConf(camCfgDir, cfg.aiqbName) != OK) {
-                LOGE("load file %s failed, sensor %s", cfg.aiqbName.c_str(), sensorName.c_str());
+            if (loadConf(camCfgDir, aiqbName) != OK) {
+                LOGE("load file %s failed, sensor %s", aiqbName.c_str(), sensorName.c_str());
                 continue;
             }
         }
@@ -296,7 +310,7 @@ CpfStore::CpfStore(const std::string& sensorName,
 
         CpfConf* cpfConf = new CpfConf();
 
-        cpfConf->init(mCpfData[cfg.aiqbName], oneLardTagCfg);
+        cpfConf->init(mCpfData[aiqbName], oneLardTagCfg);
         mCpfConfig[cfg.tuningMode] = cpfConf;
     }
 }
@@ -316,6 +330,45 @@ CpfStore::~CpfStore()
         }
     }
     mCpfData.clear();
+}
+
+int CpfStore::getCameraModuleFromEEPROM(const std::string& nvmPath, std::string* cameraModule)
+{
+    LOG1("@%s, nvmPath %s", __func__, nvmPath.c_str());
+
+    CheckError(nvmPath.empty(), NAME_NOT_FOUND, "nvmPath is empty");
+
+    const int moduleInfoSize = CAMERA_MODULE_INFO_SIZE;
+    const int moduleInfoOffset = CAMERA_MODULE_INFO_OFFSET;
+    struct CameraModuleInfo cameraModuleInfo;
+    CLEAR(cameraModuleInfo);
+    FILE* eepromFile = fopen(nvmPath.c_str(), "rb");
+    CheckError(!eepromFile, UNKNOWN_ERROR, "Failed to open EEPROM file in %s", nvmPath.c_str());
+
+    // file size should be larger than CAMERA_MODULE_INFO_OFFSET
+    fseek(eepromFile, 0, SEEK_END);
+    int nvmDataSize = static_cast<int>(ftell(eepromFile));
+    if (nvmDataSize < moduleInfoOffset) {
+        LOGE("EEPROM data is too small");
+        fclose(eepromFile);
+        return NOT_ENOUGH_DATA;
+    }
+
+    fseek(eepromFile, -1 * moduleInfoOffset, SEEK_END);
+    int ret = fread(&cameraModuleInfo, moduleInfoSize, 1, eepromFile);
+    fclose(eepromFile);
+    CheckError(!ret, UNKNOWN_ERROR, "Failed to read module info %d", ret);
+
+    char tmpName[CAMERA_MODULE_INFO_SIZE];
+    snprintf(tmpName, CAMERA_MODULE_INFO_SIZE, "%c%c%x-%c%c-%d", cameraModuleInfo.mSensorVendor[0],
+             cameraModuleInfo.mSensorVendor[1], cameraModuleInfo.mSensorModel,
+             cameraModuleInfo.mModuleVendor[0], cameraModuleInfo.mModuleVendor[1],
+             cameraModuleInfo.mModuleProduct);
+
+    cameraModule->assign(tmpName);
+    LOG1("%s, aiqb name %s", __func__, cameraModule->c_str());
+
+    return OK;
 }
 
 /**
@@ -453,19 +506,31 @@ AiqInitData::AiqInitData(const std::string& sensorName,
                          const std::vector<TuningConfig>& tuningCfg,
                          const std::vector<LardTagConfig>& lardTagCfg,
                          const std::string& nvmDir,
-                         int maxNvmSize) :
+                         int maxNvmSize,
+                         const std::unordered_map<std::string, std::string>& camModuleToAiqbMap) :
     mSensorName(sensorName),
     mCamCfgDir(camCfgDir),
-    mNvmDir(nvmDir),
     mMaxNvmSize(maxNvmSize),
     mTuningCfg(tuningCfg),
     mLardTagCfg(lardTagCfg),
     mCpfStore(nullptr),
+    mCameraModuleToAiqbMap(camModuleToAiqbMap),
     mNvmDataBuf(nullptr),
     mMakerNote(nullptr)
 {
     CLEAR(mNvmData);
     mMakerNote = std::unique_ptr<MakerNote>(new MakerNote);
+
+    if (nvmDir.length() > 0) {
+        mNvmPath.append(NVM_DATA_PATH);
+
+        mNvmPath.append(nvmDir);
+        if (mNvmPath.back() != '/')
+            mNvmPath.append("/");
+
+        mNvmPath.append("eeprom");
+        LOG2("NVM data is located in %s", mNvmPath.c_str());
+    }
 }
 
 AiqInitData::~AiqInitData()
@@ -484,7 +549,8 @@ int AiqInitData::getCpfAndCmc(ia_binary_data* ispData,
                               ia_cmc_t** cmcData)
 {
     if (!mCpfStore) {
-        mCpfStore = new CpfStore(mSensorName, mCamCfgDir, mTuningCfg, mLardTagCfg);
+        mCpfStore = new CpfStore(mSensorName, mCamCfgDir, mTuningCfg, mLardTagCfg,
+                                 mNvmPath, mCameraModuleToAiqbMap);
     }
     return mCpfStore->getCpfAndCmc(ispData, aiqData, otherData, cmcHandle, mode, cmcData);
 }
@@ -493,24 +559,15 @@ status_t AiqInitData::loadNvm()
 {
     LOG1("@%s", __func__);
 
-    if (mNvmDir.length() == 0) {
+    if (mNvmPath.length() == 0) {
         LOG1("NVM dirctory from config is null");
         return UNKNOWN_ERROR;
     }
 
-    string nvmDataPath(NVM_DATA_PATH);
-    if (nvmDataPath.back() != '/')
-        nvmDataPath.append("/");
+    LOG2("NVM data for %s is located in %s", mSensorName.c_str(), mNvmPath.c_str());
 
-    nvmDataPath.append(mNvmDir);
-    if (nvmDataPath.back() != '/')
-        nvmDataPath.append("/");
-
-    nvmDataPath.append("eeprom");
-    LOG2("NVM data for %s is located in %s", mSensorName.c_str(), nvmDataPath.c_str());
-
-    FILE* nvmFile = fopen(nvmDataPath.c_str(), "rb");
-    CheckError(!nvmFile, UNKNOWN_ERROR, "Failed to open NVM file: %s", nvmDataPath.c_str());
+    FILE* nvmFile = fopen(mNvmPath.c_str(), "rb");
+    CheckError(!nvmFile, UNKNOWN_ERROR, "Failed to open NVM file: %s", mNvmPath.c_str());
 
     fseek(nvmFile, 0, SEEK_END);
     int nvmDataSize = std::min(static_cast<int>(ftell(nvmFile)), mMaxNvmSize);

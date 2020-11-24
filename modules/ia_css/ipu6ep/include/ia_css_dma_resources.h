@@ -1,0 +1,135 @@
+/*
+ * INTEL CONFIDENTIAL
+ *
+ * Copyright (C) 2017 - 2018 Intel Corporation.
+ * All Rights Reserved.
+ *
+ * The source code contained or described herein and all documents
+ * related to the source code ("Material") are owned by Intel Corporation
+ * or licensors. Title to the Material remains with Intel
+ * Corporation or its licensors. The Material contains trade
+ * secrets and proprietary and confidential information of Intel or its
+ * licensors. The Material is protected by worldwide copyright
+ * and trade secret laws and treaty provisions. No part of the Material may
+ * be used, copied, reproduced, modified, published, uploaded, posted,
+ * transmitted, distributed, or disclosed in any way without Intel's prior
+ * express written permission.
+ *
+ * No License under any patent, copyright, trade secret or other intellectual
+ * property right is granted to or conferred upon you by disclosure or
+ * delivery of the Materials, either expressly, by implication, inducement,
+ * estoppel or otherwise. Any license under such intellectual property rights
+ * must be express and approved by Intel in writing.
+ */
+
+#ifndef __IA_CSS_DMA_RESOURCES_H
+#define __IA_CSS_DMA_RESOURCES_H
+
+#include "ipu_device_dma_type_properties.h"
+#include "ipu_device_dma_properties_defs.h"
+#include "vied_nci_psys_resource_model.h"
+#include "assert_support.h"
+#include "storage_class.h"
+
+/* Reservation of request banks (IPU6 Transfer HAS table 3.4-3) */
+/* DMA_LB - 6 requestor banks available */
+enum {
+	DMA_LB_REQUESTOR_BANK_SPC0 = NCI_DMA_REQUESTOR_ID_0,
+	DMA_LB_REQUESTOR_BANK_SPP0 = NCI_DMA_REQUESTOR_ID_1,
+	DMA_LB_REQUESTOR_BANK_BB0 = NCI_DMA_REQUESTOR_ID_2, /* TODO - define if needed */
+	DMA_LB_REQUESTOR_BANK_BB1 = NCI_DMA_REQUESTOR_ID_3, /* TODO - define if needed */
+	DMA_LB_REQUESTOR_BANK_DFM_ISA = NCI_DMA_REQUESTOR_ID_4, /* Used in DFM kernels */
+	DMA_LB_REQUESTOR_BANK_DFM_PSA = NCI_DMA_REQUESTOR_ID_5, /* Used in DFM kernels */
+	DMA_LB_REQUESTOR_BANK_NUM
+};
+
+STORAGE_CLASS_INLINE void __dummy_lb_(void)
+{
+	COMPILATION_ERROR_IF(DMA_LB_REQUESTOR_BANK_NUM > IPU_DEVICE_DMA_EXT0_REQUEST_BANKS);
+}
+
+/* DMA_HBfrx - 6 requestor banks available */
+enum {
+	DMA_EXT1_REQUESTOR_BANK_SPC0 = NCI_DMA_REQUESTOR_ID_0, /* Assigned by tproxy*/
+	DMA_EXT1_REQUESTOR_BANK_SPP0 = NCI_DMA_REQUESTOR_ID_1, /* Assigned by tproxy*/
+	DMA_EXT1_REQUESTOR_BANK_GDC_MBR = NCI_DMA_REQUESTOR_ID_2,
+	DMA_EXT1_REQUESTOR_BANK_TNR_MBR = NCI_DMA_REQUESTOR_ID_3,
+	DMA_EXT1_REQUESTOR_BANK_DFM_ISA = NCI_DMA_REQUESTOR_ID_4, /* Used in DFM kernels */
+	DMA_EXT1_REQUESTOR_BANK_DFM_PSA = NCI_DMA_REQUESTOR_ID_5, /* Used in DFM kernels */
+	DMA_EXT1_REQUESTOR_BANK_NUM
+};
+
+STORAGE_CLASS_INLINE void __dummy_ext1r_(void)
+{
+	COMPILATION_ERROR_IF(DMA_EXT1_REQUESTOR_BANK_NUM > IPU_DEVICE_DMA_EXT1R_REQUEST_BANKS);
+}
+
+/* DMA_HBtX - 8 requestor banks available */
+enum {
+	DMA_EXT1W_RESERVED_SPC = NCI_DMA_REQUESTOR_ID_0, /* Assigned by tproxy */
+	DMA_EXT1W_RESERVED_SPP1 = NCI_DMA_REQUESTOR_ID_1, /* Assigned by tproxy */
+	DMA_EXT1W_REQUESTOR_BANK_TNR = NCI_DMA_REQUESTOR_ID_2,
+	DMA_EXT1W_REQUESTOR_BANK_OFA_MP = NCI_DMA_REQUESTOR_ID_3,
+	DMA_EXT1W_REQUESTOR_BANK_OFA_VP = NCI_DMA_REQUESTOR_ID_4,
+	DMA_EXT1W_REQUESTOR_BANK_OFA_PP = NCI_DMA_REQUESTOR_ID_5,
+	DMA_EXT1W_REQUESTOR_BANK_DFM_ISA = NCI_DMA_REQUESTOR_ID_6,
+	DMA_EXT1W_REQUESTOR_BANK_DFM_PSA = NCI_DMA_REQUESTOR_ID_7,
+	DMA_EXT1W_REQUESTOR_BANK_NUM
+};
+
+STORAGE_CLASS_INLINE void __dummy_ext1w_(void)
+{
+	COMPILATION_ERROR_IF(DMA_EXT1W_REQUESTOR_BANK_NUM > IPU_DEVICE_DMA_EXT1W_REQUEST_BANKS);
+}
+
+/* DMA_i */
+enum {
+	DMA_INTERNAL_REQUESTOR_BANK_GDC_MBR = NCI_DMA_REQUESTOR_ID_0,
+	DMA_INTERNAL_REQUESTOR_BANK_TNR_MBR = NCI_DMA_REQUESTOR_ID_1,
+	DMA_INTERNAL_REQUESTOR_BANK_NUM
+};
+
+STORAGE_CLASS_INLINE void __dummy_internal_(void)
+{
+	COMPILATION_ERROR_IF(DMA_INTERNAL_REQUESTOR_BANK_NUM > IPU_DEVICE_DMA_INT_REQUEST_BANKS);
+}
+
+/* Reservation of DMA channels */
+/* DMA_Hbfrx */
+#define IA_CSS_DMA_RESOURCES_DMA_EXT1_CHN_READ_OFFSET_BB  	(0)
+#define IA_CSS_DMA_RESOURCES_DMA_EXT1_CHN_READ_SIZE_BB  	(13) /* GDC-MBR(8)+TNR-MBR(5)*/
+
+#define IA_CSS_DMA_RESOURCES_DMA_EXT1_CHN_READ_OFFSET_ISL 	(IA_CSS_DMA_RESOURCES_DMA_EXT1_CHN_READ_OFFSET_BB + IA_CSS_DMA_RESOURCES_DMA_EXT1_CHN_READ_SIZE_BB)
+#define IA_CSS_DMA_RESOURCES_DMA_EXT1_CHN_READ_SIZE_ISL 	(4) /* BAYER planar */
+
+#define IA_CSS_DMA_RESOURCES_DMA_EXT1_CHN_READ_OFFSET_PSA 	(IA_CSS_DMA_RESOURCES_DMA_EXT1_CHN_READ_OFFSET_ISL + IA_CSS_DMA_RESOURCES_DMA_EXT1_CHN_READ_SIZE_ISL)
+#define IA_CSS_DMA_RESOURCES_DMA_EXT1_CHN_READ_SIZE_PSA 	(4) /* BAYER planar */
+
+/* DMA_Hbtox */
+#define IA_CSS_DMA_RESOURCES_DMA_EXT1_CHN_WRITE_OFFSET_BB  	(0)
+#define IA_CSS_DMA_RESOURCES_DMA_EXT1_CHN_WRITE_SIZE_BB  	(21) /* MP(6)+DP(6)+PP(6)+TNRRefout(3) */
+
+#define IA_CSS_DMA_RESOURCES_DMA_EXT1_CHN_WRITE_OFFSET_ISL 	(IA_CSS_DMA_RESOURCES_DMA_EXT1_CHN_WRITE_OFFSET_BB + IA_CSS_DMA_RESOURCES_DMA_EXT1_CHN_WRITE_SIZE_BB)
+#define IA_CSS_DMA_RESOURCES_DMA_EXT1_CHN_WRITE_SIZE_ISL 	(13) /* STILL planar(4) + 2x Scaler planar (3) + 2x SIS(1) + IR(1) */
+
+#define IA_CSS_DMA_RESOURCES_DMA_EXT1_CHN_WRITE_OFFSET_PSA 	(IA_CSS_DMA_RESOURCES_DMA_EXT1_CHN_WRITE_OFFSET_ISL + IA_CSS_DMA_RESOURCES_DMA_EXT1_CHN_WRITE_SIZE_ISL)
+#define IA_CSS_DMA_RESOURCES_DMA_EXT1_CHN_WRITE_SIZE_PSA 	(3) /* BAYER planar */
+
+/* DMA LB */
+#define IA_CSS_DMA_RESOURCES_DMA_LB_CHN_OFFSET_BB		(0)
+#define IA_CSS_DMA_RESOURCES_DMA_LB_CHN_SIZE_BB			(2) /* GDC-MBR (2) */
+
+#define IA_CSS_DMA_RESOURCES_DMA_LB_CHN_OFFSET_ISL		(IA_CSS_DMA_RESOURCES_DMA_LB_CHN_OFFSET_BB + IA_CSS_DMA_RESOURCES_DMA_LB_CHN_SIZE_BB)
+#define IA_CSS_DMA_RESOURCES_DMA_LB_CHN_SIZE_ISL		(6) /* LSC(1) + AWB(2) + AF(2) + PAF(1) */
+
+#define IA_CSS_DMA_RESOURCES_DMA_LB_CHN_OFFSET_PSA		(IA_CSS_DMA_RESOURCES_DMA_LB_CHN_OFFSET_ISL + IA_CSS_DMA_RESOURCES_DMA_LB_CHN_SIZE_ISL)
+#define IA_CSS_DMA_RESOURCES_DMA_LB_CHN_SIZE_PSA		(10) /* GAMMASTAR(1) + DVS(9) */
+
+STORAGE_CLASS_INLINE void __dummy_dma_chan_(void)
+{
+	COMPILATION_ERROR_IF((IA_CSS_DMA_RESOURCES_DMA_EXT1_CHN_READ_SIZE_ISL + IA_CSS_DMA_RESOURCES_DMA_EXT1_CHN_READ_SIZE_PSA + IA_CSS_DMA_RESOURCES_DMA_EXT1_CHN_READ_SIZE_BB) >  VIED_NCI_DEV_CHN_DMA_EXT1_READ_MAX_SIZE);
+	COMPILATION_ERROR_IF((IA_CSS_DMA_RESOURCES_DMA_EXT1_CHN_WRITE_SIZE_ISL + IA_CSS_DMA_RESOURCES_DMA_EXT1_CHN_WRITE_SIZE_PSA + IA_CSS_DMA_RESOURCES_DMA_EXT1_CHN_WRITE_SIZE_BB) >  VIED_NCI_DEV_CHN_DMA_EXT1_WRITE_MAX_SIZE);
+	COMPILATION_ERROR_IF((IA_CSS_DMA_RESOURCES_DMA_LB_CHN_SIZE_ISL + IA_CSS_DMA_RESOURCES_DMA_LB_CHN_SIZE_PSA + IA_CSS_DMA_RESOURCES_DMA_LB_CHN_SIZE_BB) >  VIED_NCI_DEV_CHN_DMA_EXT0_MAX_SIZE);
+}
+
+#endif /* __IA_CSS_DMA_RESOURCES_H */

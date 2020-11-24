@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <set>
 #include <queue>
 
 #include "BufferQueue.h"
@@ -86,8 +87,11 @@ private:
                                bool *hasRawOutput, bool *hasRawInput);
     bool isBufferHoldForRawReprocess(long sequence);
     void saveRawBuffer(CameraBufferPortMap *srcBuffers);
+    void returnRawBuffer();
     void handleStillPipeForTnr(long sequence, CameraBufferPortMap *dstBuffers);
     void sendPsysFrameDoneEvent(const CameraBufferPortMap* dstBuffers);
+    void sendPsysBufReadyEvent(const CameraBufferPortMap* dstBuffers,
+                               int64_t sequence, uint64_t timestamp);
 
 private:
     int mCameraId;
@@ -102,7 +106,8 @@ private:
     static const int IA_PAL_CONTROL_BUFFER_SIZE = 10;
 
     Condition mFrameDoneSignal;
-    std::queue<long> mSequenceInflight; // Save the sequences which are being processed.
+    // Save the sequences which are being processed.
+    std::multiset<int64_t> mSequencesInflight;
 
     std::vector<ConfigMode> mConfigModes;
     PSysDAGConfigModeMap mPSysDAGs;

@@ -16,6 +16,7 @@
 
 #define LOG_TAG "PSysProcessor"
 
+#include <set>
 #include <utility>
 
 #include "iutils/Utils.h"
@@ -38,6 +39,11 @@
 #define SOF_EVENT_MAX_MARGIN (60000000)  // 60ms
 // GPU TNR needs to run extra 2 iterators to converge
 #define TNR_CONVERGE_COUNT 2
+
+#define EXTREME_NEGATIVE_STRENGTH (-60)
+#define EXTREME_POSITIVE_STRENGTH (20)
+
+#define DEFAULT_STRENGTH 0
 
 using std::shared_ptr;
 using std::unique_ptr;
@@ -121,7 +127,8 @@ int PSysProcessor::configure(const std::vector<ConfigMode>& configModes)
         unique_ptr<PSysDAG> pSysDAG = unique_ptr<PSysDAG>(new PSysDAG(mCameraId, this));
 
         pSysDAG->setFrameInfo(mInputFrameInfo, outputFrameInfo);
-        ret = pSysDAG->configure(tuningConfig.configMode, tuningConfig.tuningMode);
+        bool useTnrOutBuffer = mOpaqueRawPort != INVALID_PORT;
+        ret = pSysDAG->configure(tuningConfig.configMode, tuningConfig.tuningMode, useTnrOutBuffer);
         CheckError(ret != OK, ret, "@%s configure psys dag failed:%d", __func__, ret);
 
         mPSysDAGs[tuningConfig.configMode] = std::move(pSysDAG);
@@ -225,9 +232,8 @@ int PSysProcessor::setParameters(const Parameters& param)
         mIspSettings.manualSettings.manualSaturation = (char)enhancement.saturation;
         mIspSettings.eeSetting.strength = enhancement.sharpness;
     } else {
-        mIspSettings.eeSetting.strength = 0;
+        mIspSettings.eeSetting.strength = static_cast<char>(DEFAULT_STRENGTH);
     }
-    LOG2("%s: manual edge strength set: %d", __func__, mIspSettings.eeSetting.strength);
 
     camera_edge_mode_t manualEdgeMode;
     ret = param.getEdgeMode(manualEdgeMode);
@@ -235,23 +241,27 @@ int PSysProcessor::setParameters(const Parameters& param)
         LOG2("%s: manual edge mode set: %d", __func__, manualEdgeMode);
         switch (manualEdgeMode) {
             case EDGE_MODE_OFF:
-                mIspSettings.eeSetting.feature_level = ia_isp_feature_level_off;
+            case EDGE_MODE_ZERO_SHUTTER_LAGE:
+                mIspSettings.eeSetting.feature_level = ia_isp_feature_level_high;
+                mIspSettings.eeSetting.strength = static_cast<char>(EXTREME_NEGATIVE_STRENGTH);
                 break;
             case EDGE_MODE_FAST:
                 mIspSettings.eeSetting.feature_level = ia_isp_feature_level_high;
                 break;
             case EDGE_MODE_HIGH_QUALITY:
                 mIspSettings.eeSetting.feature_level = ia_isp_feature_level_high;
-                break;
-            case EDGE_MODE_ZERO_SHUTTER_LAGE:
-                mIspSettings.eeSetting.feature_level = ia_isp_feature_level_off;
+                mIspSettings.eeSetting.strength = static_cast<char>(EXTREME_POSITIVE_STRENGTH);
                 break;
             default:
                 mIspSettings.eeSetting.feature_level = ia_isp_feature_level_high;
         }
     } else {
+        LOG2("%s: manual edge mode not set, default enabled", __func__);
         mIspSettings.eeSetting.feature_level = ia_isp_feature_level_high;
     }
+    LOG2("%s: ISP EE setting, level: %d, strength: %d",
+         __func__, static_cast<int>(mIspSettings.eeSetting.feature_level),
+         static_cast<int>(mIspSettings.eeSetting.strength));
 
     camera_nr_mode_t manualNrMode;
     camera_nr_level_t manualNrLevel;
@@ -259,41 +269,38 @@ int PSysProcessor::setParameters(const Parameters& param)
     int manualNrModeSet = param.getNrMode(manualNrMode);
     int manualNrLevelSet = param.getNrLevel(manualNrLevel);
 
+    if (manualNrLevelSet == OK) {
+        mIspSettings.nrSetting.strength = static_cast<char>(manualNrLevel.overall);
+    } else {
+        mIspSettings.nrSetting.strength = static_cast<char>(DEFAULT_STRENGTH);
+    }
+
     if (manualNrModeSet == OK) {
         LOG2("%s: manual NR mode set: %d", __func__, manualNrMode);
         switch (manualNrMode) {
             case NR_MODE_OFF:
-                mIspSettings.nrSetting.feature_level = ia_isp_feature_level_off;
-                break;
             case NR_MODE_AUTO:
-                mIspSettings.nrSetting.feature_level = ia_isp_feature_level_low;
-                break;
             case NR_MODE_MANUAL_NORMAL:
-                mIspSettings.nrSetting.feature_level = ia_isp_feature_level_low;
+                mIspSettings.nrSetting.feature_level = ia_isp_feature_level_high;
+                mIspSettings.nrSetting.strength = static_cast<char>(EXTREME_NEGATIVE_STRENGTH);
                 break;
             case NR_MODE_MANUAL_EXPERT:
-            case NR_MODE_HIGH_QUALITY:
                 mIspSettings.nrSetting.feature_level = ia_isp_feature_level_high;
                 break;
+            case NR_MODE_HIGH_QUALITY:
+                mIspSettings.nrSetting.feature_level = ia_isp_feature_level_high;
+                mIspSettings.nrSetting.strength = static_cast<char>(EXTREME_POSITIVE_STRENGTH);
+                break;
             default:
-                mIspSettings.nrSetting.feature_level = ia_isp_feature_level_low;
+                mIspSettings.nrSetting.feature_level = ia_isp_feature_level_high;
         }
     } else {
         LOG2("%s: manual NR mode not set, default enabled", __func__);
         mIspSettings.nrSetting.feature_level = ia_isp_feature_level_high;
     }
-
-    if (manualNrLevelSet == OK) {
-        LOG2("%s: manual NR level set: %d", __func__, manualNrLevel.overall);
-        mIspSettings.nrSetting.strength = (char)manualNrLevel.overall;
-    } else {
-        LOG2("%s: manual NR level not set, default used", __func__);
-        mIspSettings.nrSetting.strength = (char)0;
-    }
-
     LOG2("%s: ISP NR setting, level: %d, strength: %d",
-            __func__, (int)mIspSettings.nrSetting.feature_level,
-            (int)mIspSettings.nrSetting.strength);
+         __func__, static_cast<int>(mIspSettings.nrSetting.feature_level),
+         static_cast<int>(mIspSettings.nrSetting.strength));
 
     camera_video_stabilization_mode_t stabilizationMode;
     ret = param.getVideoStabilizationMode(stabilizationMode);
@@ -470,17 +477,17 @@ int PSysProcessor::processNewFrame() {
         ret = prepareTask(&srcBuffers, &dstBuffers);
         CheckError(ret != OK, UNKNOWN_ERROR, "%s, Failed to process frame", __func__);
     } else {
+        timeval curTime;
+        int64_t sofInterval = 0;
         {
             ConditionLock lock(mSofLock);
 
-            timeval curTime;
             gettimeofday(&curTime, nullptr);
-            int64_t sofInterval = TIMEVAL2NSECS(curTime) - TIMEVAL2NSECS(mSofTimestamp);
-
+            sofInterval = TIMEVAL2NSECS(curTime) - TIMEVAL2NSECS(mSofTimestamp);
             // Wait next sof event when missing last one for a long time
             if (sofInterval > SOF_EVENT_MARGIN && sofInterval < SOF_EVENT_MAX_MARGIN) {
                 LOG2("%s, need to wait next sof event. sofInterval: %ld", __func__, sofInterval);
-                ret = mSofCondition.waitRelative(lock, kWaitDuration * SLOWLY_MULTIPLIER);
+                ret = mSofCondition.waitRelative(lock, SOF_EVENT_MAX_MARGIN * SLOWLY_MULTIPLIER);
 
                 // Already stopped
                 if (!mThreadRunning) return -1;
@@ -499,20 +506,25 @@ int PSysProcessor::processNewFrame() {
                 ConditionLock lock(mBufferQueueLock);
                 ret = waitFreeBuffersInQueue(lock, srcBuffers, dstBuffers, SOF_EVENT_MARGIN);
 
+                // Already stopped
+                if (!mThreadRunning) return -1;
+
                 // Return to wait next sof event if there isn't pending buffer.
-                if (ret != OK) {
-                    LOG1("%s, cameraId: %d, there isn't pending buffer, recovery",
-                         __func__, mCameraId);
-                    return OK;
-                }
+                if (ret != OK) return OK;
             }
 
             {
                 AutoMutex l(mSofLock);
                 if (srcBuffers.begin()->second->getSequence() >= mSofSequence) {
-                    LOG2("%s, run the frame in next sof: buffer sequence: %ld, sof sequence: %ld",
-                         __func__, srcBuffers.begin()->second->getSequence(), mSofSequence);
-                    return OK;
+                    gettimeofday(&curTime, nullptr);
+                    sofInterval = TIMEVAL2NSECS(curTime) - TIMEVAL2NSECS(mSofTimestamp);
+
+                    // Handle the frame of sof(N) on sof(N + 1) when the sof event is continuously
+                    if (sofInterval < SOF_EVENT_MAX_MARGIN) {
+                        return OK;
+                    }
+                    LOG2("%s, sof event lost for long time, skip wating. sofInterval: %ld",
+                         __func__, sofInterval);
                 }
             }
 
@@ -569,6 +581,9 @@ void PSysProcessor::handleRawReprocessing(CameraBufferPortMap *srcBuffers,
               timestamp, inputSequence, rawOutputBuffer->getBufferSize(),
               rawOutputBuffer->getBufferAddr());
 
+        // handle Shutter first
+        sendPsysBufReadyEvent(dstBuffers, settingSequence, timestamp);
+
         // Return opaque RAW buffer
         for (auto &it : mBufferConsumerList) {
             it->onFrameAvailable(mOpaqueRawPort, rawOutputBuffer);
@@ -585,21 +600,12 @@ void PSysProcessor::handleRawReprocessing(CameraBufferPortMap *srcBuffers,
         }
     } else if (settingSequence != -1 && inputSequence > settingSequence) {
         // handle Shutter first
-        for (const auto& output : *dstBuffers) {
-            if (output.second && output.second->getUsage() != BUFFER_USAGE_PSYS_INTERNAL) {
-                EventData event;
-                event.type = EVENT_PSYS_REQUEST_BUF_READY;
-                event.buffer = nullptr;
-                event.data.requestReady.timestamp = output.second->getUserBuffer()->timestamp;
-                event.data.requestReady.sequence = settingSequence;
-                notifyListeners(event);
-                break;
-            }
-        }
+        sendPsysBufReadyEvent(dstBuffers, settingSequence, 0);
+
         // only one video buffer is supported
         if (PlatformData::isGpuTnrEnabled() && videoBuf.size() == 1) {
             shared_ptr<CameraBuffer> buf = videoBuf.begin()->second;
-            bool handled = mPSysDAGs[mCurConfigMode]->fetchTnrRefBuffer(settingSequence, buf);
+            bool handled = mPSysDAGs[mCurConfigMode]->fetchTnrOutBuffer(settingSequence, buf);
             if (handled) {
                 LOG2("%s, settingSequence %ld is found", __func__, settingSequence);
                 if (stillBuf.empty()) {
@@ -653,18 +659,35 @@ void PSysProcessor::saveRawBuffer(CameraBufferPortMap *srcBuffers)
 
     LOG2("@%s, mCameraId:%d, inputSequence %ld", __func__, mCameraId, inputSequence);
 
+    {
     AutoMutex lock(mBufferMapLock);
     mRawBufferMap[inputSequence] = mapBuf;
+    }
 
+    returnRawBuffer();
+}
+
+void PSysProcessor::returnRawBuffer()
+{
+    AutoMutex lock(mBufferMapLock);
     // If too many buffers are holden in mRawQueue, return back to producer
     if (mRawBufferMap.size() > (PlatformData::getMaxRawDataNum(mCameraId) -
                                 PlatformData::getMaxRequestsInflight(mCameraId))) {
-        std::map<long, CameraBufferPortMap>::iterator it = mRawBufferMap.begin();
-        CameraBufferPortMap &bufferPortMap = it->second;
+        auto it = mRawBufferMap.cbegin();
+        {
+        AutoMutex l(mBufferQueueLock);
+        if (mSequencesInflight.find(it->first) != mSequencesInflight.end()) {
+            // Raw buffer is in used and return it later
+            return;
+        }
+        }
+
+        const CameraBufferPortMap &bufferPortMap = it->second;
         for (auto &item : bufferPortMap) {
             mBufferProducer->qbuf(item.first, item.second);
         }
-        mRawBufferMap.erase(mRawBufferMap.begin());
+        LOG2("@%s, returned sequence %ld", __func__, it->first);
+        mRawBufferMap.erase(it);
     }
 }
 
@@ -750,17 +773,7 @@ status_t PSysProcessor::prepareTask(CameraBufferPortMap *srcBuffers,
     if (needRunPipe) {
         // Raw output already has been returned back, and don't need to handle again.
         if (!hasRawOutput) {
-            for (const auto& output : *dstBuffers) {
-                if (output.second && output.second->getUsage() != BUFFER_USAGE_PSYS_INTERNAL) {
-                    EventData event;
-                    event.type = EVENT_PSYS_REQUEST_BUF_READY;
-                    event.buffer = nullptr;
-                    event.data.requestReady.timestamp = timestamp;
-                    event.data.requestReady.sequence = settingSequence;
-                    notifyListeners(event);
-                    break;
-                }
-            }
+            sendPsysBufReadyEvent(dstBuffers, settingSequence, timestamp);
         }
         if (PlatformData::isGpuTnrEnabled()) {
             handleStillPipeForTnr(inputSequence, dstBuffers);
@@ -831,13 +844,13 @@ void PSysProcessor::dispatchTask(CameraBufferPortMap &inBuf, CameraBufferPortMap
 
         if (needSwitch) {
             LOG1("Switch pipe for sequence:%ld, unprocessed buffer number:%zu",
-                  currentSequence, mSequenceInflight.size());
+                  currentSequence, mSequencesInflight.size());
 
             // Deactive the PSysDag which is no longer used.
             mPSysDAGs[previousMode]->pause();
 
             // Before switching, need to wait all buffers in current pipe being processed.
-            while (!mSequenceInflight.empty()) {
+            while (!mSequencesInflight.empty()) {
                 int ret = mFrameDoneSignal.waitRelative(lock, kWaitDuration * SLOWLY_MULTIPLIER);
                 if (!mThreadRunning) {
                     LOG1("@%s: Processor is not active while waiting for frame done.", __func__);
@@ -853,7 +866,7 @@ void PSysProcessor::dispatchTask(CameraBufferPortMap &inBuf, CameraBufferPortMap
             // Activate the current used PSysDag.
             mPSysDAGs[mCurConfigMode]->resume();
         }
-        mSequenceInflight.push(currentSequence);
+        mSequencesInflight.insert(currentSequence);
     } // End of lock mBufferQueueLock
 
     // Prepare the task input paramerters including input and output buffers, settings etc.
@@ -869,6 +882,14 @@ void PSysProcessor::dispatchTask(CameraBufferPortMap &inBuf, CameraBufferPortMap
         Parameters params;
         if (mParameterGenerator->getParameters(currentSequence, &params, false) == OK) {
             setParameters(params);
+
+            // Dump raw image if makernote mode is MAKERNOTE_MODE_JPEG for IQ tune
+            camera_makernote_mode_t makernoteMode = MAKERNOTE_MODE_OFF;
+            int ret = params.getMakernoteMode(makernoteMode);
+            if (ret == OK && makernoteMode == MAKERNOTE_MODE_JPEG &&
+                !fakeTask && CameraDump::isDumpTypeEnable(DUMP_JPEG_BUFFER)) {
+                CameraDump::dumpImage(mCameraId, inBuf[MAIN_PORT], M_PSYS, MAIN_PORT);
+            }
         }
     }
     {
@@ -945,46 +966,66 @@ void PSysProcessor::sendPsysFrameDoneEvent(const CameraBufferPortMap* dstBuffers
     }
 }
 
+void PSysProcessor::sendPsysBufReadyEvent(const CameraBufferPortMap* dstBuffers,
+                                          int64_t sequence, uint64_t timestamp)
+{
+    for (const auto& output : *dstBuffers) {
+        if (output.second && output.second->getUsage() != BUFFER_USAGE_PSYS_INTERNAL) {
+            EventData event;
+            event.type = EVENT_PSYS_REQUEST_BUF_READY;
+            event.buffer = nullptr;
+            event.data.requestReady.timestamp
+                = timestamp > 0 ? timestamp : output.second->getUserBuffer()->timestamp;
+            event.data.requestReady.sequence = sequence;
+            notifyListeners(event);
+            break;
+        }
+    }
+}
 void PSysProcessor::onFrameDone(const PSysTaskData& result)
 {
     PERF_CAMERA_ATRACE();
-    LOG2("@%s, mCameraId:%d", __func__, mCameraId);
 
     long sequence = result.mInputBuffers.begin()->second->getSequence();
+    LOG2("@%s, mCameraId:%d, sequence %ld", __func__, mCameraId, sequence);
     TRACE_LOG_POINT("PSysProcessor", __func__, MAKE_COLOR(sequence), sequence);
 
-    if (!needSkipOutputFrame(sequence)) {
-        sendPsysFrameDoneEvent(&result.mOutputBuffers);
-    }
+    if (!result.mFakeTask) {
+        if (!needSkipOutputFrame(sequence)) {
+            sendPsysFrameDoneEvent(&result.mOutputBuffers);
+        }
 
-    long settingSequence = getSettingSequence(result.mOutputBuffers);
-    bool holdOnInput = needHoldOnInputFrame(settingSequence, sequence);
-    bool hasRawOutput = isBufferHoldForRawReprocess(sequence);
+        long settingSequence = getSettingSequence(result.mOutputBuffers);
+        bool holdOnInput = needHoldOnInputFrame(settingSequence, sequence);
+        bool hasRawOutput = isBufferHoldForRawReprocess(sequence);
 
-    // Return buffer only if the buffer is not used in the future.
-    if (!holdOnInput && mBufferProducer && !hasRawOutput) {
-        for (const auto& src : result.mInputBuffers) {
-            mBufferProducer->qbuf(src.first, src.second);
+        // Return buffer only if the buffer is not used in the future.
+        if (!holdOnInput && mBufferProducer && !hasRawOutput) {
+            for (const auto& src : result.mInputBuffers) {
+                mBufferProducer->qbuf(src.first, src.second);
 
-            if (src.second->getStreamType() == CAMERA_STREAM_INPUT) {
-                for (auto &it : mBufferConsumerList) {
-                    it->onFrameAvailable(src.first, src.second);
+                if (src.second->getStreamType() == CAMERA_STREAM_INPUT) {
+                    for (auto &it : mBufferConsumerList) {
+                        it->onFrameAvailable(src.first, src.second);
+                    }
                 }
             }
         }
     }
 
+    {
     AutoMutex l(mBufferQueueLock);
-    long oldest = mSequenceInflight.front();
-    if (sequence != oldest) {
-        // The output buffer should always be FIFO.
-        LOGW("The sequence should be %ld, but it's %ld", oldest, sequence);
+    std::multiset<int64_t>::iterator it = mSequencesInflight.find(sequence);
+    if (it != mSequencesInflight.end()) {
+        mSequencesInflight.erase(it);
     }
 
-    mSequenceInflight.pop();
-    if (mSequenceInflight.empty()) {
+    if (mSequencesInflight.empty()) {
         mFrameDoneSignal.signal();
     }
+    }
+
+    returnRawBuffer();
 }
 
 void PSysProcessor::outputRawImage(shared_ptr<CameraBuffer> &srcBuf, shared_ptr<CameraBuffer> &dstBuf)

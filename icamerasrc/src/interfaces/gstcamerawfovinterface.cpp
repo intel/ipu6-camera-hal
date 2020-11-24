@@ -40,7 +40,7 @@
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
  * Boston, MA 02111-1307, USA.
  */
-#ifndef CHROME_SLIM_INTERFACE
+#ifndef CHROME_SLIM_CAMHAL
 #define LOG_TAG "GstCameraWFOVInterface"
 
 #ifdef HAVE_CONFIG_H
@@ -94,4 +94,4 @@ gst_camerasrc_wfov_iface_init (GstCamerasrcWFOVInterface *wfovIface)
   wfovIface->set_camera_rotation = NULL;
   wfovIface->get_camera_rotation = NULL;
 }
-#endif //CHROME_SLIM_INTERFACE
+#endif //CHROME_SLIM_CAMHAL

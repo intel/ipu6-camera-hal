@@ -33,8 +33,8 @@ class IntelTNRServer {
     int deInit(int cameraId, TnrType type);
     int prepareSurface(void* pData, int dataSize, int cameraId, TnrType type);
     int runTnrFrame(const void* inBufAddr, void* outBufAddr, uint32_t inBufSize,
-                    uint32_t outBufSize, void* tnrParam, int cameraId, TnrType type);
-    int asyncParamUpdate(int cameraId, int gain, TnrType type);
+                    uint32_t outBufSize, void* tnrParam, int cameraId, TnrType type, int outBufFd);
+    int asyncParamUpdate(int cameraId, int gain, TnrType type, bool forceUpdate);
 
  private:
     // the tnr instance of the id

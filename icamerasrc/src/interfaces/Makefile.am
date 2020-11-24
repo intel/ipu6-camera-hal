@@ -53,8 +53,8 @@ libgsticamerainterface_la_CPPFLAGS = -std=c++11 \
     $(LIBUTILS_CFLAGS) \
     $(CAMHAL_CFLAGS)
 
-if CHROME_SLIM_INTERFACE_TEST
-libgsticamerainterface_la_CPPFLAGS += -DCHROME_SLIM_INTERFACE
+if USE_CHROME_SLIM_CAMHAL
+libgsticamerainterface_la_CPPFLAGS += -DCHROME_SLIM_CAMHAL
 endif
 
 # for hardening-check

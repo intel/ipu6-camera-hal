@@ -37,7 +37,6 @@ IntelPGParam::IntelPGParam(int pgId)
           mProgramControlInitTerminalIndex(-1),
           mProcessGroupMemory(nullptr) {
     CLEAR(mP2pCacheBuffer);
-    CLEAR(mPgReqs);
 }
 
 IntelPGParam::~IntelPGParam() {
@@ -190,7 +189,8 @@ int IntelPGParam::prepare(const ia_binary_data* ipuParameters, const ia_css_rbm_
                     reinterpret_cast<ia_css_param_terminal_manifest_t*>(terminalManifest);
                 mPgReqs.terminals[termIndex].kernelOrder =
                     new IpuPgTerminalKernelInfo[PSYS_MAX_KERNELS_PER_PG];
-                memset(mPgReqs.terminals[termIndex].kernelOrder, UINT8_MAX, kernelInfoSize);
+                memset(reinterpret_cast<void*>(mPgReqs.terminals[termIndex].kernelOrder), UINT8_MAX,
+                       kernelInfoSize);
                 ret = getKernelOrderForParamCachedInTerm(paramMani,
                                                          mPgReqs.terminals[termIndex].kernelOrder);
                 CheckError(ret != css_err_none, ret, "getKernelOrderForParamCachedInTerm failed");
@@ -201,7 +201,9 @@ int IntelPGParam::prepare(const ia_binary_data* ipuParameters, const ia_css_rbm_
                     reinterpret_cast<ia_css_program_terminal_manifest_t*>(terminalManifest);
                 mPgReqs.terminals[termIndex].kernelOrder =
                     new IpuPgTerminalKernelInfo[PSYS_MAX_KERNELS_PER_PG];
-                memset(mPgReqs.terminals[termIndex].kernelOrder, UINT8_MAX, kernelInfoSize);
+                memset(reinterpret_cast<void*>(mPgReqs.terminals[termIndex].kernelOrder), UINT8_MAX,
+                       kernelInfoSize);
+
                 ret =
                     getKernelOrderForProgramTerm(proMani, mPgReqs.terminals[termIndex].kernelOrder);
                 CheckError(ret != css_err_none, ret, "getKernelOrderForProgramTerm failed");

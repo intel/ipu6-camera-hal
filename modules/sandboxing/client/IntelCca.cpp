@@ -111,6 +111,7 @@ IntelCca::IntelCca() {
 
 IntelCca::~IntelCca() {
     LOG1("@%s", __func__);
+    mCommon.releaseAllShmMems(mMems);
 }
 
 ia_err IntelCca::init(const cca::cca_init_params& initParams) {
@@ -121,10 +122,10 @@ ia_err IntelCca::init(const cca::cca_init_params& initParams) {
     cca::cca_init_params* params = static_cast<cca::cca_init_params*>(mMemInit.mAddr);
     *params = initParams;
 
-    bool ret = mCommon.requestSync(IPC_CCA_INIT, mMemInit.mHandle);
-    CheckError(ret == false, ia_err_general, "@%s, requestSync fails", __func__);
+    ia_err ret = mCommon.requestSyncCca(IPC_CCA_INIT, mMemInit.mHandle);
+    CheckError(ret != ia_err_none, ia_err_general, "@%s, requestSyncCca fails", __func__);
 
-    return ia_err_none;
+    return ret;
 }
 
 ia_err IntelCca::setStatsParams(const cca::cca_stats_params& params) {
@@ -135,10 +136,10 @@ ia_err IntelCca::setStatsParams(const cca::cca_stats_params& params) {
     cca::cca_stats_params* statsParams = static_cast<cca::cca_stats_params*>(mMemStats.mAddr);
     *statsParams = params;
 
-    bool ret = mCommon.requestSync(IPC_CCA_SET_STATS, mMemStats.mHandle);
-    CheckError(ret == false, ia_err_general, "@%s, requestSync fails", __func__);
+    ia_err ret = mCommon.requestSyncCca(IPC_CCA_SET_STATS, mMemStats.mHandle);
+    CheckError(ret != ia_err_none, ia_err_general, "@%s, requestSyncCca fails", __func__);
 
-    return ia_err_none;
+    return ret;
 }
 
 ia_err IntelCca::runAEC(uint64_t frameId, const cca::cca_ae_input_params& params,
@@ -153,12 +154,12 @@ ia_err IntelCca::runAEC(uint64_t frameId, const cca::cca_ae_input_params& params
     aecParams->frameId = frameId;
     aecParams->inParams = params;
 
-    bool ret = mCommon.requestSync(IPC_CCA_RUN_AEC, mMemAEC.mHandle);
-    CheckError(ret == false, ia_err_general, "@%s, requestSync fails", __func__);
+    ia_err ret = mCommon.requestSyncCca(IPC_CCA_RUN_AEC, mMemAEC.mHandle);
+    CheckError(ret != ia_err_none, ia_err_general, "@%s, requestSyncCca fails", __func__);
 
     *results = aecParams->results;
 
-    return ia_err_none;
+    return ret;
 }
 
 ia_err IntelCca::runAIQ(uint64_t frameId, const cca::cca_aiq_params& params,
@@ -173,12 +174,12 @@ ia_err IntelCca::runAIQ(uint64_t frameId, const cca::cca_aiq_params& params,
     aiqParams->frameId = frameId;
     aiqParams->inParams = params;
 
-    bool ret = mCommon.requestSync(IPC_CCA_RUN_AIQ, mMemAIQ.mHandle);
-    CheckError(ret == false, ia_err_general, "@%s, requestSync fails", __func__);
+    ia_err ret = mCommon.requestSyncCca(IPC_CCA_RUN_AIQ, mMemAIQ.mHandle);
+    CheckError(ret != ia_err_none, ia_err_general, "@%s, requestSyncCca fails", __func__);
 
     *results = aiqParams->results;
 
-    return ia_err_none;
+    return ret;
 }
 
 ia_err IntelCca::runLTM(uint64_t frameId, const cca::cca_ltm_input_params& params) {
@@ -189,10 +190,10 @@ ia_err IntelCca::runLTM(uint64_t frameId, const cca::cca_ltm_input_params& param
     ltmParams->frameId = frameId;
     ltmParams->inParams = params;
 
-    bool ret = mCommon.requestSync(IPC_CCA_RUN_LTM, mMemLTM.mHandle);
-    CheckError(ret == false, ia_err_general, "@%s, requestSync fails", __func__);
+    ia_err ret = mCommon.requestSyncCca(IPC_CCA_RUN_LTM, mMemLTM.mHandle);
+    CheckError(ret != ia_err_none, ia_err_general, "@%s, requestSyncCca fails", __func__);
 
-    return ia_err_none;
+    return ret;
 }
 
 ia_err IntelCca::updateZoom(const cca::cca_dvs_zoom& params) {
@@ -202,10 +203,10 @@ ia_err IntelCca::updateZoom(const cca::cca_dvs_zoom& params) {
     cca::cca_dvs_zoom* zoomParams = static_cast<cca::cca_dvs_zoom*>(mMemZoom.mAddr);
     *zoomParams = params;
 
-    bool ret = mCommon.requestSync(IPC_CCA_UPDATE_ZOOM, mMemZoom.mHandle);
-    CheckError(ret == false, ia_err_general, "@%s, requestSync fails", __func__);
+    ia_err ret = mCommon.requestSyncCca(IPC_CCA_UPDATE_ZOOM, mMemZoom.mHandle);
+    CheckError(ret != ia_err_none, ia_err_general, "@%s, requestSyncCca fails", __func__);
 
-    return ia_err_none;
+    return ret;
 }
 
 ia_err IntelCca::runDVS(uint64_t frameId) {
@@ -215,32 +216,36 @@ ia_err IntelCca::runDVS(uint64_t frameId) {
     uint64_t* params = static_cast<uint64_t*>(mMemDVS.mAddr);
     *params = frameId;
 
-    bool ret = mCommon.requestSync(IPC_CCA_RUN_DVS, mMemDVS.mHandle);
-    CheckError(ret == false, ia_err_general, "@%s, requestSync fails", __func__);
+    ia_err ret = mCommon.requestSyncCca(IPC_CCA_RUN_DVS, mMemDVS.mHandle);
+    CheckError(ret != ia_err_none, ia_err_general, "@%s, requestSyncCca fails", __func__);
 
-    return ia_err_none;
+    return ret;
 }
 
-ia_err IntelCca::runAIC(uint64_t frameId, const cca::cca_pal_input_params& params,
-                        ia_binary_data* pal) {
-    LOG1("@%s, in params size:%d", __func__, sizeof(params));
+ia_err IntelCca::runAIC(uint64_t frameId, cca::cca_pal_input_params* params, ia_binary_data* pal) {
+    LOG1("@%s, cca::cca_pal_input_params size:%d", __func__, sizeof(cca::cca_pal_input_params));
+    CheckError(!params, ia_err_argument, "@%s, params is nullptr", __func__);
     CheckError(!pal, ia_err_argument, "@%s, pal is nullptr", __func__);
     CheckError(!mInitialized, ia_err_general, "@%s, mInitialized is false", __func__);
 
     intel_cca_run_aic_data* aicParams = static_cast<intel_cca_run_aic_data*>(mMemAIC.mAddr);
     aicParams->frameId = frameId;
     aicParams->inParams = params;
+    aicParams->inParamsHandle = mCommon.getShmMemHandle(params);
     aicParams->palOutData = *pal;
 
     int32_t palDataHandle = mCommon.getShmMemHandle(pal->data);
     CheckError(!palDataHandle, ia_err_general, "%s, pal buf:%p is not in SHM", __func__, pal->data);
-    LOG1("%s, pal buffer:%p, buffer handle:%d", __func__, pal->data, palDataHandle);
+    LOG2("%s, pal buffer:%p, buffer handle:%d", __func__, pal->data, palDataHandle);
     aicParams->palDataHandle = palDataHandle;
 
-    bool ret = mCommon.requestSync(IPC_CCA_RUN_AIC, mMemAIC.mHandle);
-    CheckError(ret == false, ia_err_general, "@%s, requestSync fails", __func__);
+    ia_err ret = mCommon.requestSyncCca(IPC_CCA_RUN_AIC, mMemAIC.mHandle);
+    CheckError(ret != ia_err_none && ret != ia_err_not_run, ia_err_general,
+               "@%s, requestSyncCca fails", __func__);
+    pal->size = aicParams->palOutData.size;
+    LOG2("%s, pal->size:%d", __func__, pal->size);
 
-    return ia_err_none;
+    return ret;
 }
 
 ia_err IntelCca::getCMC(cca::cca_cmc* cmc) {
@@ -248,13 +253,13 @@ ia_err IntelCca::getCMC(cca::cca_cmc* cmc) {
     CheckError(!cmc, ia_err_argument, "@%s, cmc is nullptr", __func__);
     CheckError(!mInitialized, ia_err_general, "@%s, mInitialized is false", __func__);
 
-    bool ret = mCommon.requestSync(IPC_CCA_GET_CMC, mMemCMC.mHandle);
-    CheckError(ret == false, ia_err_general, "@%s, requestSync fails", __func__);
+    ia_err ret = mCommon.requestSyncCca(IPC_CCA_GET_CMC, mMemCMC.mHandle);
+    CheckError(ret != ia_err_none, ia_err_general, "@%s, requestSyncCca fails", __func__);
 
     cca::cca_cmc* cmcData = static_cast<cca::cca_cmc*>(mMemCMC.mAddr);
     *cmc = *cmcData;
 
-    return ia_err_none;
+    return ret;
 }
 
 ia_err IntelCca::getMKN(ia_mkn_trg type, cca::cca_mkn* mkn) {
@@ -265,12 +270,12 @@ ia_err IntelCca::getMKN(ia_mkn_trg type, cca::cca_mkn* mkn) {
     intel_cca_mkn_data* params = static_cast<intel_cca_mkn_data*>(mMemMKN.mAddr);
     params->type = type;
 
-    bool ret = mCommon.requestSync(IPC_CCA_GET_MKN, mMemMKN.mHandle);
-    CheckError(ret == false, ia_err_general, "@%s, requestSync fails", __func__);
+    ia_err ret = mCommon.requestSyncCca(IPC_CCA_GET_MKN, mMemMKN.mHandle);
+    CheckError(ret != ia_err_none, ia_err_general, "@%s, requestSyncCca fails", __func__);
 
     *mkn = params->results;
 
-    return ia_err_none;
+    return ret;
 }
 
 ia_err IntelCca::getAiqd(cca::cca_aiqd* aiqd) {
@@ -278,13 +283,13 @@ ia_err IntelCca::getAiqd(cca::cca_aiqd* aiqd) {
     CheckError(!aiqd, ia_err_argument, "@%s, aiqd is nullptr", __func__);
     CheckError(!mInitialized, ia_err_general, "@%s, mInitialized is false", __func__);
 
-    bool ret = mCommon.requestSync(IPC_CCA_GET_AIQD, mMemAIQD.mHandle);
-    CheckError(ret == false, ia_err_general, "@%s, requestSync fails", __func__);
+    ia_err ret = mCommon.requestSyncCca(IPC_CCA_GET_AIQD, mMemAIQD.mHandle);
+    CheckError(ret != ia_err_none, ia_err_general, "@%s, requestSyncCca fails", __func__);
 
     cca::cca_aiqd* aiqdData = static_cast<cca::cca_aiqd*>(mMemAIQD.mAddr);
     *aiqd = *aiqdData;
 
-    return ia_err_none;
+    return ret;
 }
 
 ia_err IntelCca::updateTuning(uint8_t lardTags, const ia_lard_input_params& lardParams) {
@@ -296,18 +301,18 @@ ia_err IntelCca::updateTuning(uint8_t lardTags, const ia_lard_input_params& lard
     params->lardTags = lardTags;
     params->lardParams = lardParams;
 
-    bool ret = mCommon.requestSync(IPC_CCA_UPDATE_TUNING, mMemTuning.mHandle);
-    CheckError(ret == false, ia_err_general, "@%s, requestSync fails", __func__);
+    ia_err ret = mCommon.requestSyncCca(IPC_CCA_UPDATE_TUNING, mMemTuning.mHandle);
+    CheckError(ret != ia_err_none, ia_err_general, "@%s, requestSyncCca fails", __func__);
 
-    return ia_err_none;
+    return ret;
 }
 
 void IntelCca::deinit() {
     LOG1("@%s", __func__);
     CheckError(!mInitialized, VOID_VALUE, "@%s, mInitialized is false", __func__);
 
-    bool ret = mCommon.requestSync(IPC_CCA_DEINIT);
-    CheckError(ret == false, VOID_VALUE, "@%s, requestSync fails", __func__);
+    ia_err ret = mCommon.requestSyncCca(IPC_CCA_DEINIT);
+    CheckError(ret != ia_err_none, VOID_VALUE, "@%s, requestSyncCca fails", __func__);
 }
 
 void IntelCca::getVersion(std::string* version) {
@@ -316,8 +321,8 @@ void IntelCca::getVersion(std::string* version) {
 
     intel_cca_version_data* params = static_cast<intel_cca_version_data*>(mMemVersion.mAddr);
 
-    bool ret = mCommon.requestSync(IPC_CCA_GET_VERSION, mMemVersion.mHandle);
-    CheckError(ret == false, VOID_VALUE, "@%s, requestSync fails", __func__);
+    ia_err ret = mCommon.requestSyncCca(IPC_CCA_GET_VERSION, mMemVersion.mHandle);
+    CheckError(ret != ia_err_none, VOID_VALUE, "@%s, requestSyncCca fails", __func__);
 
     *version = params->data;
 }
@@ -335,12 +340,12 @@ ia_err IntelCca::decodeStats(uint64_t statsPointer, uint32_t statsSize,
     params->statsBuffer.data = nullptr;
     params->statsBuffer.size = statsSize;
 
-    bool ret = mCommon.requestSync(IPC_CCA_DECODE_STATS, mMemDecodeStats.mHandle);
-    CheckError(ret == false, ia_err_general, "@%s, requestSync fails", __func__);
+    ia_err ret = mCommon.requestSyncCca(IPC_CCA_DECODE_STATS, mMemDecodeStats.mHandle);
+    CheckError(ret != ia_err_none, ia_err_general, "@%s, requestSyncCca fails", __func__);
 
     *results = params->results;
 
-    return ia_err_none;
+    return ret;
 }
 
 uint32_t IntelCca::getPalDataSize(const cca::cca_program_group& programGroup) {
@@ -351,8 +356,8 @@ uint32_t IntelCca::getPalDataSize(const cca::cca_program_group& programGroup) {
         static_cast<intel_cca_get_pal_data_size*>(mMemPalSize.mAddr);
     params->pg = programGroup;
 
-    bool ret = mCommon.requestSync(IPC_CCA_GET_PAL_SIZE, mMemPalSize.mHandle);
-    CheckError(ret == false, 0, "@%s, requestSync fails", __func__);
+    ia_err ret = mCommon.requestSyncCca(IPC_CCA_GET_PAL_SIZE, mMemPalSize.mHandle);
+    CheckError(ret != ia_err_none, 0, "@%s, requestSyncCca fails", __func__);
 
     LOG1("@%s, returnSize:%d", __func__, params->returnSize);
     return params->returnSize;

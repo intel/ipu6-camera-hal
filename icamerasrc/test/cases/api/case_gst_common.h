@@ -45,7 +45,7 @@
 #include <sys/time.h>
 #include <gst/gst.h>
 #include <Parameters.h>
-#ifndef CHROME_SLIM_INTERFACE
+#ifndef CHROME_SLIM_CAMHAL
 #include <IspControl.h>
 #include <AlgoTuning.h>
 #endif
@@ -103,7 +103,7 @@ typedef struct _CustomData {
     Field3A cam3a_field;
     Custom3AData cam3a_data;
 
-#ifndef CHROME_SLIM_INTERFACE
+#ifndef CHROME_SLIM_CAMHAL
     uint8_t wfov_mode;
     camera_mount_type_t mount_type;
     gboolean set_projection;
@@ -114,7 +114,7 @@ typedef struct _CustomData {
     camera_view_fine_adjustments_t fine_adjustments;
     gboolean set_camera_rotation;
     camera_view_rotation_t camera_rotation;
-#endif //CHROME_SLIM_INTERFACE
+#endif //CHROME_SLIM_CAMHAL
 
     gboolean test_isp_control;
     CustomIspControl camisp_control;
@@ -123,10 +123,10 @@ typedef struct _CustomData {
     gboolean test_dewarping_mode_switch;
     GstCamerasrcDewarping *camdewarping;
     GstCamerasrcDewarpingInterface *camdewarping_iface;
-#ifndef CHROME_SLIM_INTERFACE
+#ifndef CHROME_SLIM_CAMHAL
     GstCamerasrcWFOV *camwfov;
     GstCamerasrcWFOVInterface *camwfov_iface;
-#endif //CHROME_SLIM_INTERFACE
+#endif //CHROME_SLIM_CAMHAL
     GMainLoop *main_loop;  /* GLib's Main Loop */
 } CustomData;
 
@@ -150,7 +150,7 @@ typedef struct _CheckField  {
     struct FrameInfo info;
     struct UpdateProperty property;
 
-#ifndef CHROME_SLIM_INTERFACE
+#ifndef CHROME_SLIM_CAMHAL
     gboolean check_wfov;
     gboolean set_projection;
     camera_view_projection_t projection;
@@ -158,7 +158,7 @@ typedef struct _CheckField  {
     camera_view_rotation_t rotation;
     gboolean set_fine_adjustments;
     camera_view_fine_adjustments_t fine_adjustments;
-#endif //CHROME_SLIM_INTERFACE
+#endif //CHROME_SLIM_CAMHAL
 } CheckField;
 
 typedef struct _PropertyRange {

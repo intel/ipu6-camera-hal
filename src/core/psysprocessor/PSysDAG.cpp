@@ -83,7 +83,7 @@ void PSysDAG::releasePipeExecutors()
  * According to the policy config to create the executors,
  * and use the graph config data to configure the executors.
  */
-int PSysDAG::createPipeExecutors()
+int PSysDAG::createPipeExecutors(bool useTnrOutBuffer)
 {
     LOG1("@%s, mCameraId:%d", __func__, mCameraId);
 
@@ -139,7 +139,8 @@ int PSysDAG::createPipeExecutors()
 #ifdef TNR7_CM
         PipeExecutor *executor;
         if (strstr(item.exeName.c_str(), "gputnr") != nullptr) {
-            executor = new GPUExecutor(mCameraId, item, cfg->exclusivePgs, this, gc);
+            executor = new GPUExecutor(mCameraId, item, cfg->exclusivePgs, this, gc,
+                                       useTnrOutBuffer);
             if (streamId == VIDEO_STREAM_ID) mVideoTnrExecutor = executor;
         } else {
             executor = new PipeExecutor(mCameraId, item, cfg->exclusivePgs, this, gc);
@@ -194,9 +195,9 @@ int PSysDAG::createPipeExecutors()
     return OK;
 }
 
-bool PSysDAG::fetchTnrRefBuffer(int64_t seq, std::shared_ptr<CameraBuffer> buf)
+bool PSysDAG::fetchTnrOutBuffer(int64_t seq, std::shared_ptr<CameraBuffer> buf)
 {
-    return mVideoTnrExecutor != nullptr ? mVideoTnrExecutor->fetchTnrRefBuffer(seq, buf) : false;
+    return mVideoTnrExecutor != nullptr ? mVideoTnrExecutor->fetchTnrOutBuffer(seq, buf) : false;
 }
 
 int PSysDAG::linkAndConfigExecutors()
@@ -459,7 +460,7 @@ void PSysDAG::configShareReferPool(std::shared_ptr<IGraphConfig> gc) {
 }
 #endif
 
-int PSysDAG::configure(ConfigMode configMode, TuningMode tuningMode)
+int PSysDAG::configure(ConfigMode configMode, TuningMode tuningMode, bool useTnrOutBuffer)
 {
     LOG1("@%s, mCameraId:%d", __func__, mCameraId);
 
@@ -474,7 +475,7 @@ int PSysDAG::configure(ConfigMode configMode, TuningMode tuningMode)
     ret = mIspParamAdaptor->configure(mInputFrameInfo[mDefaultMainInputPort], mConfigMode, mTuningMode);
     CheckError(ret != OK, ret, "Configure isp Adaptor failed, tuningMode %d", mTuningMode);
 
-    ret = createPipeExecutors();
+    ret = createPipeExecutors(useTnrOutBuffer);
     CheckError(ret != OK, ret, "@%s, create psys executors failed", __func__);
 
     ret = linkAndConfigExecutors();
@@ -652,11 +653,11 @@ int PSysDAG::onFrameDone(Port port, const std::shared_ptr<CameraBuffer>& buffer)
     }
 
     // Don't handle buffer done if it is a fake task
-    if (fakeTask) return OK;
-
-    CheckError(outputPort == INVALID_PORT, INVALID_OPERATION, "outputPort is invalid");
-    // Return buffer
-    mPSysDagCB->onBufferDone(sequence, outputPort, buffer);
+    if (!fakeTask) {
+        CheckError(outputPort == INVALID_PORT, INVALID_OPERATION, "outputPort is invalid");
+        // Return buffer
+        mPSysDagCB->onBufferDone(sequence, outputPort, buffer);
+    }
 
     if (needReturn) {
         returnBuffers(result);

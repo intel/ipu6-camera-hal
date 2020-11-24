@@ -17,7 +17,9 @@
 #define LOG_TAG "LiveTuning"
 
 #include "iutils/CameraLog.h"
+#include "iutils/CameraDump.h"
 #include "modules/livetune/LiveTuning.h"
+#include "modules/sandboxing/client/IntelAlgoClient.h"
 
 #include "PlatformData.h"
 
@@ -28,6 +30,34 @@ using std::vector;
  */
 
 namespace icamera {
+
+int setupIPCEnvForLiveTune(cros::CameraMojoChannelManager* mojoManager) {
+    PERF_CAMERA_ATRACE();
+    HAL_TRACE_CALL(1);
+
+    CheckError(mojoManager == nullptr, BAD_VALUE, "@%s, Invalid mojoManager!", __func__);
+
+    // Set debug level and dump level
+    icamera::Log::setDebugLevel();
+    icamera::CameraDump::setDumpLevel();
+
+    // Create IntelAlgoClient and set the mojo manager
+    icamera::IntelAlgoClient::getInstance()->setMojoManager(mojoManager);
+
+    // Run initialization of IntelAlgoClient
+    CheckError(icamera::IntelAlgoClient::getInstance()->initialize() != icamera::OK, -EINVAL,
+               "%s, Connect to algo service fails", __func__);
+
+    return OK;
+}
+
+int tearDownIPCEnvForLiveTune() {
+    PERF_CAMERA_ATRACE();
+    HAL_TRACE_CALL(1);
+
+    icamera::IntelAlgoClient::releaseInstance();
+    return OK;
+}
 
 int getSupportedRawInfo(int cameraId, int* width, int* height, int* format, int* mcId) {
     PERF_CAMERA_ATRACE();

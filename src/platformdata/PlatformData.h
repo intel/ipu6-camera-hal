@@ -32,6 +32,7 @@
 #include "AiqInitData.h"
 #include "MediaControl.h"
 #include "IGraphConfig.h"
+#include "FaceBase.h"
 
 namespace icamera {
 
@@ -153,6 +154,7 @@ public:
                 mFaceEngineRunningInterval(FACE_ENGINE_DEFAULT_RUNNING_INTERVAL),
                 mFaceEngineRunningIntervalNoFace(FACE_ENGINE_DEFAULT_RUNNING_INTERVAL),
                 mFaceEngineRunningSync(false),
+                mMaxFaceDetectionNumber(MAX_FACES_DETECTABLE),
                 mPsysAlignWithSof(false),
                 mPsysBundleWithAic(false),
                 mSwProcessingAlignWithIsp(false),
@@ -228,6 +230,7 @@ public:
             int mFaceEngineRunningInterval;
             int mFaceEngineRunningIntervalNoFace;
             int mFaceEngineRunningSync;
+            unsigned int mMaxFaceDetectionNumber;
             bool mPsysAlignWithSof;
             bool mPsysBundleWithAic;
             bool mSwProcessingAlignWithIsp;
@@ -241,6 +244,8 @@ public:
             std::vector<UserToPslOutputMap> mOutputMap;
             int mMaxNvmDataSize;
             std::string mNvmDirectory;
+            /* key: camera module info, value: aiqb name */
+            std::unordered_map<std::string, std::string> mCameraModuleToAiqbMap;
             std::vector<IGraphType::ScalerInfo> mScalerInfo;
             int mVideoStreamNum;
         };
@@ -586,6 +591,14 @@ public:
      * \return if face detection runs synchronously or not.
      */
     static bool isFaceEngineSyncRunning(int cameraId);
+
+    /**
+     * get the max number of face detection
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return the max number of face detection.
+     */
+    static unsigned int getMaxFaceDetectionNumber(int cameraId);
 
     /**
      * get dvs supported status
@@ -1195,5 +1208,10 @@ public:
      * Check if still stream tnr is prior to video tnr
      */
      static bool isStillTnrPrior();
+
+     /**
+     * Check if update tnr7us params every frame
+     */
+     static bool isTnrParamForceUpdate();
 };
 } /* namespace icamera */

@@ -76,8 +76,12 @@ status_t IntelIspParamAdaptor::runPal(ia_isp_bxt* ispBxtHandle,
                "%s, Wrong pal data buffer", __func__);
 
     ia_err ret = ia_isp_bxt_run_v2(ispBxtHandle, inputParams, outputData);
-    CheckError(ret != ia_err_none, UNKNOWN_ERROR, "%s, isp parameters adaptor run failed %d",
+    CheckError(ret != ia_err_none && ret != ia_err_not_run, UNKNOWN_ERROR, "%s, run PAL failed %d",
                __func__, ret);
+
+    // if PAL doesn't run, set output size to 0
+    if (ret == ia_err_not_run) outputData->size = 0;
+
     LOG1("%s, The pal result size: %d", __func__, outputData->size);
 
     return OK;

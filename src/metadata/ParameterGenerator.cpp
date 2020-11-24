@@ -162,6 +162,18 @@ void ParameterGenerator::updateParameters(long sequence, const Parameters *param
         requestParam->param.setJpegThumbnailQuality(quality);
     }
 
+    camera_edge_mode_t edgeMode;
+    ret = param->getEdgeMode(edgeMode);
+    if (ret == OK) {
+        requestParam->param.setEdgeMode(edgeMode);
+    }
+
+    camera_nr_mode_t nrMode;
+    ret = param->getNrMode(nrMode);
+    if (ret == OK) {
+        requestParam->param.setNrMode(nrMode);
+    }
+
     mRequestParamMap[sequence] = requestParam;
 }
 
@@ -262,7 +274,8 @@ int ParameterGenerator::updateWithAiqResultsL(long sequence, Parameters *params)
     camera_af_state_t afState = \
             (aiqResult->mAfResults.status == ia_aiq_af_status_local_search) ? AF_STATE_LOCAL_SEARCH
           : (aiqResult->mAfResults.status == ia_aiq_af_status_extended_search) ? AF_STATE_EXTENDED_SEARCH
-          : (aiqResult->mAfResults.status == ia_aiq_af_status_success) ? AF_STATE_SUCCESS
+          : ((aiqResult->mAfResults.status == ia_aiq_af_status_success)
+             && aiqResult->mAfResults.final_lens_position_reached) ? AF_STATE_SUCCESS
           : (aiqResult->mAfResults.status == ia_aiq_af_status_fail) ? AF_STATE_FAIL
           : AF_STATE_IDLE;
     params->setAfState(afState);

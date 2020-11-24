@@ -90,16 +90,28 @@ private:
     DISALLOW_COPY_AND_ASSIGN(IspParamAdaptor);
 
     int initProgramGroupForAllStreams(ConfigMode configMode);
-    int postConfigure(int width, int height, ia_binary_data *ipuParam);
+    int postConfigure(int width, int height, ia_binary_data *binaryData);
     void initInputParams(ia_isp_bxt_input_params_v2 *params, PgParamType type);
 
     int initIspAdaptHandle(ConfigMode configMode, TuningMode tuningMode);
     void deinitIspAdaptHandle();
 
     void updatePalDataForVideoPipe(ia_binary_data dest);
+    struct IspParameter {
+        /*
+         * map from setting sequnce to PAL data sequence to look up PAL data
+         * for PAL may not run if no scene changes, so setting sequence will
+         * map PAL data sequence with latest PAL data.
+         */
+        std::map<int64_t, int64_t> mSequenceToDataId;
+        // map from sequence to ia_binary_data
+        std::multimap<int64_t, ia_binary_data> mSequenceToDataMap;
+    };
+    void updateIspParameterMap(IspParameter* ispParam, int64_t dataSeq,
+                               int64_t settingSeq, ia_binary_data curIpuParam);
     int runIspAdaptL(ia_isp_bxt_program_group programGroup, ia_isp_bxt_gdc_limits* mbrData,
                      const IspSettings* ispSettings, long settingSequence,
-                     ia_binary_data *ipuParam, bool forceUpdate = false);
+                     ia_binary_data *binaryData, int32_t streamId = -1);
 
     //Allocate memory for mIspParameters
     int allocateIspParamBuffers();
@@ -109,7 +121,7 @@ private:
     // Dumping methods for debugging purposes.
     void dumpRgbsStats(ia_aiq_rgbs_grid *rgbs_grid, long sequence, unsigned int num = 1);
     void dumpAfStats(const ia_aiq_af_grid *afGrid, long sequence);
-    void dumpIspParameter(long sequence, ia_binary_data ipuParam);
+    void dumpIspParameter(long sequence, ia_binary_data binaryData);
     // Enable or disable kernels according to environment variables for debug purpose.
     void updateKernelToggles(ia_isp_bxt_program_group programGroup);
 
@@ -134,21 +146,20 @@ private:
     std::map<int, ia_isp_bxt_gdc_limits> mStreamIdToMbrDataMap;
     ia_aiq_frame_params mFrameParam;
     static const int ISP_PARAM_QUEUE_SIZE = MAX_SETTING_COUNT;
-    int mCurIspParamIndex;
-    struct IspParameter {
-        long sequence; // frame sequence id
-        std::map<int, ia_binary_data> streamIdToDataMap; // map from stream id to ia_binary_data
-        std::unordered_map<int32_t, bool> dataAvailableMap;
-    } mIspParameters[ISP_PARAM_QUEUE_SIZE];
+    std::map<int, IspParameter> mStreamIdToIspParameterMap; // map from stream id to IspParameter
     ia_binary_data mLastPalDataForVideoPipe;
-    int mCallInfoOffset;
-    int mBNLM32Offset;
     //Guard lock for ipu parameter
     Mutex mIpuParamLock;
 
     IGraphConfigManager *mGCM;
     std::list<long> mSequenceList;  // Store the sequence history in IspParamAdaptor
     std::unique_ptr<IntelIspParamAdaptor> mAdaptor;
+
+    struct PalRecord {
+        int uuid;
+        int offset;
+    };
+    std::vector<PalRecord> mPalRecords;  // Save PAL offset info for overwriting PAL
 };
 
 } // namespace icamera

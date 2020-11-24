@@ -673,11 +673,22 @@ void AiqUtils::applyAwbGainForTonemapCurve(const camera_tonemap_curves_t& curves
     float averageG = sumG / (curves.gSize / 2);
     float averageB = sumB / (curves.bSize / 2);
     LOG2("%s: curve average: %f %f %f", __func__, averageR, averageG, averageB);
+
     float minAverage = std::min(averageR, averageG);
     minAverage = std::min(minAverage, averageB);
-    if (minAverage > EPSILON) {
-        results->accurate_r_per_g *= averageG / averageR;
-        results->accurate_b_per_g *= averageG / averageB;
+    float maxAverage = std::max(averageR, averageG);
+    maxAverage = std::max(maxAverage, averageB);
+    if (maxAverage - minAverage > EPSILON) {
+        averageR =  AWB_GAIN_NORMALIZED_START + (averageR - minAverage) * \
+                                           AWB_GAIN_RANGE_NORMALIZED / (maxAverage - minAverage);
+        averageG =  AWB_GAIN_NORMALIZED_START + (averageG - minAverage) * \
+                                           AWB_GAIN_RANGE_NORMALIZED / (maxAverage - minAverage);
+        averageB =  AWB_GAIN_NORMALIZED_START + (averageB - minAverage) * \
+                                           AWB_GAIN_RANGE_NORMALIZED / (maxAverage - minAverage);
+        results->accurate_r_per_g = averageR / averageG;
+        results->accurate_b_per_g = averageB / averageG;
+        LOG2("%s: overwrite awb gain %f %f", __func__,
+             results->accurate_r_per_g, results->accurate_b_per_g);
     }
 }
 

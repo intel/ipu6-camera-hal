@@ -40,7 +40,8 @@ struct intel_cca_run_ltm_data {
 
 struct intel_cca_run_aic_data {
     uint64_t frameId;
-    cca::cca_pal_input_params inParams;
+    cca::cca_pal_input_params* inParams;
+    int32_t inParamsHandle;
 
     ia_binary_data palOutData;
     int32_t palDataHandle;

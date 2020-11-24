@@ -75,7 +75,7 @@ public:
     virtual ~PSysDAG();
     void setFrameInfo(const std::map<Port, stream_t>& inputInfo,
                       const std::map<Port, stream_t>& outputInfo);
-    int configure(ConfigMode configMode, TuningMode tuningMode);
+    int configure(ConfigMode configMode, TuningMode tuningMode, bool useTnrOutBuffer);
     int start();
     int stop();
 
@@ -94,7 +94,7 @@ public:
     TuningMode getTuningMode(long sequence);
     int prepareIpuParams(long sequence, bool forceUpdate = false, TaskInfo *task = nullptr);
 
-    bool fetchTnrRefBuffer(int64_t seq, std::shared_ptr<CameraBuffer> buf);
+    bool fetchTnrOutBuffer(int64_t seq, std::shared_ptr<CameraBuffer> buf);
 
     /**
      * Use to handle the frame done event from the executors.
@@ -106,7 +106,7 @@ private:
 
     void tuningReconfig(TuningMode newTuningMode);
 
-    int createPipeExecutors();
+    int createPipeExecutors(bool useTnrOutBuffer);
     int linkAndConfigExecutors();
     int bindExternalPortsToExecutor();
     void releasePipeExecutors();

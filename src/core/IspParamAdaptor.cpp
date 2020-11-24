@@ -16,9 +16,10 @@
 
 #define LOG_TAG "IspParamAdaptor"
 
-#include <stdio.h>
-
 #include "IspParamAdaptor.h"
+
+#include <stdio.h>
+#include <utility>
 
 #include "3a/AiqResult.h"
 #include "3a/AiqResultStorage.h"
@@ -41,9 +42,6 @@ IspParamAdaptor::IspParamAdaptor(int cameraId, PgParamType type) :
         mTuningMode(TUNING_MODE_VIDEO),
         mIspAdaptHandle(nullptr),
         mBCompResults(nullptr),
-        mCurIspParamIndex(-1),
-        mCallInfoOffset(-1),
-        mBNLM32Offset(-1),
         mGCM(nullptr),
         mAdaptor(nullptr)
 {
@@ -56,6 +54,15 @@ IspParamAdaptor::IspParamAdaptor(int cameraId, PgParamType type) :
     }
 
     mAdaptor = std::unique_ptr<IntelIspParamAdaptor>(new IntelIspParamAdaptor());
+
+    PalRecord palRecordArray[] = {
+        { ia_pal_uuid_isp_call_info, -1 },
+        { ia_pal_uuid_isp_bnlm_3_2, -1  },
+        { ia_pal_uuid_isp_lsc_1_1, -1   }
+    };
+    for (uint32_t i = 0; i < sizeof(palRecordArray) / sizeof(PalRecord); i++) {
+        mPalRecords.push_back(palRecordArray[i]);
+    }
 }
 
 IspParamAdaptor::~IspParamAdaptor()
@@ -94,8 +101,9 @@ int IspParamAdaptor::deinit()
 
     CLEAR(mFrameParam);
     CLEAR(mLastPalDataForVideoPipe);
-    mCallInfoOffset = -1;
-    mBNLM32Offset = -1;
+    for (uint32_t i = 0; i < mPalRecords.size(); i++) {
+        mPalRecords[i].offset = -1;
+    }
 
     mIspAdaptorState = ISP_ADAPTOR_NOT_INIT;
     return OK;
@@ -239,7 +247,7 @@ void IspParamAdaptor::initInputParams(ia_isp_bxt_input_params_v2 *params, PgPara
     }
 }
 
-int IspParamAdaptor::postConfigure(int width, int height, ia_binary_data *ipuParam)
+int IspParamAdaptor::postConfigure(int width, int height, ia_binary_data *binaryData)
 {
     // The PG wrapper init is done by the imaging controller.
     if(mPgParamType == PG_PARAM_PSYS_ISA) {
@@ -278,8 +286,9 @@ int IspParamAdaptor::configure(const stream_t &stream,
 
     mTuningMode = tuningMode;
     CLEAR(mLastPalDataForVideoPipe);
-    mCallInfoOffset = -1;
-    mBNLM32Offset = -1;
+    for (uint32_t i = 0; i < mPalRecords.size(); i++) {
+        mPalRecords[i].offset = -1;
+    }
 
     ia_isp_bxt_input_params_v2 inputParams;
     CLEAR(inputParams);
@@ -328,37 +337,29 @@ int IspParamAdaptor::configure(const stream_t &stream,
      *  IA_ISP_BXT can run without 3A results to produce the defaults for a
      *  given sensor configuration.
      */
-    IspParameter *ipuParam = nullptr;
-    {
-        AutoMutex l(mIpuParamLock);
-        mCurIspParamIndex = 0;
-        ipuParam = &(mIspParameters[mCurIspParamIndex]);
-    }
-    CheckError(!ipuParam, UNKNOWN_ERROR, "%s, Failed to get memory for ipuParam", __func__);
-
-    ia_binary_data curIpuParam = {};
-    for (auto& binaryMap : ipuParam->streamIdToDataMap) {
-        inputParams.program_group = &(mStreamIdToProgramGroupMap[binaryMap.first]);
+    ia_binary_data binaryData = {};
+    for (auto& ispParamIt : mStreamIdToIspParameterMap) {
+        inputParams.program_group = &(mStreamIdToProgramGroupMap[ispParamIt.first]);
         inputParams.sensor_frame_params = &mFrameParam;
-        curIpuParam = binaryMap.second;
-        curIpuParam.size = mStreamIdToPGOutSizeMap[binaryMap.first];
+        {
+            AutoMutex l(mIpuParamLock);
+            binaryData = ispParamIt.second.mSequenceToDataMap.begin()->second;
+        }
+        binaryData.size = mStreamIdToPGOutSizeMap[ispParamIt.first];
 
         PERF_CAMERA_ATRACE_PARAM1_IMAGING("ia_isp_bxt_run", 1);
 
-        int ret = mAdaptor->runPal(mIspAdaptHandle, &inputParams, &curIpuParam);
+        int ret = mAdaptor->runPal(mIspAdaptHandle, &inputParams, &binaryData);
         CheckError(ret != OK, UNKNOWN_ERROR, "ISP parameter adaptation has failed %d", ret);
 
-        {
-            AutoMutex l(mIpuParamLock);
-            binaryMap.second.size = curIpuParam.size;
-            ipuParam->dataAvailableMap[binaryMap.first] = true;
-            ipuParam->sequence = -1;
-        }
+        AutoMutex l(mIpuParamLock);
+        updateIspParameterMap(&(ispParamIt.second), -1, -1, binaryData);
+        ispParamIt.second.mSequenceToDataMap.erase(ispParamIt.second.mSequenceToDataMap.begin());
     }
 
-    dumpIspParameter(0, curIpuParam);
+    dumpIspParameter(0, binaryData);
 
-    return postConfigure(stream.width, stream.height, &curIpuParam);
+    return postConfigure(stream.width, stream.height, &binaryData);
 }
 
 int IspParamAdaptor::getParameters(Parameters& param)
@@ -495,29 +496,20 @@ void IspParamAdaptor::updateKernelToggles(ia_isp_bxt_program_group programGroup)
 /*
  * PAL output buffer is a reference data for next output buffer,
  * but currently a ring buffer is used in HAL, which caused logic mismatching issue.
- * So temporarily copy lastest call info and BNLM_3_2 into PAL output buffer.
+ * So temporarily copy lastest PAL datas into PAL output buffer.
  */
 void IspParamAdaptor::updatePalDataForVideoPipe(ia_binary_data dest)
 {
     if (mLastPalDataForVideoPipe.data == nullptr || mLastPalDataForVideoPipe.size == 0)
         return;
 
-    char* src = static_cast<char*>(mLastPalDataForVideoPipe.data);
-    ia_pal_record_header *header_call_info = nullptr;
-    ia_pal_record_header *header_bnlm_3_2 = nullptr;
+    if (mPalRecords.empty()) return;
+
     ia_pal_record_header *header = nullptr;
-    if (mBNLM32Offset >= 0 && mCallInfoOffset >= 0) {
-        header = reinterpret_cast<ia_pal_record_header*>(src + mCallInfoOffset);
-        if (header->uuid == ia_pal_uuid_isp_call_info) {
-            header_call_info = header;
-        }
-        header = reinterpret_cast<ia_pal_record_header*>(src + mBNLM32Offset);
-        if (header->uuid == ia_pal_uuid_isp_bnlm_3_2) {
-            header_bnlm_3_2 = header;
-        }
-    } else {
+    char* src = static_cast<char*>(mLastPalDataForVideoPipe.data);
+    // find uuid offset in saved PAL buffer
+    if (mPalRecords[0].offset < 0) {
         uint32_t offset = 0;
-        // find call_info and bnlm_3_2 data in saved PAL buffer
         while (offset < mLastPalDataForVideoPipe.size) {
             ia_pal_record_header *header = reinterpret_cast<ia_pal_record_header*>(src + offset);
             // check if header is valid or not
@@ -526,38 +518,54 @@ void IspParamAdaptor::updatePalDataForVideoPipe(ia_binary_data dest)
                 return;
             }
 
-            if (header->uuid == ia_pal_uuid_isp_call_info) {
-                header_call_info = header;
-                mCallInfoOffset = offset;
-            } else if (header->uuid == ia_pal_uuid_isp_bnlm_3_2) {
-                header_bnlm_3_2 = header;
-                mBNLM32Offset = offset;
+            for (uint32_t i = 0; i < mPalRecords.size(); i++) {
+                if (mPalRecords[i].offset < 0 && mPalRecords[i].uuid == header->uuid) {
+                    mPalRecords[i].offset = offset;
+                    LOG2("find uuid %d, offset %d, size %d", header->uuid, offset, header->size);
+                    break;
+                }
             }
             offset += header->size;
         }
-        LOG2("call info offset %d, bnlm_3_2 offset %d", mCallInfoOffset, mBNLM32Offset);
-    }
-
-    // return if not all data is found
-    if (header_call_info == nullptr || header_bnlm_3_2 == nullptr) {
-        LOG2("%s, call info or bnlm_3_2 isn't found", __func__);
-        return;
     }
 
     char* destData = static_cast<char*>(dest.data);
-    // update call_info and bnlm_3_2 data
-    if (mBNLM32Offset >= 0 && mCallInfoOffset >= 0) {
-        header = reinterpret_cast<ia_pal_record_header*>(destData + mCallInfoOffset);
-        if (header->uuid == ia_pal_uuid_isp_call_info) {
-            MEMCPY_S(header, header->size, header_call_info, header_call_info->size);
-        }
-        header = reinterpret_cast<ia_pal_record_header*>(destData + mBNLM32Offset);
-        if (header->uuid == ia_pal_uuid_isp_bnlm_3_2) {
-            MEMCPY_S(header, header->size, header_bnlm_3_2, header_bnlm_3_2->size);
+    ia_pal_record_header *headerSrc = nullptr;
+    for (uint32_t i = 0; i < mPalRecords.size(); i++) {
+        if (mPalRecords[i].offset >= 0) {
+            // find source record header
+            header = reinterpret_cast<ia_pal_record_header*>(src + mPalRecords[i].offset);
+            if (header->uuid == mPalRecords[i].uuid) {
+                headerSrc = header;
+            }
+
+            if (!headerSrc) {
+                LOGW("Failed to find PAL recorder header %d", mPalRecords[i].uuid);
+                continue;
+            }
+            header = reinterpret_cast<ia_pal_record_header*>(destData + mPalRecords[i].offset);
+            if (header->uuid == mPalRecords[i].uuid) {
+                MEMCPY_S(header, header->size, headerSrc, headerSrc->size);
+                LOG2("%s, PAL data of kernel uuid %d has been updated", __func__, header->uuid);
+            }
         }
     }
+}
 
-    LOG2("%s, call info and bnlm_3_2 kernels have been updated", __func__);
+void IspParamAdaptor::updateIspParameterMap(IspParameter* ispParam, int64_t dataSeq,
+                                            int64_t settingSeq, ia_binary_data binaryData)
+{
+    LOG2("%s, data seq %ld, setting sequence %ld", __func__, dataSeq, settingSeq);
+
+    // if dataSeq doesn't equal to settingSeq, only update sequence map
+    if (dataSeq == settingSeq) {
+        std::pair<int64_t, ia_binary_data> p(settingSeq, binaryData);
+        ispParam->mSequenceToDataMap.insert(p);
+    }
+    if (ispParam->mSequenceToDataId.size() >= ISP_PARAM_QUEUE_SIZE) {
+        ispParam->mSequenceToDataId.erase(ispParam->mSequenceToDataId.begin());
+    }
+    ispParam->mSequenceToDataId[settingSeq] = dataSeq;
 }
 
 /**
@@ -572,72 +580,67 @@ int IspParamAdaptor::runIspAdapt(const IspSettings* ispSettings, long settingSeq
     CheckError(mIspAdaptorState != ISP_ADAPTOR_CONFIGURED, INVALID_OPERATION, "%s, wrong state %d",
           __func__, mIspAdaptorState);
 
-    bool forceUpdate = false;
-    IspParameter *ipuParam = nullptr;
-    {
-        AutoMutex l(mIpuParamLock);
+    for (auto& it : mStreamIdToIspParameterMap) {
+        if (streamId != -1 && it.first != streamId) continue;
 
-        int updateIndex = -1;
-        // Check if the given sequence is already there, if so we need update it instead of
-        // updating mCurIspParamIndex and using next buffer.
-        for (int i = 0; i < ISP_PARAM_QUEUE_SIZE; i++) {
-            if (mIspParameters[i].sequence == settingSequence) {
-                updateIndex = i;
-                break;
-            }
-        }
-
-        if (updateIndex == -1) {
-            mCurIspParamIndex++;
-            mCurIspParamIndex = mCurIspParamIndex % ISP_PARAM_QUEUE_SIZE;
-            updateIndex = mCurIspParamIndex;
-            forceUpdate = true;
-            // Only Store the new sequence
-            LOG2("%s, the sequence list size: %zu", __func__, mSequenceList.size());
-            if (mSequenceList.size() >= PlatformData::getMaxRawDataNum(mCameraId)) {
-                mSequenceList.pop_front();
-            }
-            mSequenceList.push_back(settingSequence);
-            mIspParameters[updateIndex].dataAvailableMap.clear();
-        }
-
-        ipuParam = &(mIspParameters[updateIndex]);
-        ipuParam->sequence = -1;
-        LOG2("%s, current isp parameter index:%d, update index:%d, for sequence: %ld, stream %d",
-              __func__, mCurIspParamIndex, updateIndex, settingSequence, streamId);
-    }
-    CheckError(!ipuParam, UNKNOWN_ERROR, "%s, Failed to get memory for ipuParam", __func__);
-
-    ia_isp_bxt_gdc_limits* mbrData = nullptr;
-    ia_binary_data curIpuParam = {};
-    for (auto& binaryMap : ipuParam->streamIdToDataMap) {
-        if (!(streamId == -1 || binaryMap.first == streamId))
-            continue;
-        curIpuParam = binaryMap.second;
-        curIpuParam.size = mStreamIdToPGOutSizeMap[binaryMap.first];
-        if (mStreamIdToMbrDataMap.find(binaryMap.first) != mStreamIdToMbrDataMap.end())
-            mbrData = &(mStreamIdToMbrDataMap[binaryMap.first]);
-
-        // Update some PAL data to lastest PAL result
-        if (binaryMap.first == VIDEO_STREAM_ID) {
-            updatePalDataForVideoPipe(binaryMap.second);
-        }
-        int ret = runIspAdaptL(mStreamIdToProgramGroupMap[binaryMap.first], mbrData,
-                               ispSettings, settingSequence, &curIpuParam, forceUpdate);
-
-        CheckError(ret != OK, ret, "run isp adaptor error for streamId %d, sequence: %ld",
-                               binaryMap.first, settingSequence);
+        ia_binary_data binaryData = {};
+        IspParameter *ispParam = &(it.second);
+        auto dataIt = ispParam->mSequenceToDataMap.end();
         {
             AutoMutex l(mIpuParamLock);
-            binaryMap.second.size = curIpuParam.size;
-            ipuParam->dataAvailableMap[binaryMap.first] = true;
-            ipuParam->sequence = settingSequence;
+            // Only one sequence key will be saved if settingSequence is larger than 0
+            if (settingSequence >= 0) {
+                dataIt = ispParam->mSequenceToDataMap.find(settingSequence);
+            }
 
-            if (binaryMap.first == VIDEO_STREAM_ID) {
-                mLastPalDataForVideoPipe = binaryMap.second;
+            if (dataIt == ispParam->mSequenceToDataMap.end()) {
+                dataIt = ispParam->mSequenceToDataMap.begin();
+            }
+            CheckError(dataIt == ispParam->mSequenceToDataMap.end(), UNKNOWN_ERROR, "No PAL buf!");
+            binaryData = dataIt->second;
+
+            LOG2("%s, PAL data buffer seq:%ld, for sequence: %ld, stream %d",
+                 __func__, dataIt->first, settingSequence, it.first);
+        }
+
+        ia_isp_bxt_gdc_limits* mbrData = nullptr;
+        binaryData.size = mStreamIdToPGOutSizeMap[it.first];
+        if (mStreamIdToMbrDataMap.find(it.first) != mStreamIdToMbrDataMap.end())
+            mbrData = &(mStreamIdToMbrDataMap[it.first]);
+
+        // Update some PAL data to lastest PAL result
+        if (it.first == VIDEO_STREAM_ID) {
+            updatePalDataForVideoPipe(binaryData);
+        }
+        int ret = runIspAdaptL(mStreamIdToProgramGroupMap[it.first], mbrData,
+                               ispSettings, settingSequence, &binaryData, it.first);
+        CheckError(ret != OK, ret, "run isp adaptor error for streamId %d, sequence: %ld",
+                   it.first, settingSequence);
+
+        {
+            AutoMutex l(mIpuParamLock);
+            int64_t dataSequence = settingSequence;
+            if (binaryData.size == 0) {
+                dataSequence = ispParam->mSequenceToDataMap.rbegin()->first;
+            }
+
+            updateIspParameterMap(ispParam, dataSequence, settingSequence, binaryData);
+            if (binaryData.size > 0) {
+                ispParam->mSequenceToDataMap.erase(dataIt);
+
+                if (it.first == VIDEO_STREAM_ID) {
+                    mLastPalDataForVideoPipe = binaryData;
+                }
             }
         }
     }
+
+    // Only Store the new sequence
+    LOG2("%s, the sequence list size: %zu", __func__, mSequenceList.size());
+    if (mSequenceList.size() >= PlatformData::getMaxRawDataNum(mCameraId)) {
+        mSequenceList.pop_front();
+    }
+    mSequenceList.push_back(settingSequence);
 
     return OK;
 }
@@ -646,52 +649,38 @@ ia_binary_data* IspParamAdaptor::getIpuParameter(long sequence, int streamId)
 {
     AutoMutex l(mIpuParamLock);
 
-    ia_binary_data* ipuParam = nullptr;
-    // get the latest ipu param when sequence is -1
-    if (sequence == -1) {
-        /* For old version.
-        * We should get the ipu param according to streamId and
-        * sequenceId when there are multi-streams in one pipe.
-        *
-        * This is only for getting the default ipu parameter
-        */
-        if (streamId == -1) {
-            return &(mIspParameters[mCurIspParamIndex].streamIdToDataMap.begin()->second);
-        }
+    // This is only for getting the default ipu parameter
+    if (sequence == -1 && streamId == -1) {
+        return &(mStreamIdToIspParameterMap.begin()->second.mSequenceToDataMap.begin()->second);
+    }
+    CheckError(streamId == -1, nullptr, "stream id is -1, but seq isn't -1");
 
-        long seq = -1;
-        int index = 0;
-        for (int i = 0; i < ISP_PARAM_QUEUE_SIZE; i++) {
-            if (seq < mIspParameters[i].sequence) {
-                seq = mIspParameters[i].sequence;
-                // only get the latest param for requested stream
-                if (mIspParameters[i].dataAvailableMap.find(streamId) !=
-                    mIspParameters[i].dataAvailableMap.end()) {
-                    index = i;
-                }
-            }
-        }
-        IspParameter& param = mIspParameters[index];
-        if (param.streamIdToDataMap.find(streamId) != param.streamIdToDataMap.end()) {
-            ipuParam = &param.streamIdToDataMap[streamId];
-        }
-    } else {
-        for (int i = 0; i < ISP_PARAM_QUEUE_SIZE; i++) {
-            IspParameter& param = mIspParameters[i];
-            if (param.sequence == sequence &&
-                param.streamIdToDataMap.find(streamId) != param.streamIdToDataMap.end() &&
-                param.dataAvailableMap.find(streamId) != param.dataAvailableMap.end()) {
-                ipuParam = &param.streamIdToDataMap[streamId];
+    IspParameter& ispParam = mStreamIdToIspParameterMap[streamId];
+    ia_binary_data* binaryData = nullptr;
+    if (sequence == -1) {
+        // get the latest ipu param when sequence is -1
+        auto rit = ispParam.mSequenceToDataMap.rbegin();
+        for (; rit != ispParam.mSequenceToDataMap.rend(); ++rit) {
+            // sequence -1 is valid for default PAL data
+            if (rit->first >= -1) {
+                binaryData = &(rit->second);
                 break;
             }
         }
+    } else {
+        auto seqIt =ispParam.mSequenceToDataId.find(sequence);
+        if (seqIt != ispParam.mSequenceToDataId.end()) {
+            auto dataIt = ispParam.mSequenceToDataMap.find(seqIt->second);
+            if (dataIt != ispParam.mSequenceToDataMap.end())
+                binaryData = &(dataIt->second);
+        }
     }
 
-    if (!ipuParam) {
+    if (!binaryData) {
         LOG1("Failed to find ISP parameter for stream id %d, sequence: %ld", streamId, sequence);
     }
 
-    return ipuParam;
+    return binaryData;
 }
 
 int IspParamAdaptor::getPalOutputDataSize(const ia_isp_bxt_program_group* programGroup)
@@ -701,7 +690,7 @@ int IspParamAdaptor::getPalOutputDataSize(const ia_isp_bxt_program_group* progra
 }
 
 /*
- * Allocate memory for mIspParameters
+ * Allocate memory for mSequenceToDataMap
  * TODO: Let PAL to expose the max ia_binary_data buffer size which
  * come from mIspAdaptHandle->ia_pal.m_output_isp_parameters_size
  */
@@ -710,17 +699,16 @@ int IspParamAdaptor::allocateIspParamBuffers()
     releaseIspParamBuffers();
 
     for (int i = 0; i < ISP_PARAM_QUEUE_SIZE; i++) {
-        for (auto & pgMap : mStreamIdToProgramGroupMap) {
-            ia_binary_data ispParam;
+        for (auto& pgMap : mStreamIdToProgramGroupMap) {
+            ia_binary_data binaryData = {};
             int size = mStreamIdToPGOutSizeMap[pgMap.first];
-            CLEAR(ispParam);
-            ispParam.size = size;
-            ispParam.data = mAdaptor->allocatePalBuffer(pgMap.first, i, size);
-            CheckError(ispParam.data == nullptr, NO_MEMORY, "Faile to calloc the memory for isp parameter");
-            mIspParameters[i].streamIdToDataMap[pgMap.first] = ispParam;
+            binaryData.size = size;
+            binaryData.data = mAdaptor->allocatePalBuffer(pgMap.first, i, size);
+            CheckError(binaryData.data == nullptr, NO_MEMORY, "Faile to calloc PAL data");
+            int64_t index = i * (-1) - 2; // default index list: -2, -3, -4, ...
+            std::pair<int64_t, ia_binary_data> p(index, binaryData);
+            mStreamIdToIspParameterMap[pgMap.first].mSequenceToDataMap.insert(p);
         }
-        mIspParameters[i].sequence = -1;
-        mIspParameters[i].dataAvailableMap.clear();
     }
 
     return OK;
@@ -729,19 +717,21 @@ int IspParamAdaptor::allocateIspParamBuffers()
 void IspParamAdaptor::releaseIspParamBuffers()
 {
     for (int i = 0; i < ISP_PARAM_QUEUE_SIZE; i++) {
-        for (auto& binaryMap : mIspParameters[i].streamIdToDataMap)
-            mAdaptor->freePalBuffer(binaryMap.second.data);
+        for (auto& it : mStreamIdToIspParameterMap) {
+            for (auto& binaryMap : it.second.mSequenceToDataMap) {
+                mAdaptor->freePalBuffer(binaryMap.second.data);
+            }
 
-        mIspParameters[i].sequence = -1;
-        mIspParameters[i].streamIdToDataMap.clear();
-        mIspParameters[i].dataAvailableMap.clear();
+            it.second.mSequenceToDataId.clear();
+            it.second.mSequenceToDataMap.clear();
+        }
     }
 }
 
 int IspParamAdaptor::runIspAdaptL(ia_isp_bxt_program_group programGroup,
                                   ia_isp_bxt_gdc_limits *mbrData,
                                   const IspSettings* ispSettings, long settingSequence,
-                                  ia_binary_data *ipuParam, bool forceUpdate)
+                                  ia_binary_data *binaryData, int32_t streamId)
 {
     PERF_CAMERA_ATRACE_IMAGING();
     AiqResult* aiqResults = const_cast<AiqResult*>(AiqResultStorage::getInstance(mCameraId)->getAiqResult(settingSequence));
@@ -808,6 +798,12 @@ int IspParamAdaptor::runIspAdaptL(ia_isp_bxt_program_group programGroup,
                 programGroup.run_kernels[i].metadata[3] = aiqResults->mAiqParam.yuvColorRangeMode;
                 LOG2("ofa yuv color range mode %d", programGroup.run_kernels[i].metadata[3]);
                 break;
+            case ia_pal_uuid_isp_gammatm_v3:
+                // Bypass the GammaTM for manual color transform awb mode
+                programGroup.run_kernels[i].enable =
+                    (aiqResults->mAiqParam.awbMode == AWB_MODE_MANUAL_COLOR_TRANSFORM) ? 0 : 1;
+                LOG2("GammaTM enabled: %d", programGroup.run_kernels[i].enable);
+                break;
             }
         }
     }
@@ -825,6 +821,18 @@ int IspParamAdaptor::runIspAdaptL(ia_isp_bxt_program_group programGroup,
     inputParams.pa_results = &aiqResults->mPaResults;
     inputParams.sa_results = &aiqResults->mSaResults;
     inputParams.weight_grid = aiqResults->mAeResults.weight_grid;
+
+    inputParams.media_format = media_format_legacy;
+    if (aiqResults->mAiqParam.tonemapMode != TONEMAP_MODE_FAST &&
+        aiqResults->mAiqParam.tonemapMode != TONEMAP_MODE_HIGH_QUALITY) {
+        inputParams.media_format = media_format_custom;
+    }
+    LOG2("%s, media format: 0x%x", __func__, inputParams.media_format);
+
+    if (VIDEO_STREAM_ID == streamId)
+        inputParams.call_rate_control.mode = ia_isp_call_rate_never_on_converged;
+    else
+        inputParams.call_rate_control.mode = ia_isp_call_rate_always;
 
     if (aiqResults->mCustomControls.count > 0) {
         inputParams.custom_controls = &aiqResults->mCustomControls;
@@ -882,18 +890,14 @@ int IspParamAdaptor::runIspAdaptL(ia_isp_bxt_program_group programGroup,
         inputParams.manual_digital_gain = aiqResults->mAeResults.exposures[0].exposure->digital_gain;
     }
 
-    if (forceUpdate) {
-        inputParams.sa_results->lsc_update = true;
-    }
-
     int ret = OK;
     {
         PERF_CAMERA_ATRACE_PARAM1_IMAGING("ia_isp_bxt_run", 1);
-        ret = mAdaptor->runPal(mIspAdaptHandle, &inputParams, ipuParam);
+        ret = mAdaptor->runPal(mIspAdaptHandle, &inputParams, binaryData);
     }
     CheckError(ret != OK, UNKNOWN_ERROR, "ISP parameter adaptation has failed %d", ret);
 
-    dumpIspParameter(aiqResults->mSequence, *ipuParam);
+    dumpIspParameter(aiqResults->mSequence, *binaryData);
 
     return OK;
 }
@@ -969,7 +973,7 @@ void IspParamAdaptor::dumpRgbsStats(ia_aiq_rgbs_grid *rgbsGrid, long sequence, u
     }
 }
 
-void IspParamAdaptor::dumpIspParameter(long sequence, ia_binary_data ipuParam) {
+void IspParamAdaptor::dumpIspParameter(long sequence, ia_binary_data binaryData) {
     if (mPgParamType == PG_PARAM_PSYS_ISA && !CameraDump::isDumpTypeEnable(DUMP_PSYS_PAL)) return;
     if (mPgParamType == PG_PARAM_ISYS && !CameraDump::isDumpTypeEnable(DUMP_ISYS_PAL)) return;
 
@@ -978,7 +982,7 @@ void IspParamAdaptor::dumpIspParameter(long sequence, ia_binary_data ipuParam) {
     bParam.mType    = mPgParamType == PG_PARAM_PSYS_ISA ? M_PSYS : M_ISYS;
     bParam.sequence = sequence;
     bParam.gParam.appendix = "pal";
-    CameraDump::dumpBinary(mCameraId, ipuParam.data, ipuParam.size, &bParam);
+    CameraDump::dumpBinary(mCameraId, binaryData.data, binaryData.size, &bParam);
 }
 
 } // namespace icamera

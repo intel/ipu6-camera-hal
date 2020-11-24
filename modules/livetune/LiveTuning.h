@@ -34,11 +34,46 @@
 #include <stdlib.h>  // For including definition of NULL
 #include <vector>
 
+#include "cros-camera/camera_algorithm_bridge.h"
+
 namespace icamera {
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/**
+ * \brief
+ *   Setup IPC environment to init Livetune.
+ *
+ * \note
+ *   Call the API once when live tuning camera engine constructed.
+ *
+ * \param[in/out]
+ *   cros::CameraMojoChannelManager* mojoManager: pointer of CameraMojoChannelManager.
+ *
+ * \return
+ *   0 means the api run succeed.
+ * \return
+ *   non-0 means the api run failed.
+ *
+ */
+int setupIPCEnvForLiveTune(cros::CameraMojoChannelManager* mojoManager);
+
+/**
+ * \brief
+ *   Tear Down IPC environment to deinit Livetune.
+ *
+ * \note
+ *   Call the API once when live tuning camera engine deconstructed.
+ *
+ * \return
+ *   0 means the api run succeed.
+ * \return
+ *   non-0 means the api run failed.
+ *
+ */
+int tearDownIPCEnvForLiveTune();
 
 /**
  * \brief

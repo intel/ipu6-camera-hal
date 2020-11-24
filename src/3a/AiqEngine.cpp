@@ -499,6 +499,13 @@ int AiqEngine::applyManualTonemaps(AiqResult *aiqResult)
         AiqUtils::applyAwbGainForTonemapCurve(mAiqParam.tonemapCurves, &aiqResult->mAwbResults);
     }
 
+    // use unity value for tone map table
+    if (aiqResult->mGbceResults.tone_map_lut_size > 0 && aiqResult->mGbceResults.tone_map_lut) {
+        for (unsigned int i = 0; i < aiqResult->mGbceResults.tone_map_lut_size; i++) {
+            aiqResult->mGbceResults.tone_map_lut[i] = 1.0;
+        }
+    }
+
     return OK;
 }
 

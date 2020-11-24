@@ -50,7 +50,7 @@ class IntelCca {
 
     ia_err runDVS(uint64_t frameId);
 
-    ia_err runAIC(uint64_t frameId, const cca::cca_pal_input_params& params, ia_binary_data* pal);
+    ia_err runAIC(uint64_t frameId, const cca::cca_pal_input_params* params, ia_binary_data* pal);
 
     ia_err getCMC(cca::cca_cmc* cmc);
     ia_err getMKN(ia_mkn_trg type, cca::cca_mkn* mkn);
@@ -68,6 +68,10 @@ class IntelCca {
     void freePalBuffer(void* addr);
 
  private:
+    cca::IntelCCA* getIntelCCA();
+    void releaseIntelCCA();
+
+ private:
     struct CCAHandle {
         int cameraId;
         std::unordered_map<TuningMode, IntelCca*> ccaHandle;  // TuningMode to IntelCca map
@@ -75,6 +79,6 @@ class IntelCca {
     static std::vector<CCAHandle> sCcaInstance;
     static Mutex sLock;
 
-    std::unique_ptr<cca::IntelCCA> mIntelCCA;
+    cca::IntelCCA* mIntelCCA;
 };
 } /* namespace icamera */

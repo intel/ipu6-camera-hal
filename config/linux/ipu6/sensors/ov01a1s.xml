@@ -17,30 +17,30 @@
 <CameraSettings>
     <Sensor name="ov01a1s" description="OV01A1S sensor.">
         <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1312" outputHeight="800" format="V4L2_PIX_FMT_SGRBG10"><!-- RAW10 BE capture -->
-            <format name="ov01a1s 16-0036" pad="0" width="1296" height="800" format="V4L2_MBUS_FMT_SGRBG10_1X10"/> 
+            <format name="ov01a1s 3-0036" pad="0" width="1296" height="800" format="V4L2_MBUS_FMT_SGRBG10_1X10"/> 
             <format name="Intel IPU6 CSI-2 1" pad="0" width="1296" height="800" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
             <format name="Intel IPU6 CSI-2 1" pad="1" width="1296" height="800" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
-            
-            <link srcName="ov01a1s 16-0036" srcPad="0" sinkName="Intel IPU6 CSI-2 1" sinkPad="0" enable="true"/>
+
+            <link srcName="ov01a1s 3-0036" srcPad="0" sinkName="Intel IPU6 CSI-2 1" sinkPad="0" enable="true"/>
 
             <format name="Intel IPU6 CSI2 BE SOC 0" pad="0" width="1296" height="800" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
             <format name="Intel IPU6 CSI2 BE SOC 0" pad="1" width="1312" height="800" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
-	    <selection name="Intel IPU6 CSI2 BE SOC 0" pad="1" target="V4L2_SEL_TGT_CROP" left="0" top="0" width="1312" height="800"/>
-	    
+            <selection name="Intel IPU6 CSI2 BE SOC 0" pad="1" target="V4L2_SEL_TGT_CROP" left="0" top="0" width="1312" height="800"/>
+
             <link srcName="Intel IPU6 CSI-2 1" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 0" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC 0" srcPad="1" sinkName="Intel IPU6 BE SOC capture 0" sinkPad="0" enable="true"/>
 
             <videonode name="Intel IPU6 BE SOC capture 0" videoNodeType="VIDEO_GENERIC"/>
             <videonode name="Intel IPU6 CSI-2 1" videoNodeType="VIDEO_ISYS_RECEIVER"/>
-            <videonode name="ov01a1s 16-0036" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+            <videonode name="ov01a1s 3-0036" videoNodeType="VIDEO_PIXEL_ARRAY"/>
         </MediaCtlConfig>
 
         <StaticMetadata>
             <!-- format,widthxheight,field(none:0,alternate:7),mcId -->
-		<supportedStreamConfig value="V4L2_PIX_FMT_NV12,1280x720,0,0" />
-		<!--	V4L2_PIX_FMT_NV12,640x480,0,0,
-			V4L2_PIX_FMT_NV12,320x240,0,0"  -->
-		<!--  V4L2_PIX_FMT_SGRBG10,1280x720,0,0" -->
+        <supportedStreamConfig value="V4L2_PIX_FMT_NV12,1280x720,0,0" />
+        <!--    V4L2_PIX_FMT_NV12,640x480,0,0,
+           V4L2_PIX_FMT_NV12,320x240,0,0"  -->
+        <!--  V4L2_PIX_FMT_SGRBG10,1280x720,0,0" -->
 
             <supportedFeatures value="MANUAL_EXPOSURE,
                                       MANUAL_WHITE_BALANCE,
@@ -78,7 +78,7 @@
             <sensor.info.exposureTimeRange value="100,100000"/>  <!-- align with supportedAeExposureTimeRange -->
 
             <!-- Blow static metadata are for camera HAL V3 -->
-	    <sensor.info.activeArraySize value="0,0,1296,800"/> <!-- 1296,800 -->
+            <sensor.info.activeArraySize value="0,0,1296,800"/> <!-- 1296,800 -->
             <sensor.info.pixelArraySize value="1296x800"/>
             <!-- 4096x1.12um 3072x1.12um -->
             <sensor.info.physicalSize value="3.69,2.77"/>
@@ -177,21 +177,21 @@
         <enableAIQ value="true"/>
         <iSysRawFormat value="V4L2_PIX_FMT_SGRBG10"/>
         <maxRawDataNum value="32"/>
-	<pSysFormat value="V4L2_PIX_FMT_NV12"/>  <!-- V4L2_PIX_FMT_NV12 -->
+        <pSysFormat value="V4L2_PIX_FMT_NV12"/>  <!-- V4L2_PIX_FMT_NV12 -->
         <initialSkipFrame value="0"/>
         <exposureLag value="2"/>
         <gainLag value="2"/>
         <ltmGainLag value="1"/>
         <yuvColorRangeMode value="full"/> <!-- there are 2 yuv color range mode, like full, reduced. -->
         <pipeSwitchDelayFrame value="60"/>
-        <graphSettingsFile value="TGL_ov01a1s_linux.IPU6.xml"/>
+        <graphSettingsFile value="graph_settings_ov01a1s.xml"/>
         <graphSettingsType value="dispersed"/>
         <enablePSysProcessor value="true"/>
         <dvsType value="IMG_TRANS"/>
         <testPatternMap value="Off,0,ColorBars,2"/>
         <enableAiqd value = "true"/>
         <useCrlModule value = "false"/>
-	<pslOutputMapForRotation value="1280x720@1280x720,640x480@640x480,320x240@640x480"/>
+        <pslOutputMapForRotation value="1280x720@1280x720,640x480@640x480,320x240@640x480"/>
 
         <maxRequestsInflight value="5"/>
         <faceEngineRunningSync value="true"/>

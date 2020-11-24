@@ -48,12 +48,13 @@ namespace icamera {
 std::mutex GPUExecutor::mGPULock;
 
 GPUExecutor::GPUExecutor(int cameraId, const ExecutorPolicy& policy, vector<string> exclusivePGs,
-                         PSysDAG* psysDag, shared_ptr<IGraphConfig> gc)
+                         PSysDAG* psysDag, shared_ptr<IGraphConfig> gc, bool useTnrOutBuffer)
         : PipeExecutor(cameraId, policy, exclusivePGs, psysDag, gc),
           mTnr7usParam(nullptr),
           mIntelTNR(nullptr),
           mLastSequence(UINT32_MAX),
-          mRefBufferSize(0) {
+          mUseInternalTnrBuffer(useTnrOutBuffer),
+          mOutBufferSize(0) {
     LOG1("@%s %s", __func__, mName.c_str());
 }
 
@@ -180,7 +181,7 @@ int GPUExecutor::allocBuffers() {
     }
 
     if (mIntelTNR) {
-        int ret = allocTnrRefBufs(size);
+        int ret = allocTnrOutBufs(size);
         CheckError(ret, UNKNOWN_ERROR, "@%s: alloc tnr reference buffer failed", __func__);
 
         mTnr7usParam = mIntelTNR->allocTnr7ParamBuf();
@@ -203,15 +204,17 @@ int GPUExecutor::allocBuffers() {
     return OK;
 }
 
-bool GPUExecutor::fetchTnrRefBuffer(int64_t seq, std::shared_ptr<CameraBuffer> buf) {
-    std::unique_lock<std::mutex> lock(mTnrRefBufMapLock);
-    if (mTnrRefBufMap.find(seq) != mTnrRefBufMap.end()) {
+bool GPUExecutor::fetchTnrOutBuffer(int64_t seq, std::shared_ptr<CameraBuffer> buf) {
+    if (!mUseInternalTnrBuffer) return false;
+
+    std::unique_lock<std::mutex> lock(mTnrOutBufMapLock);
+    if (mTnrOutBufMap.find(seq) != mTnrOutBufMap.end()) {
         void* pSrcBuf = (buf->getMemory() == V4L2_MEMORY_DMABUF)
                             ? CameraBuffer::mapDmaBufferAddr(buf->getFd(), buf->getBufferSize())
                             : buf->getBufferAddr();
         CheckError(!pSrcBuf, false, "%s, pSrcBuf is nullptr", __func__);
         LOG2("%s, sequence %ld is used for output", __func__, seq);
-        MEMCPY_S(pSrcBuf, buf->getBufferSize(), mTnrRefBufMap[seq], mRefBufferSize);
+        MEMCPY_S(pSrcBuf, buf->getBufferSize(), mTnrOutBufMap[seq], mOutBufferSize);
         if (buf->getMemory() == V4L2_MEMORY_DMABUF) {
             CameraBuffer::unmapDmaBufferAddr(pSrcBuf, buf->getBufferSize());
         }
@@ -222,21 +225,22 @@ bool GPUExecutor::fetchTnrRefBuffer(int64_t seq, std::shared_ptr<CameraBuffer> b
     return false;
 }
 
-int GPUExecutor::allocTnrRefBufs(uint32_t bufSize) {
-    mRefBufferSize = bufSize;
+int GPUExecutor::allocTnrOutBufs(uint32_t bufSize) {
+    mOutBufferSize = bufSize;
+
     /* for yuv still stream, we use maxRaw buffer to do reprocessing, and for real still stream, 2
      * tnr buffers are enough */
-    int maxTnrRefBufCount = (mStreamId == VIDEO_STREAM_ID)
+    int maxTnrOutBufCount = (mStreamId == VIDEO_STREAM_ID && mUseInternalTnrBuffer)
                                 ? PlatformData::getMaxRawDataNum(mCameraId)
                                 : DEFAULT_TNR7US_BUFFER_COUNT;
 
-    std::unique_lock<std::mutex> lock(mTnrRefBufMapLock);
-    for (int i = 0; i < maxTnrRefBufCount; i++) {
+    std::unique_lock<std::mutex> lock(mTnrOutBufMapLock);
+    for (int i = 0; i < maxTnrOutBufCount; i++) {
         void* buffer = mIntelTNR->allocCamBuf(bufSize, MAX_BUFFER_COUNT + i);
         // will release all buffer in freeAllBufs
         CheckError(!buffer, UNKNOWN_ERROR, "@%s, alloc reference buffer fails", __func__);
         int index = i * (-1) - 1;  // initialize index as -1, -2, ...
-        mTnrRefBufMap[index] = buffer;
+        mTnrOutBufMap[index] = buffer;
     }
     return OK;
 }
@@ -245,7 +249,7 @@ void GPUExecutor::releaseBuffers() {
     if (mIntelTNR) {
         mIntelTNR->freeAllBufs();
     }
-    mTnrRefBufMap.clear();
+    mTnrOutBufMap.clear();
     // Release internel frame buffers
     mInternalOutputBuffers.clear();
     mInternalBuffers.clear();
@@ -485,16 +489,27 @@ int GPUExecutor::runTnrFrame(const std::shared_ptr<CameraBuffer>& inBuf,
         mTnr7usParam->bc.is_first_frame = 0;
     }
 
-    std::map<int64_t, void*>::iterator refBuf;
-    {
-        std::unique_lock<std::mutex> lock(mTnrRefBufMapLock);
-        refBuf = mTnrRefBufMap.begin();
+    void* dstBuf = outPtr;
+    int dstSize = bufferSize;
+    int dstFd = fd;
+    std::map<int64_t, void*>::iterator tnrOutBuf;
+    // use internal tnr buffer for ZSL and none APP buffer request usage
+    bool useInternalBuffer = mUseInternalTnrBuffer || memoryType != V4L2_MEMORY_DMABUF;
+    if (useInternalBuffer) {
+        std::unique_lock<std::mutex> lock(mTnrOutBufMapLock);
+        tnrOutBuf = mTnrOutBufMap.begin();
+        dstBuf = tnrOutBuf->second;
+        dstSize = mOutBufferSize;
+        // when use internal tnr buffer, we don't need to use fd map buffer
+        dstFd = -1;
     }
-    ret = mIntelTNR->runTnrFrame(inBuf->getBufferAddr(), refBuf->second, inBuf->getBufferSize(),
-                                 mRefBufferSize, mTnr7usParam);
+    ret = mIntelTNR->runTnrFrame(inBuf->getBufferAddr(), dstBuf, inBuf->getBufferSize(), dstSize,
+                                 mTnr7usParam, dstFd);
 
     if (ret == OK) {
-        MEMCPY_S(outPtr, bufferSize, refBuf->second, mRefBufferSize);
+        if (useInternalBuffer) {
+            MEMCPY_S(outPtr, bufferSize, tnrOutBuf->second, mOutBufferSize);
+        }
     } else {
         LOG2("%s, Just copy source buffer if run TNR failed", __func__);
         MEMCPY_S(outPtr, bufferSize, inBuf->getBufferAddr(), inBuf->getBufferSize());
@@ -503,11 +518,12 @@ int GPUExecutor::runTnrFrame(const std::shared_ptr<CameraBuffer>& inBuf,
         mGPULock.unlock();
     }
 
-    {
-        std::unique_lock<std::mutex> lock(mTnrRefBufMapLock);
-        mTnrRefBufMap.erase(refBuf->first);
-        mTnrRefBufMap[sequence] = refBuf->second;
-        LOG2("%s, refBuf->first %ld, refBuf->second %p", __func__, refBuf->first, refBuf->second);
+    if (useInternalBuffer) {
+        std::unique_lock<std::mutex> lock(mTnrOutBufMapLock);
+        mTnrOutBufMap.erase(tnrOutBuf->first);
+        mTnrOutBufMap[sequence] = tnrOutBuf->second;
+        LOG2("%s, outBuf->first %ld, outBuf->second %p", __func__, tnrOutBuf->first,
+             tnrOutBuf->second);
     }
 
     if (memoryType == V4L2_MEMORY_DMABUF) {
@@ -531,7 +547,8 @@ int GPUExecutor::runTnrFrame(const std::shared_ptr<CameraBuffer>& inBuf,
                                     aiqResults->mAeResults.exposures[0].exposure->digital_gain);
 
         // update tnr param when total gain changes, gain set to analog_gain * digital_gain.
-        ret = mIntelTNR->asyncParamUpdate(gain);
+        bool isTnrParamForceUpdate = icamera::PlatformData::isTnrParamForceUpdate();
+        ret = mIntelTNR->asyncParamUpdate(gain, isTnrParamForceUpdate);
     }
 
     LOG2("Exit %s executor name:%s, sequence: %u", __func__, mName.c_str(), inBuf->getSequence());
