@@ -68,6 +68,8 @@ message(STATUS "install prefix: " ${CMAKE_INSTALL_PREFIX})
 
 #------------------------- Compilation settings -------------------------
 
+include(GNUInstallDirs)
+
 # -fPIC in xos way
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
@@ -391,15 +393,13 @@ else()
 endif()
 
 # Install libraries
-install(TARGETS camhal camhal_static
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib
-        )
+install(TARGETS camhal camhal_static)
 
 # Install package config file
 configure_file(${PROJECT_SOURCE_DIR}/cmake/libcamhal.pc.cmakein
                ${PROJECT_SOURCE_DIR}/libcamhal.pc @ONLY)
-install(FILES libcamhal.pc DESTINATION lib/pkgconfig)
+install(FILES libcamhal.pc
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 
 endif() #NOT CAL_BUILD
 
