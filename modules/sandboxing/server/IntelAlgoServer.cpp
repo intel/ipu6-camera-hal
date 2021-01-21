@@ -18,7 +18,6 @@
 
 #include "modules/sandboxing/server/IntelAlgoServer.h"
 
-#include <base/logging.h>
 #include <ia_log.h>
 #include <stdlib.h>
 #include <sys/mman.h>
@@ -128,7 +127,7 @@ int IntelAlgoServer::parseReqHeader(const uint8_t req_header[], uint32_t size) {
 void IntelAlgoServer::returnCallback(uint32_t req_id, status_t status, int32_t buffer_handle) {
     LOGIPC("@%s, req_id:%d:%s, status:%d", __func__, req_id,
            IntelAlgoIpcCmdToString(static_cast<IPC_CMD>(req_id)), status);
-    (*mCallback->return_callback)(mCallback, req_id, (status == OK ? 0 : 1), buffer_handle);
+    (*mCallback->return_callback)(mCallback, req_id, status, buffer_handle);
 }
 
 status_t IntelAlgoServer::getShmInfo(const int32_t buffer_handle, ShmInfo* memInfo) {

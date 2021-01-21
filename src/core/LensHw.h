@@ -50,9 +50,6 @@ public:
     int setAutoFocusRange(int value);
     int getAutoFocusRange(int &value);
     int getLatestPosition(int& lensPosition, unsigned long long& time);
-// IPU4_FEATURE_S
-    int setPwmDuty(int pwmDuty);
-// IPU4_FEATURE_E
     bool isLensSubdevAvailable() { return (mLensSubdev != nullptr); }
 
 private:

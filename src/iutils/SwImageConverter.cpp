@@ -356,56 +356,6 @@ void SwImageConverter::convertYuvBlock(unsigned int x, unsigned int y,
     }
 }
 
-// IPU4_FEATURE_S
-static int convertBxtVect(unsigned char *inBuf, unsigned int inLen,
-   unsigned char *outBuf, unsigned int outLen,
-   unsigned int width, unsigned int height,
-   unsigned int srcFmt, unsigned int dstFmt, unsigned int shift)
-{
-    CheckError(!inBuf || !outBuf, -1, "@%s,inBuf:%p, outBuf:%p", __func__, inBuf, outBuf);
-    CheckError(!CameraUtils::isRaw(srcFmt), -1, "[%s] Unsupported input format, srcFmt:%s",
-               __func__, CameraUtils::format2string(srcFmt).c_str());
-
-    LOG2("@%s, inLen:%d, outLen:%d, width:%d, height:%d, srcFmt:%s, dstFmt:%s, shift:%d",
-         __func__, inLen, outLen, width, height,
-         CameraUtils::format2string(srcFmt).c_str(),
-         CameraUtils::format2string(dstFmt).c_str(), shift);
-
-    const int VECTOR_ELEMENTS = 32;
-    const int  ELEMENT_SIZE = 2;
-    const int  COMPONENT_COUNT_X = 2;
-    const int  COMPONENT_COUNT_Y = 2;
-
-    unsigned char *in_buf = inBuf;
-    unsigned int x, y;
-    int vector_size = VECTOR_ELEMENTS * ELEMENT_SIZE;
-    int group_size = vector_size * COMPONENT_COUNT_X * COMPONENT_COUNT_Y;
-    int dstStride = CameraUtils::getStride(dstFmt, width);
-    int line_size = ((width + VECTOR_ELEMENTS - 1) / VECTOR_ELEMENTS) * vector_size;
-
-    CheckError(inLen < line_size * height, -1, "[%s] No enough vector data, inLen:%d %d", __func__, inLen, line_size * height);
-    CheckError(outLen < dstStride * height, -1,
-        "[%s] out buffer is not big enough, outLen:%d, request len:%d", __func__, outLen, dstStride * height);
-
-    for (y = 0; y < height; y += COMPONENT_COUNT_Y) {
-        unsigned char *line = &in_buf[line_size * y];
-        for (x = 0; x < width; x += COMPONENT_COUNT_X) {
-            unsigned short bayer_data[4];
-            unsigned char *group = &line[x / COMPONENT_COUNT_X / VECTOR_ELEMENTS * group_size];
-            int comp_index = (x / COMPONENT_COUNT_X) % VECTOR_ELEMENTS;
-            bayer_data[0] = (*(unsigned short*)&group[comp_index * ELEMENT_SIZE]) >> shift;
-            bayer_data[1] = (*(unsigned short*)&group[vector_size + comp_index * ELEMENT_SIZE]) >> shift;
-            bayer_data[2] = (*(unsigned short*)&group[vector_size * 2 + comp_index * ELEMENT_SIZE]) >> shift;
-            bayer_data[3] = (*(unsigned short*)&group[vector_size * 3 + comp_index * ELEMENT_SIZE]) >> shift;
-
-            SwImageConverter::convertBayerBlock(x, y, width, height, bayer_data, outBuf, srcFmt, dstFmt);
-        }
-    }
-
-    return 0;
-}
-// IPU4_FEATURE_E
-
 int SwImageConverter::convertFormat(unsigned int width, unsigned int height,
                         unsigned char *inBuf, unsigned int inLength, unsigned int srcFmt,
                         unsigned char *outBuf, unsigned int outLength, unsigned int dstFmt)
@@ -425,53 +375,6 @@ int SwImageConverter::convertFormat(unsigned int width, unsigned int height,
         MEMCPY_S(outBuf, outLength, inBuf, inLength);
         return 0;
     }
-
-// IPU4_FEATURE_S
-    // for vector raw format
-    if (CameraUtils::isVectorRaw(srcFmt)) {
-        unsigned origFmt = V4L2_PIX_FMT_SGRBG8;
-        unsigned int shift = 0;
-        switch(srcFmt) {
-            case V4L2_PIX_FMT_SRGGB10V32:
-                origFmt = V4L2_PIX_FMT_SRGGB10;
-                break;
-            case V4L2_PIX_FMT_SGRBG10V32:
-                origFmt = V4L2_PIX_FMT_SGRBG10;
-                break;
-            case V4L2_PIX_FMT_SGBRG10V32:
-                origFmt = V4L2_PIX_FMT_SGBRG10;
-                break;
-            case V4L2_PIX_FMT_SBGGR10V32:
-                origFmt = V4L2_PIX_FMT_SBGGR10;
-                break;
-            case V4L2_PIX_FMT_SRGGB12V32:
-                origFmt = V4L2_PIX_FMT_SRGGB12;
-                shift = 3;
-                break;
-            case V4L2_PIX_FMT_SGRBG12V32:
-                origFmt = V4L2_PIX_FMT_SGRBG12;
-                shift = 3;
-                break;
-            case V4L2_PIX_FMT_SGBRG12V32:
-                origFmt = V4L2_PIX_FMT_SGBRG12;
-                shift = 3;
-                break;
-            case V4L2_PIX_FMT_SBGGR12V32:
-                origFmt = V4L2_PIX_FMT_SBGGR12;
-                shift = 3;
-                break;
-            case V4L2_PIX_FMT_SGRBG8V32:
-                origFmt = V4L2_PIX_FMT_SGRBG8;
-                break;
-            default:
-                LOGW("%s: srcFmt %s is not supported", __func__,
-                     CameraUtils::format2string(srcFmt).c_str());
-                return BAD_VALUE;
-        }
-
-        return convertBxtVect(inBuf, inLength, outBuf, outLength, width, height, origFmt, dstFmt, shift);
-    }
-// IPU4_FEATURE_E
 
     // for not vector raw
     int srcStride = CameraUtils::getStride(srcFmt, width);

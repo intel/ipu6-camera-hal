@@ -31,11 +31,12 @@
 namespace icamera {
 class IntelCca {
  public:
-    IntelCca();
+    IntelCca(int cameraId, TuningMode mode);
     virtual ~IntelCca();
 
     static IntelCca* getInstance(int cameraId, TuningMode mode);
     static void releaseInstance(int cameraId, TuningMode mode);
+    static void releaseAllInstances();
 
     ia_err init(const cca::cca_init_params& initParams);
 
@@ -60,20 +61,23 @@ class IntelCca {
     ia_err updateTuning(uint8_t lardTags, const ia_lard_input_params& lardParams);
 
     void deinit();
-    void getVersion(std::string* version);
 
     ia_err decodeStats(uint64_t statsPointer, uint32_t statsSize,
                        ia_isp_bxt_statistics_query_results_t* results);
 
     uint32_t getPalDataSize(const cca::cca_program_group& programGroup);
-    void* allocatePalBuffer(int streamId, int index, int palDataSize);
-    void freePalBuffer(void* addr);
+    void* allocMem(int streamId, const std::string& name, int index, int size);
+    void freeMem(void* addr);
 
  private:
+    int mCameraId;
+    TuningMode mTuningMode;
+
     IntelAlgoCommon mCommon;
 
     bool mInitialized;
 
+    ShmMemInfo mMemStruct;
     ShmMemInfo mMemInit;
     ShmMemInfo mMemStats;
     ShmMemInfo mMemAEC;
@@ -86,12 +90,13 @@ class IntelCca {
     ShmMemInfo mMemMKN;
     ShmMemInfo mMemAIQD;
     ShmMemInfo mMemTuning;
-    ShmMemInfo mMemVersion;
+    ShmMemInfo mMemDeinit;
     ShmMemInfo mMemDecodeStats;
     ShmMemInfo mMemPalSize;
-    std::vector<ShmMemInfo> mMemsPalData;
 
     std::vector<ShmMem> mMems;
+
+    std::unordered_map<void*, ShmMemInfo> mMemsOuter;
 
  private:
     struct CCAHandle {

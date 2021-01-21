@@ -41,7 +41,7 @@ Command::Command(const PSysCommandConfig& cfg) {
             CIPR::callocMemory(cfg.buffers.size(), sizeof(struct ipu_psys_buffer)));
 
         if (!mCmd->iocCmd.buffers) {
-            icamera::LOG2("Could not allocate DMA-BUF handle array");
+            LOG2("Could not allocate DMA-BUF handle array");
             delete mCmd;
             return;
         }
@@ -103,7 +103,7 @@ Result Command::updateKernel(const PSysCommandConfig& cfg, const MemoryDesc& mem
 Result Command::getLegacyPGMem(const PSysCommandConfig& cfg, MemoryDesc* memory) {
     auto ret = cfg.extBuf->getMemory(memory);
     if (ret != Result::OK && cfg.pgParamsBuf != nullptr) {
-        icamera::LOG2("pg_params_buf-field of CIPR command deprecated!");
+        LOG2("pg_params_buf-field of CIPR command deprecated!");
         ret = cfg.pgParamsBuf->getMemory(memory);
         if (ret != Result::OK) {
             return ret;
@@ -148,7 +148,7 @@ Result Command::setConfig(const PSysCommandConfig& cfg) {
 
     mCmd->extBuf = cfg.extBuf;
     if (cfg.id != 0) {
-        icamera::LOG2("ID-field of CIPR command deprecated!");
+        LOG2("ID-field of CIPR command deprecated!");
     }
 
     mCmd->iocCmd.user_token = cfg.token;

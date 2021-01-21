@@ -89,11 +89,14 @@ struct EventRequestBufferReady
 
 struct EventData
 {
-    EventData() : type(EVENT_ISYS_SOF) {
+    EventData() :
+        type(EVENT_ISYS_SOF),
+        pipeType(-1) {
         CLEAR(data);
     }
 
     EventType type;
+    int pipeType; // if you don't care it, you can ignore it.
     std::shared_ptr<CameraBuffer> buffer;
     union
     {

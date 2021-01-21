@@ -16,12 +16,7 @@
 #
 
 set(ALGOWRAPPER_SRCS
-    ${ALGOWRAPPER_DIR}/IntelLard.cpp
-    ${ALGOWRAPPER_DIR}/IntelMkn.cpp
-    ${ALGOWRAPPER_DIR}/IntelLtm.cpp
-    ${ALGOWRAPPER_DIR}/IntelDvs.cpp
-    ${ALGOWRAPPER_DIR}/IntelCmc.cpp
-    ${ALGOWRAPPER_DIR}/IntelAiq.cpp
+    ${ALGOWRAPPER_DIR}/IntelCca.cpp
     CACHE INTERNAL "algo wrapper sources"
     )
 
@@ -34,7 +29,6 @@ set(ALGOWRAPPER_SRCS
 
     set(ALGOWRAPPER_SRCS
         ${ALGOWRAPPER_SRCS}
-        ${ALGOWRAPPER_DIR}/IntelIspParamAdaptor.cpp
         CACHE INTERNAL "algo wrapper sources"
     )
 

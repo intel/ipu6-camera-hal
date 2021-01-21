@@ -25,19 +25,17 @@
 
 namespace icamera {
 
-AiqEngine::AiqEngine(int cameraId, SensorHwCtrl *sensorHw, LensHw *lensHw, AiqSetting *setting) :
+AiqEngine::AiqEngine(int cameraId, SensorHwCtrl *sensorHw, LensHw *lensHw, AiqSetting *setting,
+                     ParameterGenerator* paramGen) :
     mCameraId(cameraId),
     mAiqSetting(setting),
+    mParamGen(paramGen),
     mFirstAiqRunning(true),
-    mFirstExposureSetting(true),
-    mAiqRunningForPerframe(false),
-    m3ACadenceSequence(0),
     mLastStatsSequence(-1)
 {
     LOG1("%s, mCameraId = %d", __func__, mCameraId);
 
-    CLEAR(mRgbsGridArray);
-    CLEAR(mAfGridArray);
+    mAiqRunningForPerframe = PlatformData::isFeatureSupported(mCameraId, PER_FRAME_CONTROL);
 
     mAiqCore = new AiqCore(mCameraId);
 
@@ -47,7 +45,6 @@ AiqEngine::AiqEngine(int cameraId, SensorHwCtrl *sensorHw, LensHw *lensHw, AiqSe
 
     // Should consider better place to maintain the life cycle of AiqResultStorage
     mAiqResultStorage = AiqResultStorage::getInstance(mCameraId);
-    mCurrentStatsSequence = 0;
 }
 
 AiqEngine::~AiqEngine()
@@ -107,13 +104,10 @@ int AiqEngine::startEngine()
     LOG1("%s, mCameraId = %d", __func__, mCameraId);
 
     mFirstAiqRunning = true;
-    mFirstExposureSetting = true;
 
     mSensorManager->reset();
 
     mLensManager->start();
-
-    m3ACadenceSequence = 0;
 
     LOG1("%s, end mCameraId = %d", __func__, mCameraId);
 
@@ -130,36 +124,28 @@ int AiqEngine::stopEngine()
     return OK;
 }
 
-int AiqEngine::run3A(long *settingSequence)
+int AiqEngine::run3A(long requestId, long applyingSeq, long* effectSeq)
 {
     LOG3A("%s", __func__);
     // Run 3A in call thread
     AutoMutex l(mEngineLock);
 
-    // Handle 3A cadence logic
-    int run3ACadence = mAiqParam.run3ACadence;
-    if (run3ACadence < 1) {
-        LOGW("Invalid 3A cadence %d, use default 1.", run3ACadence);
-        run3ACadence = 1;
-    }
-    LOG2("%s: run3ACadence is %d", __func__, run3ACadence);
-
-    if (m3ACadenceSequence % run3ACadence != 0) {
-        // Skip 3A per cadence
-        m3ACadenceSequence ++;
-        return OK;
-    }
-    LOG2("%s: run 3A for cadence sequence %ld", __func__, m3ACadenceSequence);
-    m3ACadenceSequence ++;
-
-    mAiqRunningForPerframe = (settingSequence != nullptr);
-    AiqState state = prepareInputParam();
+    AiqStatistics *aiqStats =
+        const_cast<AiqStatistics*>(mAiqResultStorage->getAndLockAiqStatistics());
 
     AiqResult *aiqResult = mAiqResultStorage->acquireAiqResult();
-    aiqResult->mTuningMode = mAiqParam.tuningMode;
+    AiqState state = AIQ_STATE_IDLE;
+
+    if (!needRun3A(aiqStats, requestId)) {
+        LOG3A("%s: needRun3A is false, return AIQ_STATE_WAIT", __func__);
+        state = AIQ_STATE_WAIT;
+    } else {
+        state = prepareInputParam(aiqStats);
+        aiqResult->mTuningMode = mAiqParam.tuningMode;
+    }
 
     if (state == AIQ_STATE_RUN) {
-        state = runAiq(aiqResult);
+        state = runAiq(requestId, aiqResult, applyingSeq);
     }
     if (state == AIQ_STATE_RESULT_SET) {
         state = handleAiqResult(aiqResult);
@@ -170,14 +156,15 @@ int AiqEngine::run3A(long *settingSequence)
 
     mAiqResultStorage->unLockAiqStatistics();
 
-    if (settingSequence) {
-        *settingSequence = mAiqResultStorage->getAiqResult()->mSequence;
-        LOG3A("%s, sequence %ld, mLastStatsSequence %ld", __func__, *settingSequence,
+    if (effectSeq) {
+        *effectSeq = mAiqResultStorage->getAiqResult()->mSequence;
+        LOG3A("%s, effect sequence %ld, mLastStatsSequence %ld", __func__, *effectSeq,
                mLastStatsSequence);
     }
 
     PlatformData::saveMakernoteData(mCameraId, mAiqParam.makernoteMode,
-                                    mAiqResultStorage->getAiqResult()->mSequence);
+                                    mAiqResultStorage->getAiqResult()->mSequence,
+                                    aiqResult->mTuningMode);
 
     return (state == AIQ_STATE_DONE || state == AIQ_STATE_WAIT) ? 0 : UNKNOWN_ERROR;
 }
@@ -190,82 +177,21 @@ EventListener *AiqEngine::getSofEventListener()
     return mSensorManager->getSofEventListener();
 }
 
-int AiqEngine::saveAfGridData(const ia_aiq_af_grid* afGrid, ia_aiq_af_grid* dst)
-{
-    LOG3A("%s", __func__);
-    if (afGrid == nullptr
-        || afGrid->filter_response_1 == nullptr
-        || afGrid->filter_response_2 == nullptr
-        || afGrid->grid_width == 0
-        || afGrid->grid_height == 0) {
-        LOGE("%s, af grids are invalid", __func__);
-        return BAD_VALUE;
-    }
-
-    size_t gridSize = afGrid->grid_width * afGrid->grid_height;
-    if (afGrid->grid_width != dst->grid_width || afGrid->grid_height != dst->grid_height) {
-        if (dst->filter_response_1 != nullptr) {
-            delete [] dst->filter_response_1;
-        }
-        dst->filter_response_1 = new int[gridSize];
-        if (dst->filter_response_2 != nullptr) {
-            delete [] dst->filter_response_2;
-        }
-        dst->filter_response_2 = new int[gridSize];
-    }
-
-    dst->grid_width = afGrid->grid_width;
-    dst->grid_height = afGrid->grid_height;
-    dst->block_width = afGrid->block_width;
-    dst->block_height = afGrid->block_height;
-    MEMCPY_S(dst->filter_response_1, gridSize * sizeof(int),
-             afGrid->filter_response_1, gridSize * sizeof(int));
-    MEMCPY_S(dst->filter_response_2, gridSize * sizeof(int),
-             afGrid->filter_response_2, gridSize * sizeof(int));
-
-    LOG3A("%s, grid size=[%dx%d]", __func__, dst->grid_width, dst->grid_height);
-    return OK;
-}
-
-int AiqEngine::saveRgbsGridData(const ia_aiq_rgbs_grid* rgbsGrid, ia_aiq_rgbs_grid* dst)
-{
-    LOG3A("%s", __func__);
-    if (rgbsGrid == nullptr
-        || rgbsGrid->blocks_ptr == nullptr
-        || rgbsGrid->grid_width == 0
-        || rgbsGrid->grid_height == 0) {
-        LOGE("%s, rgbs grids are invalid", __func__);
-        return BAD_VALUE;
-    }
-
-    size_t gridSize = rgbsGrid->grid_width * rgbsGrid->grid_height;
-    if (rgbsGrid->grid_width != dst->grid_width || rgbsGrid->grid_height != dst->grid_height) {
-        if (dst->blocks_ptr != nullptr) {
-            delete [] dst->blocks_ptr;
-        }
-        dst->blocks_ptr = new rgbs_grid_block[gridSize];
-    }
-
-    dst->grid_width = rgbsGrid->grid_width;
-    dst->grid_height = rgbsGrid->grid_height;
-    MEMCPY_S(dst->blocks_ptr, gridSize * sizeof(rgbs_grid_block),
-             rgbsGrid->blocks_ptr, gridSize * sizeof(rgbs_grid_block));
-
-    dst->shading_correction = rgbsGrid->shading_correction;
-
-    LOG3A("%s, grid size=[%dx%d]", __func__, dst->grid_width, dst->grid_height);
-    return OK;
-}
-
-int AiqEngine::prepareStats(ia_aiq_statistics_input_params_v4 *statsParam,
-                            ia_aiq_gbce_results *gbceResults,
-                            AiqStatistics *aiqStatistics)
+int AiqEngine::prepareStatsParams(cca::cca_stats_params *statsParams, AiqStatistics *aiqStatistics)
 {
     mLastStatsSequence = aiqStatistics->mSequence;
     LOG3A("%s, sequence %ld", __func__, aiqStatistics->mSequence);
 
-    statsParam->rgbs_grids = mRgbsGridArray;
-    statsParam->af_grids = mAfGridArray;
+    // update face detection related parameters
+    if (PlatformData::isFaceAeEnabled(mCameraId)) {
+        cca::cca_face_state* faceState = &statsParams->faces;
+        int ret = icamera::FaceDetection::getResult(mCameraId, faceState);
+        if (ret == OK && faceState->num_faces > 0) {
+            ia_rectangle rect = faceState->faces[0].face_area;
+            LOG3A("@%s, face number:%d, left:%d, top:%d, right:%d, bottom:%d", __func__,
+                  faceState->num_faces, rect.left, rect.top, rect.right, rect.bottom);
+        }
+    }
 
     int ret = OK;
     do {
@@ -277,23 +203,11 @@ int AiqEngine::prepareStats(ia_aiq_statistics_input_params_v4 *statsParam,
             timestamp = aiqStatistics->mTimestamp;
         }
 
-        statsParam->frame_id = aiqStatistics->mSequence;
-        statsParam->frame_timestamp = timestamp;
-        statsParam->num_rgbs_grids = PlatformData::getExposureNum(mCameraId,
-                                         CameraUtils::isMultiExposureCase(mAiqParam.tuningMode));
-
-        if (statsParam->num_rgbs_grids > 1) {
-            for (unsigned int i = 0; i < statsParam->num_rgbs_grids; i++) {
-                statsParam->rgbs_grids[i] = &(aiqStatistics->mRgbsGridArray[i]);
-            }
-        } else {
-            statsParam->rgbs_grids[0] = &(aiqStatistics->mRgbsGridArray[0]);
-        }
-        statsParam->af_grids[0] = &(aiqStatistics->mAfGridArray[0]);
-        statsParam->num_af_grids = 1;
-        statsParam->external_histograms = nullptr;
-        statsParam->num_external_histograms = 0;
-        statsParam->camera_orientation = ia_aiq_camera_orientation_unknown;
+        int64_t requestId = -1;
+        mParamGen->getRequestId(aiqStatistics->mSequence, requestId);
+        statsParams->frame_id = requestId;
+        statsParams->frame_timestamp = timestamp;
+        statsParams->camera_orientation = ia_aiq_camera_orientation_unknown;
 
         const AiqResult *feedback = mAiqResultStorage->getAiqResult(aiqStatistics->mSequence);
         if (feedback == nullptr) {
@@ -301,14 +215,6 @@ int AiqEngine::prepareStats(ia_aiq_statistics_input_params_v4 *statsParam,
                     __func__, aiqStatistics->mSequence);
             feedback = mAiqResultStorage->getAiqResult();
         }
-
-        statsParam->frame_ae_parameters = &feedback->mAeResults;
-        statsParam->frame_af_parameters = &feedback->mAfResults;
-        statsParam->frame_pa_parameters = &feedback->mPaResults;
-        statsParam->awb_results = &feedback->mAwbResults;
-        statsParam->frame_sa_parameters = &feedback->mSaResults;
-
-        *gbceResults = feedback->mGbceResults;
     } while (0);
     LOG3A("%s end", __func__);
     return ret;
@@ -316,18 +222,6 @@ int AiqEngine::prepareStats(ia_aiq_statistics_input_params_v4 *statsParam,
 
 void AiqEngine::setAiqResult(AiqResult *aiqResult, bool skip)
 {
-    SensorExpGroup sensorExposures;
-    for (unsigned int i = 0; i < aiqResult->mAeResults.num_exposures; i++) {
-        SensorExposure exposure;
-        exposure.sensorParam = *aiqResult->mAeResults.exposures[i].sensor_exposure;
-        exposure.realDigitalGain = (aiqResult->mAeResults.exposures[i].exposure)->digital_gain;
-        sensorExposures.push_back(exposure);
-    }
-    bool useSof = !mFirstExposureSetting;
-    aiqResult->mSequence = mSensorManager->updateSensorExposure(sensorExposures, useSof);
-    if (mFirstExposureSetting) {
-        mFirstExposureSetting = false;
-    }
     aiqResult->mSkip = skip;
 
     if (skip) {
@@ -358,7 +252,7 @@ int AiqEngine::getSkippingNum(AiqResult *aiqResult)
     return skipNum;
 }
 
-bool AiqEngine::needRun3A(AiqStatistics *aiqStatistics)
+bool AiqEngine::needRun3A(AiqStatistics *aiqStatistics, long requestId)
 {
     LOG3A("%s", __func__);
 
@@ -371,6 +265,20 @@ bool AiqEngine::needRun3A(AiqStatistics *aiqStatistics)
     if (mFirstAiqRunning) {
         return true;
     }
+
+    // Handle 3A cadence logic
+    int run3ACadence = mAiqParam.run3ACadence;
+    if (run3ACadence < 1) {
+        LOGW("Invalid 3A cadence %d, use default 1.", run3ACadence);
+        run3ACadence = 1;
+    }
+    LOG2("%s: run3ACadence is %d", __func__, run3ACadence);
+
+    if (requestId % run3ACadence != 0) {
+        // Skip 3A per cadence
+        return false;
+    }
+    LOG2("%s: run 3A for requestId %ld", __func__, requestId);
 
     if (aiqStatistics == nullptr) {
         LOG3A("no stats and not need to re-run 3A");
@@ -388,7 +296,7 @@ bool AiqEngine::needRun3A(AiqStatistics *aiqStatistics)
     return true;
 }
 
-AiqEngine::AiqState AiqEngine::prepareInputParam(void)
+AiqEngine::AiqState AiqEngine::prepareInputParam(AiqStatistics* aiqStats)
 {
     // set Aiq Params
     int ret = mAiqSetting->getAiqParameter(mAiqParam);
@@ -412,59 +320,51 @@ AiqEngine::AiqState AiqEngine::prepareInputParam(void)
     mLensManager->getLensInfo(mAiqParam);
 
     mAiqCore->updateParameter(mAiqParam);
-    // set Stats
-    ia_aiq_statistics_input_params_v4 statsParam;
-    CLEAR(statsParam);
-    ia_aiq_gbce_results gbceResults;
-    CLEAR(gbceResults);
-
-    AiqStatistics *aiqStats =
-        const_cast<AiqStatistics*>(mAiqResultStorage->getAndLockAiqStatistics());
-
-    if (!needRun3A(aiqStats)) {
-        return AIQ_STATE_WAIT;
-    }
 
     if (aiqStats == nullptr) {
         LOG3A("%s: run aiq without stats data", __func__);
         return AIQ_STATE_RUN;
     }
 
-    // update face detection related parameters
-    ia_atbx_face faces[MAX_FACES_DETECTABLE];
-    ia_atbx_face_state facesState;
-    if (PlatformData::isFaceAeEnabled(mCameraId)) {
-        facesState.num_faces = 0;
-        facesState.faces = faces;
-        int ret = icamera::FaceDetection::getResult(mCameraId, &facesState);
-        if (ret == OK && facesState.num_faces > 0) {
-            ia_rectangle rect = facesState.faces[0].face_area;
-            LOG3A("@%s, face number:%d, left:%d, top:%d, right:%d, bottom:%d", __func__,
-                   facesState.num_faces, rect.left, rect.top, rect.right, rect.bottom);
-            statsParam.faces = &facesState;
-        }
-    }
-
-    ret = prepareStats(&statsParam, &gbceResults, aiqStats);
-
+    // set Stats
+    cca::cca_stats_params statsParams = {};
+    ret = prepareStatsParams(&statsParams, aiqStats);
     if (ret != OK) {
         LOG3A("%s: no useful stats", __func__);
         return AIQ_STATE_RUN;
     }
 
-    mAiqCore->setStatistics(&statsParam);
+    mAiqCore->setStatsParams(statsParams);
 
     return AIQ_STATE_RUN;
 }
 
-AiqEngine::AiqState AiqEngine::runAiq(AiqResult *aiqResult)
+AiqEngine::AiqState AiqEngine::runAiq(long requestId, AiqResult *aiqResult, long applyingSeq)
 {
-    int ret = mAiqCore->runAiq(aiqResult);
+    int ret = mAiqCore->runAe(requestId, aiqResult);
+    if (ret != OK) {
+        return AIQ_STATE_ERROR;
+    }
+    setSensorExposure(aiqResult, applyingSeq);
+
+    ret = mAiqCore->runAiq(requestId, aiqResult);
     if (ret != OK) {
         return AIQ_STATE_ERROR;
     }
 
     return AIQ_STATE_RESULT_SET;
+}
+
+void AiqEngine::setSensorExposure(AiqResult* aiqResult, long applyingSeq)
+{
+    SensorExpGroup sensorExposures;
+    for (unsigned int i = 0; i < aiqResult->mAeResults.num_exposures; i++) {
+        SensorExposure exposure;
+        exposure.sensorParam = *aiqResult->mAeResults.exposures[i].sensor_exposure;
+        exposure.realDigitalGain = aiqResult->mAeResults.exposures[i].exposure[0].digital_gain;
+        sensorExposures.push_back(exposure);
+    }
+    aiqResult->mSequence = mSensorManager->updateSensorExposure(sensorExposures, applyingSeq);
 }
 
 AiqEngine::AiqState AiqEngine::handleAiqResult(AiqResult *aiqResult)
@@ -483,8 +383,11 @@ int AiqEngine::applyManualTonemaps(AiqResult *aiqResult)
      */
     if (mAiqParam.tonemapMode == TONEMAP_MODE_FAST ||
         mAiqParam.tonemapMode == TONEMAP_MODE_HIGH_QUALITY) {
+        aiqResult->mGbceResults.have_manual_settings = false;
         return OK;
     }
+
+    aiqResult->mGbceResults.have_manual_settings = true;
 
     if (mAiqParam.tonemapMode == TONEMAP_MODE_GAMMA_VALUE) {
         AiqUtils::applyTonemapGamma(mAiqParam.tonemapGamma, &aiqResult->mGbceResults);
@@ -500,7 +403,7 @@ int AiqEngine::applyManualTonemaps(AiqResult *aiqResult)
     }
 
     // use unity value for tone map table
-    if (aiqResult->mGbceResults.tone_map_lut_size > 0 && aiqResult->mGbceResults.tone_map_lut) {
+    if (aiqResult->mGbceResults.tone_map_lut_size > 0) {
         for (unsigned int i = 0; i < aiqResult->mGbceResults.tone_map_lut_size; i++) {
             aiqResult->mGbceResults.tone_map_lut[i] = 1.0;
         }
@@ -521,6 +424,7 @@ AiqEngine::AiqState AiqEngine::done(AiqResult *aiqResult)
         mAiqResultStorage->updateAiqResult(tmp->mSequence);
         tmp = mAiqResultStorage->acquireAiqResult();
         *tmp = *aiqResult;
+        setSensorExposure(tmp);
     }
 
     setAiqResult(tmp, false);

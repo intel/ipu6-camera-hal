@@ -47,7 +47,8 @@ class IntelAlgoClient : public camera_algorithm_callback_ops_t {
     IntelAlgoClient();
     virtual ~IntelAlgoClient();
 
-    void setMojoManager(cros::CameraMojoChannelManager* manager) { mMojoManager = manager; }
+    void setMojoManagerToken(cros::CameraMojoChannelManagerToken* token) {
+        mMojoManagerToken = token;}
 
     // Connect to the algo processes(cpu and gpu)
     // It must be called after all preparation are ready in camera service
@@ -106,7 +107,7 @@ class IntelAlgoClient : public camera_algorithm_callback_ops_t {
     std::unordered_map<void*, int32_t> mShmMap[MAX_ALGO_SHM];
     std::mutex mShmMapMutex;  // the mutex for mShmMap
 
-    cros::CameraMojoChannelManager* mMojoManager;
+    cros::CameraMojoChannelManagerToken* mMojoManagerToken;
     bool mInitialized;
 
  private:
@@ -126,7 +127,7 @@ class IntelAlgoClient : public camera_algorithm_callback_ops_t {
         pthread_mutex_t mCbLock;
         pthread_cond_t mCbCond;
         bool mIsCallbacked;
-        bool mCbResult;  // true: success, false: fail
+        int mCbStatus;
 
         bool mInitialized;
 

@@ -35,26 +35,14 @@ AiqResult::AiqResult(int cameraId) :
 {
     LOG3A("@%s", __func__);
 
-    CLEAR(mGrid);
-    CLEAR(mFlashes);
     CLEAR(mRGammaLut);
     CLEAR(mGGammaLut);
     CLEAR(mBGammaLut);
     CLEAR(mToneMapLut);
-    CLEAR(mHueSectors);
-    CLEAR(mAdvancedCCM);
-    CLEAR(mIrWeightGridR);
-    CLEAR(mIrWeightGridG);
-    CLEAR(mIrWeightGridB);
     CLEAR(mCustomControls);
     CLEAR(mCustomControlsParams);
-    CLEAR(mSaResults);
     CLEAR(mAwbResults);
-    CLEAR(mIrWeight);
-    CLEAR(mApertureControl);
     CLEAR(mGbceResults);
-    CLEAR(mWeightGrid);
-    CLEAR(mPreferredAcm);
     CLEAR(mPaResults);
     CLEAR(mAeResults);
     CLEAR(mAfResults);
@@ -75,60 +63,12 @@ int AiqResult::init()
     CLEAR(mAeResults);
     CLEAR(mAfResults);
     CLEAR(mAwbResults);
-    CLEAR(mGbceResults);
-    CLEAR(mSaResults);
     CLEAR(mPaResults);
-
-    CLEAR(mExposureResults);
-    CLEAR(mWeightGrid);
-    CLEAR(mGrid);
-    CLEAR(mFlashes);
-    CLEAR(mGenericExposure);
-    CLEAR(mSensorExposure);
-    CLEAR(mApertureControl);
-    CLEAR(mPreferredAcm);
-    CLEAR(mIrWeight);
 
     mAiqParam.reset();
 
     /*AE results init */
     mAeResults.num_exposures = 1;
-    mAeResults.exposures = mExposureResults;
-    mAeResults.aperture_control = &mApertureControl;
-    mAeResults.weight_grid = &mWeightGrid;
-    mAeResults.weight_grid->weights = mGrid;
-    mAeResults.flashes = mFlashes;
-    for (unsigned int i = 0; i< MAX_EXPOSURES_NUM; i++) {
-        mAeResults.exposures[i].exposure = &mGenericExposure[i];
-        mAeResults.exposures[i].sensor_exposure = &mSensorExposure[i];
-    }
-    /* GBCE results init */
-    mGbceResults.r_gamma_lut = mRGammaLut;
-    mGbceResults.g_gamma_lut = mGGammaLut;
-    mGbceResults.b_gamma_lut = mBGammaLut;
-    mGbceResults.tone_map_lut = mToneMapLut;
-
-    /* SA results init */
-    mSaResults.width = MAX_LSC_WIDTH;
-    mSaResults.height = MAX_LSC_HEIGHT;
-
-    for (int i = 0; i < MAX_BAYER_ORDER_NUM; i++) {
-        for (int j = 0; j < MAX_BAYER_ORDER_NUM; j++) {
-            mSaResults.lsc_grid[i][j] = new unsigned short[MAX_LSC_WIDTH * MAX_LSC_HEIGHT];
-            memset(mSaResults.lsc_grid[i][j], 0,
-                   sizeof(unsigned short) * MAX_LSC_WIDTH * MAX_LSC_HEIGHT);
-        }
-    }
-
-    /* PA results init */
-    mPaResults.ir_weight = &mIrWeight;
-
-    mPaResults.ir_weight->ir_weight_grid_R = mIrWeightGridR;
-    mPaResults.ir_weight->ir_weight_grid_G = mIrWeightGridG;
-    mPaResults.ir_weight->ir_weight_grid_B = mIrWeightGridB;
-
-    mPreferredAcm.hue_of_sectors = mHueSectors;
-    mPreferredAcm.advanced_color_conversion_matrices = mAdvancedCCM;
 
     /* Custom Controls init */
     mCustomControls.parameters = mCustomControlsParams;
@@ -139,13 +79,6 @@ int AiqResult::init()
 int AiqResult::deinit()
 {
     LOG3A("@%s", __func__);
-
-    for (int i = 0; i < MAX_BAYER_ORDER_NUM; ++i) {
-        for (int j = 0; j < MAX_BAYER_ORDER_NUM; ++j) {
-            delete []  mSaResults.lsc_grid[i][j];
-            mSaResults.lsc_grid[i][j] = nullptr;
-        }
-    }
 
     return OK;
 }
@@ -173,9 +106,7 @@ int AiqResult::deepCopyAiqResult(const AiqResult &src, AiqResult *dst)
     int ret = AiqUtils::deepCopyAeResults(src.mAeResults, &dst->mAeResults);
     ret |= AiqUtils::deepCopyAfResults(src.mAfResults, &dst->mAfResults);
     ret |= AiqUtils::deepCopyAwbResults(src.mAwbResults, &dst->mAwbResults);
-    ret |= AiqUtils::deepCopyGbceResults(src.mGbceResults, &dst->mGbceResults);
-    ret |= AiqUtils::deepCopyPaResults(src.mPaResults, &dst->mPaResults, &dst->mPreferredAcm);
-    ret |= AiqUtils::deepCopySaResults(src.mSaResults, &dst->mSaResults);
+    ret |= AiqUtils::deepCopyPaResults(src.mPaResults, &dst->mPaResults);
 
     return ret;
 }

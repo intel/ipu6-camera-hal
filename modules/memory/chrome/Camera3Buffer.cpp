@@ -440,15 +440,9 @@ int Camera3Buffer::v4L2Fmt2GFXFmt(int v4l2Fmt) {
         case V4L2_PIX_FMT_SBGGR12:
         case V4L2_PIX_FMT_SGBRG12:
         case V4L2_PIX_FMT_SRGGB12:
-            // IPU4_FEATURE_S
-        case V4L2_PIX_FMT_SGRBG12V32:
-            // IPU4_FEATURE_E
             gfxFmt = HAL_PIXEL_FORMAT_RAW16;
             break;
         case V4L2_PIX_FMT_YVU420:
-            // IPU4_FEATURE_S
-        case V4L2_PIX_FMT_YUYV420_V32:
-            // IPU4_FEATURE_E
             gfxFmt = HAL_PIXEL_FORMAT_YV12;
             break;
         case V4L2_PIX_FMT_NV21:

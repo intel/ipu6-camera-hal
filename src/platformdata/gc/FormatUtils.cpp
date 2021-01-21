@@ -83,19 +83,12 @@ static const FormatInfo gFormatMapping[] = {
     { V4L2_PIX_FMT_SGRBG10, ia_cipf_frame_fourcc_gr10, "V4L2_PIX_FMT_SGRBG10", "GRBG10", 16, FORMAT_RAW },
     { 0, css_fourcc_grbg_12_li, "css_fourcc_grbg_12_li", "CSL6", 15, FORMAT_RAW},
     { V4L2_PIX_FMT_SGRBG12, ia_cipf_frame_fourcc_ba12, "V4L2_PIX_FMT_SGRBG12", "GRBG12", 16, FORMAT_RAW },
-// IPU4_FEATURE_S
-    { V4L2_PIX_FMT_SGRBG10V32, ia_fourcc('b','V','0','G'), "V4L2_PIX_FMT_SGRBG10V32", "GRBG10V32", 16, FORMAT_RAW_VEC },
-    { V4L2_PIX_FMT_SGRBG12V32, css_fourcc_raw_interleaved, "V4L2_PIX_FMT_SGRBG12V32", "GRBG12V32", 16, FORMAT_RAW_VEC },
-// IPU4_FEATURE_E
 
     { V4L2_PIX_FMT_NV12, ia_cipf_frame_fourcc_nv12, "V4L2_PIX_FMT_NV12", "NV12", 12, FORMAT_YUV },
     { V4L2_PIX_FMT_NV21, ia_cipf_frame_fourcc_nv21, "V4L2_PIX_FMT_NV21", "NV21", 12, FORMAT_YUV },
     { V4L2_PIX_FMT_UYVY, ia_cipf_frame_fourcc_uyvy, "V4L2_PIX_FMT_UYVY", "UYVY", 16, FORMAT_YUV },
 
     { V4L2_PIX_FMT_YUV420, ia_cipf_frame_fourcc_iyuv, "YUV420_8_PL", "YUV420", 12, FORMAT_YUV },
-// IPU4_FEATURE_S
-    { V4L2_PIX_FMT_YUYV420_V32, css_fourcc_yyuv420_v32, "V4L2_PIX_FMT_YUYV420_V32", "YUYV420V32", 24, FORMAT_YUV_VEC },
-// IPU4_FEATURE_E
     // Packed formats No V4L2 equivalent exists
     // Normal YUV420 planar but with each sample of 12bits stored in 16bits
     { 0, ia_cipf_frame_fourcc_i420, "YUV420-12-16p", "YUV420", 24, FORMAT_YUV },
@@ -105,12 +98,6 @@ static const FormatInfo gFormatMapping[] = {
     //  Normal YUV420 planar but with each sample of 10-bit DMA-packed
     // (51 pixels and 2 bits of padding in a 64-byte DMA word)
     { 0, css_fourcc_yuv420_10_p64, "YUV420-10-64p", "YUV420", 15, FORMAT_YUV },
-
-// IPU4_FEATURE_S
-    // P010 formats
-    { V4L2_PIX_FMT_P010_BE, css_fourcc_p010, "V4L2_PIX_FMT_P010_BE", "P010", 24, FORMAT_YUV },
-    { V4L2_PIX_FMT_P010_LE, css_fourcc_p010_lsb, "V4L2_PIX_FMT_P010_LE", "P01L", 24, FORMAT_YUV },
-// IPU4_FEATURE_E
 
     { V4L2_MBUS_FMT_SBGGR10_1X10, ia_cipf_frame_fourcc_bg10, "V4L2_MBUS_FMT_SBGGR10_1X10", "SBGGR10_1X10", 10, FORMAT_MBUS_BAYER },
     { V4L2_MBUS_FMT_SGBRG10_1X10, ia_cipf_frame_fourcc_gb10, "V4L2_MBUS_FMT_SGBRG10_1X10", "SGBRG10_1X10", 10, FORMAT_MBUS_BAYER },
@@ -126,18 +113,8 @@ static const FormatInfo gFormatMapping[] = {
     { V4L2_PIX_FMT_SGRBG10P, 0, "V4L2_PIX_FMT_SGRBG10P", "GRBG10P", 10, FORMAT_RAW },
     { V4L2_PIX_FMT_SRGGB10P, 0, "V4L2_PIX_FMT_SRGGB10P", "RGGB10P", 10, FORMAT_RAW },
 
-// IPU4_FEATURE_S
-    { V4L2_PIX_FMT_SBGGR10V32, 0, "V4L2_PIX_FMT_SBGGR10V32", "BGGR10V32", 16, FORMAT_RAW_VEC },
-    { V4L2_PIX_FMT_SGBRG10V32, 0, "V4L2_PIX_FMT_SGBRG10V32", "GBRG10V32", 16, FORMAT_RAW_VEC },
-    { V4L2_PIX_FMT_SRGGB10V32, 0, "V4L2_PIX_FMT_SRGGB10V32", "RGGB10V32", 16, FORMAT_RAW_VEC },
-
-    { V4L2_PIX_FMT_SBGGR12V32, 0, "V4L2_PIX_FMT_SBGGR12V32", "BGGR12V32", 16, FORMAT_RAW_VEC },
-    { V4L2_PIX_FMT_SGBRG12V32, 0, "V4L2_PIX_FMT_SGBRG12V32", "GBRG12V32", 16, FORMAT_RAW_VEC },
-    { V4L2_PIX_FMT_SRGGB12V32, 0, "V4L2_PIX_FMT_SRGGB12V32", "RGGB12V32", 16, FORMAT_RAW_VEC },
-// IPU4_FEATURE_E
-
     { V4L2_PIX_FMT_NV16, 0, "V4L2_PIX_FMT_NV16", "NV16", 16, FORMAT_YUV },
-    { V4L2_PIX_FMT_YUYV, 0, "V4L2_PIX_FMT_YUYV", "YUYV", 16, FORMAT_YUV },
+    { V4L2_PIX_FMT_YUYV, ia_cipf_frame_fourcc_yuy2, "V4L2_PIX_FMT_YUYV", "YUYV", 16, FORMAT_YUV },
     { V4L2_PIX_FMT_YVU420, 0, "V4L2_PIX_FMT_YVU420", "YVU420", 12, FORMAT_YUV },
     { V4L2_PIX_FMT_YUV422P, 0, "V4L2_PIX_FMT_YUV422P", "YUV422P", 16, FORMAT_YUV },
 
@@ -215,10 +192,6 @@ bool isPlanarFormat(int32_t format)
 {
     return (format == V4L2_PIX_FMT_NV12 ||
             format == V4L2_PIX_FMT_NV21 ||
-// IPU4_FEATURE_S
-            format == V4L2_PIX_FMT_P010_BE ||
-            format == V4L2_PIX_FMT_P010_LE ||
-// IPU4_FEATURE_E
             format == V4L2_PIX_FMT_YUV420 ||
             format == V4L2_PIX_FMT_YVU420 ||
             format == V4L2_PIX_FMT_YUV422P);
@@ -282,6 +255,7 @@ int32_t getBpl(int32_t format, int32_t width)
         case css_fourcc_p010_lsb:
         case css_fourcc_p010_msb_tile_y:
         case css_fourcc_p010_msb_cile_y:
+        case ia_cipf_frame_fourcc_yuy2:
             bpl = width * 2;
             break;
         case ia_cipf_frame_fourcc_nv12:     // NV12

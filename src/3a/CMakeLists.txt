@@ -40,7 +40,6 @@ set(3A_SRCS
     set(3A_SRCS
         ${3A_SRCS}
         ${3A_DIR}/Dvs.cpp
-        ${3A_DIR}/DvsResult.cpp
         CACHE INTERNAL "3A sources"
         )
 # INTEL_DVS_E

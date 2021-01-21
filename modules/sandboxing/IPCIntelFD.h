@@ -25,8 +25,9 @@ class IPCIntelFD {
     IPCIntelFD();
     virtual ~IPCIntelFD();
 
-    bool clientFlattenInit(unsigned int max_face_num, FaceDetectionInitParams* params);
+    bool clientFlattenInit(unsigned int max_face_num, int cameraId,
+                           FaceDetectionInitParams* params);
     bool serverUnflattenRun(const FaceDetectionRunParams& inParams, void* imageData,
-                            pvl_image* image);
+                            pvl_image* image, int* cameraId);
 };
 } /* namespace icamera */

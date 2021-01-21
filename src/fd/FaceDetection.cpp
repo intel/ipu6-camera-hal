@@ -93,6 +93,7 @@ FaceDetection::FaceDetection(int cameraId, unsigned int maxFaceNum, int32_t halS
     /* init IntelFaceDetection */
     FaceDetectionInitParams params;
     params.max_face_num = maxFaceNum;
+    params.cameraId = mCameraId;
     mFace = std::unique_ptr<IntelFaceDetection>(new IntelFaceDetection());
     ret = mFace->init(&params, sizeof(FaceDetectionInitParams));
     CheckError(ret != OK, VOID_VALUE, "mFace.init fails, ret %d", ret);
@@ -108,11 +109,14 @@ FaceDetection::FaceDetection(int cameraId, unsigned int maxFaceNum, int32_t halS
 
 FaceDetection::~FaceDetection() {
     LOG1("@%s", __func__);
-    mFace->deinit();
     requestExit();
 
     AutoMutex l(mRunBufQueueLock);
     mRunCondition.notify_one();
+
+    FaceDetectionDeinitParams params;
+    params.cameraId = mCameraId;
+    mFace->deinit(&params, sizeof(FaceDetectionDeinitParams));
 }
 
 FaceDetectionRunParams *FaceDetection::acquireRunBuf() {
@@ -166,6 +170,7 @@ void FaceDetection::runFaceDetectionBySync(const camera_buffer_t &buffer) {
     params->format = pvl_image_format_nv12;
     params->stride = buffer.s.stride;
     params->bufferHandle = -1;
+    params->cameraId = mCameraId;
 
     nsecs_t startTime = CameraUtils::systemTime();
 
@@ -211,6 +216,7 @@ void FaceDetection::runFaceDetectionByAsync(const camera_buffer_t &buffer) {
     params->format = pvl_image_format_gray;
     params->stride = buffer.s.stride;
     params->bufferHandle = -1;
+    params->cameraId = mCameraId;
 
     AutoMutex l(mRunBufQueueLock);
     mRunBufQueue.push(params);
@@ -296,7 +302,7 @@ void FaceDetection::getHalStreamId(int32_t *halStreamId) {
 }
 
 /* The result for 3A AE */
-int FaceDetection::getResult(int cameraId, ia_atbx_face_state *faceState) {
+int FaceDetection::getResult(int cameraId, cca::cca_face_state *faceState) {
     LOG1("@%s", __func__);
     CheckError(!faceState, UNKNOWN_ERROR, "faceState is nullptr");
     CheckError(cameraId < 0 || cameraId >= PlatformData::numberOfCameras(),

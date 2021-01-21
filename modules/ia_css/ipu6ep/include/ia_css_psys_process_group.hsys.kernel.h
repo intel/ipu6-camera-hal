@@ -1,26 +1,18 @@
 /*
-* INTEL CONFIDENTIAL
-*
-* Copyright (C) 2014 - 2018 Intel Corporation.
-* All Rights Reserved.
-*
-* The source code contained or described herein and all documents
-* related to the source code ("Material") are owned by Intel Corporation
-* or licensors. Title to the Material remains with Intel
-* Corporation or its licensors. The Material contains trade
-* secrets and proprietary and confidential information of Intel or its
-* licensors. The Material is protected by worldwide copyright
-* and trade secret laws and treaty provisions. No part of the Material may
-* be used, copied, reproduced, modified, published, uploaded, posted,
-* transmitted, distributed, or disclosed in any way without Intel's prior
-* express written permission.
-*
-* No License under any patent, copyright, trade secret or other intellectual
-* property right is granted to or conferred upon you by disclosure or
-* delivery of the Materials, either expressly, by implication, inducement,
-* estoppel or otherwise. Any license under such intellectual property rights
-* must be express and approved by Intel in writing.
-*/
+ * Copyright (C) 2020 Intel Corporation.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #ifndef __IA_CSS_PSYS_PROCESS_GROUP_HSYS_KERNEL_H
 #define __IA_CSS_PSYS_PROCESS_GROUP_HSYS_KERNEL_H
@@ -63,7 +55,7 @@
 #include <ia_css_psys_buffer_set.h>
 #include <vied_nci_psys_system_global.h>
 
-#include <type_support.h>					/* uint8_t */
+#include <type_support.h>                    /* uint8_t */
 
 /*
  * Registration of user contexts / callback info
@@ -71,12 +63,12 @@
 
 /*! Get the user (callback) token as registered in the process group
 
- @param	process_group[in]		process group object
+ @param    process_group[in]        process group object
 
  @return 0 on error
  */
 extern uint64_t ia_css_process_group_get_token(
-	ia_css_process_group_t					*process_group);
+    ia_css_process_group_t                    *process_group);
 
 /*! Set (register) a user (callback) token in the process group
 
@@ -84,13 +76,13 @@ extern uint64_t ia_css_process_group_get_token(
  returned in each return message related to the process
  group the token is registered with.
 
- @param	process_group[in]		process group object
- @param	token[in]				user token
+ @param    process_group[in]        process group object
+ @param    token[in]                user token
  @return < 0 on error
  */
 extern int ia_css_process_group_set_token(
-	ia_css_process_group_t					*process_group,
-	const uint64_t							token);
+    ia_css_process_group_t                    *process_group,
+    const uint64_t                            token);
 
 /*
  * Passing of a (fragment) watermark
@@ -100,19 +92,19 @@ extern int ia_css_process_group_set_token(
 
  @see ia_css_process_group_set_fragment_limit()
 
- @param	process_group[in]		process group object
+ @param    process_group[in]        process group object
 
  @return 0 on error
 
  */
 IA_CSS_PSYS_DYNAMIC_STORAGE_CLASS_H
 uint16_t ia_css_process_group_get_fragment_limit(
-	const ia_css_process_group_t				*process_group);
+    const ia_css_process_group_t                *process_group);
 
 /*! Set the new fragment progress limit of the process group
 
- @param	process_group[in]		process group object
- @param	fragment_limit[in]		New limit value
+ @param    process_group[in]        process group object
+ @param    fragment_limit[in]        New limit value
 
  @note The limit value must be less or equal to the fragment
  count value. The process group will not make progress beyond
@@ -127,14 +119,14 @@ uint16_t ia_css_process_group_get_fragment_limit(
  */
 IA_CSS_PSYS_DYNAMIC_STORAGE_CLASS_H
 int ia_css_process_group_set_fragment_limit(
-	ia_css_process_group_t				*process_group,
-	const uint16_t					fragment_limit);
+    ia_css_process_group_t                *process_group,
+    const uint16_t                    fragment_limit);
 
 /*! Clear the fragment progress limit of the process group
 
  @see ia_css_process_group_set_fragment_limit()
 
- @param	process_group[in]		process group object
+ @param    process_group[in]        process group object
 
  @note This function sets the fragment limit to zero.
 
@@ -142,7 +134,7 @@ int ia_css_process_group_set_fragment_limit(
  */
 IA_CSS_PSYS_DYNAMIC_STORAGE_CLASS_H
 int ia_css_process_group_clear_fragment_limit(
-	ia_css_process_group_t					*process_group);
+    ia_css_process_group_t                    *process_group);
 
 /*
  * Commands
@@ -150,7 +142,7 @@ int ia_css_process_group_clear_fragment_limit(
 
 /*! Perform the start command on the process group
 
- @param	process_group[in]		process group object
+ @param    process_group[in]        process group object
 
  @note Start is an action of the l-Scheduler it makes the
  process group eligible for execution.
@@ -168,11 +160,11 @@ int ia_css_process_group_clear_fragment_limit(
  @return < 0 on error
  */
 extern int ia_css_process_group_start(
-	ia_css_process_group_t					*process_group);
+    ia_css_process_group_t                    *process_group);
 
 /*! Perform the suspend command on the process group
 
- @param	process_group[in]		process group object
+ @param    process_group[in]        process group object
 
  @note Suspend indicates that the process group execution
  is halted at the next fragment boundary. The process group
@@ -183,11 +175,11 @@ extern int ia_css_process_group_start(
  @return < 0 on error
  */
 extern int ia_css_process_group_suspend(
-	ia_css_process_group_t					*process_group);
+    ia_css_process_group_t                    *process_group);
 
 /*! Perform the resume command on the process group
 
- @param	process_group[in]		process group object
+ @param    process_group[in]        process group object
 
  @note Resume indicates that the process group is again
  eligible for execution
@@ -197,11 +189,11 @@ extern int ia_css_process_group_suspend(
  @return < 0 on error
  */
 extern int ia_css_process_group_resume(
-	ia_css_process_group_t					*process_group);
+    ia_css_process_group_t                    *process_group);
 
 /*! Perform the reset command on the process group
 
- @param	process_group[in]		process group object
+ @param    process_group[in]        process group object
 
  @note Return the process group to the started state
 
@@ -210,11 +202,11 @@ extern int ia_css_process_group_resume(
  @return < 0 on error
  */
 extern int ia_css_process_group_reset(
-	ia_css_process_group_t					*process_group);
+    ia_css_process_group_t                    *process_group);
 
 /*! Perform the abort command on the process group
 
- @param	process_group[in]		process group object
+ @param    process_group[in]        process group object
 
  @note Force the process group to the stopped state
 
@@ -223,14 +215,14 @@ extern int ia_css_process_group_reset(
  @return < 0 on error
  */
 extern int ia_css_process_group_abort(
-	ia_css_process_group_t					*process_group);
+    ia_css_process_group_t                    *process_group);
 
 /*! Release ownership of the process group
 
   For PPG's, this is the last step required before buffer
   sets can be enqueued.
 
- @param	process_group[in]		process group object
+ @param    process_group[in]        process group object
 
  @note Release notifies PSYS and hands over ownership of the
  process group from SW to FW.
@@ -240,7 +232,7 @@ extern int ia_css_process_group_abort(
  @return < 0 on error
  */
 extern int ia_css_process_group_disown(
-	ia_css_process_group_t					*process_group);
+    ia_css_process_group_t                    *process_group);
 
 /*
  * External resources
@@ -248,10 +240,10 @@ extern int ia_css_process_group_disown(
 
 /*! Set (register) a data buffer to the indexed terminal in the process group
 
- @param	process_group[in]		process group object
- @param	buffer[in]			buffer handle
- @param	buffer_state[in]		state of the buffer
- @param	terminal_index[in]		index of the terminal
+ @param    process_group[in]        process group object
+ @param    buffer[in]            buffer handle
+ @param    buffer_state[in]        state of the buffer
+ @param    terminal_index[in]        index of the terminal
 
  @note For legacy program groups (== non-PPG), the buffer handle
  shall not be VIED_NULL, but the buffer state can be undefined; BUFFER_UNDEFINED
@@ -266,16 +258,16 @@ extern int ia_css_process_group_disown(
  */
 IA_CSS_PSYS_DYNAMIC_STORAGE_CLASS_H
 int ia_css_process_group_attach_buffer(
-	ia_css_process_group_t			*process_group,
-	vied_vaddress_t				buffer,
-	const ia_css_buffer_state_t		buffer_state,
-	const unsigned int			terminal_index);
+    ia_css_process_group_t            *process_group,
+    vied_vaddress_t                buffer,
+    const ia_css_buffer_state_t        buffer_state,
+    const unsigned int            terminal_index);
 
 /*! Get (unregister) the data buffer on the indexed terminal of
  * the process group
 
- @param	process_group[in]		process group object
- @param	terminal_index[in]		index of the terminal
+ @param    process_group[in]        process group object
+ @param    terminal_index[in]        index of the terminal
 
  @note Precondition: The process group must be stopped
 
@@ -288,15 +280,15 @@ int ia_css_process_group_attach_buffer(
  */
 IA_CSS_PSYS_DYNAMIC_STORAGE_CLASS_H
 vied_vaddress_t ia_css_process_group_detach_buffer(
-	ia_css_process_group_t			*process_group,
-	const unsigned int			terminal_index);
+    ia_css_process_group_t            *process_group,
+    const unsigned int            terminal_index);
 
 /*! Set (register) a data buffer to the indexed terminal in the process group
 
- @param	process_group[in]		process group object
- @param	stream[in]				stream handle
- @param	buffer_state[in]		state of the buffer
- @param	terminal_index[in]		index of the terminal
+ @param    process_group[in]        process group object
+ @param    stream[in]                stream handle
+ @param    buffer_state[in]        state of the buffer
+ @param    terminal_index[in]        index of the terminal
 
  @note The stream handle shall not be zero, the buffer
  state can be undefined; BUFFER_UNDEFINED
@@ -310,16 +302,16 @@ vied_vaddress_t ia_css_process_group_detach_buffer(
  */
 IA_CSS_PSYS_DYNAMIC_STORAGE_CLASS_H
 int ia_css_process_group_attach_stream(
-	ia_css_process_group_t			*process_group,
-	uint32_t				stream,
-	const ia_css_buffer_state_t		buffer_state,
-	const unsigned int			terminal_index);
+    ia_css_process_group_t            *process_group,
+    uint32_t                stream,
+    const ia_css_buffer_state_t        buffer_state,
+    const unsigned int            terminal_index);
 
 /*! Get (unregister) the stream handle on the indexed terminal of
  * the process group
 
- @param	process_group[in]		process group object
- @param	terminal_index[in]		index of the terminal
+ @param    process_group[in]        process group object
+ @param    terminal_index[in]        index of the terminal
 
  @par Precondition: The process group must be stopped
 
@@ -332,8 +324,8 @@ int ia_css_process_group_attach_stream(
  */
 IA_CSS_PSYS_DYNAMIC_STORAGE_CLASS_H
 uint32_t ia_css_process_group_detach_stream(
-	ia_css_process_group_t			*process_group,
-	const unsigned int			terminal_index);
+    ia_css_process_group_t            *process_group,
+    const unsigned int            terminal_index);
 
 /*
  * Sequencing resources
@@ -342,8 +334,8 @@ uint32_t ia_css_process_group_detach_stream(
 /*! Set (an artificial) blocking resource (barrier) in
  * the process group resource map
 
- @param	process_group[in]		process group object
- @param	barrier_index[in]		index of the barrier
+ @param    process_group[in]        process group object
+ @param    barrier_index[in]        index of the barrier
 
  @note The barriers have to be set to force sequence between started
  process groups
@@ -354,14 +346,14 @@ uint32_t ia_css_process_group_detach_stream(
  */
 IA_CSS_PSYS_DYNAMIC_STORAGE_CLASS_H
 int ia_css_process_group_set_barrier(
-	ia_css_process_group_t					*process_group,
-	const vied_nci_barrier_ID_t				barrier_index);
+    ia_css_process_group_t                    *process_group,
+    const vied_nci_barrier_ID_t                barrier_index);
 
 /*! Clear a previously set blocking resource (barrier) in
  * the process group resource map
 
- @param	process_group[in]		process group object
- @param	barrier_index[in]		index of the barrier
+ @param    process_group[in]        process group object
+ @param    barrier_index[in]        index of the barrier
 
  @par Precondition: The barriers must have been set
 
@@ -371,17 +363,17 @@ int ia_css_process_group_set_barrier(
  */
 IA_CSS_PSYS_DYNAMIC_STORAGE_CLASS_H
 int ia_css_process_group_clear_barrier(
-	ia_css_process_group_t					*process_group,
-	const vied_nci_barrier_ID_t				barrier_index);
+    ia_css_process_group_t                    *process_group,
+    const vied_nci_barrier_ID_t                barrier_index);
 
 /*! Boolean test if the process group preconditions for start are satisfied
 
- @param	process_group[in]		process group object
+ @param    process_group[in]        process group object
 
  @return true if the process group can be started
  */
 IA_CSS_PSYS_DYNAMIC_STORAGE_CLASS_H
 bool ia_css_can_process_group_start(
-	const ia_css_process_group_t			*process_group);
+    const ia_css_process_group_t            *process_group);
 
 #endif /* __IA_CSS_PSYS_PROCESS_GROUP_HSYS_KERNEL_H */

@@ -48,16 +48,6 @@ AiqResultStorage::AiqResultStorage(int cameraId) :
         mAiqResults[i] = new AiqResult(mCameraId);
         mAiqResults[i]->init();
     }
-    // INTEL_DVS_S
-    for (int i = 0; i < kDvsStorageSize; i++) {
-        mDvsResults[i] = new DvsResult();
-    }
-    // INTEL_DVS_E
-    // LOCAL_TONEMAP_S
-    for (int i = 0; i < kLtmStorageSize; i++) {
-        mLtmResults[i] = new ltm_result_t;
-    }
-    // LOCAL_TONEMAP_E
 }
 
 AiqResultStorage::~AiqResultStorage()
@@ -67,115 +57,7 @@ AiqResultStorage::~AiqResultStorage()
     for (int i = 0; i < kStorageSize; i++) {
         delete mAiqResults[i];
     }
-    // INTEL_DVS_S
-    for (int i = 0; i < kDvsStorageSize; i++) {
-        delete mDvsResults[i];
-    }
-    // INTEL_DVS_E
-    // LOCAL_TONEMAP_S
-    for (int i = 0; i < kLtmStorageSize; i++) {
-        delete mLtmResults[i];
-    }
-    // LOCAL_TONEMAP_E
 }
-
-// LOCAL_TONEMAP_S
-ltm_result_t* AiqResultStorage::acquireLtmResult()
-{
-    AutoWMutex rlock(mDataLock);
-
-    int index = mCurrentLtmIndex + 1;
-    index %= kLtmStorageSize;
-
-    mLtmResults[index]->sequence = -1;
-
-    return mLtmResults[index];
-}
-
-void AiqResultStorage::updateLtmResult(long sequence)
-{
-    AutoWMutex wlock(mDataLock);
-
-    mCurrentLtmIndex++;
-    mCurrentLtmIndex %= kLtmStorageSize;
-
-    mLtmResults[mCurrentLtmIndex]->sequence = sequence;
-}
-
-const ltm_result_t* AiqResultStorage::getLtmResult(long sequence)
-{
-    AutoRMutex rlock(mDataLock);
-
-    if (mCurrentLtmIndex == -1)
-        return nullptr;
-
-    // Sequence is -1 means to get the latest result
-    if (sequence == -1) {
-        return mLtmResults[mCurrentLtmIndex];
-    }
-
-    // Try to find the matched result
-    for (int i = 0; i < kLtmStorageSize; i++) {
-        int tmpIdx = (mCurrentLtmIndex + kLtmStorageSize - i) % kLtmStorageSize;
-        if (mLtmResults[tmpIdx]->sequence >= 0 && sequence >= mLtmResults[tmpIdx]->sequence) {
-            LOG2("%s, find the ltm result (expect: %ld actual: %ld)",
-                    __func__, sequence, mLtmResults[tmpIdx]->sequence);
-            return mLtmResults[tmpIdx];
-        }
-    }
-
-    return nullptr;
-}
-// LOCAL_TONEMAP_E
-
-// INTEL_DVS_S
-DvsResult* AiqResultStorage::acquireDvsResult()
-{
-    AutoWMutex rlock(mDataLock);
-
-    int index = mCurrentDvsIndex + 1;
-    index %= kDvsStorageSize;
-
-    mDvsResults[index]->mSequence = -1;
-
-    return mDvsResults[index];
-}
-
-void AiqResultStorage::updateDvsResult(long sequence)
-{
-    AutoWMutex wlock(mDataLock);
-
-    mCurrentDvsIndex++;
-    mCurrentDvsIndex %= kDvsStorageSize;
-
-    mDvsResults[mCurrentDvsIndex]->mSequence = sequence;
-}
-
-const DvsResult* AiqResultStorage::getDvsResult(long sequence)
-{
-    AutoRMutex rlock(mDataLock);
-
-    if (mCurrentDvsIndex == -1)
-        return nullptr;
-
-    CheckError(mDvsResults[mCurrentDvsIndex]->mSequence == -1, nullptr, "invalid sequence id -1");
-
-    if (sequence == -1)
-        return mDvsResults[mCurrentDvsIndex];
-
-    // Try to find the matched result
-    for (int i = 0; i < kDvsStorageSize; i++) {
-        int tmpIdx = (mCurrentDvsIndex + kDvsStorageSize - i) % kDvsStorageSize;
-        if (mDvsResults[tmpIdx]->mSequence >= 0 && sequence >= mDvsResults[tmpIdx]->mSequence) {
-            LOG2("%s, find the DVS result (expect: %ld actual: %ld)",
-                    __func__, sequence, mDvsResults[tmpIdx]->mSequence);
-            return mDvsResults[tmpIdx];
-        }
-    }
-
-    return nullptr;
-}
-// INTEL_DVS_E
 
 AiqStatistics* AiqResultStorage::acquireAiqStatistics()
 {

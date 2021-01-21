@@ -388,7 +388,9 @@ v4l2_format* V4L2Format::Get() {
 V4L2VideoNode::V4L2VideoNode(const std::string& name)
         : V4L2Device(name),
           state_(VideoNodeState::CLOSED),
-          is_buffer_cached_(false) {
+          is_buffer_cached_(false),
+          buffer_type_(V4L2_BUF_TYPE_VIDEO_CAPTURE),
+          memory_type_(V4L2_MEMORY_USERPTR) {
     LOG1("@%s", __func__);
 }
 

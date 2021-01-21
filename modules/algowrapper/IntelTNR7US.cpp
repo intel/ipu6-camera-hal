@@ -101,7 +101,7 @@ int IntelTNR7US::prepareSurface(void* bufAddr, int size) {
 }
 
 int IntelTNR7US::runTnrFrame(const void* inBufAddr, void* outBufAddr, uint32_t inBufSize,
-                             uint32_t outBufSize, Tnr7Param* tnrParam, int fd) {
+                             uint32_t outBufSize, Tnr7Param* tnrParam, bool syncUpdate, int fd) {
     PERF_CAMERA_ATRACE();
     TRACE_LOG_PROCESS("IntelTNR7US", "runTnrFrame");
     LOG1("%s mCameraId %d, type %d", __func__, mCameraId, mTnrType);
@@ -119,9 +119,10 @@ int IntelTNR7US::runTnrFrame(const void* inBufAddr, void* outBufAddr, uint32_t i
     }
     CheckError(outSurface == nullptr, UNKNOWN_ERROR, "Failed to get CMSurface for output buffer");
 
-    /* call Tnr api to run tnr for the inSurface and store the result in refOutSurface */
-    int ret = run_tnr7us_frame(mWidth, mHeight, mWidth, inSurface, outSurface, &tnrParam->scale,
-                               &tnrParam->ims, &tnrParam->bc, &tnrParam->blend, false, mTnrType);
+    /* call Tnr api to run tnr for the inSurface and store the result in outSurface */
+    int ret =
+        run_tnr7us_frame(mWidth, mHeight, mWidth, inSurface, outSurface, &tnrParam->scale,
+                         &tnrParam->ims, &tnrParam->bc, &tnrParam->blend, syncUpdate, mTnrType);
     if (fd >= 0) {
         destroyCMSurface(outSurface);
     }

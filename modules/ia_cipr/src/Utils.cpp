@@ -51,7 +51,7 @@ void freeMemory(void* p) {
 
 void memoryCopy(void* dst, size_t dsz, const void* src, size_t sz) {
     if (dsz < sz) {
-        icamera::LOG2("%s: destination size < source size, potential coding error", __func__);
+        LOG2("%s: destination size < source size, potential coding error", __func__);
     }
 
     MEMCPY_S(dst, dsz, src, sz);

@@ -31,7 +31,7 @@ class IntelFaceDetection {
     virtual ~IntelFaceDetection();
 
     status_t init(FaceDetectionInitParams* initData, int dataSize);
-    status_t deinit();
+    status_t deinit(FaceDetectionDeinitParams* deinitParams, int dataSize);
     status_t run(FaceDetectionRunParams* runParams, int dataSize, int dmafd = -1);
     FaceDetectionRunParams* prepareRunBuffer(unsigned int index);
 
@@ -42,6 +42,7 @@ class IntelFaceDetection {
     bool mInitialized;
 
     ShmMemInfo mMemInit;
+    ShmMemInfo mMemDeinit;
     ShmMemInfo mMemRunBufs[MAX_STORE_FACE_DATA_BUF_NUM];
     std::vector<ShmMem> mMems;
 };

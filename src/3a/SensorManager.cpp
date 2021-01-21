@@ -159,16 +159,16 @@ int SensorManager::getCurrentExposureAppliedDelay()
     return mExposureDataMap.size() + PlatformData::getExposureLag(mCameraId);
 }
 
-uint32_t SensorManager::updateSensorExposure(SensorExpGroup sensorExposures, bool useSof)
+uint32_t SensorManager::updateSensorExposure(SensorExpGroup sensorExposures, long applyingSeq)
 {
     AutoMutex l(mLock);
 
-    long appliedSeq = mLastSofSequence < 0 ? 0 : \
-                      mLastSofSequence + PlatformData::getExposureLag(mCameraId);
+    long effectSeq = mLastSofSequence < 0 ? 0 : \
+                     mLastSofSequence + PlatformData::getExposureLag(mCameraId);
 
     if (sensorExposures.empty()) {
         LOGW("%s: No exposure parameter", __func__);
-        return ((uint32_t)appliedSeq);
+        return ((uint32_t)effectSeq);
     }
 
     ExposureData exposureData;
@@ -188,12 +188,20 @@ uint32_t SensorManager::updateSensorExposure(SensorExpGroup sensorExposures, boo
         digitalGains.push_back(digitalGain);
     }
 
-    if (useSof) {
+    if (effectSeq > 0) {
         int sensorSeq = mLastSofSequence + mExposureDataMap.size() + 1;
-        mExposureDataMap[sensorSeq] = exposureData;
+        if (applyingSeq > 0 && applyingSeq == mLastSofSequence) {
+            sensorSeq = applyingSeq;
+            mSensorHwCtrl->setFrameDuration(exposureData.lineLengthPixels,
+                                            exposureData.frameLengthLines);
+            mSensorHwCtrl->setExposure(exposureData.coarseExposures, exposureData.fineExposures);
+        } else {
+            mExposureDataMap[sensorSeq] = exposureData;
+        }
+
         mAnalogGainMap[sensorSeq + mAnalogGainDelay] = analogGains;
         mDigitalGainMap[sensorSeq + mDigitalGainDelay] = digitalGains;
-        appliedSeq += mExposureDataMap.size();
+        effectSeq += mExposureDataMap.size();
     } else if (PlatformData::isIsysEnabled(mCameraId)) {
         mSensorHwCtrl->setFrameDuration(exposureData.lineLengthPixels,
                                         exposureData.frameLengthLines);
@@ -202,9 +210,9 @@ uint32_t SensorManager::updateSensorExposure(SensorExpGroup sensorExposures, boo
         mSensorHwCtrl->setDigitalGains(digitalGains);
     }
 
-    LOG3A("@%s, useSof:%d, mLastSofSequence:%ld, appliedSeq %ld", __func__, useSof,
-           mLastSofSequence, appliedSeq);
-    return ((uint32_t)appliedSeq);
+    LOG3A("@%s, mLastSofSequence:%ld, effectSeq %ld, applyingSeq %ld",
+          __func__, mLastSofSequence, effectSeq, applyingSeq);
+    return ((uint32_t)effectSeq);
 }
 
 int SensorManager::setFrameRate(float fps)

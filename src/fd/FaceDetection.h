@@ -35,6 +35,8 @@
 #include "Parameters.h"
 #include "FaceBase.h"
 
+#include "IntelCCATypes.h"
+
 namespace icamera {
 
 #ifdef FACE_DETECTION
@@ -54,7 +56,7 @@ class FaceDetection : public Thread {
     void runFaceDetectionByAsync(const camera_buffer_t &buffer);
     int getFaceNum();
     virtual bool threadLoop();
-    static int getResult(int cameraId, ia_atbx_face_state *faceState);
+    static int getResult(int cameraId, cca::cca_face_state *faceState);
     static int getResult(int cameraId, CVFaceDetectionAbstractResult *result);
 
  private:
@@ -98,7 +100,7 @@ class FaceDetection : public Thread {
 #else
 class FaceDetection {
  public:
-    static int getResult(int cameraId, ia_atbx_face_state *faceState) {
+    static int getResult(int cameraId, cca::cca_face_state *faceState) {
         faceState->num_faces = 0;
         return 0;
     }

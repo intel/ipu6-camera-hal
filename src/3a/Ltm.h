@@ -16,81 +16,31 @@
 
 #pragma once
 
-#include <queue>
 #include <memory>
+#include <queue>
 
 #ifdef ENABLE_SANDBOXING
-#include "modules/sandboxing/client/IntelLtm.h"
+#include "modules/sandboxing/client/IntelCca.h"
 #else
-#include "modules/algowrapper/IntelLtm.h"
+#include "modules/algowrapper/IntelCca.h"
 #endif
 
-#include "CameraEvent.h"
-#include "AiqSetting.h"
 #include "AiqResult.h"
-#include "iutils/Thread.h"
+#include "AiqSetting.h"
+#include "CameraEvent.h"
 #include "iutils/CameraDump.h"
+#include "iutils/Thread.h"
 
 namespace icamera {
 
-struct ltm_result_t {
-    ia_ltm_drc_params ltmDrcParams;
-    ia_ltm_results ltmResults;
-
-    camera_resolution_t yvGridInfo;
-
-    long sequence;
-
-    ltm_result_t() {
-        CLEAR(ltmDrcParams);
-        CLEAR(ltmResults);
-        yvGridInfo = {0, 0};
-        sequence = -1;
-    }
-};
-
 struct LtmInputParams {
-    ia_isp_bxt_hdr_yv_grid_t yvGrid;
-    ia_ltm_input_params ltmParams;
-    ia_ltm_gtm_input_params gtmParams;
+    cca::cca_ltm_input_params ltmParams;
     long sequence;
 
     LtmInputParams() {
-        CLEAR(yvGrid);
         CLEAR(ltmParams);
-        CLEAR(gtmParams);
         sequence = -1;
     }
-};
-/**
- * There are two SIS port, SIS_A is for preview.
- * SIS_B is for still and capture.
- */
-enum SisPort
-{
-    SIS_A = 0,
-    SIS_B,
-    MAX_SIS_NUM
-};
-
-struct SisBuffer
-{
-    SisPort sisPort;
-    ia_binary_data sisImage;
-
-    SisBuffer() {
-        sisPort = SIS_A;
-        CLEAR(sisImage);
-    }
-};
-
-struct LtmStatistics {
-    LtmStatistics(ia_isp_bxt_hdr_yv_grid_t *inputYvGrid = nullptr, long seq = -1) {
-        yvGrid = inputYvGrid;
-        sequence = seq;
-    }
-    ia_isp_bxt_hdr_yv_grid_t *yvGrid;
-    long sequence;
 };
 
 /**
@@ -113,73 +63,49 @@ class Ltm : public EventListener {
      * \brief handle statistics event
      */
     void handleEvent(EventData eventData);
+    int handleSisLtm(const std::shared_ptr<CameraBuffer>& cameraBuffer);
 
-    int handleLtm(ia_isp_bxt_hdr_yv_grid_t* yvGrid,
-                  unsigned long long timestamp = 0,
-                  long sequence = 0);
-    int handleSisLtm(const std::shared_ptr<CameraBuffer> &cameraBuffer);
  private:
     DISALLOW_COPY_AND_ASSIGN(Ltm);
 
-    int runLtm();
-    int initLtmParams();
-    int runLtm(ia_aiq_ae_results* aeResult, ltm_result_t *ltmResult, ia_ltm_input_params *ltmParams = NULL);
+    int runLtmAsync();
+    int runLtm(const LtmInputParams& ltmInputParams);
 
-    int initIaLtmHandle(TuningMode tuningMode);
-    int deinitIaLtmHandle();
-
-    int updateTuningData();
-    AiqResult *getAiqResult(long sequence);
-    int updateParameter(const aiq_parameter_t &param, unsigned long long timestamp);
-
-    int dumpLtmDrcParams(const ia_ltm_drc_params* ltmDrcParams);
-    int dumpLtmResultsParams(const ia_ltm_results *ltmResults);
+    AiqResult* getAiqResult(long sequence);
 
  private:
     /**
      * \brief The ltm thread
      */
-    class LtmThread: public Thread {
-        Ltm *mLtmHandle;
-        public:
-        LtmThread(Ltm *pThis)
-            : mLtmHandle(pThis) { }
+    class LtmThread : public Thread {
+        Ltm* mLtmHandle;
+
+     public:
+        LtmThread(Ltm* pThis) : mLtmHandle(pThis) {}
 
         virtual bool threadLoop() {
-            int ret = mLtmHandle->runLtm();
+            int ret = mLtmHandle->runLtmAsync();
             return (ret == 0);
         }
     };
 
     int mCameraId;
-    ia_ltm *mLtm;
     TuningMode mTuningMode;
 
-    enum LtmState {
-        LTM_NOT_INIT = 0,
-        LTM_INIT,
-        LTM_CONFIGURED,
-        LTM_MAX
-    } mLtmState;
+    enum LtmState { LTM_NOT_INIT = 0, LTM_INIT, LTM_CONFIGURED, LTM_MAX } mLtmState;
 
     // Use it to lock mInputParamIndex and mLtmParams
     // And use it for thread condition lock
-    Mutex  mLtmLock;
-    LtmThread *mLtmThread;
+    Mutex mLtmLock;
+    LtmThread* mLtmThread;
     bool mThreadRunning;
     Condition mParamAvailableSignal;
     static const nsecs_t kWaitDuration = 2000000000;  // 2000ms
-    static const int kMaxLtmParamsNum = 2;  // 2 ltm input params
+    static const int kMaxLtmParamsNum = 2;            // 2 ltm input params
 
     int mInputParamIndex;
-    LtmInputParams *mLtmParams[kMaxLtmParamsNum];
-    std::queue<LtmInputParams *> mLtmParamsQ;
-
-    SisBuffer *mSisBuffer[kMaxLtmParamsNum];
-    BinParam_t mLtmBinParam;
-
-    std::unique_ptr<IntelLtm> mIntelLtm;
+    LtmInputParams* mLtmParams[kMaxLtmParamsNum];
+    std::queue<LtmInputParams*> mLtmParamsQ;
 };
 
-}  /* namespace icamera */
-
+} /* namespace icamera */

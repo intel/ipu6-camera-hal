@@ -84,6 +84,20 @@ bool IntelAlgoCommon::requestSync(IPC_CMD cmd) {
     return mClient->requestSync(cmd) == OK ? true : false;
 }
 
+ia_err IntelAlgoCommon::requestSyncCca(IPC_CMD cmd, int32_t handle) {
+    LOGIPC("@%s", __func__);
+    CheckError(mClient == nullptr, ia_err_argument, "@%s, mClient is nullptr", __func__);
+
+    return (ia_err)(mClient->requestSync(cmd, handle));
+}
+
+ia_err IntelAlgoCommon::requestSyncCca(IPC_CMD cmd) {
+    LOGIPC("@%s", __func__);
+    CheckError(mClient == nullptr, ia_err_argument, "@%s, mClient is nullptr", __func__);
+
+    return (ia_err)(mClient->requestSync(cmd));
+}
+
 void IntelAlgoCommon::freeShmMem(const ShmMemInfo& shm, ShmMemUsage usage) {
     LOGIPC("@%s, mHandle:%d, mFd:%d, mName:%s, mSize:%d, mAddr:%p", __func__, shm.mHandle, shm.mFd,
            shm.mName.c_str(), shm.mSize, shm.mAddr);

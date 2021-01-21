@@ -45,7 +45,7 @@ Result Buffer::allocateCommon() {
         if (mMemoryDesc.cpuPtr) {
             memoryCopy(cpuPtr, mMemoryDesc.size, mMemoryDesc.cpuPtr, mMemoryDesc.size);
         } else if (mMemoryDesc.flags & MemoryFlag::MemoryHandle) {
-            icamera::LOGE("%s: copy from handle to host only memory not implemented", __func__);
+            LOGE("%s: copy from handle to host only memory not implemented", __func__);
             if (cpuPtr) CIPR::freeMemory(cpuPtr);
             return Result::GeneralError;
         }
@@ -138,7 +138,7 @@ Result Buffer::allocate() {
 
 Result Buffer::createWithUserMemory(uint32_t size, MemoryFlag flags, const MemoryDesc* userMemory) {
     if (size < userMemory->size) {
-        icamera::LOG2(
+        LOG2(
             "%s: requested bytes to allocate less than provided user memory in argument, "
             "truncating",
             __func__);
@@ -240,7 +240,7 @@ Buffer::Buffer(uint32_t size, MemoryFlag flags, const MemoryDesc* userMemory) {
     mInitialized = true;
     ret = validateBuffer(nullptr);
     if (ret != Result::OK) {
-        icamera::LOG2("Buffer::Buffer validateBuffer Error");
+        LOG2("Buffer::Buffer validateBuffer Error");
         mInitialized = false;
     }
 }
@@ -279,14 +279,14 @@ Buffer::~Buffer() {
 
     if (isRegion()) {
         if (!mMemoryDesc.anchor) {
-            icamera::LOG2("%s: parent already released", __func__);
+            LOG2("%s: parent already released", __func__);
         } else {
             mMemoryDesc.anchor->mRegions.erase(this);
         }
     }
 
     if (!mRegions.empty()) {
-        icamera::LOG2("%s: parent buffer destroy leaves stale regions", __func__);
+        LOG2("%s: parent buffer destroy leaves stale regions", __func__);
 
         for (auto& x : mRegions) {
             x->mMemoryDesc.anchor = nullptr;
@@ -365,7 +365,7 @@ Result Buffer::getMemorySize(int* size) {
 
 Buffer* Buffer::getParent() {
     if (!isRegion()) {
-        icamera::LOGE("%s: not a child object", __func__);
+        LOGE("%s: not a child object", __func__);
         return nullptr;
     }
 

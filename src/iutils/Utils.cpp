@@ -97,23 +97,6 @@ static const FormatInfo gFormatMapping[] = {
     { V4L2_PIX_FMT_SGRBG10P, "V4L2_PIX_FMT_SGRBG10P", "GRBG10P", 10, FORMAT_RAW },
     { V4L2_PIX_FMT_SRGGB10P, "V4L2_PIX_FMT_SRGGB10P", "RGGB10P", 10, FORMAT_RAW },
 
-// IPU4_FEATURE_S
-    { V4L2_PIX_FMT_SBGGR8V32, "V4L2_PIX_FMT_SBGGR8V32", "BGGR8V32", 16, FORMAT_RAW_VEC },
-    { V4L2_PIX_FMT_SGBRG8V32, "V4L2_PIX_FMT_SGBRG8V32", "GBRG8V32", 16, FORMAT_RAW_VEC },
-    { V4L2_PIX_FMT_SGRBG8V32, "V4L2_PIX_FMT_SGRBG8V32", "GRBG8V32", 16, FORMAT_RAW_VEC },
-    { V4L2_PIX_FMT_SRGGB8V32, "V4L2_PIX_FMT_SRGGB8V32", "RGGB8V32", 16, FORMAT_RAW_VEC },
-
-    { V4L2_PIX_FMT_SBGGR10V32, "V4L2_PIX_FMT_SBGGR10V32", "BGGR10V32", 16, FORMAT_RAW_VEC },
-    { V4L2_PIX_FMT_SGBRG10V32, "V4L2_PIX_FMT_SGBRG10V32", "GBRG10V32", 16, FORMAT_RAW_VEC },
-    { V4L2_PIX_FMT_SGRBG10V32, "V4L2_PIX_FMT_SGRBG10V32", "GRBG10V32", 16, FORMAT_RAW_VEC },
-    { V4L2_PIX_FMT_SRGGB10V32, "V4L2_PIX_FMT_SRGGB10V32", "RGGB10V32", 16, FORMAT_RAW_VEC },
-
-    { V4L2_PIX_FMT_SBGGR12V32, "V4L2_PIX_FMT_SBGGR12V32", "BGGR12V32", 16, FORMAT_RAW_VEC },
-    { V4L2_PIX_FMT_SGBRG12V32, "V4L2_PIX_FMT_SGBRG12V32", "GBRG12V32", 16, FORMAT_RAW_VEC },
-    { V4L2_PIX_FMT_SRGGB12V32, "V4L2_PIX_FMT_SRGGB12V32", "RGGB12V32", 16, FORMAT_RAW_VEC },
-    { V4L2_PIX_FMT_SGRBG12V32, "V4L2_PIX_FMT_SGRBG12V32", "GRBG12V32", 16, FORMAT_RAW_VEC },
-// IPU4_FEATURE_E
-
     { V4L2_PIX_FMT_NV12, "V4L2_PIX_FMT_NV12", "NV12", 12, FORMAT_YUV },
     { V4L2_PIX_FMT_NV21, "V4L2_PIX_FMT_NV21", "NV21", 12, FORMAT_YUV },
     { V4L2_PIX_FMT_NV16, "V4L2_PIX_FMT_NV16", "NV16", 16, FORMAT_YUV },
@@ -123,13 +106,6 @@ static const FormatInfo gFormatMapping[] = {
     { V4L2_PIX_FMT_YUV420, "V4L2_PIX_FMT_YUV420", "YUV420", 12, FORMAT_YUV },
     { V4L2_PIX_FMT_YVU420, "V4L2_PIX_FMT_YVU420", "YVU420", 12, FORMAT_YUV },
     { V4L2_PIX_FMT_YUV422P, "V4L2_PIX_FMT_YUV422P", "YUV422P", 16, FORMAT_YUV },
-
-// IPU4_FEATURE_S
-    { V4L2_PIX_FMT_YUYV420_V32, "V4L2_PIX_FMT_YUYV420_V32", "YUYV420V32", 24, FORMAT_YUV_VEC },
-
-    { V4L2_PIX_FMT_P010_BE, "V4L2_PIX_FMT_P010_BE", "P010", 24, FORMAT_YUV },
-    { V4L2_PIX_FMT_P010_LE, "V4L2_PIX_FMT_P010_LE", "P01L", 24, FORMAT_YUV },
-// IPU4_FEATURE_E
 
     { V4L2_PIX_FMT_BGR24, "V4L2_PIX_FMT_BGR24", "BGR24", 24, FORMAT_RGB },
     { V4L2_PIX_FMT_BGR32, "V4L2_PIX_FMT_BGR32", "BGR32", 32, FORMAT_RGB },
@@ -180,7 +156,7 @@ static const FormatInfo gFormatMapping[] = {
     { GET_FOURCC_FMT('G','R','1','0'), "GR10", "GR10", 16, FORMAT_FOURCC },
     { GET_FOURCC_FMT('C','S','L','6'), "GRBG_12_LI", "CSL6", 15, FORMAT_FOURCC },
     { GET_FOURCC_FMT('P','0','1','0'), "P010", "P010", 24, FORMAT_FOURCC },
-    { GET_FOURCC_FMT('Y','U','Y','2'), "YUY2", "YUY2", 16, FORMAT_FOURCC },
+    { GET_FOURCC_FMT('Y','U','Y','2'), "YUV422_8_P64", "YUY2", 16, FORMAT_FOURCC },
     { GET_FOURCC_FMT('G','R','B','G'), "GRBG", "GRBG", 8, FORMAT_FOURCC },
 };
 
@@ -320,20 +296,6 @@ bool CameraUtils::isRaw(int format)
     return false;
 }
 
-// IPU4_FEATURE_S
-bool CameraUtils::isVectorRaw(int format)
-{
-    int size = ARRAY_SIZE(gFormatMapping);
-    for (int i = 0; i < size; i++) {
-        if (gFormatMapping[i].pixelCode == format) {
-            return gFormatMapping[i].type == FORMAT_RAW_VEC;
-        }
-    }
-
-    return false;
-}
-// IPU4_FEATURE_E
-
 int CameraUtils::getBpp(int format)
 {
     int size = ARRAY_SIZE(gFormatMapping);
@@ -345,6 +307,20 @@ int CameraUtils::getBpp(int format)
 
     LOGE("There is no bpp supplied for format %s", pixelCode2String(format));
     return -1;
+}
+
+int CameraUtils::getBpe(int format, int bpp) {
+    int bpe = bpp;
+    switch (format) {
+        case V4L2_PIX_FMT_YUYV:
+        case V4L2_PIX_FMT_UYVY:
+        case GET_FOURCC_FMT('Y','U','Y','2'):
+            bpe = 8;
+            break;
+        default:
+            break;
+    }
+    return bpe;
 }
 
 /**
@@ -363,88 +339,89 @@ int CameraUtils::getStride(int format, int width)
 /*
  * Calc frame size for compression
  */
-int CameraUtils::getCompressedFrameSize(int format, int width, int height)
-{
-   int alignedBpl = getStride(format, width);
-   int alignedHeight, imageBufferSize, frameSize;
+int CameraUtils::getCompressedFrameSize(int format, int width, int height) {
+    int frameSize = 0;
+    switch (format) {
+        case V4L2_PIX_FMT_SBGGR8:
+        case V4L2_PIX_FMT_SGBRG8:
+        case V4L2_PIX_FMT_SGRBG8:
+        case V4L2_PIX_FMT_SRGGB8:
+        case V4L2_PIX_FMT_SBGGR10:
+        case V4L2_PIX_FMT_SGBRG10:
+        case V4L2_PIX_FMT_SGRBG10:
+        case V4L2_PIX_FMT_SRGGB10: {
+            int alignedBpl = getStride(format, width);
+            alignedBpl = ALIGN(alignedBpl, ISYS_COMPRESSION_STRIDE_ALIGNMENT_BYTES);
+            int alignedHeight = ALIGN(height, ISYS_COMPRESSION_HEIGHT_ALIGNMENT);
+            int imageBufferSize = ALIGN(alignedBpl * alignedHeight, ISYS_COMPRESSION_PAGE_SIZE);
+            int singlePlanarTileStatusSize =
+                CAMHAL_CEIL_DIV(((alignedBpl * alignedHeight / ISYS_COMPRESSION_TILE_SIZE_BYTES) *
+                                 ISYS_COMPRESSION_TILE_STATUS_BITS),
+                                8);
+            int singleTileStatusSize =
+                ALIGN(singlePlanarTileStatusSize, ISYS_COMPRESSION_PAGE_SIZE);
+            LOG1("@%s: format:%s, stride:%d, height:%d, imageSize:%d, TS size:%d", __func__,
+                 pixelCode2String(format), alignedBpl, alignedHeight, imageBufferSize,
+                 singleTileStatusSize);
 
-   switch (format) {
-       case V4L2_PIX_FMT_SBGGR8:
-       case V4L2_PIX_FMT_SGBRG8:
-       case V4L2_PIX_FMT_SGRBG8:
-       case V4L2_PIX_FMT_SRGGB8:
-       case V4L2_PIX_FMT_SBGGR10:
-       case V4L2_PIX_FMT_SGBRG10:
-       case V4L2_PIX_FMT_SGRBG10:
-       case V4L2_PIX_FMT_SRGGB10:
-       {
-           alignedBpl = ALIGN(alignedBpl, ISYS_COMPRESSION_STRIDE_ALIGNMENT_BYTES);
-           alignedHeight = ALIGN(height, ISYS_COMPRESSION_HEIGHT_ALIGNMENT);
-           imageBufferSize = ALIGN(alignedBpl * alignedHeight, ISYS_COMPRESSION_PAGE_SIZE);
-           int singlePlanarTileStatusSize = CAMHAL_CEIL_DIV(((alignedBpl * alignedHeight / ISYS_COMPRESSION_TILE_SIZE_BYTES) *
-                                                                                               ISYS_COMPRESSION_TILE_STATUS_BITS), 8);
-           int singleTileStatusSize = ALIGN(singlePlanarTileStatusSize, ISYS_COMPRESSION_PAGE_SIZE);
-           LOG1("@%s: format:%s, aligned stride:%d, buffer height:%d, pixel buffer size:%d, single planner TS size:%d",
-                __func__, pixelCode2String(format), alignedBpl, alignedHeight, imageBufferSize, singleTileStatusSize);
-           frameSize = imageBufferSize + singleTileStatusSize;
-           break;
-       }
-       case GET_FOURCC_FMT('V','4','2','0'):
-       case GET_FOURCC_FMT('I','Y','U','V'):
-       {
-           //alignedBpl needs accurate stride, not equivalent value from getStride()
-           alignedBpl = (format == GET_FOURCC_FMT('V','4','2','0')) ? width * 2 : width;
-           alignedBpl = ALIGN(alignedBpl, PSYS_COMPRESSION_PSA_Y_STRIDE_ALIGNMENT);
-           alignedHeight = ALIGN(height, PSYS_COMPRESSION_PSA_HEIGHT_ALIGNMENT);
-           int alignBplUV = ALIGN(alignedBpl / UV_STRIDE_DIVIDER, PSYS_COMPRESSION_PSA_UV_STRIDE_ALIGNMENT);
-           int alignHeightUV = ALIGN(alignedHeight / UV_HEIGHT_DIVIDER, PSYS_COMPRESSION_PSA_HEIGHT_ALIGNMENT);
-           imageBufferSize = ALIGN((alignedBpl * alignedHeight + alignBplUV * alignHeightUV * 2), PSYS_COMPRESSION_PAGE_SIZE);
+            frameSize = imageBufferSize + singleTileStatusSize;
+            break;
+        }
+        case GET_FOURCC_FMT('V', '4', '2', '0'):
+        case GET_FOURCC_FMT('I', 'Y', 'U', 'V'): {
+            int alignedBpl = format == GET_FOURCC_FMT('V', '4', '2', '0') ? width * 2 : width;
+            alignedBpl = ALIGN(alignedBpl, PSYS_COMPRESSION_PSA_Y_STRIDE_ALIGNMENT);
+            int alignedHeight = ALIGN(height, PSYS_COMPRESSION_PSA_HEIGHT_ALIGNMENT);
+            int alignWidthUV = alignedBpl / 2;
+            int alignHeightUV = alignedHeight / 2;
 
-           int planarYTileStatus = CAMHAL_CEIL_DIV((alignedBpl * alignedHeight / TILE_SIZE_YUV420_Y) *
-                                                                                   TILE_STATUS_BITS_YUV420_Y, 8);
-           planarYTileStatus = ALIGN(planarYTileStatus, PSYS_COMPRESSION_PAGE_SIZE);
-           int planarUVTileStatus = CAMHAL_CEIL_DIV((alignBplUV * alignHeightUV / TILE_SIZE_YUV420_Y) *
-                                                                                   TILE_STATUS_BITS_YUV420_Y, 8);
-           planarUVTileStatus = ALIGN(planarUVTileStatus, PSYS_COMPRESSION_PAGE_SIZE);
+            int imageBufferSize =
+                ALIGN((alignedBpl * alignedHeight + alignWidthUV * alignHeightUV * 2),
+                      PSYS_COMPRESSION_PAGE_SIZE);
 
-           LOG1("@%s: format:%s, stride:%d, height:%d, imageSize:%d, tile_status_Y:%d, two tile_status_UV:%d",
-                       __func__, pixelCode2String(format), alignedBpl, alignedHeight,
-                       imageBufferSize, planarYTileStatus, planarUVTileStatus*2);
-           frameSize = imageBufferSize + planarYTileStatus + planarUVTileStatus * 2;
-           break;
-       }
-       case V4L2_PIX_FMT_NV12:
-// IPU4_FEATURE_S
-       case V4L2_PIX_FMT_P010_BE:
-// IPU4_FEATURE_E
-       {
-           int bpl = width;
-// IPU4_FEATURE_S
-           if (format == V4L2_PIX_FMT_P010_BE) {
-                bpl = width * 2;
-           }
-// IPU4_FEATURE_E
-           alignedBpl = ALIGN(bpl, PSYS_COMPRESSION_OFS_STRIDE_ALIGNMENT);
-           alignedHeight = ALIGN(height, PSYS_COMPRESSION_OFS_LINEAR_HEIGHT_ALIGNMENT);
-           int alignedHeightUV = ALIGN(alignedHeight / UV_HEIGHT_DIVIDER, PSYS_COMPRESSION_OFS_LINEAR_HEIGHT_ALIGNMENT);
-           int imageBufferSize = ALIGN(alignedBpl * (alignedHeight + alignedHeightUV), PSYS_COMPRESSION_PAGE_SIZE);
+            int planarYTileStatus = CAMHAL_CEIL_DIV(
+                (alignedBpl * alignedHeight / TILE_SIZE_YUV420_Y) * TILE_STATUS_BITS_YUV420_Y, 8);
+            planarYTileStatus = ALIGN(planarYTileStatus, PSYS_COMPRESSION_PAGE_SIZE);
+            int planarUVTileStatus = CAMHAL_CEIL_DIV(
+                (alignWidthUV * alignHeightUV / TILE_SIZE_YUV420_UV) * TILE_STATUS_BITS_YUV420_UV,
+                8);
+            planarUVTileStatus = ALIGN(planarUVTileStatus, PSYS_COMPRESSION_PAGE_SIZE);
 
-           int planarYTileStatus = CAMHAL_CEIL_DIV((alignedBpl *  alignedHeight / TILE_SIZE_OFS8_10_LINEAR) *
-                                                                                   TILE_STATUS_BITS_OFS8_10_LINEAR, 8);
-           planarYTileStatus = ALIGN(planarYTileStatus, PSYS_COMPRESSION_PAGE_SIZE);
-           int planarUVTileStatus = CAMHAL_CEIL_DIV((alignedBpl * alignedHeightUV / TILE_SIZE_OFS8_10_LINEAR) *
-                                                                                   TILE_STATUS_BITS_OFS8_10_LINEAR, 8);
-           planarUVTileStatus = ALIGN(planarUVTileStatus, PSYS_COMPRESSION_PAGE_SIZE);
+            LOG1("@%s: format:%s, stride:%d, height:%d, imageSize:%d, tile_status_Y:%d,"
+                 "tile_status_UV:%d", __func__, pixelCode2String(format), alignedBpl, alignedHeight,
+                 imageBufferSize, planarYTileStatus, planarUVTileStatus);
+            frameSize = imageBufferSize + planarYTileStatus + planarUVTileStatus * 2;
+            break;
+        }
+        case V4L2_PIX_FMT_NV12:  {
+                int bpl = width;
+                int alignedBpl = ALIGN(bpl, PSYS_COMPRESSION_TNR_STRIDE_ALIGNMENT);
+                int alignedHeight = ALIGN(height, PSYS_COMPRESSION_TNR_LINEAR_HEIGHT_ALIGNMENT);
+                int alignedHeightUV = ALIGN(alignedHeight / UV_HEIGHT_DIVIDER,
+                                            PSYS_COMPRESSION_TNR_LINEAR_HEIGHT_ALIGNMENT);
+                int imageBufferSize = ALIGN(alignedBpl * (alignedHeight + alignedHeightUV),
+                                            PSYS_COMPRESSION_PAGE_SIZE);
 
-           LOG1("@%s: format: %s, stride:%d, height:%d, imageSize:%d, tile_status_Y:%d, tile_status_UV:%d",
-                    __func__, pixelCode2String(format), alignedBpl, alignedHeight, imageBufferSize, planarYTileStatus, planarUVTileStatus);
-           frameSize = imageBufferSize + planarYTileStatus + planarUVTileStatus;
-           break;
-       }
-       default:
-           LOGE("@%s: unexpected format 0x%x in string %s, unsupported compression format", __func__, format, pixelCode2String(format));
-           frameSize = 0;
-           break;
+                int planarYTileStatus =
+                    CAMHAL_CEIL_DIV((alignedBpl * alignedHeight / TILE_SIZE_TNR_NV12_Y) *
+                                    TILE_STATUS_BITS_TNR_NV12_TILE_Y, 8);
+                planarYTileStatus = ALIGN(planarYTileStatus, PSYS_COMPRESSION_PAGE_SIZE);
+                int planarUVTileStatus =
+                    CAMHAL_CEIL_DIV((alignedBpl * alignedHeightUV / TILE_SIZE_TNR_NV12_LINEAR) *
+                                    TILE_STATUS_BITS_TNR_NV12_LINEAR, 8);
+                planarUVTileStatus = ALIGN(planarUVTileStatus, PSYS_COMPRESSION_PAGE_SIZE);
+
+                LOG1("@%s: format: %s, stride:%d height:%d imageSize:%d, tile_status_Y:%d, "
+                     "tile_status_UV:%d", __func__, pixelCode2String(format), alignedBpl,
+                     alignedHeight, imageBufferSize, planarYTileStatus, planarUVTileStatus);
+                frameSize = imageBufferSize + planarYTileStatus + planarUVTileStatus;
+                break;
+            }
+        default:
+            LOGE("@%s: unexpected format 0x%x in string %s, unsupported compression format",
+                 __func__, format, pixelCode2String(format));
+            frameSize = 0;
+            break;
     }
 
     return frameSize;
@@ -705,9 +682,6 @@ unsigned int CameraUtils::getMBusFormat(int cameraId, unsigned int isysFmt)
         pixelCode = MEDIA_BUS_FMT_RGB565_1X16;
         break;
     case V4L2_PIX_FMT_SGRBG8:
-// IPU4_FEATURE_S
-    case V4L2_PIX_FMT_SGRBG8V32:
-// IPU4_FEATURE_E
         pixelCode = V4L2_MBUS_FMT_SGRBG8_1X8;
         break;
     default:

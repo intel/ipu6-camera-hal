@@ -155,16 +155,4 @@ int LensHw::getLatestPosition(int& lensPosition, unsigned long long& time)
     time = mLensMovementStartTime;
     return OK;
 }
-
-// IPU4_FEATURE_S
-/**
- * Set PWM duty, it is used to control aperture.
- */
-int LensHw::setPwmDuty(int pwmDuty)
-{
-    CheckError(!mLensSubdev, NO_INIT, "%s: No Lens device inited.", __func__);
-    LOG2("@%s", __func__);
-    return mLensSubdev->SetControl(V4L2_CID_PWM_DUTY, pwmDuty);
-}
-// IPU4_FEATURE_E
 }   // namespace icamera

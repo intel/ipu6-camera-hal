@@ -28,7 +28,9 @@ IntelFaceDetection::IntelFaceDetection() : mInitialized(false) {
 
     uintptr_t personal = reinterpret_cast<uintptr_t>(this);
     mMems = {{("/faceDetectionInit" + std::to_string(personal) + "Shm"),
-              sizeof(FaceDetectionInitParams), &mMemInit, false}};
+              sizeof(FaceDetectionInitParams), &mMemInit, false},
+              {("/faceDetectionDeinit" + std::to_string(personal) + "Shm"),
+              sizeof(FaceDetectionDeinitParams), &mMemDeinit, false}};
 
     for (int i = 0; i < MAX_STORE_FACE_DATA_BUF_NUM; i++) {
         mMems.push_back(
@@ -62,11 +64,11 @@ status_t IntelFaceDetection::init(FaceDetectionInitParams* initParams, int dataS
 
     unsigned int maxFacesNum =
         std::min(initParams->max_face_num, static_cast<unsigned int>(MAX_FACES_DETECTABLE));
-    LOG2("@%s, maxFacesNum:%d", __func__, maxFacesNum);
+    LOG2("@%s, maxFacesNum:%d, cameraId:%d", __func__, maxFacesNum, initParams->cameraId);
 
     FaceDetectionInitParams* params = static_cast<FaceDetectionInitParams*>(mMemInit.mAddr);
 
-    bool ret = mIpc.clientFlattenInit(maxFacesNum, params);
+    bool ret = mIpc.clientFlattenInit(maxFacesNum, initParams->cameraId, params);
     CheckError(ret == false, UNKNOWN_ERROR, "@%s, clientFlattenInit fails", __func__);
 
     ret = mCommon.requestSync(IPC_FD_INIT, mMemInit.mHandle);
@@ -75,11 +77,16 @@ status_t IntelFaceDetection::init(FaceDetectionInitParams* initParams, int dataS
     return OK;
 }
 
-status_t IntelFaceDetection::deinit() {
+status_t IntelFaceDetection::deinit(FaceDetectionDeinitParams* deinitParams, int dataSize) {
     LOG1("@%s", __func__);
     CheckError(!mInitialized, UNKNOWN_ERROR, "@%s, mInitialized is false", __func__);
+    CheckError(deinitParams == nullptr, UNKNOWN_ERROR, "@%s, deinitParams is nullptr", __func__);
+    CheckError(dataSize < static_cast<int>(sizeof(FaceDetectionDeinitParams)), UNKNOWN_ERROR,
+               "@%s, buffer is small", __func__);
 
-    bool ret = mCommon.requestSync(IPC_FD_DEINIT);
+    FaceDetectionDeinitParams* params = static_cast<FaceDetectionDeinitParams*>(mMemDeinit.mAddr);
+    params->cameraId = deinitParams->cameraId;
+    bool ret = mCommon.requestSync(IPC_FD_DEINIT, mMemDeinit.mHandle);
     CheckError(ret == false, UNKNOWN_ERROR, "@%s, requestSync fails", __func__);
 
     return OK;

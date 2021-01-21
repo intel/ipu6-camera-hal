@@ -18,7 +18,6 @@
 
 #include "modules/sandboxing/server/IntelCPUAlgoServer.h"
 
-#include <base/logging.h>
 #include <ia_log.h>
 #include <stdlib.h>
 #include <sys/mman.h>
@@ -31,8 +30,25 @@
 
 namespace icamera {
 
+// Common check before the function call
+#define FUNCTION_PREPARED_RETURN \
+    uint16_t key = getKey(p->cameraId, p->tuningMode); \
+    if (mCcas.find(key) == mCcas.end()) { \
+        LOGE("@%s, req_id:%d, it doesn't find the cca", __func__, req_id); \
+        status = UNKNOWN_ERROR; \
+        break; \
+    }
+
 IntelCPUAlgoServer::IntelCPUAlgoServer(IntelAlgoServer* server) : RequestHandler(server) {
     LOGIPC("@%s", __func__);
+}
+
+IntelCPUAlgoServer::~IntelCPUAlgoServer() {
+    LOGIPC("@%s", __func__);
+
+    for (auto& it : mCcas) {
+        delete it.second;
+    }
 }
 
 void IntelCPUAlgoServer::handleRequest(const MsgReq& msg) {
@@ -53,18 +69,6 @@ void IntelCPUAlgoServer::handleRequest(const MsgReq& msg) {
            IntelAlgoIpcCmdToString(static_cast<IPC_CMD>(req_id)), requestSize, addr, buffer_handle);
 
     switch (req_id) {
-        case IPC_LARD_INIT:
-            status = mLard.init(addr, requestSize);
-            break;
-        case IPC_LARD_GET_TAG_LIST:
-            status = mLard.getTagList(addr, requestSize);
-            break;
-        case IPC_LARD_RUN:
-            status = mLard.run(addr, requestSize);
-            break;
-        case IPC_LARD_DEINIT:
-            status = mLard.deinit(addr, requestSize);
-            break;
         case IPC_FD_INIT:
             status = mFaceDetection.init(addr, requestSize);
             break;
@@ -84,7 +88,7 @@ void IntelCPUAlgoServer::handleRequest(const MsgReq& msg) {
             break;
         }
         case IPC_FD_DEINIT:
-            status = mFaceDetection.deinit();
+            status = mFaceDetection.deinit(addr, requestSize);
             break;
         case IPC_GRAPH_ADD_KEY:
             mGraph.addCustomKeyMap();
@@ -107,140 +111,169 @@ void IntelCPUAlgoServer::handleRequest(const MsgReq& msg) {
         case IPC_GRAPH_GET_PG_ID:
             mGraph.getPgIdForKernel(addr, requestSize);
             break;
-        case IPC_CMC_INIT:
-            status = mCmc.init(addr, requestSize);
+        case IPC_CCA_CONSTRUCT: {
+            intel_cca_struct_data* p = static_cast<intel_cca_struct_data*>(addr);
+            uint16_t key = getKey(p->cameraId, p->tuningMode);
+            if (mCcas.find(key) != mCcas.end()) {
+                delete mCcas[key];
+                mCcas.erase(key);
+            }
+
+            mCcas[key] = new IntelCcaServer(p->cameraId, p->tuningMode);
+
             break;
-        case IPC_CMC_DEINIT:
-            status = mCmc.deinit(addr, requestSize);
+        }
+        case IPC_CCA_DESTRUCT: {
+            intel_cca_struct_data* p = static_cast<intel_cca_struct_data*>(addr);
+            uint16_t key = getKey(p->cameraId, p->tuningMode);
+            if (mCcas.find(key) == mCcas.end()) {
+                LOGE("@%s, req_id:%d, it doesn't find the cca", __func__, req_id);
+                status = UNKNOWN_ERROR;
+                break;
+            }
+
+            delete mCcas[key];
+            mCcas.erase(key);
+
             break;
-        case IPC_MKN_INIT:
-            status = mMkn.init(addr, requestSize);
+        }
+        case IPC_CCA_INIT: {
+            intel_cca_init_data* p = static_cast<intel_cca_init_data*>(addr);
+            FUNCTION_PREPARED_RETURN
+
+            status = mCcas[key]->init(addr, requestSize);
             break;
-        case IPC_MKN_ENABLE:
-            status = mMkn.enable(addr, requestSize);
+        }
+        case IPC_CCA_SET_STATS: {
+            intel_cca_set_stats_data* p = static_cast<intel_cca_set_stats_data*>(addr);
+            FUNCTION_PREPARED_RETURN
+
+            status = mCcas[key]->setStats(addr, requestSize);
             break;
-        case IPC_MKN_PREPARE:
-            status = mMkn.prepare(addr, requestSize);
+        }
+        case IPC_CCA_RUN_AEC: {
+            intel_cca_run_aec_data* p = static_cast<intel_cca_run_aec_data*>(addr);
+            FUNCTION_PREPARED_RETURN
+
+            status = mCcas[key]->runAEC(addr, requestSize);
             break;
-        case IPC_MKN_DEINIT:
-            status = mMkn.deinit(addr, requestSize);
+        }
+        case IPC_CCA_RUN_AIQ: {
+            intel_cca_run_aiq_data* p = static_cast<intel_cca_run_aiq_data*>(addr);
+            FUNCTION_PREPARED_RETURN
+
+            status = mCcas[key]->runAIQ(addr, requestSize);
             break;
-        case IPC_LTM_INIT:
-            status = mLtm.init(addr, requestSize);
+        }
+        case IPC_CCA_RUN_LTM: {
+            intel_cca_run_ltm_data* p = static_cast<intel_cca_run_ltm_data*>(addr);
+            FUNCTION_PREPARED_RETURN
+
+            status = mCcas[key]->runLTM(addr, requestSize);
             break;
-        case IPC_LTM_RUN:
-            status = mLtm.run(addr, requestSize);
+        }
+        case IPC_CCA_UPDATE_ZOOM: {
+            intel_cca_update_zoom_data* p = static_cast<intel_cca_update_zoom_data*>(addr);
+            FUNCTION_PREPARED_RETURN
+
+            status = mCcas[key]->updateZoom(addr, requestSize);
             break;
-        case IPC_LTM_DEINIT:
-            status = mLtm.deinit(addr, requestSize);
+        }
+        case IPC_CCA_RUN_DVS: {
+            intel_cca_run_dvs_data* p = static_cast<intel_cca_run_dvs_data*>(addr);
+            FUNCTION_PREPARED_RETURN
+
+            status = mCcas[key]->runDVS(addr, requestSize);
             break;
-        case IPC_AIQ_INIT:
-            status = mAiq.init(addr, requestSize);
-            break;
-        case IPC_AIQ_AE_RUN:
-            status = mAiq.aeRun(addr, requestSize);
-            break;
-        case IPC_AIQ_AF_RUN:
-            status = mAiq.afRun(addr, requestSize);
-            break;
-        case IPC_AIQ_AWB_RUN:
-            status = mAiq.awbRun(addr, requestSize);
-            break;
-        case IPC_AIQ_GBCE_RUN:
-            status = mAiq.gbceRun(addr, requestSize);
-            break;
-        case IPC_AIQ_PA_RUN_V1:
-            status = mAiq.paRunV1(addr, requestSize);
-            break;
-        case IPC_AIQ_SA_RUN_V2:
-            status = mAiq.saRunV2(addr, requestSize);
-            break;
-        case IPC_AIQ_STATISTICS_SET_V4:
-            status = mAiq.statisticsSetV4(addr, requestSize);
-            break;
-        case IPC_AIQ_GET_AIQD_DATA:
-            status = mAiq.getAiqdData(addr, requestSize);
-            break;
-        case IPC_AIQ_DEINIT:
-            status = mAiq.deinit(addr, requestSize);
-            break;
-        case IPC_AIQ_GET_VERSION:
-            status = mAiq.getVersion(addr, requestSize);
-            break;
-        case IPC_DVS_INIT:
-            status = mDvs.init(addr, requestSize);
-            break;
-        case IPC_DVS_CONFIG:
-            status = mDvs.config(addr, requestSize);
-            break;
-        case IPC_DVS_SET_NONE_BLANK_RATION:
-            status = mDvs.setNonBlankRatio(addr, requestSize);
-            break;
-        case IPC_DVS_SET_DIGITAL_ZOOM_MODE:
-            status = mDvs.setDigitalZoomMode(addr, requestSize);
-            break;
-        case IPC_DVS_SET_DIGITAL_ZOOM_REGION:
-            status = mDvs.setDigitalZoomRegion(addr, requestSize);
-            break;
-        case IPC_DVS_SET_DIGITAL_ZOOM_COORDINATE:
-            status = mDvs.setDigitalZoomCoordinate(addr, requestSize);
-            break;
-        case IPC_DVS_SET_DIGITAL_ZOOM_MAGNITUDE:
-            status = mDvs.setDigitalZoomMagnitude(addr, requestSize);
-            break;
-        case IPC_DVS_FREE_MORPH_TABLE:
-            status = mDvs.freeMorphTable(addr, requestSize);
-            break;
-        case IPC_DVS_ALLOCATE_MORPH_TABLE:
-            status = mDvs.allocateMorphTalbe(addr, requestSize);
-            break;
-        case IPC_DVS_GET_MORPH_TABLE:
-            status = mDvs.getMorphTalbe(addr, requestSize);
-            break;
-        case IPC_DVS_SET_STATISTICS:
-            status = mDvs.setStatistics(addr, requestSize);
-            break;
-        case IPC_DVS_EXECUTE:
-            status = mDvs.execute(addr, requestSize);
-            break;
-        case IPC_DVS_GET_IMAGE_TRANSFORMATION:
-            status = mDvs.getImageTransformation(addr, requestSize);
-            break;
-        case IPC_DVS_DEINIT:
-            status = mDvs.deinit(addr, requestSize);
-            break;
-        case IPC_ISP_ADAPTOR_INIT:
-            status = mIspAdaptor.init(addr, requestSize);
-            break;
-        case IPC_ISP_ADAPTOR_DEINIT:
-            status = mIspAdaptor.deInit(addr, requestSize);
-            break;
-        case IPC_ISP_GET_PAL_SIZE:
-            status = mIspAdaptor.getPalDataSize(addr, requestSize);
-            break;
-        case IPC_ISP_CONVERT_STATS: {
-            ConvertStatsParam* params = static_cast<ConvertStatsParam*>(addr);
-            ShmInfo statsDataInfo = {};
-            status = getIntelAlgoServer()->getShmInfo(params->statsHandle, &statsDataInfo);
-            if (status == OK) {
-                status = mIspAdaptor.queryAndConvertStats(addr, requestSize, statsDataInfo.addr);
-            } else {
-                LOGE("%s, the buffer handle for stats data is invalid", __func__);
+        }
+        case IPC_CCA_RUN_AIC: {
+            status = UNKNOWN_ERROR;
+            intel_cca_run_aic_data* p = static_cast<intel_cca_run_aic_data*>(addr);
+            FUNCTION_PREPARED_RETURN
+
+            if (p->palDataHandle >= 0) {
+                ShmInfo inParamsInfo = {};
+                status = getIntelAlgoServer()->getShmInfo(p->inParamsHandle, &inParamsInfo);
+                if (status != OK) {
+                    LOGE("%s, the buffer handle for inParamsHandle is invalid", __func__);
+                    break;
+                }
+                p->inParams = static_cast<cca::cca_pal_input_params*>(inParamsInfo.addr);
+
+                ShmInfo palDataInfo = {};
+                status = getIntelAlgoServer()->getShmInfo(p->palDataHandle, &palDataInfo);
+                if (status != OK) {
+                    LOGE("%s, the buffer handle for palDataHandle is invalid", __func__);
+                    break;
+                }
+                p->palOutData.data = palDataInfo.addr;
+
+                status = mCcas[key]->runAIC(addr, requestSize);
             }
             break;
         }
-        case IPC_ISP_RUN_PAL: {
-            RunPalParam* palParams = static_cast<RunPalParam*>(addr);
-            ShmInfo palDataInfo;
-            status = getIntelAlgoServer()->getShmInfo(palParams->palDataHandle, &palDataInfo);
+        case IPC_CCA_GET_CMC: {
+            intel_cca_get_cmc_data* p = static_cast<intel_cca_get_cmc_data*>(addr);
+            FUNCTION_PREPARED_RETURN
+
+            status = mCcas[key]->getCMC(addr, requestSize);
+            break;
+        }
+        case IPC_CCA_GET_MKN: {
+            intel_cca_mkn_data* p = static_cast<intel_cca_mkn_data*>(addr);
+            FUNCTION_PREPARED_RETURN
+
+            if (p->resultsHandle >= 0) {
+                ShmInfo paramsInfo = {};
+                status = getIntelAlgoServer()->getShmInfo(p->resultsHandle, &paramsInfo);
+                if (status != OK) {
+                    LOGE("%s, the buffer handle for resultsHandle is invalid", __func__);
+                    break;
+                }
+                p->results = static_cast<cca::cca_mkn*>(paramsInfo.addr);
+            }
+            status = mCcas[key]->getMKN(addr, requestSize);
+            break;
+        }
+        case IPC_CCA_GET_AIQD: {
+            intel_cca_get_aiqd_data* p = static_cast<intel_cca_get_aiqd_data*>(addr);
+            FUNCTION_PREPARED_RETURN
+
+            status = mCcas[key]->getAiqd(addr, requestSize);
+            break;
+        }
+        case IPC_CCA_UPDATE_TUNING: {
+            intel_cca_update_tuning_data* p = static_cast<intel_cca_update_tuning_data*>(addr);
+            FUNCTION_PREPARED_RETURN
+
+            mCcas[key]->updateTuning(addr, requestSize);
+            break;
+        }
+        case IPC_CCA_DEINIT: {
+            intel_cca_deinit_data* p = static_cast<intel_cca_deinit_data*>(addr);
+            FUNCTION_PREPARED_RETURN
+
+            status = mCcas[key]->deinit(addr, requestSize);
+            break;
+        }
+        case IPC_CCA_DECODE_STATS: {
+            intel_cca_decode_stats_data* p = static_cast<intel_cca_decode_stats_data*>(addr);
+            FUNCTION_PREPARED_RETURN
+
+            ShmInfo info = {};
+            status = getIntelAlgoServer()->getShmInfo(p->statsHandle, &info);
             if (status != OK) {
-                LOGE("%s, the buffer handle for pal data is invalid", __func__);
+                LOGE("%s, the buffer handle for stats data is invalid", __func__);
                 break;
             }
-            LOGIPC("@%s, pal data info: fd:%d, size:%zu, addr: %p", __func__, palDataInfo.fd,
-                   palDataInfo.size, palDataInfo.addr);
+            status = mCcas[key]->decodeStats(addr, requestSize, info.addr);
+            break;
+        }
+        case IPC_CCA_GET_PAL_SIZE: {
+            intel_cca_get_pal_data_size* p = static_cast<intel_cca_get_pal_data_size*>(addr);
+            FUNCTION_PREPARED_RETURN
 
-            status = mIspAdaptor.runPal(addr, requestSize, palDataInfo.addr);
+            status = mCcas[key]->getPalDataSize(addr, requestSize);
             break;
         }
         case IPC_PG_PARAM_INIT:
@@ -303,5 +336,9 @@ void IntelCPUAlgoServer::handleRequest(const MsgReq& msg) {
     LOGIPC("@%s, req_id:%d:%s, status:%d", __func__, req_id,
            IntelAlgoIpcCmdToString(static_cast<IPC_CMD>(req_id)), status);
     getIntelAlgoServer()->returnCallback(req_id, status, buffer_handle);
+}
+
+uint16_t IntelCPUAlgoServer::getKey(int cameraId, TuningMode mode) {
+    return ((cameraId & 0xFF) << 8) + (mode & 0xFF);
 }
 }  // namespace icamera

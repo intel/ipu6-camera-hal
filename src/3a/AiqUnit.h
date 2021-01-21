@@ -48,7 +48,7 @@ public:
     virtual int configure(const stream_config_t * /*streamList*/) { return OK; }
     virtual int start() { return OK; }
     virtual int stop() { return OK; }
-    virtual int run3A(long * /*settingSequence*/)  { return OK; }
+    virtual int run3A(long request, long applyingSeq, long * /*effectSeq*/)  { return OK; }
 
     virtual std::vector<EventListener*> getSofEventListener()
     {
@@ -71,7 +71,8 @@ private:
 class AiqUnit : public AiqUnitBase {
 
 public:
-    AiqUnit(int cameraId, SensorHwCtrl *sensorHw, LensHw *lensHw);
+    AiqUnit(int cameraId, SensorHwCtrl *sensorHw, LensHw *lensHw,
+            ParameterGenerator* paramGen);
     ~AiqUnit();
 
     /**
@@ -101,11 +102,16 @@ public:
 
     /**
      * \brief Run 3a to get new 3a settings.
-     * Return 0 if the operation succeeds, and output settingSequence to
-     * indicate the frame that settings are applied.
-     * settingSequence -1 means uncertain frame for this settings.
+     *
+     * requestId: unique request id set by RequestThread;
+     * applyingSeq: sequence id indicates which SOF sequence to set the settings,
+     *             -1 means no target sequence to set the settings;
+     * effectSeq: sequence id is an output parameter and indicates the settings is taken effect
+     *            on the frame.
+     *
+     * Return 0 if the operation succeeds.
      */
-    int run3A(long *settingSequence);
+    int run3A(long requestId, long applyingSeq, long* effectSeq);
 
     /**
      * \brief Get software EventListener

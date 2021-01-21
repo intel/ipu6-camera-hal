@@ -75,6 +75,7 @@ class ShareReferBufferPool {
         std::string consumerPgName;
         int64_t producerId;
         int64_t consumerId;
+        bool active;
 
         Mutex bufferLock;
         Condition bufferSignal;

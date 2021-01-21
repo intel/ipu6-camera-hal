@@ -18,7 +18,6 @@
 
 #include "modules/sandboxing/server/IntelGPUAlgoServer.h"
 
-#include <base/logging.h>
 #include <ia_log.h>
 #include <stdlib.h>
 #include <sys/mman.h>
@@ -67,8 +66,7 @@ void IntelGPUAlgoServer::handleRequest(const MsgReq& msg) {
                     break;
                 }
             }
-            status = mTNR.prepareSurface(surfaceBuffer.addr, surfaceBuffer.size,
-                                         requestInfo->cameraId, requestInfo->type);
+            status = mTNR.prepareSurface(surfaceBuffer.addr, surfaceBuffer.size, requestInfo);
             break;
         }
         case IPC_GPU_TNR_RUN_FRAME: {
@@ -99,19 +97,17 @@ void IntelGPUAlgoServer::handleRequest(const MsgReq& msg) {
             }
 
             status = mTNR.runTnrFrame(inBuffer.addr, outBuffer.addr, inBuffer.size, outBuffer.size,
-                                      paramBuffer.addr, requestInfo->cameraId, requestInfo->type,
-                                      requestInfo->outBufFd);
+                                      paramBuffer.addr, requestInfo);
             break;
         }
         case IPC_GPU_TNR_PARAM_UPDATE: {
             TnrRequestInfo* requestInfo = static_cast<TnrRequestInfo*>(addr);
-            status = mTNR.asyncParamUpdate(requestInfo->cameraId, requestInfo->gain,
-                                           requestInfo->type, requestInfo->isForceUpdate);
+            status = mTNR.asyncParamUpdate(requestInfo);
             break;
         }
         case IPC_GPU_TNR_DEINIT: {
             TnrRequestInfo* requestInfo = static_cast<TnrRequestInfo*>(addr);
-            status = mTNR.deInit(requestInfo->cameraId, requestInfo->type);
+            status = mTNR.deInit(requestInfo);
             break;
         }
 #endif

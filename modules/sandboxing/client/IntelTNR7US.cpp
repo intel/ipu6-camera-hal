@@ -84,7 +84,7 @@ int IntelTNR7US::init(int width, int height, TnrType type) {
 }
 
 int IntelTNR7US::runTnrFrame(const void* inBufAddr, void* outBufAddr, uint32_t inBufSize,
-                             uint32_t outBufSize, Tnr7Param* tnrParam, int fd) {
+                             uint32_t outBufSize, Tnr7Param* tnrParam, bool syncUpdate, int fd) {
     LOG1("%s type:%d", __func__, mTnrType);
     CheckError(!inBufAddr || !outBufAddr || !tnrParam, UNKNOWN_ERROR,
                "@%s, invalid data buffer or parameter buffer", __func__);
@@ -107,6 +107,7 @@ int IntelTNR7US::runTnrFrame(const void* inBufAddr, void* outBufAddr, uint32_t i
     mTnrRequestInfo->type = mTnrType;
     mTnrRequestInfo->cameraId = mCameraId;
     mTnrRequestInfo->outBufFd = fd;
+    mTnrRequestInfo->isForceUpdate = syncUpdate;
 
     int32_t requestHandle =
         mCommon.getShmMemHandle(static_cast<void*>(mTnrRequestInfo), GPU_ALGO_SHM);

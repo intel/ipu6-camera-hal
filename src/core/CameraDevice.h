@@ -16,6 +16,12 @@
 
 #pragma once
 
+#ifdef ENABLE_SANDBOXING
+#include "modules/sandboxing/client/IntelCca.h"
+#else
+#include "modules/algowrapper/IntelCca.h"
+#endif
+
 #include "CameraStream.h"
 #include "RequestThread.h"
 #include "StreamSource.h"
@@ -236,6 +242,11 @@ private:
 
     int registerBuffer(camera_buffer_t **ubuffer, int bufferNum);
 
+    int initIntelCcaHandle(const std::vector<ConfigMode> &configModes);
+    void deinitIntelCcaHandle();
+    int configCcaDvsData(int cameraId, ConfigMode configMode, cca::cca_init_params *params);
+    void dumpDvsConfiguration(const cca::cca_init_params &config);
+
 private:
     enum {
         DEVICE_UNINIT = 0,
@@ -279,6 +290,9 @@ private:
     IGraphConfigManager *mGCM;
     stream_t mInputConfig;
     camera_callback_ops_t *mCallback;
+    std::vector<TuningMode> mTuningModes;
+
+    bool mCcaInitialized;
 };
 
 } //namespace icamera

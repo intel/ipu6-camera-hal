@@ -32,7 +32,7 @@ class IntelTNR7US {
     ~IntelTNR7US();
     int init(int width, int height, TnrType type);
     int runTnrFrame(const void* inBufAddr, void* outBufAddr, uint32_t inBufSize,
-                    uint32_t outBufSize, Tnr7Param* tnrParam, int fd = -1);
+                    uint32_t outBufSize, Tnr7Param* tnrParam, bool syncUpdate, int fd = -1);
     Tnr7Param* allocTnr7ParamBuf();
     void* allocCamBuf(uint32_t bufSize, int id);
     void freeAllBufs();

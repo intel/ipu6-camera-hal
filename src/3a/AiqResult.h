@@ -56,14 +56,11 @@ public:
     bool mSkip;
     camera_range_t mFocusRange;
 
-    ia_aiq_ae_results mAeResults;
-    ia_aiq_awb_results mAwbResults;
-    ia_aiq_af_results mAfResults;
-    ia_aiq_gbce_results mGbceResults;
-    ia_aiq_pa_results_v1 mPaResults;
-    ia_aiq_sa_results_v1 mSaResults;
-
-    ia_aiq_advanced_ccm_t mPreferredAcm;
+    cca::cca_ae_results mAeResults;
+    cca::cca_awb_results mAwbResults;
+    cca::cca_af_results mAfResults;
+    cca::cca_gbce_params mGbceResults;
+    cca::cca_pa_params mPaResults;
 
     ia_isp_custom_controls mCustomControls;
 
@@ -75,17 +72,6 @@ public:
     int64_t mRollingShutter;  // us
 
 private:
-    /*!< ia_aiq_ae_results pointer contents */
-    ia_aiq_ae_exposure_result mExposureResults[MAX_EXPOSURES_NUM];
-    ia_aiq_aperture_control   mApertureControl;
-    ia_aiq_hist_weight_grid   mWeightGrid;
-    unsigned char mGrid[MAX_AE_GRID_SIZE];
-    ia_aiq_flash_parameters   mFlashes[NUM_FLASH_LEDS];
-
-    /*!< ia_aiq_ae_exposure_result pointer contents */
-    ia_aiq_exposure_parameters        mGenericExposure[MAX_EXPOSURES_NUM];
-    ia_aiq_exposure_sensor_parameters mSensorExposure[MAX_EXPOSURES_NUM];
-
     /*!< ia_aiq_gbce results */
     /* The actual size of this table can be calculated by running cold
      * GBCE, it will provide those tables.
@@ -94,14 +80,6 @@ private:
     float mGGammaLut[MAX_GAMMA_LUT_SIZE];
     float mBGammaLut[MAX_GAMMA_LUT_SIZE];
     float mToneMapLut[MAX_TONEMAP_LUT_SIZE];
-
-    /*!< ia_aiq_pa_results pointer content */
-    unsigned int mHueSectors[MAX_NUM_SECTORS];
-    float mAdvancedCCM[MAX_NUM_SECTORS][3][3];
-    ia_aiq_ir_weight_t mIrWeight;
-    unsigned short mIrWeightGridR[MAX_IR_WEIGHT_GRID_SIZE];
-    unsigned short mIrWeightGridG[MAX_IR_WEIGHT_GRID_SIZE];
-    unsigned short mIrWeightGridB[MAX_IR_WEIGHT_GRID_SIZE];
 
     /*!< ia_isp_custom_controls pointer content */
     float mCustomControlsParams[MAX_CUSTOM_CONTROLS_PARAM_SIZE];

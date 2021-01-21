@@ -35,6 +35,7 @@ PSysDAG::PSysDAG(int cameraId, PSysDagCallback* psysDagCB) :
 #endif
     mDefaultMainInputPort(MAIN_PORT),
     mVideoTnrExecutor(nullptr),
+    mStillTnrExecutor(nullptr),
     mRunAicAfterQbuf(false)
 {
     LOG1("@%s, mCameraId:%d", __func__, mCameraId);
@@ -142,6 +143,7 @@ int PSysDAG::createPipeExecutors(bool useTnrOutBuffer)
             executor = new GPUExecutor(mCameraId, item, cfg->exclusivePgs, this, gc,
                                        useTnrOutBuffer);
             if (streamId == VIDEO_STREAM_ID) mVideoTnrExecutor = executor;
+            else if (streamId == STILL_STREAM_ID) mStillTnrExecutor = executor;
         } else {
             executor = new PipeExecutor(mCameraId, item, cfg->exclusivePgs, this, gc);
         }
@@ -198,6 +200,11 @@ int PSysDAG::createPipeExecutors(bool useTnrOutBuffer)
 bool PSysDAG::fetchTnrOutBuffer(int64_t seq, std::shared_ptr<CameraBuffer> buf)
 {
     return mVideoTnrExecutor != nullptr ? mVideoTnrExecutor->fetchTnrOutBuffer(seq, buf) : false;
+}
+
+bool PSysDAG::isBypassStillTnr(int64_t seq)
+{
+    return mStillTnrExecutor != nullptr ? mStillTnrExecutor->isBypassStillTnr(seq) : true;
 }
 
 int PSysDAG::linkAndConfigExecutors()
@@ -719,7 +726,8 @@ int PSysDAG::prepareIpuParams(long sequence, bool forceUpdate, TaskInfo *task)
             }
         }
 
-        ret = mIspParamAdaptor->runIspAdapt(&task->mTaskData.mIspSettings, sequence, id);
+        ret = mIspParamAdaptor->runIspAdapt(&task->mTaskData.mIspSettings, task->mTaskData.mRequestId,
+                                            sequence, id);
         CheckError(ret != OK, UNKNOWN_ERROR,
                    "%s, Failed to run AIC: sequence: %ld streamId: %d", __func__, sequence, id);
 

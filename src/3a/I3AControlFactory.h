@@ -35,10 +35,12 @@ public:
      * \param cameraId: the camera id
      * \param sensorHw: the hw sensor
      * \param lensHw: the hw lens
+     * \param paramGen: ParameterGenerator
      *
      * \return the AIQ unit base class
      */
-    static AiqUnitBase *createI3AControl(int cameraId, SensorHwCtrl *sensorHw, LensHw *lensHw);
+    static AiqUnitBase *createI3AControl(int cameraId, SensorHwCtrl *sensorHw, LensHw *lensHw,
+                                         ParameterGenerator* paramGen);
 };
 
 } /* namespace icamera */

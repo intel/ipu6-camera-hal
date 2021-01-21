@@ -16,33 +16,31 @@
 
 #pragma once
 
-#include <map>
 #include <list>
+#include <map>
 #include <memory>
 
 #ifdef ENABLE_SANDBOXING
-#include "modules/sandboxing/client/IntelMkn.h"
+#include "modules/sandboxing/client/IntelCca.h"
 #else
-#include "modules/algowrapper/IntelMkn.h"
+#include "modules/algowrapper/IntelCca.h"
 #endif
 
-#include "iutils/Utils.h"
-#include "iutils/Thread.h"
 #include "Parameters.h"
+#include "iutils/Thread.h"
+#include "iutils/Utils.h"
 
 namespace icamera {
 
 struct MakernoteData {
     int64_t sequence;
     uint64_t timestamp;
-    unsigned int size;
-    char section[MAKERNOTE_SECTION1_SIZE + MAKERNOTE_SECTION2_SIZE];
+    cca::cca_mkn* mknData;
 
     MakernoteData() {
         sequence = -1;
         timestamp = 0;
-        size = 0;
-        CLEAR(section);
+        CLEAR(mknData);
     }
 };
 
@@ -60,22 +58,42 @@ class MakerNote {
     ~MakerNote();
 
     /**
+     * \brief init Makernote
+     * allocate memories for mMakernoteDataList by using IntelCca::allocMem()
+     *
+     * param[in] int cameraId
+     * param[in] TuningMode tuningMode
+     *
+     * return OK if it is successful, fails for other values.
+     */
+    int init(int cameraId, TuningMode tuningMode);
+
+    /**
+     * \brief deinit Makernote
+     * free memories for mMakernoteDataList by using IntelCca::freeMem()
+     *
+     * param[in] int cameraId
+     * param[in] TuningMode tuningMode
+     *
+     * return OK if it is successful, fails for other values.
+     */
+    int deinit(int cameraId, TuningMode tuningMode);
+
+    /**
      * \brief Save Makernote by ia_mkn_trg mode
      *
+     * param[in] int cameraId: camera ID
      * param[in] camera_makernote_mode_t: MAKERNOTE_MODE_JPEG is corresponding
      *           to ia_mkn_trg_section_1 for Normal Jpeg capture;
      *           MAKERNOTE_MODE_RAW is corresponding to ia_mkn_trg_section_2
      *           for Raw image capture.
      * param[in] int64_t sequence: the sequence in latest AiqResult
+     * param[in] TuningMode tuningMode: tuning mode
      *
      * return OK if get Makernote successfully, otherwise return ERROR.
      */
-    int saveMakernoteData(camera_makernote_mode_t makernoteMode, int64_t sequence);
-
-    /**
-     * \brief Get ia_mkn (Makernote) handle.
-     */
-    ia_mkn *getMknHandle();
+    int saveMakernoteData(int cameraId, camera_makernote_mode_t makernoteMode, int64_t sequence,
+                          TuningMode tuningMode);
 
     /**
      * \brief Update timestamp of frame.
@@ -93,24 +111,17 @@ class MakerNote {
      * param[out] param: Makernote data will be saved in parameters as metadata.
      *
      */
-    void acquireMakernoteData(uint64_t timestamp, Parameters *param);
+    void acquireMakernoteData(uint64_t timestamp, Parameters* param);
 
  private:
     // Should > max request number in processing
     static const int MAX_MAKER_NOTE_LIST_SIZE = 32;
 
-    enum MknState {
-        UNINIT,
-        INIT
-    } mMknState;
+    enum MknState { UNINIT, INIT } mMknState;
 
     // Guard for MakerNote API
     Mutex mMknLock;
-    ia_mkn *mMkn;
-
-    IntelMkn mIntelMkn;
-
-    std::list<std::shared_ptr<MakernoteData>> mMakernoteDataList;
+    std::list<MakernoteData> mMakernoteDataList;
 };
 
 }  // namespace icamera

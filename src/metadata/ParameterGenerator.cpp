@@ -31,7 +31,6 @@
 
 namespace icamera {
 
-#define MIN_TONEMAP_POINTS 64
 #define CHECK_REQUEST_ID(id) CheckError((id < 0), UNKNOWN_ERROR, "%s: error request id %ld!", __func__, id);
 #define CHECK_SEQUENCE(id) CheckError((id < 0), UNKNOWN_ERROR, "%s: error sequence %ld!", __func__, id);
 
@@ -244,12 +243,14 @@ int ParameterGenerator::updateWithAiqResultsL(long sequence, Parameters *params)
     params->setAeState(aeState);
 
     if (CameraUtils::isMultiExposureCase(aiqResult->mTuningMode) &&
-        aiqResult->mAeResults.num_exposures > 1 && aiqResult->mAeResults.exposures[1].exposure) {
-        params->setExposureTime(aiqResult->mAeResults.exposures[1].exposure->exposure_time_us);
+        aiqResult->mAeResults.num_exposures > 1) {
+        params->setExposureTime(aiqResult->mAeResults.exposures[1].exposure[0].exposure_time_us);
     } else {
-        params->setExposureTime(aiqResult->mAeResults.exposures[0].exposure->exposure_time_us);
+        params->setExposureTime(aiqResult->mAeResults.exposures[0].exposure[0].exposure_time_us);
     }
-    params->setSensitivityIso(aiqResult->mAeResults.exposures[0].exposure->iso);
+    params->setSensitivityIso(aiqResult->mAeResults.exposures[0].exposure[0].iso);
+    float fps = 1000000.0 / aiqResult->mFrameDuration;
+    params->setFrameRate(fps);
 
     // Update AWB related parameters
     updateAwbGainsL(params, aiqResult->mAwbResults);
@@ -285,8 +286,6 @@ int ParameterGenerator::updateWithAiqResultsL(long sequence, Parameters *params)
     bool lensMoving = false;
     if (afState == AF_STATE_LOCAL_SEARCH || afState == AF_STATE_EXTENDED_SEARCH) {
         lensMoving = (aiqResult->mAfResults.final_lens_position_reached == false);
-    } else if (aiqResult->mAiqParam.afMode == AF_MODE_OFF) {
-        lensMoving = (aiqResult->mAfResults.lens_driver_action ? true : false);
     }
     params->setLensState(lensMoving);
 
@@ -319,7 +318,7 @@ int ParameterGenerator::updateWithAiqResultsL(long sequence, Parameters *params)
     return updateCommonMetadata(params, aiqResult);
 }
 
-int ParameterGenerator::updateAwbGainsL(Parameters *params, const ia_aiq_awb_results &result)
+int ParameterGenerator::updateAwbGainsL(Parameters *params, const cca::cca_awb_results &result)
 {
     camera_awb_gains_t awbGains;
     CLEAR(awbGains);
@@ -363,7 +362,7 @@ int ParameterGenerator::updateTonemapCurve(long sequence, Parameters *params)
     const AiqResult *aiqResult = AiqResultStorage::getInstance(mCameraId)->getAiqResult(sequence);
     CheckError((aiqResult == nullptr), UNKNOWN_ERROR,
                "%s Aiq result of sequence %ld does not exist", __func__, sequence);
-    const ia_aiq_gbce_results &gbceResults = aiqResult->mGbceResults;
+    const cca::cca_gbce_params &gbceResults = aiqResult->mGbceResults;
 
     int multiplier = gbceResults.gamma_lut_size / mTonemapMaxCurvePoints;
     for (int32_t i=0; i < mTonemapMaxCurvePoints; i++) {

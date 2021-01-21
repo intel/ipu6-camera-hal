@@ -113,10 +113,11 @@ int PipeLiteExecutor::analyzeConnections(const vector<IGraphType::PipelineConnec
     ia_uid lastStageId = mPGExecutors.back().stageId;
 
     for (auto const& connection : connVector) {
-        LOG2("%s: terminal %d (%d): %dx%d, 0x%x", getName(),
+        LOG2("%s: terminal %d (%d): %dx%d, 0x%x(%s)", getName(),
              connection.portFormatSettings.terminalId, connection.portFormatSettings.enabled,
              connection.portFormatSettings.width, connection.portFormatSettings.height,
-             connection.portFormatSettings.fourcc);
+             connection.portFormatSettings.fourcc,
+             CameraUtils::fourcc2String(connection.portFormatSettings.fourcc).c_str());
         LOG2("%s:     connection source %d, %d, %d, has edge %d", getName(),
              connection.connectionConfig.mSourceStage, connection.connectionConfig.mSourceTerminal,
              connection.connectionConfig.mSourceIteration, connection.hasEdgePort);
@@ -218,7 +219,8 @@ int PipeLiteExecutor::createPGs()
         ExecutorUnit pgUnit;
         pgUnit.pgId = pgId;
         pgUnit.stageId = psys_2600_pg_uid(pgId);
-        pgUnit.pg = std::shared_ptr<PGCommon>(new PGCommon(pgId, pgName, pgUnit.stageId + 1));
+        pgUnit.pg =
+            std::shared_ptr<PGCommon>(new PGCommon(mCameraId, pgId, pgName, pgUnit.stageId + 1));
         // Please refer to ia_cipf_css.h for terminalBaseUid
         pgUnit.pg->setShareReferPool(mShareReferPool);
         mPGExecutors.push_back(pgUnit);
@@ -398,6 +400,12 @@ void PipeLiteExecutor::stop()
     // Thread is not running. It is safe to clear the Queue
     clearBufferQueues();
     delete mProcessThread;
+
+    // Clear the buffer pool of pg Uint
+    for (auto& unit : mPGExecutors) {
+        unit.inputBuffers.clear();
+        unit.outputBuffers.clear();
+    }
 }
 
 void PipeLiteExecutor::notifyStop()
@@ -496,21 +504,6 @@ bool PipeLiteExecutor::isSameStreamConfig(const stream_t& internal, const stream
          && (external.format == V4L2_PIX_FMT_SRGGB10 || external.format == V4L2_PIX_FMT_SRGGB12)) {
          return true;
     }
-
-// IPU4_FEATURE_S
-    /*
-     * WA: For some sensor setting, the output format is RAW10/VEC_RAW10,
-     * but low latency PG only supports VEC_RAW12 input.
-     * Now regard them as same format, and revert it after the format is
-     * supported in low latency PG.
-     */
-    if ((configMode == CAMERA_STREAM_CONFIGURATION_MODE_VIDEO_LL ||
-         configMode == CAMERA_STREAM_CONFIGURATION_MODE_ULL) &&
-        (internalFormat == V4L2_PIX_FMT_SGRBG12V32 &&
-         external.format == V4L2_PIX_FMT_SGRBG10V32)) {
-        return true;
-    }
-// IPU4_FEATURE_E
 
     bool sameHeight = internal.height == external.height ||
                       internal.height == ALIGN_32(external.height);
@@ -882,6 +875,7 @@ int PipeLiteExecutor::notifyStatsDone(TuningMode tuningMode,
             eventData.type = eventType[statsIndex];
             eventData.buffer = statsBuf;
             eventData.data.statsReady = statsReadyData;
+            eventData.pipeType = (mStreamId == VIDEO_STREAM_ID) ? VIDEO_STREAM_ID : STILL_STREAM_ID;
             notifyListeners(eventData);
         }
 
@@ -923,7 +917,13 @@ int PipeLiteExecutor::allocBuffers()
         int srcFmt = termDesc.frameDesc.mFormat;
         int srcWidth = termDesc.frameDesc.mWidth;
         int srcHeight = termDesc.frameDesc.mHeight;
-        int size = PGCommon::getFrameSize(srcFmt, srcWidth, srcHeight, true);
+        bool isCompression = PlatformData::getPSACompression(mCameraId) &&
+                             PGUtils::isCompressionTerminal(termDesc.terminal);
+
+        int size = isCompression
+                       ? PGCommon::getFrameSize(srcFmt, srcWidth, srcHeight, false, true, true)
+                       : PGCommon::getFrameSize(srcFmt, srcWidth, srcHeight, true);
+
         shared_ptr<CameraBuffer> buf = CameraBuffer::create(mCameraId,
                      BUFFER_USAGE_PSYS_INPUT, V4L2_MEMORY_USERPTR, size, 0, srcFmt, srcWidth, srcHeight);
         CheckError(!buf, NO_MEMORY, "@%s: Allocate producer buffer failed", __func__);
@@ -970,7 +970,13 @@ int PipeLiteExecutor::allocBuffers()
             int srcHeight = mTerminalsDesc[terminal].frameDesc.mHeight;
             // Get frame size with aligned height taking in count for internal buffers.
             // To garantee PSYS kernel like GDC always get enough buffer size to process.
-            int size = PGCommon::getFrameSize(srcFmt, srcWidth, srcHeight, true);
+            bool isCompression = PlatformData::getPSACompression(mCameraId) &&
+                                 PGUtils::isCompressionTerminal(terminal);
+
+            int size = isCompression
+                         ? PGCommon::getFrameSize(srcFmt, srcWidth, srcHeight, false, true, true)
+                         : PGCommon::getFrameSize(srcFmt, srcWidth, srcHeight, true);
+
             for (int i = 0; i < MAX_BUFFER_COUNT; i++) {
                 // Prepare internal frame buffer for its producer.
                 shared_ptr<CameraBuffer> buf = CameraBuffer::create(mCameraId,

@@ -50,7 +50,7 @@ extern "C" {
  *   Call the API once when live tuning camera engine constructed.
  *
  * \param[in/out]
- *   cros::CameraMojoChannelManager* mojoManager: pointer of CameraMojoChannelManager.
+ *   cros::CameraMojoChannelManagerToken* token: pointer of CameraMojoChannelManagerToken.
  *
  * \return
  *   0 means the api run succeed.
@@ -58,7 +58,7 @@ extern "C" {
  *   non-0 means the api run failed.
  *
  */
-int setupIPCEnvForLiveTune(cros::CameraMojoChannelManager* mojoManager);
+int setupIPCEnvForLiveTune(cros::CameraMojoChannelManagerToken* token);
 
 /**
  * \brief

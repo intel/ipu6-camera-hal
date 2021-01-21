@@ -16,14 +16,17 @@
 
 #define LOG_TAG "PGUtils"
 
+#include "PGUtils.h"
+
+// CIPF backends
+extern "C" {
+#include <ia_cipf_css/ia_cipf_css.h>
+}
+
 #include <stdint.h>
-
 #include <vector>
-
 #include "iutils/Utils.h"
 #include "iutils/CameraLog.h"
-
-#include "PGUtils.h"
 
 namespace icamera {
 
@@ -44,8 +47,8 @@ struct FormatMap {
 };
 
 static const FormatMap sFormatMapping[] = {
-    { V4L2_PIX_FMT_YUYV,   IA_CSS_DATA_FORMAT_YUYV, 12 },
-    { V4L2_PIX_FMT_UYVY,   IA_CSS_DATA_FORMAT_UYVY, 12 },
+    { V4L2_PIX_FMT_YUYV,   IA_CSS_DATA_FORMAT_YUYV, 16 },
+    { V4L2_PIX_FMT_UYVY,   IA_CSS_DATA_FORMAT_UYVY, 16 },
     { V4L2_PIX_FMT_YUV420, IA_CSS_DATA_FORMAT_YUV420, 16 },
     { V4L2_PIX_FMT_NV12,   IA_CSS_DATA_FORMAT_NV12, 8 },
     { V4L2_PIX_FMT_NV16,   IA_CSS_DATA_FORMAT_NV16, 12 },
@@ -54,12 +57,10 @@ static const FormatMap sFormatMapping[] = {
     { V4L2_PIX_FMT_RGB32,  IA_CSS_DATA_FORMAT_RGBA888, 24 },
     { V4L2_PIX_FMT_SGRBG12, IA_CSS_DATA_FORMAT_RAW, 16 },
     { V4L2_PIX_FMT_SGRBG10, IA_CSS_DATA_FORMAT_RAW, 16 }, // IA_CSS_DATA_FORMAT_BAYER_GRBG or IA_CSS_DATA_FORMAT_RAW ?
-// IPU4_FEATURE_S
-    { V4L2_PIX_FMT_YUYV420_V32, IA_CSS_DATA_FORMAT_YYUVYY_VECTORIZED, 16 },
-// IPU4_FEATURE_E
 
-    { GET_FOURCC_FMT('Y', 'U', 'Y', 'V'), IA_CSS_DATA_FORMAT_YUYV, 12 },
-    { GET_FOURCC_FMT('U', 'Y', 'V', 'Y'), IA_CSS_DATA_FORMAT_UYVY, 12 },
+    { GET_FOURCC_FMT('Y', 'U', 'Y', 'V'), IA_CSS_DATA_FORMAT_YUYV, 16 },
+    { GET_FOURCC_FMT('Y', 'U', 'Y', '2'), IA_CSS_DATA_FORMAT_YUYV, 16 },
+    { GET_FOURCC_FMT('U', 'Y', 'V', 'Y'), IA_CSS_DATA_FORMAT_UYVY, 16 },
     { GET_FOURCC_FMT('Y', 'U', '1', '2'), IA_CSS_DATA_FORMAT_YUV420, 16 },
     { GET_FOURCC_FMT('N', 'V', '1', '2'), IA_CSS_DATA_FORMAT_NV12, 8 },
     { GET_FOURCC_FMT('N', 'V', '1', '6'), IA_CSS_DATA_FORMAT_NV16, 12 },
@@ -97,6 +98,9 @@ int getCssStride(int v4l2Fmt, int width) {
     switch (v4l2Fmt) {
         case GET_FOURCC_FMT('I','Y','U','V'):
             stride = width;
+            break;
+        case GET_FOURCC_FMT('Y','U','Y','2'):
+            stride = ALIGN_64(width * 2);
             break;
         default:
             stride = getStride(cssFmt, width);
@@ -138,6 +142,9 @@ int getStride(int cssFmt, int width) {
             break;
         case IA_CSS_DATA_FORMAT_NV12:
             stride = width;
+            break;
+        case IA_CSS_DATA_FORMAT_YUYV:
+            stride = ALIGN_64(width * 2);
             break;
         default:
             LOG2("TODO for format: %d", cssFmt);
@@ -206,5 +213,85 @@ bool getTerminalPairs(int pgId, TERMINAL_PAIR_TYPE type, std::vector<TerminalPai
     return false;
 }
 
+int getCssFmtBpe(ia_css_frame_format_type_t cssFmt, int cssBpp) {
+    int bpe = cssBpp;
+    switch (cssFmt) {
+        case IA_CSS_DATA_FORMAT_YUYV:
+        case IA_CSS_DATA_FORMAT_UYVY:
+            bpe = 8;
+            break;
+        default:
+            break;
+    }
+    return bpe;
+}
+
+int getCssFmtBpp(ia_css_frame_format_type_t cssFmt) {
+    int size = ARRAY_SIZE(sFormatMapping);
+    for (int i = 0; i < size; i++) {
+        if (sFormatMapping[i].cssFmt == cssFmt) {
+            return sFormatMapping[i].cssBpp;
+        }
+    }
+
+    LOG2("%s: unsupported cssFmt pixel format: 0x%x", __func__, cssFmt);
+    return 8;
+}
+
+int getCompressedBpp(ia_css_frame_format_type_t format, int cssBpp) {
+    int bpp = cssBpp;
+    switch (format) {
+        case IA_CSS_DATA_FORMAT_BAYER_GRBG:
+        case IA_CSS_DATA_FORMAT_BAYER_RGGB:
+        case IA_CSS_DATA_FORMAT_BAYER_BGGR:
+        case IA_CSS_DATA_FORMAT_BAYER_GBRG:
+            bpp = 10;
+            break;
+        case IA_CSS_DATA_FORMAT_YUV420:
+        case IA_CSS_DATA_FORMAT_NV12:
+            bpp = 8;
+            break;
+        default:
+            LOGW("%s format %d compress not supported", __func__, format);
+            break;
+    }
+    return bpp;
+}
+
+int getCompressedBpe(ia_css_frame_format_type_t format, int cssBpp) {
+    int bpe = cssBpp;
+    switch (format) {
+        case IA_CSS_DATA_FORMAT_BAYER_GRBG:
+        case IA_CSS_DATA_FORMAT_BAYER_RGGB:
+        case IA_CSS_DATA_FORMAT_BAYER_BGGR:
+        case IA_CSS_DATA_FORMAT_BAYER_GBRG:
+            bpe = 16;
+            break;
+        case IA_CSS_DATA_FORMAT_YUV420:
+        case IA_CSS_DATA_FORMAT_NV12:
+            bpe = 8;
+            break;
+        default:
+            LOGW("%s format %d compress not supported", __func__, format);
+            break;
+    }
+    return bpe;
+}
+
+bool isCompressionTerminal(int terminalId) {
+    bool cmp = false;
+    /* only pg 187 terminal 3/7 and pg 189 terminal 0 support compression
+    ** tnr compression 189 terminal 4/6 not enabled in software
+    */
+    if (terminalId == psys_ipu6_isa_lb_input_high_uid ||
+        terminalId == psys_ipu6_isa_lb_output_uid ||
+        terminalId == psys_ipu6_bb_input_uid ||
+        terminalId == psys_ipu6_bb_tnr_ref_in_uid ||
+        terminalId == psys_ipu6_bb_tnr_ref_out_uid) {
+        cmp = true;
+    }
+
+    return cmp;
+}
 } // name space PGUtils
 } // namespace icamera

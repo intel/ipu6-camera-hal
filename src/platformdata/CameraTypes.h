@@ -49,9 +49,6 @@ enum {
 
 enum {
     LENS_VCM_HW = 0,
-// IPU4_FEATURE_S
-    LENS_PWM_HW,
-// IPU4_FEATURE_E
     LENS_NONE_HW
 };
 

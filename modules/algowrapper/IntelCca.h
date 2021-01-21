@@ -29,11 +29,12 @@
 namespace icamera {
 class IntelCca {
  public:
-    IntelCca();
+    IntelCca(int cameraId, TuningMode mode);
     virtual ~IntelCca();
 
     static IntelCca* getInstance(int cameraId, TuningMode mode);
     static void releaseInstance(int cameraId, TuningMode mode);
+    static void releaseAllInstances();
 
     ia_err init(const cca::cca_init_params& initParams);
 
@@ -58,20 +59,22 @@ class IntelCca {
     ia_err updateTuning(uint8_t lardTags, const ia_lard_input_params& lardParams);
 
     void deinit();
-    void getVersion(std::string* version);
 
     ia_err decodeStats(uint64_t statsPointer, uint32_t statsSize,
                        ia_isp_bxt_statistics_query_results_t* results);
 
     uint32_t getPalDataSize(const cca::cca_program_group& programGroup);
-    void* allocatePalBuffer(int streamId, int index, int palDataSize);
-    void freePalBuffer(void* addr);
+    void* allocMem(int streamId, const std::string& name, int index, int size);
+    void freeMem(void* addr);
 
  private:
     cca::IntelCCA* getIntelCCA();
     void releaseIntelCCA();
 
  private:
+     int mCameraId;
+     TuningMode mTuningMode;
+
     struct CCAHandle {
         int cameraId;
         std::unordered_map<TuningMode, IntelCca*> ccaHandle;  // TuningMode to IntelCca map

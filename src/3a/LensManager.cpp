@@ -61,8 +61,8 @@ int LensManager::stop()
     return OK;
 }
 
-int LensManager::setLensResult(const ia_aiq_ae_results &aeResults,
-                               const ia_aiq_af_results &afResults)
+int LensManager::setLensResult(const cca::cca_ae_results &aeResults,
+                               const cca::cca_af_results &afResults)
 {
     LOG3A("%s, mCameraId = %d", __func__, mCameraId);
     AutoMutex l(mLock);
@@ -76,20 +76,13 @@ int LensManager::setLensResult(const ia_aiq_ae_results &aeResults,
     int lensHwType = PlatformData::getLensHwType(mCameraId);
     switch(lensHwType) {
         case LENS_VCM_HW:
-            if (mFocusPosition != afResults.next_lens_position) {
+            if (mFocusPosition != static_cast<int>(afResults.next_lens_position)) {
                 ret = mLensHw->setFocusPosition(afResults.next_lens_position);
-                mFocusPosition = afResults.next_lens_position;
+                mFocusPosition = static_cast<int>(afResults.next_lens_position);
                 LOG3A("mFocusPosition = %d, camera id %d", mFocusPosition, mCameraId);
                 LOG2("SENSORCTRLINFO: vcm_step=%d", mFocusPosition);
             }
             break;
-// IPU4_FEATURE_S
-        case LENS_PWM_HW:
-            mDcIrisCommand = aeResults.aperture_control->dc_iris_command;
-            ret = mLensHw->setPwmDuty(aeResults.aperture_control->code);
-            LOG3A("lens duty = %d, mDcIrisCommand = %d", aeResults.aperture_control->code, mDcIrisCommand);
-            break;
-// IPU4_FEATURE_E
         default:
             LOGW("Not supported Lens HW type, lensHwType = %d", lensHwType);
             break;

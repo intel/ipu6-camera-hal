@@ -37,11 +37,12 @@ extern "C" {
 }
 
 #ifdef ENABLE_SANDBOXING
-#include "modules/sandboxing/client/IntelIspParamAdaptor.h"
+#include "modules/sandboxing/client/IntelCca.h"
 #else
-#include "modules/algowrapper/IntelIspParamAdaptor.h"
+#include "modules/algowrapper/IntelCca.h"
 #endif
 
+#include "3a/AiqResult.h"
 #include "ia_aiq_types.h"
 #include "ia_isp_bxt_types.h"
 #include "ia_isp_bxt_statistics_types.h"
@@ -81,7 +82,7 @@ public:
                         std::shared_ptr<CameraBuffer> statsBuffer,
                         std::shared_ptr<IGraphConfig> graphConfig = nullptr);
 
-    int runIspAdapt(const IspSettings* ispSettings, long settingSequence = -1, int32_t streamId = -1);
+    int runIspAdapt(const IspSettings* ispSettings, long requestId, long settingSequence = -1, int32_t streamId = -1);
     //Get ISP param from mult-stream ISP param adaptation
     ia_binary_data* getIpuParameter(long sequence = -1, int streamId = -1);
     int getPalOutputDataSize(const ia_isp_bxt_program_group* programGroup);
@@ -89,14 +90,15 @@ public:
 private:
     DISALLOW_COPY_AND_ASSIGN(IspParamAdaptor);
 
+    int deepCopyProgramGroup(const ia_isp_bxt_program_group *pgPtr,
+                             cca::cca_program_group *programGroup);
+    int getDataFromProgramGroup();
     int initProgramGroupForAllStreams(ConfigMode configMode);
     int postConfigure(int width, int height, ia_binary_data *binaryData);
-    void initInputParams(ia_isp_bxt_input_params_v2 *params, PgParamType type);
-
-    int initIspAdaptHandle(ConfigMode configMode, TuningMode tuningMode);
-    void deinitIspAdaptHandle();
+    void initInputParams(cca::cca_pal_input_params *params);
 
     void updatePalDataForVideoPipe(ia_binary_data dest);
+
     struct IspParameter {
         /*
          * map from setting sequnce to PAL data sequence to look up PAL data
@@ -109,8 +111,8 @@ private:
     };
     void updateIspParameterMap(IspParameter* ispParam, int64_t dataSeq,
                                int64_t settingSeq, ia_binary_data curIpuParam);
-    int runIspAdaptL(ia_isp_bxt_program_group programGroup, ia_isp_bxt_gdc_limits* mbrData,
-                     const IspSettings* ispSettings, long settingSequence,
+    int runIspAdaptL(ia_isp_bxt_program_group *pgPtr, ia_isp_bxt_gdc_limits* mbrData,
+                     const IspSettings* ispSettings, long requestId, long settingSequence,
                      ia_binary_data *binaryData, int32_t streamId = -1);
 
     //Allocate memory for mIspParameters
@@ -119,11 +121,13 @@ private:
     void releaseIspParamBuffers();
 
     // Dumping methods for debugging purposes.
-    void dumpRgbsStats(ia_aiq_rgbs_grid *rgbs_grid, long sequence, unsigned int num = 1);
-    void dumpAfStats(const ia_aiq_af_grid *afGrid, long sequence);
     void dumpIspParameter(long sequence, ia_binary_data binaryData);
+
     // Enable or disable kernels according to environment variables for debug purpose.
-    void updateKernelToggles(ia_isp_bxt_program_group programGroup);
+    void updateKernelToggles(cca::cca_program_group *programGroup);
+    void dumpProgramGroup(ia_isp_bxt_program_group *pgPtr);
+    void applyMediaFormat(const AiqResult* aiqResult,
+                          ia_media_format* mediaFormat, bool* useLinearGamma);
 
  private:
     enum IspAdaptorState {
@@ -136,24 +140,19 @@ private:
     PgParamType mPgParamType;
     TuningMode mTuningMode;
 
-    ia_isp_bxt   *mIspAdaptHandle;
-    ia_bcomp_results *mBCompResults;
-
     //Guard for IspParamAdaptor public API
     Mutex mIspAdaptorLock;
-    std::map<int, ia_isp_bxt_program_group> mStreamIdToProgramGroupMap;
     std::map<int, int> mStreamIdToPGOutSizeMap;
     std::map<int, ia_isp_bxt_gdc_limits> mStreamIdToMbrDataMap;
-    ia_aiq_frame_params mFrameParam;
     static const int ISP_PARAM_QUEUE_SIZE = MAX_SETTING_COUNT;
     std::map<int, IspParameter> mStreamIdToIspParameterMap; // map from stream id to IspParameter
     ia_binary_data mLastPalDataForVideoPipe;
     //Guard lock for ipu parameter
     Mutex mIpuParamLock;
+    std::unordered_map<int, cca::cca_pal_input_params*> mStreamIdToPalInputParamsMap;
 
-    IGraphConfigManager *mGCM;
-    std::list<long> mSequenceList;  // Store the sequence history in IspParamAdaptor
-    std::unique_ptr<IntelIspParamAdaptor> mAdaptor;
+    std::shared_ptr<IGraphConfig> mGraphConfig;
+    IntelCca *mIntelCca;
 
     struct PalRecord {
         int uuid;

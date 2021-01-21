@@ -40,16 +40,13 @@ typedef std::vector<Node*> NodesPtrVector;
 
 namespace icamera {
 
-/**
- * Stream id associated with still capture.
- */
-static const int32_t STILL_STREAM_ID = 60000;
-/**
- * Stream id associated with video stream.
- */
 #ifdef TNR7_CM
+// Stream id associated with still capture.
+static const int32_t STILL_STREAM_ID = 60009;
+// Stream id associated with video stream.
 static const int32_t VIDEO_STREAM_ID = 60006;
 #else
+static const int32_t STILL_STREAM_ID = 60000;
 static const int32_t VIDEO_STREAM_ID = 60001;
 #endif
 

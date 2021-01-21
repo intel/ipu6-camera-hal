@@ -29,28 +29,29 @@ std::vector<IntelCca::CCAHandle> IntelCca::sCcaInstance;
 Mutex IntelCca::sLock;
 
 IntelCca* IntelCca::getInstance(int cameraId, TuningMode mode) {
-    LOG2("@%s, cameraId: %d, tuningMode: %d", __func__, cameraId, mode);
+    LOG2("@%s, cameraId:%d, tuningMode:%d, cca instance size:%d", __func__,
+         cameraId, mode, sCcaInstance.size());
 
     AutoMutex lock(sLock);
     for (auto &it : sCcaInstance) {
         if (cameraId == it.cameraId) {
-            if (it.ccaHandle.find(mode) == it.ccaHandle.end())
-                it.ccaHandle[mode] = new IntelCca();
-
+            if (it.ccaHandle.find(mode) == it.ccaHandle.end()) {
+                it.ccaHandle[mode] = new IntelCca(cameraId, mode);
+            }
             return it.ccaHandle[mode];
         }
     }
 
     IntelCca::CCAHandle handle = {};
     handle.cameraId = cameraId;
-    handle.ccaHandle[mode] = new IntelCca();
+    handle.ccaHandle[mode] = new IntelCca(cameraId, mode);
     sCcaInstance.push_back(handle);
 
     return handle.ccaHandle[mode];
 }
 
 void IntelCca::releaseInstance(int cameraId, TuningMode mode) {
-    LOG2("@%s, cameraId: %d, tuningMode: %d", __func__, cameraId, mode);
+    LOG2("@%s, cameraId:%d, tuningMode:%d", __func__, cameraId, mode);
 
     AutoMutex lock(sLock);
     for (auto &it : sCcaInstance) {
@@ -58,14 +59,26 @@ void IntelCca::releaseInstance(int cameraId, TuningMode mode) {
             IntelCca *cca = it.ccaHandle[mode];
             it.ccaHandle.erase(mode);
             delete cca;
-            cca = nullptr;
         }
     }
 }
 
-IntelCca::IntelCca() {
-    LOG2("@%s", __func__);
+void IntelCca::releaseAllInstances() {
+    AutoMutex lock(sLock);
+    LOG2("@%s, cca instance size:%d", __func__, sCcaInstance.size());
+    for (auto &it : sCcaInstance) {
+        for (auto &oneCcaHandle : it.ccaHandle) {
+            IntelCca* intelCca = oneCcaHandle.second;
+            delete intelCca;
+        }
+        it.ccaHandle.clear();
+    }
+}
 
+IntelCca::IntelCca(int cameraId, TuningMode mode) :
+    mCameraId(cameraId),
+    mTuningMode(mode) {
+    LOG2("@%s, cameraId:%d, tuning mode:%d", __func__, mCameraId, mTuningMode);
     mIntelCCA = nullptr;
 }
 
@@ -89,7 +102,7 @@ ia_err IntelCca::init(const cca::cca_init_params& initParams) {
     LOG2("@%s, bitmap:%d", __func__, initParams.bitmap);
 
     ia_err ret = getIntelCCA()->init(initParams);
-    LOG2("@%s, ret:%d", __func__, ret);
+    LOG2("@%s, ret:%d, version:%s", __func__, ret, getIntelCCA()->getVersion());
 
     return ret;
 }
@@ -214,13 +227,6 @@ void IntelCca::deinit() {
     releaseIntelCCA();
 }
 
-void IntelCca::getVersion(std::string* version) {
-    LOG2("@%s", __func__);
-    CheckError(!version, VOID_VALUE, "@%s, version is nullptr", __func__);
-
-    *version = std::string(getIntelCCA()->getVersion());
-}
-
 ia_err IntelCca::decodeStats(uint64_t statsPointer, uint32_t statsSize,
                              ia_isp_bxt_statistics_query_results_t* results) {
     LOG2("@%s, statsPointer: 0x%lu, statsSize:%d", __func__, statsPointer, statsSize);
@@ -239,13 +245,14 @@ uint32_t IntelCca::getPalDataSize(const cca::cca_program_group& programGroup) {
     return size;
 }
 
-void* IntelCca::allocatePalBuffer(int streamId, int index, int palDataSize) {
-    LOG2("@%s index: %d, streamId: %d, size: %d", __func__, index, streamId, palDataSize);
+void* IntelCca::allocMem(int streamId, const std::string& name, int index, int size) {
+    LOG1("@%s, name:%s, index: %d, streamId: %d, size: %d", __func__,
+         name.c_str(), index, streamId, size);
 
-    return calloc(1, palDataSize);
+    return calloc(1, size);
 }
 
-void IntelCca::freePalBuffer(void* addr) {
+void IntelCca::freeMem(void* addr) {
     LOG2("@%s addr: %p", __func__, addr);
     free(addr);
 }

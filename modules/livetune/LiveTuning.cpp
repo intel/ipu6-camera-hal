@@ -31,18 +31,18 @@ using std::vector;
 
 namespace icamera {
 
-int setupIPCEnvForLiveTune(cros::CameraMojoChannelManager* mojoManager) {
+int setupIPCEnvForLiveTune(cros::CameraMojoChannelManagerToken* token) {
     PERF_CAMERA_ATRACE();
     HAL_TRACE_CALL(1);
 
-    CheckError(mojoManager == nullptr, BAD_VALUE, "@%s, Invalid mojoManager!", __func__);
+    CheckError(token == nullptr, BAD_VALUE, "@%s, Invalid token!", __func__);
 
     // Set debug level and dump level
     icamera::Log::setDebugLevel();
     icamera::CameraDump::setDumpLevel();
 
     // Create IntelAlgoClient and set the mojo manager
-    icamera::IntelAlgoClient::getInstance()->setMojoManager(mojoManager);
+    icamera::IntelAlgoClient::getInstance()->setMojoManagerToken(token);
 
     // Run initialization of IntelAlgoClient
     CheckError(icamera::IntelAlgoClient::getInstance()->initialize() != icamera::OK, -EINVAL,

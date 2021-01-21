@@ -70,39 +70,42 @@ int IntelTNRServer::init(void* pData, int dataSize) {
                                    static_cast<TnrType>(tnrInstance));
 }
 
-int IntelTNRServer::deInit(int cameraId, TnrType type) {
-    LOG1("@%s", __func__);
-    int key = getIndex(cameraId, type);
+int IntelTNRServer::deInit(TnrRequestInfo* requestInfo) {
+    CheckError(requestInfo == nullptr, UNKNOWN_ERROR, "@%s, requestInfo is nullptr", __func__);
+    int key = getIndex(requestInfo->cameraId, requestInfo->type);
     CheckError((mIntelTNRMap.find(key) == mIntelTNRMap.end()), UNKNOWN_ERROR,
-               "%s, IntelTNR type:%d is nullptr", __func__, type);
+               "%s, IntelTNR type:%d is nullptr", __func__, requestInfo->type);
     mIntelTNRMap.erase(key);
     mTnrSlotMap.erase(key);
     return OK;
 }
 
-int IntelTNRServer::prepareSurface(void* pData, int dataSize, int cameraId, TnrType type) {
-    CheckError(pData == nullptr, UNKNOWN_ERROR, "@%s, pData is nullptr", __func__);
-    int key = getIndex(cameraId, type);
+int IntelTNRServer::prepareSurface(void* pData, int dataSize, TnrRequestInfo* requestInfo) {
+    CheckError(pData == nullptr || requestInfo == nullptr, UNKNOWN_ERROR, "@%s, param is nullptr",
+               __func__);
+    int key = getIndex(requestInfo->cameraId, requestInfo->type);
     CheckError((mIntelTNRMap.find(key) == mIntelTNRMap.end()), UNKNOWN_ERROR,
-               "%s, IntelTNR type:%d is nullptr", __func__, type);
+               "%s, IntelTNR type:%d is nullptr", __func__, requestInfo->type);
     return mIntelTNRMap[key]->prepareSurface(pData, dataSize);
 }
 
 int IntelTNRServer::runTnrFrame(const void* inBufAddr, void* outBufAddr, uint32_t inBufSize,
-                                uint32_t outBufSize, void* tnrParam, int cameraId, TnrType type,
-                                int outBufFd) {
-    int key = getIndex(cameraId, type);
+                                uint32_t outBufSize, void* tnrParam, TnrRequestInfo* requestInfo) {
+    CheckError(requestInfo == nullptr, UNKNOWN_ERROR, "@%s, param is nullptr", __func__);
+    int key = getIndex(requestInfo->cameraId, requestInfo->type);
     CheckError((mIntelTNRMap.find(key) == mIntelTNRMap.end()), UNKNOWN_ERROR,
-               "%s, IntelTNR type:%d is nullptr", __func__, type);
+               "%s, IntelTNR type:%d is nullptr", __func__, requestInfo->type);
     return mIntelTNRMap[key]->runTnrFrame(inBufAddr, outBufAddr, inBufSize, outBufSize,
-                                          static_cast<Tnr7Param*>(tnrParam), outBufFd);
+                                          static_cast<Tnr7Param*>(tnrParam),
+                                          requestInfo->isForceUpdate, requestInfo->outBufFd);
 }
 
-int IntelTNRServer::asyncParamUpdate(int cameraId, int gain, TnrType type, bool forceUpdate) {
-    int key = getIndex(cameraId, type);
+int IntelTNRServer::asyncParamUpdate(TnrRequestInfo* requestInfo) {
+    CheckError(requestInfo == nullptr, UNKNOWN_ERROR, "@%s, requestInfo is nullptr", __func__);
+    int key = getIndex(requestInfo->cameraId, requestInfo->type);
     CheckError((mIntelTNRMap.find(key) == mIntelTNRMap.end()), UNKNOWN_ERROR,
-               "%s, IntelTNR type:%d is nullptr", __func__, type);
-    return mIntelTNRMap[key]->asyncParamUpdate(gain, forceUpdate);
+               "%s, IntelTNR type:%d is nullptr", __func__, requestInfo->type);
+    return mIntelTNRMap[key]->asyncParamUpdate(requestInfo->gain, requestInfo->isForceUpdate);
 }
 
 }  // namespace icamera

@@ -175,6 +175,9 @@ typedef ::cros::V4L2Format V4L2Format;
 #define PSYS_COMPRESSION_OFS_STRIDE_ALIGNMENT 128
 #define PSYS_COMPRESSION_OFS_TILE_HEIGHT_ALIGNMENT 32
 #define PSYS_COMPRESSION_OFS_LINEAR_HEIGHT_ALIGNMENT 2
+#define PSYS_COMPRESSION_TNR_STRIDE_ALIGNMENT 128
+#define PSYS_COMPRESSION_TNR_LINEAR_HEIGHT_ALIGNMENT 4
+
 #define PSYS_COMPRESSION_PAGE_SIZE 0x1000
 #define UV_STRIDE_DIVIDER 2
 #define UV_HEIGHT_DIVIDER 2
@@ -185,6 +188,8 @@ typedef ::cros::V4L2Format V4L2Format;
 #define TILE_SIZE_OFS10_12_TILEY 256
 #define TILE_SIZE_OFS8_TILEY 256
 #define TILE_SIZE_OFS8_10_LINEAR 128
+#define TILE_SIZE_TNR_NV12_Y 512
+#define TILE_SIZE_TNR_NV12_LINEAR 256
 
 //tile status bits definition
 #define ISYS_COMPRESSION_TILE_STATUS_BITS 4
@@ -193,7 +198,8 @@ typedef ::cros::V4L2Format V4L2Format;
 #define TILE_STATUS_BITS_OFS_NV12_TILE_Y	 8
 #define TILE_STATUS_BITS_OFS_P010_TILE_Y 8
 #define TILE_STATUS_BITS_OFS8_10_LINEAR 1
-#define TILE_STATUS_BITS_TNR_NV12_LINEAR 4
+#define TILE_STATUS_BITS_TNR_NV12_TILE_Y 4
+#define TILE_STATUS_BITS_TNR_NV12_LINEAR 2
 
 #define CAMHAL_CEIL_DIV(a,b)   (((a) + (b) - 1) / (b))
 
@@ -230,11 +236,9 @@ namespace CameraUtils {
 
     bool isRaw(int format);
 
-// IPU4_FEATURE_S
-    bool isVectorRaw(int format);
-// IPU4_FEATURE_E
-
     int getBpp(int format);
+
+    int getBpe(int format, int bpp);
 
     int getStride (int format, int width);
 

@@ -69,6 +69,8 @@ private:
     bool mInStaticMetadata;
     MediaControl* mMC;
     CameraMetadata mMetadata;
+    std::string mCameraModuleName;
+    CameraMetadata mCameraModuleMetadata;
 
     long* mMetadataCache;
     static const int mMetadataCacheSize = 4096;
@@ -103,7 +105,7 @@ private:
 // parse the media controller configuration in xml, the MediaControl MUST be run before the parser to run.
     void handleMediaCtlCfg(CameraParser *profiles, const char *name, const char **atts);
     void handleStaticMetaData(CameraParser *profiles, const char *name, const char **atts);
-    void handleGenericStaticMetaData(const char *name, const char *src);
+    void handleGenericStaticMetaData(const char* name, const char* src, CameraMetadata* metadata);
     void parseMediaCtlConfigElement(CameraParser *profiles, const char *name, const char **atts);
     void storeMcMappForConfig(int mcId, stream_t streamCfg);
     void parseLinkElement(CameraParser *profiles, const char *name, const char **atts);

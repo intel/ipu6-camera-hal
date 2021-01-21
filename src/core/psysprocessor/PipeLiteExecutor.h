@@ -49,6 +49,7 @@ public:
     void notifyStop();
 
     virtual bool fetchTnrOutBuffer(int64_t seq, std::shared_ptr<CameraBuffer> buf) { return false; }
+    virtual bool isBypassStillTnr(int64_t seq) { return true; }
     int releaseStatsBuffer(const std::shared_ptr<CameraBuffer> &statsBuf);
 
     void setStreamId(int streamId) { mStreamId = streamId; }
@@ -116,6 +117,8 @@ public:
         // Initialized during buffer allocation
         std::map<ia_uid, std::shared_ptr<CameraBuffer>> inputBuffers;
         std::map<ia_uid, std::shared_ptr<CameraBuffer>> outputBuffers;
+
+        ExecutorUnit() { pgId = -1; stageId = 0; }
     };
 
  protected:

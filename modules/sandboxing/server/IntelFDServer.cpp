@@ -25,8 +25,6 @@
 
 namespace icamera {
 IntelFDServer::IntelFDServer() {
-    mFaceDetection = std::unique_ptr<IntelFaceDetection>(new IntelFaceDetection());
-
     LOG1("@%s", __func__);
 }
 
@@ -40,7 +38,13 @@ status_t IntelFDServer::init(void* pData, int dataSize) {
     CheckError(dataSize < static_cast<int>(sizeof(FaceDetectionInitParams)), UNKNOWN_ERROR,
                "buffer is small");
 
-    return mFaceDetection->init(static_cast<FaceDetectionInitParams*>(pData), dataSize);
+    FaceDetectionInitParams* inParams = static_cast<FaceDetectionInitParams*>(pData);
+    if (mFaceDetection.find(inParams->cameraId) == mFaceDetection.end()) {
+        mFaceDetection[inParams->cameraId] =
+            std::unique_ptr<IntelFaceDetection>(new IntelFaceDetection());
+    }
+
+    return mFaceDetection[inParams->cameraId]->init(inParams, dataSize);
 }
 
 status_t IntelFDServer::run(void* pData, int dataSize, void* imageData) {
@@ -52,14 +56,25 @@ status_t IntelFDServer::run(void* pData, int dataSize, void* imageData) {
                "buffer is small");
 
     pvl_image image;
+    int cameraId;
     FaceDetectionRunParams* pFdRunParams = static_cast<FaceDetectionRunParams*>(pData);
-    mIpcFD.serverUnflattenRun(*pFdRunParams, imageData, &image);
+    mIpcFD.serverUnflattenRun(*pFdRunParams, imageData, &image, &cameraId);
+    CheckError((mFaceDetection.find(cameraId) == mFaceDetection.end()), UNKNOWN_ERROR,
+               "%s, cameraId:%d, mFaceDetection is nullptr", __func__, cameraId);
 
-    return mFaceDetection->run(&image, &pFdRunParams->results);
+    return mFaceDetection[cameraId]->run(&image, &pFdRunParams->results);
 }
 
-status_t IntelFDServer::deinit() {
-    LOG1("@%s", __func__);
-    return mFaceDetection->deinit();
+status_t IntelFDServer::deinit(void* pData, int dataSize) {
+    LOG1("@%s, pData:%p, dataSize:%d", __func__, pData, dataSize);
+    CheckError(pData == nullptr, UNKNOWN_ERROR, "@%s, pData is nullptr", __func__);
+    CheckError(dataSize < static_cast<int>(sizeof(FaceDetectionDeinitParams)), UNKNOWN_ERROR,
+               "buffer is small");
+
+    FaceDetectionDeinitParams* deinitParams = static_cast<FaceDetectionDeinitParams*>(pData);
+    CheckError((mFaceDetection.find(deinitParams->cameraId) == mFaceDetection.end()), UNKNOWN_ERROR,
+               "%s, cameraId:%d, mFaceDetection is nullptr", __func__, deinitParams->cameraId);
+
+    return mFaceDetection[deinitParams->cameraId]->deinit(deinitParams, dataSize);
 }
 } /* namespace icamera */

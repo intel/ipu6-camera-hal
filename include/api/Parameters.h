@@ -791,21 +791,20 @@ typedef struct {
  * \enum camera_edge_mode_t: Specify the edge mode.
  */
 typedef enum {
-    EDGE_MODE_OFF,
-    EDGE_MODE_FAST,
-    EDGE_MODE_HIGH_QUALITY,
-    EDGE_MODE_ZERO_SHUTTER_LAGE,
+    EDGE_MODE_LEVEL_1, /* strength 20 */
+    EDGE_MODE_LEVEL_2, /* strength 0 */
+    EDGE_MODE_LEVEL_3, /* strength -60 */
+    EDGE_MODE_LEVEL_4, /* strength -100 */
 } camera_edge_mode_t;
 
 /**
  * \enum camera_nr_mode_t: Specify the noise reduction mode.
  */
 typedef enum {
-    NR_MODE_OFF,
-    NR_MODE_AUTO,
-    NR_MODE_MANUAL_NORMAL,
-    NR_MODE_MANUAL_EXPERT,
-    NR_MODE_HIGH_QUALITY,
+    NR_MODE_LEVEL_1, /* strength 20 */
+    NR_MODE_LEVEL_2, /* strength 0 */
+    NR_MODE_LEVEL_3, /* strength -60 */
+    NR_MODE_LEVEL_4, /* strength -100 */
 } camera_nr_mode_t;
 
 /**

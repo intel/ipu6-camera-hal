@@ -39,9 +39,11 @@ RequestThread::RequestThread(int cameraId, AiqUnitBase *a3AControl, ParameterGen
     mNeedReconfigPipe(false),
     mReconfigPipeScore(0),
     mActive(false),
+    mRequestTriggerEvent(NONE_EVENT),
     mLastRequestId(-1),
-    mLastPredictSeq(-1),
-    mLastEofSeq(-1),
+    mLastEffectSeq(-1),
+    mLastAppliedSeq(-1),
+    mLastSofSeq(-1),
     mBlockRequest(true)
 {
     CLEAR(mStreamConfig);
@@ -89,8 +91,9 @@ void RequestThread::clearRequests()
     }
 
     mLastRequestId = -1;
-    mLastPredictSeq = -1;
-    mLastEofSeq = -1;
+    mLastEffectSeq = -1;
+    mLastAppliedSeq = -1;
+    mLastSofSeq = -1;
     mFirstRequest = true;
     mBlockRequest = true;
 }
@@ -222,13 +225,17 @@ void RequestThread::postConfigure(const stream_config_t *streamList) {
 }
 
 bool RequestThread::blockRequest() {
+    if (mPendingRequests.empty()) return true;
+
     /**
      * Block request processing if:
-     * 1. mBlockRequest is true (except the 1st request), or
-     * 2. Too many requests in flight.
+     * 1. mBlockRequest is true (except the 1st request);
+     * 2. Too many requests in flight;
+     * 3. if no trigger event is available.
      */
     return ((mBlockRequest && (mLastRequestId >= 0)) ||
-            mRequestsInProcessing >= PlatformData::getMaxRequestsInflight(mCameraId));
+        (mRequestsInProcessing >= PlatformData::getMaxRequestsInflight(mCameraId)) ||
+        (mPerframeControlSupport && (mRequestTriggerEvent == NONE_EVENT)));
 }
 
 int RequestThread::processRequest(int bufferNum, camera_buffer_t **ubuffer, const Parameters* params)
@@ -258,6 +265,7 @@ int RequestThread::processRequest(int bufferNum, camera_buffer_t **ubuffer, cons
         mActive = true;
     }
 
+    mRequestTriggerEvent |= NEW_REQUEST;
     mRequestSignal.signal();
     return OK;
 }
@@ -341,8 +349,9 @@ void RequestThread::handleEvent(EventData eventData)
                 if (mRequestsInProcessing > 0) {
                     mRequestsInProcessing--;
                 }
-                // Continue process(that maight be blocked due to many requests in flight).
+                // Just in case too many requests are pending in mPendingRequests.
                 if (!mPendingRequests.empty()) {
+                    mRequestTriggerEvent |= NEW_FRAME;
                     mRequestSignal.signal();
                 }
             }
@@ -353,15 +362,19 @@ void RequestThread::handleEvent(EventData eventData)
                 AutoMutex l(mPendingReqLock);
                 if (mBlockRequest) {
                     mBlockRequest = false;
-                    mRequestSignal.signal();
                 }
+                mRequestTriggerEvent |= NEW_STATS;
+                mRequestSignal.signal();
             }
             break;
-        case EVENT_ISYS_SOF: {
-            AutoMutex l(mPendingReqLock);
-            mLastEofSeq = eventData.data.sync.sequence - 1;
+        case EVENT_ISYS_SOF:
+            {
+                AutoMutex l(mPendingReqLock);
+                mLastSofSeq = eventData.data.sync.sequence;
+                mRequestTriggerEvent |= NEW_SOF;
+                mRequestSignal.signal();
+            }
             break;
-        }
         case EVENT_FRAME_AVAILABLE:
             {
                 if (eventData.buffer->getUserBuffer() != &mFakeReqBuf) {
@@ -381,7 +394,7 @@ void RequestThread::handleEvent(EventData eventData)
                 AutoMutex l(mPendingReqLock);
                 // Insert fake request if no any request in the HAL to keep 3A running
                 if (mGet3AStatWithFakeRequest &&
-                    eventData.buffer->getSequence() >= mLastPredictSeq &&
+                    eventData.buffer->getSequence() >= mLastEffectSeq &&
                     mPendingRequests.empty()) {
                     LOGW("No request, insert fake req after req %d to keep 3A stats update",
                          mLastRequestId);
@@ -390,6 +403,7 @@ void RequestThread::handleEvent(EventData eventData)
                     fakeRequest.mBuffer[0] = &mFakeReqBuf;
                     mFakeReqBuf.sequence = -1;
                     mPendingRequests.push_back(fakeRequest);
+                    mRequestTriggerEvent |= NEW_REQUEST;
                     mRequestSignal.signal();
                 }
             }
@@ -453,20 +467,50 @@ bool RequestThread::isReadyForReconfigure()
 bool RequestThread::threadLoop()
 {
     bool restart = false;
+    long applyingSeq = -1;
     {
          ConditionLock lock(mPendingReqLock);
 
-         bool waitProcessing = blockRequest() || mPendingRequests.empty();
-         if (waitProcessing) {
+         if (blockRequest()) {
             int ret = mRequestSignal.waitRelative(lock, kWaitDuration * SLOWLY_MULTIPLIER);
-            waitProcessing = blockRequest() || mPendingRequests.empty();
-            if (ret == TIMED_OUT || waitProcessing) {
+            if (ret == TIMED_OUT) {
                 LOGW("%s: wait event time out", __func__);
+                return true;
+            }
+
+            if (blockRequest()) {
+                LOG2("Pending request processing, mBlockRequest %d, Req in processing %d",
+                     mBlockRequest, mRequestsInProcessing);
+                mRequestTriggerEvent = NONE_EVENT;
                 return true;
             }
         }
 
         restart = isReconfigurationNeeded();
+
+        /* for perframe control cases, one request should be processed in one SOF period only.
+         * 1, for new SOF, processes request for current sequence if no request processed for it;
+         * 2, for new stats, processes request for next sequence;
+         * 3, for new request or frame done, processes request only no buffer processed in HAL.
+         */
+        if (mPerframeControlSupport && mRequestTriggerEvent != NONE_EVENT) {
+            if ((mRequestTriggerEvent & NEW_SOF) && (mLastSofSeq > mLastAppliedSeq)) {
+                applyingSeq = mLastSofSeq;
+            } else if ((mRequestTriggerEvent & NEW_STATS) && (mLastSofSeq >= mLastAppliedSeq)) {
+                applyingSeq = mLastSofSeq + 1;
+            } else if ((mRequestTriggerEvent & (NEW_REQUEST | NEW_FRAME)) &&
+                       (mRequestsInProcessing == 0)) {
+                applyingSeq = mLastSofSeq + 1;
+            } else {
+                mRequestTriggerEvent = NONE_EVENT;
+                return true;
+            }
+
+            mLastAppliedSeq = applyingSeq;
+            LOG2("%s, trigger event %x, SOF %ld, predict %ld, processed %d request id %d",
+                 __func__, mRequestTriggerEvent, mLastSofSeq, mLastAppliedSeq,
+                 mRequestsInProcessing, mLastRequestId);
+        }
     }
 
     if (!mActive) {
@@ -484,7 +528,12 @@ bool RequestThread::threadLoop()
             handleReconfig();
         }
 
-        handleRequest(request);
+        handleRequest(request, applyingSeq);
+
+        {
+            AutoMutex l(mPendingReqLock);
+            mRequestTriggerEvent = NONE_EVENT;
+        }
     }
     return true;
 }
@@ -505,40 +554,34 @@ void RequestThread::handleReconfig()
     return;
 }
 
-void RequestThread::handleRequest(CameraRequest& request)
+void RequestThread::handleRequest(CameraRequest& request, long applyingSeq)
 {
-    long predictSequence = mLastPredictSeq + 1;
-    if (mLastPredictSeq < 0) {
-        predictSequence = PlatformData::getInitialSkipFrame(mCameraId);
-    } else if (predictSequence < mLastEofSeq) {
-        // Drop early frames
-        predictSequence = mLastEofSeq;
-    }
-
+    long effectSeq = -1;
     // Raw reprocessing case, don't run 3A.
     if (request.mBuffer[0]->sequence >= 0 && request.mBuffer[0]->timestamp > 0) {
-        predictSequence = request.mBuffer[0]->sequence;
+        effectSeq = request.mBuffer[0]->sequence;
         if (request.mParams.get()) {
-            mParamGenerator->updateParameters(predictSequence, request.mParams.get());
+            mParamGenerator->updateParameters(effectSeq, request.mParams.get());
         }
     } else {
+        mLastRequestId++;
         if (request.mParams.get()) {
             m3AControl->setParameters(*request.mParams);
         }
-        m3AControl->run3A(mPerframeControlSupport? &predictSequence : nullptr);
+        m3AControl->run3A(mLastRequestId, applyingSeq, &effectSeq);
 
         // Check the final prediction value
-        if (predictSequence <= mLastPredictSeq) {
-            LOGW("predict %ld error! should > %ld", predictSequence, mLastPredictSeq);
-            predictSequence = mLastPredictSeq + 1;
+        if (effectSeq <= mLastEffectSeq) {
+            // Skip 3A cases, just increase it
+            LOG2("predict effectSeq %ld, last effect %ld", effectSeq, mLastEffectSeq);
+            effectSeq = mLastEffectSeq + 1;
         }
 
-        mLastPredictSeq = predictSequence;
-        mLastRequestId++;
-        mParamGenerator->saveParameters(mLastPredictSeq, mLastRequestId, request.mParams.get());
+        mParamGenerator->saveParameters(effectSeq, mLastRequestId, request.mParams.get());
+        mLastEffectSeq = effectSeq;
     }
     LOG2("%s: Process request: %ld:%ld, out buffer %d, param? %s", __func__,
-          mLastRequestId, predictSequence, request.mBufferNum,
+          mLastRequestId, effectSeq, request.mBufferNum,
           request.mParams.get() ? "true" : "false");
 
     // Sent event to handle request buffers
@@ -546,7 +589,7 @@ void RequestThread::handleRequest(CameraRequest& request)
     requestData.bufferNum = request.mBufferNum;
     requestData.buffer = request.mBuffer;
     requestData.param = request.mParams.get();
-    requestData.settingSeq = predictSequence;
+    requestData.settingSeq = effectSeq;
     EventData eventData;
     eventData.type = EVENT_PROCESS_REQUEST;
     eventData.data.request = requestData;

@@ -41,7 +41,7 @@ status_t IntelFaceDetection::init(FaceDetectionInitParams* pData, int dataSize) 
                "buffer is small");
 
     mMaxFacesNum = std::min(pData->max_face_num, static_cast<unsigned int>(MAX_FACES_DETECTABLE));
-    LOG2("@%s, mMaxFacesNum:%d", __func__, mMaxFacesNum);
+    LOG2("@%s, mMaxFacesNum:%d, cameraId:%d", __func__, mMaxFacesNum, pData->cameraId);
 
     pvl_err faceRet = pvl_face_detection_create(nullptr, &mFDHandle);
     CheckError(faceRet != pvl_success, UNKNOWN_ERROR,
@@ -60,8 +60,11 @@ status_t IntelFaceDetection::init(FaceDetectionInitParams* pData, int dataSize) 
     return OK;
 }
 
-status_t IntelFaceDetection::deinit() {
-    LOG1("@%s", __func__);
+status_t IntelFaceDetection::deinit(FaceDetectionDeinitParams* pData, int dataSize) {
+    CheckError(!pData, UNKNOWN_ERROR, "pData is nullptr");
+    CheckError(dataSize < static_cast<int>(sizeof(FaceDetectionDeinitParams)), UNKNOWN_ERROR,
+               "buffer is small");
+    LOG1("@%s, cameraId:%d", __func__, pData->cameraId);
 
     if (mFDHandle) {
         pvl_face_detection_destroy(mFDHandle);

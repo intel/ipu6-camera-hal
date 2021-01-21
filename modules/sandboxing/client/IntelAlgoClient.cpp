@@ -17,6 +17,7 @@
 #define LOG_TAG "IntelAlgoClient"
 
 #include "modules/sandboxing/client/IntelAlgoClient.h"
+#include "modules/sandboxing/client/IntelCca.h"
 
 #include <fcntl.h>
 #include <sys/mman.h>
@@ -50,6 +51,8 @@ IntelAlgoClient* IntelAlgoClient::getInstance() {
 void IntelAlgoClient::releaseInstance() {
     AutoMutex lock(sLock);
 
+    icamera::IntelCca::releaseAllInstances();
+
     if (sInstance) {
         delete sInstance;
         sInstance = nullptr;
@@ -60,7 +63,7 @@ IntelAlgoClient::IntelAlgoClient()
         : mErrCb(nullptr),
           mGpuBridge(nullptr),
           mIPCStatus(true),
-          mMojoManager(nullptr),
+          mMojoManagerToken(nullptr),
           mInitialized(false) {
     LOGIPC("@%s", __func__);
 }
@@ -70,8 +73,8 @@ IntelAlgoClient::~IntelAlgoClient() {
 }
 
 int IntelAlgoClient::initialize() {
-    LOGIPC("@%s, mMojoManager: %p", __func__, mMojoManager);
-    CheckError(!mMojoManager, UNKNOWN_ERROR, "@%s, mMojoManager is nullptr", __func__);
+    LOGIPC("@%s, mMojoManagerToken: %p", __func__, mMojoManagerToken);
+    CheckError(!mMojoManagerToken, UNKNOWN_ERROR, "@%s, mMojoManagerToken is nullptr", __func__);
 
     mCallback = base::Bind(&IntelAlgoClient::callbackHandler, base::Unretained(this));
     IntelAlgoClient::return_callback = returnCallback;
@@ -80,14 +83,14 @@ int IntelAlgoClient::initialize() {
     IntelAlgoClient::notify = notifyCallback;
 
     mBridge = cros::CameraAlgorithmBridge::CreateInstance(cros::CameraAlgorithmBackend::kVendorCpu,
-                                                          mMojoManager);
+                                                          mMojoManagerToken);
     CheckError(!mBridge, UNKNOWN_ERROR, "@%s, mBridge is nullptr", __func__);
     CheckError(mBridge->Initialize(this) != 0, UNKNOWN_ERROR, "@%s, mBridge init fails", __func__);
 
     if (PlatformData::isUsingGpuAlgo()) {
         LOGIPC("@%s GPU algo enabled", __func__);
         mGpuBridge = cros::CameraAlgorithmBridge::CreateInstance(
-            cros::CameraAlgorithmBackend::kVendorGpu, mMojoManager);
+            cros::CameraAlgorithmBackend::kVendorGpu, mMojoManagerToken);
         CheckError(!mGpuBridge, UNKNOWN_ERROR, "@%s, mGpuBridge is nullptr", __func__);
         CheckError(mGpuBridge->Initialize(this) != 0, UNKNOWN_ERROR, "@%s, mGpuBridge init fails",
                    __func__);
@@ -332,7 +335,7 @@ IntelAlgoClient::Runner::Runner(IPC_GROUP group, cros::CameraAlgorithmBridge* br
         : mGroup(group),
           mBridge(bridge),
           mIsCallbacked(false),
-          mCbResult(true),
+          mCbStatus(OK),
           mInitialized(false) {
     LOGIPC("@%s, group:%d", __func__, mGroup);
 
@@ -397,22 +400,23 @@ int IntelAlgoClient::Runner::requestSync(IPC_CMD cmd, int32_t bufferHandle) {
     CheckError((ret != OK), UNKNOWN_ERROR, "@%s, waitCallback fails, cmd:%d:%s", __func__, cmd,
                IntelAlgoIpcCmdToString(cmd));
 
-    LOGIPC("@%s, cmd:%d:%s, group:%d, mCbResult:%d, done!", __func__, cmd,
-           IntelAlgoIpcCmdToString(cmd), mGroup, mCbResult);
+    LOGIPC("@%s, cmd:%d:%s, group:%d, mCbStatus:%d, done!", __func__, cmd,
+           IntelAlgoIpcCmdToString(cmd), mGroup, mCbStatus);
 
     // check callback result
-    CheckError((mCbResult != true), UNKNOWN_ERROR, "@%s, callback fails, cmd:%d:%s", __func__, cmd,
-               IntelAlgoIpcCmdToString(cmd));
+    CheckError((mCbStatus != OK && mCbStatus != ia_err_not_run), mCbStatus,
+               "@%s, callback fails, cmd:%d:%s, mCbStatus:%d",
+               __func__, cmd, IntelAlgoIpcCmdToString(cmd), mCbStatus);
 
-    return OK;
+    return mCbStatus;
 }
 
 void IntelAlgoClient::Runner::callbackHandler(uint32_t status, int32_t buffer_handle) {
     LOGIPC("@%s, group:%d, status:%d, buffer_handle:%d", __func__, mGroup, status, buffer_handle);
-    if (status != 0) {
+    if (status != 0 && status != ia_err_not_run) {
         LOGE("@%s, group:%d, status:%d, buffer_handle:%d", __func__, mGroup, status, buffer_handle);
     }
-    mCbResult = status != 0 ? false : true;
+    mCbStatus = status;
 
     pthread_mutex_lock(&mCbLock);
     mIsCallbacked = true;

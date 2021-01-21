@@ -17,6 +17,7 @@
 #pragma once
 
 #include <memory>
+#include <unordered_map>
 
 #include "ia_aiq.h"
 #include "ia_ltm.h"
@@ -31,9 +32,9 @@
 #include "Intel3AParameter.h"
 
 #ifdef ENABLE_SANDBOXING
-#include "modules/sandboxing/client/IntelAiq.h"
+#include "modules/sandboxing/client/IntelCca.h"
 #else
-#include "modules/algowrapper/IntelAiq.h"
+#include "modules/algowrapper/IntelCca.h"
 #endif
 
 namespace icamera {
@@ -89,14 +90,21 @@ public:
     /**
      * \brief Set ispStatistics to AiqPlus and Aiq3A or custom 3A
      */
-    int setStatistics(const ia_aiq_statistics_input_params_v4 *ispStatistics);
+    int setStatsParams(const cca::cca_stats_params &statsParams);
 
     /**
-     * \brief run 3A and AiqPlus
+     * \brief run AE
      *
      * \return OK if succeed, other value indicates failed
      */
-    int runAiq(AiqResult *aiqResult);
+    int runAe(long requestId, AiqResult* aiqResult);
+
+    /**
+     * \brief run AWB, AF, SA, PA and GBCE
+     *
+     * \return OK if succeed, other value indicates failed
+     */
+    int runAiq(long requestId, AiqResult *aiqResult);
 
 private:
     DISALLOW_COPY_AND_ASSIGN(AiqCore);
@@ -126,36 +134,24 @@ private:
             gridGb(NULL), gridB(NULL) {}
     };
 
-    int run3A(AiqResult *aiqResult);
-    int runAiqPlus(AiqResult *aiqResult);
-    int runAe(ia_aiq_ae_results* aeResults);
-    int runAf(AiqResult *aiqResult);
-    void focusDistanceResult(const ia_aiq_af_results *afResults,
+    int runAEC(long requestId, cca::cca_ae_results* aeResults);
+    void focusDistanceResult(const cca::cca_af_results *afResults,
                              float *afDistanceDiopters,
                              camera_range_t *focusRange);
-    int runAwb(ia_aiq_awb_results* awbResults);
-    int runGbce(ia_aiq_gbce_results *gbceResults);
-    int runPa(ia_aiq_pa_results_v1 *paResults,
-              ia_aiq_awb_results *awbResults,
-              ia_aiq_exposure_parameters *exposureParams,
-              ia_aiq_advanced_ccm_t *preferredAcm);
-    int runSa(ia_aiq_sa_results_v1 *saResults,
-              ia_aiq_awb_results *awbResults,
-              float *lensShadingMap);
-    int processSAResults(ia_aiq_sa_results_v1 *saResults, float *lensShadingMap);
+    int processSAResults(cca::cca_sa_results *saResults, float *lensShadingMap);
     int checkColorOrder(cmc_bayer_order bayerOrder, ColorOrder *colorOrder);
     int storeLensShadingMap(const LSCGrid &inputLscGrid,
                             const LSCGrid &resizeLscGrid, float *dstLscGridRGGB);
     int reFormatLensShadingMap(const LSCGrid &inputLscGrid, float *dstLscGridRGGB);
 
     int calculateHyperfocalDistance(TuningMode mode);
-    int calculateDepthOfField(const ia_aiq_af_results &afResults, camera_range_t *focusRange);
+    int calculateDepthOfField(const cca::cca_af_results &afResults, camera_range_t *focusRange);
     int initAiqPlusParams();
-    int initIntelAiqHandle(const std::vector<TuningMode>& tuningModes);
-    void deinitIntelAiqHandle(void);
     // debug dumpers
-    int dumpPaResult(const ia_aiq_pa_results_v1* paResult);
-    int dumpSaResult(const ia_aiq_sa_results_v1* saResult);
+    int dumpPaParams(const cca::cca_pa_params& pa);
+    int dumpSaResult(const cca::cca_sa_results* saResult);
+
+    IntelCca* getIntelCca(TuningMode tuningMode);
 
 private:
     int mCameraId;
@@ -169,15 +165,15 @@ private:
     std::unique_ptr<Intel3AParameter> mIntel3AParameter;
 
     // Original AeResult class arrays are kept in 3a engine which is safely used here.
-    ia_aiq_ae_results *mLastAeResult;
-    ia_aiq_awb_results *mLastAwbResult;
-    ia_aiq_af_results *mLastAfResult;
+    cca::cca_ae_results mLastAeResult;
+    cca::cca_awb_results mLastAwbResult;
+    cca::cca_af_results mLastAfResult;
 
-    int mAeRunTime;
-    int mAwbRunTime;
+    uint64_t mAeRunTime;
+    uint64_t mAwbRunTime;
+    uint64_t mAiqRunTime;
 
-    IntelAiq *mIntelAiqHandle[TUNING_MODE_MAX];
-    bool mIntelAiqHandleStatus[TUNING_MODE_MAX];
+    std::unordered_map<TuningMode, IntelCca*> mIntelCcaHandles;
 
     enum AiqState {
         AIQ_NOT_INIT = 0,
@@ -188,10 +184,11 @@ private:
 
     ia_aiq_frame_params mFrameParams;
 
-    ia_aiq_gbce_input_params mGbceParams;
-    ia_aiq_pa_input_params mPaParams;
+    cca::cca_gbce_input_params mGbceParams;
+    cca::cca_pa_input_params mPaParams;
     ia_aiq_color_channels mPaColorGains;
-    ia_aiq_sa_input_params_v1 mSaParams;
+    cca::cca_sa_input_params mSaParams;
+
     float mHyperFocalDistance;  // in millimeters
 
     TuningMode mTuningMode;
@@ -206,6 +203,13 @@ private:
     float mLscGridRGGB[DEFAULT_LSC_GRID_SIZE * 4];
     size_t mLscGridRGGBLen;
     float mLastEvShift;
+
+    camera_tonemap_mode_t mTonemapMode;
+
+    std::unique_ptr<cca::cca_aiq_params> mAiqParams;
+    std::unique_ptr<cca::cca_aiq_results> mAiqResults;
+
+    int32_t mTonemapMaxCurvePoints;
 };
 
 } /* namespace icamera */

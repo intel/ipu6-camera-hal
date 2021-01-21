@@ -67,7 +67,8 @@ public:
     EventListener *getSofEventListener();
 
     void handleEvent(EventData eventData);
-    uint32_t updateSensorExposure(SensorExpGroup sensorExposures, bool useSof = true);
+    /* sensorExposures are exposure results, applyingSeq is the sequence to apply results */
+    uint32_t updateSensorExposure(SensorExpGroup sensorExposures, long applyingSeq);
     int getSensorInfo(ia_aiq_frame_params &frameParams,
                       ia_aiq_exposure_sensor_descriptor &sensorDescriptor);
 

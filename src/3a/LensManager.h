@@ -46,13 +46,13 @@ public:
     /**
      * \brief Set Lens results
      *
-     * \param[in] ia_aiq_ae_results includes aperture result
+     * \param[in] cca::cca_ae_results includes aperture result
      *            and ia_aiq_af_results includes focus result.
      *
      * \return OK if set successfully.
      */
-    int setLensResult(const ia_aiq_ae_results &aeResults,
-                      const ia_aiq_af_results &afResults);
+    int setLensResult(const cca::cca_ae_results &aeResults,
+                      const cca::cca_af_results &afResults);
     /**
      * \brief Get Lens info
      *

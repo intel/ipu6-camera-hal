@@ -111,7 +111,7 @@ private:
     std::shared_ptr<Parameters> acquireParam();
 
     void handleReconfig();
-    void handleRequest(CameraRequest& request);
+    void handleRequest(CameraRequest& request, long applyingSeq);
     bool blockRequest();
 
     static const int kMaxRequests = MAX_BUFFER_COUNT;
@@ -149,9 +149,19 @@ private:
     FrameQueue mOutputFrames[MAX_STREAM_NUMBER];
     bool mActive;
 
+    enum RequestTriggerEvent {
+        NONE_EVENT  = 0,
+        NEW_REQUEST = 1,
+        NEW_FRAME   = 1 << 1,
+        NEW_STATS   = 1 << 2,
+        NEW_SOF     = 1 << 3,
+    };
+    int mRequestTriggerEvent;
+
     long mLastRequestId;
-    long mLastPredictSeq;
-    long mLastEofSeq;
+    long mLastEffectSeq;  // Last sequence is which last results had been taken effect on
+    long mLastAppliedSeq; // Last sequence id which last results had been set on
+    long mLastSofSeq;
     bool mBlockRequest;  // Process the 2nd or 3th request after the 1st 3A event
                          // to avoid unstable AWB at the beginning of stream on
 };

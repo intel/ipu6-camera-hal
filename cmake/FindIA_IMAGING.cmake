@@ -31,6 +31,7 @@ endif()
 set(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} ${IA_IMAGING_LIBRARY_DIRS})
 
 # Libraries
+find_library(IA_CCA_LIB         ia_cca)
 find_library(IA_AIQ_LIB         ia_aiq)
 find_library(IA_AIQB_PARSER_LIB ia_aiqb_parser)
 find_library(IA_CMC_PARSER_LIB  ia_cmc_parser)
@@ -54,6 +55,7 @@ if (ENABLE_LEGACY_AIC)
 endif()
 
 set(IA_IMAGING_LIBS
+    ${IA_CCA_LIB}
     ${IA_AIQ_LIB}
     ${IA_AIQB_PARSER_LIB}
     ${IA_CMC_PARSER_LIB}

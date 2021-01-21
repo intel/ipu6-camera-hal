@@ -65,7 +65,7 @@ private:
 
     int generateParametersL(long sequence, Parameters *params);
     int updateWithAiqResultsL(long sequence, Parameters *params);
-    int updateAwbGainsL(Parameters *params, const ia_aiq_awb_results &result);
+    int updateAwbGainsL(Parameters *params, const cca::cca_awb_results &result);
     int updateTonemapCurve(long sequence, Parameters *params);
 
     int updateCommonMetadata(Parameters *params, const AiqResult *aiqResult);

@@ -23,6 +23,7 @@
 #include "AiqResultStorage.h"
 #include "SensorManager.h"
 #include "LensManager.h"
+#include "ParameterGenerator.h"
 
 namespace icamera {
 
@@ -36,7 +37,8 @@ namespace icamera {
 class AiqEngine {
 
 public:
-    AiqEngine(int cameraId, SensorHwCtrl *sensorHw, LensHw *lensHw, AiqSetting *setting);
+    AiqEngine(int cameraId, SensorHwCtrl *sensorHw, LensHw *lensHw, AiqSetting *setting,
+              ParameterGenerator* paramGen);
     ~AiqEngine();
 
     /**
@@ -61,11 +63,16 @@ public:
 
     /**
      * \brief Run 3a to get new 3a settings.
-     * Return 0 if the operation succeeds, and output settingSequence to
-     * indicate the frame that settings are applied.
-     * settingSequence -1 means uncertain frame for this settings.
+     *
+     * requestId: unique request id set by RequestThread;
+     * applyingSeq: sequence id indicates which SOF sequence to set the settings,
+     *             -1 means no target sequence to set the settings;
+     * effectSeq: sequence id is an output parameter and indicates the settings is taken effect
+     *            on the frame.
+     *
+     * Return 0 if the operation succeeds.
      */
-    int run3A(long *settingSequence);
+    int run3A(long requestId, long applyingSeq, long* effectSeq);
 
     /**
      * \brief Stop 3a thrad and LensManager.
@@ -80,18 +87,15 @@ public:
 private:
     DISALLOW_COPY_AND_ASSIGN(AiqEngine);
 
-    int saveAfGridData(const ia_aiq_af_grid* afGrid, ia_aiq_af_grid* dst);
-    int saveRgbsGridData(const ia_aiq_rgbs_grid* rgbsGrid, ia_aiq_rgbs_grid* dst);
+    int prepareStatsParams(cca::cca_stats_params *statsParams, AiqStatistics *aiqStatistics);
 
-    int prepareStats(ia_aiq_statistics_input_params_v4 *statsParami,
-                     ia_aiq_gbce_results *gbceResults,
-                     AiqStatistics *aiqStatistics);
-
+    // Handle AIQ results except Exposure results which are handled in setSensorExposure
     void setAiqResult(AiqResult *aiqResult, bool skip);
+    void setSensorExposure(AiqResult* aiqResult, long applyingSeq = -1);
 
     int getSkippingNum(AiqResult *aiqResult);
 
-    bool needRun3A(AiqStatistics *aiqStatistics);
+    bool needRun3A(AiqStatistics *aiqStatistics, long requestId);
 
     enum AiqState {
         AIQ_STATE_IDLE = 0,
@@ -104,8 +108,8 @@ private:
         AIQ_STATE_MAX
     };
 
-    AiqState prepareInputParam(void);
-    AiqState runAiq(AiqResult *aiqResult);
+    AiqState prepareInputParam(AiqStatistics* aiqStats);
+    AiqState runAiq(long requestId, AiqResult *aiqResult, long applyingSeq);
     AiqState handleAiqResult(AiqResult *aiqResult);
     AiqState done(AiqResult *aiqResult);
 
@@ -123,25 +127,18 @@ private:
     int mCameraId;
     AiqResultStorage* mAiqResultStorage;
     AiqSetting *mAiqSetting;
+    ParameterGenerator* mParamGen;
     AiqCore *mAiqCore;
     SensorManager *mSensorManager;
     LensManager *mLensManager;
     bool mFirstAiqRunning;
-    bool mFirstExposureSetting;
     bool mAiqRunningForPerframe;
 
     // Guard for public API of AiqEngine.
     Mutex mEngineLock;
-    Condition mStatsAvailableSignal;
-
-    uint32_t mCurrentStatsSequence;
-
-    const ia_aiq_rgbs_grid* mRgbsGridArray[MAX_EXPOSURES_NUM];
-    const ia_aiq_af_grid* mAfGridArray[MAX_EXPOSURES_NUM];
 
     aiq_parameter_t mAiqParam;
 
-    long m3ACadenceSequence;
     long mLastStatsSequence;
 };
 

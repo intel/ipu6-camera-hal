@@ -49,7 +49,7 @@ Event::Event(const PSysEventConfig& eventConfig) {
     CheckError(!mEvent, VOID_VALUE, "%s: could not allocate mEvent", __func__);
 
     if (eventConfig.id != 0) {
-        icamera::LOG2("ID-field of CIPR mEvent deprecated!");
+        LOG2("ID-field of CIPR mEvent deprecated!");
     }
 
     mEvent->event.type = eventConfig.type;
@@ -111,7 +111,7 @@ Result Event::wait(Context* ctx) {
         return Result::TimeOut;
     }
 
-    icamera::LOG2("%s: poll returned error: %s", __func__, strerror(res));
+    LOG2("%s: poll returned error: %s", __func__, strerror(res));
     return Result::GeneralError;
 }
 }  // namespace CIPR

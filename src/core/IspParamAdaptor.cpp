@@ -18,10 +18,10 @@
 
 #include "IspParamAdaptor.h"
 
+#include <math.h>
 #include <stdio.h>
 #include <utility>
 
-#include "3a/AiqResult.h"
 #include "3a/AiqResultStorage.h"
 #include "iutils/Utils.h"
 #include "iutils/CameraLog.h"
@@ -40,20 +40,10 @@ IspParamAdaptor::IspParamAdaptor(int cameraId, PgParamType type) :
         mCameraId(cameraId),
         mPgParamType(type),
         mTuningMode(TUNING_MODE_VIDEO),
-        mIspAdaptHandle(nullptr),
-        mBCompResults(nullptr),
-        mGCM(nullptr),
-        mAdaptor(nullptr)
-{
+        mGraphConfig(nullptr),
+        mIntelCca(nullptr) {
     LOG1("IspParamAdaptor was created for id:%d type:%d", mCameraId, mPgParamType);
-    CLEAR(mFrameParam);
     CLEAR(mLastPalDataForVideoPipe);
-
-    if (PlatformData::getGraphConfigNodes(cameraId)) {
-        mGCM = IGraphConfigManager::getInstance(cameraId);
-    }
-
-    mAdaptor = std::unique_ptr<IntelIspParamAdaptor>(new IntelIspParamAdaptor());
 
     PalRecord palRecordArray[] = {
         { ia_pal_uuid_isp_call_info, -1 },
@@ -65,13 +55,11 @@ IspParamAdaptor::IspParamAdaptor(int cameraId, PgParamType type) :
     }
 }
 
-IspParamAdaptor::~IspParamAdaptor()
-{
+IspParamAdaptor::~IspParamAdaptor() {
     LOG1("IspParamAdaptor was created for id:%d type:%d", mCameraId, mPgParamType);
 }
 
-int IspParamAdaptor::init()
-{
+int IspParamAdaptor::init() {
     PERF_CAMERA_ATRACE();
     HAL_TRACE_CALL(CAMERA_DEBUG_LOG_LEVEL1);
     AutoMutex l(mIspAdaptorLock);
@@ -80,26 +68,16 @@ int IspParamAdaptor::init()
     return OK;
 }
 
-int IspParamAdaptor::deinit()
-{
+int IspParamAdaptor::deinit() {
     LOG1("ISP HW param adaptor de-initialized for camera id:%d type:%d", mCameraId, mPgParamType);
     AutoMutex l(mIspAdaptorLock);
 
-    deinitIspAdaptHandle();
-
     {
         AutoMutex l(mIpuParamLock);
-
-        // Release the memory and clear the mapping
-        for (auto& pgMap: mStreamIdToProgramGroupMap) {
-            delete[] pgMap.second.run_kernels;
-        }
-        mStreamIdToProgramGroupMap.clear();
         mStreamIdToPGOutSizeMap.clear();
         releaseIspParamBuffers();
     }
 
-    CLEAR(mFrameParam);
     CLEAR(mLastPalDataForVideoPipe);
     for (uint32_t i = 0; i < mPalRecords.size(); i++) {
         mPalRecords[i].offset = -1;
@@ -109,146 +87,114 @@ int IspParamAdaptor::deinit()
     return OK;
 }
 
-int IspParamAdaptor::initIspAdaptHandle(ConfigMode configMode, TuningMode tuningMode)
-{
-    int ret = OK;
+int IspParamAdaptor::deepCopyProgramGroup(const ia_isp_bxt_program_group *pgPtr,
+                                          cca::cca_program_group *programGroup) {
+    CheckError(!programGroup, UNKNOWN_ERROR, "%s, the programGroup is nullptr", __func__);
+    CheckError(pgPtr->kernel_count > cca::MAX_KERNEL_NUMBERS_IN_PIPE, NO_MEMORY,
+               "%s, memory for program group is too small, kernel count: %d", __func__,
+               pgPtr->kernel_count);
 
-    if (!PlatformData::isEnableAIQ(mCameraId)) {
-        return ret;
+    programGroup->base = *pgPtr;
+    uint32_t &kernelCnt = programGroup->base.kernel_count;
+    kernelCnt = 0;
+
+    for (unsigned int i = 0; i < pgPtr->kernel_count; ++i) {
+        // Skip those kernels with 0 uuid which isn't PAL uuid
+        if (pgPtr->run_kernels[i].kernel_uuid == 0) {
+            LOG2("There is 0 uuid found, skip it");
+            continue;
+        }
+
+        programGroup->run_kernels[kernelCnt] = pgPtr->run_kernels[i];
+        if (programGroup->run_kernels[kernelCnt].resolution_info) {
+            programGroup->resolution_info[kernelCnt] = *pgPtr->run_kernels[i].resolution_info;
+            programGroup->run_kernels[kernelCnt].resolution_info =
+                &(programGroup->resolution_info[kernelCnt]);
+        }
+
+        if (programGroup->run_kernels[kernelCnt].resolution_history) {
+            programGroup->resolution_history[kernelCnt] = *pgPtr->run_kernels[i].resolution_history;
+            programGroup->run_kernels[kernelCnt].resolution_history =
+                &(programGroup->resolution_history[kernelCnt]);
+        }
+
+        if (programGroup->base.pipe) {
+            programGroup->pipe[kernelCnt] = pgPtr->pipe[i];
+        }
+
+        kernelCnt++;
     }
 
-    ia_binary_data ispData;
-    ia_cmc_t *cmcData = nullptr;
-    uintptr_t cmcHandle = reinterpret_cast<uintptr_t>(nullptr);
-
-    ret = PlatformData::getCpfAndCmc(mCameraId, &ispData, nullptr, nullptr,
-                                     &cmcHandle, tuningMode, &cmcData);
-    CheckError(ret != OK, NO_INIT, "get cpf and cmc data failed");
-
-    int statsNum = PlatformData::getExposureNum(mCameraId,
-                                                CameraUtils::isMultiExposureCase(tuningMode));
-    mIspAdaptHandle = mAdaptor->init(&ispData, reinterpret_cast<ia_cmc_t*>(cmcHandle),
-                                     MAX_STATISTICS_WIDTH, MAX_STATISTICS_HEIGHT,
-                                     statsNum, nullptr);
-    CheckError(!mIspAdaptHandle, NO_INIT, "ISP adaptor failed to initialize");
-
-    /*
-     * The number of streamId is identified in configure stream,
-     * fill the mStreamIdToProgramGroupMap and allocate the IspParameter memory
-     */
-    if (mGCM != nullptr && mGCM->isGcConfigured()) {
-        AutoMutex l(mIpuParamLock);
-
-        ret = initProgramGroupForAllStreams(configMode);
-        CheckError(ret != OK, ret, "%s, Failed to init programGroup for all streams", __func__);
-        ret = allocateIspParamBuffers();
-        CheckError(ret != OK, ret, "%s, Failed to allocate isp parameter buffers", __func__);
+    if (programGroup->base.run_kernels) {
+        programGroup->base.run_kernels = programGroup->run_kernels;
     }
 
-    LOG1("ISP HW param adaptor initialized successfully camera id:%d", mCameraId);
+    if (programGroup->base.pipe) {
+        programGroup->base.pipe = programGroup->pipe;
+    }
 
-    return ret;
+    LOG2("%s, the kernel count: %d", __func__, kernelCnt);
+    return OK;
 }
 
-void IspParamAdaptor::deinitIspAdaptHandle()
-{
-    if (mIspAdaptHandle) {
-        mAdaptor->deInit(mIspAdaptHandle);
-        mIspAdaptHandle = nullptr;
-    }
-
-}
-
-int IspParamAdaptor::initProgramGroupForAllStreams(ConfigMode configMode)
-{
+int IspParamAdaptor::getDataFromProgramGroup() {
     HAL_TRACE_CALL(CAMERA_DEBUG_LOG_LEVEL1);
+    CheckError(!mGraphConfig || !mIntelCca, UNKNOWN_ERROR,
+               "%s, mGraphConfig or mIntelCca is nullptr", __func__);
 
-    std::vector<int32_t> streamIds;
-
-    //Release the memory and clear the mapping
-    for (auto& pgMap: mStreamIdToProgramGroupMap) {
-        delete[] pgMap.second.run_kernels;
-    }
-    mStreamIdToProgramGroupMap.clear();
     mStreamIdToPGOutSizeMap.clear();
     mStreamIdToMbrDataMap.clear();
 
-    std::shared_ptr<IGraphConfig> graphConfig = mGCM->getGraphConfig(configMode);
-    if(graphConfig == nullptr) {
-        LOGW("There isn't GraphConfig for camera configMode: %d", configMode);
-        return UNKNOWN_ERROR;
-    }
-
+    status_t ret = OK;
+    std::vector<int32_t> streamIds;
     if (mPgParamType == PG_PARAM_ISYS) {
         int streamId = 0; // 0 is for PG_PARAM_ISYS
         streamIds.push_back(streamId);
     } else {
-        status_t ret = graphConfig->graphGetStreamIds(streamIds);
+        ret = mGraphConfig->graphGetStreamIds(streamIds);
         CheckError(ret != OK, UNKNOWN_ERROR, "Failed to get the PG streamIds");
     }
 
     for (auto id : streamIds) {
-        ia_isp_bxt_program_group *pgPtr = graphConfig->getProgramGroup(id);
-        if (pgPtr != nullptr) {
-            ia_isp_bxt_program_group programGroup;
-            CLEAR(programGroup);
-            programGroup.run_kernels = new ia_isp_bxt_run_kernels_t[pgPtr->kernel_count];
+        ia_isp_bxt_program_group *pgPtr = mGraphConfig->getProgramGroup(id);
+        CheckError(!pgPtr, UNKNOWN_ERROR, "%s, Failed to get the programGroup for streamId: %d",
+                   __func__, id);
 
-            // Skip those kernels with 0 uuid which isn't PAL uuid
-            for (unsigned int i = 0; i < pgPtr->kernel_count; i++) {
-                if (pgPtr->run_kernels[i].kernel_uuid != 0) {
-                    MEMCPY_S(&programGroup.run_kernels[programGroup.kernel_count],
-                             sizeof(ia_isp_bxt_run_kernels_t),
-                             &pgPtr->run_kernels[i],
-                             sizeof(ia_isp_bxt_run_kernels_t));
-                    programGroup.kernel_count++;
-                } else {
-                    LOG1("There is 0 uuid found, stream id %d", id);
-                }
-            }
+        cca::cca_program_group programGroup = {};
+        ret = deepCopyProgramGroup(pgPtr, &programGroup);
+        CheckError(ret != OK, UNKNOWN_ERROR, "%s, Failed to convert cca programGroup. streamId",
+                   __func__, id);
+        mStreamIdToPGOutSizeMap[id] = mIntelCca->getPalDataSize(programGroup);
 
-            // Override the stream id in kernel list with the one in sensor's config file.
-            // Remove this after the sensor's tuning file uses correct stream id.
-            int streamId = PlatformData::getStreamIdByConfigMode(mCameraId, configMode);
-            if (streamId != -1) {
-                programGroup.run_kernels->stream_id = streamId;
-            }
-
-            mStreamIdToProgramGroupMap[id] = programGroup;
-            mStreamIdToPGOutSizeMap[id] = mAdaptor->getPalDataSize(&programGroup);
-            ia_isp_bxt_gdc_limits mbrData;
-            status_t ret  = graphConfig->getMBRData(id, &mbrData);
-            if (ret == OK) {
-                mStreamIdToMbrDataMap[id] = mbrData;
-                LOG2("get mbr data for stream:%d:%f,%f,%f,%f",
-                     id, mbrData.rectilinear.zoom, mbrData.rectilinear.pitch,
-                     mbrData.rectilinear.yaw, mbrData.rectilinear.roll);
-            }
+        ia_isp_bxt_gdc_limits mbrData;
+        ret  = mGraphConfig->getMBRData(id, &mbrData);
+        if (ret == OK) {
+            mStreamIdToMbrDataMap[id] = mbrData;
+            LOG2("get mbr data for stream:%d:%f,%f,%f,%f", id, mbrData.rectilinear.zoom,
+                 mbrData.rectilinear.pitch, mbrData.rectilinear.yaw, mbrData.rectilinear.roll);
         }
     }
 
     return OK;
 }
 
-void IspParamAdaptor::initInputParams(ia_isp_bxt_input_params_v2 *params, PgParamType type)
-{
+void IspParamAdaptor::initInputParams(cca::cca_pal_input_params *params) {
     CheckError(params == nullptr, VOID_VALUE, "NULL input parameter");
 
-    if (type == PG_PARAM_PSYS_ISA) {
+    if (mPgParamType == PG_PARAM_PSYS_ISA) {
         params->ee_setting.feature_level = ia_isp_feature_level_low;
         params->ee_setting.strength = 0;
         LOG2("%s: set initial default edge enhancement setting: level: %d, strengh: %d",
-            __func__, params->ee_setting.feature_level, params->ee_setting.strength);
+             __func__, params->ee_setting.feature_level, params->ee_setting.strength);
 
         params->nr_setting.feature_level = ia_isp_feature_level_high;
         params->nr_setting.strength = 0;
         LOG2("%s: set initial default noise setting: level: %d, strengh: %d",
-            __func__, params->nr_setting.feature_level, params->nr_setting.strength);
+             __func__, params->nr_setting.feature_level, params->nr_setting.strength);
     }
 }
 
-int IspParamAdaptor::postConfigure(int width, int height, ia_binary_data *binaryData)
-{
+int IspParamAdaptor::postConfigure(int width, int height, ia_binary_data *binaryData) {
     // The PG wrapper init is done by the imaging controller.
     if(mPgParamType == PG_PARAM_PSYS_ISA) {
         mIspAdaptorState = ISP_ADAPTOR_CONFIGURED;
@@ -278,10 +224,16 @@ int IspParamAdaptor::postConfigure(int width, int height, ia_binary_data *binary
  * \return UNKNOWN_ERROR: First run of ISP adaptation failed.
  * \return NO_INIT: Initialization of P2P or PG_DIE wrapper failed.
  */
-int IspParamAdaptor::configure(const stream_t &stream,
-        ConfigMode configMode, TuningMode tuningMode)
-{
+int IspParamAdaptor::configure(const stream_t &stream, ConfigMode configMode,
+                               TuningMode tuningMode) {
     HAL_TRACE_CALL(CAMERA_DEBUG_LOG_LEVEL1);
+
+    int ret = OK;
+    if (!PlatformData::isEnableAIQ(mCameraId)) {
+        LOG2("%s, AIQ is disabled", __func__);
+        return ret;
+    }
+
     AutoMutex l(mIspAdaptorLock);
 
     mTuningMode = tuningMode;
@@ -290,48 +242,31 @@ int IspParamAdaptor::configure(const stream_t &stream,
         mPalRecords[i].offset = -1;
     }
 
-    ia_isp_bxt_input_params_v2 inputParams;
-    CLEAR(inputParams);
-    ia_aiq_sa_results_v1 fakeSaResults;
-    CLEAR(fakeSaResults);
+    mIntelCca = IntelCca::getInstance(mCameraId, tuningMode);
+    CheckError(!mIntelCca, UNKNOWN_ERROR, "%s, mIntelCca is nullptr, tuningMode:%d",
+                __func__, mTuningMode);
 
-    deinitIspAdaptHandle();
-    int ret = initIspAdaptHandle(configMode, tuningMode);
-    CheckError(ret != OK, ret, "%s, init Isp Adapt Handle failed %d", __func__, ret);
+    IGraphConfigManager *gcm = IGraphConfigManager::getInstance(mCameraId);
+    CheckError(!gcm, UNKNOWN_ERROR, "%s, Failed to get graph config manager for cameraId: %d",
+                __func__, mCameraId);
+    CheckError(!gcm->isGcConfigured(), UNKNOWN_ERROR, "%s, graph isn't configured", __func__);
 
-    SensorFrameParams param;
-    int status = PlatformData::calculateFrameParams(mCameraId, param);
-    CheckError(status != OK, status, "%s: Failed to calculate frame params", __func__);
-    AiqUtils::convertToAiqFrameParam(param, mFrameParam);
+    mGraphConfig = gcm->getGraphConfig(configMode);
+    CheckError(!mGraphConfig, UNKNOWN_ERROR, "%s, There isn't GraphConfig for configMode: %d",
+               __func__, configMode);
 
-    LOG1("horizontal_crop_offset:%d", mFrameParam.horizontal_crop_offset);
-    LOG1("vertical_crop_offset:%d", mFrameParam.vertical_crop_offset);
-    LOG1("cropped_image_width:%d", mFrameParam.cropped_image_width);
-    LOG1("cropped_image_height:%d", mFrameParam.cropped_image_height);
-    LOG1("horizontal_scaling_numerator:%d", mFrameParam.horizontal_scaling_numerator);
-    LOG1("horizontal_scaling_denominator:%d", mFrameParam.horizontal_scaling_denominator);
-    LOG1("vertical_scaling_numerator:%d", mFrameParam.vertical_scaling_numerator);
-    LOG1("vertical_scaling_denominator:%d", mFrameParam.vertical_scaling_denominator);
+    {
+        /*
+         * The number of streamId is identified in configure stream,
+         * get data from program group and allocate the IspParameter memory
+         */
+        AutoMutex l(mIpuParamLock);
 
-    /*
-     * Construct the dummy Shading Adaptor  results to force the creation of
-     * the LSC table.
-     * Assign them to the AIC input parameter structure.
-     */
-    unsigned short fakeLscTable[4] = {1,1,1,1};
-    for (int i = 0; i < MAX_BAYER_ORDER_NUM; i++) {
-        for (int j = 0; j < MAX_BAYER_ORDER_NUM; j++) {
-            fakeSaResults.lsc_grid[i][j] = fakeLscTable;
-        }
+        ret = getDataFromProgramGroup();
+        CheckError(ret != OK, ret, "%s, Failed to init programGroup for all streams", __func__);
+        ret = allocateIspParamBuffers();
+        CheckError(ret != OK, ret, "%s, Failed to allocate isp parameter buffers", __func__);
     }
-    fakeSaResults.fraction_bits = 0;
-    fakeSaResults.color_order = cmc_bayer_order_grbg;
-    fakeSaResults.lsc_update = true;
-    fakeSaResults.width = 2;
-    fakeSaResults.height = 2;
-    inputParams.sa_results = &fakeSaResults;
-
-    initInputParams(&inputParams, mPgParamType);
 
     /*
      *  IA_ISP_BXT can run without 3A results to produce the defaults for a
@@ -339,8 +274,20 @@ int IspParamAdaptor::configure(const stream_t &stream,
      */
     ia_binary_data binaryData = {};
     for (auto& ispParamIt : mStreamIdToIspParameterMap) {
-        inputParams.program_group = &(mStreamIdToProgramGroupMap[ispParamIt.first]);
-        inputParams.sensor_frame_params = &mFrameParam;
+        cca::cca_pal_input_params* inputParams = mStreamIdToPalInputParamsMap[ispParamIt.first];
+        inputParams->seq_id = -1;
+        initInputParams(inputParams);
+        inputParams->stream_id = ispParamIt.first;
+
+        ia_isp_bxt_program_group *pgPtr = mGraphConfig->getProgramGroup(ispParamIt.first);
+        CheckError(!pgPtr, UNKNOWN_ERROR, "%s, Failed to get the programGroup for streamId: %d",
+                   __func__, ispParamIt.first);
+
+        ret = deepCopyProgramGroup(pgPtr, &(inputParams->program_group));
+        CheckError(ret != OK, UNKNOWN_ERROR, "%s, Failed to convert cca programGroup. streamId",
+                   __func__, ispParamIt.first);
+        dumpProgramGroup(&inputParams->program_group.base);
+
         {
             AutoMutex l(mIpuParamLock);
             binaryData = ispParamIt.second.mSequenceToDataMap.begin()->second;
@@ -348,115 +295,66 @@ int IspParamAdaptor::configure(const stream_t &stream,
         binaryData.size = mStreamIdToPGOutSizeMap[ispParamIt.first];
 
         PERF_CAMERA_ATRACE_PARAM1_IMAGING("ia_isp_bxt_run", 1);
-
-        int ret = mAdaptor->runPal(mIspAdaptHandle, &inputParams, &binaryData);
-        CheckError(ret != OK, UNKNOWN_ERROR, "ISP parameter adaptation has failed %d", ret);
+        ia_err iaErr = mIntelCca->runAIC(-1, inputParams, &binaryData);
+        CheckError(iaErr != ia_err_none && iaErr != ia_err_not_run, UNKNOWN_ERROR,
+                   "ISP parameter adaptation has failed %d", iaErr);
 
         AutoMutex l(mIpuParamLock);
         updateIspParameterMap(&(ispParamIt.second), -1, -1, binaryData);
         ispParamIt.second.mSequenceToDataMap.erase(ispParamIt.second.mSequenceToDataMap.begin());
     }
-
     dumpIspParameter(0, binaryData);
 
     return postConfigure(stream.width, stream.height, &binaryData);
 }
 
-int IspParamAdaptor::getParameters(Parameters& param)
-{
-    AutoMutex l(mIspAdaptorLock);
-
+int IspParamAdaptor::getParameters(Parameters& param) {
     return OK;
 }
 
 int IspParamAdaptor::decodeStatsData(TuningMode tuningMode,
                                      std::shared_ptr<CameraBuffer> statsBuffer,
-                                     std::shared_ptr<IGraphConfig> graphConfig)
-{
+                                     std::shared_ptr<IGraphConfig> graphConfig) {
     CheckError(mIspAdaptorState != ISP_ADAPTOR_CONFIGURED,
                INVALID_OPERATION, "%s, wrong state %d", __func__, mIspAdaptorState);
+    CheckError(!mIntelCca, UNKNOWN_ERROR, "%s, mIntelCca is nullptr", __func__);
 
     long sequence = statsBuffer->getSequence();
     AiqResultStorage *aiqResultStorage = AiqResultStorage::getInstance(mCameraId);
-
-    const AiqResult *feedback = aiqResultStorage->getAiqResult(sequence);
-    if (feedback == nullptr) {
-        LOGW("No aiq result of sequence %ld! Use the latest instead", sequence);
-        feedback = aiqResultStorage->getAiqResult();
-    }
-
-    camera_resolution_t dvsInReso = {};
-    if (graphConfig) {
-        ia_isp_bxt_resolution_info_t resolution = {};
-        uint32_t gdcKernelId;
-        graphConfig->getGdcKernelSetting(&gdcKernelId, &resolution);
-        dvsInReso.width = resolution.input_width;
-        dvsInReso.height = resolution.input_height;
-    }
+    AiqStatistics *aiqStatistics = aiqResultStorage->acquireAiqStatistics();
+    aiqStatistics->mSequence = sequence;
+    aiqStatistics->mTimestamp = TIMEVAL2USECS(statsBuffer->getTimestamp());
+    aiqStatistics->mTuningMode = tuningMode;
+    aiqResultStorage->updateAiqStatistics(sequence);
 
     ia_binary_data *hwStatsData = (ia_binary_data *)(statsBuffer->getBufferAddr());
-    ConvertInputParam inputParams = {CameraUtils::isMultiExposureCase(tuningMode),
-                                     hwStatsData, &dvsInReso, &feedback->mAeResults, mBCompResults};
-
-    ConvertResult result;
-    ia_isp_bxt_statistics_query_results_t queryResults;
-    CLEAR(result);
-    CLEAR(queryResults);
-    result.queryResults = &queryResults;
-
-    int ret = mAdaptor->queryAndConvertStats(mIspAdaptHandle, &inputParams, &result);
-    CheckError(ret != OK, ret, "%s, Faield to query and convert statistics", __func__);
-
-    // Decode DVS statistics
-    if (queryResults.dvs_stats) {
-        if (CameraDump::isDumpTypeEnable(DUMP_PSYS_DECODED_STAT) && hwStatsData != nullptr) {
-            BinParam_t bParam;
-            bParam.bType = BIN_TYPE_GENERAL;
-            bParam.mType = M_PSYS;
-            bParam.sequence = statsBuffer->getSequence();
-            bParam.gParam.appendix = "dvs_p2p_decoded_stats";
-            CameraDump::dumpBinary(mCameraId, hwStatsData->data, hwStatsData->size, &bParam);
-        }
-
-        if (result.dvsStats) {
-            DvsStatistics dvsStatsStorage(result.dvsStats, statsBuffer->getSequence());
-            aiqResultStorage->updateDvsStatistics(dvsStatsStorage);
-        } else {
-            LOGW("Failed to get GDC kernel setting, DVS stats not decoded");
-        }
+    if (CameraDump::isDumpTypeEnable(DUMP_PSYS_DECODED_STAT) && hwStatsData != nullptr) {
+        BinParam_t bParam;
+        bParam.bType = BIN_TYPE_GENERAL;
+        bParam.mType = M_PSYS;
+        bParam.sequence = statsBuffer->getSequence();
+        bParam.gParam.appendix = "p2p_decoded_stats";
+        CameraDump::dumpBinary(mCameraId, hwStatsData->data, hwStatsData->size, &bParam);
     }
 
-    if (queryResults.rgbs_grid && queryResults.af_grid) {
-        int exposureNum = PlatformData::getExposureNum(mCameraId, false);
-        AiqStatistics *aiqStatistics = aiqResultStorage->acquireAiqStatistics();
-
-        if (*(result.rgbsGrid)) {
-            dumpRgbsStats(*(result.rgbsGrid),
-                          statsBuffer->getSequence(), feedback->mAeResults.num_exposures);
-        }
-        if (result.afGrid) {
-            dumpAfStats(result.afGrid, statsBuffer->getSequence());
-        }
-
-        aiqStatistics->saveRgbsGridData(result.rgbsGrid, exposureNum);
-        aiqStatistics->saveAfGridData(result.afGrid);
-        aiqStatistics->mSequence = sequence;
-        aiqStatistics->mTimestamp = TIMEVAL2USECS(statsBuffer->getTimestamp());
-        aiqStatistics->mTuningMode = tuningMode;
-        aiqResultStorage->updateAiqStatistics(sequence);
-    }
+    CheckError(hwStatsData == nullptr, UNKNOWN_ERROR, "%s, hwStatsData is nullptr", __func__);
+    ia_isp_bxt_statistics_query_results_t queryResults = {};
+    ia_err iaErr = mIntelCca->decodeStats(reinterpret_cast<uint64_t>(hwStatsData->data),
+                                          hwStatsData->size, &queryResults);
+    CheckError(iaErr != ia_err_none, UNKNOWN_ERROR, "%s, Faield convert statistics", __func__);
+    LOG2("%s, query results: rgbs_grid(%d), af_grid(%d), dvs_stats(%d)", __func__,
+         queryResults.rgbs_grid, queryResults.af_grid, queryResults.dvs_stats);
 
     return OK;
 }
 
-void IspParamAdaptor::updateKernelToggles(ia_isp_bxt_program_group programGroup) {
+void IspParamAdaptor::updateKernelToggles(cca::cca_program_group *programGroup) {
 
     if (!Log::isDebugLevelEnable(CAMERA_DEBUG_LOG_KERNEL_TOGGLE)) return;
 
     const char* ENABLED_KERNELS = "/tmp/enabledKernels";
     const char* DISABLED_KERNELS = "/tmp/disabledKernels";
     const int FLIE_CONT_MAX_LENGTH = 1024;
-    ia_isp_bxt_run_kernels_t* curKernel = programGroup.run_kernels;
     char enabledKernels[FLIE_CONT_MAX_LENGTH] = { 0 };
     char disabledKernels[FLIE_CONT_MAX_LENGTH] = { 0 };
 
@@ -469,27 +367,24 @@ void IspParamAdaptor::updateKernelToggles(ia_isp_bxt_program_group programGroup)
     }
 
     LOG2("%s: enabled kernels: %s, disabled kernels %s", __func__,
-        enabledKernels, disabledKernels);
+         enabledKernels, disabledKernels);
 
-    for (unsigned int i = 0; i < programGroup.kernel_count; i++) {
-
+    for (unsigned int i = 0; i < programGroup->base.kernel_count; i++) {
+        ia_isp_bxt_run_kernels_t *curKernel = &(programGroup->base.run_kernels[i]);
         std::string curKernelUUID = std::to_string(curKernel->kernel_uuid);
-
         LOG2("%s: checking kernel %s", __func__, curKernelUUID.c_str());
 
         if (strstr(enabledKernels, curKernelUUID.c_str()) != nullptr) {
             curKernel->enable = 1;
             LOG2("%s: kernel %d is explicitly enabled", __func__,
-                curKernel->kernel_uuid);
+                 curKernel->kernel_uuid);
         }
 
         if (strstr(disabledKernels, curKernelUUID.c_str()) != nullptr) {
             curKernel->enable = 0;
             LOG2("%s: kernel %d is explicitly disabled", __func__,
-                curKernel->kernel_uuid);
+                 curKernel->kernel_uuid);
         }
-
-        curKernel ++;
     }
 }
 
@@ -498,8 +393,7 @@ void IspParamAdaptor::updateKernelToggles(ia_isp_bxt_program_group programGroup)
  * but currently a ring buffer is used in HAL, which caused logic mismatching issue.
  * So temporarily copy lastest PAL datas into PAL output buffer.
  */
-void IspParamAdaptor::updatePalDataForVideoPipe(ia_binary_data dest)
-{
+void IspParamAdaptor::updatePalDataForVideoPipe(ia_binary_data dest) {
     if (mLastPalDataForVideoPipe.data == nullptr || mLastPalDataForVideoPipe.size == 0)
         return;
 
@@ -517,7 +411,6 @@ void IspParamAdaptor::updatePalDataForVideoPipe(ia_binary_data dest)
                 LOGW("%s, source header info isn't correct", __func__);
                 return;
             }
-
             for (uint32_t i = 0; i < mPalRecords.size(); i++) {
                 if (mPalRecords[i].offset < 0 && mPalRecords[i].uuid == header->uuid) {
                     mPalRecords[i].offset = offset;
@@ -553,8 +446,7 @@ void IspParamAdaptor::updatePalDataForVideoPipe(ia_binary_data dest)
 }
 
 void IspParamAdaptor::updateIspParameterMap(IspParameter* ispParam, int64_t dataSeq,
-                                            int64_t settingSeq, ia_binary_data binaryData)
-{
+                                            int64_t settingSeq, ia_binary_data binaryData) {
     LOG2("%s, data seq %ld, setting sequence %ld", __func__, dataSeq, settingSeq);
 
     // if dataSeq doesn't equal to settingSeq, only update sequence map
@@ -572,13 +464,14 @@ void IspParamAdaptor::updateIspParameterMap(IspParameter* ispParam, int64_t data
  * runIspAdapt
  * Convert the results of the 3A algorithms and parse with P2P.
  */
-int IspParamAdaptor::runIspAdapt(const IspSettings* ispSettings, long settingSequence, int32_t streamId)
-{
+int IspParamAdaptor::runIspAdapt(const IspSettings* ispSettings, long requestId, long settingSequence,
+                                 int32_t streamId) {
     PERF_CAMERA_ATRACE();
     HAL_TRACE_CALL(CAMERA_DEBUG_LOG_LEVEL2);
     AutoMutex l(mIspAdaptorLock);
     CheckError(mIspAdaptorState != ISP_ADAPTOR_CONFIGURED, INVALID_OPERATION, "%s, wrong state %d",
           __func__, mIspAdaptorState);
+    CheckError(!mGraphConfig, UNKNOWN_ERROR, "%s, mGraphConfig is nullptr", __func__);
 
     for (auto& it : mStreamIdToIspParameterMap) {
         if (streamId != -1 && it.first != streamId) continue;
@@ -586,6 +479,7 @@ int IspParamAdaptor::runIspAdapt(const IspSettings* ispSettings, long settingSeq
         ia_binary_data binaryData = {};
         IspParameter *ispParam = &(it.second);
         auto dataIt = ispParam->mSequenceToDataMap.end();
+
         {
             AutoMutex l(mIpuParamLock);
             // Only one sequence key will be saved if settingSequence is larger than 0
@@ -600,7 +494,7 @@ int IspParamAdaptor::runIspAdapt(const IspSettings* ispSettings, long settingSeq
             binaryData = dataIt->second;
 
             LOG2("%s, PAL data buffer seq:%ld, for sequence: %ld, stream %d",
-                 __func__, dataIt->first, settingSequence, it.first);
+                    __func__, dataIt->first, settingSequence, it.first);
         }
 
         ia_isp_bxt_gdc_limits* mbrData = nullptr;
@@ -612,18 +506,20 @@ int IspParamAdaptor::runIspAdapt(const IspSettings* ispSettings, long settingSeq
         if (it.first == VIDEO_STREAM_ID) {
             updatePalDataForVideoPipe(binaryData);
         }
-        int ret = runIspAdaptL(mStreamIdToProgramGroupMap[it.first], mbrData,
-                               ispSettings, settingSequence, &binaryData, it.first);
+
+        ia_isp_bxt_program_group *pgPtr = mGraphConfig->getProgramGroup(it.first);
+        CheckError(!pgPtr, UNKNOWN_ERROR, "%s, Failed to get the programGroup for streamId: %d",
+                   __func__, it.first);
+
+        int ret = runIspAdaptL(pgPtr, mbrData, ispSettings, requestId, settingSequence, &binaryData, it.first);
         CheckError(ret != OK, ret, "run isp adaptor error for streamId %d, sequence: %ld",
                    it.first, settingSequence);
-
         {
             AutoMutex l(mIpuParamLock);
             int64_t dataSequence = settingSequence;
             if (binaryData.size == 0) {
                 dataSequence = ispParam->mSequenceToDataMap.rbegin()->first;
             }
-
             updateIspParameterMap(ispParam, dataSequence, settingSequence, binaryData);
             if (binaryData.size > 0) {
                 ispParam->mSequenceToDataMap.erase(dataIt);
@@ -635,18 +531,10 @@ int IspParamAdaptor::runIspAdapt(const IspSettings* ispSettings, long settingSeq
         }
     }
 
-    // Only Store the new sequence
-    LOG2("%s, the sequence list size: %zu", __func__, mSequenceList.size());
-    if (mSequenceList.size() >= PlatformData::getMaxRawDataNum(mCameraId)) {
-        mSequenceList.pop_front();
-    }
-    mSequenceList.push_back(settingSequence);
-
     return OK;
 }
 
-ia_binary_data* IspParamAdaptor::getIpuParameter(long sequence, int streamId)
-{
+ia_binary_data* IspParamAdaptor::getIpuParameter(long sequence, int streamId) {
     AutoMutex l(mIpuParamLock);
 
     // This is only for getting the default ipu parameter
@@ -683,27 +571,28 @@ ia_binary_data* IspParamAdaptor::getIpuParameter(long sequence, int streamId)
     return binaryData;
 }
 
-int IspParamAdaptor::getPalOutputDataSize(const ia_isp_bxt_program_group* programGroup)
-{
+int IspParamAdaptor::getPalOutputDataSize(const ia_isp_bxt_program_group *programGroup) {
     CheckError(programGroup == nullptr, 0, "Request programGroup is nullptr");
-    return mAdaptor->getPalDataSize(const_cast<ia_isp_bxt_program_group*>(programGroup));
+    CheckError(!mIntelCca, UNKNOWN_ERROR, "%s, mIntelCca is nullptr", __func__);
+
+    cca::cca_program_group pg = {};
+    deepCopyProgramGroup(programGroup, &pg);
+    return mIntelCca->getPalDataSize(pg);
 }
 
 /*
- * Allocate memory for mSequenceToDataMap
- * TODO: Let PAL to expose the max ia_binary_data buffer size which
- * come from mIspAdaptHandle->ia_pal.m_output_isp_parameters_size
+ * Allocate memory for mIspParameters
  */
-int IspParamAdaptor::allocateIspParamBuffers()
-{
-    releaseIspParamBuffers();
+int IspParamAdaptor::allocateIspParamBuffers() {
+    CheckError(!mIntelCca, UNKNOWN_ERROR, "%s, mIntelCca is nullptr", __func__);
 
+    releaseIspParamBuffers();
     for (int i = 0; i < ISP_PARAM_QUEUE_SIZE; i++) {
-        for (auto& pgMap : mStreamIdToProgramGroupMap) {
+        for (auto & pgMap : mStreamIdToPGOutSizeMap) {
             ia_binary_data binaryData = {};
-            int size = mStreamIdToPGOutSizeMap[pgMap.first];
+            int size = pgMap.second;
             binaryData.size = size;
-            binaryData.data = mAdaptor->allocatePalBuffer(pgMap.first, i, size);
+            binaryData.data = mIntelCca->allocMem(pgMap.first, "palData", i, size);
             CheckError(binaryData.data == nullptr, NO_MEMORY, "Faile to calloc PAL data");
             int64_t index = i * (-1) - 2; // default index list: -2, -3, -4, ...
             std::pair<int64_t, ia_binary_data> p(index, binaryData);
@@ -711,266 +600,227 @@ int IspParamAdaptor::allocateIspParamBuffers()
         }
     }
 
+    for (auto& pgMap : mStreamIdToPGOutSizeMap) {
+        cca::cca_pal_input_params* p = static_cast<cca::cca_pal_input_params*>(
+            mIntelCca->allocMem(pgMap.first, "palData", ISP_PARAM_QUEUE_SIZE,
+                                sizeof(cca::cca_pal_input_params)));
+        CheckError(p == nullptr, NO_MEMORY, "Cannot alloc memory for cca_pal_input_params!");
+        CLEAR(*p);
+        mStreamIdToPalInputParamsMap[pgMap.first] = p;
+    }
+
     return OK;
 }
 
-void IspParamAdaptor::releaseIspParamBuffers()
-{
+void IspParamAdaptor::releaseIspParamBuffers() {
     for (int i = 0; i < ISP_PARAM_QUEUE_SIZE; i++) {
         for (auto& it : mStreamIdToIspParameterMap) {
             for (auto& binaryMap : it.second.mSequenceToDataMap) {
-                mAdaptor->freePalBuffer(binaryMap.second.data);
+                mIntelCca->freeMem(binaryMap.second.data);
             }
 
             it.second.mSequenceToDataId.clear();
             it.second.mSequenceToDataMap.clear();
         }
     }
+
+    for (auto& it : mStreamIdToPalInputParamsMap) {
+        mIntelCca->freeMem(it.second);
+    }
+    mStreamIdToPalInputParamsMap.clear();
 }
 
-int IspParamAdaptor::runIspAdaptL(ia_isp_bxt_program_group programGroup,
-                                  ia_isp_bxt_gdc_limits *mbrData,
-                                  const IspSettings* ispSettings, long settingSequence,
-                                  ia_binary_data *binaryData, int32_t streamId)
-{
+void IspParamAdaptor::applyMediaFormat(const AiqResult* aiqResult,
+                                       ia_media_format* mediaFormat, bool* useLinearGamma) {
+    CheckError(!mediaFormat || !aiqResult, VOID_VALUE, "mediaFormat or aiqResult is nullptr");
+
+    *mediaFormat = media_format_legacy;
+    if (aiqResult->mAiqParam.tonemapMode == TONEMAP_MODE_GAMMA_VALUE) {
+        if (aiqResult->mAiqParam.tonemapGamma == 1.0) {
+            *useLinearGamma = true;
+            *mediaFormat = media_format_custom;
+            LOG2("%s: a linear 1.0 gamma value.", __func__);
+        } else {
+            LOGW("%s, dynamic gamma value(%f) is not supported", __func__,
+                 aiqResult->mAiqParam.tonemapGamma);
+        }
+    } else if (aiqResult->mAiqParam.tonemapMode == TONEMAP_MODE_CONTRAST_CURVE) {
+        const camera_tonemap_curves_t* curves = &aiqResult->mAiqParam.tonemapCurves;
+        CheckError((curves->rSize != curves->gSize || curves->bSize != curves->gSize), VOID_VALUE,
+                   "%s, the size of rgb channels must be same", __func__);
+
+        // User's curve is 2-d array: (in, out)
+        // Use the gamma curve to select the media format
+        float curveX = curves->gCurve[curves->gSize / 2];
+        float curveY = curves->gCurve[curves->gSize / 2 + 1];
+
+        if (curveX == curveY) {
+            // It's a linear gamma curves(same with gamma = 1.0)
+            *useLinearGamma = true;
+            *mediaFormat = media_format_custom;
+            LOG2("%s: a linear gamma curve. curveX: %f, curveY: %f", __func__, curveX, curveY);
+        } else if (abs(curveY - pow(curveX, (1 / 2.2))) < EPSILON) {
+            // Its a standard 2_2 gamma curves
+            *mediaFormat = media_format_bt709_8b;
+            LOG2("%s: a 2.2 gamma curve. curveX: %f, curveY: %f", __func__, curveX, curveY);
+        } else {
+            LOGW("%s, dynamic gamma curve(%f, %f) is not supported", __func__, curveX, curveY);
+        }
+    }
+}
+
+int IspParamAdaptor::runIspAdaptL(ia_isp_bxt_program_group *pgPtr, ia_isp_bxt_gdc_limits *mbrData,
+                                  const IspSettings* ispSettings, long requestId, long settingSequence,
+                                  ia_binary_data *binaryData, int streamId) {
     PERF_CAMERA_ATRACE_IMAGING();
+    CheckError(!mIntelCca, UNKNOWN_ERROR, "%s, mIntelCca is nullptr", __func__);
+    LOG2("%s: device type: %d, requestId:%d", __func__, mPgParamType, requestId);
+
     AiqResult* aiqResults = const_cast<AiqResult*>(AiqResultStorage::getInstance(mCameraId)->getAiqResult(settingSequence));
     if (aiqResults == nullptr) {
         LOGW("%s: no result for sequence %ld! use the latest instead", __func__, settingSequence);
         aiqResults = const_cast<AiqResult*>(AiqResultStorage::getInstance(mCameraId)->getAiqResult());
         CheckError((aiqResults == nullptr), INVALID_OPERATION, "Cannot find available aiq result.");
     }
-    CheckError((aiqResults->mSaResults.width * aiqResults->mSaResults.height == 0),
-            INVALID_OPERATION, "No invalid aiq result needed to run Generic AIC");
 
-    LOG2("%s: device type: %d", __func__, mPgParamType);
+    cca::cca_pal_input_params* inputParams = mStreamIdToPalInputParamsMap[streamId];
+    inputParams->seq_id = settingSequence;
 
-    ia_isp_bxt_input_params_v2 inputParams;
-    ia_view_config_t viewConfig;
-    CLEAR(inputParams);
-    CLEAR(viewConfig);
+    bool useLinearGamma = false;
+    applyMediaFormat(aiqResults, &inputParams->media_format, &useLinearGamma);
+    LOG2("%s, media format: 0x%x, gamma lut size: %d", __func__,
+         inputParams->media_format, aiqResults->mGbceResults.gamma_lut_size);
 
-    // LOCAL_TONEMAP_S
-    bool hasLtm = PlatformData::isLtmEnabled(mCameraId);
-
-    if (hasLtm) {
-        size_t ltmLag = PlatformData::getLtmGainLag(mCameraId);
-        long ltmSequence = settingSequence;
-
-        // Consider there may be skipped frames, so according to the gain lag and current
-        // sequence to find the actual ltm sequence in history list.
-        if (mSequenceList.size() > ltmLag) {
-            size_t index = 0;
-            for(auto iter = mSequenceList.begin(); iter != mSequenceList.end(); iter++) {
-                if (*iter == settingSequence && index >= ltmLag) {
-                    ltmSequence = *(std::prev(iter, ltmLag));
-                    break;
-                }
-                index++;
-            }
-        }
-        ltm_result_t* ltmResult = const_cast<ltm_result_t*>(AiqResultStorage::getInstance(mCameraId)->getLtmResult(ltmSequence));
-        if (ltmResult != nullptr) {
-            LOG2("%s: frame sequence %ld, ltm sequence %ld, actual sequence: %ld",
-                    __func__, settingSequence, ltmSequence, ltmResult->sequence);
-            inputParams.ltm_results = &ltmResult->ltmResults;
-            inputParams.ltm_drc_params = &ltmResult->ltmDrcParams;
-        }
+    if (VIDEO_STREAM_ID == streamId) {
+        inputParams->call_rate_control.mode = ia_isp_call_rate_never_on_converged;
+    } else {
+        inputParams->call_rate_control.mode = ia_isp_call_rate_always;
+        inputParams->force_lsc_update = true;
     }
-    // LOCAL_TONEMAP_E
+
+    int ret = deepCopyProgramGroup(pgPtr, &(inputParams->program_group));
+    CheckError(ret != OK, UNKNOWN_ERROR, "%s, Failed to convert cca programGroup", __func__);
+    dumpProgramGroup(&(inputParams->program_group.base));
 
     // update metadata of runnning kernels
     if (mPgParamType == PG_PARAM_PSYS_ISA) {
-        for (unsigned int i=0; i<programGroup.kernel_count; i++) {
-            switch (programGroup.run_kernels[i].kernel_uuid) {
-            case ia_pal_uuid_isp_tnr5_21:
-            case ia_pal_uuid_isp_tnr5_22:
-            case ia_pal_uuid_isp_tnr5_25:
-                programGroup.run_kernels[i].metadata[0] = aiqResults->mSequence;
-                LOG2("ia_pal_uuid_isp_tnr5_2x frame count = %d", programGroup.run_kernels[i].metadata[0]);
-                break;
-            case ia_pal_uuid_isp_bxt_ofa_dp:
-            case ia_pal_uuid_isp_bxt_ofa_mp:
-            case ia_pal_uuid_isp_bxt_ofa_ppp:
-                programGroup.run_kernels[i].metadata[2] = aiqResults->mAiqParam.flipMode;
-                LOG2("%s: flip mode set to %d", __func__, programGroup.run_kernels[i].metadata[2]);
+        for (unsigned int i = 0; i < inputParams->program_group.base.kernel_count; i++) {
+            switch (inputParams->program_group.base.run_kernels[i].kernel_uuid) {
+                case ia_pal_uuid_isp_tnr5_21:
+                case ia_pal_uuid_isp_tnr5_22:
+                case ia_pal_uuid_isp_tnr5_25:
+                    inputParams->program_group.base.run_kernels[i].metadata[0] = aiqResults->mSequence;
+                    LOG2("%s, ia_pal_uuid_isp_tnr5_2x frame count = %d",
+                         __func__, inputParams->program_group.base.run_kernels[i].metadata[0]);
+                    break;
+#ifdef IPU_SYSVER_ipu6v5
+                case ia_pal_uuid_isp_ofa_2_mp:
+                case ia_pal_uuid_isp_ofa_2_dp:
+                case ia_pal_uuid_isp_ofa_2_ppp:
+                    // These metadata options map to ofa_format_nv12 defined in ofa_format_t
+                    inputParams->program_group.base.run_kernels[i].metadata[1] = 2;
+                    break;
+#endif
+                case ia_pal_uuid_isp_bxt_ofa_dp:
+                case ia_pal_uuid_isp_bxt_ofa_mp:
+                case ia_pal_uuid_isp_bxt_ofa_ppp:
+                    inputParams->program_group.base.run_kernels[i].metadata[2] =
+                        aiqResults->mAiqParam.flipMode;
+                    LOG2("%s: flip mode set to %d", __func__,
+                         inputParams->program_group.base.run_kernels[i].metadata[2]);
 
-                programGroup.run_kernels[i].metadata[3] = aiqResults->mAiqParam.yuvColorRangeMode;
-                LOG2("ofa yuv color range mode %d", programGroup.run_kernels[i].metadata[3]);
-                break;
-            case ia_pal_uuid_isp_gammatm_v3:
-                // Bypass the GammaTM for manual color transform awb mode
-                programGroup.run_kernels[i].enable =
-                    (aiqResults->mAiqParam.awbMode == AWB_MODE_MANUAL_COLOR_TRANSFORM) ? 0 : 1;
-                LOG2("GammaTM enabled: %d", programGroup.run_kernels[i].enable);
-                break;
+                    inputParams->program_group.base.run_kernels[i].metadata[3] =
+                        aiqResults->mAiqParam.yuvColorRangeMode;
+                    LOG2("%s: ofa yuv color range mode %d", __func__,
+                         inputParams->program_group.base.run_kernels[i].metadata[3]);
+                    break;
             }
         }
     }
 
     // Enable or disable kernels according to environment variables for debug purpose.
-    updateKernelToggles(programGroup);
-
-    inputParams.timestamp = aiqResults->mTimestamp;
-    inputParams.program_group = &programGroup;
-    inputParams.sensor_frame_params = &mFrameParam;
-
-    inputParams.ae_results = &aiqResults->mAeResults;
-    inputParams.gbce_results = &aiqResults->mGbceResults;
-    inputParams.awb_results = &aiqResults->mAwbResults;
-    inputParams.pa_results = &aiqResults->mPaResults;
-    inputParams.sa_results = &aiqResults->mSaResults;
-    inputParams.weight_grid = aiqResults->mAeResults.weight_grid;
-
-    inputParams.media_format = media_format_legacy;
-    if (aiqResults->mAiqParam.tonemapMode != TONEMAP_MODE_FAST &&
-        aiqResults->mAiqParam.tonemapMode != TONEMAP_MODE_HIGH_QUALITY) {
-        inputParams.media_format = media_format_custom;
-    }
-    LOG2("%s, media format: 0x%x", __func__, inputParams.media_format);
-
-    if (VIDEO_STREAM_ID == streamId)
-        inputParams.call_rate_control.mode = ia_isp_call_rate_never_on_converged;
-    else
-        inputParams.call_rate_control.mode = ia_isp_call_rate_always;
-
-    if (aiqResults->mCustomControls.count > 0) {
-        inputParams.custom_controls = &aiqResults->mCustomControls;
-    }
+    updateKernelToggles(&(inputParams->program_group));
+    inputParams->stream_id = inputParams->program_group.base.run_kernels[0].stream_id;
 
     if (ispSettings) {
-        inputParams.nr_setting = ispSettings->nrSetting;
-        inputParams.ee_setting = ispSettings->eeSetting;
-        LOG2("%s: ISP NR setting, level: %d, strength: %d",
-                __func__, (int)ispSettings->nrSetting.feature_level,
-                (int)ispSettings->nrSetting.strength);
-        inputParams.effects = ispSettings->effects;
-        inputParams.manual_brightness = ispSettings->manualSettings.manualBrightness;
-        inputParams.manual_contrast = ispSettings->manualSettings.manualContrast;
-        inputParams.manual_hue = ispSettings->manualSettings.manualHue;
-        inputParams.manual_saturation = ispSettings->manualSettings.manualSaturation;
-        LOG2("%s: ISP EE setting, level: %d, strength: %d",
-                __func__, ispSettings->eeSetting.feature_level,
-                ispSettings->eeSetting.strength);
-        // INTEL_DVS_S
-        if (ispSettings->videoStabilization) {
-            int dvsType = PlatformData::getDVSType(mCameraId);
-            LOG2("%s: ISP Video Stabilization Mode Enable, dvs type %d", __func__, dvsType);
-            DvsResult* dvsResult = const_cast<DvsResult*>(AiqResultStorage::getInstance(mCameraId)->getDvsResult());
-            if (dvsType == MORPH_TABLE) {
-                inputParams.dvs_morph_table = (dvsResult == nullptr) ? nullptr : &dvsResult->mMorphTable;
-            } else if (dvsType == IMG_TRANS) {
-                inputParams.gdc_transformation = (dvsResult == nullptr) ? nullptr : &dvsResult->mTransformation;
-            }
-        }
-        // INTEL_DVS_E
+        inputParams->nr_setting = ispSettings->nrSetting;
+        inputParams->ee_setting = ispSettings->eeSetting;
+        LOG2("%s: ISP NR setting, level: %d, strength: %d", __func__,
+             static_cast<int>(ispSettings->nrSetting.feature_level),
+             static_cast<int>(ispSettings->nrSetting.strength));
 
-        inputParams.pal_override = ispSettings->palOverride;
+        inputParams->effects = ispSettings->effects;
+        inputParams->manual_brightness = ispSettings->manualSettings.manualBrightness;
+        inputParams->manual_contrast = ispSettings->manualSettings.manualContrast;
+        inputParams->manual_hue = ispSettings->manualSettings.manualHue;
+        inputParams->manual_saturation = ispSettings->manualSettings.manualSaturation;
+        LOG2("%s: ISP EE setting, level: %d, strength: %d", __func__,
+             ispSettings->eeSetting.feature_level, ispSettings->eeSetting.strength);
+
+        if (ispSettings->palOverride) {
+            CheckError(ispSettings->palOverride->size > cca::MAX_PAL_TUNING_SIZE, NO_MEMORY,
+                       "buffer for pal override is too small, MAX_PAL_TUNING_SIZE: %d, size: %d",
+                       cca::MAX_PAL_TUNING_SIZE, ispSettings->palOverride->size);
+
+            LOG2("%s, palOverride size:%d", __func__, ispSettings->palOverride->size);
+            MEMCPY_S(inputParams->pal_override.data, cca::MAX_PAL_TUNING_SIZE,
+                     ispSettings->palOverride->data, ispSettings->palOverride->size);
+            inputParams->pal_override.size = ispSettings->palOverride->size;
+        }
+    }
+
+    inputParams->custom_controls.count = aiqResults->mCustomControls.count;
+    uint32_t cnt = static_cast<uint32_t>(inputParams->custom_controls.count);
+    if (cnt > 0) {
+        CheckError(cnt > cca::MAX_CUSTOM_CONTROLS_PARAM_SIZE,
+                   UNKNOWN_ERROR, "%s, buffer for custom control is too small", __func__, cnt);
+
+        MEMCPY_S(inputParams->custom_controls.parameters, cnt,
+                 aiqResults->mCustomControls.parameters, cca::MAX_CUSTOM_CONTROLS_PARAM_SIZE);
+    }
+
+    inputParams->manual_pa_setting = aiqResults->mPaResults;
+    if (aiqResults->mGbceResults.have_manual_settings == true) {
+        inputParams->manual_gbce_setting = aiqResults->mGbceResults;
+        if (useLinearGamma) {
+            inputParams->manual_gbce_setting.gamma_lut_size = 0;
+        }
     }
 
     if (CameraUtils::isUllPsysPipe(mTuningMode)) {
-        CheckError((aiqResults->mAeResults.exposures[0].exposure == nullptr), BAD_VALUE, "Aiq exposure is NULL.");
         // The situation that all DG passed to ISP, not sensor.
         if (!PlatformData::isUsingSensorDigitalGain(mCameraId)) {
-            inputParams.manual_digital_gain = aiqResults->mAeResults.exposures[0].exposure->digital_gain;
+            inputParams->manual_digital_gain =
+                aiqResults->mAeResults.exposures[0].exposure[0].digital_gain;
         }
+
         // Fine-tune DG passed to ISP if partial ISP DG is needed.
         if (PlatformData::isUsingIspDigitalGain(mCameraId)) {
-            inputParams.manual_digital_gain = PlatformData::getIspDigitalGain(mCameraId,
-                                aiqResults->mAeResults.exposures[0].exposure->digital_gain);
+            inputParams->manual_digital_gain = PlatformData::getIspDigitalGain(mCameraId,
+                    aiqResults->mAeResults.exposures[0].exposure[0].digital_gain);
         }
 
-        LOG3A("%s: set digital gain for ULL pipe: %f", __func__, inputParams.manual_digital_gain);
+        LOG3A("%s: set digital gain for ULL pipe: %f", __func__, inputParams->manual_digital_gain);
     } else if (CameraUtils::isMultiExposureCase(mTuningMode) &&
                PlatformData::getSensorGainType(mCameraId) == ISP_DG_AND_SENSOR_DIRECT_AG) {
-        CheckError((aiqResults->mAeResults.exposures[0].exposure == nullptr), BAD_VALUE, "Aiq exposure is NULL.");
+        inputParams->manual_digital_gain =
+            aiqResults->mAeResults.exposures[0].exposure[0].digital_gain;
 
-        LOG3A("%s: all digital gain is passed to ISP, DG(%ld): %f",
-              __func__, aiqResults->mSequence, aiqResults->mAeResults.exposures[0].exposure->digital_gain);
-        inputParams.manual_digital_gain = aiqResults->mAeResults.exposures[0].exposure->digital_gain;
+        LOG3A("%s: all digital gain is passed to ISP, DG(%ld): %f", __func__,
+              aiqResults->mSequence, aiqResults->mAeResults.exposures[0].exposure[0].digital_gain);
     }
 
-    int ret = OK;
+    ia_err iaErr = ia_err_none;
     {
         PERF_CAMERA_ATRACE_PARAM1_IMAGING("ia_isp_bxt_run", 1);
-        ret = mAdaptor->runPal(mIspAdaptHandle, &inputParams, binaryData);
+        iaErr = mIntelCca->runAIC(requestId, inputParams, binaryData);
     }
-    CheckError(ret != OK, UNKNOWN_ERROR, "ISP parameter adaptation has failed %d", ret);
+    CheckError(iaErr != ia_err_none && iaErr != ia_err_not_run, UNKNOWN_ERROR,
+               "ISP parameter adaptation has failed %d", iaErr);
 
-    dumpIspParameter(aiqResults->mSequence, *binaryData);
+    dumpIspParameter(settingSequence, *binaryData);
 
     return OK;
-}
-
-void IspParamAdaptor::dumpAfStats(const ia_aiq_af_grid *afGrid, long sequence)
-{
-    if (!afGrid) return;
-
-    if (mPgParamType == PG_PARAM_PSYS_ISA && !CameraDump::isDumpTypeEnable(DUMP_PSYS_AIQ_STAT))
-        return;
-    if (mPgParamType == PG_PARAM_ISYS && !CameraDump::isDumpTypeEnable(DUMP_ISYS_AIQ_STAT))
-        return;
-
-    BinParam_t bParam;
-    bParam.bType = BIN_TYPE_STATISTIC;
-    bParam.mType = mPgParamType == PG_PARAM_PSYS_ISA ? M_PSYS : M_ISYS;
-    bParam.sequence = sequence;
-    bParam.sParam.gridWidth = afGrid->grid_width;
-    bParam.sParam.gridHeight = afGrid->grid_height;
-    bParam.sParam.appendix = "af_stats_filter_response_1";
-    CameraDump::dumpBinary(mCameraId, afGrid->filter_response_1,
-                           afGrid->grid_width * afGrid->grid_height * sizeof(int), &bParam);
-    bParam.sParam.appendix = "af_stats_filter_response_2";
-    CameraDump::dumpBinary(mCameraId, afGrid->filter_response_2,
-                           afGrid->grid_width * afGrid->grid_height * sizeof(int), &bParam);
-}
-
-void IspParamAdaptor::dumpRgbsStats(ia_aiq_rgbs_grid *rgbsGrid, long sequence, unsigned int num)
-{
-    if (rgbsGrid == nullptr) return;
-
-    if (Log::isDebugLevelEnable(CAMERA_DEBUG_LOG_AIQ)) {
-        for (unsigned int i = 0; i < num; i++ ) {
-            rgbs_grid_block *rgbsPtr = rgbsGrid[i].blocks_ptr;
-            int size = rgbsGrid[i].grid_width * rgbsGrid[i].grid_height;
-            // Print out some value to check if it's reasonable
-            for (int j = 100; j < 105 && j < size; j++) {
-                LOG3A("RGBS: [%d]:%d, %d, %d, %d, %d", j, rgbsPtr[j].avg_b, rgbsPtr[j].avg_gb,
-                            rgbsPtr[j].avg_gr, rgbsPtr[j].avg_r, rgbsPtr[j].sat);
-            }
-
-            // Only print last Rgbs Stats's y_mean for validation purpose
-            if (i < num - 1) continue;
-
-            int sumLuma = 0;
-            for (int j = 0; j < size; j++) {
-                sumLuma += (rgbsPtr[j].avg_b + rgbsPtr[j].avg_r + (rgbsPtr[j].avg_gb + rgbsPtr[j].avg_gr) / 2) / 3;
-            }
-            LOG3A("RGB stat grid[%d] %dx%d, y_mean %d", i, rgbsGrid[i].grid_width, rgbsGrid[i].grid_height, sumLuma/size);
-        }
-    }
-
-    if ((mPgParamType == PG_PARAM_PSYS_ISA && CameraDump::isDumpTypeEnable(DUMP_PSYS_AIQ_STAT)) ||
-        (mPgParamType == PG_PARAM_ISYS && CameraDump::isDumpTypeEnable(DUMP_ISYS_AIQ_STAT))) {
-        char name[30];
-        BinParam_t bParam;
-        bParam.bType    = BIN_TYPE_STATISTIC;
-        bParam.mType    = mPgParamType == PG_PARAM_PSYS_ISA ? M_PSYS : M_ISYS;
-        bParam.sequence = sequence;
-        for (unsigned int i = 0; i < num; i++ ) {
-            CLEAR(name);
-            snprintf(name, sizeof(name), "%s_stats_%u_%u",
-                    mPgParamType == PG_PARAM_PSYS_ISA ? "hdr_rgbs" : "rgbs", num, i);
-            bParam.sParam.gridWidth  = rgbsGrid[i].grid_width;
-            bParam.sParam.gridHeight = rgbsGrid[i].grid_height;
-            bParam.sParam.appendix   = name;
-            if (rgbsGrid[i].grid_width != 0 && rgbsGrid[i].grid_height != 0) {
-                CameraDump::dumpBinary(mCameraId, rgbsGrid[i].blocks_ptr,
-                                       rgbsGrid[i].grid_width * rgbsGrid[i].grid_height * sizeof(rgbs_grid_block),
-                                       &bParam);
-            }
-        }
-    }
 }
 
 void IspParamAdaptor::dumpIspParameter(long sequence, ia_binary_data binaryData) {
@@ -983,6 +833,35 @@ void IspParamAdaptor::dumpIspParameter(long sequence, ia_binary_data binaryData)
     bParam.sequence = sequence;
     bParam.gParam.appendix = "pal";
     CameraDump::dumpBinary(mCameraId, binaryData.data, binaryData.size, &bParam);
+}
+
+void IspParamAdaptor::dumpProgramGroup(ia_isp_bxt_program_group *pgPtr) {
+    LOG2("the kernel count: %d, run_kernels: %p", pgPtr->kernel_count, pgPtr->run_kernels);
+    for (unsigned int i = 0; i < pgPtr->kernel_count; i++) {
+        LOG2("kernel uuid: %d, stream_id: %d, enable: %d", pgPtr->run_kernels[i].kernel_uuid,
+             pgPtr->run_kernels[i].stream_id, pgPtr->run_kernels[i].enable);
+
+        if (pgPtr->run_kernels[i].resolution_info) {
+            LOG2("resolution info: input: %dx%d, output: %dx%d",
+                 (pgPtr->run_kernels[i].resolution_info)->input_width,
+                 (pgPtr->run_kernels[i].resolution_info)->input_height,
+                 (pgPtr->run_kernels[i].resolution_info)->output_width,
+                 (pgPtr->run_kernels[i].resolution_info)->output_height);
+        }
+
+        if (pgPtr->run_kernels[i].resolution_history) {
+            LOG2("resolution history: input: %dx%d, output: %dx%d",
+                 (pgPtr->run_kernels[i].resolution_history)->input_width,
+                 (pgPtr->run_kernels[i].resolution_history)->input_height,
+                 (pgPtr->run_kernels[i].resolution_history)->output_width,
+                 (pgPtr->run_kernels[i].resolution_history)->output_height);
+        }
+
+        if (pgPtr->pipe) {
+            LOG2("pipe info, uuid: %d, flags: %x", pgPtr->pipe[i].kernel_uuid,
+                 pgPtr->pipe[i].flags);
+        }
+    }
 }
 
 } // namespace icamera

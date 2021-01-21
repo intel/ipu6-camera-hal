@@ -27,8 +27,8 @@ class IntelFaceDetection {
     IntelFaceDetection();
     ~IntelFaceDetection();
 
-    status_t init(FaceDetectionInitParams* initData, int dataSize);
-    status_t deinit();
+    status_t init(FaceDetectionInitParams* pData, int dataSize);
+    status_t deinit(FaceDetectionDeinitParams* pData, int dataSize);
     status_t run(pvl_image* pImage, FaceDetectionResult* fdResults);
     status_t run(FaceDetectionRunParams* fdRunParams, int dataSize, void* addr = nullptr);
     FaceDetectionRunParams* prepareRunBuffer(unsigned int index);

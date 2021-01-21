@@ -1,26 +1,18 @@
-/**
-* INTEL CONFIDENTIAL
-*
-* Copyright (C) 2017 - 2018 Intel Corporation.
-* All Rights Reserved.
-*
-* The source code contained or described herein and all documents
-* related to the source code ("Material") are owned by Intel Corporation
-* or licensors. Title to the Material remains with Intel
-* Corporation or its licensors. The Material contains trade
-* secrets and proprietary and confidential information of Intel or its
-* licensors. The Material is protected by worldwide copyright
-* and trade secret laws and treaty provisions. No part of the Material may
-* be used, copied, reproduced, modified, published, uploaded, posted,
-* transmitted, distributed, or disclosed in any way without Intel's prior
-* express written permission.
-*
-* No License under any patent, copyright, trade secret or other intellectual
-* property right is granted to or conferred upon you by disclosure or
-* delivery of the Materials, either expressly, by implication, inducement,
-* estoppel or otherwise. Any license under such intellectual property rights
-* must be express and approved by Intel in writing.
-*/
+/*
+ * Copyright (C) 2020 Intel Corporation.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #ifndef __IA_CSS_RBM_MANIFEST_H
 #define __IA_CSS_RBM_MANIFEST_H
@@ -104,9 +96,9 @@ ia_css_rbm_manifest_print(const ia_css_rbm_manifest_t *manifest);
  */
 void
 ia_css_rbm_pretty_print(
-	const ia_css_rbm_t *rbm,
-	const ia_css_rbm_mux_desc_t *mux,
-	unsigned int mux_desc_count);
+    const ia_css_rbm_t *rbm,
+    const ia_css_rbm_mux_desc_t *mux,
+    unsigned int mux_desc_count);
 
 /** \brief check for the validity of a routing bitmap.
  * @param manifest[in] Routing bitmap manifest.
@@ -115,8 +107,8 @@ ia_css_rbm_pretty_print(
  */
 bool
 ia_css_rbm_manifest_check_rbm_validity(
-	const ia_css_rbm_manifest_t *manifest,
-	const ia_css_rbm_t *rbm);
+    const ia_css_rbm_manifest_t *manifest,
+    const ia_css_rbm_t *rbm);
 
 /** \brief sets, using manifest info, the value of a mux in the routing bitmap.
  * @param rbm[in]             Routing bitmap.
@@ -129,12 +121,12 @@ ia_css_rbm_manifest_check_rbm_validity(
  */
 ia_css_rbm_t
 ia_css_rbm_set_mux(
-	ia_css_rbm_t rbm,
-	ia_css_rbm_mux_desc_t *mux,
-	unsigned int mux_count,
-	unsigned int gp_dev_id,
-	unsigned int mux_id,
-	unsigned int value);
+    ia_css_rbm_t rbm,
+    ia_css_rbm_mux_desc_t *mux,
+    unsigned int mux_count,
+    unsigned int gp_dev_id,
+    unsigned int mux_id,
+    unsigned int value);
 
 /** \brief Gets the value of a mux.
  * @param rbm      routing bitmap
@@ -144,8 +136,8 @@ ia_css_rbm_set_mux(
 IA_CSS_RBM_MANIFEST_STORAGE_CLASS_H
 int
 ia_css_rbm_get_mux_value(
-	const ia_css_rbm_t *rbm,
-	const ia_css_rbm_mux_desc_t *mux_desc);
+    const ia_css_rbm_t *rbm,
+    const ia_css_rbm_mux_desc_t *mux_desc);
 
 #ifdef __IA_CSS_RBM_MANIFEST_INLINE__
 #include "ia_css_rbm_manifest_impl.h"

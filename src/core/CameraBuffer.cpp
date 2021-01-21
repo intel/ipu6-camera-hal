@@ -157,7 +157,7 @@ void CameraBuffer::setUserBufferInfo(camera_buffer_t *ubuffer)
 
     LOG1("%s: ubuffer->s.MemType: %d, addr: %p, fd: %d", __func__, ubuffer->s.memType,
          ubuffer->addr, ubuffer->dmafd);
-    //update the v4l2 buffer memory with user infro
+    //update the v4l2 buffer memory with user info
     switch (ubuffer->s.memType) {
         case V4L2_MEMORY_USERPTR:
             setAddr(ubuffer->addr, 0);
@@ -174,8 +174,16 @@ void CameraBuffer::setUserBufferInfo(camera_buffer_t *ubuffer)
     }
 
     if (mU->s.streamType == CAMERA_STREAM_INPUT || ubuffer->sequence >= 0) {
+        // update timestamp if raw buffer is selected by user and timestamp is set
+        if (ubuffer->timestamp > 0) {
+            struct timeval timestamp = { 0 };
+            timestamp.tv_sec = ubuffer->timestamp / 1000000000LL;
+            timestamp.tv_usec = (ubuffer->timestamp - timestamp.tv_sec * 1000000000LL) / 1000LL;
+            mV.SetTimestamp(timestamp);
+        }
         mV.SetSequence(ubuffer->sequence);
-        LOG2("%s, input buffer sequence %lld", __func__, ubuffer->sequence);
+        LOG2("%s, input buffer sequence %lld, timestamp %ld", __func__, ubuffer->sequence,
+             ubuffer->timestamp);
     }
 }
 

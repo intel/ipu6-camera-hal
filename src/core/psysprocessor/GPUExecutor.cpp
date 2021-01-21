@@ -30,6 +30,7 @@ extern "C" {
 
 #include "3a/AiqResult.h"
 #include "3a/AiqResultStorage.h"
+#include "AiqInitData.h"
 #include "FormatUtils.h"
 #include "PSysDAG.h"
 #include "SyncManager.h"
@@ -45,6 +46,9 @@ using std::vector;
 
 namespace icamera {
 
+#define STILL_TNR_THRESHOLD_GAIN_ID 722
+#define DEFAULT_TNR_THRESHOLD_GAIN 2.0f
+
 std::mutex GPUExecutor::mGPULock;
 
 GPUExecutor::GPUExecutor(int cameraId, const ExecutorPolicy& policy, vector<string> exclusivePGs,
@@ -54,7 +58,8 @@ GPUExecutor::GPUExecutor(int cameraId, const ExecutorPolicy& policy, vector<stri
           mIntelTNR(nullptr),
           mLastSequence(UINT32_MAX),
           mUseInternalTnrBuffer(useTnrOutBuffer),
-          mOutBufferSize(0) {
+          mOutBufferSize(0),
+          mStillTnrTG(DEFAULT_TNR_THRESHOLD_GAIN) {
     LOG1("@%s %s", __func__, mName.c_str());
 }
 
@@ -102,6 +107,11 @@ int GPUExecutor::createPGs() {
 
 int GPUExecutor::start() {
     LOG1("%s executor:%s", __func__, mName.c_str());
+    if (mStreamId == STILL_STREAM_ID &&
+        getStillTnrTG(mPSysDag->getTuningMode(0), &mStillTnrTG) != OK) {
+        mStillTnrTG = DEFAULT_TNR_THRESHOLD_GAIN;
+        LOGW("%s can't get threshold gain from aiqb, use default", __func__);
+    }
 
     mProcessThread = new ProcessThread(this);
 
@@ -225,6 +235,43 @@ bool GPUExecutor::fetchTnrOutBuffer(int64_t seq, std::shared_ptr<CameraBuffer> b
     return false;
 }
 
+int GPUExecutor::getStillTnrTG(TuningMode mode, float* tg) {
+    CheckError(!tg, UNKNOWN_ERROR, "invalid input");
+    IntelCca* intelCca = IntelCca::getInstance(mCameraId, mode);
+    CheckError(!intelCca, UNKNOWN_ERROR, "%s, cca is nullptr, mode:%d", __func__, mode);
+    cca::cca_cmc cmc;
+    ia_err ret = intelCca->getCMC(&cmc);
+    CheckError(ret != OK, BAD_VALUE, "@%s get cmc data failed", __func__);
+    *tg = cmc.tnr7us_threshold_gain;
+    LOG1("%s threshold gain is %f", __func__, cmc.tnr7us_threshold_gain);
+    return OK;
+}
+
+int GPUExecutor::getTotalGain(int64_t seq, float* totalGain) {
+    CheckError(!totalGain, UNKNOWN_ERROR, "Invalid input");
+    AiqResult* aiqResults =
+        const_cast<AiqResult*>(AiqResultStorage::getInstance(mCameraId)->getAiqResult(seq));
+    if (aiqResults == nullptr) {
+        LOGW("%s: no result for sequence %ld! use the latest instead", __func__, seq);
+        aiqResults =
+            const_cast<AiqResult*>(AiqResultStorage::getInstance(mCameraId)->getAiqResult());
+        CheckError((aiqResults == nullptr), INVALID_OPERATION, "Cannot find available aiq result.");
+    }
+    *totalGain = (aiqResults->mAeResults.exposures[0].exposure->analog_gain *
+                  aiqResults->mAeResults.exposures[0].exposure->digital_gain);
+    return OK;
+}
+
+bool GPUExecutor::isBypassStillTnr(int64_t seq) {
+    if (mStreamId != STILL_STREAM_ID) return false;
+
+    float totalGain = 0.0f;
+    int ret = getTotalGain(seq, &totalGain);
+    CheckError(ret, true, "@%s, Failed to get total gain", __func__);
+    if (totalGain <= mStillTnrTG) return true;
+    return false;
+}
+
 int GPUExecutor::allocTnrOutBufs(uint32_t bufSize) {
     mOutBufferSize = bufSize;
 
@@ -308,6 +355,11 @@ int GPUExecutor::processNewFrame() {
 
     ret = runTnrFrame(inBuf, outBuf);
     CheckError(ret != OK, ret, "@%s: run tnr failed", __func__);
+
+    if (CameraDump::isDumpTypeEnable(DUMP_GPU_TNR) && mStreamId == STILL_STREAM_ID) {
+        CameraDump::dumpImage(mCameraId, inBuf, M_GPUTNR, inBuffers.begin()->first);
+        CameraDump::dumpImage(mCameraId, outBuf, M_GPUTNR, outBuffers.begin()->first);
+    }
 
     // Remove internal output buffers
     for (auto& item : outBuffers) {
@@ -459,6 +511,7 @@ int GPUExecutor::runTnrFrame(const std::shared_ptr<CameraBuffer>& inBuf,
                        : outBuf->getBufferAddr();
     if (!outPtr) return UNKNOWN_ERROR;
 
+    outBuf->setSequence(sequence);
     if (!mIntelTNR) {
         MEMCPY_S(outPtr, bufferSize, inBuf->getBufferAddr(), inBuf->getBufferSize());
         if (memoryType == V4L2_MEMORY_DMABUF) {
@@ -503,8 +556,9 @@ int GPUExecutor::runTnrFrame(const std::shared_ptr<CameraBuffer>& inBuf,
         // when use internal tnr buffer, we don't need to use fd map buffer
         dstFd = -1;
     }
+    bool isTnrParamSyncUpdate = mStreamId == STILL_STREAM_ID ? true : false;
     ret = mIntelTNR->runTnrFrame(inBuf->getBufferAddr(), dstBuf, inBuf->getBufferSize(), dstSize,
-                                 mTnr7usParam, dstFd);
+                                 mTnr7usParam, isTnrParamSyncUpdate, dstFd);
 
     if (ret == OK) {
         if (useInternalBuffer) {
@@ -532,23 +586,15 @@ int GPUExecutor::runTnrFrame(const std::shared_ptr<CameraBuffer>& inBuf,
     CheckError(ret != OK, UNKNOWN_ERROR, " %s tnr7us run frame failed", __func__);
     mLastSequence = sequence;
 
-    if (mStreamId != STILL_STREAM_ID) {
+    if (!isTnrParamSyncUpdate) {
         // still stream will update params in tnr7us, skip async update
-        AiqResult* aiqResults = const_cast<AiqResult*>(
-            AiqResultStorage::getInstance(mCameraId)->getAiqResult(sequence));
-        if (aiqResults == nullptr) {
-            LOGW("%s: no result for sequence %ld! use the latest instead", __func__, sequence);
-            aiqResults =
-                const_cast<AiqResult*>(AiqResultStorage::getInstance(mCameraId)->getAiqResult());
-            CheckError((aiqResults == nullptr), UNKNOWN_ERROR, "Cannot find available aiq result.");
-        }
+        float totalGain = 0.0f;
+        ret = getTotalGain(sequence, &totalGain);
+        CheckError(ret, UNKNOWN_ERROR, "@%s, Failed to get total gain", __func__);
 
-        int gain = static_cast<int>(aiqResults->mAeResults.exposures[0].exposure->analog_gain *
-                                    aiqResults->mAeResults.exposures[0].exposure->digital_gain);
-
-        // update tnr param when total gain changes, gain set to analog_gain * digital_gain.
+        // update tnr param when total gain changes
         bool isTnrParamForceUpdate = icamera::PlatformData::isTnrParamForceUpdate();
-        ret = mIntelTNR->asyncParamUpdate(gain, isTnrParamForceUpdate);
+        ret = mIntelTNR->asyncParamUpdate(static_cast<int>(totalGain), isTnrParamForceUpdate);
     }
 
     LOG2("Exit %s executor name:%s, sequence: %u", __func__, mName.c_str(), inBuf->getSequence());

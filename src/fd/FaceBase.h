@@ -54,6 +54,11 @@ typedef struct CVFaceDetectionAbstractResult {
 
 struct FaceDetectionInitParams {
     unsigned int max_face_num;
+    int cameraId;
+};
+
+struct FaceDetectionDeinitParams {
+    int cameraId;
 };
 
 #ifdef FACE_DETECTION
@@ -73,6 +78,7 @@ struct FaceDetectionRunParams {
     pvl_image_format format;
     int32_t stride;
     int32_t rotation;
+    int cameraId;
 
     FaceDetectionResult results;
 };

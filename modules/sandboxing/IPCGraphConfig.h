@@ -30,7 +30,7 @@ namespace icamera {
 #define MAX_PG_NUMBER (10)                         // Max pg number
 #define MAX_NAME_LENGTH (128)                      // Max length for name
 #define MAX_CONNECTION_COUNT (64)                  // Max connection count
-#define MAX_STREAM_KERNEL_COUNT (500)              // Max kernels info per one stream
+#define MAX_STREAM_KERNEL_COUNT (128)              // Max kernels info per one stream
 
 struct GraphBaseInfo {
     int cameraId;

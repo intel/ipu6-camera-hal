@@ -17,6 +17,7 @@
 #pragma once
 
 #include <memory>
+#include <unordered_map>
 
 #include "iutils/Errors.h"
 #include "modules/algowrapper/IntelFaceDetection.h"
@@ -30,10 +31,10 @@ class IntelFDServer {
 
     status_t init(void* pData, int dataSize);
     status_t run(void* pData, int dataSize, void* imageData);
-    status_t deinit();
+    status_t deinit(void* pData, int dataSize);
 
  private:
-    std::unique_ptr<IntelFaceDetection> mFaceDetection;
+    std::unordered_map<int, std::unique_ptr<IntelFaceDetection>> mFaceDetection;
     IPCIntelFD mIpcFD;
 };
 } /* namespace icamera */

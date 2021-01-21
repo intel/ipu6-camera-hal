@@ -37,13 +37,11 @@
  */
 #define SOF_EVENT_MARGIN (5000000)  // 5ms
 #define SOF_EVENT_MAX_MARGIN (60000000)  // 60ms
-// GPU TNR needs to run extra 2 iterators to converge
-#define TNR_CONVERGE_COUNT 2
 
-#define EXTREME_NEGATIVE_STRENGTH (-60)
-#define EXTREME_POSITIVE_STRENGTH (20)
-
-#define DEFAULT_STRENGTH 0
+#define EXTREME_STRENGTH_LEVEL4 (-120)
+#define EXTREME_STRENGTH_LEVEL3 (-60)
+#define EXTREME_STRENGTH_LEVEL2 (0)
+#define EXTREME_STRENGTH_LEVEL1 (20)
 
 using std::shared_ptr;
 using std::unique_ptr;
@@ -232,33 +230,32 @@ int PSysProcessor::setParameters(const Parameters& param)
         mIspSettings.manualSettings.manualSaturation = (char)enhancement.saturation;
         mIspSettings.eeSetting.strength = enhancement.sharpness;
     } else {
-        mIspSettings.eeSetting.strength = static_cast<char>(DEFAULT_STRENGTH);
+        mIspSettings.eeSetting.strength = static_cast<char>(EXTREME_STRENGTH_LEVEL2);
     }
 
+    mIspSettings.eeSetting.feature_level = ia_isp_feature_level_high;
     camera_edge_mode_t manualEdgeMode;
     ret = param.getEdgeMode(manualEdgeMode);
     if (ret == OK) {
         LOG2("%s: manual edge mode set: %d", __func__, manualEdgeMode);
         switch (manualEdgeMode) {
-            case EDGE_MODE_OFF:
-            case EDGE_MODE_ZERO_SHUTTER_LAGE:
-                mIspSettings.eeSetting.feature_level = ia_isp_feature_level_high;
-                mIspSettings.eeSetting.strength = static_cast<char>(EXTREME_NEGATIVE_STRENGTH);
+            case EDGE_MODE_LEVEL_4:
+                mIspSettings.eeSetting.strength = static_cast<char>(EXTREME_STRENGTH_LEVEL4);
                 break;
-            case EDGE_MODE_FAST:
-                mIspSettings.eeSetting.feature_level = ia_isp_feature_level_high;
+            case EDGE_MODE_LEVEL_3:
+                mIspSettings.eeSetting.strength = static_cast<char>(EXTREME_STRENGTH_LEVEL3);
                 break;
-            case EDGE_MODE_HIGH_QUALITY:
-                mIspSettings.eeSetting.feature_level = ia_isp_feature_level_high;
-                mIspSettings.eeSetting.strength = static_cast<char>(EXTREME_POSITIVE_STRENGTH);
+            case EDGE_MODE_LEVEL_2:
+                mIspSettings.eeSetting.strength = static_cast<char>(EXTREME_STRENGTH_LEVEL2);
+                break;
+            case EDGE_MODE_LEVEL_1:
+                mIspSettings.eeSetting.strength = static_cast<char>(EXTREME_STRENGTH_LEVEL1);
                 break;
             default:
-                mIspSettings.eeSetting.feature_level = ia_isp_feature_level_high;
+                mIspSettings.eeSetting.strength = static_cast<char>(EXTREME_STRENGTH_LEVEL2);
         }
-    } else {
-        LOG2("%s: manual edge mode not set, default enabled", __func__);
-        mIspSettings.eeSetting.feature_level = ia_isp_feature_level_high;
     }
+
     LOG2("%s: ISP EE setting, level: %d, strength: %d",
          __func__, static_cast<int>(mIspSettings.eeSetting.feature_level),
          static_cast<int>(mIspSettings.eeSetting.strength));
@@ -267,37 +264,33 @@ int PSysProcessor::setParameters(const Parameters& param)
     camera_nr_level_t manualNrLevel;
 
     int manualNrModeSet = param.getNrMode(manualNrMode);
-    int manualNrLevelSet = param.getNrLevel(manualNrLevel);
-
-    if (manualNrLevelSet == OK) {
-        mIspSettings.nrSetting.strength = static_cast<char>(manualNrLevel.overall);
-    } else {
-        mIspSettings.nrSetting.strength = static_cast<char>(DEFAULT_STRENGTH);
-    }
-
+    mIspSettings.nrSetting.feature_level = ia_isp_feature_level_high;
+    mIspSettings.nrSetting.strength = static_cast<char>(EXTREME_STRENGTH_LEVEL2);
     if (manualNrModeSet == OK) {
         LOG2("%s: manual NR mode set: %d", __func__, manualNrMode);
         switch (manualNrMode) {
-            case NR_MODE_OFF:
-            case NR_MODE_AUTO:
-            case NR_MODE_MANUAL_NORMAL:
-                mIspSettings.nrSetting.feature_level = ia_isp_feature_level_high;
-                mIspSettings.nrSetting.strength = static_cast<char>(EXTREME_NEGATIVE_STRENGTH);
+            case NR_MODE_LEVEL_4:
+                mIspSettings.nrSetting.strength = static_cast<char>(EXTREME_STRENGTH_LEVEL4);
                 break;
-            case NR_MODE_MANUAL_EXPERT:
-                mIspSettings.nrSetting.feature_level = ia_isp_feature_level_high;
+            case NR_MODE_LEVEL_3:
+                mIspSettings.nrSetting.strength = static_cast<char>(EXTREME_STRENGTH_LEVEL3);
                 break;
-            case NR_MODE_HIGH_QUALITY:
-                mIspSettings.nrSetting.feature_level = ia_isp_feature_level_high;
-                mIspSettings.nrSetting.strength = static_cast<char>(EXTREME_POSITIVE_STRENGTH);
+            case NR_MODE_LEVEL_2:
+                mIspSettings.nrSetting.strength = static_cast<char>(EXTREME_STRENGTH_LEVEL2);
+                break;
+            case NR_MODE_LEVEL_1:
+                mIspSettings.nrSetting.strength = static_cast<char>(EXTREME_STRENGTH_LEVEL1);
                 break;
             default:
-                mIspSettings.nrSetting.feature_level = ia_isp_feature_level_high;
+                mIspSettings.nrSetting.strength = static_cast<char>(EXTREME_STRENGTH_LEVEL2);
         }
-    } else {
-        LOG2("%s: manual NR mode not set, default enabled", __func__);
-        mIspSettings.nrSetting.feature_level = ia_isp_feature_level_high;
     }
+
+    int manualNrLevelSet = param.getNrLevel(manualNrLevel);
+    if (manualNrLevelSet == OK) {
+        mIspSettings.nrSetting.strength = static_cast<char>(manualNrLevel.overall);
+    }
+
     LOG2("%s: ISP NR setting, level: %d, strength: %d",
          __func__, static_cast<int>(mIspSettings.nrSetting.feature_level),
          static_cast<int>(mIspSettings.nrSetting.strength));
@@ -800,14 +793,15 @@ void PSysProcessor::handleStillPipeForTnr(long sequence, CameraBufferPortMap *ds
     LOG2("@%s, seq %ld, hold raw %d, last still seq %ld, still %d", __func__, sequence,
          mHoldRawBuffers, mLastStillTnrSequence, hasStill);
 
-    if (hasStill && sequence != (mLastStillTnrSequence + 1) && mHoldRawBuffers) {
+    bool bypass = mPSysDAGs[mCurConfigMode]->isBypassStillTnr(sequence);
+    if (!bypass && hasStill && sequence != (mLastStillTnrSequence + 1) && mHoldRawBuffers) {
         CameraBufferPortMap fakeTaskBuffers = *dstBuffers;
         for (const auto& item : fakeTaskBuffers) {
             if (item.second && item.second->getStreamUsage() != CAMERA_STREAM_STILL_CAPTURE) {
                 fakeTaskBuffers[item.first] = nullptr;
             }
         }
-        for (int i = TNR_CONVERGE_COUNT; i > 0; i--) {
+        for (int i = PlatformData::getTnrExtraFrameCount(mCameraId); i > 0; i--) {
             CameraBufferPortMap srcBuf;
             {
             AutoMutex lock(mBufferMapLock);
@@ -883,11 +877,11 @@ void PSysProcessor::dispatchTask(CameraBufferPortMap &inBuf, CameraBufferPortMap
         if (mParameterGenerator->getParameters(currentSequence, &params, false) == OK) {
             setParameters(params);
 
-            // Dump raw image if makernote mode is MAKERNOTE_MODE_JPEG for IQ tune
+            // Dump raw image if makernote mode is MAKERNOTE_MODE_JPEG or fake task for IQ tune
             camera_makernote_mode_t makernoteMode = MAKERNOTE_MODE_OFF;
             int ret = params.getMakernoteMode(makernoteMode);
-            if (ret == OK && makernoteMode == MAKERNOTE_MODE_JPEG &&
-                !fakeTask && CameraDump::isDumpTypeEnable(DUMP_JPEG_BUFFER)) {
+            if (((ret == OK && makernoteMode == MAKERNOTE_MODE_JPEG) || fakeTask) &&
+                CameraDump::isDumpTypeEnable(DUMP_JPEG_BUFFER)) {
                 CameraDump::dumpImage(mCameraId, inBuf[MAIN_PORT], M_PSYS, MAIN_PORT);
             }
         }
@@ -896,6 +890,7 @@ void PSysProcessor::dispatchTask(CameraBufferPortMap &inBuf, CameraBufferPortMap
         AutoRMutex rl(mIspSettingsLock);
         mIspSettings.palOverride = nullptr;
         taskParam.mIspSettings = mIspSettings;
+        mParameterGenerator->getRequestId(settingSequence, taskParam.mRequestId);
     }
 
     if (!mThreadRunning) return;

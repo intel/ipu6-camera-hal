@@ -37,11 +37,11 @@ public:
     int init();
     int setSensorInfo(ia_aiq_exposure_sensor_descriptor descriptor);
     int updateParameter(aiq_parameter_t param);
-    void updateAeResult(ia_aiq_ae_results* aeResult);
-    void updateAwbResult(ia_aiq_awb_results* awbResult);
-    void updatePaResult(ia_aiq_pa_results_v1* paResult);
+    void updateAeResult(cca::cca_ae_results* aeResult);
+    void updateAwbResult(cca::cca_awb_results* awbResult);
+    void updatePaResult(cca::cca_pa_params* paResult);
 
-    void fillAfTriggerResult(ia_aiq_af_results *afResults);
+    void fillAfTriggerResult(cca::cca_af_results *afResults);
 
 private:
     void initAeParameter();
@@ -62,9 +62,9 @@ private:
 public:
     int mCameraId;
     // aiq 3a parameters
-    ia_aiq_ae_input_params  mAeParams;
-    ia_aiq_af_input_params  mAfParams;
-    ia_aiq_awb_input_params mAwbParams;
+    cca::cca_ae_input_params mAeParams;
+    cca::cca_af_input_params mAfParams;
+    cca::cca_awb_input_params mAwbParams;
 
     bool mUseManualAwbGain;
     bool mUseManualColorMatrix;
@@ -81,25 +81,6 @@ public:
     bool mAfForceLock; // Lock AF to respond autofocus action triggered by user.
 private:
     static const int MAX_FOCUS_DISTANCE = 5000; // unit is mm
-
-    /*!< ia_aiq_ae_input_params pointer contents */
-    ia_aiq_exposure_sensor_descriptor mSensorDescriptor;
-    ia_rectangle mExposureWindow;
-    ia_coordinate mExposureCoordinate;
-    ia_aiq_ae_features mAeFeatures;
-    ia_aiq_ae_manual_limits mAeManualLimits;
-
-    /*!< ia_aiq_af_input_params pointer contents */
-    ia_aiq_manual_focus_parameters mManualFocusParams;
-    ia_rectangle mFocusRect;
-
-    /*!< ia_aiq_awb_input_params pointer contents */
-    ia_aiq_awb_manual_cct_range mManualCctRange;
-    ia_coordinate mManualWhiteCoordinate;
-
-    long mManualExposureTimeUs[MAX_EXPOSURES_NUM];
-    float mManualAnalogGain[MAX_EXPOSURES_NUM];
-    short mManualIso[MAX_EXPOSURES_NUM];
 
     camera_af_mode_t mAfMode;
     camera_af_trigger_t mAfTrigger;

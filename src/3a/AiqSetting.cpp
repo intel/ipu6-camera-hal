@@ -79,6 +79,14 @@ int AiqSetting::configure(const stream_config_t *streamList)
         }
     }
 
+    // Use pixel array as resolution to calculate region if it is set.
+    camera_coordinate_system_t activePixelArray = PlatformData::getActivePixelArray(mCameraId);
+    if ((activePixelArray.right > activePixelArray.left) &&
+        (activePixelArray.bottom > activePixelArray.top)) {
+        resolution.width = activePixelArray.right - activePixelArray.left;
+        resolution.height = activePixelArray.bottom - activePixelArray.top;
+    }
+
     updateFrameUsage(streamList);
 
     mAiqParam.tuningMode = TUNING_MODE_MAX;
@@ -197,6 +205,15 @@ int AiqSetting::setParameters(const Parameters& params)
 
     int ret = params.getMakernoteMode(mAiqParam.makernoteMode);
     if (ret == NAME_NOT_FOUND) mAiqParam.makernoteMode = MAKERNOTE_MODE_OFF;
+
+    CameraMetadata meta;
+    ParameterHelper::copyMetadata(params, &meta);
+
+    uint32_t tag = CAMERA_LENS_INFO_MINIMUM_FOCUS_DISTANCE;
+    icamera_metadata_entry entry = meta.find(tag);
+    if (entry.count == 1) {
+        mAiqParam.minFocusDistance = entry.data.f[0];
+    }
 
     params.getFocusDistance(mAiqParam.focusDistance);
     params.getShadingMode(mAiqParam.shadingMode);

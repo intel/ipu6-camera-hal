@@ -75,6 +75,7 @@ enum {
 
     DUMP_AAL_OUTPUT = 1 << 23, // 0x800000 Decimal val 8388608
     DUMP_AAL_INPUT = 1 << 24, // 0x1000000 Decimal val 16777216
+    DUMP_GPU_TNR = 1 << 25, // 0x2000000
 };
 
 enum {
@@ -91,6 +92,7 @@ typedef enum {
     M_PSYS,   // PSYS param, payload, frame dump
     M_DEINTR, // De-interlaced frame dump
     M_SWIPOP, // Sw Image processor frame dump
+    M_GPUTNR, // GPU TNR frame dump
 } ModuleType_t;
 
 typedef enum {

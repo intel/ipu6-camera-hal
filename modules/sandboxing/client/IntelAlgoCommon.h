@@ -49,6 +49,8 @@ class IntelAlgoCommon {
     void deregisterGbmBuffer(int32_t bufferHandle, ShmMemUsage usage = CPU_ALGO_SHM);
     bool requestSync(IPC_CMD cmd, int32_t handle);
     bool requestSync(IPC_CMD cmd);
+    ia_err requestSyncCca(IPC_CMD cmd, int32_t handle);
+    ia_err requestSyncCca(IPC_CMD cmd);
     void freeShmMem(const ShmMemInfo& shm, ShmMemUsage usage = CPU_ALGO_SHM);
 
     bool allocateAllShmMems(std::vector<ShmMem>* mems);

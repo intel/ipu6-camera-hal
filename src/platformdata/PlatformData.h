@@ -52,6 +52,8 @@ namespace icamera {
 
 #define FACE_ENGINE_DEFAULT_RUNNING_INTERVAL 1
 
+#define DEFAULT_TNR_EXTRA_FRAME_NUM 2
+
 /* Max number of the RAW buffer number is 32.
  * Max number size of the pipeline depth is 6.
  * Max setting count should be larger than raw buffer number + pipeline depth.
@@ -116,6 +118,7 @@ public:
                 mSensorGainType(SENSOR_GAIN_NONE),
                 mLensCloseCode(0),
                 mEnableAIQ(false),
+                mEnableMkn(true),
                 mSkipFrameV4L2Error(false),
                 mCITMaxMargin(0),
                 mYuvColorRangeMode(CAMERA_FULL_MODE_YUV_COLOR_RANGE),
@@ -159,7 +162,8 @@ public:
                 mPsysBundleWithAic(false),
                 mSwProcessingAlignWithIsp(false),
                 mMaxNvmDataSize(0),
-                mVideoStreamNum(DEFAULT_VIDEO_STREAM_NUM)
+                mVideoStreamNum(DEFAULT_VIDEO_STREAM_NUM),
+                mTnrExtraFrameNum(DEFAULT_TNR_EXTRA_FRAME_NUM)
             {
             }
 
@@ -176,6 +180,7 @@ public:
             int mSensorGainType;
             int mLensCloseCode;
             bool mEnableAIQ;
+            bool mEnableMkn;
             bool mSkipFrameV4L2Error;
             int mCITMaxMargin;
             camera_yuv_color_range_mode_t mYuvColorRangeMode;
@@ -244,10 +249,11 @@ public:
             std::vector<UserToPslOutputMap> mOutputMap;
             int mMaxNvmDataSize;
             std::string mNvmDirectory;
-            /* key: camera module info, value: aiqb name */
-            std::unordered_map<std::string, std::string> mCameraModuleToAiqbMap;
+            /* key: camera module name, value: camera module info */
+            std::unordered_map<std::string, CameraMetadata> mCameraModuleInfoMap;
             std::vector<IGraphType::ScalerInfo> mScalerInfo;
             int mVideoStreamNum;
+            int mTnrExtraFrameNum;
         };
 
         std::vector<CameraInfo> mCameras;
@@ -306,13 +312,6 @@ public:
       * This function must be called when the hal is destroyed.
       */
     static void releaseInstance();
-
-    /**
-     * Check if avaibleSensors is empty
-     *
-     * \return true if has sensor ,otherwise return false.
-     */
-    static bool isSensorAvailable();
 
     /**
      * init PlatformData
@@ -414,6 +413,14 @@ public:
      * \return if AIQ is enabled or not.
      */
     static bool isEnableAIQ(int cameraId);
+
+    /**
+     * Check Mkn is enabled or not
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return if Mkn is enabled or not.
+     */
+    static bool isEnableMkn(int cameraId);
 
     /**
      * Check if sensor digital gain is used or not
@@ -947,24 +954,14 @@ public:
     static void saveAiqd(int cameraId, TuningMode tuningMode, const ia_binary_data& data);
 
     /**
-     * Get cpf and cmc
+     * Get cpf
      *
-     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
-     * \param ispData: isp data in cpf
-     * \param aiqData:  aiq data in cpf
-     * \param otherData: other data in cpf
-     * \param cmcHandle: cmc handle
+     * \param cameraId: [0, MAX_CAMERA_NUMBER]
      * \param mode: tuning mode
-     * \param cmcData: cmd data
+     * \param aiqbData: cpf
      * \return OK if it is successful.
      */
-    static int getCpfAndCmc(int cameraId,
-                            ia_binary_data* ispData,
-                            ia_binary_data* aiqData,
-                            ia_binary_data* otherData,
-                            uintptr_t* cmcHandle,
-                            TuningMode mode = TUNING_MODE_VIDEO,
-                            ia_cmc_t** cmcData = nullptr);
+    static int getCpf(int cameraId, TuningMode mode, ia_binary_data* aiqbData);
 
     /**
      * If dynamic graph config enabled
@@ -1121,26 +1118,45 @@ public:
     static float getIspDigitalGain(int cameraId, float realDigitalGain);
 
     /**
+     * \brief init Makernote
+     * allocate memory resouce for Makernote
+     *
+     * param[in] int cameraId: camera ID
+     * \param[in] cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \param[in] TuningMode tuningMode
+     *
+     * return OK if it is successful, fails for other values.
+     */
+    static int initMakernote(int cameraId, TuningMode tuningMode);
+
+    /**
+     * \brief deinit Makernote
+     * free memory resouce for Makernote
+     *
+     * param[in] int cameraId: camera ID
+     * \param[in] cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \param[in] TuningMode tuningMode
+     *
+     * return OK if it is successful, fails for other values.
+     */
+    static int deinitMakernote(int cameraId, TuningMode tuningMode);
+
+    /**
      * \brief Save Makernote by ia_mkn_trg mode
      *
+     * param[in] int cameraId: camera ID
      * \param[in] cameraId: [0, MAX_CAMERA_NUMBER - 1]
      * \param[in] camera_makernote_mode_t: MAKERNOTE_MODE_JPEG is corresponding
      *           to ia_mkn_trg_section_1 for Normal Jpeg capture;
      *           MAKERNOTE_MODE_RAW is corresponding to ia_mkn_trg_section_2
      *           for Raw image capture.
      * \param[in] int64_t sequence: the sequence in latest AiqResult
+     * param[in] TuningMode tuningMode: tuning mode
      *
      * \return OK if get Makernote successfully, otherwise return ERROR.
      */
     static int saveMakernoteData(int cameraId, camera_makernote_mode_t makernoteMode,
-                                 int64_t sequence);
-
-    /**
-     * \brief Get ia_mkn (Makernote) handle.
-     *
-     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
-     */
-    static ia_mkn *getMknHandle(int cameraId);
+                                 int64_t sequence, TuningMode tuningMode);
 
     /**
      * \brief Update Makernote timestamp.
@@ -1213,5 +1229,9 @@ public:
      * Check if update tnr7us params every frame
      */
      static bool isTnrParamForceUpdate();
+     /**
+     * the extra frame count for still stream
+     */
+     static int getTnrExtraFrameCount(int cameraId);
 };
 } /* namespace icamera */

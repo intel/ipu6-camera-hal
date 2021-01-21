@@ -22,8 +22,11 @@
 #include "ia_ltm_types.h"
 #include "ia_dvs_types.h"
 #include "ia_isp_bxt_statistics_types.h"
+#include "IntelCCATypes.h"
 
 namespace icamera {
+
+#define MIN_TONEMAP_POINTS 64
 
 /*!> Top limit for the RGBS grid size */
 static const unsigned int MAX_AE_GRID_SIZE = 2048;
@@ -67,19 +70,15 @@ static const float AWB_GAIN_RANGE_USER = AWB_GAIN_MAX - AWB_GAIN_MIN;
 static const int MAX_CUSTOM_CONTROLS_PARAM_SIZE = 1024;
 
 namespace AiqUtils {
-int dumpAeResults(const ia_aiq_ae_results &aeResult);
-int dumpAfResults(const ia_aiq_af_results &afResult);
-int dumpAwbResults(const ia_aiq_awb_results &awbResult);
+int dumpAeResults(const cca::cca_ae_results &aeResult);
+int dumpAfResults(const cca::cca_af_results &afResult);
+int dumpAwbResults(const cca::cca_awb_results &awbResult);
 
-int deepCopyAeResults(const ia_aiq_ae_results& src, ia_aiq_ae_results* dst);
-int deepCopyAfResults(const ia_aiq_af_results& src, ia_aiq_af_results* dst);
-int deepCopyAwbResults(const ia_aiq_awb_results& src, ia_aiq_awb_results* dst);
+int deepCopyAeResults(const cca::cca_ae_results& src, cca::cca_ae_results* dst);
+int deepCopyAfResults(const cca::cca_af_results& src, cca::cca_af_results* dst);
+int deepCopyAwbResults(const cca::cca_awb_results& src, cca::cca_awb_results* dst);
 int deepCopyGbceResults(const ia_aiq_gbce_results& src, ia_aiq_gbce_results* dst);
-int deepCopyPaResults(const ia_aiq_pa_results_v1& src, ia_aiq_pa_results_v1* dst,
-                      ia_aiq_advanced_ccm_t* preferredAcm);
-int deepCopySaResults(const ia_aiq_sa_results_v1& src, ia_aiq_sa_results_v1* dst);
-int deepCopyLtmResults(const ia_ltm_results& src, ia_ltm_results* dst);
-int deepCopyLtmDRCParams(const ia_ltm_drc_params& src, ia_ltm_drc_params* dst);
+int deepCopyPaResults(const cca::cca_pa_params& src, cca::cca_pa_params* dst);
 int deepCopyDvsResults(const ia_dvs_morph_table& src, ia_dvs_morph_table* dst);
 int deepCopyDvsResults(const ia_dvs_image_transformation& src, ia_dvs_image_transformation* dst);
 
@@ -100,12 +99,12 @@ float convertSpeedModeToTime(camera_converge_speed_t mode);
 
 ia_aiq_frame_use convertFrameUsageToIaFrameUsage(int frameUsage);
 
-void applyTonemapGamma(float gamma, ia_aiq_gbce_results* results);
-void applyTonemapSRGB(ia_aiq_gbce_results* results);
-void applyTonemapREC709(ia_aiq_gbce_results* results);
-void applyTonemapCurve(const camera_tonemap_curves_t& curves, ia_aiq_gbce_results* results);
+void applyTonemapGamma(float gamma, cca::cca_gbce_params* results);
+void applyTonemapSRGB(cca::cca_gbce_params* results);
+void applyTonemapREC709(cca::cca_gbce_params* results);
+void applyTonemapCurve(const camera_tonemap_curves_t& curves, cca::cca_gbce_params* results);
 void applyAwbGainForTonemapCurve(const camera_tonemap_curves_t& curves,
-                                 ia_aiq_awb_results* results);
+                                 cca::cca_awb_results* results);
 
 // Resize a 2D array with linear interpolation
 // For some cases, we need to upscale or downscale a 2D array.
@@ -181,7 +180,7 @@ template int resize2dArray<int>(
     const int* a_src, int a_src_w, int a_src_h,
     int* a_dst, int a_dst_w, int a_dst_h);
 
-float calculateHyperfocalDistance(const ia_cmc_t &cmcData);
+float calculateHyperfocalDistance(const cca::cca_cmc &cmc);
 
 } // namespace AiqUtils
 

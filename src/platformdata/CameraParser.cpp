@@ -49,7 +49,7 @@ CameraParser::CameraParser(MediaControl *mc, PlatformData::StaticCfg *cfg) :
 
     // Get common data from libcamhal_profile.xml
     int ret = getDataFromXmlFile(LIBCAMHAL_PROFILE_NAME);
-    CheckError(ret != OK, VOID_VALUE, "Failed to get libcamhal profile data frome %s",
+    CheckError(ret != OK, VOID_VALUE, "Failed to get libcamhal profile data from %s",
                LIBCAMHAL_PROFILE_NAME);
 
     mGenericStaticMetadataToTag = {
@@ -99,7 +99,7 @@ CameraParser::CameraParser(MediaControl *mc, PlatformData::StaticCfg *cfg) :
         {"sync.maxLatency", CAMERA_SYNC_MAX_LATENCY},
     };
 
-    // Get sensor data frome sensor xml.
+    // Get sensor data from sensor xml.
     CheckError(mc == nullptr, VOID_VALUE, "@%s, mc is nullptr", __func__);
     mMetadataCache = new long[mMetadataCacheSize];
     getSensorDataFromXmlFile();
@@ -285,6 +285,8 @@ void CameraParser::handleSensor(CameraParser *profiles, const char *name, const 
         getSupportedFormat(atts[1], pCurrentCam->mPSysFormat);
     } else if (strcmp(name, "enableAIQ") == 0) {
         pCurrentCam->mEnableAIQ = strcmp(atts[1], "true") == 0;
+    } else if (strcmp(name, "enableMkn") == 0) {
+        pCurrentCam->mEnableMkn = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "useCrlModule") == 0) {
         pCurrentCam->mUseCrlModule = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "skipFrameV4L2Error") == 0) {
@@ -302,10 +304,6 @@ void CameraParser::handleSensor(CameraParser *profiles, const char *name, const 
     } else if (strcmp(name, "lensHwType") == 0) {
         if (strcmp(atts[1], "LENS_VCM_HW") == 0) {
             pCurrentCam->mLensHwType = LENS_VCM_HW;
-// IPU4_FEATURE_S
-        } else if (strcmp(atts[1], "LENS_PWM_HW") == 0) {
-            pCurrentCam->mLensHwType = LENS_PWM_HW;
-// IPU4_FEATURE_E
         } else {
             LOGE("unknown Lens HW type %s, set to LENS_NONE_HW", atts[1]);
             pCurrentCam->mLensHwType = LENS_NONE_HW;
@@ -436,23 +434,6 @@ void CameraParser::handleSensor(CameraParser *profiles, const char *name, const 
         pCurrentCam->mMaxNvmDataSize = atoi(atts[1]);
     } else if (strcmp(name, "nvmDirectory") == 0) {
         pCurrentCam->mNvmDirectory = atts[1];
-    } else if (strcmp(name, "cameraModuleToAiqbMap") == 0) {
-        int size = strlen(atts[1]);
-        char src[size + 1];
-        MEMCPY_S(src, size, atts[1], size);
-        src[size] = '\0';
-
-        char* savePtr = nullptr;
-        char* tablePtr = strtok_r(src, ",", &savePtr);
-        while (tablePtr) {
-            std::string key(tablePtr);
-            tablePtr = strtok_r(nullptr, ",", &savePtr);
-            CheckError(tablePtr == nullptr, VOID_VALUE, "value is nullptr");
-            std::string value(tablePtr);
-            pCurrentCam->mCameraModuleToAiqbMap[key] = value;
-
-            tablePtr = strtok_r(nullptr, ",", &savePtr);
-        }
     } else if (strcmp(name, "isISYSCompression") == 0) {
         pCurrentCam->mISYSCompression = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "isPSACompression") == 0) {
@@ -484,6 +465,9 @@ void CameraParser::handleSensor(CameraParser *profiles, const char *name, const 
     } else if (strcmp(name, "videoStreamNum") == 0) {
         int val = atoi(atts[1]);
         pCurrentCam->mVideoStreamNum = val > 0 ? val : DEFAULT_VIDEO_STREAM_NUM;
+    } else if (strcmp(name, "tnrExtraFrameNum") == 0) {
+        int val = atoi(atts[1]);
+        pCurrentCam->mTnrExtraFrameNum = val > 0 ? val : DEFAULT_TNR_EXTRA_FRAME_NUM;
     }
 }
 
@@ -1613,7 +1597,7 @@ void CameraParser::handleStaticMetaData(CameraParser *profiles, const char *name
         mMetadata.update(INTEL_INFO_SENSOR_MOUNT_TYPE, &mountType, 1);
         LOGXML("@%s, sensor mount type: %d", __func__, mountType);
     } else if (strcmp(name, "StaticMetadata") != 0) { // Make sure it doesn't reach the end of StaticMetadata.
-        handleGenericStaticMetaData(name, atts[1]);
+        handleGenericStaticMetaData(name, atts[1], &mMetadata);
     }
 }
 
@@ -1622,9 +1606,12 @@ void CameraParser::handleStaticMetaData(CameraParser *profiles, const char *name
  *
  * \param name: the element's name.
  * \param src: the element's value, only include data and separator 'x' or ','.
+ * \param metadata: used to save metadata
  */
-void CameraParser::handleGenericStaticMetaData(const char *name, const char *src)
+void CameraParser::handleGenericStaticMetaData(const char* name, const char* src,
+                                               CameraMetadata* metadata)
 {
+    CheckError(!metadata, VOID_VALUE, "metadata is nullptr");
     uint32_t tag = -1;
     if (mGenericStaticMetadataToTag.find(name) != mGenericStaticMetadataToTag.end()) {
         tag = mGenericStaticMetadataToTag[name];
@@ -1684,22 +1671,22 @@ void CameraParser::handleGenericStaticMetaData(const char *name, const char *src
 
     switch (tagType) {
     case ICAMERA_TYPE_BYTE:
-        mMetadata.update(tag, data.u8, index);
+        metadata->update(tag, data.u8, index);
         break;
     case ICAMERA_TYPE_INT32:
-        mMetadata.update(tag, data.i32, index);
+        metadata->update(tag, data.i32, index);
         break;
     case ICAMERA_TYPE_INT64:
-        mMetadata.update(tag, data.i64, index);
+        metadata->update(tag, data.i64, index);
         break;
     case ICAMERA_TYPE_FLOAT:
-        mMetadata.update(tag, data.f, index);
+        metadata->update(tag, data.f, index);
         break;
     case ICAMERA_TYPE_DOUBLE:
-        mMetadata.update(tag, data.d, index);
+        metadata->update(tag, data.d, index);
         break;
     case ICAMERA_TYPE_RATIONAL:
-        mMetadata.update(tag, data.r, index / 2);
+        metadata->update(tag, data.r, index / 2);
         break;
     }
 }
@@ -1729,6 +1716,12 @@ void CameraParser::startParseElement(void *userData, const char *name, const cha
             } else if (strcmp(name, "StaticMetadata") == 0) {
                 profiles->mInStaticMetadata = true;
                 LOGXML("@%s %s, mInStaticMetadata is set to true", __func__, name);
+            } else if (strncmp(name, "CameraModuleInfo_", strlen("CameraModuleInfo_")) == 0) {
+                // tag name like this: CameraModuleInfo_XXX
+                std::string tagName(name);
+                profiles->mCameraModuleName = tagName.substr(strlen("CameraModuleInfo_"));
+                LOGXML("@%s, mCameraModuleInfo %s is set", __func__, name);
+                break;
             }
 
             if (profiles->mInMediaCtlCfg) {
@@ -1737,6 +1730,11 @@ void CameraParser::startParseElement(void *userData, const char *name, const cha
             } else if (profiles->mInStaticMetadata) {
                 // The StaticMetadata belongs to the sensor segments
                 profiles->handleStaticMetaData(profiles, name, atts);
+            } else if (!profiles->mCameraModuleName.empty()) {
+                // The CameraModuleInfo belongs to the sensor segments
+                LOGXML("@%s, name:%s, atts[1]:%s, profiles->mCurrentSensor:%d", __func__,
+                       name, atts[1], profiles->mCurrentSensor);
+                profiles->handleGenericStaticMetaData(name, atts[1], &profiles->mCameraModuleMetadata);
             } else {
                 profiles->handleSensor(profiles, name, atts);
             }
@@ -1797,6 +1795,15 @@ void CameraParser::endParseElement(void *userData, const char *name)
     if (strcmp(name, "StaticMetadata") == 0) {
         LOGXML("@%s %s, mInStaticMetadata is set to false", __func__, name);
         profiles->mInStaticMetadata = false;
+    }
+
+    if (strncmp(name, "CameraModuleInfo_", strlen("CameraModuleInfo_")) == 0) {
+        LOGXML("@%s Camera Module Name is %s", __func__, name);
+        if (!profiles->mCameraModuleName.empty()) {
+            profiles->pCurrentCam->mCameraModuleInfoMap[profiles->mCameraModuleName]
+                = mCameraModuleMetadata;
+            profiles->mCameraModuleName.clear();
+        }
     }
 
     if (strcmp(name, "Common") == 0)
@@ -1881,7 +1888,7 @@ void CameraParser::getSensorDataFromXmlFile(void)
         sensorName.append(sensor);
         sensorName.append(".xml");
         int ret = getDataFromXmlFile(sensorName);
-        CheckError(ret != OK, VOID_VALUE, "Failed to get sensor profile data frome %s", sensorName.c_str());
+        CheckError(ret != OK, VOID_VALUE, "Failed to get sensor profile data from %s", sensorName.c_str());
     }
 }
 

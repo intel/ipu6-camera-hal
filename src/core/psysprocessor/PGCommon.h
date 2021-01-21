@@ -83,7 +83,7 @@ public:
     static int getFrameSize(int format, int width, int height,
                             bool needAlignedHeight = false, bool needExtraSize = true, bool needCompression = false);
 
-    PGCommon(int pgId, const std::string& pgName, ia_uid terminalBaseUid = 0);
+    PGCommon(int cameraId, int pgId, const std::string& pgName, ia_uid terminalBaseUid = 0);
     virtual ~PGCommon();
     void setShareReferPool(std::shared_ptr<ShareReferBufferPool> referPool) { mShareReferPool = referPool; }
 
@@ -147,6 +147,7 @@ protected:
     virtual int setTerminalParams(const ia_css_frame_format_type* frameFormatTypes);
     virtual int configureFragmentDesc();
     int configureTerminalFragmentDesc(int termIdx, const ia_p2p_fragment_desc* srcDesc);
+    int configureFrameDesc();
     ia_css_process_group_t* createPG(CIPR::Buffer** pgBuffer);
     int createCommands();
     int createCommand(CIPR::Buffer* pg, CIPR::Command** cmd, CIPR::Buffer** extBuffer, int bufCount);
@@ -199,6 +200,7 @@ protected:
     CIPR::Buffer* mPGParamsBuffer = nullptr;
     std::unique_ptr<IntelPGParam> mPGParamAdapt;
 
+    int mCameraId;
     int mPGId;
     std::string mName;  // For debug
     ia_uid mTerminalBaseUid;

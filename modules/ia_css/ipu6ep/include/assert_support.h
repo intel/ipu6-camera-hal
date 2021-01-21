@@ -1,26 +1,18 @@
-/**
-* INTEL CONFIDENTIAL
-*
-* Copyright (C) 2013 - 2018 Intel Corporation.
-* All Rights Reserved.
-*
-* The source code contained or described herein and all documents
-* related to the source code ("Material") are owned by Intel Corporation
-* or licensors. Title to the Material remains with Intel
-* Corporation or its licensors. The Material contains trade
-* secrets and proprietary and confidential information of Intel or its
-* licensors. The Material is protected by worldwide copyright
-* and trade secret laws and treaty provisions. No part of the Material may
-* be used, copied, reproduced, modified, published, uploaded, posted,
-* transmitted, distributed, or disclosed in any way without Intel's prior
-* express written permission.
-*
-* No License under any patent, copyright, trade secret or other intellectual
-* property right is granted to or conferred upon you by disclosure or
-* delivery of the Materials, either expressly, by implication, inducement,
-* estoppel or otherwise. Any license under such intellectual property rights
-* must be express and approved by Intel in writing.
-*/
+/*
+ * Copyright (C) 2020 Intel Corporation.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #ifndef __ASSERT_SUPPORT_H
 #define __ASSERT_SUPPORT_H
@@ -70,11 +62,11 @@
  *
  * example:
  *  COMPILATION_ERROR_IF( sizeof(struct host_sp_queues) !=
- *			SIZE_OF_HOST_SP_QUEUES_STRUCT);
+ *            SIZE_OF_HOST_SP_QUEUES_STRUCT);
  *
  * verify that the macro indeed triggers a compilation error with your compiler:
  *  COMPILATION_ERROR_IF( sizeof(struct host_sp_queues) !=
- *			(sizeof(struct host_sp_queues)+1) );
+ *            (sizeof(struct host_sp_queues)+1) );
  *
  * Not all compilers will trigger an error with this macro;
  * use a search engine to search for BUILD_BUG_ON to find other methods.
@@ -154,12 +146,12 @@
  * but that causes many compiler warnings (==errors) under Android
  * because it seems that the BUG_ON() macro is not seen as a check by
  * gcc like the BUG() macro is. */
-#define assert(cnd)							\
-	do {								\
-		if (!(cnd)) {						\
-			BUG();						\
-		}							\
-	} while (0)
+#define assert(cnd)                            \
+    do {                                \
+        if (!(cnd)) {                        \
+            BUG();                        \
+        }                            \
+    } while (0)
 #endif /*KERNEL_ASSERT_TO_BUG*/
 
 #ifdef KERNEL_ASSERT_TO_BUG_ON
@@ -171,15 +163,15 @@
 #endif /*KERNEL_ASSERT_TO_WARN_ON*/
 
 #ifdef KERNEL_ASSERT_TO_WARN_ON_INF_LOOP
-#define assert(cnd)							\
-	do {								\
-		int not_cnd = !(cnd);					\
-		WARN_ON(not_cnd);					\
-		if (not_cnd) {						\
-			for (;;) {					\
-			}						\
-		}							\
-	} while (0)
+#define assert(cnd)                            \
+    do {                                \
+        int not_cnd = !(cnd);                    \
+        WARN_ON(not_cnd);                    \
+        if (not_cnd) {                        \
+            for (;;) {                    \
+            }                        \
+        }                            \
+    } while (0)
 #endif /*KERNEL_ASSERT_TO_WARN_ON_INF_LOOP*/
 
 #ifdef KERNEL_ASSERT_UNDEFINED
@@ -208,9 +200,9 @@
 extern void _compile_time_assert(void);
 STORAGE_CLASS_INLINE void compile_time_assert(unsigned cond)
 {
-	/* Call undefined function if cond is false */
-	if (!cond)
-		_compile_time_assert();
+    /* Call undefined function if cond is false */
+    if (!cond)
+        _compile_time_assert();
 }
 #endif
 #endif /* PIPE_GENERATION */

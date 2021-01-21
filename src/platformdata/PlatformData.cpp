@@ -84,12 +84,6 @@ PlatformData::~PlatformData() {
     mAiqInitData.clear();
 }
 
-bool PlatformData::isSensorAvailable() {
-    LOG2("@%s", __func__);
-
-    return !getInstance()->mStaticCfg.mCommonConfig.availableSensors.empty();
-}
-
 int PlatformData::init() {
     LOG2("@%s", __func__);
 
@@ -97,15 +91,21 @@ int PlatformData::init() {
 
     StaticCfg *staticCfg = &(getInstance()->mStaticCfg);
     for (size_t i = 0; i < staticCfg->mCameras.size(); i++) {
+        std::string camModuleName;
         AiqInitData* aiqInitData =
             new AiqInitData(staticCfg->mCameras[i].sensorName,
                             getCameraCfgPath(),
                             staticCfg->mCameras[i].mSupportedTuningConfig,
-                            staticCfg->mCameras[i].mLardTagsConfig,
                             staticCfg->mCameras[i].mNvmDirectory,
-                            staticCfg->mCameras[i].mMaxNvmDataSize,
-                            staticCfg->mCameras[i].mCameraModuleToAiqbMap);
+                            staticCfg->mCameras[i].mMaxNvmDataSize, &camModuleName);
         getInstance()->mAiqInitData.push_back(aiqInitData);
+
+        if (!camModuleName.empty() &&
+            staticCfg->mCameras[i].mCameraModuleInfoMap.find(camModuleName) !=
+            staticCfg->mCameras[i].mCameraModuleInfoMap.end()) {
+            ParameterHelper::merge(staticCfg->mCameras[i].mCameraModuleInfoMap[camModuleName],
+                                  &staticCfg->mCameras[i].mCapability);
+        }
     }
 
     return OK;
@@ -192,6 +192,11 @@ int PlatformData::getCITMaxMargin(int cameraId)
 bool PlatformData::isEnableAIQ(int cameraId)
 {
     return getInstance()->mStaticCfg.mCameras[cameraId].mEnableAIQ;
+}
+
+bool PlatformData::isEnableMkn(int cameraId)
+{
+    return getInstance()->mStaticCfg.mCameras[cameraId].mEnableMkn;
 }
 
 bool PlatformData::isEnableLtmThread(int cameraId)
@@ -1073,23 +1078,15 @@ void PlatformData::saveAiqd(int cameraId, TuningMode tuningMode, const ia_binary
     aiqInitData->saveAiqd(tuningMode, data);
 }
 
-// load cpf when tuning file (.aiqb) is available
-int PlatformData::getCpfAndCmc(int cameraId,
-                               ia_binary_data* ispData,
-                               ia_binary_data* aiqData,
-                               ia_binary_data* otherData,
-                               uintptr_t* cmcHandle,
-                               TuningMode mode,
-                               ia_cmc_t** cmcData)
+int PlatformData::getCpf(int cameraId, TuningMode mode, ia_binary_data* aiqbData)
 {
-    CheckError(cameraId >= static_cast<int>(getInstance()->mAiqInitData.size()) ||
-               cameraId >= MAX_CAMERA_NUMBER, BAD_VALUE, "@%s, bad cameraId:%d",
-               __func__, cameraId);
+    CheckError(cameraId >= MAX_CAMERA_NUMBER, BAD_VALUE,
+               "@%s, bad cameraId:%d", __func__, cameraId);
     CheckError(getInstance()->mStaticCfg.mCameras[cameraId].mSupportedTuningConfig.empty(),
                INVALID_OPERATION, "@%s, the tuning config in xml does not exist", __func__);
 
     AiqInitData* aiqInitData = getInstance()->mAiqInitData[cameraId];
-    return aiqInitData->getCpfAndCmc(ispData, aiqData, otherData, cmcHandle, mode, cmcData);
+    return aiqInitData->getCpf(mode, aiqbData);
 }
 
 bool PlatformData::isCSIBackEndCapture(int cameraId)
@@ -1238,7 +1235,10 @@ camera_coordinate_system_t PlatformData::getActivePixelArray(int cameraId)
     camera_coordinate_system_t arraySize;
     CLEAR(arraySize);
 
-    getInstance()->mStaticCfg.mCameras[cameraId].mCapability.getSensorActiveArraySize(arraySize);
+    Parameters* param = &getInstance()->mStaticCfg.mCameras[cameraId].mCapability;
+    if (param->getSensorActiveArraySize(arraySize) != OK) {
+        return { 0, 0, 0, 0 };
+    }
 
     return {arraySize.left, arraySize.top, arraySize.right, arraySize.bottom};
 }
@@ -1296,21 +1296,28 @@ float PlatformData::getIspDigitalGain(int cameraId, float realDigitalGain)
     return ispDg;
 }
 
+int PlatformData::initMakernote(int cameraId, TuningMode tuningMode)
+{
+    CheckError(cameraId >= static_cast<int>(getInstance()->mAiqInitData.size()), BAD_VALUE,
+               "@%s, bad cameraId:%d", __func__, cameraId);
+    return getInstance()->mAiqInitData[cameraId]->initMakernote(cameraId, tuningMode);
+}
+
+int PlatformData::deinitMakernote(int cameraId, TuningMode tuningMode)
+{
+    CheckError(cameraId >= static_cast<int>(getInstance()->mAiqInitData.size()), BAD_VALUE,
+               "@%s, bad cameraId:%d", __func__, cameraId);
+    return getInstance()->mAiqInitData[cameraId]->deinitMakernote(cameraId, tuningMode);
+}
+
 int PlatformData::saveMakernoteData(int cameraId, camera_makernote_mode_t makernoteMode,
-                                    int64_t sequence)
+                                    int64_t sequence, TuningMode tuningMode)
 {
     CheckError(cameraId >= static_cast<int>(getInstance()->mAiqInitData.size()), BAD_VALUE,
                "@%s, bad cameraId:%d", __func__, cameraId);
 
-    return getInstance()->mAiqInitData[cameraId]->saveMakernoteData(makernoteMode, sequence);
-}
-
-void* PlatformData::getMknHandle(int cameraId)
-{
-    CheckError(cameraId >= static_cast<int>(getInstance()->mAiqInitData.size()), nullptr,
-               "@%s, bad cameraId:%d", __func__, cameraId);
-
-    return getInstance()->mAiqInitData[cameraId]->getMknHandle();
+    return getInstance()->mAiqInitData[cameraId]->saveMakernoteData(cameraId, makernoteMode,
+                                                                    sequence, tuningMode);
 }
 
 void PlatformData::updateMakernoteTimeStamp(int cameraId, int64_t sequence, uint64_t timestamp)
@@ -1396,4 +1403,8 @@ bool PlatformData::isTnrParamForceUpdate()
     return getInstance()->mStaticCfg.mCommonConfig.isTnrParamForceUpdate;
 }
 
+int PlatformData::getTnrExtraFrameCount(int cameraId)
+{
+    return getInstance()->mStaticCfg.mCameras[cameraId].mTnrExtraFrameNum;
+}
 } // namespace icamera

@@ -790,9 +790,6 @@ int MediaControl::setFormat(int cameraId, const McFormat *format, int targetWidt
     struct v4l2_subdev_format fmt = {};
     fmt.pad = format->pad;
     fmt.which = V4L2_SUBDEV_FORMAT_ACTIVE;
-// IPU4_FEATURE_S
-    fmt.stream = format->stream;
-// IPU4_FEATURE_E
     fmt.format = mbusfmt;
     ret = subDev->SetFormat(fmt);
     CheckError(ret < 0, BAD_VALUE, "set format %s [%d:%d] [%dx%d] %s failed.",
@@ -818,9 +815,6 @@ int MediaControl::setFormat(int cameraId, const McFormat *format, int targetWidt
                 tmt.format = mbusfmt;
                 tmt.pad = link->sink->index;
                 tmt.which = V4L2_SUBDEV_FORMAT_ACTIVE;
-// IPU4_FEATURE_S
-                tmt.stream = format->stream;
-// IPU4_FEATURE_E
                 subDev->SetFormat(tmt);
             }
         }

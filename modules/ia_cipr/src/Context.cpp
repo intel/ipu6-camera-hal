@@ -78,12 +78,12 @@ Result Context::getMemory(MemoryDesc* mem, MemoryDesc* out) {
     CheckError(!out, Result::InvaildArg, "@%s, out is nullptr", __func__);
 
     if (!(mInitFlag == Context::Flags::DEBUG) && (mem->flags & MemoryFlag::HardwareOnly)) {
-        icamera::LOG2("%s: host cannot access HW only memory!", __func__);
+        LOG2("%s: host cannot access HW only memory!", __func__);
         return Result::GeneralError;
     }
 
     if ((mem->flags & MemoryFlag::MemoryHandle) && !(mem->flags & MemoryFlag::CpuPtr)) {
-        icamera::LOG2("%s: fallback host address mapping not implemented!", __func__);
+        LOG2("%s: fallback host address mapping not implemented!", __func__);
         return Result::GeneralError;
     }
 
@@ -170,7 +170,7 @@ Result Context::doIoctl(int request, void* ptr) {
     int errnoCopy = errno;
 
     if (res < 0) {
-        icamera::LOG2("Ioctl returned error: %s", strerror(errnoCopy));
+        LOG2("Ioctl returned error: %s", strerror(errnoCopy));
         switch (errnoCopy) {
             case ENOMEM:
                 return Result::NoMemory;
@@ -211,11 +211,11 @@ Result Context::registerBuffer(MemoryDesc* mem) {
         }
 
         if (!(ioc_buffer->flags & IPU_BUFFER_FLAG_DMA_HANDLE)) {
-            icamera::LOG2("CIPR: IOC_GETBUF succeed but did not return dma handle");
+            LOG2("CIPR: IOC_GETBUF succeed but did not return dma handle");
             CIPR::freeMemory(ioc_buffer);
             return Result::InternalError;
         } else if (ioc_buffer->flags & IPU_BUFFER_FLAG_USERPTR) {
-            icamera::LOG2("CIPR: IOC_GETBUF succeed but did not consume the userptr flag");
+            LOG2("CIPR: IOC_GETBUF succeed but did not consume the userptr flag");
             CIPR::freeMemory(ioc_buffer);
             return Result::InternalError;
         }
@@ -243,7 +243,7 @@ Result Context::registerBuffer(MemoryDesc* mem) {
     mem->sysBuff = ioc_buffer;
     mem->flags |= MemoryFlag::Migrated;
 
-    icamera::LOG2("%s: registered %p -> fd %d size:%u offset:%u bytes_used:%u", __func__,
+    LOG2("%s: registered %p -> fd %d size:%u offset:%u bytes_used:%u", __func__,
                   mem->cpuPtr, ioc_buffer->base.fd, ioc_buffer->len, ioc_buffer->data_offset,
                   ioc_buffer->bytes_used);
 
@@ -265,7 +265,7 @@ Result Context::unregisterBuffer(MemoryDesc* mem) {
     Result res = doIoctl(static_cast<int>(IPU_IOC_UNMAPBUF),
                          reinterpret_cast<void*>((intptr_t)ioc_buffer->base.fd));
     if (res != Result::OK) {
-        icamera::LOG2("%s: cannot unmap buffer fd %d, possibly already unmapped", __func__,
+        LOG2("%s: cannot unmap buffer fd %d, possibly already unmapped", __func__,
                       ioc_buffer->base.fd);
     }
 
@@ -285,7 +285,7 @@ Result Context::psysClose(int fd) {
     int error = errno;
 
     if (res < 0) {
-        icamera::LOG2("Close returned error: %s", strerror(error));
+        LOG2("Close returned error: %s", strerror(error));
         switch (error) {
             case EBADF:
                 return Result::InvaildArg;

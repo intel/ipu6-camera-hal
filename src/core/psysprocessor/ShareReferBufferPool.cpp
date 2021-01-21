@@ -54,6 +54,7 @@ int32_t ShareReferBufferPool::setReferPair(const std::string& producerPgName, in
     pair->consumerPgName = consumerPgName;
     pair->consumerId = consumerId;
     pair->busy = false;
+    pair->active = true;
     LOG1("%s: %s:%lx -> %s:%lx", __func__, producerPgName.c_str(), producerId,
          consumerPgName.c_str(), consumerId);
     AutoMutex l(mPairLock);
@@ -95,6 +96,8 @@ int32_t ShareReferBufferPool::getMinBufferNum(int64_t id) {
 }
 
 int32_t ShareReferBufferPool::registerReferBuffers(int64_t id, CIPR::Buffer* buffer) {
+    CheckError(!buffer, BAD_VALUE, "%s, buffer is nullptr", __func__);
+
     AutoMutex l(mPairLock);
     UserPair* pair = findUserPair(id);
     CheckError(!pair, UNKNOWN_ERROR, "Can't find id %lx", id);
@@ -104,6 +107,18 @@ int32_t ShareReferBufferPool::registerReferBuffers(int64_t id, CIPR::Buffer* buf
     std::vector<ReferBuffer>& bufV =
         (id == pair->producerId) ? pair->mProducerBuffers : pair->mConsumerBuffers;
     bufV.push_back(referBuf);
+
+    if (pair->active && !pair->mProducerBuffers.empty() && !pair->mConsumerBuffers.empty()) {
+        int32_t srcSize = 0, dstSize = 0;
+        pair->mProducerBuffers.front().buffer->getMemorySize(&srcSize);
+        pair->mConsumerBuffers.front().buffer->getMemorySize(&dstSize);
+        if (srcSize != dstSize) {
+            LOG2("%s, disable share buffer pool due to different size. src: %d, dst: %d",
+                 __func__, srcSize, dstSize);
+            pair->active = false;
+        }
+    }
+
     return OK;
 }
 
@@ -152,6 +167,8 @@ int32_t ShareReferBufferPool::acquireBuffer(int64_t id, CIPR::Buffer** referIn,
             }
             LOGE("%lx has no refer in seq %ld", id, inSequence);
             return UNKNOWN_ERROR;
+        } else if (!pair->active) {
+            return OK;
         }
         pair->busy = true;
     }

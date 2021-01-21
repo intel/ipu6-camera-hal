@@ -72,6 +72,11 @@ namespace PGUtils {
 ia_css_frame_format_type getCssFmt(int v4l2Fmt);
 int getCssBpp(int v4l2Fmt);
 int getCssStride(int v4l2Fmt, int width);
+int getCompressedBpp(ia_css_frame_format_type_t format, int cssBpp);
+int getCompressedBpe(ia_css_frame_format_type_t format, int cssBpp);
+int getCssFmtBpe(ia_css_frame_format_type_t cssFmt, int cssBpp);
+int getCssFmtBpp(ia_css_frame_format_type_t format);
+bool isCompressionTerminal(int terminalId);
 
 /* ************************************************************
  * Difference between PGs
