@@ -228,6 +228,11 @@ set_target_properties(camhal_static PROPERTIES OUTPUT_NAME "camhal")
 target_link_libraries(camhal ${CMAKE_DL_LIBS})
 target_link_libraries(camhal_static ${CMAKE_DL_LIBS})
 
+set (THREADS_PREFER_PTHREAD_FLAG ON)
+find_package (Threads REQUIRED)
+target_link_libraries(camhal ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(camhal_static ${CMAKE_THREAD_LIBS_INIT})
+
 target_link_libraries(camhal expat rt)
 target_link_libraries(camhal_static expat rt)
 
