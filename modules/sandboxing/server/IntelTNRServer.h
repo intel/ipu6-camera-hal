@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Intel Corporation.
+ * Copyright (C) 2020-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,8 @@ class IntelTNRServer {
  private:
     // the tnr instance of the id
     std::unordered_map<int, TnrType> mTnrSlotMap;
-    std::unordered_map<int, std::unique_ptr<IntelTNR7US> > mIntelTNRMap;
+    std::unordered_map<int, std::unique_ptr<IntelTNR7US>> mIntelTNRMap;
+    std::unordered_map<int, std::unique_ptr<std::mutex>> mLockMap;
     // transfer cameraId and type to index of the mTnrSlotMap and mIntelTNRMap
     int getIndex(int cameraId, TnrType type) { return (cameraId << TNR_INSTANCE_MAX) + type; }
 };

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Intel Corporation
+ * Copyright (C) 2015-2021 Intel Corporation
  * Copyright 2008-2017, The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,6 +18,8 @@
 
 #include <string.h>
 #include <expat.h>
+#include <dirent.h>
+
 #include <memory>
 
 #include "iutils/CameraLog.h"
@@ -143,6 +145,48 @@ string CameraParser::replaceStringInXml(CameraParser *profiles, const char *valu
 }
 
 /**
+* Get CSI port and I2C bus address according to current sensor name
+*
+* \param profiles: the pointer of the CameraParser.
+*/
+void CameraParser::getCsiPortAndI2CBus(CameraParser *profiles)
+{
+    std::string fullSensorName = profiles->pCurrentCam->sensorName;
+    if (fullSensorName.empty()) {
+        LOGXML("@%s, Faild to find sensorName", __func__);
+        return;
+    }
+
+    for (auto availableSensorTmp : profiles->mAvailableSensor) {
+        AvailableSensorInfo *sensorInfo = &availableSensorTmp.second;
+        if ((availableSensorTmp.first.find(fullSensorName) != string::npos) &&
+            (sensorInfo->sensorFlag != true)) {
+            /* parameters information format example:
+               sinkEntityName is "Intel IPU6 CSI-2 1"
+               profiles->pCurrentCam->sensorName is "ov8856-wf" or "ov8856"
+               sensorName is "ov8856"
+            */
+            string sinkEntityName = sensorInfo->sinkEntityName;
+            sensorInfo->sensorFlag = true;
+            profiles->mCsiPort =
+                            sinkEntityName.substr(sinkEntityName.find_last_of(' ') + 1);
+
+            string sensorName = fullSensorName;
+            if (sensorName.find_first_of('-') != string::npos)
+                sensorName = fullSensorName.substr(0, (sensorName.find_first_of('-')));
+
+            profiles->mMC->getI2CBusAddress(sensorName, sinkEntityName, &profiles->mI2CBus);
+
+            LOGXML("@%s, mI2CBus:%s, cisPort:%s", __func__, profiles->mI2CBus.c_str(),
+                   profiles->mCsiPort.c_str());
+            break;
+        }
+    }
+
+    return;
+}
+
+/**
  * This function will check which field that the parser parses to.
  *
  * The field is set to 3 types.
@@ -179,24 +223,7 @@ void CameraParser::checkField(CameraParser *profiles, const char *name, const ch
                 idx += 2;
             }
 
-            if (!profiles->pCurrentCam->sensorName.empty() &&
-                (profiles->mAvailableSensor.find(profiles->pCurrentCam->sensorName) !=
-                 profiles->mAvailableSensor.end())) {
-                /* parameters information format example:
-                   sinkEntityName is "Intel IPU6 CSI-2 1"
-                   profiles->pCurrentCam->sensorName is "ov8856-wf"
-                   sensorName is "ov8856"
-                */
-                string sinkEntityName = profiles->mAvailableSensor[profiles->pCurrentCam->sensorName];
-                profiles->mCsiPort = sinkEntityName.substr(sinkEntityName.find_last_of(' ') + 1);
-                string sensorName = profiles->pCurrentCam->sensorName;
-                sensorName = sensorName.substr(0, (sensorName.find_last_of('-')));
-                profiles->mMC->getI2CBusAddress(sensorName, sinkEntityName, &profiles->mI2CBus);
-
-                LOGXML("@%s, mI2CBus:%s, cisPort:%s", __func__,
-                       profiles->mI2CBus.c_str(), profiles->mCsiPort.c_str());
-             }
-
+            getCsiPortAndI2CBus(profiles);
             profiles->mMetadata.clear();
             profiles->mCurrentDataField = FIELD_SENSOR;
 
@@ -300,7 +327,13 @@ void CameraParser::handleSensor(CameraParser *profiles, const char *name, const 
     } else if (strcmp(name, "enableFrameSyncCheck") == 0) {
         pCurrentCam->mFrameSyncCheckEnabled = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "lensName") == 0) {
-        profiles->mMC->getVCMI2CAddr(atts[1], &pCurrentCam->mLensName);
+        string vcmName = atts[1];
+        if (!profiles->mI2CBus.empty()) {
+            int i2cBusId = atoi(profiles->mI2CBus.c_str());
+            vcmName.append(" ");
+            vcmName.append(std::to_string(i2cBusId));
+        }
+        profiles->mMC->getVCMI2CAddr(vcmName.c_str(), &pCurrentCam->mLensName);
     } else if (strcmp(name, "lensHwType") == 0) {
         if (strcmp(atts[1], "LENS_VCM_HW") == 0) {
             pCurrentCam->mLensHwType = LENS_VCM_HW;
@@ -434,6 +467,8 @@ void CameraParser::handleSensor(CameraParser *profiles, const char *name, const 
         pCurrentCam->mMaxNvmDataSize = atoi(atts[1]);
     } else if (strcmp(name, "nvmDirectory") == 0) {
         pCurrentCam->mNvmDirectory = atts[1];
+    } else if (strcmp(name, "nvmNodeName") == 0) {
+        mNvmNodeName = atts[1];
     } else if (strcmp(name, "isISYSCompression") == 0) {
         pCurrentCam->mISYSCompression = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "isPSACompression") == 0) {
@@ -605,6 +640,10 @@ void CameraParser::parseControlElement(CameraParser *profiles, const char *name,
                 ctl.ctlCmd = V4L2_CID_WATERMARK2;
             } else if (!strcmp(val, "V4L2_CID_TEST_PATTERN")) {
                 ctl.ctlCmd = V4L2_CID_TEST_PATTERN;
+#ifdef LINUX_BUILD
+            } else if (!strcmp(val, "V4L2_CID_MIPI_LANES")) {
+                ctl.ctlCmd = V4L2_CID_MIPI_LANES;
+#endif
             } else {
                 LOGE("Unknow ioctl command %s", val);
                 ctl.ctlCmd = -1;
@@ -1774,6 +1813,14 @@ void CameraParser::endParseElement(void *userData, const char *name)
                     LOGXML("@%s, Failed to getLensName", __func__);
                 }
             }
+
+            // I2CBus is adaptor-bus, like 18-0010, and use adaptor id to select NVM path.
+            if ((profiles->mI2CBus.size() >= 2) && !profiles->mNvmNodeName.empty()) {
+                getNVMDirectory(profiles);
+            }
+
+            profiles->mNvmNodeName.clear();
+
             // Merge the content of mMetadata into mCapability.
             ParameterHelper::merge(profiles->mMetadata, &profiles->pCurrentCam->mCapability);
             profiles->mMetadata.clear();
@@ -1808,6 +1855,49 @@ void CameraParser::endParseElement(void *userData, const char *name)
 
     if (strcmp(name, "Common") == 0)
         profiles->mCurrentDataField = FIELD_INVALID;
+}
+
+/* the path of NVM device is in /sys/bus/i2c/devices/i2c-'adaptorId'/firmware_node/XXXX/path. */
+void CameraParser::getNVMDirectory(CameraParser* profiles)
+{
+    LOGXML("@%s", __func__);
+
+    std::string nvmPath("/sys/bus/i2c/devices/i2c-");
+    // attach i2c adaptor id, like 18-0010
+    std::size_t found = profiles->mI2CBus.find("-");
+    CheckError(found == std::string::npos, VOID_VALUE, "Failed to get adaptor id");
+    nvmPath += profiles->mI2CBus.substr(0,found);
+    nvmPath += "/firmware_node/";
+    DIR* dir = opendir(nvmPath.c_str());
+    if (dir) {
+        struct dirent* direntPtr = nullptr;
+        while ((direntPtr = readdir(dir)) != nullptr) {
+            if (direntPtr->d_type != DT_DIR) continue;
+
+            std::string fwNodePath(nvmPath.c_str());
+            fwNodePath += direntPtr->d_name;
+            fwNodePath += "/path";
+
+            FILE* fp = fopen(fwNodePath.c_str(), "rb");
+            if (fp) {
+                fseek(fp, 0, SEEK_END);
+                int size = static_cast<int>(ftell(fp));
+                fseek(fp, 0, SEEK_SET);
+                std::unique_ptr<char[]> ptr(new char[size + 1]);
+                ptr[size] = 0;
+                size_t readSize = fread(ptr.get(), sizeof(char), size, fp);
+                fclose(fp);
+
+                if (readSize > 0 && strstr(ptr.get(), profiles->mNvmNodeName.c_str()) != nullptr) {
+                    profiles->pCurrentCam->mNvmDirectory = "i2c-";
+                    profiles->pCurrentCam->mNvmDirectory += direntPtr->d_name;
+                    LOGXML("NVM dir %s", profiles->pCurrentCam->mNvmDirectory.c_str());
+                    break;
+                }
+            }
+        }
+        closedir(dir);
+    }
 }
 
 /**
@@ -1850,11 +1940,11 @@ std::vector<std::string> CameraParser::getAvailableSensors(const std::string &ip
 
         bool ret = mMC->checkAvailableSensor(sensorName, sensorSinkNameTmp);
         if (ret) {
-            std::string sensorNameTmp = srcSensor.substr(0, srcSensor.find_last_of('-'));
-            availableSensors.push_back(sensorNameTmp);
-            mAvailableSensor[sensorNameTmp] = sensorSinkNameTmp;
+            AvailableSensorInfo sensorInfo = {sensorSinkNameTmp, false};
+            availableSensors.push_back(srcSensor);
+            mAvailableSensor[srcSensor] = sensorInfo;
             LOGXML("@%s, The availabel sensor name:%s, sensorSinkNameTmp:%s",
-                   __func__, sensorNameTmp.c_str(), sensorSinkNameTmp.c_str());
+                   __func__, srcSensor.c_str(), sensorSinkNameTmp.c_str());
         }
     }
 
@@ -1885,7 +1975,12 @@ void CameraParser::getSensorDataFromXmlFile(void)
 
     for (auto sensor : allSensors) {
         string sensorName = "sensors/";
-        sensorName.append(sensor);
+        if ((sensor.find("-wf-") != string::npos) ||
+            (sensor.find("-uf-") != string::npos)) {
+            sensorName.append(sensor.substr(0, sensor.find_last_of('-')));
+        } else {
+            sensorName.append(sensor);
+        }
         sensorName.append(".xml");
         int ret = getDataFromXmlFile(sensorName);
         CheckError(ret != OK, VOID_VALUE, "Failed to get sensor profile data from %s", sensorName.c_str());

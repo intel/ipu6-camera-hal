@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Intel Corporation.
+ * Copyright (C) 2015-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -237,8 +237,6 @@ namespace CameraUtils {
     bool isRaw(int format);
 
     int getBpp(int format);
-
-    int getBpe(int format, int bpp);
 
     int getStride (int format, int width);
 

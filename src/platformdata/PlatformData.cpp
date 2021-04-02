@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Intel Corporation.
+ * Copyright (C) 2015-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1227,7 +1227,7 @@ ia_binary_data *PlatformData::getNvm(int cameraId)
     CheckError(cameraId >= static_cast<int>(getInstance()->mAiqInitData.size()), nullptr,
                "@%s, bad cameraId:%d", __func__, cameraId);
 
-    return getInstance()->mAiqInitData[cameraId]->getNvm();
+    return getInstance()->mAiqInitData[cameraId]->getNvm(cameraId);
 }
 
 camera_coordinate_system_t PlatformData::getActivePixelArray(int cameraId)
@@ -1407,4 +1407,15 @@ int PlatformData::getTnrExtraFrameCount(int cameraId)
 {
     return getInstance()->mStaticCfg.mCameras[cameraId].mTnrExtraFrameNum;
 }
+
+void PlatformData::setSensorOrientation(int cameraId, int orientation)
+{
+    getInstance()->mStaticCfg.mCameras[cameraId].mSensorOrientation = orientation;
+}
+
+int PlatformData::getSensorOrientation(int cameraId)
+{
+    return getInstance()->mStaticCfg.mCameras[cameraId].mSensorOrientation;
+}
+
 } // namespace icamera

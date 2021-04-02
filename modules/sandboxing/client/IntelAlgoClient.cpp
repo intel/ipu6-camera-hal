@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Intel Corporation.
+ * Copyright (C) 2019-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -97,11 +97,12 @@ int IntelAlgoClient::initialize() {
     }
 
     for (int i = 0; i < IPC_GROUP_NUM; i++) {
-        if (static_cast<IPC_GROUP>(i) != IPC_GROUP_GPU) {
+        if (static_cast<IPC_GROUP>(i) < IPC_GROUP_GPU) {
             mRunner[i] =
                 std::unique_ptr<Runner>(new Runner(static_cast<IPC_GROUP>(i), mBridge.get()));
         } else if (mGpuBridge) {
-            mRunner[i] = std::unique_ptr<Runner>(new Runner(IPC_GROUP_GPU, mGpuBridge.get()));
+            mRunner[i] =
+                std::unique_ptr<Runner>(new Runner(static_cast<IPC_GROUP>(i), mGpuBridge.get()));
         }
     }
 

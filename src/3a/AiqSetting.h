@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Intel Corporation.
+ * Copyright (C) 2015-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -115,6 +115,7 @@ struct aiq_parameter_t {
     float tonemapGamma;
     camera_tonemap_curves_t tonemapCurves;
     float tonemapCurveMem[DEFAULT_TONEMAP_CURVE_POINT_NUM * 3];  // r, g, b
+    camera_test_pattern_mode_t testPatternMode;
 
     aiq_parameter_t() { reset(); }
     void reset();

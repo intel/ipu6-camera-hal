@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2020 Intel Corporation
+ * Copyright (C) 2017-2021 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -97,6 +97,7 @@ public:
 
     bool fetchTnrOutBuffer(int64_t seq, std::shared_ptr<CameraBuffer> buf);
     bool isBypassStillTnr(int64_t seq);
+    int getTnrExtraFrameCount(int64_t seq);
 
     /**
      * Use to handle the frame done event from the executors.
@@ -120,6 +121,7 @@ private:
 
     int queueBuffers(const PSysTaskData& task);
     int returnBuffers(PSysTaskData& result);
+    bool isInactiveStream(int streamId, const PSysTaskData* task);
 
     void dumpExternalPortMap();
 
@@ -143,6 +145,7 @@ private:
     std::map<Port, std::vector<int32_t> > mOutputPortToStreamIds;
     PipeExecutor* mVideoTnrExecutor;
     PipeExecutor* mStillTnrExecutor;
+    PipeExecutor* mStillExecutor;
 
     // A lock for protecting task data from being accessed by different threads.
     Mutex mTaskLock;

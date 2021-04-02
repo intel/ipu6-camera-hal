@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Intel Corporation
+ * Copyright (C) 2019-2021 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,20 +58,20 @@ bool JpegEncoderCore::doJpegEncode(EncodePackage* pa) {
     CheckError(pa->inputHeight <= 0 || pa->outputHeight <= 0, false,
                "@%s, inputHeight:%d, outputHeight:%d", __func__, pa->inputHeight, pa->outputHeight);
 
-    LOGI("@%s: Using Google encoding...", __func__);
+    LOG1("@%s: Using Google encoding...", __func__);
 
     nsecs_t startTime = CameraUtils::systemTime();
 
     bool ret = false;
     if (pa->inputBufferHandle && pa->outputBufferHandle) {
-        LOGI("%s, use buffer handle to do jpeg encode input: %p, output: %p", __func__,
+        LOG1("%s, use buffer handle to do jpeg encode input: %p, output: %p", __func__,
              pa->inputBufferHandle, pa->outputBufferHandle);
         ret = mJpegCompressor->CompressImageFromHandle(
             *reinterpret_cast<buffer_handle_t*>(pa->inputBufferHandle),
             *reinterpret_cast<buffer_handle_t*>(pa->outputBufferHandle), pa->inputWidth,
             pa->inputHeight, pa->quality, pa->exifData, pa->exifDataSize, &pa->encodedDataSize);
     } else if (pa->inputData && pa->outputData) {
-        LOGI("%s, use buffer address to do jpeg encode input: %p, output: %p", __func__,
+        LOG1("%s, use buffer address to do jpeg encode input: %p, output: %p", __func__,
              pa->inputData, pa->outputData);
         ret = mJpegCompressor->CompressImageFromMemory(
             pa->inputData, V4L2_PIX_FMT_NV12, pa->outputData, pa->outputSize, pa->inputWidth,
@@ -80,7 +80,7 @@ bool JpegEncoderCore::doJpegEncode(EncodePackage* pa) {
         LOGE("%s: Google encode input type and output type does not match", __func__);
     }
 
-    LOGI("@%s: Google encoding ret:%d, %dx%d need %u ms, jpeg size %u, quality %d)", __func__, ret,
+    LOG1("@%s: Google encoding ret:%d, %dx%d need %u ms, jpeg size %u, quality %d)", __func__, ret,
          pa->outputWidth, pa->outputHeight, (CameraUtils::systemTime() - startTime) / 1000000,
          pa->encodedDataSize, pa->quality);
     return ret && pa->encodedDataSize > 0;

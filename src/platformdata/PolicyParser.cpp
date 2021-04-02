@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2020 Intel Corporation.
+ * Copyright (C) 2017-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -152,28 +152,37 @@ void PolicyParser::handleBundles(PolicyParser *profiles, const char *name, const
 void PolicyParser::handleShareReferPair(PolicyParser *profiles,
                                         const char *name, const char **atts) {
     // example: <shareReferPair pair="post_gdc_video_bayer:6,post_gdc_stills:6"/>
+    // Consumer can be null to support reprocessing (video pipe needs previous frames),
+    // Don't set port or set it as 0 for this case:
+    //          <shareReferPair pair="post_gdc_video_bayer:6,null"/>
     if (strcmp(atts[0], "pair") != 0) return;
     int sz = strlen(atts[1]);
     char src[sz + 1];
     MEMCPY_S(src, sz, atts[1], sz);
     src[sz] = '\0';
 
-    char* consumer = nullptr;
-    char* producer = strtok_r(src, ",", &consumer);
-    if (!consumer || !producer) return;
+    char* producer = src;
+    char* consumer = reinterpret_cast<char*>(strchr(src, ','));
+    if (!consumer) return;
+    *consumer = 0;
+    consumer++;
 
-    char* pPort = nullptr;
-    char* pName = strtok_r(producer, ":", &pPort);
-    char* cPort = nullptr;
-    char* cName = strtok_r(consumer, ":", &cPort);
-    if (!pPort || !cPort) return;
-
+    char* pPort = reinterpret_cast<char*>(strchr(producer, ':'));
+    if (!pPort) return;
+    *pPort = 0;
+    pPort++;
     ShareReferIdDesc pPair;
-    ShareReferIdDesc cPair;
-    pPair.first = pName;
+    pPair.first = producer;
     pPair.second = atoi(pPort);
-    cPair.first = cName;
-    cPair.second = atoi(cPort);
+
+    char* cPort = reinterpret_cast<char*>(strchr(consumer, ':'));
+    if (cPort) {
+        *cPort = 0;
+        cPort++;
+    }
+    ShareReferIdDesc cPair;
+    cPair.first = consumer;
+    cPair.second = cPort ? atoi(cPort) : 0;
 
     LOGXML("@%s, pair: %s:%d -> %s:%d", __func__,
            pPair.first.c_str(), pPair.second, cPair.first.c_str(), cPair.second);

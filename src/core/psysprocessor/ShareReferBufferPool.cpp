@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Intel Corporation.
+ * Copyright (C) 2020-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -165,7 +165,7 @@ int32_t ShareReferBufferPool::acquireBuffer(int64_t id, CIPR::Buffer** referIn,
                     return OK;
                 }
             }
-            LOGE("%lx has no refer in seq %ld", id, inSequence);
+            LOG1("%lx has no refer in seq %ld", id, inSequence);
             return UNKNOWN_ERROR;
         } else if (!pair->active) {
             return OK;

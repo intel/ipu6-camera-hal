@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Intel Corporation.
+ * Copyright (C) 2016-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,6 @@
 #include "Dvs.h"
 // INTEL_DVS_E
 #include "AiqStatistics.h"
-
 #include "iutils/Utils.h"
 #include "iutils/Thread.h"
 #include "iutils/RWLock.h"

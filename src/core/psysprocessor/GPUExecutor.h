@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Intel Corporation
+ * Copyright (C) 2020-2021 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "PipeLiteExecutor.h"
+#include "IntelCCATypes.h"
 #ifdef ENABLE_SANDBOXING
 #include "modules/sandboxing/client/IntelTNR7US.h"
 #else
@@ -45,6 +46,8 @@ class GPUExecutor : public PipeLiteExecutor {
     // fetch TNR reference buffer for user output, return true if found successfully
     virtual bool fetchTnrOutBuffer(int64_t seq, std::shared_ptr<CameraBuffer> buf);
     virtual bool isBypassStillTnr(int64_t seq);
+    // tnr extra frame count depend on AE gain
+    virtual int getTnrExtraFrameCount(int64_t seq);
 
  private:
     int createPGs();
@@ -55,7 +58,7 @@ class GPUExecutor : public PipeLiteExecutor {
     int allocTnrOutBufs(uint32_t bufSize);
     int dumpTnrParameters(uint32_t sequence);
     int getTotalGain(int64_t seq, float* totalGain);
-    int getStillTnrTG(TuningMode mode, float* tg);
+    int getStillTnrTriggerInfo(TuningMode mode);
     int runTnrFrame(const std::shared_ptr<CameraBuffer>& inBuf,
                     std::shared_ptr<CameraBuffer> outbuf);
 
@@ -68,8 +71,7 @@ class GPUExecutor : public PipeLiteExecutor {
      * should require this lock. */
     static std::mutex mGPULock;
     int mOutBufferSize;
-    // threshold gain for still tnr, only run still tnr when gain > TG
-    float mStillTnrTG;
+    tnr7us_trigger_info_t mStillTnrTriggerInfo;
     std::mutex mTnrOutBufMapLock;  // used to guard mTnrOutBufMap
     // first: sequence of source buffer, second: the reference buffer address
     std::map<int64_t, void*> mTnrOutBufMap;

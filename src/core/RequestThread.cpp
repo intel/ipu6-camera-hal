@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Intel Corporation.
+ * Copyright (C) 2015-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -293,11 +293,12 @@ int RequestThread::waitFrame(int streamId, camera_buffer_t **ubuffer)
     FrameQueue& frameQueue = mOutputFrames[streamId];
     ConditionLock lock(frameQueue.mFrameMutex);
 
+    if (!mActive) return NO_INIT;
     while (frameQueue.mFrameQueue.empty()) {
         int ret = frameQueue.mFrameAvailableSignal.waitRelative(
                       lock,
                       kWaitFrameDuration * SLOWLY_MULTIPLIER);
-        if (!mActive) return INVALID_OPERATION;
+        if (!mActive) return NO_INIT;
 
         if (ret == TIMED_OUT) {
             LOGW("@%s, mCameraId:%d, time out happens, wait recovery", __func__, mCameraId);
@@ -507,6 +508,11 @@ bool RequestThread::threadLoop()
             }
 
             mLastAppliedSeq = applyingSeq;
+            if ((mLastAppliedSeq + PlatformData::getExposureLag(mCameraId)) <= mLastEffectSeq) {
+                mRequestTriggerEvent = NONE_EVENT;
+                LOG2("%s, skip processing request for AE delay issue", __func__);
+                return true;
+            }
             LOG2("%s, trigger event %x, SOF %ld, predict %ld, processed %d request id %d",
                  __func__, mRequestTriggerEvent, mLastSofSeq, mLastAppliedSeq,
                  mRequestsInProcessing, mLastRequestId);
@@ -556,33 +562,52 @@ void RequestThread::handleReconfig()
 
 void RequestThread::handleRequest(CameraRequest& request, long applyingSeq)
 {
-    long effectSeq = -1;
+    long effectSeq = mLastEffectSeq + 1;
     // Raw reprocessing case, don't run 3A.
     if (request.mBuffer[0]->sequence >= 0 && request.mBuffer[0]->timestamp > 0) {
         effectSeq = request.mBuffer[0]->sequence;
         if (request.mParams.get()) {
             mParamGenerator->updateParameters(effectSeq, request.mParams.get());
         }
+        LOG2("%s: Reprocess request: seq %ld, out buffer %d", __func__,
+             effectSeq, request.mBufferNum);
     } else {
-        mLastRequestId++;
-        if (request.mParams.get()) {
-            m3AControl->setParameters(*request.mParams);
-        }
-        m3AControl->run3A(mLastRequestId, applyingSeq, &effectSeq);
-
-        // Check the final prediction value
-        if (effectSeq <= mLastEffectSeq) {
-            // Skip 3A cases, just increase it
-            LOG2("predict effectSeq %ld, last effect %ld", effectSeq, mLastEffectSeq);
-            effectSeq = mLastEffectSeq + 1;
+        long requestId = -1;
+        {
+            AutoMutex l(mPendingReqLock);
+            if (mActive) {
+                requestId = ++mLastRequestId;
+                if (request.mParams.get()) {
+                    m3AControl->setParameters(*request.mParams);
+                }
+            }
         }
 
-        mParamGenerator->saveParameters(effectSeq, mLastRequestId, request.mParams.get());
-        mLastEffectSeq = effectSeq;
+        if (requestId >= 0) m3AControl->run3A(requestId, applyingSeq, &effectSeq);
+
+        {
+            AutoMutex l(mPendingReqLock);
+            if (!mActive) {
+                // Recycle params buffer for re-using
+                if (request.mParams) {
+                    mReqParamsPool.push(request.mParams);
+                }
+                return;
+            }
+
+            // Check the final prediction value from 3A
+            if (effectSeq <= mLastEffectSeq) {
+                LOG2("predict effectSeq %ld, last effect %ld", effectSeq, mLastEffectSeq);
+            }
+
+            mParamGenerator->saveParameters(effectSeq, mLastRequestId, request.mParams.get());
+            mLastEffectSeq = effectSeq;
+
+            LOG2("%s: Process request: %ld:%ld, out buffer %d, param? %s", __func__,
+                 mLastRequestId, effectSeq, request.mBufferNum,
+                 request.mParams.get() ? "true" : "false");
+        }
     }
-    LOG2("%s: Process request: %ld:%ld, out buffer %d, param? %s", __func__,
-          mLastRequestId, effectSeq, request.mBufferNum,
-          request.mParams.get() ? "true" : "false");
 
     // Sent event to handle request buffers
     EventRequestData requestData;
@@ -595,7 +620,7 @@ void RequestThread::handleRequest(CameraRequest& request, long applyingSeq)
     eventData.data.request = requestData;
     notifyListeners(eventData);
 
-    // Recycle params ptr for re-using
+    // Recycle params buffer for re-using
     if (request.mParams) {
         AutoMutex l(mPendingReqLock);
         mReqParamsPool.push(request.mParams);

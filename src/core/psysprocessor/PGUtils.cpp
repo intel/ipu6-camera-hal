@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Intel Corporation.
+ * Copyright (C) 2019-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,37 +44,50 @@ struct FormatMap {
     ia_css_frame_format_type cssFmt;
 
     int cssBpp;
+    int cssBpe;
 };
 
 static const FormatMap sFormatMapping[] = {
-    { V4L2_PIX_FMT_YUYV,   IA_CSS_DATA_FORMAT_YUYV, 16 },
-    { V4L2_PIX_FMT_UYVY,   IA_CSS_DATA_FORMAT_UYVY, 16 },
-    { V4L2_PIX_FMT_YUV420, IA_CSS_DATA_FORMAT_YUV420, 16 },
-    { V4L2_PIX_FMT_NV12,   IA_CSS_DATA_FORMAT_NV12, 8 },
-    { V4L2_PIX_FMT_NV16,   IA_CSS_DATA_FORMAT_NV16, 12 },
-    { V4L2_PIX_FMT_RGB565, IA_CSS_DATA_FORMAT_RGB565, 16 },
-    { V4L2_PIX_FMT_RGB24,  IA_CSS_DATA_FORMAT_RGB888, 24 },
-    { V4L2_PIX_FMT_RGB32,  IA_CSS_DATA_FORMAT_RGBA888, 24 },
-    { V4L2_PIX_FMT_SGRBG12, IA_CSS_DATA_FORMAT_RAW, 16 },
-    { V4L2_PIX_FMT_SGRBG10, IA_CSS_DATA_FORMAT_RAW, 16 }, // IA_CSS_DATA_FORMAT_BAYER_GRBG or IA_CSS_DATA_FORMAT_RAW ?
+    { V4L2_PIX_FMT_YUYV,    IA_CSS_DATA_FORMAT_YUYV, 16, 8 },
+    { V4L2_PIX_FMT_UYVY,    IA_CSS_DATA_FORMAT_UYVY, 16, 8 },
+    { V4L2_PIX_FMT_YUV420,  IA_CSS_DATA_FORMAT_YUV420, 12, 8 },
+    { V4L2_PIX_FMT_NV12,    IA_CSS_DATA_FORMAT_NV12, 12, 8 },
+    { V4L2_PIX_FMT_NV16,    IA_CSS_DATA_FORMAT_NV16, 16, 8 },
+    { V4L2_PIX_FMT_RGB565,  IA_CSS_DATA_FORMAT_RGB565, 16, 16 },
+    { V4L2_PIX_FMT_RGB24,   IA_CSS_DATA_FORMAT_RGB888, 24, 24 },
+    { V4L2_PIX_FMT_RGB32,   IA_CSS_DATA_FORMAT_RGBA888, 24, 24 },
+    { V4L2_PIX_FMT_SGRBG12, IA_CSS_DATA_FORMAT_RAW, 16, 16 },
+    { V4L2_PIX_FMT_SGRBG10, IA_CSS_DATA_FORMAT_RAW, 16, 16 },
+    { V4L2_PIX_FMT_SGRBG8,  IA_CSS_DATA_FORMAT_RAW, 8, 8 },
 
-    { GET_FOURCC_FMT('Y', 'U', 'Y', 'V'), IA_CSS_DATA_FORMAT_YUYV, 16 },
-    { GET_FOURCC_FMT('Y', 'U', 'Y', '2'), IA_CSS_DATA_FORMAT_YUYV, 16 },
-    { GET_FOURCC_FMT('U', 'Y', 'V', 'Y'), IA_CSS_DATA_FORMAT_UYVY, 16 },
-    { GET_FOURCC_FMT('Y', 'U', '1', '2'), IA_CSS_DATA_FORMAT_YUV420, 16 },
-    { GET_FOURCC_FMT('N', 'V', '1', '2'), IA_CSS_DATA_FORMAT_NV12, 8 },
-    { GET_FOURCC_FMT('N', 'V', '1', '6'), IA_CSS_DATA_FORMAT_NV16, 12 },
-    { GET_FOURCC_FMT('R', 'G', 'B', 'P'), IA_CSS_DATA_FORMAT_RGB565, 16 },
-    { GET_FOURCC_FMT('R', 'G', 'B', '3'), IA_CSS_DATA_FORMAT_RGB888, 24 },
-    { GET_FOURCC_FMT('R', 'G', 'B', '4'), IA_CSS_DATA_FORMAT_RGBA888, 24 },
-    { GET_FOURCC_FMT('B', 'A', '1', '2'), IA_CSS_DATA_FORMAT_RAW, 16 },
-    { GET_FOURCC_FMT('B', 'A', '1', '0'), IA_CSS_DATA_FORMAT_RAW, 16 }, // IA_CSS_DATA_FORMAT_BAYER_GRBG or IA_CSS_DATA_FORMAT_RAW ?
-    { GET_FOURCC_FMT('y', '0', '3', '2'), IA_CSS_DATA_FORMAT_YYUVYY_VECTORIZED, 16 },
-    { GET_FOURCC_FMT('V', '4', '2', '0'), IA_CSS_DATA_FORMAT_YUV420, 16 },
-    { GET_FOURCC_FMT('b','V','0','K'),    IA_CSS_DATA_FORMAT_BAYER_VECTORIZED, 16 },
-    { GET_FOURCC_FMT('C','S','L','6'),    IA_CSS_DATA_FORMAT_BAYER_LINE_INTERLEAVED, 16},
-    { GET_FOURCC_FMT('G','R','1','0'),    IA_CSS_DATA_FORMAT_BAYER_GRBG, 16 },
-    { GET_FOURCC_FMT('I','Y','U','V'),    IA_CSS_DATA_FORMAT_YUV420, 12 },
+    { GET_FOURCC_FMT('Y', 'U', 'Y', 'V'), IA_CSS_DATA_FORMAT_YUYV, 16, 8 },
+    { GET_FOURCC_FMT('Y', 'U', 'Y', '2'), IA_CSS_DATA_FORMAT_YUYV, 16, 8 },
+    { GET_FOURCC_FMT('U', 'Y', 'V', 'Y'), IA_CSS_DATA_FORMAT_UYVY, 16, 8 },
+    { GET_FOURCC_FMT('Y', 'U', '1', '2'), IA_CSS_DATA_FORMAT_YUV420, 12, 8 },
+    { GET_FOURCC_FMT('Y', 'V', '1', '2'), IA_CSS_DATA_FORMAT_YUV420, 12, 8 },
+    { GET_FOURCC_FMT('N', 'V', '1', '2'), IA_CSS_DATA_FORMAT_NV12, 12, 8 },
+    { GET_FOURCC_FMT('N', 'V', '2', '1'), IA_CSS_DATA_FORMAT_NV21, 12, 8 },
+    { GET_FOURCC_FMT('T', 'I', 'L', 'E'), IA_CSS_DATA_FORMAT_NV12_TILEY, 12, 8 },
+    { GET_FOURCC_FMT('N', 'V', '1', '6'), IA_CSS_DATA_FORMAT_NV16, 16, 8 },
+    { GET_FOURCC_FMT('R', 'G', 'B', 'P'), IA_CSS_DATA_FORMAT_RGB565, 16, 16},
+    { GET_FOURCC_FMT('R', 'G', 'B', '3'), IA_CSS_DATA_FORMAT_RGB888, 24, 24},
+    { GET_FOURCC_FMT('R', 'G', 'B', '4'), IA_CSS_DATA_FORMAT_RGBA888, 24, 24 },
+    { GET_FOURCC_FMT('B', 'A', '1', '2'), IA_CSS_DATA_FORMAT_RAW, 16, 16 },
+    { GET_FOURCC_FMT('B', 'A', '1', '0'), IA_CSS_DATA_FORMAT_RAW, 16, 16 },
+    { GET_FOURCC_FMT('y', '0', '3', '2'), IA_CSS_DATA_FORMAT_YYUVYY_VECTORIZED, 24, 16 },
+    { GET_FOURCC_FMT('V', '4', '2', '0'), IA_CSS_DATA_FORMAT_YUV420, 24, 16 },
+    { GET_FOURCC_FMT('b', 'V', '0', 'K'), IA_CSS_DATA_FORMAT_BAYER_VECTORIZED, 16, 16 },
+    { GET_FOURCC_FMT('b', 'V', '0', 'G'), IA_CSS_DATA_FORMAT_BAYER_VECTORIZED, 16, 16 },
+    { GET_FOURCC_FMT('C', 'S', 'L', '6'), IA_CSS_DATA_FORMAT_BAYER_LINE_INTERLEAVED, 12, 10 },
+    { GET_FOURCC_FMT('C', 'S', '4', '2'), IA_CSS_DATA_FORMAT_YUV420, 18, 12 },
+    { GET_FOURCC_FMT('G', 'R', '1', '0'), IA_CSS_DATA_FORMAT_BAYER_GRBG, 16, 16 },
+    { GET_FOURCC_FMT('R', 'G', '1', '0'), IA_CSS_DATA_FORMAT_BAYER_RGGB, 16, 16 },
+    { GET_FOURCC_FMT('G', 'B', '1', '0'), IA_CSS_DATA_FORMAT_BAYER_GBRG, 16, 16 },
+    { GET_FOURCC_FMT('B', 'G', '1', '0'), IA_CSS_DATA_FORMAT_BAYER_BGGR, 16, 16 },
+    { GET_FOURCC_FMT('B', 'A', '1', '0'), IA_CSS_DATA_FORMAT_RAW, 16, 16 },
+    { GET_FOURCC_FMT('I', 'Y', 'U', 'V'), IA_CSS_DATA_FORMAT_YUV420, 12, 8 },
+    { GET_FOURCC_FMT('P', '0', '1', '0'), IA_CSS_DATA_FORMAT_P010, 24, 16 },
+    { GET_FOURCC_FMT('P', '4', '1', '2'), IA_CSS_DATA_FORMAT_YUV420, 24, 16 },
 };
 
 static int getStride(int cssFmt, int width);
@@ -109,16 +122,74 @@ int getCssStride(int v4l2Fmt, int width) {
     return stride;
 }
 
-int getCssBpp(int v4l2Fmt) {
+int getCssBpp(int v4l2Fmt, bool compression) {
     int size = ARRAY_SIZE(sFormatMapping);
+    int bpp = 0;
     for (int i = 0; i < size; i++) {
         if (sFormatMapping[i].v4l2Fmt == v4l2Fmt) {
-            return sFormatMapping[i].cssBpp;
+            bpp = sFormatMapping[i].cssBpp;
         }
     }
 
-    LOG2("%s: unsupported v4l2 pixel format: 0x%x", __func__, v4l2Fmt);
-    return 8;
+    if (compression) {
+        ia_css_frame_format_type cssFmt = getCssFmt(v4l2Fmt);
+        switch (cssFmt) {
+            case IA_CSS_DATA_FORMAT_BAYER_GRBG:
+            case IA_CSS_DATA_FORMAT_BAYER_RGGB:
+            case IA_CSS_DATA_FORMAT_BAYER_BGGR:
+            case IA_CSS_DATA_FORMAT_BAYER_GBRG:
+                bpp = 10;
+                break;
+            case IA_CSS_DATA_FORMAT_YUV420:
+            case IA_CSS_DATA_FORMAT_NV12:
+                bpp = 8;
+                break;
+            default:
+                LOGW("%s format %d compress not supported", __func__, v4l2Fmt);
+                break;
+        }
+    }
+
+    if (bpp == 0) {
+        LOG2("%s: unsupported v4l2 format: 0x%x, compressed %d", __func__, v4l2Fmt, compression);
+        bpp = 8;
+    }
+    return bpp;
+}
+
+int getCssBpe(int v4l2Fmt, bool compression) {
+    int size = ARRAY_SIZE(sFormatMapping);
+    int bpe = 0;
+    for (int i = 0; i < size; i++) {
+        if (sFormatMapping[i].v4l2Fmt == v4l2Fmt) {
+            bpe = sFormatMapping[i].cssBpe;
+        }
+    }
+
+    if (compression) {
+        ia_css_frame_format_type cssFmt = getCssFmt(v4l2Fmt);
+        switch (cssFmt) {
+            case IA_CSS_DATA_FORMAT_BAYER_GRBG:
+            case IA_CSS_DATA_FORMAT_BAYER_RGGB:
+            case IA_CSS_DATA_FORMAT_BAYER_BGGR:
+            case IA_CSS_DATA_FORMAT_BAYER_GBRG:
+                bpe = 16;
+                break;
+            case IA_CSS_DATA_FORMAT_YUV420:
+            case IA_CSS_DATA_FORMAT_NV12:
+                bpe = 8;
+                break;
+            default:
+                LOGW("%s format %d compress not supported", __func__, v4l2Fmt);
+                break;
+        }
+    }
+
+    if (bpe == 0) {
+        LOG2("%s: unsupported v4l2 format: 0x%x, compressed %d", __func__, v4l2Fmt, compression);
+        bpe = getCssBpp(v4l2Fmt, compression);
+    }
+    return bpe;
 }
 
 int getStride(int cssFmt, int width) {
@@ -211,71 +282,6 @@ bool getTerminalPairs(int pgId, TERMINAL_PAIR_TYPE type, std::vector<TerminalPai
     }
 
     return false;
-}
-
-int getCssFmtBpe(ia_css_frame_format_type_t cssFmt, int cssBpp) {
-    int bpe = cssBpp;
-    switch (cssFmt) {
-        case IA_CSS_DATA_FORMAT_YUYV:
-        case IA_CSS_DATA_FORMAT_UYVY:
-            bpe = 8;
-            break;
-        default:
-            break;
-    }
-    return bpe;
-}
-
-int getCssFmtBpp(ia_css_frame_format_type_t cssFmt) {
-    int size = ARRAY_SIZE(sFormatMapping);
-    for (int i = 0; i < size; i++) {
-        if (sFormatMapping[i].cssFmt == cssFmt) {
-            return sFormatMapping[i].cssBpp;
-        }
-    }
-
-    LOG2("%s: unsupported cssFmt pixel format: 0x%x", __func__, cssFmt);
-    return 8;
-}
-
-int getCompressedBpp(ia_css_frame_format_type_t format, int cssBpp) {
-    int bpp = cssBpp;
-    switch (format) {
-        case IA_CSS_DATA_FORMAT_BAYER_GRBG:
-        case IA_CSS_DATA_FORMAT_BAYER_RGGB:
-        case IA_CSS_DATA_FORMAT_BAYER_BGGR:
-        case IA_CSS_DATA_FORMAT_BAYER_GBRG:
-            bpp = 10;
-            break;
-        case IA_CSS_DATA_FORMAT_YUV420:
-        case IA_CSS_DATA_FORMAT_NV12:
-            bpp = 8;
-            break;
-        default:
-            LOGW("%s format %d compress not supported", __func__, format);
-            break;
-    }
-    return bpp;
-}
-
-int getCompressedBpe(ia_css_frame_format_type_t format, int cssBpp) {
-    int bpe = cssBpp;
-    switch (format) {
-        case IA_CSS_DATA_FORMAT_BAYER_GRBG:
-        case IA_CSS_DATA_FORMAT_BAYER_RGGB:
-        case IA_CSS_DATA_FORMAT_BAYER_BGGR:
-        case IA_CSS_DATA_FORMAT_BAYER_GBRG:
-            bpe = 16;
-            break;
-        case IA_CSS_DATA_FORMAT_YUV420:
-        case IA_CSS_DATA_FORMAT_NV12:
-            bpe = 8;
-            break;
-        default:
-            LOGW("%s format %d compress not supported", __func__, format);
-            break;
-    }
-    return bpe;
 }
 
 bool isCompressionTerminal(int terminalId) {

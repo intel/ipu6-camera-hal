@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Intel Corporation.
+ * Copyright (C) 2015-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,9 +44,6 @@ public:
 
     AiqResult& operator=(const AiqResult& other);
 
-private:
-    int deepCopyAiqResult(const AiqResult &src, AiqResult *dst);
-
 public:
     int mCameraId;
     unsigned long long mTimestamp;
@@ -72,15 +69,6 @@ public:
     int64_t mRollingShutter;  // us
 
 private:
-    /*!< ia_aiq_gbce results */
-    /* The actual size of this table can be calculated by running cold
-     * GBCE, it will provide those tables.
-     */
-    float mRGammaLut[MAX_GAMMA_LUT_SIZE];
-    float mGGammaLut[MAX_GAMMA_LUT_SIZE];
-    float mBGammaLut[MAX_GAMMA_LUT_SIZE];
-    float mToneMapLut[MAX_TONEMAP_LUT_SIZE];
-
     /*!< ia_isp_custom_controls pointer content */
     float mCustomControlsParams[MAX_CUSTOM_CONTROLS_PARAM_SIZE];
 

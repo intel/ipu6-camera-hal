@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Intel Corporation.
+ * Copyright (C) 2015-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,11 +36,8 @@ AiqEngine::AiqEngine(int cameraId, SensorHwCtrl *sensorHw, LensHw *lensHw, AiqSe
     LOG1("%s, mCameraId = %d", __func__, mCameraId);
 
     mAiqRunningForPerframe = PlatformData::isFeatureSupported(mCameraId, PER_FRAME_CONTROL);
-
     mAiqCore = new AiqCore(mCameraId);
-
     mSensorManager = new SensorManager(mCameraId, sensorHw);
-
     mLensManager = new LensManager(mCameraId, lensHw);
 
     // Should consider better place to maintain the life cycle of AiqResultStorage
@@ -52,9 +49,7 @@ AiqEngine::~AiqEngine()
     LOG1("%s, mCameraId = %d", __func__, mCameraId);
 
     delete mLensManager;
-
     delete mSensorManager;
-
     delete mAiqCore;
 
     AiqResultStorage::releaseAiqResultStorage(mCameraId);
@@ -62,37 +57,34 @@ AiqEngine::~AiqEngine()
 
 int AiqEngine::init()
 {
-    AutoMutex l(mEngineLock);
     LOG1("%s, mCameraId = %d", __func__, mCameraId);
 
+    AutoMutex l(mEngineLock);
     if (mAiqCore->init() != OK) {
         return UNKNOWN_ERROR;
     }
 
-    mSensorManager->init();
+    mSensorManager->reset();
 
-    LOG1("%s, end mCameraId = %d", __func__, mCameraId);
     return OK;
 }
 
 int AiqEngine::deinit()
 {
-    AutoMutex l(mEngineLock);
     LOG1("%s, mCameraId = %d", __func__, mCameraId);
 
-    mSensorManager->deinit();
-
+    AutoMutex l(mEngineLock);
+    mSensorManager->reset();
     mAiqCore->deinit();
 
-    LOG1("%s, end mCameraId = %d", __func__, mCameraId);
     return OK;
 }
 
 int AiqEngine::configure(const std::vector<ConfigMode>& configModes)
 {
-    AutoMutex l(mEngineLock);
     LOG1("%s, mCameraId = %d", __func__, mCameraId);
 
+    AutoMutex l(mEngineLock);
     mAiqCore->configure(configModes);
 
     return OK;
@@ -100,25 +92,21 @@ int AiqEngine::configure(const std::vector<ConfigMode>& configModes)
 
 int AiqEngine::startEngine()
 {
-    AutoMutex l(mEngineLock);
     LOG1("%s, mCameraId = %d", __func__, mCameraId);
 
+    AutoMutex l(mEngineLock);
     mFirstAiqRunning = true;
-
     mSensorManager->reset();
-
     mLensManager->start();
-
-    LOG1("%s, end mCameraId = %d", __func__, mCameraId);
 
     return OK;
 }
 
 int AiqEngine::stopEngine()
 {
-    AutoMutex l(mEngineLock);
-    LOG1("%s, end mCameraId = %d", __func__, mCameraId);
+    LOG1("%s, mCameraId = %d", __func__, mCameraId);
 
+    AutoMutex l(mEngineLock);
     mLensManager->stop();
 
     return OK;
@@ -127,12 +115,12 @@ int AiqEngine::stopEngine()
 int AiqEngine::run3A(long requestId, long applyingSeq, long* effectSeq)
 {
     LOG3A("%s", __func__);
+
     // Run 3A in call thread
     AutoMutex l(mEngineLock);
 
     AiqStatistics *aiqStats =
         const_cast<AiqStatistics*>(mAiqResultStorage->getAndLockAiqStatistics());
-
     AiqResult *aiqResult = mAiqResultStorage->acquireAiqResult();
     AiqState state = AIQ_STATE_IDLE;
 
@@ -171,9 +159,9 @@ int AiqEngine::run3A(long requestId, long applyingSeq, long* effectSeq)
 
 EventListener *AiqEngine::getSofEventListener()
 {
-    AutoMutex l(mEngineLock);
     LOG1("%s, mCameraId = %d", __func__, mCameraId);
 
+    AutoMutex l(mEngineLock);
     return mSensorManager->getSofEventListener();
 }
 
@@ -208,28 +196,19 @@ int AiqEngine::prepareStatsParams(cca::cca_stats_params *statsParams, AiqStatist
         statsParams->frame_id = requestId;
         statsParams->frame_timestamp = timestamp;
         statsParams->camera_orientation = ia_aiq_camera_orientation_unknown;
-
-        const AiqResult *feedback = mAiqResultStorage->getAiqResult(aiqStatistics->mSequence);
-        if (feedback == nullptr) {
-            LOGW("%s: no feed back result for sequence %ld! use the latest instead",
-                    __func__, aiqStatistics->mSequence);
-            feedback = mAiqResultStorage->getAiqResult();
-        }
     } while (0);
-    LOG3A("%s end", __func__);
+
     return ret;
 }
 
 void AiqEngine::setAiqResult(AiqResult *aiqResult, bool skip)
 {
     aiqResult->mSkip = skip;
-
     if (skip) {
         LOG3A("%s, skipping frame aiqResult->mSequence = %ld", __func__, aiqResult->mSequence);
     }
 
     mLensManager->setLensResult(aiqResult->mAeResults, aiqResult->mAfResults);
-
     aiqResult->mAiqParam = mAiqParam;
 }
 
@@ -305,12 +284,9 @@ AiqEngine::AiqState AiqEngine::prepareInputParam(AiqStatistics* aiqStats)
 
     // Update sensor info for the first-run of AIQ
     if (mFirstAiqRunning) {
-        mSensorManager->setFrameRate(mAiqParam.fps);
         // set sensor info if needed
-        ia_aiq_exposure_sensor_descriptor sensorDescriptor;
-        ia_aiq_frame_params frameParams;
-        CLEAR(sensorDescriptor);
-        CLEAR(frameParams);
+        ia_aiq_exposure_sensor_descriptor sensorDescriptor = {};
+        ia_aiq_frame_params frameParams = {};
         ret = mSensorManager->getSensorInfo(frameParams, sensorDescriptor);
         CheckError((ret != OK), AIQ_STATE_ERROR, "Get sensor info failed:%d", ret);
         mAiqCore->setSensorInfo(frameParams, sensorDescriptor);

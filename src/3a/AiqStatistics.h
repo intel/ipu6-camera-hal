@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Intel Corporation.
+ * Copyright (C) 2018-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,43 +16,20 @@
 
 #pragma once
 
-#include "ia_aiq_types.h"
-#include "ia_isp_bxt_types.h"
-#include "ia_dvs_types.h"
-#include "ia_isp_bxt_statistics_types.h"
-
-#include "AiqUtils.h"
-
 namespace icamera {
-
 /*
- * \class AiqStatistics
- *
- * This class is used to envelop AIQ statistics.
+ * This struct is used to envelop AIQ statistics.
  */
-class AiqStatistics {
-public:
-    AiqStatistics();
-    ~AiqStatistics();
+struct AiqStatistics {
+    long mSequence;
+    unsigned long long mTimestamp;
+    TuningMode mTuningMode;
+    bool mInUse;
 
-    AiqStatistics& operator=(const AiqStatistics& other);
-
-    int saveRgbsGridData(const ia_aiq_rgbs_grid* const *rgbsGrid, int exposureNum);
-    int saveAfGridData(const ia_aiq_af_grid *afGrid);
-
-private:
-    int copyRgbsGridData(const ia_aiq_rgbs_grid *src, ia_aiq_rgbs_grid *dst);
-
-public:
-    long mSequence = -1;
-    unsigned long long mTimestamp = 0;
-    TuningMode mTuningMode = TUNING_MODE_MAX;
-    bool mInUse = false;
-
-    int mExposureNum = 0;
-    ia_aiq_rgbs_grid mRgbsGridArray[MAX_EXPOSURES_NUM];
-    ia_aiq_af_grid mAfGridArray[MAX_EXPOSURES_NUM];
+    AiqStatistics() : mSequence(-1),
+                      mTimestamp(0),
+                      mTuningMode(TUNING_MODE_MAX),
+                      mInUse(false) {}
 };
-
 } /* namespace icamera */
 

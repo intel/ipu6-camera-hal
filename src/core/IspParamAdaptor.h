@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Intel Corporation.
+ * Copyright (C) 2015-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -128,6 +128,8 @@ private:
     void dumpProgramGroup(ia_isp_bxt_program_group *pgPtr);
     void applyMediaFormat(const AiqResult* aiqResult,
                           ia_media_format* mediaFormat, bool* useLinearGamma);
+    void dumpCscMatrix(const ia_isp_bxt_csc* cscMatrix);
+    void applyCscMatrix(ia_isp_bxt_csc* cscMatrix);
 
  private:
     enum IspAdaptorState {

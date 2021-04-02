@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Intel Corporation
+ * Copyright (C) 2019-2021 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@
 #include <mutex>
 
 #include "IJpegEncoder.h"
-#include "camera/include/cros-camera/jpeg_compressor.h"
+#include "cros-camera/jpeg_compressor.h"
 #include "iutils/Utils.h"
 
 namespace icamera {

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017-2020 Intel Corporation
+#  Copyright (C) 2017-2021 Intel Corporation
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -53,6 +53,7 @@ endif() #SUPPORT_LIVE_TUNING
 # ia_cipr is only used by psysprocessor
 if (USE_PG_LITE_PIPE)
 set(IA_CIPR_DIR         ${MODULES_DIR}/ia_cipr)
+set(MODULE_IA_CSS_DIR   ${MODULES_DIR}/ia_css)
 endif() #USE_PG_LITE_PIPE
 
 # CMake module directory
@@ -74,11 +75,11 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG(-faligned-new COMPILER_SUPPORTS_ALIGNED_NEW)
 if (COMPILER_SUPPORTS_ALIGNED_NEW)
-    add_definitions(-faligned-new)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -faligned-new")
 endif()
 
-add_compile_options(-std=c++11
-                    -Wall -Werror
+set (CMAKE_CXX_STANDARD 11)
+add_compile_options(-Wall -Werror
                     -fstack-protector
                     -fPIE -fPIC
                     -D_FORTIFY_SOURCE=2
@@ -181,7 +182,17 @@ if (SUPPORT_LIVE_TUNING)
 endif() #SUPPORT_LIVE_TUNING
 
 if (USE_PG_LITE_PIPE)
-include_directories(modules/ia_css/${IPU_VER}/include)
+add_subdirectory(${MODULE_IA_CSS_DIR})
+include_directories(${MODULE_IA_CSS_HEADER_INCLUDE_DIR})
+set(LIBCAMHAL_SRCS ${LIBCAMHAL_SRCS} ${MODULE_IA_CSS_SRC})
+
+# suppress modules/ia_css .c code compiling error
+include(CheckCCompilerFlag)
+CHECK_C_COMPILER_FLAG("-Wno-error=unused-but-set-variable" COMPILER_SUPPORTS_NO_UNUSED_BUT_SET_VAR)
+if (COMPILER_SUPPORTS_NO_UNUSED_BUT_SET_VAR)
+    set_source_files_properties(${MODULE_IA_CSS_SRC} PROPERTIES COMPILE_FLAGS
+                                "-Wno-error=unused-but-set-variable ${CMAKE_C_FLAGS}")
+endif()
 endif() #USE_PG_LITE_PIPE
 
 set(LIBCAMHAL_SRCS
@@ -244,8 +255,7 @@ endif()
     target_link_libraries(camhal ${IA_IMAGING_LIBS})
     target_link_libraries(camhal_static ${IA_IMAGING_LIBS})
 
-    if (IPU_VER MATCHES "ipu7")
-        # Link libgcss
+    if(USE_PG_LITE_PIPE)
         find_package(LIBGCSS)
         include_directories(${LIBGCSS_INCLUDE_DIRS})
         target_link_libraries(camhal ${LIBGCSS_LIBS})
@@ -258,9 +268,14 @@ endif()
         target_link_libraries(camhal_static ${LIBIACSS_LIBS})
     endif()
 
-    # Include libipu(4) headers
-    find_package(LIBIPU)
-    include_directories(${LIBIPU_INCLUDE_DIRS})
+# Include libipu(4) headers
+find_package(LIBIPU)
+include_directories(${LIBIPU_INCLUDE_DIRS})
+
+if (USE_PG_LITE_PIPE)
+    target_link_libraries(camhal ${IPU_LIB})
+    target_link_libraries(camhal_static ${IPU_LIB})
+endif()
 
 if (CAL_BUILD)
     find_package(LIBCAMERA_CLIENT)
@@ -350,9 +365,6 @@ if("${IPU_VER}" STREQUAL "ipu6")
         message("Install IPU6 configure files")
         install(DIRECTORY config/linux/ipu6/ DESTINATION share/defaults/etc/camera)
     endif()
-elseif("${IPU_VER}" STREQUAL "ipu7")
-    message("Install IPU7 configure files")
-    install(DIRECTORY config/linux/ipu7/ DESTINATION share/defaults/etc/camera)
 else()
     message("Install IPU4 configure files")
     install(DIRECTORY config/linux/ipu4/ DESTINATION share/defaults/etc/camera)

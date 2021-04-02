@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Intel Corporation
+ * Copyright (C) 2020-2021 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -211,10 +211,11 @@ ia_err IntelCca::getAiqd(cca::cca_aiqd* aiqd) {
     return ret;
 }
 
-ia_err IntelCca::updateTuning(uint8_t lardTags, const ia_lard_input_params& lardParams) {
+ia_err IntelCca::updateTuning(uint8_t lardTags, const ia_lard_input_params& lardParams,
+                              const cca::cca_nvm& nvm) {
     LOG2("@%s", __func__);
 
-    ia_err ret = getIntelCCA()->updateTuning(lardTags, lardParams);
+    ia_err ret = getIntelCCA()->updateTuning(lardTags, lardParams, nvm);
     LOG2("@%s, ret:%d", __func__, ret);
 
     return ret;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Intel Corporation
+ * Copyright (C) 2015-2021 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,6 @@ namespace icamera {
 
 SensorHwCtrl::SensorHwCtrl(int cameraId, V4L2Subdevice* pixelArraySubdev, V4L2Subdevice* sensorOutputSubdev):
         mPixelArraySubdev(pixelArraySubdev),
-        mSensorOutputSubdev(sensorOutputSubdev),
         mCameraId(cameraId),
         mHorzBlank(0),
         mVertBlank(0),
@@ -300,41 +299,6 @@ int SensorHwCtrl::getExposureRange(int &exposureMin, int &exposureMax, int &expo
         __func__, exposureMin, exposureMax, exposureStep);
 
     return status;
-}
-
-int SensorHwCtrl::setFrameRate(float fps)
-{
-    HAL_TRACE_CALL(CAMERA_DEBUG_LOG_LEVEL2);
-    CheckError(!mSensorOutputSubdev, NO_INIT, "sensor output sub device is not set");
-
-    LOG2("%s FPS is: %f", __func__, fps);
-
-    struct v4l2_queryctrl query;
-    CLEAR(query);
-    query.id = V4L2_CID_LINK_FREQ;
-    int status = mSensorOutputSubdev->QueryControl(&query);
-    CheckError(status != OK, status, "Couldn't get V4L2_CID_LINK_FREQ, status:%d", status);
-
-    LOG2("@%s, query V4L2_CID_LINK_FREQ:, default_value:%d, maximum:%d, minimum:%d, step:%d",
-        __func__, query.default_value, query.maximum, query.minimum, query.step);
-
-    int mode = 0;
-    if (query.maximum == query.minimum) {
-        mode = query.default_value;
-    } else {
-        /***********************************************************************************
-         * WA: This heavily depends on sensor driver implementation, need to find a graceful
-         * solution.
-         * imx185:
-         * When fps larger than 30, should switch to high speed mode, currently only
-         * 0, 1, 2 are available. 0 means 720p 30fps, 1 means 2M 30fps, and 2 means 2M 60fps.
-         * imx290:
-         * 0 and 1 available, for 30 and higher FPS.
-         ***********************************************************************************/
-        mode = (fps > 30) ? query.maximum : (query.maximum - 1);
-    }
-    LOG2("@%s, set V4L2_CID_LINK_FREQ to %d", __func__, mode);
-    return mSensorOutputSubdev->SetControl(V4L2_CID_LINK_FREQ, mode);
 }
 
 } // namespace icamera

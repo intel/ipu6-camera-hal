@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Intel Corporation.
+ * Copyright (C) 2015-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,20 +70,14 @@ static const float AWB_GAIN_RANGE_USER = AWB_GAIN_MAX - AWB_GAIN_MIN;
 static const int MAX_CUSTOM_CONTROLS_PARAM_SIZE = 1024;
 
 namespace AiqUtils {
-int dumpAeResults(const cca::cca_ae_results &aeResult);
-int dumpAfResults(const cca::cca_af_results &afResult);
-int dumpAwbResults(const cca::cca_awb_results &awbResult);
-
-int deepCopyAeResults(const cca::cca_ae_results& src, cca::cca_ae_results* dst);
-int deepCopyAfResults(const cca::cca_af_results& src, cca::cca_af_results* dst);
-int deepCopyAwbResults(const cca::cca_awb_results& src, cca::cca_awb_results* dst);
-int deepCopyGbceResults(const ia_aiq_gbce_results& src, ia_aiq_gbce_results* dst);
-int deepCopyPaResults(const cca::cca_pa_params& src, cca::cca_pa_params* dst);
-int deepCopyDvsResults(const ia_dvs_morph_table& src, ia_dvs_morph_table* dst);
-int deepCopyDvsResults(const ia_dvs_image_transformation& src, ia_dvs_image_transformation* dst);
+int dumpAeResults(const cca::cca_ae_results& aeResult);
+int dumpAfResults(const cca::cca_af_results& afResult);
+int dumpAwbResults(const cca::cca_awb_results& awbResult);
+int dumpGbceResults(const cca::cca_gbce_params& gbceResult);
+int dumpPaResults(const cca::cca_pa_params& paResult);
+int dumpSaResults(const cca::cca_sa_results& saResult);
 
 int convertError(ia_err iaErr);
-
 void convertToAiqFrameParam(const SensorFrameParams& sensor, ia_aiq_frame_params& aiq);
 
 camera_coordinate_t convertCoordinateSystem(const camera_coordinate_system_t& srcSystem,
@@ -181,7 +175,5 @@ template int resize2dArray<int>(
     int* a_dst, int a_dst_w, int a_dst_h);
 
 float calculateHyperfocalDistance(const cca::cca_cmc &cmc);
-
-} // namespace AiqUtils
-
-} // namespace icamera
+}  // namespace AiqUtils
+}  // namespace icamera

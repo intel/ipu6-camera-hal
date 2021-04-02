@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Intel Corporation.
+ * Copyright (C) 2015-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,6 @@ AiqUnit::AiqUnit(int cameraId, SensorHwCtrl *sensorHw, LensHw *lensHw,
     LOG1("@%s mCameraId = %d", __func__, mCameraId);
 
     mAiqSetting = new AiqSetting(cameraId);
-
     mAiqEngine = new AiqEngine(cameraId, sensorHw, lensHw, mAiqSetting, paramGen);
 
     // INTEL_DVS_S
@@ -59,7 +58,6 @@ AiqUnit::~AiqUnit()
     if (mAiqUnitState == AIQ_UNIT_START) {
         stop();
     }
-
     if (mAiqUnitState == AIQ_UNIT_INIT) {
         deinit();
     }
@@ -116,9 +114,7 @@ int AiqUnit::deinit()
     // LOCAL_TONEMAP_E
 
     mAiqEngine->deinit();
-
     mAiqSetting->deinit();
-
     mAiqUnitState = AIQ_UNIT_NOT_INIT;
 
     return OK;

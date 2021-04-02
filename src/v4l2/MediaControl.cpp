@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2011 The Android Open Source Project
- * Copyright (C) 2015-2020 Intel Corporation
+ * Copyright (C) 2015-2021 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 #define LOG_TAG "MediaControl"
 
 #include <stack>
+#include <string>
 #include <linux/v4l2-mediabus.h>
 #include <linux/videodev2.h>
 
@@ -723,6 +724,8 @@ const char *MediaControl::padType2String(unsigned flag)
 
 void MediaControl::setMediaMcCtl(int cameraId, vector <McCtl> ctls)
 {
+    setSensorOrientation(cameraId);
+
     for (auto &ctl : ctls) {
         MediaEntity *entity = getEntityById(ctl.entity);
         V4L2Subdevice* subDev = V4l2DeviceFactory::getSubDev(cameraId, entity->devname);
@@ -1151,4 +1154,25 @@ void MediaControl::dumpEntityTopology(bool dot)
             dumpTopologyText();
     }
 }
+
+void MediaControl::setSensorOrientation(int cameraId) {
+    int orientation = icamera::PlatformData::getSensorOrientation(cameraId);
+
+    if (orientation != ORIENTATION_180) {
+        LOG1("@%s, orientation %d do not supported currently", __func__, orientation);
+        return;
+    }
+
+    std::string subDevName;
+    PlatformData::getDevNameByType(cameraId, VIDEO_PIXEL_ARRAY, subDevName);
+    LOG1("@%s, sub-dev name is %s", __func__, subDevName.c_str());
+    V4L2Subdevice* subDev = V4l2DeviceFactory::getSubDev(cameraId, subDevName);
+    if ((subDev->SetControl(V4L2_CID_HFLIP, 1) == OK) &&
+                (subDev->SetControl(V4L2_CID_VFLIP, 1) == OK)) {
+        LOG1("@%s, IOCTL V4L2_CID_HFLIP/VFLIP OK", __func__);
+    } else {
+        LOGE("@%s Cannot set sensor orientation to %d.", __func__, orientation);
+    }
+}
+
 } // namespace icamera

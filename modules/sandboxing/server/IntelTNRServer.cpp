@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Intel Corporation
+ * Copyright (C) 2020-2021 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,12 +24,14 @@
 #include "iutils/Utils.h"
 
 namespace icamera {
+
 IntelTNRServer::IntelTNRServer() {
     LOG1("@%s", __func__);
 }
 
 IntelTNRServer::~IntelTNRServer() {
     mIntelTNRMap.clear();
+    mLockMap.clear();
     LOG1("@%s", __func__);
 }
 
@@ -64,7 +66,9 @@ int IntelTNRServer::init(void* pData, int dataSize) {
         mIntelTNRMap[key] = std::unique_ptr<IntelTNR7US>(new IntelTNR7US(initInfo->cameraId));
     }
 
+    mLockMap[key] = std::unique_ptr<std::mutex>(new std::mutex);
     mTnrSlotMap[key] = static_cast<TnrType>(tnrInstance);
+    std::unique_lock<std::mutex> lock(*mLockMap[key]);
 
     return mIntelTNRMap[key]->init(initInfo->width, initInfo->height,
                                    static_cast<TnrType>(tnrInstance));
@@ -72,11 +76,17 @@ int IntelTNRServer::init(void* pData, int dataSize) {
 
 int IntelTNRServer::deInit(TnrRequestInfo* requestInfo) {
     CheckError(requestInfo == nullptr, UNKNOWN_ERROR, "@%s, requestInfo is nullptr", __func__);
+
     int key = getIndex(requestInfo->cameraId, requestInfo->type);
+
     CheckError((mIntelTNRMap.find(key) == mIntelTNRMap.end()), UNKNOWN_ERROR,
                "%s, IntelTNR type:%d is nullptr", __func__, requestInfo->type);
-    mIntelTNRMap.erase(key);
-    mTnrSlotMap.erase(key);
+    {
+        std::unique_lock<std::mutex> lock(*mLockMap[key]);
+        mIntelTNRMap.erase(key);
+        mTnrSlotMap.erase(key);
+    }
+    mLockMap.erase(key);
     return OK;
 }
 
@@ -86,6 +96,8 @@ int IntelTNRServer::prepareSurface(void* pData, int dataSize, TnrRequestInfo* re
     int key = getIndex(requestInfo->cameraId, requestInfo->type);
     CheckError((mIntelTNRMap.find(key) == mIntelTNRMap.end()), UNKNOWN_ERROR,
                "%s, IntelTNR type:%d is nullptr", __func__, requestInfo->type);
+    std::unique_lock<std::mutex> lock(*mLockMap[key]);
+
     return mIntelTNRMap[key]->prepareSurface(pData, dataSize);
 }
 
@@ -95,6 +107,8 @@ int IntelTNRServer::runTnrFrame(const void* inBufAddr, void* outBufAddr, uint32_
     int key = getIndex(requestInfo->cameraId, requestInfo->type);
     CheckError((mIntelTNRMap.find(key) == mIntelTNRMap.end()), UNKNOWN_ERROR,
                "%s, IntelTNR type:%d is nullptr", __func__, requestInfo->type);
+    std::unique_lock<std::mutex> lock(*mLockMap[key]);
+
     return mIntelTNRMap[key]->runTnrFrame(inBufAddr, outBufAddr, inBufSize, outBufSize,
                                           static_cast<Tnr7Param*>(tnrParam),
                                           requestInfo->isForceUpdate, requestInfo->outBufFd);
@@ -105,6 +119,8 @@ int IntelTNRServer::asyncParamUpdate(TnrRequestInfo* requestInfo) {
     int key = getIndex(requestInfo->cameraId, requestInfo->type);
     CheckError((mIntelTNRMap.find(key) == mIntelTNRMap.end()), UNKNOWN_ERROR,
                "%s, IntelTNR type:%d is nullptr", __func__, requestInfo->type);
+    std::unique_lock<std::mutex> lock(*mLockMap[key]);
+
     return mIntelTNRMap[key]->asyncParamUpdate(requestInfo->gain, requestInfo->isForceUpdate);
 }
 

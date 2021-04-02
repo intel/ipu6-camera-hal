@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Intel Corporation
+ * Copyright (C) 2020-2021 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,6 +48,7 @@ namespace icamera {
 
 #define STILL_TNR_THRESHOLD_GAIN_ID 722
 #define DEFAULT_TNR_THRESHOLD_GAIN 2.0f
+#define TNR7US_RESTART_THRESHOLD 5
 
 std::mutex GPUExecutor::mGPULock;
 
@@ -58,8 +59,8 @@ GPUExecutor::GPUExecutor(int cameraId, const ExecutorPolicy& policy, vector<stri
           mIntelTNR(nullptr),
           mLastSequence(UINT32_MAX),
           mUseInternalTnrBuffer(useTnrOutBuffer),
-          mOutBufferSize(0),
-          mStillTnrTG(DEFAULT_TNR_THRESHOLD_GAIN) {
+          mOutBufferSize(0) {
+    CLEAR(mStillTnrTriggerInfo);
     LOG1("@%s %s", __func__, mName.c_str());
 }
 
@@ -107,9 +108,8 @@ int GPUExecutor::createPGs() {
 
 int GPUExecutor::start() {
     LOG1("%s executor:%s", __func__, mName.c_str());
-    if (mStreamId == STILL_STREAM_ID &&
-        getStillTnrTG(mPSysDag->getTuningMode(0), &mStillTnrTG) != OK) {
-        mStillTnrTG = DEFAULT_TNR_THRESHOLD_GAIN;
+    if (mStreamId == STILL_TNR_STREAM_ID &&
+        getStillTnrTriggerInfo(mPSysDag->getTuningMode(-1)) != OK) {
         LOGW("%s can't get threshold gain from aiqb, use default", __func__);
     }
 
@@ -235,15 +235,14 @@ bool GPUExecutor::fetchTnrOutBuffer(int64_t seq, std::shared_ptr<CameraBuffer> b
     return false;
 }
 
-int GPUExecutor::getStillTnrTG(TuningMode mode, float* tg) {
-    CheckError(!tg, UNKNOWN_ERROR, "invalid input");
+int GPUExecutor::getStillTnrTriggerInfo(TuningMode mode) {
     IntelCca* intelCca = IntelCca::getInstance(mCameraId, mode);
     CheckError(!intelCca, UNKNOWN_ERROR, "%s, cca is nullptr, mode:%d", __func__, mode);
     cca::cca_cmc cmc;
     ia_err ret = intelCca->getCMC(&cmc);
     CheckError(ret != OK, BAD_VALUE, "@%s get cmc data failed", __func__);
-    *tg = cmc.tnr7us_threshold_gain;
-    LOG1("%s threshold gain is %f", __func__, cmc.tnr7us_threshold_gain);
+    mStillTnrTriggerInfo = cmc.tnr7us_trigger_info;
+    LOG2("%s still tnr trigger gain num: %d", mName.c_str(), mStillTnrTriggerInfo.num_gains);
     return OK;
 }
 
@@ -263,13 +262,32 @@ int GPUExecutor::getTotalGain(int64_t seq, float* totalGain) {
 }
 
 bool GPUExecutor::isBypassStillTnr(int64_t seq) {
-    if (mStreamId != STILL_STREAM_ID) return false;
+    if (mStreamId != STILL_TNR_STREAM_ID) return true;
 
     float totalGain = 0.0f;
     int ret = getTotalGain(seq, &totalGain);
     CheckError(ret, true, "@%s, Failed to get total gain", __func__);
-    if (totalGain <= mStillTnrTG) return true;
+    if (totalGain <= mStillTnrTriggerInfo.tnr7us_threshold_gain) return true;
     return false;
+}
+
+int GPUExecutor::getTnrExtraFrameCount(int64_t seq) {
+    if (mStreamId != STILL_TNR_STREAM_ID) return 0;
+    float totalGain = 0.0f;
+    int ret = getTotalGain(seq, &totalGain);
+    CheckError(ret, 0, "@%s, Failed to get total gain", __func__);
+
+    if (!mStillTnrTriggerInfo.num_gains)
+        return PlatformData::getTnrExtraFrameCount(mCameraId);
+
+    int index = 0;
+    for (int i = 1; i < mStillTnrTriggerInfo.num_gains; i++) {
+        if (fabs(mStillTnrTriggerInfo.trigger_infos[i].gain - totalGain) <
+            fabs(mStillTnrTriggerInfo.trigger_infos[i - 1].gain - totalGain))
+            index = i;
+    }
+    /* the frame_count is total tnr7 frame count, already run 1 frame */
+    return mStillTnrTriggerInfo.trigger_infos[index].frame_count - 1;
 }
 
 int GPUExecutor::allocTnrOutBufs(uint32_t bufSize) {
@@ -356,7 +374,7 @@ int GPUExecutor::processNewFrame() {
     ret = runTnrFrame(inBuf, outBuf);
     CheckError(ret != OK, ret, "@%s: run tnr failed", __func__);
 
-    if (CameraDump::isDumpTypeEnable(DUMP_GPU_TNR) && mStreamId == STILL_STREAM_ID) {
+    if (CameraDump::isDumpTypeEnable(DUMP_GPU_TNR) && mStreamId == STILL_TNR_STREAM_ID) {
         CameraDump::dumpImage(mCameraId, inBuf, M_GPUTNR, inBuffers.begin()->first);
         CameraDump::dumpImage(mCameraId, outBuf, M_GPUTNR, outBuffers.begin()->first);
     }
@@ -531,7 +549,7 @@ int GPUExecutor::runTnrFrame(const std::shared_ptr<CameraBuffer>& inBuf,
             LOG2("%s executor name:%s, skip frame sequence: %ld", __func__, mName.c_str(),
                  inBuf->getSequence());
             return OK;
-        } else if (mStreamId == STILL_STREAM_ID) {
+        } else if (mStreamId == STILL_TNR_STREAM_ID) {
             mGPULock.lock();
         }
     }
@@ -556,10 +574,8 @@ int GPUExecutor::runTnrFrame(const std::shared_ptr<CameraBuffer>& inBuf,
         // when use internal tnr buffer, we don't need to use fd map buffer
         dstFd = -1;
     }
-    bool isTnrParamSyncUpdate = mStreamId == STILL_STREAM_ID ? true : false;
     ret = mIntelTNR->runTnrFrame(inBuf->getBufferAddr(), dstBuf, inBuf->getBufferSize(), dstSize,
-                                 mTnr7usParam, isTnrParamSyncUpdate, dstFd);
-
+                                 mTnr7usParam, false, dstFd);
     if (ret == OK) {
         if (useInternalBuffer) {
             MEMCPY_S(outPtr, bufferSize, tnrOutBuf->second, mOutBufferSize);
@@ -586,16 +602,14 @@ int GPUExecutor::runTnrFrame(const std::shared_ptr<CameraBuffer>& inBuf,
     CheckError(ret != OK, UNKNOWN_ERROR, " %s tnr7us run frame failed", __func__);
     mLastSequence = sequence;
 
-    if (!isTnrParamSyncUpdate) {
-        // still stream will update params in tnr7us, skip async update
-        float totalGain = 0.0f;
-        ret = getTotalGain(sequence, &totalGain);
-        CheckError(ret, UNKNOWN_ERROR, "@%s, Failed to get total gain", __func__);
-
-        // update tnr param when total gain changes
-        bool isTnrParamForceUpdate = icamera::PlatformData::isTnrParamForceUpdate();
-        ret = mIntelTNR->asyncParamUpdate(static_cast<int>(totalGain), isTnrParamForceUpdate);
-    }
+    // update tnr parameters after GPU thread finished
+    float totalGain = 0.0f;
+    ret = getTotalGain(sequence, &totalGain);
+    CheckError(ret, UNKNOWN_ERROR, "@%s, Failed to get total gain", __func__);
+    // update tnr param when total gain changes
+    bool isTnrParamForceUpdate = icamera::PlatformData::isTnrParamForceUpdate();
+    // multiply totalGain by 100, to avoid lose accuracy
+    ret = mIntelTNR->asyncParamUpdate(static_cast<int>(totalGain * 100), isTnrParamForceUpdate);
 
     LOG2("Exit %s executor name:%s, sequence: %u", __func__, mName.c_str(), inBuf->getSequence());
     return ret;

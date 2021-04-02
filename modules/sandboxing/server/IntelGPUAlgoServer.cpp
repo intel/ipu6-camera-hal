@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Intel Corporation.
+ * Copyright (C) 2020-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,7 +69,8 @@ void IntelGPUAlgoServer::handleRequest(const MsgReq& msg) {
             status = mTNR.prepareSurface(surfaceBuffer.addr, surfaceBuffer.size, requestInfo);
             break;
         }
-        case IPC_GPU_TNR_RUN_FRAME: {
+        case IPC_GPU_TNR_RUN_FRAME:
+        case IPC_GPU_TNR_THREAD2_RUN_FRAME: {
             TnrRequestInfo* requestInfo = static_cast<TnrRequestInfo*>(addr);
             ShmInfo inBuffer = {};
             ShmInfo outBuffer = {};
@@ -100,7 +101,8 @@ void IntelGPUAlgoServer::handleRequest(const MsgReq& msg) {
                                       paramBuffer.addr, requestInfo);
             break;
         }
-        case IPC_GPU_TNR_PARAM_UPDATE: {
+        case IPC_GPU_TNR_PARAM_UPDATE:
+        case IPC_GPU_TNR_THREAD2_PARAM_UPDATE: {
             TnrRequestInfo* requestInfo = static_cast<TnrRequestInfo*>(addr);
             status = mTNR.asyncParamUpdate(requestInfo);
             break;

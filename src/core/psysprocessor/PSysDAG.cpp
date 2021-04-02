@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2020 Intel Corporation.
+ * Copyright (C) 2017-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ PSysDAG::PSysDAG(int cameraId, PSysDagCallback* psysDagCB) :
     mDefaultMainInputPort(MAIN_PORT),
     mVideoTnrExecutor(nullptr),
     mStillTnrExecutor(nullptr),
+    mStillExecutor(nullptr),
     mRunAicAfterQbuf(false)
 {
     LOG1("@%s, mCameraId:%d", __func__, mCameraId);
@@ -136,16 +137,17 @@ int PSysDAG::createPipeExecutors(bool useTnrOutBuffer)
         if (!hasVideoPipe)
             hasVideoPipe = (streamId == VIDEO_STREAM_ID);
         if (!hasStillPipe)
-            hasStillPipe = (streamId == STILL_STREAM_ID);
+            hasStillPipe = (streamId == STILL_STREAM_ID || streamId == STILL_TNR_STREAM_ID);
 #ifdef TNR7_CM
         PipeExecutor *executor;
         if (strstr(item.exeName.c_str(), "gputnr") != nullptr) {
             executor = new GPUExecutor(mCameraId, item, cfg->exclusivePgs, this, gc,
                                        useTnrOutBuffer);
             if (streamId == VIDEO_STREAM_ID) mVideoTnrExecutor = executor;
-            else if (streamId == STILL_STREAM_ID) mStillTnrExecutor = executor;
+            else if (streamId == STILL_TNR_STREAM_ID) mStillTnrExecutor = executor;
         } else {
             executor = new PipeExecutor(mCameraId, item, cfg->exclusivePgs, this, gc);
+            if (streamId == STILL_STREAM_ID) mStillExecutor = executor;
         }
 #else
         PipeExecutor *executor = new PipeExecutor(mCameraId, item, cfg->exclusivePgs, this, gc);
@@ -204,7 +206,24 @@ bool PSysDAG::fetchTnrOutBuffer(int64_t seq, std::shared_ptr<CameraBuffer> buf)
 
 bool PSysDAG::isBypassStillTnr(int64_t seq)
 {
-    return mStillTnrExecutor != nullptr ? mStillTnrExecutor->isBypassStillTnr(seq) : true;
+    return mStillExecutor != nullptr &&
+           (mStillTnrExecutor != nullptr ? mStillTnrExecutor->isBypassStillTnr(seq) : true);
+}
+
+int PSysDAG::getTnrExtraFrameCount(int64_t seq)
+{
+    return mStillTnrExecutor != nullptr ? mStillTnrExecutor->getTnrExtraFrameCount(seq) : 0;
+}
+
+/* multi-streams can bind to the same output port, but only one stream is active */
+bool PSysDAG::isInactiveStream(int streamId, const PSysTaskData* task)
+{
+    if (mStillExecutor == nullptr || mStillTnrExecutor == nullptr) return false;
+    long sequence = task->mInputBuffers.at(mDefaultMainInputPort)->getSequence();
+    bool isTnrTask = !isBypassStillTnr(sequence) || task->mFakeTask;
+
+    return ((!isTnrTask && (streamId == STILL_TNR_STREAM_ID))
+     || (isTnrTask && (streamId == STILL_STREAM_ID)));
 }
 
 int PSysDAG::linkAndConfigExecutors()
@@ -266,11 +285,7 @@ status_t PSysDAG::searchStreamIdsForOutputPort(PipeExecutor *executor, Port port
     CheckError(!executor || !executor->isOutputEdge(), BAD_VALUE,
                "%s, the executor is nullptr or is not output edge", __func__);
 
-    if (mOutputPortToStreamIds.find(port) != mOutputPortToStreamIds.end()) {
-        return OK;
-    }
-
-    std::vector<int32_t> streamIds;
+    auto& streamIds = mOutputPortToStreamIds[port];
     PipeExecutor *tmpExecutor = executor;
     // Loop to find the producer executor's stream id
     do {
@@ -282,8 +297,6 @@ status_t PSysDAG::searchStreamIdsForOutputPort(PipeExecutor *executor, Port port
 
         tmpExecutor = findExecutorProducer(tmpExecutor);
     } while (tmpExecutor);
-
-    mOutputPortToStreamIds[port] = streamIds;
 
     return OK;
 }
@@ -325,8 +338,8 @@ int PSysDAG::bindExternalPortsToExecutor()
                     mInputMaps.push_back(portMap);
                     // Clear the stream of executor to avoid binding it again.
                     CLEAR(portInfo.second);
-                    LOG2("%s, inputMap executor %p, dagPort %d, execPort %d", __func__,
-                        executor, frameInfo.first, portInfo.first);
+                    LOG2("%s, inputMap executor %s, dagPort %d, execPort %d", __func__,
+                         executor->getName(), frameInfo.first, portInfo.first);
                     break;
                 }
             }
@@ -356,6 +369,8 @@ int PSysDAG::bindExternalPortsToExecutor()
                     searchStreamIdsForOutputPort(executor, frameInfo.first);
                     // Clear the stream of executor to avoid binding it again.
                     CLEAR(portInfo.second);
+                    LOG2("%s, outputMap executor %s, dagPort %d, execPort %d", __func__,
+                         executor->getName(), frameInfo.first, portInfo.first);
                     break;
                 }
             }
@@ -365,7 +380,7 @@ int PSysDAG::bindExternalPortsToExecutor()
     // Each required port must be mapped to one of (edge) executor's port.
     // One input port may be mapped to more of (edge) executor's ports.
     CheckError(mInputMaps.size() < mInputFrameInfo.size(), BAD_VALUE, "Failed to bind input ports");
-    CheckError(mOutputMaps.size() != mOutputFrameInfo.size(), BAD_VALUE, "Failed to bind output ports");
+    CheckError(mOutputMaps.size() < mOutputFrameInfo.size(), BAD_VALUE, "Failed to bind output ports");
 
     return OK;
 }
@@ -404,11 +419,12 @@ int PSysDAG::registerInternalBufs(std::map<Port, CameraBufVector> &internalBufs)
 int PSysDAG::queueBuffers(const PSysTaskData& task)
 {
     LOG2("@%s, mCameraId:%d", __func__, mCameraId);
-
     // Provide the input buffers for the input edge executor.
     for (auto& inputFrame : task.mInputBuffers) {
         for (auto& inputMap : mInputMaps) {
             if (inputMap.mDagPort == inputFrame.first) {
+                if (isInactiveStream(mExecutorStreamId[inputMap.mExecutor], &task))
+                    continue;
                 inputMap.mExecutor->onFrameAvailable(inputMap.mExecutorPort, inputFrame.second);
                 LOG2("%s, queue input buffer: dagPort: %d, executorPort: %d, name: %s", __func__,
                      inputMap.mDagPort, inputMap.mExecutorPort, inputMap.mExecutor->getName());
@@ -420,6 +436,8 @@ int PSysDAG::queueBuffers(const PSysTaskData& task)
     for (auto& outputFrame : task.mOutputBuffers) {
         for (auto& outputMap : mOutputMaps) {
             if (outputMap.mDagPort == outputFrame.first) {
+                if (isInactiveStream(mExecutorStreamId[outputMap.mExecutor], &task))
+                    continue;
                 outputMap.mExecutor->qbuf(outputMap.mExecutorPort, outputFrame.second);
                 LOG2("%s, queue output buffer, dagPort: %d, executorPort: %d, name: %s", __func__,
                      outputMap.mDagPort, outputMap.mExecutorPort, outputMap.mExecutor->getName());
@@ -587,6 +605,8 @@ TuningMode PSysDAG::getTuningMode(long sequence)
 {
     AutoMutex taskLock(mTaskLock);
 
+    if (sequence < 0) return mTuningMode;
+
     TuningMode taskTuningMode = mTuningMode;
     bool taskTuningModeFound = false;
 
@@ -702,6 +722,7 @@ int PSysDAG::prepareIpuParams(long sequence, bool forceUpdate, TaskInfo *task)
                    __func__, outputFrame.first);
 
         for (auto& streamId : it->second) {
+            if (isInactiveStream(streamId, &(task->mTaskData))) continue;
             if (std::find(activeStreamIds.begin(), activeStreamIds.end(), streamId)
                     == activeStreamIds.end()) {
                 activeStreamIds.push_back(streamId);
@@ -786,12 +807,14 @@ void PSysDAG::tuningReconfig(TuningMode newTuningMode)
 
 void PSysDAG::dumpExternalPortMap()
 {
+    if (!Log::isDebugLevelEnable(CAMERA_DEBUG_LOG_LEVEL2)) return;
+
     for (auto& inputMap : mInputMaps) {
         if (inputMap.mExecutor) {
             LOG2("@%s: Input port %d, executor: %s:%d", __func__, inputMap.mDagPort,
                  inputMap.mExecutor->getName(), inputMap.mExecutorPort);
         } else {
-            LOGE("%s: no executro for input port %d!", __func__, inputMap.mDagPort);
+            LOGE("%s: no executor for input port %d!", __func__, inputMap.mDagPort);
         }
     }
     for (auto& outputMap : mOutputMaps) {
@@ -799,7 +822,7 @@ void PSysDAG::dumpExternalPortMap()
             LOG2("@%s: Output port %d, executor: %s:%d", __func__, outputMap.mDagPort,
                  outputMap.mExecutor->getName(), outputMap.mExecutorPort);
         } else {
-            LOGE("%s: no executro for output port %d!", __func__, outputMap.mDagPort);
+            LOGE("%s: no executor for output port %d!", __func__, outputMap.mDagPort);
         }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Intel Corporation.
+ * Copyright (C) 2015-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -147,10 +147,6 @@ private:
     int calculateHyperfocalDistance(TuningMode mode);
     int calculateDepthOfField(const cca::cca_af_results &afResults, camera_range_t *focusRange);
     int initAiqPlusParams();
-    // debug dumpers
-    int dumpPaParams(const cca::cca_pa_params& pa);
-    int dumpSaResult(const cca::cca_sa_results* saResult);
-
     IntelCca* getIntelCca(TuningMode tuningMode);
 
 private:

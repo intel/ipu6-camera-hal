@@ -597,7 +597,7 @@ status_t GraphConfigPipe::getScalerKernelResolutionRatio(uint32_t* kenerArray, u
 
     const ia_isp_bxt_resolution_info_t* resolutionInfo;
     resolutionInfo = getScalerKernelResolutionInfo(kenerArray, sizeArray);
-    CheckError(!resolutionInfo, UNKNOWN_ERROR, "%s getScalerKernelResolutionInfo fails", __func__);
+    if (!resolutionInfo) return OK;    // no scaling in current setting
 
     *widthRatio = 1.0;
     *heightRatio = 1.0;

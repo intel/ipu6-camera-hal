@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Intel Corporation
+ * Copyright (C) 2020-2021 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -361,7 +361,8 @@ ia_err IntelCca::getAiqd(cca::cca_aiqd* aiqd) {
     return ret;
 }
 
-ia_err IntelCca::updateTuning(uint8_t lardTags, const ia_lard_input_params& lardParams) {
+ia_err IntelCca::updateTuning(uint8_t lardTags, const ia_lard_input_params& lardParams,
+                              const cca::cca_nvm& nvm) {
     LOGIPC("@%s, mCameraId:%d, tuningMode:%d", __func__, mCameraId, mTuningMode);
     CheckError(!mInitialized, ia_err_general, "@%s, mInitialized is false", __func__);
 
@@ -371,6 +372,7 @@ ia_err IntelCca::updateTuning(uint8_t lardTags, const ia_lard_input_params& lard
     params->tuningMode = mTuningMode;
     params->lardTags = lardTags;
     params->lardParams = lardParams;
+    params->nvmParams = nvm;
 
     ia_err ret = mCommon.requestSyncCca(IPC_CCA_UPDATE_TUNING, mMemTuning.mHandle);
     CheckError(ret != ia_err_none, ia_err_general, "@%s, requestSyncCca fails", __func__);

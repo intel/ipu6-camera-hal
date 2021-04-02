@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Intel Corporation.
+ * Copyright (C) 2015-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,8 +79,7 @@ AiqCore::AiqCore(int cameraId) :
     mAiqParams = std::unique_ptr<cca::cca_aiq_params>(new cca::cca_aiq_params);
     mAiqResults = std::unique_ptr<cca::cca_aiq_results>(new cca::cca_aiq_results);
 
-    camera_info_t info;
-    CLEAR(info);
+    camera_info_t info = {};
     PlatformData::getCameraInfo(mCameraId, info);
     info.capability->getTonemapMaxCurvePoints(mTonemapMaxCurvePoints);
     if (mTonemapMaxCurvePoints > 0 && mTonemapMaxCurvePoints < MIN_TONEMAP_POINTS) {
@@ -342,10 +341,15 @@ int AiqCore::runAiq(long requestId, AiqResult *aiqResult) {
     mAiqParams->bitmap = 0;
 
     // fill the parameter
-    if ((aaaRunType & IMAGING_ALGO_AWB) &&
-        (!mAwbForceLock && (mAwbRunTime % mIntel3AParameter->mAwbPerTicks == 0))) {
+    if (aaaRunType & IMAGING_ALGO_AWB) {
+        if (!mAwbForceLock && (mAwbRunTime % mIntel3AParameter->mAwbPerTicks == 0)) {
+            mIntel3AParameter->mAwbParams.is_bypass = false;
+            mAiqParams->awb_input = mIntel3AParameter->mAwbParams;
+        } else {
+            mIntel3AParameter->mAwbParams.is_bypass = true;
+        }
+        LOG3A("AWB bypass %d", mIntel3AParameter->mAwbParams.is_bypass);
         mAiqParams->bitmap |= cca::CCA_MODULE_AWB;
-        mAiqParams->awb_input = mIntel3AParameter->mAwbParams;
     }
 
     if (aaaRunType & IMAGING_ALGO_AF && !mAfForceLock) {
@@ -405,9 +409,8 @@ int AiqCore::runAiq(long requestId, AiqResult *aiqResult) {
         }
 
         mIntel3AParameter->updateAwbResult(newAwbResults);
-
         aiqResult->mAwbResults = *newAwbResults;
-
+        AiqUtils::dumpAwbResults(aiqResult->mAwbResults);
         ++mAwbRunTime;
     }
 
@@ -416,6 +419,7 @@ int AiqCore::runAiq(long requestId, AiqResult *aiqResult) {
         focusDistanceResult(&mAiqResults->af_output, &aiqResult->mAfDistanceDiopters,
                             &aiqResult->mFocusRange);
         aiqResult->mAfResults = mAiqResults->af_output;
+        AiqUtils::dumpAfResults(aiqResult->mAfResults);
 
         mIntel3AParameter->fillAfTriggerResult(&aiqResult->mAfResults);
     }
@@ -423,21 +427,21 @@ int AiqCore::runAiq(long requestId, AiqResult *aiqResult) {
     // handle gbce result
     if (aaaRunType & IMAGING_ALGO_GBCE) {
         aiqResult->mGbceResults = mAiqResults->gbce_output;
+        AiqUtils::dumpGbceResults(aiqResult->mGbceResults);
     }
 
     // handle pa result
     if (aaaRunType & IMAGING_ALGO_PA) {
         mIntel3AParameter->updatePaResult(&mAiqResults->pa_output);
-        dumpPaParams(mAiqResults->pa_output);
         aiqResult->mPaResults = mAiqResults->pa_output;
+        AiqUtils::dumpPaResults(aiqResult->mPaResults);
     }
 
     // handle sa result
     if (aaaRunType & IMAGING_ALGO_SA) {
-        dumpSaResult(&mAiqResults->sa_output);
+        AiqUtils::dumpSaResults(mAiqResults->sa_output);
         ret |= processSAResults(&mAiqResults->sa_output, aiqResult->mLensShadingMap);
     }
-
     CheckError(ret != OK, ret, "run3A failed, ret: %d", ret);
 
     uint16_t pixelInLine = aiqResult->mAeResults.exposures[0].sensor_exposure->line_length_pixels;
@@ -477,16 +481,11 @@ int AiqCore::runAEC(long requestId, cca::cca_ae_results* aeResults) {
         ia_err iaErr = intelCca->runAEC(requestId, mIntel3AParameter->mAeParams, newAeResults);
         ret = AiqUtils::convertError(iaErr);
         CheckError(ret != OK, ret, "Error running AE, ret: %d", ret);
-
-        LOG3A("%s, AE results exposure time %d, iso %d, converged %d", __func__,
-              newAeResults->exposures[0].exposure[0].exposure_time_us,
-              newAeResults->exposures[0].exposure[0].iso,
-              newAeResults->exposures[0].converged);
     }
 
     mIntel3AParameter->updateAeResult(newAeResults);
     *aeResults = *newAeResults;
-
+    AiqUtils::dumpAeResults(*aeResults);
     ++mAeRunTime;
 
     return ret;
@@ -684,34 +683,6 @@ int AiqCore::processSAResults(cca::cca_sa_results *saResults, float *lensShading
     for (size_t i = 0; i < mLscGridRGGBLen; i++) {
         lensShadingMap[i] = lsm[i];
     }
-
-    return OK;
-}
-
-int AiqCore::dumpPaParams(const cca::cca_pa_params& pa) {
-    if (!Log::isDebugLevelEnable(CAMERA_DEBUG_LOG_AIQ)) return OK;
-
-    for (int i = 0; i < 3; i++) {
-        LOG3A("@%s, color_conversion_matrix  [%.3f %.3f %.3f] ", __func__,
-              pa.color_conversion_matrix[i][0],
-              pa.color_conversion_matrix[i][1],
-              pa.color_conversion_matrix[i][2]);
-    }
-
-    LOG3A("@%s, color_gains, gr:%f, r:%f, b:%f, gb:%f", __func__,
-          pa.color_gains.gr, pa.color_gains.r, pa.color_gains.b, pa.color_gains.gb);
-
-    return OK;
-}
-
-int AiqCore::dumpSaResult(const cca::cca_sa_results *saResult) {
-    LOG3A("%s, saResult:%p", __func__, saResult);
-    CheckError(!saResult, BAD_VALUE, "@%s, saResult is nullptr", __func__);
-
-    if (!Log::isDebugLevelEnable(CAMERA_DEBUG_LOG_AIQ)) return OK;
-
-    LOG3A("   SA results color_order %d size %dx%d",
-          saResult->color_order, saResult->width,  saResult->height);
 
     return OK;
 }

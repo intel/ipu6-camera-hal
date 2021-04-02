@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Intel Corporation
+ * Copyright (C) 2019-2021 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,6 +50,7 @@ public:
 
     virtual bool fetchTnrOutBuffer(int64_t seq, std::shared_ptr<CameraBuffer> buf) { return false; }
     virtual bool isBypassStillTnr(int64_t seq) { return true; }
+    virtual int getTnrExtraFrameCount(int64_t seq) { return 0; }
     int releaseStatsBuffer(const std::shared_ptr<CameraBuffer> &statsBuf);
 
     void setStreamId(int streamId) { mStreamId = streamId; }

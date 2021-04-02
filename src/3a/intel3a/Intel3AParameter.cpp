@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Intel Corporation.
+ * Copyright (C) 2015-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -131,6 +131,7 @@ void Intel3AParameter::initAfParameter()
 
 void Intel3AParameter::initAwbParameter()
 {
+    mAwbParams.is_bypass = false;
     mAwbParams.scene_mode = ia_aiq_awb_operation_mode_auto;
     mAwbParams.manual_convergence_time = -1;
 
@@ -258,8 +259,7 @@ void Intel3AParameter::setManualExposure(const aiq_parameter_t& param)
         return;
     }
 
-    camera_range_t range;
-    CLEAR(range);
+    camera_range_t range = {};
     if (PlatformData::getSupportAeExposureTimeRange(mCameraId, param.sceneMode, range) == OK) {
          manualExpTimeUs = CLIP(manualExpTimeUs, range.max, range.min);
     }
@@ -278,8 +278,7 @@ void Intel3AParameter::setManualGain(const aiq_parameter_t& param)
         return;
     }
 
-    camera_range_t gainRange;
-    CLEAR(gainRange);
+    camera_range_t gainRange = {};
     if (PlatformData::getSupportAeGainRange(mCameraId, param.sceneMode, gainRange) == OK) {
         manualGain = CLIP(manualGain, gainRange.max, gainRange.min);
     }
@@ -390,8 +389,7 @@ void Intel3AParameter::updateAeParameter(const aiq_parameter_t& param)
         camera_window_t window = param.aeRegions.back();
 
         if (window.right > window.left && window.bottom > window.top) {
-            camera_coordinate_t coordinate;
-            CLEAR(coordinate);
+            camera_coordinate_t coordinate = {};
             coordinate.x = window.left + (window.right - window.left) / 2;
             coordinate.y = window.top + (window.bottom - window.top) / 2;
             camera_coordinate_system_t frameCoord = {0, 0, param.resolution.width, param.resolution.height};
@@ -566,16 +564,14 @@ void Intel3AParameter::updateAwbParameter(const aiq_parameter_t& param)
                 break;
         }
     }
+    LOG3A("%s, scene mode: %d, cctRange[%u:%u], white coordinate[%u:%u], time: %f", __func__,
+          mAwbParams.scene_mode, mAwbParams.manual_cct_range.min_cct,
+          mAwbParams.manual_cct_range.max_cct, mAwbParams.manual_white_coordinate.x,
+          mAwbParams.manual_white_coordinate.y, mAwbParams.manual_convergence_time);
 }
 
 void Intel3AParameter::updateAfParameter(const aiq_parameter_t& param)
 {
-    mAfParams.lens_position = param.lensPosition;
-    mAfParams.lens_movement_start_timestamp = param.lensMovementStartTimestamp;
-
-    LOG3A("%s, Focus position %d, timestamp %llu, afMode %d", __func__, param.lensPosition,
-            param.lensMovementStartTimestamp, param.afMode);
-
     // Mode
     if (mAfMode != param.afMode) {
         // Reset af parameter
@@ -590,6 +586,9 @@ void Intel3AParameter::updateAfParameter(const aiq_parameter_t& param)
         mAfForceLock = false;
         mDuringAfTriggerScan = false;
     }
+
+    mAfParams.lens_position = param.lensPosition;
+    mAfParams.lens_movement_start_timestamp = param.lensMovementStartTimestamp;
     mAfParams.frame_use = AiqUtils::convertFrameUsageToIaFrameUsage(param.frameUsage);
 
     // Trigger
@@ -646,11 +645,18 @@ void Intel3AParameter::updateAfParameter(const aiq_parameter_t& param)
         }
 
         mAfParams.manual_focus_parameters.manual_focus_distance = focusInMm;
+        LOG3A("%s, manual_focus_action: %d, manual_focus_distance: %d, manual_lens_position: %d,",
+              __func__, mAfParams.manual_focus_parameters.manual_focus_action,
+              mAfParams.manual_focus_parameters.manual_focus_distance,
+              mAfParams.manual_focus_parameters.manual_lens_position);
     } else {
         mAfParams.manual_focus_parameters = {};
     }
 
     LOG3A("%s, afForceLock %d, duringAfTriggerScan %d", __func__, mAfForceLock, mDuringAfTriggerScan);
+    LOG3A("%s, frame_use: %d, lens position %d, timestamp %llu, focus_mode %d, afMode: %d",
+          __func__, mAfParams.frame_use, mAfParams.lens_position,
+          mAfParams.lens_movement_start_timestamp, mAfParams.focus_mode, mAfMode);
 }
 
 void Intel3AParameter::updateAfParameterForAfTriggerStart()

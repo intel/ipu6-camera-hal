@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Intel Corporation.
+ * Copyright (C) 2020-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,7 +58,8 @@ class IntelCca {
     ia_err getCMC(cca::cca_cmc* cmc);
     ia_err getMKN(ia_mkn_trg type, cca::cca_mkn* mkn);
     ia_err getAiqd(cca::cca_aiqd* aiqd);
-    ia_err updateTuning(uint8_t lardTags, const ia_lard_input_params& lardParams);
+    ia_err updateTuning(uint8_t lardTags, const ia_lard_input_params& lardParams,
+                        const cca::cca_nvm& nvm);
 
     void deinit();
 

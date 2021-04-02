@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Intel Corporation.
+ * Copyright (C) 2015-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,10 +35,6 @@ AiqResult::AiqResult(int cameraId) :
 {
     LOG3A("@%s", __func__);
 
-    CLEAR(mRGammaLut);
-    CLEAR(mGGammaLut);
-    CLEAR(mBGammaLut);
-    CLEAR(mToneMapLut);
     CLEAR(mCustomControls);
     CLEAR(mCustomControlsParams);
     CLEAR(mAwbResults);
@@ -85,30 +81,31 @@ int AiqResult::deinit()
 
 AiqResult &AiqResult::operator=(const AiqResult &other)
 {
-    deepCopyAiqResult(other, this);
+    mCameraId = other.mCameraId;
     mSequence = other.mSequence;
     mTimestamp = other.mTimestamp;
     mTuningMode = other.mTuningMode;
+    mAfDistanceDiopters = other.mAfDistanceDiopters;
     mSkip = other.mSkip;
+    mFocusRange = other.mFocusRange;
+
+    mAeResults = other.mAeResults;
+    mAwbResults = other.mAwbResults;
+    mAfResults = other.mAfResults;
+    mGbceResults = other.mGbceResults;
+    mPaResults = other.mPaResults;
+
     mCustomControls.count = other.mCustomControls.count;
     for (int i = 0; i < mCustomControls.count; i++) {
         mCustomControlsParams[i] = other.mCustomControlsParams[i];
     }
+    MEMCPY_S(mLensShadingMap, sizeof(mLensShadingMap),
+             other.mLensShadingMap, sizeof(other.mLensShadingMap));
+
     mAiqParam = other.mAiqParam;
     mFrameDuration = other.mFrameDuration;
     mRollingShutter = other.mRollingShutter;
 
     return *this;
 }
-
-int AiqResult::deepCopyAiqResult(const AiqResult &src, AiqResult *dst)
-{
-    int ret = AiqUtils::deepCopyAeResults(src.mAeResults, &dst->mAeResults);
-    ret |= AiqUtils::deepCopyAfResults(src.mAfResults, &dst->mAfResults);
-    ret |= AiqUtils::deepCopyAwbResults(src.mAwbResults, &dst->mAwbResults);
-    ret |= AiqUtils::deepCopyPaResults(src.mPaResults, &dst->mPaResults);
-
-    return ret;
-}
-
 } /* namespace icamera */

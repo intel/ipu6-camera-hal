@@ -27,11 +27,6 @@ set(ALGOWRAPPER_SRCS
         CACHE INTERNAL "algo wrapper sources"
     )
 
-    set(ALGOWRAPPER_SRCS
-        ${ALGOWRAPPER_SRCS}
-        CACHE INTERNAL "algo wrapper sources"
-    )
-
 if (USE_PG_LITE_PIPE)
     set(ALGOWRAPPER_SRCS
         ${ALGOWRAPPER_SRCS}

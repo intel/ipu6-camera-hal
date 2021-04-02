@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <atomic>
 #include <deque>
 
 #include "iutils/Thread.h"
@@ -147,7 +148,7 @@ private:
         CameraBufQ mFrameQueue;
     };
     FrameQueue mOutputFrames[MAX_STREAM_NUMBER];
-    bool mActive;
+    std::atomic<bool> mActive;
 
     enum RequestTriggerEvent {
         NONE_EVENT  = 0,

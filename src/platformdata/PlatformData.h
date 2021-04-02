@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Intel Corporation.
+ * Copyright (C) 2015-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -142,6 +142,7 @@ public:
                 mUseCrlModule(true),
                 mFacing(FACING_BACK),
                 mOrientation(ORIENTATION_0),
+                mSensorOrientation(ORIENTATION_0),
                 mUseSensorDigitalGain(false),
                 mUseIspDigitalGain(false),
                 mNeedPreRegisterBuffers(false),
@@ -214,6 +215,7 @@ public:
             bool mUseCrlModule;
             int mFacing;
             int mOrientation;
+            int mSensorOrientation;
             bool mUseSensorDigitalGain;
             bool mUseIspDigitalGain;
             bool mNeedPreRegisterBuffers;
@@ -1119,7 +1121,7 @@ public:
 
     /**
      * \brief init Makernote
-     * allocate memory resouce for Makernote
+     * allocate memory resource for Makernote
      *
      * param[in] int cameraId: camera ID
      * \param[in] cameraId: [0, MAX_CAMERA_NUMBER - 1]
@@ -1131,7 +1133,7 @@ public:
 
     /**
      * \brief deinit Makernote
-     * free memory resouce for Makernote
+     * free memory resource for Makernote
      *
      * param[in] int cameraId: camera ID
      * \param[in] cameraId: [0, MAX_CAMERA_NUMBER - 1]
@@ -1233,5 +1235,21 @@ public:
      * the extra frame count for still stream
      */
      static int getTnrExtraFrameCount(int cameraId);
+
+     /*
+     * Set the orientation Info
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \param sensor orientation
+     */
+    static void setSensorOrientation(int cameraId, int orientation);
+
+    /*
+     * Get the orientation Info
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return sensor orientation
+     */
+    static int getSensorOrientation(int cameraId);
 };
 } /* namespace icamera */

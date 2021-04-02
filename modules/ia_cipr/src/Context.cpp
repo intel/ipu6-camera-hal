@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Intel Corporation.
+ * Copyright (C) 2020-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -152,8 +152,7 @@ Result Context::getManifest(uint32_t index, uint32_t* mainfestSize, void* manife
     pg_manifest.manifest = manifest;
 
     Result ret = doIoctl(static_cast<int>(IPU_IOC_GET_MANIFEST), &pg_manifest);
-    CheckError(ret != Result::OK, ret, "%s: Failed to retrieve manifest with index %d", __func__,
-               index);
+    if (ret != Result::OK) return ret;
 
     *mainfestSize = pg_manifest.size;
     return Result::OK;

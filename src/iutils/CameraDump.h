@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Intel Corporation.
+ * Copyright (C) 2015-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,7 +75,8 @@ enum {
 
     DUMP_AAL_OUTPUT = 1 << 23, // 0x800000 Decimal val 8388608
     DUMP_AAL_INPUT = 1 << 24, // 0x1000000 Decimal val 16777216
-    DUMP_GPU_TNR = 1 << 25, // 0x2000000
+    DUMP_GPU_TNR = 1 << 25, // 0x2000000 Decimal val 33554432
+    DUMP_NVM_DATA = 1 << 26, // 0x4000000 Decimal val 67108864
 };
 
 enum {
@@ -93,6 +94,7 @@ typedef enum {
     M_DEINTR, // De-interlaced frame dump
     M_SWIPOP, // Sw Image processor frame dump
     M_GPUTNR, // GPU TNR frame dump
+    M_NVM,    // NVM data dump
 } ModuleType_t;
 
 typedef enum {

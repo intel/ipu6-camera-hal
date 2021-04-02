@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Intel Corporation
+ * Copyright (C) 2019-2021 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,7 +61,9 @@ const char* IntelAlgoIpcCmdToString(IPC_CMD cmd) {
                                            "IPC_GPU_TNR_PREPARE_SURFACE",
                                            "IPC_GPU_TNR_RUN_FRAME",
                                            "IPC_GPU_TNR_PARAM_UPDATE",
-                                           "IPC_GPU_TNR_DEINIT"};
+                                           "IPC_GPU_TNR_DEINIT",
+                                           "IPC_GPU_TNR_THREAD2_RUN_FRAME",
+                                           "IPC_GPU_TNR_THREAD2_PARAM_UPDATE"};
 
     unsigned int num = sizeof(gIpcCmdMapping) / sizeof(gIpcCmdMapping[0]);
     return cmd < num ? gIpcCmdMapping[cmd] : gIpcCmdMapping[0];
@@ -77,10 +79,12 @@ IPC_GROUP IntelAlgoIpcCmdToGroup(IPC_CMD cmd) {
         group = IPC_GROUP_PSYS;
     } else if (cmd >= IPC_FD_INIT && cmd <= IPC_FD_DEINIT) {
         group = IPC_GROUP_FD;
-    } else if (cmd < IPC_GPU_TNR_INIT) {
-        group = IPC_GROUP_CPU_OTHER;
-    } else {
+    } else if (cmd >= IPC_GPU_TNR_INIT && cmd <= IPC_GPU_TNR_DEINIT) {
         group = IPC_GROUP_GPU;
+    } else if (cmd >= IPC_GPU_TNR_THREAD2_RUN_FRAME && cmd <= IPC_GPU_TNR_THREAD2_PARAM_UPDATE) {
+        group = IPC_GROUP_GPU_THREAD2;
+    } else {
+        group = IPC_GROUP_CPU_OTHER;
     }
 
     return group;
@@ -96,7 +100,8 @@ const char* IntelAlgoServerThreadName(int index) {
                                                             "OtherCPUAlgoServer"};
     count = IPC_CPU_GROUP_NUM;
 #else
-    static const char* gIpcCmdMapping[IPC_GPU_GROUP_NUM] = {"GPUAlgoServer"};
+    static const char* gIpcCmdMapping[IPC_GPU_GROUP_NUM] = {"GPUAlgoServer",
+                                                            "GPUAlgoServer2"};
     count = IPC_GPU_GROUP_NUM;
 #endif
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Intel Corporation.
+ * Copyright (C) 2015-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,7 +63,11 @@ private:
     int mCurrentSensor;
     std::string mI2CBus;
     std::string mCsiPort;
-    std::unordered_map<std::string, std::string> mAvailableSensor;
+    struct AvailableSensorInfo {
+        std::string sinkEntityName;
+        bool sensorFlag;
+    };
+    std::unordered_map<std::string, AvailableSensorInfo> mAvailableSensor;
     PlatformData::StaticCfg::CameraInfo *pCurrentCam;
     bool mInMediaCtlCfg;
     bool mInStaticMetadata;
@@ -71,6 +75,7 @@ private:
     CameraMetadata mMetadata;
     std::string mCameraModuleName;
     CameraMetadata mCameraModuleMetadata;
+    std::string mNvmNodeName;
 
     long* mMetadataCache;
     static const int mMetadataCacheSize = 4096;
@@ -87,6 +92,7 @@ private:
     std::vector<std::string> getAvailableSensors(const std::string &ipuName,
                                                  const std::vector<std::string> &sensorsList);
     void getSensorDataFromXmlFile(void);
+    void getCsiPortAndI2CBus(CameraParser *profiles);
     void checkField(CameraParser *profiles, const char *name, const char **atts);
 
     void handleSensor(CameraParser *profiles, const char *name, const char **atts);
@@ -125,6 +131,7 @@ private:
     void parseOutputMap(const char *str, std::vector<UserToPslOutputMap> &outputMap);
 
     std::string replaceStringInXml(CameraParser *profiles, const char *value);
+    void getNVMDirectory(CameraParser* profiles);
 };
 
 } // namespace icamera

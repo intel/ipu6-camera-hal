@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017-2020 Intel Corporation
+#  Copyright (C) 2017-2021 Intel Corporation
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -29,7 +29,6 @@ set(3A_SRCS
         ${3A_DIR}/LensManager.cpp
         ${3A_DIR}/AiqCore.cpp
         ${3A_DIR}/AiqEngine.cpp
-        ${3A_DIR}/AiqStatistics.cpp
         ${3A_DIR}/AiqSetting.cpp
         ${3A_DIR}/AiqUnit.cpp
         ${3A_DIR}/MakerNote.cpp

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Intel Corporation
+ * Copyright (C) 2019-2021 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,7 +70,9 @@ enum IPC_CMD {
     IPC_GPU_TNR_PREPARE_SURFACE,
     IPC_GPU_TNR_RUN_FRAME,
     IPC_GPU_TNR_PARAM_UPDATE,
-    IPC_GPU_TNR_DEINIT
+    IPC_GPU_TNR_DEINIT,
+    IPC_GPU_TNR_THREAD2_RUN_FRAME,
+    IPC_GPU_TNR_THREAD2_PARAM_UPDATE,
 };
 
 #define MAX_IA_BINARY_DATA_SIZE 800000
@@ -90,10 +92,11 @@ enum IPC_GROUP {
     IPC_GROUP_CPU_OTHER,
     // IPU command group for gpu
     IPC_GROUP_GPU,
+    IPC_GROUP_GPU_THREAD2,
 };
-#define IPC_GROUP_NUM (IPC_GROUP_GPU + 1)
+#define IPC_GROUP_NUM (IPC_GROUP_GPU_THREAD2 + 1)
 #define IPC_CPU_GROUP_NUM (IPC_GROUP_CPU_OTHER + 1)
-#define IPC_GPU_GROUP_NUM (IPC_GROUP_NUM - IPC_GROUP_GPU)
+#define IPC_GPU_GROUP_NUM (IPC_GROUP_GPU_THREAD2 - IPC_GROUP_GPU + 1)
 
 IPC_GROUP IntelAlgoIpcCmdToGroup(IPC_CMD cmd);
 const char* IntelAlgoServerThreadName(int index);

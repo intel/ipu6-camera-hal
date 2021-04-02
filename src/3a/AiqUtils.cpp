@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Intel Corporation.
+ * Copyright (C) 2015-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,27 +27,32 @@
 
 namespace icamera {
 
-#define TONEMAP_MIN_POINTS 64
-
-int AiqUtils::dumpAeResults(const cca::cca_ae_results &aeResult)
+int AiqUtils::dumpAeResults(const cca::cca_ae_results& aeResult)
 {
-    if (!Log::isDebugLevelEnable(CAMERA_DEBUG_LOG_AIQ)) {
-        return OK;
-    }
+    if (!Log::isDebugLevelEnable(CAMERA_DEBUG_LOG_AIQ)) return OK;
     LOG3A("@%s", __func__);
 
     LOG3A("num_exposures :%d", aeResult.num_exposures);
     for (unsigned int i = 0; i < aeResult.num_exposures; i++) {
-        for (unsigned int j = 0; j < cca::MAX_EXPO_PLAN; j++) {
-            LOG3A("AE sensor exp[%d] result ag %d dg %d coarse: %d fine: %d llp:%d fll:%d", i,
-                  aeResult.exposures[i].sensor_exposure[j].analog_gain_code_global,
-                  aeResult.exposures[i].sensor_exposure[j].digital_gain_global,
-                  aeResult.exposures[i].sensor_exposure[j].coarse_integration_time,
-                  aeResult.exposures[i].sensor_exposure[j].fine_integration_time,
-                  aeResult.exposures[i].sensor_exposure[j].line_length_pixels,
-                  aeResult.exposures[i].sensor_exposure[j].frame_length_lines);
-        }
-        LOG3A(" AE Converged : %s", aeResult.exposures[i].converged ? "YES" : "NO");
+        LOG3A("AE sensor exp[%u] result ag %u dg %u coarse: %u fine: %u llp:%u fll:%u", i,
+              aeResult.exposures[i].sensor_exposure[0].analog_gain_code_global,
+              aeResult.exposures[i].sensor_exposure[0].digital_gain_global,
+              aeResult.exposures[i].sensor_exposure[0].coarse_integration_time,
+              aeResult.exposures[i].sensor_exposure[0].fine_integration_time,
+              aeResult.exposures[i].sensor_exposure[0].line_length_pixels,
+              aeResult.exposures[i].sensor_exposure[0].frame_length_lines);
+
+        LOG3A("AE exp[%d] ag %f dg %f Fn %f time %uus total %u filter[%s] iso %d", i,
+              aeResult.exposures[i].exposure[0].analog_gain,
+              aeResult.exposures[i].exposure[0].digital_gain,
+              aeResult.exposures[i].exposure[0].aperture_fn,
+              aeResult.exposures[i].exposure[0].exposure_time_us,
+              aeResult.exposures[i].exposure[0].total_target_exposure,
+              aeResult.exposures[i].exposure[0].nd_filter_enabled? "YES": "NO",
+              aeResult.exposures[i].exposure[0].iso);
+        LOG3A("Distance convergence: %f, AE Converged : %s",
+              aeResult.exposures[i].distance_from_convergence,
+              aeResult.exposures[i].converged ? "YES" : "NO");
     }
     LOG3A("AE bracket mode = %d %s", aeResult.multiframe,
           aeResult.multiframe == ia_aiq_bracket_mode_ull ? "ULL" : "none-ULL");
@@ -67,11 +72,9 @@ int AiqUtils::dumpAeResults(const cca::cca_ae_results &aeResult)
     return OK;
 }
 
-int AiqUtils::dumpAfResults(const cca::cca_af_results &afResult)
+int AiqUtils::dumpAfResults(const cca::cca_af_results& afResult)
 {
-    if (!Log::isDebugLevelEnable(CAMERA_DEBUG_LOG_AIQ)) {
-        return OK;
-    }
+    if (!Log::isDebugLevelEnable(CAMERA_DEBUG_LOG_AIQ)) return OK;
     LOG3A("@%s", __func__);
 
     LOG3A("AF results current_focus_distance %d final_position_reached %s",
@@ -100,12 +103,9 @@ int AiqUtils::dumpAfResults(const cca::cca_af_results &afResult)
     return OK;
 }
 
-int AiqUtils::dumpAwbResults(const cca::cca_awb_results &awbResult)
+int AiqUtils::dumpAwbResults(const cca::cca_awb_results& awbResult)
 {
-    if (!Log::isDebugLevelEnable(CAMERA_DEBUG_LOG_AIQ)) {
-        return OK;
-    }
-
+    if (!Log::isDebugLevelEnable(CAMERA_DEBUG_LOG_AIQ)) return OK;
     LOG3A("@%s", __func__);
 
     LOG3A("AWB result: accurate_r/g %f, accurate_b/g %f",
@@ -115,128 +115,61 @@ int AiqUtils::dumpAwbResults(const cca::cca_awb_results &awbResult)
     return OK;
 }
 
-int AiqUtils::deepCopyAeResults(const cca::cca_ae_results& src, cca::cca_ae_results* dst)
+int AiqUtils::dumpGbceResults(const cca::cca_gbce_params& gbceResult)
 {
+    if (!Log::isDebugLevelEnable(CAMERA_DEBUG_LOG_AIQ)) return OK;
     LOG3A("@%s", __func__);
-    dumpAeResults(src);
 
-    *dst = src;
+    LOG3A("gamma_lut_size: %u, tone_map_lut_size: %u",
+          gbceResult.gamma_lut_size, gbceResult.tone_map_lut_size);
+
+    LOG3A("gamma table: R: 0(%f), %u(%f), %u(%f)", gbceResult.r_gamma_lut[0],
+          (gbceResult.gamma_lut_size / 2), gbceResult.r_gamma_lut[gbceResult.gamma_lut_size / 2],
+          (gbceResult.gamma_lut_size - 1),  gbceResult.r_gamma_lut[gbceResult.gamma_lut_size - 1]);
+
+    LOG3A("gamma table: G: 0(%f), %u(%f), %u(%f)", gbceResult.g_gamma_lut[0],
+          (gbceResult.gamma_lut_size / 2), gbceResult.g_gamma_lut[gbceResult.gamma_lut_size / 2],
+          (gbceResult.gamma_lut_size - 1),  gbceResult.g_gamma_lut[gbceResult.gamma_lut_size - 1]);
+
+    LOG3A("gamma table: B: 0(%f), %u(%f), %u(%f)", gbceResult.b_gamma_lut[0],
+          (gbceResult.gamma_lut_size / 2), gbceResult.b_gamma_lut[gbceResult.gamma_lut_size / 2],
+          (gbceResult.gamma_lut_size - 1),  gbceResult.b_gamma_lut[gbceResult.gamma_lut_size - 1]);
+
+    LOG3A("tonemap table: 0(%f), %u(%f), %u(%f)", gbceResult.tone_map_lut[0],
+          (gbceResult.tone_map_lut_size / 2),
+          gbceResult.tone_map_lut[gbceResult.tone_map_lut_size / 2],
+          (gbceResult.tone_map_lut_size - 1),
+          gbceResult.tone_map_lut[gbceResult.tone_map_lut_size - 1]);
 
     return OK;
 }
 
-int AiqUtils::deepCopyAfResults(const cca::cca_af_results& src, cca::cca_af_results* dst)
+int AiqUtils::dumpPaResults(const cca::cca_pa_params& paResult)
 {
+    if (!Log::isDebugLevelEnable(CAMERA_DEBUG_LOG_AIQ)) return OK;
     LOG3A("@%s", __func__);
-    dumpAfResults(src);
 
-    CheckError(!dst, BAD_VALUE, "Failed to deep copy Af result- invalid destination or Source");
-
-    *dst = src;
-
-    return OK;
-}
-
-int AiqUtils::deepCopyAwbResults(const cca::cca_awb_results& src, cca::cca_awb_results* dst)
-{
-    LOG3A("@%s", __func__);
-    dumpAwbResults(src);
-
-    CheckError(!dst, BAD_VALUE, "Failed to deep copy Awb result- invalid destination or Source");
-
-    *dst = src;
-
-    return OK;
-}
-
-int AiqUtils::deepCopyGbceResults(const ia_aiq_gbce_results& src, ia_aiq_gbce_results* dst)
-{
-    LOG3A("%s", __func__);
-
-    CheckError(!dst||!dst->r_gamma_lut||!dst->g_gamma_lut||!dst->b_gamma_lut||!dst->tone_map_lut
-        ,BAD_VALUE ,"Failed to deep copy GBCE result- invalid destination");
-    CheckError(!src.r_gamma_lut||!src.g_gamma_lut||!src.b_gamma_lut
-        ,BAD_VALUE ,"Failed to deep copy GBCE result- invalid source");
-
-    MEMCPY_S(dst->r_gamma_lut, src.gamma_lut_size*sizeof(float),
-             src.r_gamma_lut, src.gamma_lut_size*sizeof(float));
-
-    MEMCPY_S(dst->g_gamma_lut, src.gamma_lut_size*sizeof(float),
-             src.g_gamma_lut, src.gamma_lut_size*sizeof(float));
-
-    MEMCPY_S(dst->b_gamma_lut, src.gamma_lut_size*sizeof(float),
-             src.b_gamma_lut, src.gamma_lut_size*sizeof(float));
-
-    dst->gamma_lut_size = src.gamma_lut_size;
-
-    // Copy tone mapping table
-    if (src.tone_map_lut != nullptr)
-    {
-        MEMCPY_S(dst->tone_map_lut, src.tone_map_lut_size * sizeof(float),
-                 src.tone_map_lut, src.tone_map_lut_size * sizeof(float));
-
+    for (int i = 0; i < 3; i++) {
+        LOG3A("color_conversion_matrix  [%.3f %.3f %.3f] ",
+              paResult.color_conversion_matrix[i][0],
+              paResult.color_conversion_matrix[i][1],
+              paResult.color_conversion_matrix[i][2]);
     }
-    dst->tone_map_lut_size = src.tone_map_lut_size; // zero indicates GBCE is ineffective.
+
+    LOG3A("color_gains, gr:%f, r:%f, b:%f, gb:%f",
+          paResult.color_gains.gr, paResult.color_gains.r,
+          paResult.color_gains.b, paResult.color_gains.gb);
 
     return OK;
 }
 
-int AiqUtils::deepCopyPaResults(const cca::cca_pa_params& src, cca::cca_pa_params* dst)
+int AiqUtils::dumpSaResults(const cca::cca_sa_results& saResult)
 {
-    LOG3A("%s", __func__);
+    if (!Log::isDebugLevelEnable(CAMERA_DEBUG_LOG_AIQ)) return OK;
+    LOG3A("@%s", __func__);
 
-    CheckError(!dst, BAD_VALUE, "Failed to deep copy PA result- invalid destination");
-
-    *dst = src;
-
-    return OK;
-}
-
-int AiqUtils::deepCopyDvsResults(const ia_dvs_morph_table& src, ia_dvs_morph_table* dst)
-{
-    LOG3A("%s", __func__);
-
-    CheckError(!dst || !dst->xcoords_y || !dst->ycoords_y
-          || !dst->xcoords_uv || !dst->ycoords_uv
-          || !dst->xcoords_uv_float || !dst->ycoords_uv_float
-          ,BAD_VALUE ,"Failed to deep copy DVS result- invalid destination");
-
-    CheckError(!src.xcoords_y || !src.ycoords_y
-          || !src.xcoords_uv || !src.ycoords_uv
-          || !src.xcoords_uv_float || !src.ycoords_uv_float
-          ,BAD_VALUE ,"Failed to deep copy DVS result- invalid source");
-
-    CheckError(src.width_y == 0 || src.height_y == 0 || src.width_uv == 0 || src.height_uv == 0
-          ,BAD_VALUE ,"Failed to deep copy DVS result- invalid source size y[%dx%d] uv[%dx%d]",
-          src.width_y, src.height_y, src.width_uv, src.height_uv);
-
-    dst->width_y = src.width_y;
-    dst->height_y = src.height_y;
-    dst->width_uv = src.width_uv;
-    dst->height_uv = src.height_uv;
-    dst->morph_table_changed = src.morph_table_changed;
-    unsigned int SizeY = dst->width_y  * dst->height_y * sizeof(int32_t);
-    unsigned int SizeUV = dst->width_uv * dst->height_uv * sizeof(int32_t);
-    MEMCPY_S(dst->xcoords_y, SizeY, src.xcoords_y, SizeY);
-    MEMCPY_S(dst->ycoords_y, SizeY, src.ycoords_y, SizeY);
-    MEMCPY_S(dst->xcoords_uv, SizeUV, src.xcoords_uv, SizeUV);
-    MEMCPY_S(dst->ycoords_uv, SizeUV, src.ycoords_uv, SizeUV);
-
-    SizeUV = dst->width_uv * dst->height_uv * sizeof(float);
-    MEMCPY_S(dst->xcoords_uv_float, SizeUV, src.xcoords_uv_float, SizeUV);
-    MEMCPY_S(dst->ycoords_uv_float, SizeUV, src.ycoords_uv_float, SizeUV);
-
-    return OK;
-}
-
-int AiqUtils::deepCopyDvsResults(const ia_dvs_image_transformation& src, ia_dvs_image_transformation* dst)
-{
-    LOG3A("%s", __func__);
-
-    CheckError(!dst,BAD_VALUE ,"Failed to deep copy DVS result- invalid destination");
-
-    dst->num_homography_matrices = src.num_homography_matrices;
-    MEMCPY_S(dst->matrices, sizeof(dst->matrices), src.matrices, sizeof(src.matrices));
+    LOG3A("SA results color_order %d size %dx%d",
+          saResult.color_order, saResult.width,  saResult.height);
 
     return OK;
 }
@@ -385,7 +318,7 @@ void AiqUtils::applyTonemapGamma(float gamma, cca::cca_gbce_params* results) {
     CheckError(!results, VOID_VALUE, "gbce results nullptr");
 
     int lutSize = results->gamma_lut_size;
-    CheckError(lutSize < TONEMAP_MIN_POINTS, VOID_VALUE,
+    CheckError(lutSize < MIN_TONEMAP_POINTS, VOID_VALUE,
                "Bad gamma lut size (%d) in gbce results", lutSize);
     for (int i = 0; i < lutSize; i++) {
         results->g_gamma_lut[i] = pow(i / static_cast<float>(lutSize), 1 / gamma);
@@ -401,7 +334,8 @@ void AiqUtils::applyTonemapSRGB(cca::cca_gbce_params* results) {
     CheckError(!results, VOID_VALUE, "gbce results nullptr");
 
     int lutSize = results->gamma_lut_size;
-    CheckError(lutSize < TONEMAP_MIN_POINTS, VOID_VALUE, "Bad gamma lut size (%d) in gbce results", lutSize);
+    CheckError(lutSize < MIN_TONEMAP_POINTS, VOID_VALUE,
+               "Bad gamma lut size (%d) in gbce results", lutSize);
     for (int i = 0; i < lutSize; i++) {
         if (i / (lutSize - 1)  < 0.0031308)
             results->g_gamma_lut[i] = 12.92 * (i / (lutSize - 1));
@@ -420,7 +354,8 @@ void AiqUtils::applyTonemapREC709(cca::cca_gbce_params* results) {
     CheckError(!results, VOID_VALUE, "gbce results nullptr");
 
     int lutSize = results->gamma_lut_size;
-    CheckError(lutSize < TONEMAP_MIN_POINTS, VOID_VALUE, "Bad gamma lut size (%d) in gbce results", lutSize);
+    CheckError(lutSize < MIN_TONEMAP_POINTS, VOID_VALUE,
+               "Bad gamma lut size (%d) in gbce results", lutSize);
     for (int i = 0; i < lutSize; i++) {
         if (i / (lutSize - 1) < 0.018)
             results->g_gamma_lut[i] = 4.5 * (i / (lutSize - 1));
@@ -531,5 +466,4 @@ float AiqUtils::calculateHyperfocalDistance(const cca::cca_cmc &cmc) {
     return (hyperfocalDistanceMillis == 0.0f) ? DEFAULT_HYPERFOCAL_DISTANCE :
                                                 hyperfocalDistanceMillis;
 }
-
 } /* namespace icamera */

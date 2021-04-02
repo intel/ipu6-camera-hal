@@ -502,7 +502,7 @@ std::shared_ptr<Camera3Buffer> allocateHandleBuffer(int w, int h, int gfxFmt, in
     uint32_t stride = 0;
 
     LOG1("%s, [wxh] = [%dx%d], format 0x%x, usage 0x%x", __func__, w, h, gfxFmt, usage);
-    int ret = bufManager->Allocate(w, h, gfxFmt, usage, cros::GRALLOC, &handle, &stride);
+    int ret = bufManager->Allocate(w, h, gfxFmt, usage, &handle, &stride);
     if (ret != 0) {
         LOGE("Allocate handle failed! %d", ret);
         return nullptr;

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017-2019 Intel Corporation
+#  Copyright (C) 2017-2021 Intel Corporation
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -46,12 +46,10 @@ find_library(IA_DVS_LIB         ia_dvs)
 find_library(IA_COORDINATE_LIB  ia_coordinate)
 find_library(IA_LTM_LIB         ia_ltm)
 find_library(IA_DVS_LIB         ia_dvs)
-
-set(ENABLE_LEGACY_AIC ON)
-
-if (ENABLE_LEGACY_AIC)
-    find_library(IA_ISP_BXT_LIB ia_isp_bxt)
-    find_library(BXT_IA_PAL_LIB broxton_ia_pal)
+find_library(IA_ISP_BXT_LIB     ia_isp_bxt)
+find_library(BXT_IA_PAL_LIB     broxton_ia_pal)
+if (USE_PG_LITE_PIPE)
+find_library(P2P_LIB_NAME ia_p2p_${IPU_VER})
 endif()
 
 set(IA_IMAGING_LIBS
@@ -78,11 +76,11 @@ set(IA_IMAGING_LIBS
     )
 endif() #ENABLE_SANDBOXING
 
-if (ENABLE_LEGACY_AIC)
-    set(IA_IMAGING_LIBS ${IA_IMAGING_LIBS} ${IA_ISP_BXT_LIB} ${BXT_IA_PAL_LIB})
-else()
-    set(IA_IMAGING_LIBS ${IA_IMAGING_LIBS} ${IA_AIC_LIB})
+if (USE_PG_LITE_PIPE)
+set(IA_IMAGING_LIBS ${IA_IMAGING_LIBS} ${P2P_LIB_NAME})
 endif()
+
+set(IA_IMAGING_LIBS ${IA_IMAGING_LIBS} ${IA_ISP_BXT_LIB} ${BXT_IA_PAL_LIB})
 
 # handle the QUIETLY and REQUIRED arguments and set EXPAT_FOUND to TRUE if
 # all listed variables are TRUE

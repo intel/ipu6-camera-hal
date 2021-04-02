@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Intel Corporation.
+ * Copyright (C) 2015-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -280,14 +280,23 @@ int ParameterGenerator::updateWithAiqResultsL(long sequence, Parameters *params)
           : (aiqResult->mAfResults.status == ia_aiq_af_status_fail) ? AF_STATE_FAIL
           : AF_STATE_IDLE;
     params->setAfState(afState);
-    params->setFocusDistance(aiqResult->mAfDistanceDiopters);
-    params->setFocusRange(aiqResult->mFocusRange);
 
     bool lensMoving = false;
+    float distance = 0.0;
+    camera_af_mode_t afMode = AF_MODE_OFF;
+    params->getAfMode(afMode);
+    if (afMode == AF_MODE_OFF) {
+        params->getFocusDistance(distance);
+    }
     if (afState == AF_STATE_LOCAL_SEARCH || afState == AF_STATE_EXTENDED_SEARCH) {
         lensMoving = (aiqResult->mAfResults.final_lens_position_reached == false);
+    } else if (afState == AF_STATE_SUCCESS && afMode == AF_MODE_OFF &&
+              fabs(distance - aiqResult->mAfDistanceDiopters) > 0.1) {
+        lensMoving = true;
     }
     params->setLensState(lensMoving);
+    params->setFocusDistance(aiqResult->mAfDistanceDiopters);
+    params->setFocusRange(aiqResult->mFocusRange);
 
     // Update scene mode
     camera_scene_mode_t sceneMode = SCENE_MODE_AUTO;

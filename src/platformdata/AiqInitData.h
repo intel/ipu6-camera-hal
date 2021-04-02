@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Intel Corporation.
+ * Copyright (C) 2015-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,7 +57,7 @@ struct CameraModuleInfo
 
 class AiqData {
  public:
-    explicit AiqData(const std::string& fileName);
+    explicit AiqData(const std::string& fileName, int maxSize = -1);
     ~AiqData();
 
     ia_binary_data* getData();
@@ -66,7 +66,7 @@ class AiqData {
  private:
     DISALLOW_COPY_AND_ASSIGN(AiqData);
 
-    void loadFile(const std::string& fileName, ia_binary_data* data);
+    void loadFile(const std::string& fileName, ia_binary_data* data, int maxSize);
     void saveDataToFile(const std::string& fileName, const ia_binary_data* data);
 
  private:
@@ -93,7 +93,7 @@ class AiqInitData {
     void saveAiqd(TuningMode mode, const ia_binary_data& data);
 
     // nvm
-    ia_binary_data* getNvm();
+    ia_binary_data* getNvm(int cameraId);
 
     // maker note
     int initMakernote(int cameraId, TuningMode tuningMode);

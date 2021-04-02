@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Intel Corporation
+ * Copyright (C) 2020-2021 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -111,7 +111,9 @@ int IntelTNR7US::runTnrFrame(const void* inBufAddr, void* outBufAddr, uint32_t i
 
     int32_t requestHandle =
         mCommon.getShmMemHandle(static_cast<void*>(mTnrRequestInfo), GPU_ALGO_SHM);
-    bool ret = mCommon.requestSync(IPC_GPU_TNR_RUN_FRAME, requestHandle);
+
+    IPC_CMD cmd = mTnrType > 0 ? IPC_GPU_TNR_THREAD2_RUN_FRAME : IPC_GPU_TNR_RUN_FRAME;
+    bool ret = mCommon.requestSync(cmd, requestHandle);
 
     if (fd >= 0) {
         mCommon.deregisterGbmBuffer(mTnrRequestInfo->outHandle, GPU_ALGO_SHM);
@@ -183,7 +185,9 @@ int IntelTNR7US::asyncParamUpdate(int gain, bool forceUpdate) {
 
     int32_t requestHandle =
         mCommon.getShmMemHandle(static_cast<void*>(mTnrRequestInfo), GPU_ALGO_SHM);
-    bool ret = mCommon.requestSync(IPC_GPU_TNR_PARAM_UPDATE, requestHandle);
+
+    IPC_CMD cmd = mTnrType > 0 ? IPC_GPU_TNR_THREAD2_PARAM_UPDATE : IPC_GPU_TNR_PARAM_UPDATE;
+    bool ret = mCommon.requestSync(cmd, requestHandle);
 
     CheckError(!ret, UNKNOWN_ERROR, "@%s, IPC_GPU_TNR_PARAM_UPDATE requestSync fails", __func__);
     return OK;

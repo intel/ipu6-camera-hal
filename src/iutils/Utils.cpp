@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Intel Corporation.
+ * Copyright (C) 2015-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -307,20 +307,6 @@ int CameraUtils::getBpp(int format)
 
     LOGE("There is no bpp supplied for format %s", pixelCode2String(format));
     return -1;
-}
-
-int CameraUtils::getBpe(int format, int bpp) {
-    int bpe = bpp;
-    switch (format) {
-        case V4L2_PIX_FMT_YUYV:
-        case V4L2_PIX_FMT_UYVY:
-        case GET_FOURCC_FMT('Y','U','Y','2'):
-            bpe = 8;
-            break;
-        default:
-            break;
-    }
-    return bpe;
 }
 
 /**

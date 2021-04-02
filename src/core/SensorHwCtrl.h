@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Intel Corporation
+ * Copyright (C) 2015-2021 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,7 +47,6 @@ public:
     virtual int getActivePixelArraySize(int &width, int &height, int &pixelCode);
     virtual int getExposureRange(int &exposureMin, int &exposureMax, int &exposureStep);
 
-    virtual int setFrameRate(float fps);
 private:
     int setLineLengthPixels(int llp);
     int getLineLengthPixels(int &llp);
@@ -57,7 +56,6 @@ private:
 private:
 
     V4L2Subdevice* mPixelArraySubdev;
-    V4L2Subdevice* mSensorOutputSubdev;
     int mCameraId;
     int mHorzBlank;
     int mVertBlank;
@@ -94,7 +92,6 @@ public:
     int getVBlank(int &vblank) { return OK; }
     int getActivePixelArraySize(int &width, int &height, int &code) { return OK; }
     int getExposureRange(int &exposureMin, int &exposureMax, int &exposureStep) { return OK; }
-    int setFrameRate(float fps) { return OK; }
 };
 
 } // namespace icamera

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Intel Corporation.
+ * Copyright (C) 2015-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -202,6 +202,7 @@ int AiqSetting::setParameters(const Parameters& params)
     params.getRscMode(mAiqParam.rscMode);
     params.getFlipMode(mAiqParam.flipMode);
     params.getDigitalZoomRatio(mAiqParam.digitalZoomRatio);
+    params.getTestPatternMode(mAiqParam.testPatternMode);
 
     int ret = params.getMakernoteMode(mAiqParam.makernoteMode);
     if (ret == NAME_NOT_FOUND) mAiqParam.makernoteMode = MAKERNOTE_MODE_OFF;
@@ -337,6 +338,7 @@ void aiq_parameter_t::reset()
     shadingMode = SHADING_MODE_FAST;
     lensShadingMapMode = LENS_SHADING_MAP_MODE_OFF;
     lensShadingMapSize = {0, 0};
+    testPatternMode = TEST_PATTERN_OFF;
 
     tonemapMode = TONEMAP_MODE_FAST;
     tonemapPresetCurve = TONEMAP_PRESET_CURVE_SRGB;
@@ -415,6 +417,7 @@ void aiq_parameter_t::dump()
 
     LOG3A("tonemap mode %d, preset curve %d, gamma %f, curve points %d",
           tonemapMode, tonemapPresetCurve, tonemapGamma, tonemapCurves.gSize);
+    LOG3A("testPatternMode %d", testPatternMode);
 }
 
 } /* namespace icamera */

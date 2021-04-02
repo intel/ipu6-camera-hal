@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Intel Corporation.
+ * Copyright (C) 2020-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,6 @@
 
 #include "ia_pal_types_isp_parameters_autogen.h"
 #include "tnr7us_parameters_definition.h"
-
-#define TNR7US_RESTART_THRESHOLD 3
 
 namespace icamera {
 

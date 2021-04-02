@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Intel Corporation.
+ * Copyright (C) 2019-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -469,13 +469,13 @@ int PGCommon::initParamAdapt()
     if (pgInFrame) {
         config.inputMainFrame.width = pgInFrame->mWidth;
         config.inputMainFrame.height = pgInFrame->mHeight;
-        config.inputMainFrame.bpe = CameraUtils::getBpe(pgInFrame->mFormat, pgInFrame->mBpp);
+        config.inputMainFrame.bpe = PGUtils::getCssBpe(pgInFrame->mFormat, false);
     }
 
     if (pgOutFrame) {
         config.outputMainFrame.width = pgOutFrame->mWidth;
         config.outputMainFrame.height = pgOutFrame->mHeight;
-        config.outputMainFrame.bpe = CameraUtils::getBpe(pgOutFrame->mFormat, pgOutFrame->mBpp);
+        config.outputMainFrame.bpe = PGUtils::getCssBpe(pgOutFrame->mFormat, false);
     }
 
     // init and config p2p handle
@@ -599,7 +599,7 @@ int PGCommon::setTerminalParams(const ia_css_frame_format_type* frameFormatTypes
         terminalParam->fragment_dimensions[IA_CSS_ROW_DIMENSION] = config.mHeight;
 
         terminalParam->bpp = PGUtils::getCssBpp(config.mFormat);
-        terminalParam->bpe = PGUtils::getCssFmtBpe(terminalParam->frame_format_type, terminalParam->bpp);
+        terminalParam->bpe = PGUtils::getCssBpe(config.mFormat, false);
         terminalParam->stride = PGUtils::getCssStride(config.mFormat, config.mWidth);
 
         terminalParam->offset = 0;
@@ -752,7 +752,9 @@ int PGCommon::configureFrameDesc() {
             reinterpret_cast<ia_css_data_terminal_t*>(terminal));
         int width = mTerminalFrameInfos[termIdx].mWidth;
         int height = mTerminalFrameInfos[termIdx].mHeight;
-        int cssBpp = PGUtils::getCssFmtBpp(dstFrameDesc->frame_format_type);
+        int v4l2Fmt = mTerminalFrameInfos[termIdx].mFormat;
+        int cssBpp = PGUtils::getCssBpp(v4l2Fmt, true);
+        int cssBpe = PGUtils::getCssBpe(v4l2Fmt, true);
 
         switch (dstFrameDesc->frame_format_type) {
             case IA_CSS_DATA_FORMAT_BAYER_GRBG:
@@ -767,10 +769,8 @@ int PGCommon::configureFrameDesc() {
                 int imageBufferSize =
                     ALIGN(alignedBpl * alignedHeight, ISYS_COMPRESSION_PAGE_SIZE);
 
-                dstFrameDesc->bpp =
-                    PGUtils::getCompressedBpp(dstFrameDesc->frame_format_type, cssBpp);
-                dstFrameDesc->bpe =
-                    PGUtils::getCompressedBpe(dstFrameDesc->frame_format_type, cssBpp);
+                dstFrameDesc->bpp = cssBpp;
+                dstFrameDesc->bpe = cssBpe;
                 dstFrameDesc->plane_count = 1;
                 dstFrameDesc->ts_offsets[0] = imageBufferSize;
                 dstFrameDesc->is_compressed = 1;
@@ -804,10 +804,8 @@ int PGCommon::configureFrameDesc() {
                      alignedBpl, alignedHeight, alignWidthUV, alignHeightUV, imageBufferSize,
                      planarYTileStatus, planarUVTileStatus);
 
-                dstFrameDesc->bpp =
-                    PGUtils::getCompressedBpp(dstFrameDesc->frame_format_type, cssBpp);
-                dstFrameDesc->bpe =
-                    PGUtils::getCompressedBpe(dstFrameDesc->frame_format_type, cssBpp);
+                dstFrameDesc->bpp = cssBpp;
+                dstFrameDesc->bpe = cssBpe;
                 dstFrameDesc->plane_count = 3;
                 dstFrameDesc->stride[IA_CSS_COL_DIMENSION] = alignedBpl;
                 dstFrameDesc->dimension[IA_CSS_ROW_DIMENSION] = alignedHeight;
@@ -840,10 +838,8 @@ int PGCommon::configureFrameDesc() {
                                     TILE_STATUS_BITS_TNR_NV12_LINEAR, 8);
                 planarUVTileStatus = ALIGN(planarUVTileStatus, PSYS_COMPRESSION_PAGE_SIZE);
 
-                dstFrameDesc->bpp =
-                    PGUtils::getCompressedBpp(dstFrameDesc->frame_format_type, cssBpp);
-                dstFrameDesc->bpe =
-                    PGUtils::getCompressedBpe(dstFrameDesc->frame_format_type, cssBpp);
+                dstFrameDesc->bpp = cssBpp;
+                dstFrameDesc->bpe = cssBpe;
                 dstFrameDesc->plane_count = 2;
                 dstFrameDesc->stride[IA_CSS_COL_DIMENSION] = alignedBpl;
                 dstFrameDesc->dimension[IA_CSS_ROW_DIMENSION] = alignedHeight;
@@ -981,9 +977,17 @@ int PGCommon::allocateTnrDataBuffers() {
         uint8_t* buffer = nullptr;
         int ret = posix_memalign((void**)&buffer, PAGE_SIZE_U, PAGE_ALIGN(size));
         CheckError(ret, NO_MEMORY, "%s, alloc %d tnr data buf fails", __func__, i);
+        memset(buffer, 0, PAGE_ALIGN(size));
         mTnrDataBuffers.push_back(buffer);
 
-        CIPR::Buffer* ciprBuf = registerUserBuffer(size, buffer);
+        CIPR::Buffer* ciprBuf = nullptr;
+        /* use flush mode for still stream tnr buffers, since still stream will copy data buffer
+         * from video stream as its refer buffer.
+         */
+        if (mStreamId == STILL_STREAM_ID)
+            ciprBuf = registerUserBuffer(size, buffer, true);
+        else
+            ciprBuf = registerUserBuffer(size, buffer);
         CheckError(!ciprBuf, NO_MEMORY, "%s, register %d tnr buf %p fails", __func__, i, buffer);
 
         if (i == PAIR_BUFFER_IN_INDEX) mTerminalBuffers[mTnrTerminalPair.inId] = ciprBuf;

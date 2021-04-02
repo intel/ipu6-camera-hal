@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Intel Corporation.
+ * Copyright (C) 2015-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -391,7 +391,7 @@ void IspParamAdaptor::updateKernelToggles(cca::cca_program_group *programGroup) 
 /*
  * PAL output buffer is a reference data for next output buffer,
  * but currently a ring buffer is used in HAL, which caused logic mismatching issue.
- * So temporarily copy lastest PAL datas into PAL output buffer.
+ * So temporarily copy latest PAL data into PAL output buffer.
  */
 void IspParamAdaptor::updatePalDataForVideoPipe(ia_binary_data dest) {
     if (mLastPalDataForVideoPipe.data == nullptr || mLastPalDataForVideoPipe.size == 0)
@@ -502,7 +502,7 @@ int IspParamAdaptor::runIspAdapt(const IspSettings* ispSettings, long requestId,
         if (mStreamIdToMbrDataMap.find(it.first) != mStreamIdToMbrDataMap.end())
             mbrData = &(mStreamIdToMbrDataMap[it.first]);
 
-        // Update some PAL data to lastest PAL result
+        // Update some PAL data to latest PAL result
         if (it.first == VIDEO_STREAM_ID) {
             updatePalDataForVideoPipe(binaryData);
         }
@@ -669,6 +669,19 @@ void IspParamAdaptor::applyMediaFormat(const AiqResult* aiqResult,
     }
 }
 
+void IspParamAdaptor::applyCscMatrix(ia_isp_bxt_csc* cscMatrix) {
+    size_t matrixCount = sizeof(cscMatrix->rgb2yuv_coef) / sizeof(int32_t);
+    // This is one standard RGB2YUV matrix reverse from YUV2RGB matrix in ITS
+    const float oriMatrix[] = {0.299, 0.587, 0.114, -0.169, -0.331, 0.5, 0.5, -0.419, -0.081};
+    CheckError(matrixCount != (sizeof(oriMatrix) / sizeof(float)), VOID_VALUE,
+               "Matrix count mismatching with algo: %zu", matrixCount);
+
+    const int cscNorm = 1000;  // this value need to align with algo
+    for (size_t i = 0; i < matrixCount; i++) {
+        cscMatrix->rgb2yuv_coef[i] = static_cast<int32_t>(oriMatrix[i] * cscNorm);
+    }
+}
+
 int IspParamAdaptor::runIspAdaptL(ia_isp_bxt_program_group *pgPtr, ia_isp_bxt_gdc_limits *mbrData,
                                   const IspSettings* ispSettings, long requestId, long settingSequence,
                                   ia_binary_data *binaryData, int streamId) {
@@ -690,6 +703,11 @@ int IspParamAdaptor::runIspAdaptL(ia_isp_bxt_program_group *pgPtr, ia_isp_bxt_gd
     applyMediaFormat(aiqResults, &inputParams->media_format, &useLinearGamma);
     LOG2("%s, media format: 0x%x, gamma lut size: %d", __func__,
          inputParams->media_format, aiqResults->mGbceResults.gamma_lut_size);
+
+    if (inputParams->media_format == media_format_custom) {
+        applyCscMatrix(&inputParams->csc_matrix);
+        dumpCscMatrix(&inputParams->csc_matrix);
+    }
 
     if (VIDEO_STREAM_ID == streamId) {
         inputParams->call_rate_control.mode = ia_isp_call_rate_never_on_converged;
@@ -733,6 +751,12 @@ int IspParamAdaptor::runIspAdaptL(ia_isp_bxt_program_group *pgPtr, ia_isp_bxt_gd
                         aiqResults->mAiqParam.yuvColorRangeMode;
                     LOG2("%s: ofa yuv color range mode %d", __func__,
                          inputParams->program_group.base.run_kernels[i].metadata[3]);
+                    break;
+                case ia_pal_uuid_isp_bxt_blc:
+                    if (aiqResults->mAiqParam.testPatternMode != TEST_PATTERN_OFF) {
+                        LOG2("%s: disable blc in test pattern case.", __func__);
+                        inputParams->program_group.base.run_kernels[i].enable = false;
+                    }
                     break;
             }
         }
@@ -862,6 +886,13 @@ void IspParamAdaptor::dumpProgramGroup(ia_isp_bxt_program_group *pgPtr) {
                  pgPtr->pipe[i].flags);
         }
     }
+}
+
+void IspParamAdaptor::dumpCscMatrix(const ia_isp_bxt_csc* cscMatrix) {
+    LOG2("%s, manual rgb2yuv matrix: %d, %d, %d, %d, %d, %d, %d, %d, %d", __func__,
+         cscMatrix->rgb2yuv_coef[0], cscMatrix->rgb2yuv_coef[1], cscMatrix->rgb2yuv_coef[2],
+         cscMatrix->rgb2yuv_coef[3], cscMatrix->rgb2yuv_coef[4], cscMatrix->rgb2yuv_coef[5],
+         cscMatrix->rgb2yuv_coef[6], cscMatrix->rgb2yuv_coef[7], cscMatrix->rgb2yuv_coef[8]);
 }
 
 } // namespace icamera

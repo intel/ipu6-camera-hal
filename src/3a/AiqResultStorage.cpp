@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Intel Corporation.
+ * Copyright (C) 2016-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 #define LOG_TAG "AiqResultStorage"
 
 #include "AiqResultStorage.h"
-
 #include "iutils/CameraLog.h"
 
 namespace icamera {
@@ -113,7 +112,6 @@ AiqResult* AiqResultStorage::acquireAiqResult()
 
     int index = mCurrentIndex + 1;
     index %= kStorageSize;
-
     mAiqResults[index]->mSequence = -1;
 
     return mAiqResults[index];
@@ -125,7 +123,6 @@ void AiqResultStorage::updateAiqResult(long sequence)
 
     mCurrentIndex++;
     mCurrentIndex %= kStorageSize;
-
     mAiqResults[mCurrentIndex]->mSequence = sequence;
 }
 

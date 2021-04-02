@@ -836,7 +836,7 @@ int PipeLiteExecutor::notifyStatsDone(TuningMode tuningMode,
     for (auto statsBuf : outStatsBuffers) {
         if (!statsBuf) continue;
 
-        if (mStreamId == STILL_STREAM_ID) {
+        if (mStreamId != VIDEO_STREAM_ID) {
             LOG2("%s: No statistics data for still pipe in buffer", __func__);
             releaseStatsBuffer(statsBuf);
             continue;
