@@ -13,8 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 -->
-<graph_settings version="IPU6_20200806.0.1.0.245.1.2020.9.23.10.10.55">
-<sensor_modes sensor_name="OV01A1S" csi_port="0" metadata="0" interlaced="0" bayer_order="IGIG_GBGR_IGIG_GRGB">
+<graph_settings version="IPU6_20200806.0.1.0.245.1.2020.9.23.10.3.18">
+<sensor_modes sensor_name="OV01A1S" csi_port="0" metadata="0" interlaced="0" bayer_order="GRGB_IGIG_GBGR_IGIG">
     <available_bit_per_pixel>
         <bpp value="10"/>
     </available_bit_per_pixel>
@@ -68,7 +68,7 @@ limitations under the License.
     </ir>
   </FPS>
 </selected_resolutions>
-<settings key="8001" id="100204" active_outputs="1" dvs="0" power_factor="0" fps="30" flow="StillsDuringVideo" flip_v="0" flip_h="0" pdaf_type="0">
+<settings key="8000" id="100204" active_outputs="1" dvs="0" power_factor="0" fps="30" flow="StillsDuringVideo" flip_v="0" flip_h="0" pdaf_type="0">
   <video0 width="640" height="360" stream_id="60001" bpp="8" format="Linear" />
   <sis_b width="160" height="88" stream_id="60001" />
   <sis_a width="320" height="184" stream_id="60001" />
@@ -76,10 +76,10 @@ limitations under the License.
             <port_0 format="RG10" width="1296" height="800" />
         </sensor>
   <csi_be>
-    <output format="GR10" width="1296" height="800" />
+    <output format="GR10" width="1296" height="798" />
     <stream2mmio>
-      <input width="1296" height="800" top="0" left="0" bottom="0" right="0" />
-      <output width="1296" height="800" top="0" left="0" bottom="0" right="0" />
+      <input width="1296" height="800" top="1" left="0" bottom="1" right="0" />
+      <output width="1296" height="798" top="0" left="0" bottom="0" right="0" />
     </stream2mmio>
     <tuning_mode value="0" />
   </csi_be>
@@ -97,7 +97,7 @@ limitations under the License.
       <output width="160" height="88" top="0" left="0" bottom="0" right="0" />
     </pxl_crop_sis_b>
     <pixelformatter>
-      <input width="1296" height="800" top="0" left="7" bottom="4" right="9" />
+      <input width="1296" height="798" top="0" left="7" bottom="2" right="9" />
       <output width="1280" height="796" top="0" left="0" bottom="0" right="0" />
     </pixelformatter>
     <sis_1_0_b>
@@ -164,7 +164,7 @@ limitations under the License.
     <tuning_mode value="0" />
   </post_gdc_video_bayer>
 </settings>
-<settings key="8003" id="100204" active_outputs="1" dvs="0" power_factor="0" fps="30" flow="StillsDuringVideo" flip_v="0" flip_h="0" pdaf_type="0">
+<settings key="8002" id="100204" active_outputs="1" dvs="0" power_factor="0" fps="30" flow="StillsDuringVideo" flip_v="0" flip_h="0" pdaf_type="0">
   <video0 width="640" height="480" stream_id="60001" bpp="8" format="Linear" />
   <sis_b width="128" height="96" stream_id="60001" />
   <sis_a width="256" height="192" stream_id="60001" />
@@ -172,10 +172,10 @@ limitations under the License.
             <port_0 format="RG10" width="1296" height="800" />
         </sensor>
   <csi_be>
-    <output format="GR10" width="1296" height="800" />
+    <output format="GR10" width="1296" height="798" />
     <stream2mmio>
-      <input width="1296" height="800" top="0" left="0" bottom="0" right="0" />
-      <output width="1296" height="800" top="0" left="0" bottom="0" right="0" />
+      <input width="1296" height="800" top="1" left="0" bottom="1" right="0" />
+      <output width="1296" height="798" top="0" left="0" bottom="0" right="0" />
     </stream2mmio>
     <tuning_mode value="0" />
   </csi_be>
@@ -193,7 +193,7 @@ limitations under the License.
       <output width="128" height="96" top="0" left="0" bottom="0" right="0" />
     </pxl_crop_sis_b>
     <pixelformatter>
-      <input width="1296" height="800" top="0" left="7" bottom="4" right="9" />
+      <input width="1296" height="798" top="0" left="7" bottom="2" right="9" />
       <output width="1280" height="796" top="0" left="0" bottom="0" right="0" />
     </pixelformatter>
     <sis_1_0_b>
@@ -260,7 +260,7 @@ limitations under the License.
     <tuning_mode value="0" />
   </post_gdc_video_bayer>
 </settings>
-<settings key="8004" id="100204" active_outputs="1" dvs="0" power_factor="0" fps="30" flow="StillsDuringVideo" flip_v="0" flip_h="0" pdaf_type="0">
+<settings key="8005" id="100204" active_outputs="1" dvs="0" power_factor="0" fps="30" flow="StillsDuringVideo" flip_v="0" flip_h="0" pdaf_type="0">
   <video0 width="1280" height="720" stream_id="60001" bpp="8" format="Linear" />
   <sis_b width="160" height="92" stream_id="60001" />
   <sis_a width="320" height="184" stream_id="60001" />
@@ -268,10 +268,10 @@ limitations under the License.
             <port_0 format="RG10" width="1296" height="800" />
         </sensor>
   <csi_be>
-    <output format="GR10" width="1296" height="800" />
+    <output format="GR10" width="1296" height="798" />
     <stream2mmio>
-      <input width="1296" height="800" top="0" left="0" bottom="0" right="0" />
-      <output width="1296" height="800" top="0" left="0" bottom="0" right="0" />
+      <input width="1296" height="800" top="1" left="0" bottom="1" right="0" />
+      <output width="1296" height="798" top="0" left="0" bottom="0" right="0" />
     </stream2mmio>
     <tuning_mode value="0" />
   </csi_be>
@@ -289,7 +289,7 @@ limitations under the License.
       <output width="160" height="92" top="0" left="0" bottom="0" right="0" />
     </pxl_crop_sis_b>
     <pixelformatter>
-      <input width="1296" height="800" top="0" left="7" bottom="4" right="9" />
+      <input width="1296" height="798" top="0" left="7" bottom="2" right="9" />
       <output width="1280" height="796" top="0" left="0" bottom="0" right="0" />
     </pixelformatter>
     <sis_1_0_b>

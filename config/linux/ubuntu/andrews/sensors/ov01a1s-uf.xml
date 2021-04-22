@@ -16,20 +16,20 @@
 
 <CameraSettings>
     <Sensor name="ov01a1s-uf" description="OV01A1S sensor.">
-        <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1312" outputHeight="800" format="V4L2_PIX_FMT_SGRBG10"><!-- RAW10 BE capture -->
+        <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1296" outputHeight="798" format="V4L2_PIX_FMT_SGRBG10"><!-- RAW10 BE capture -->
             <format name="ov01a1s $I2CBUS" pad="0" width="1296" height="800" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
             <format name="Intel IPU6 CSI-2 $CSI_PORT" pad="0" width="1296" height="800" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
 
             <link srcName="ov01a1s $I2CBUS" srcPad="0" sinkName="Intel IPU6 CSI-2 $CSI_PORT" sinkPad="0" enable="true"/>
 
-            <format name="Intel IPU6 CSI2 BE SOC 0" pad="0" width="1296" height="800" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
-            <format name="Intel IPU6 CSI2 BE SOC 0" pad="1" width="1312" height="800" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
-            <selection name="Intel IPU6 CSI2 BE SOC 0" pad="1" target="V4L2_SEL_TGT_CROP" left="0" top="0" width="1312" height="800"/>
+            <format name="Intel IPU6 CSI2 BE" pad="0" width="1296" height="800" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
+            <format name="Intel IPU6 CSI2 BE" pad="1" width="1296" height="798" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
+            <selection name="Intel IPU6 CSI2 BE" pad="1" target="V4L2_SEL_TGT_CROP" left="0" top="0" width="1296" height="798"/>
 
-            <link srcName="Intel IPU6 CSI-2 $CSI_PORT" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 0" sinkPad="0" enable="true"/>
-            <link srcName="Intel IPU6 CSI2 BE SOC 0" srcPad="1" sinkName="Intel IPU6 BE SOC capture 0" sinkPad="0" enable="true"/>
+            <link srcName="Intel IPU6 CSI-2 $CSI_PORT" srcPad="1" sinkName="Intel IPU6 CSI2 BE" sinkPad="0" enable="true"/>
+            <link srcName="Intel IPU6 CSI2 BE" srcPad="1" sinkName="Intel IPU6 CSI2 BE capture" sinkPad="0" enable="true"/>
 
-            <videonode name="Intel IPU6 BE SOC capture 0" videoNodeType="VIDEO_GENERIC"/>
+            <videonode name="Intel IPU6 CSI2 BE capture" videoNodeType="VIDEO_GENERIC"/>
             <videonode name="Intel IPU6 CSI-2 $CSI_PORT" videoNodeType="VIDEO_ISYS_RECEIVER"/>
             <videonode name="ov01a1s $I2CBUS" videoNodeType="VIDEO_PIXEL_ARRAY"/>
         </MediaCtlConfig>
@@ -46,7 +46,7 @@
                                       NOISE_REDUCTION,
                                       PER_FRAME_CONTROL,
                                       SCENE_MODE"/>
-            <supportedAeExposureTimeRange value="AUTO,100,100000"/> <!--scene_mode,min_exposure_time,max_exposure_time -->
+            <supportedAeExposureTimeRange value="AUTO,10,1000000"/> <!--scene_mode,min_exposure_time,max_exposure_time -->
             <supportedAeGainRange value="NORMAL,0,60"/> <!--scene_mode,min_gain,max_gain -->
             <fpsRange value="15,15,15,30,30,30"/>
             <evRange value="-6,6"/>
@@ -156,7 +156,7 @@
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
         <lardTags value="VIDEO,DFLT,DFLT,DFLT,DFLT"/>
 
-        <supportedISysSizes value="1312x800"/> <!-- ascending order request -->
+        <supportedISysSizes value="1296x798"/> <!-- ascending order request -->
         <supportedISysFormat value="V4L2_PIX_FMT_SGRBG10"/>
         <enableAIQ value="true"/>
         <iSysRawFormat value="V4L2_PIX_FMT_SGRBG10"/>
@@ -178,11 +178,6 @@
         <pslOutputMapForRotation value="1280x720@1280x720,640x480@640x480,320x240@640x480"/>
 
         <maxRequestsInflight value="5"/>
-        <faceEngineRunningSync value="true"/>
-        <faceEngineRunningInterval value="3"/>
-        <faceEngineRunningIntervalNoFace value="10"/>
-        <!-- if faceAeEnabled is not equal to true, availableSceneModes and availableFaceDetectModes must be 0 -->
-        <faceAeEnabled value="true"/>
     </Sensor>
 </CameraSettings>
 
