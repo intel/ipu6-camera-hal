@@ -80,8 +80,11 @@ MediaControl* MediaControl::getMediaControlInstance() {
 
         SysCall *sc = SysCall::getInstance();
         int fd = sc->open(fileName.c_str(), O_RDWR);
-        CheckError(fd < 0, nullptr, "%s: Error open media device %s:%s", __func__, fileName.c_str(),
-                   strerror(errno));
+        if (fd < 0) {
+            LOGW("%s, Open media device(%s) failed: %s",
+                 __func__, fileName.c_str(), strerror(errno));
+            break;
+        }
 
         media_device_info info;
         ret = sc->ioctl(fd, MEDIA_IOC_DEVICE_INFO, &info);
@@ -118,8 +121,11 @@ void MediaControl::releaseInstance()
 {
     LOG1("%s", __func__);
     AutoMutex lock(sLock);
-    delete sInstance;
-    sInstance = nullptr;
+
+    if (sInstance) {
+        delete sInstance;
+        sInstance = nullptr;
+    }
 }
 
 MediaControl::MediaControl(const char *devName) :

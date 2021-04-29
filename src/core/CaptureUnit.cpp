@@ -331,13 +331,16 @@ int CaptureUnit::configure(const map<Port, stream_t>& outputFrames,
     mOutputFrameInfo = outputFrames;
 
     /* media ctl setup */
-    MediaCtlConf *mc = PlatformData::getMediaCtlConf(mCameraId);
-    CheckError(!mc, BAD_VALUE, "get format configuration failed for %s (%dx%d)",
+    MediaCtlConf *mediaCtl = PlatformData::getMediaCtlConf(mCameraId);
+    CheckError(!mediaCtl, BAD_VALUE, "get format configuration failed for %s (%dx%d)",
                CameraUtils::format2string(mainStream.format).c_str(),
                mainStream.width, mainStream.height);
 
-    int status = MediaControl::getInstance()->mediaCtlSetup(mCameraId, mc,
-            mainStream.width, mainStream.height, mainStream.field);
+    MediaControl *mc = MediaControl::getInstance();
+    CheckError(!mc, UNKNOWN_ERROR, "%s, MediaControl init failed", __func__);
+
+    int status = mc->mediaCtlSetup(mCameraId, mediaCtl, mainStream.width, mainStream.height,
+                                   mainStream.field);
     CheckError(status != OK, status, "set up mediaCtl failed");
 
     // Create, open, and configure all of needed devices.

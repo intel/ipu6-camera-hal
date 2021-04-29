@@ -102,7 +102,6 @@ CameraParser::CameraParser(MediaControl *mc, PlatformData::StaticCfg *cfg) :
     };
 
     // Get sensor data from sensor xml.
-    CheckError(mc == nullptr, VOID_VALUE, "@%s, mc is nullptr", __func__);
     mMetadataCache = new long[mMetadataCacheSize];
     getSensorDataFromXmlFile();
 
@@ -175,8 +174,9 @@ void CameraParser::getCsiPortAndI2CBus(CameraParser *profiles)
             if (sensorName.find_first_of('-') != string::npos)
                 sensorName = fullSensorName.substr(0, (sensorName.find_first_of('-')));
 
-            profiles->mMC->getI2CBusAddress(sensorName, sinkEntityName, &profiles->mI2CBus);
-
+            if (profiles->mMC) {
+                profiles->mMC->getI2CBusAddress(sensorName, sinkEntityName, &profiles->mI2CBus);
+            }
             LOGXML("@%s, mI2CBus:%s, cisPort:%s", __func__, profiles->mI2CBus.c_str(),
                    profiles->mCsiPort.c_str());
             break;
@@ -333,7 +333,9 @@ void CameraParser::handleSensor(CameraParser *profiles, const char *name, const 
             vcmName.append(" ");
             vcmName.append(std::to_string(i2cBusId));
         }
-        profiles->mMC->getVCMI2CAddr(vcmName.c_str(), &pCurrentCam->mLensName);
+        if (profiles->mMC) {
+            profiles->mMC->getVCMI2CAddr(vcmName.c_str(), &pCurrentCam->mLensName);
+        }
     } else if (strcmp(name, "lensHwType") == 0) {
         if (strcmp(atts[1], "LENS_VCM_HW") == 0) {
             pCurrentCam->mLensHwType = LENS_VCM_HW;
@@ -618,7 +620,9 @@ void CameraParser::parseControlElement(CameraParser *profiles, const char *name,
         LOGXML("@%s, name:%s, atts[%d]:%s, atts[%d]:%s", __func__, name, idx, key, idx + 1, val);
         if (strcmp(key, "name") == 0) {
             ctl.entityName = replaceStringInXml(profiles, val);
-            ctl.entity = profiles->mMC->getEntityIdByName(ctl.entityName.c_str());
+            if (profiles->mMC) {
+                ctl.entity = profiles->mMC->getEntityIdByName(ctl.entityName.c_str());
+            }
         } else if (strcmp(key, "ctrlId") == 0) {
             if (!strcmp(val, "V4L2_CID_LINK_FREQ")) {
                 ctl.ctlCmd = V4L2_CID_LINK_FREQ;
@@ -678,7 +682,9 @@ void CameraParser::parseSelectionElement(CameraParser *profiles, const char *nam
         LOGXML("@%s, name:%s, atts[%d]:%s, atts[%d]:%s", __func__, name, idx, key, idx+1, val);
         if (strcmp(key, "name") == 0) {
             sel.entityName = replaceStringInXml(profiles, val);
-            sel.entity = profiles->mMC->getEntityIdByName(sel.entityName.c_str());
+            if (profiles->mMC) {
+                sel.entity = profiles->mMC->getEntityIdByName(sel.entityName.c_str());
+            }
         } else if (strcmp(key, "pad") == 0) {
             sel.pad = strtoul(val, nullptr, 10);
         } else if (strcmp(key, "target") == 0) {
@@ -1033,7 +1039,9 @@ void CameraParser::parseFormatElement(CameraParser *profiles, const char *name, 
         LOGXML("@%s, name:%s, atts[%d]:%s, atts[%d]:%s", __func__, name, idx, key, idx+1, val);
         if (strcmp(key, "name") == 0) {
             fmt.entityName = replaceStringInXml(profiles, val);
-            fmt.entity = profiles->mMC->getEntityIdByName(fmt.entityName.c_str());
+            if (profiles->mMC) {
+                fmt.entity = profiles->mMC->getEntityIdByName(fmt.entityName.c_str());
+            }
         } else if (strcmp(key, "pad") == 0) {
             fmt.pad = strtoul(val, nullptr, 10);
         } else if (strcmp(key, "stream") == 0) {
@@ -1079,12 +1087,16 @@ void CameraParser::parseLinkElement(CameraParser *profiles, const char *name, co
         LOGXML("@%s, name:%s, atts[%d]:%s, atts[%d]:%s", __func__, name, idx, key, idx+1, val);
         if (strcmp(key, "srcName") == 0) {
             link.srcEntityName = replaceStringInXml(profiles, val);
-            link.srcEntity = profiles->mMC->getEntityIdByName(link.srcEntityName.c_str());
+            if (profiles->mMC) {
+                link.srcEntity = profiles->mMC->getEntityIdByName(link.srcEntityName.c_str());
+            }
         } else if (strcmp(key, "srcPad") == 0) {
             link.srcPad = strtoul(val, nullptr, 10);
         } else if (strcmp(key, "sinkName") == 0) {
             link.sinkEntityName = replaceStringInXml(profiles, val);
-            link.sinkEntity = profiles->mMC->getEntityIdByName(link.sinkEntityName.c_str());
+            if (profiles->mMC) {
+                link.sinkEntity = profiles->mMC->getEntityIdByName(link.sinkEntityName.c_str());
+            }
         } else if (strcmp(key, "sinkPad") == 0) {
             link.sinkPad = strtoul(val, nullptr, 10);
         } else if (strcmp(key, "enable") == 0) {
@@ -1111,7 +1123,9 @@ void CameraParser::parseRouteElement(CameraParser *profiles, const char *name, c
         LOGXML("@%s, name:%s, atts[%d]:%s, atts[%d]:%s", __func__, name, idx, key, idx+1, val);
         if (strcmp(key, "name") == 0) {
             route.entityName = replaceStringInXml(profiles, val);
-            route.entity = profiles->mMC->getEntityIdByName(route.entityName.c_str());
+            if (profiles->mMC) {
+                route.entity = profiles->mMC->getEntityIdByName(route.entityName.c_str());
+            }
         } else if (strcmp(key, "srcPad") == 0) {
             route.srcPad = strtoul(val, nullptr, 10);
         } else if (strcmp(key, "sinkPad") == 0) {
@@ -1808,9 +1822,11 @@ void CameraParser::endParseElement(void *userData, const char *name)
                    profiles->pCurrentCam->sensorName.c_str());
             if (profiles->pCurrentCam->mLensName.empty() &&
                 profiles->pCurrentCam->sensorName.find("-wf") != string::npos) {
-                int ret = profiles->mMC->getLensName(&profiles->pCurrentCam->mLensName);
-                if (ret != OK) {
-                    LOGXML("@%s, Failed to getLensName", __func__);
+                if (profiles->mMC) {
+                    int ret = profiles->mMC->getLensName(&profiles->pCurrentCam->mLensName);
+                    if (ret != OK) {
+                        LOGXML("@%s, Failed to getLensName", __func__);
+                    }
                 }
             }
 
@@ -1938,8 +1954,7 @@ std::vector<std::string> CameraParser::getAvailableSensors(const std::string &ip
         sensorSinkNameTmp.append(portNum);
         std::string sensorName = srcSensor.substr(0, srcSensor.find_first_of('-'));
 
-        bool ret = mMC->checkAvailableSensor(sensorName, sensorSinkNameTmp);
-        if (ret) {
+        if (mMC && mMC->checkAvailableSensor(sensorName, sensorSinkNameTmp)) {
             AvailableSensorInfo sensorInfo = {sensorSinkNameTmp, false};
             availableSensors.push_back(srcSensor);
             mAvailableSensor[srcSensor] = sensorInfo;
@@ -1947,6 +1962,15 @@ std::vector<std::string> CameraParser::getAvailableSensors(const std::string &ip
                    __func__, srcSensor.c_str(), sensorSinkNameTmp.c_str());
         }
     }
+
+#ifdef LINUX_BUILD
+    // Return all the supported sensors list if detecting them isn't ready or
+    // don't have permissions
+    if (availableSensors.empty()) {
+        LOGXML("@%s, Detect sensor dynamically isn't supported, return all the list", __func__);
+        return sensorsList;
+    }
+#endif
 
     return availableSensors;
 }

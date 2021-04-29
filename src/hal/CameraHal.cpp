@@ -118,7 +118,9 @@ int CameraHal::deviceOpen(int cameraId)
     mCameraDevices[cameraId] = new CameraDevice(cameraId);
 
     if (mCameraOpenNum == 1) {
-        MediaControl::getInstance()->resetAllLinks();
+        MediaControl *mc = MediaControl::getInstance();
+        CheckError(!mc, UNKNOWN_ERROR, "%s, MediaControl init failed", __func__);
+        mc->resetAllLinks();
     }
 
     return mCameraDevices[cameraId]->init();

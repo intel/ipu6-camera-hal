@@ -74,8 +74,11 @@ PlatformData::~PlatformData() {
 
     releaseGraphConfigNodes();
 
-    MediaControl::getInstance()->clearEntities();
-    MediaControl::releaseInstance();
+    MediaControl *mc = MediaControl::getInstance();
+    if (mc) {
+        mc->clearEntities();
+        MediaControl::releaseInstance();
+    }
 
     for (size_t i = 0; i < mAiqInitData.size(); i++) {
         delete mAiqInitData[i];
