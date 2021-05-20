@@ -81,7 +81,7 @@ MediaControl* MediaControl::getMediaControlInstance() {
         SysCall *sc = SysCall::getInstance();
         int fd = sc->open(fileName.c_str(), O_RDWR);
         if (fd < 0) {
-            LOGW("%s, Open media device(%s) failed: %s",
+            LOG1("%s, Open media device(%s) failed: %s",
                  __func__, fileName.c_str(), strerror(errno));
             break;
         }
