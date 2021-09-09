@@ -28,6 +28,7 @@
 
 #include "AiqSetting.h"
 #include "AiqResult.h"
+#include "AiqStatistics.h"
 
 #include "Intel3AParameter.h"
 
@@ -81,14 +82,15 @@ public:
     /**
      * \brief update param and set converge speed
      *
-     * \param param: the parameter update to AiqPlus and Aiq3A or custom 3A
+     * \param param: the parameter update to AiqCore
      */
     int updateParameter(const aiq_parameter_t &param);
 
     /**
-     * \brief Set ispStatistics to AiqPlus and Aiq3A or custom 3A
+     * \brief Set ispStatistics to AiqCore
      */
-    int setStatsParams(const cca::cca_stats_params &statsParams, cca::cca_out_stats *outStats);
+    int setStatsParams(const cca::cca_stats_params &statsParams, cca::cca_out_stats *outStats,
+                       AiqStatistics* aiqStats);
 
     /**
      * \brief run AE
@@ -149,11 +151,12 @@ private:
     struct RunRateInfo {
         int runCcaTime;     // cca (like runAEC, runAIQ) running time after converged
         int runAlgoTime;    // algo (like AE, AF ...) running time after converged
-        RunRateInfo() { runCcaTime = 0; runAlgoTime = 0; }
+        RunRateInfo() { reset(); }
+        void reset() { runCcaTime = 0; runAlgoTime = 0; }
     };
-    bool bypassAe();
-    bool bypassAf();
-    bool bypassAwb();
+    bool bypassAe(const aiq_parameter_t &param);
+    bool bypassAf(const aiq_parameter_t &param);
+    bool bypassAwb(const aiq_parameter_t &param);
     // return ture if skip algo running
     bool skipAlgoRunning(RunRateInfo *info, int algo, bool converged);
     // return true if run rate is larger than config run rate
@@ -214,15 +217,18 @@ private:
     std::unique_ptr<cca::cca_aiq_params> mAiqParams;
     std::unique_ptr<cca::cca_aiq_results> mAiqResults;
 
-    int32_t mTonemapMaxCurvePoints;
-    bool mIsPLCEnable;
+    bool mAeAndAwbConverged;
+    bool mRgbStatsBypassed;
 
-    bool mAeRunRateEnabled;
+    bool mAeBypassed;
     RunRateInfo mAeRunRateInfo;
-    bool mAfRunRateEnabled;
+    bool mAfBypassed;
     RunRateInfo mAfRunRateInfo;
-    bool mAwbRunRateEnabled;
+    bool mAwbBypassed;
     RunRateInfo mAwbRunRateInfo;
+
+    uint32_t mLockedExposureTimeUs;
+    uint16_t mLockedIso;
 };
 
 } /* namespace icamera */

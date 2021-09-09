@@ -239,6 +239,11 @@ float PlatformData::getAlgoRunningRate(int algo, int cameraId)
     return 0.0;
 }
 
+bool PlatformData::isStatsRunningRateSupport(int cameraId)
+{
+    return getInstance()->mStaticCfg.mCameras[cameraId].mStatsRunningRate;
+}
+
 bool PlatformData::isEnableLtmThread(int cameraId)
 {
     return getInstance()->mStaticCfg.mCameras[cameraId].mEnableLtmThread;

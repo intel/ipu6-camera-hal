@@ -275,13 +275,17 @@ int IntelPGParam::decode(int payloadCount, ia_binary_data* payloads, ia_binary_d
     CheckAndLogError(!mMaxStatsSize, BAD_VALUE, "@%s, bad max stats size", __func__);
     bool ret = true;
     int32_t statsHandle = -1;
-    // Prepare shared stats memory
-    if (!mMemStatistics.mAddr) {
-        mMemStatistics.mSize = mMaxStatsSize;
-        ret = mCommon.allocShmMem(mMemStatistics.mName, mMemStatistics.mSize, &mMemStatistics);
-        CheckAndLogError(ret == false, UNKNOWN_ERROR, "@%s, alloc statsData fails", __func__);
+    if (!statistics->data) {
+        // Prepare shared stats memory
+        if (!mMemStatistics.mAddr) {
+            mMemStatistics.mSize = mMaxStatsSize;
+            ret = mCommon.allocShmMem(mMemStatistics.mName, mMemStatistics.mSize, &mMemStatistics);
+            CheckAndLogError(ret == false, UNKNOWN_ERROR, "@%s, alloc statsData fails", __func__);
+        }
+        statsHandle = mCommon.getShmMemHandle(mMemStatistics.mAddr);
+    } else {
+        statsHandle = mCommon.getShmMemHandle(statistics->data);
     }
-    statsHandle = mCommon.getShmMemHandle(mMemStatistics.mAddr);
 
     ret = mIpc.clientFlattenDecode(mMemDecode.mAddr, mMemDecode.mSize, mClient,
                                    payloadCount, payloads, statsHandle);
@@ -292,7 +296,9 @@ int IntelPGParam::decode(int payloadCount, ia_binary_data* payloads, ia_binary_d
 
     ret = mIpc.clientUnflattenDecode(mMemDecode.mAddr, mMemDecode.mSize, statistics);
     CheckAndLogError(ret == false, UNKNOWN_ERROR, "@%s, clientUnflattenDecode fails", __func__);
-    statistics->data = mMemStatistics.mAddr;
+    if (!statistics->data) {
+        statistics->data = mMemStatistics.mAddr;
+    }
 
     return OK;
 }

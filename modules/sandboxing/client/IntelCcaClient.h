@@ -22,6 +22,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <map>
 
 #include "CameraTypes.h"
 #include "IntelAlgoCommonClient.h"
@@ -61,14 +62,22 @@ class IntelCca {
     ia_err updateTuning(uint8_t lardTags, const ia_lard_input_params& lardParams,
                         const cca::cca_nvm& nvm);
 
+    bool allocStatsDataMem(unsigned int size);
+    void* getStatsDataBuffer();
+    void decodeHwStatsDone(int64_t sequence, unsigned int byteUsed);
+    void* fetchHwStatsData(int64_t sequence, unsigned int* byteUsed);
+
     void deinit();
 
-    ia_err decodeStats(uint64_t statsPointer, uint32_t statsSize,
+    ia_err decodeStats(uint64_t statsPointer, uint32_t statsSize, uint32_t bitmap,
                        ia_isp_bxt_statistics_query_results_t* results);
 
     uint32_t getPalDataSize(const cca::cca_program_group& programGroup);
     void* allocMem(int streamId, const std::string& name, int index, int size);
     void freeMem(void* addr);
+
+ private:
+    void freeStatsDataMem();
 
  private:
     int mCameraId;
@@ -96,6 +105,18 @@ class IntelCca {
     ShmMemInfo mMemPalSize;
 
     std::vector<ShmMem> mMems;
+
+    // Only 3 buffers will be held in AiqResultStorage (kAiqResultStorageSize is 3)
+    // So it is safe to use other 3 buffers.
+    static const int kMaxQueueSize = 6;
+    Mutex mMemStatsMLock;  // protect mMemStatsInfoMap
+    struct StatsBufInfo {
+        unsigned int bufSize;
+        ShmMemInfo shmMem;
+        unsigned int usedSize;
+    };
+    // first: sequence id, second: stats buffer info
+    std::map<int64_t, StatsBufInfo> mMemStatsInfoMap;
 
     std::unordered_map<void*, ShmMemInfo> mMemsOuter;
 

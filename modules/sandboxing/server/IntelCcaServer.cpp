@@ -239,7 +239,7 @@ status_t IntelCcaServer::decodeStats(void* pData, int dataSize, void* statsAddr)
     }
 
     ia_err ret = mCca->decodeStats(reinterpret_cast<uint64_t>(params->statsBuffer.data),
-                                   params->statsBuffer.size, &params->results);
+                                   params->statsBuffer.size, params->bitmap, &params->results);
     CheckAndLogError(ret != ia_err_none, UNKNOWN_ERROR, "@%s, decodeStats fails", __func__);
     LOG2("@%s, ret:%d", __func__, ret);
 

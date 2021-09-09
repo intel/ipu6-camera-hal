@@ -53,7 +53,8 @@ int PGCommon::getFrameSize(int format, int width, int height,
     return size;
 }
 
-PGCommon::PGCommon(int cameraId, int pgId, const std::string& pgName, ia_uid terminalBaseUid):
+PGCommon::PGCommon(int cameraId, int pgId, const std::string& pgName, TuningMode tuningMode,
+                   ia_uid terminalBaseUid):
     mCtx(nullptr),
     mManifestBuffer(nullptr),
     mPGParamsBuffer(nullptr),
@@ -83,12 +84,17 @@ PGCommon::PGCommon(int cameraId, int pgId, const std::string& pgName, ia_uid ter
     mTerminalBuffers(nullptr),
     mInputMainTerminal(-1),
     mOutputMainTerminal(-1),
-    mShareReferPool(nullptr)
+    mShareReferPool(nullptr),
+    mIntelCca(nullptr)
 {
     mTnrTerminalPair.inId = -1;
     mTnrTerminalPair.outId = -1;
     CLEAR(mParamPayload);
     CLEAR(mShareReferIds);
+
+    if (PlatformData::isStatsRunningRateSupport(mCameraId)) {
+        mIntelCca = IntelCca::getInstance(mCameraId, tuningMode);
+    }
 }
 
 PGCommon::~PGCommon()
@@ -267,7 +273,7 @@ void PGCommon::setRoutingBitmap(const void* rbm, uint32_t bytes)
     }
 }
 
-int PGCommon::prepare(IspParamAdaptor* adaptor, int streamId)
+int PGCommon::prepare(IspParamAdaptor* adaptor, int statsCount, int streamId)
 {
     mStreamId = streamId;
     // Set the data terminal frame format
@@ -278,8 +284,10 @@ int PGCommon::prepare(IspParamAdaptor* adaptor, int streamId)
     ret = initParamAdapt();
     CheckAndLogError((ret != OK), ret, "%s, init p2p fail", __func__);
 
+    uint32_t maxStatsSize = 0;
     // Query and save the requirement for each terminal, get the final kernel bitmap
-    ret = mPGParamAdapt->prepare(adaptor->getIpuParameter(-1, streamId), mRoutingBitmap.get(), &mKernelBitmap);
+    ret = mPGParamAdapt->prepare(adaptor->getIpuParameter(-1, streamId), mRoutingBitmap.get(),
+                                 &mKernelBitmap, &maxStatsSize);
     CheckAndLogError((ret != OK), ret, "%s, prepare p2p fail", __func__);
 
     // Init PG parameters
@@ -314,6 +322,10 @@ int PGCommon::prepare(IspParamAdaptor* adaptor, int streamId)
     CheckAndLogError((ret != OK), NO_MEMORY, "%s, preparePayloadBuffers fails", __func__);
 
     configureFrameDesc();
+
+    if (mIntelCca && mStreamId == VIDEO_STREAM_ID && statsCount > 0) {
+        mIntelCca->allocStatsDataMem(maxStatsSize);
+    }
 
     return OK;
 }
@@ -903,8 +915,16 @@ int PGCommon::iterate(CameraBufferMap &inBufs, CameraBufferMap &outBufs,
     CheckAndLogError((ret != OK), ret, "%s, executePG fail", getName());
 
     if (statistics) {
+        bool useCcaBuf = false;
+        if (mIntelCca && !statistics->data) {
+            statistics->data = mIntelCca->getStatsDataBuffer();
+            if (statistics->data) useCcaBuf = true;
+        }
         ret = mPGParamAdapt->decode(mTerminalCount, mParamPayload, statistics);
         CheckAndLogError((ret != OK), ret, "%s, decode fail", getName());
+        if (mIntelCca && useCcaBuf) {
+            mIntelCca->decodeHwStatsDone(sequence, statistics->size);
+        }
     }
 
     postTerminalBuffersDone(sequence);

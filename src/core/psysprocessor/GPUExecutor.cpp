@@ -468,6 +468,7 @@ int GPUExecutor::updateTnrISPConfig(Tnr7Param* pbuffer, uint32_t sequence) {
         }
 
         tnr7_bc->global_protection = pBc->global_protection;
+        tnr7_bc->global_protection_inv_num_pixels = pBc->global_protection_inv_num_pixels;
         tnr7_bc->global_protection_motion_level = pBc->global_protection_motion_level;
         for (int i = 0; i < sizeof(pBc->global_protection_sensitivity_lut_values) / sizeof(int32_t);
              i++) {

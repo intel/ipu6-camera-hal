@@ -180,7 +180,19 @@ static void fancyLogInitSinks() {
 #endif
 }
 
-static void fancyLogInitTags() {
+static void fancyLogSetDefaultLevel() {
+    static const char* SUPPRESS_DEFLOG = "SUPPRESS_DEFLOG";
+    if (::getenv(SUPPRESS_DEFLOG))
+        return;
+
+    for (int i = 0; i < TAGS_MAX_NUM; ++i) {
+        globalGroupsDescp[i].level |= CAMERA_DEBUG_LOG_ERR;
+        globalGroupsDescp[i].level |= CAMERA_DEBUG_LOG_WARNING;
+        globalGroupsDescp[i].level |= CAMERA_DEBUG_LOG_INFO;
+    }
+}
+
+static void fancyLogSetLevel() {
     static const char* LOG_FILE_TAG = "FANCY_LOG_TAG";
     char* logFileTag = ::getenv(LOG_FILE_TAG);
 
@@ -219,9 +231,9 @@ static void fancyLogInitTags() {
     }
 }
 
-static void doFancyLogInit() {
-    fancyLogInitTags();
-    fancyLogInitSinks();
+static void fancyLogInitTags() {
+    fancyLogSetDefaultLevel();
+    fancyLogSetLevel();
 }
 
 void setDebugLevel(void) {
@@ -230,6 +242,8 @@ void setDebugLevel(void) {
     const char *PROP_CAMERA_HAL_PERF = "cameraPerf";
     const char *PROP_CAMERA_HAL_DVS = "cameraDvs";
     const char *PROP_CAMERA_RUN_RATIO = "cameraRunRatio";
+
+    fancyLogInitSinks();
 
     // debug
     char *dbgLevel = getenv(PROP_CAMERA_HAL_DEBUG);
@@ -246,7 +260,7 @@ void setDebugLevel(void) {
         }
     }
 
-    doFancyLogInit();
+    fancyLogInitTags();
 
     char *slowlyRunRatio = getenv(PROP_CAMERA_RUN_RATIO);
     if (slowlyRunRatio) {

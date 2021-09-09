@@ -210,7 +210,7 @@
         <enablePSysProcessor value="true"/>
         <dvsType value="IMG_TRANS"/>
         <nvmDeviceInfo value="NVM,590"/>
-        <lensName value="dw9768"/>
+        <lensName value="dw9714"/>
         <lensHwType value="LENS_VCM_HW"/>
         <testPatternMap value="Off,0,ColorBars,2"/>
         <enableAiqd value = "true"/>

@@ -334,7 +334,7 @@ AiqEngine::AiqState AiqEngine::prepareInputParam(AiqStatistics* aiqStats, AiqRes
         statsParams.using_rgbs_for_aec = true;
     }
 
-    mAiqCore->setStatsParams(statsParams, &aiqResult->mOutStats);
+    mAiqCore->setStatsParams(statsParams, &aiqResult->mOutStats, aiqStats);
 
     return AIQ_STATE_RUN;
 }

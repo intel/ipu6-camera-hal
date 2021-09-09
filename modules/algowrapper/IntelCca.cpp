@@ -85,6 +85,8 @@ IntelCca::IntelCca(int cameraId, TuningMode mode) :
 IntelCca::~IntelCca() {
     LOG2("@%s", __func__);
     releaseIntelCCA();
+    freeStatsDataMem();
+    mMemStatsInfoMap.clear();
 }
 
 cca::IntelCCA* IntelCca::getIntelCCA() {
@@ -223,6 +225,84 @@ ia_err IntelCca::updateTuning(uint8_t lardTags, const ia_lard_input_params& lard
     return ret;
 }
 
+bool IntelCca::allocStatsDataMem(unsigned int size) {
+    LOG2("@%s, mCameraId:%d, tuningMode:%d, size:%d", __func__, mCameraId, mTuningMode, size);
+
+    {
+        AutoMutex l(mMemStatsMLock);
+        if (!mMemStatsInfoMap.empty() &&
+            mMemStatsInfoMap.begin()->second.bufSize >= size) {
+            return true;
+        }
+    }
+
+    freeStatsDataMem();
+
+    AutoMutex l(mMemStatsMLock);
+    for (int i = 0; i < kMaxQueueSize; i++) {
+        void* p = malloc(size);
+        CheckAndLogError(!p, false, "failed to malloc stats buffer");
+        StatsBufInfo info = { size, p, 0 };
+
+        LOG2("the buffer address: %p", p);
+        int64_t index = i * (-1) - 1;  // default index list: -1, -2, -3, ...
+        mMemStatsInfoMap[index] = info;
+    }
+
+    return true;
+}
+
+void IntelCca::freeStatsDataMem() {
+    LOG2("@%s, mCameraId:%d, tuningMode:%d", __func__, mCameraId, mTuningMode);
+
+    AutoMutex l(mMemStatsMLock);
+    for (auto it = mMemStatsInfoMap.begin(); it != mMemStatsInfoMap.end(); ++it) {
+        free(it->second.ptr);
+    }
+
+    mMemStatsInfoMap.clear();
+}
+
+void* IntelCca::getStatsDataBuffer() {
+    LOG2("@%s, mCameraId:%d, tuningMode:%d", __func__, mCameraId, mTuningMode);
+
+    AutoMutex l(mMemStatsMLock);
+    if (mMemStatsInfoMap.empty()) return nullptr;
+
+    void* p = mMemStatsInfoMap.begin()->second.ptr;
+    LOG2("get stats buffer address %p", p);
+    return p;
+}
+
+void IntelCca::decodeHwStatsDone(int64_t sequence, unsigned int byteUsed) {
+    LOG2("@%s, mCameraId:%d, tuningMode:%d, sequence:%ld, byteUsed:%d", __func__, mCameraId,
+         mTuningMode, sequence, byteUsed);
+
+    AutoMutex l(mMemStatsMLock);
+    if (mMemStatsInfoMap.empty()) return;
+
+    auto it = mMemStatsInfoMap.begin();
+    it->second.usedSize = byteUsed;
+    mMemStatsInfoMap[sequence] = it->second;
+    mMemStatsInfoMap.erase(it->first);
+}
+
+void* IntelCca::fetchHwStatsData(int64_t sequence, unsigned int* byteUsed) {
+    LOG2("@%s, mCameraId:%d, tuningMode:%d, sequence:%ld", __func__, mCameraId,
+         mTuningMode, sequence);
+    CheckAndLogError(!byteUsed, nullptr, "byteUsed is nullptr");
+
+    AutoMutex l(mMemStatsMLock);
+    if (mMemStatsInfoMap.find(sequence) != mMemStatsInfoMap.end()) {
+        *byteUsed = mMemStatsInfoMap[sequence].usedSize;
+        void* p = mMemStatsInfoMap[sequence].ptr;
+        LOG2("decode stats address %p", p);
+        return p;
+    }
+
+    return nullptr;
+}
+
 void IntelCca::deinit() {
     LOG2("@%s", __func__);
 
@@ -230,12 +310,13 @@ void IntelCca::deinit() {
     releaseIntelCCA();
 }
 
-ia_err IntelCca::decodeStats(uint64_t statsPointer, uint32_t statsSize,
+ia_err IntelCca::decodeStats(uint64_t statsPointer, uint32_t statsSize, uint32_t bitmap,
                              ia_isp_bxt_statistics_query_results_t* results) {
-    LOG2("@%s, statsPointer: 0x%lu, statsSize:%d", __func__, statsPointer, statsSize);
+    LOG2("@%s, statsPointer: 0x%lu, statsSize:%d, bitmap:%x", __func__, statsPointer,
+         statsSize, bitmap);
     CheckAndLogError(!results, ia_err_argument, "@%s, results is nullptr", __func__);
 
-    ia_err ret = getIntelCCA()->decodeStats(statsPointer, statsSize, results);
+    ia_err ret = getIntelCCA()->decodeStats(statsPointer, statsSize, bitmap, results);
     LOG2("@%s, ret:%d", __func__, ret);
 
     return ret;

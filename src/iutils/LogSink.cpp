@@ -17,7 +17,9 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <stdio.h>
+#include <string.h>
 #include <sys/stat.h>
+#include <errno.h>
 
 #ifdef CAL_BUILD
 #include <base/logging.h>
@@ -70,7 +72,7 @@ void StdconLogSink::sendOffLog(const char* prefix, const char* logEntry,
             cameraDebugLogToString(level), prefix, logEntry);
 }
 
-void StdconLogSink::setLogTime(char* buf) {
+void LogOutputSink::setLogTime(char* buf) {
     struct timeval tv;
     gettimeofday(&tv, nullptr);
     time_t nowtime = tv.tv_sec;
@@ -83,6 +85,25 @@ void StdconLogSink::setLogTime(char* buf) {
         snprintf(buf, TIME_BUF_SIZE, "%.96s.%d", tmbuf,
                  static_cast<int>((tv.tv_usec / 1000) % 1000));
     }
+}
+
+FtraceLogSink::FtraceLogSink() {
+    mFtraceFD = open("/sys/kernel/debug/tracing/trace_marker", O_WRONLY);
+    if (mFtraceFD == -1) {
+        fprintf(stderr, "[WAR] Cannot init ftrace sink, [%s] self killing...",
+                strerror(errno));
+        raise(SIGABRT);
+    }
+}
+const char* FtraceLogSink::getName() const { return "Ftrace LOG"; }
+
+void FtraceLogSink::sendOffLog(const char* prefix, const char* logEntry,
+                               int level) {
+#define TIME_BUF_SIZE 128
+    char timeInfo[TIME_BUF_SIZE];
+    setLogTime(timeInfo);
+    dprintf(mFtraceFD, "[%s] [%s] %s %s\n", timeInfo,
+            cameraDebugLogToString(level), prefix, logEntry);
 }
 
 };  // namespace icamera

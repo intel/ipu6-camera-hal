@@ -329,6 +329,8 @@ void CameraParser::handleSensor(CameraParser *profiles, const char *name, const 
         char* savePtr = nullptr;
 
         char* tablePtr = strtok_r(src, ",", &savePtr);
+        float awbRunningRate = 0.0;
+        float aeRunningRate = 0.0;
         while (tablePtr) {
             if (strcmp(tablePtr, "AE") == 0) {
                 algo = IMAGING_ALGO_AE;
@@ -344,8 +346,17 @@ void CameraParser::handleSensor(CameraParser *profiles, const char *name, const 
             tablePtr = strtok_r(nullptr, ",", &savePtr);
             CheckAndLogError(!tablePtr, VOID_VALUE, "the run rate of algo %d is nullptr", algo);
 
+            if (algo == IMAGING_ALGO_AE) aeRunningRate = atof(tablePtr);
+            if (algo == IMAGING_ALGO_AWB) awbRunningRate = atof(tablePtr);
+
             pCurrentCam->mAlgoRunningRateMap[algo] = atof(tablePtr);
             tablePtr = strtok_r(nullptr, ",", &savePtr);
+        }
+
+        if (awbRunningRate > EPSILON && aeRunningRate > EPSILON
+            && fabs(awbRunningRate - aeRunningRate) < EPSILON) {
+            // if same runnning rate of AE and AWB, stats running rate is supported
+            pCurrentCam->mStatsRunningRate = true;
         }
     } else if (strcmp(name, "useCrlModule") == 0) {
         pCurrentCam->mUseCrlModule = strcmp(atts[1], "true") == 0;

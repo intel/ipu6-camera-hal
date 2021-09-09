@@ -128,6 +128,7 @@ public:
                 mLensCloseCode(0),
                 mEnableAIQ(false),
                 mAiqRunningInterval(1),
+                mStatsRunningRate(false),
                 mEnableMkn(true),
                 mSkipFrameV4L2Error(false),
                 mCITMaxMargin(0),
@@ -198,6 +199,7 @@ public:
             int mLensCloseCode;
             bool mEnableAIQ;
             int mAiqRunningInterval;
+            bool mStatsRunningRate;
             bool mEnableMkn;
             // first: one algo type in imaging_algorithm_t, second: running rate
             std::unordered_map<int, float> mAlgoRunningRateMap;
@@ -484,6 +486,14 @@ public:
      * \return float: the running rate of every Algorithms, otherwise return 0.0
      */
     static float getAlgoRunningRate(int algo, int cameraId);
+
+    /**
+     * if running rate is supported
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \\return if running rate is supported or not.
+     */
+    static bool isStatsRunningRateSupport(int cameraId);
 
     /**
      * Check if sensor digital gain is used or not

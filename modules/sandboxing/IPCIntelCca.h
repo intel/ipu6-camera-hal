@@ -138,6 +138,7 @@ struct intel_cca_decode_stats_data {
 
     ia_binary_data statsBuffer;
     int32_t statsHandle;
+    uint32_t bitmap;
 
     ia_isp_bxt_statistics_query_results_t results;
 };

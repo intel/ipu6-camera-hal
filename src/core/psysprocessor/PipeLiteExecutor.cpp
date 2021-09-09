@@ -215,6 +215,7 @@ int PipeLiteExecutor::storeTerminalInfo(const IGraphType::PipelineConnection& co
 
 int PipeLiteExecutor::createPGs()
 {
+    TuningMode tuningMode = mPSysDag->getTuningMode(-1);
     for (auto const& pgName : mPGNames) {
         int pgId = mGraphConfig->getPgIdByPgName(pgName);
         CheckAndLogError(pgId == -1, BAD_VALUE, "Cannot get PG ID for %s", pgName.c_str());
@@ -222,8 +223,8 @@ int PipeLiteExecutor::createPGs()
         ExecutorUnit pgUnit;
         pgUnit.pgId = pgId;
         pgUnit.stageId = psys_2600_pg_uid(pgId);
-        pgUnit.pg =
-            std::shared_ptr<PGCommon>(new PGCommon(mCameraId, pgId, pgName, pgUnit.stageId + 1));
+        pgUnit.pg = std::shared_ptr<PGCommon>(new PGCommon(mCameraId, pgId, pgName, tuningMode,
+                                                           pgUnit.stageId + 1));
         // Please refer to ia_cipf_css.h for terminalBaseUid
         pgUnit.pg->setShareReferPool(mShareReferPool);
         mPGExecutors.push_back(pgUnit);
@@ -255,10 +256,11 @@ int PipeLiteExecutor::configurePGs()
                  __func__, unit.pgId, unit.pg->getName(), stageAttr.rbm_bytes);
             unit.pg->setRoutingBitmap(stageAttr.rbm, stageAttr.rbm_bytes);
         }
-        unit.pg->prepare(mAdaptor, mStreamId);
 
         int statsCount = getStatKernels(unit.pgId, unit.statKernelUids);
         mkernelsCountWithStats += statsCount;
+
+        unit.pg->prepare(mAdaptor, statsCount, mStreamId);
 
         statsCount = getSisKernels(unit.pgId, unit.sisKernelUids);
         mkernelsCountWithStats += statsCount;

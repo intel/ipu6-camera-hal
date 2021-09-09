@@ -333,7 +333,11 @@ int IspParamAdaptor::decodeStatsData(TuningMode tuningMode,
     aiqStatistics->mSequence = sequence;
     aiqStatistics->mTimestamp = TIMEVAL2USECS(statsBuffer->getTimestamp());
     aiqStatistics->mTuningMode = tuningMode;
+    aiqStatistics->mPendingDecode = PlatformData::isStatsRunningRateSupport(mCameraId);
     aiqResultStorage->updateAiqStatistics(sequence);
+
+    // Pend stats decoding to running 3A
+    if (aiqStatistics->mPendingDecode) return OK;
 
     ia_binary_data *hwStatsData = (ia_binary_data *)(statsBuffer->getBufferAddr());
     if (CameraDump::isDumpTypeEnable(DUMP_PSYS_DECODED_STAT) && hwStatsData != nullptr) {
@@ -347,8 +351,9 @@ int IspParamAdaptor::decodeStatsData(TuningMode tuningMode,
 
     CheckAndLogError(hwStatsData == nullptr, UNKNOWN_ERROR, "%s, hwStatsData is nullptr", __func__);
     ia_isp_bxt_statistics_query_results_t queryResults = {};
+    uint32_t bitmap = 0xff; // Decode all stats by default
     ia_err iaErr = mIntelCca->decodeStats(reinterpret_cast<uint64_t>(hwStatsData->data),
-                                          hwStatsData->size, &queryResults);
+                                          hwStatsData->size, bitmap, &queryResults);
     CheckAndLogError(iaErr != ia_err_none, UNKNOWN_ERROR, "%s, Faield convert statistics",
                      __func__);
     LOG2("%s, query results: rgbs_grid(%d), af_grid(%d), dvs_stats(%d)", __func__,

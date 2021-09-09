@@ -79,7 +79,7 @@ private:
         HAL_INIT
     } mState;
 
-    int mCameraOpenNum = 0;
+    int mCameraOpenNum;
 };
 
 } // namespace icamera

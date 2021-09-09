@@ -42,7 +42,8 @@ namespace icamera {
 
 CameraHal::CameraHal() :
     mInitTimes(0),
-    mState(HAL_UNINIT)
+    mState(HAL_UNINIT),
+    mCameraOpenNum(0)
 {
     PERF_CAMERA_ATRACE();
     LOG1("@%s", __func__);
@@ -114,8 +115,9 @@ int CameraHal::deviceOpen(int cameraId)
         return INVALID_OPERATION;
     }
 
-    mCameraOpenNum++;
     mCameraDevices[cameraId] = new CameraDevice(cameraId);
+
+    mCameraOpenNum++;
 
     if (mCameraOpenNum == 1) {
         MediaControl *mc = MediaControl::getInstance();

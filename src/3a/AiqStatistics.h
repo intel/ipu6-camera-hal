@@ -25,11 +25,13 @@ struct AiqStatistics {
     unsigned long long mTimestamp;
     TuningMode mTuningMode;
     bool mInUse;
+    bool mPendingDecode;
 
     AiqStatistics() : mSequence(-1),
                       mTimestamp(0),
                       mTuningMode(TUNING_MODE_MAX),
-                      mInUse(false) {}
+                      mInUse(false),
+                      mPendingDecode(false) {}
 };
 } /* namespace icamera */
 
