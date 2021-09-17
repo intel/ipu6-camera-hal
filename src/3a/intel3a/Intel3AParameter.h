@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2018 Intel Corporation.
+ * Copyright (C) 2015-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,6 +65,7 @@ public:
     cca::cca_ae_input_params mAeParams;
     cca::cca_af_input_params mAfParams;
     cca::cca_awb_input_params mAwbParams;
+    camera_test_pattern_mode_t mTestPatternMode;
 
     bool mUseManualAwbGain;
     bool mUseManualColorMatrix;
@@ -79,6 +80,8 @@ public:
     int mAwbPerTicks;
 
     bool mAfForceLock; // Lock AF to respond autofocus action triggered by user.
+    float mManualFocusDistance;
+    camera_ae_mode_t mAeMode;
 private:
     static const int MAX_FOCUS_DISTANCE = 5000; // unit is mm
 

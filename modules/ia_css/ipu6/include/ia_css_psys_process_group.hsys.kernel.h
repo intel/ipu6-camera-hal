@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Intel Corporation.
+ * Copyright (C) 2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@
  *  This file, together with the user space header, ia_css_psys_process_group.hsys.user.h,
  *  defines the functions required to manage the lifetime of a process group.
  *
- * Sequence for settup up and queueing processing tasks with a persistent program group
+ * Sequence for setup up and queuing processing tasks with a persistent program group
  * to IPU is:
  *
  * # Get Program Group manifest by ID
@@ -34,7 +34,7 @@
  * # Configure process group
  * ## Set kernel and terminal enables
  * ## Set terminal attributes
- * # Submit processs group
+ * # Submit process group
  * # Start process group
  * # Disown process group
  * # Frame/Fragment processing loop
@@ -250,7 +250,7 @@ extern int ia_css_process_group_disown(
 
  @par For PPG's, buffer is ignored as the buffers will be sent
  later on with ia_css_enqueue_buffer_set().  Nonetheless, this function must be
- called before ia_css_process_group_submit() as sets up some internal bookeeping.
+ called before ia_css_process_group_submit() as sets up some internal bookkeeping.
 
  @note The buffer can be in memory or streaming over memory
 

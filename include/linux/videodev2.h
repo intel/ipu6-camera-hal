@@ -500,7 +500,7 @@ struct v4l2_pix_format {
 #define V4L2_PIX_FMT_MJPEG v4l2_fourcc('M', 'J', 'P', 'G')
 
 #define V4L2_PIX_FMT_YUYV420_V32 v4l2_fourcc('y', '0', '3', '2')
-#define V4L2_PIX_FMT_P010_BE v4l2_fourcc('P', '0', '1', '0')
+#define V4L2_PIX_FMT_P010 v4l2_fourcc('P', '0', '1', '0')
 #define V4L2_PIX_FMT_P010_LE v4l2_fourcc('P', '0', '1', 'L')
 #define V4L2_PIX_FMT_M420 v4l2_fourcc('M', '4', '2', '0')
 

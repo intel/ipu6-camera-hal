@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Intel Corporation.
+ * Copyright (C) 2015-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#define LOG_TAG "SofSource"
+#define LOG_TAG SofSource
 
 #include <poll.h>
 
@@ -34,9 +34,7 @@ SofSource::SofSource(int cameraId) :
 {
     LOG1("%s: SofSource is constructed", __func__);
 
-    mSofDisabled = !PlatformData::isEnableAIQ(mCameraId);
-
-    mSofDisabled = mSofDisabled || !PlatformData::isIsysEnabled(cameraId);
+    mSofDisabled = !PlatformData::isIsysEnabled(cameraId);
 }
 
 SofSource::~SofSource()
@@ -82,12 +80,12 @@ int SofSource::initDev()
 
 #ifdef CAL_BUILD
     int status = mIsysReceiverSubDev->SubscribeEvent(V4L2_EVENT_FRAME_SYNC);
-    CheckError(status != OK, status, "%s: Failed to subscribe sync event 0", __func__);
+    CheckAndLogError(status != OK, status, "%s: Failed to subscribe sync event 0", __func__);
     LOG1("%s: Using SOF event id 0 for sync", __func__);
 #else
     int id = 0;
     int status = mIsysReceiverSubDev->SubscribeEvent(V4L2_EVENT_FRAME_SYNC, id);
-    CheckError(status != OK, status, "%s: Failed to subscribe sync event %d", __func__, id);
+    CheckAndLogError(status != OK, status, "%s: Failed to subscribe sync event %d", __func__, id);
     LOG1("%s: Using SOF event id %d for sync", __func__, id);
 #endif
 

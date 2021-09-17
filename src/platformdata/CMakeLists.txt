@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017-2019 Intel Corporation
+#  Copyright (C) 2017-2021 Intel Corporation
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -25,14 +25,9 @@ set(PLATFORMDATA_SRCS
     set(PLATFORMDATA_SRCS
         ${PLATFORMDATA_SRCS}
         ${PLATFORMDATA_DIR}/AiqInitData.cpp
-        ${PLATFORMDATA_DIR}/gc/FormatUtils.cpp
         ${PLATFORMDATA_DIR}/gc/GraphUtils.cpp
+        ${PLATFORMDATA_DIR}/gc/GraphConfigManager.cpp
+        ${PLATFORMDATA_DIR}/gc/GraphConfig.cpp
         CACHE INTERNAL "platformdata sources"
-        )
-        set(PLATFORMDATA_SRCS
-            ${PLATFORMDATA_SRCS}
-            ${PLATFORMDATA_DIR}/gc/GraphConfigManager.cpp
-            ${PLATFORMDATA_DIR}/gc/GraphConfig.cpp
-            CACHE INTERNAL "platformdata sources"
         )
 

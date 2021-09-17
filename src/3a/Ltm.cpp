@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2020 Intel Corporation.
+ * Copyright (C) 2017-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#define LOG_TAG "Ltm"
+#define LOG_TAG Ltm
 
 #include "Ltm.h"
 
@@ -63,7 +63,7 @@ int Ltm::init() {
 
     for (int i = 0; i < kMaxLtmParamsNum; i++) {
         mLtmParams[i] = new LtmInputParams;
-        CheckError(!mLtmParams[i], NO_MEMORY, "%s, No memory for Ltm input params", __func__);
+        CheckAndLogError(!mLtmParams[i], NO_MEMORY, "%s, No memory for Ltm input params", __func__);
         mLtmParams[i]->ltmParams.ltm_level = ia_ltm_level_use_tuning;
         mLtmParams[i]->ltmParams.ev_shift = 0;
         mLtmParams[i]->ltmParams.ltm_strength_manual = 100;
@@ -176,11 +176,11 @@ int Ltm::handleSisLtm(const std::shared_ptr<CameraBuffer>& cameraBuffer) {
     AutoMutex l(mLtmLock);
 
     ia_binary_data* sisFrame = (ia_binary_data*)cameraBuffer->getBufferAddr();
-    CheckError(sisFrame == nullptr, BAD_VALUE, "sis frame buffer is nullptr!");
+    CheckAndLogError(sisFrame == nullptr, BAD_VALUE, "sis frame buffer is nullptr!");
     unsigned int size = sisFrame->size;
-    CheckError((size == 0), BAD_VALUE, "sis data size err!");
+    CheckAndLogError((size == 0), BAD_VALUE, "sis data size err!");
     void* data = sisFrame->data;
-    CheckError((data == nullptr), BAD_VALUE, "sis data ptr err!");
+    CheckAndLogError((data == nullptr), BAD_VALUE, "sis data ptr err!");
 
     mInputParamIndex++;
     mInputParamIndex %= kMaxLtmParamsNum;
@@ -243,10 +243,10 @@ int Ltm::runLtmAsync() {
         }
     }
 
-    CheckError(mLtmParamsQ.empty(), UNKNOWN_ERROR, "Failed to get ltm input params buffers");
+    CheckAndLogError(mLtmParamsQ.empty(), UNKNOWN_ERROR, "Failed to get ltm input params buffers");
     inputParams = mLtmParamsQ.front();
     mLtmParamsQ.pop();
-    CheckError(!inputParams, OK, "%s, the inputParams is NULL", __func__);
+    CheckAndLogError(!inputParams, OK, "%s, the inputParams is NULL", __func__);
 
     runLtm(*inputParams);
 
@@ -262,12 +262,13 @@ int Ltm::runLtm(const LtmInputParams& ltmInputParams) {
     {
         PERF_CAMERA_ATRACE_PARAM1_IMAGING("ia_ltm_run", 0);
         IntelCca* intelCcaHandle = IntelCca::getInstance(mCameraId, mTuningMode);
-        CheckError(!intelCcaHandle, BAD_VALUE, "@%s, Failed to get IntelCca instance", __func__);
+        CheckAndLogError(!intelCcaHandle, BAD_VALUE, "@%s, Failed to get IntelCca instance",
+                         __func__);
         iaErr = intelCcaHandle->runLTM(ltmInputParams.sequence, ltmInputParams.ltmParams);
     }
 
     int ret = AiqUtils::convertError(iaErr);
-    CheckError(ret != OK, ret, "Error running LTM: %d", ret);
+    CheckAndLogError(ret != OK, ret, "Error running LTM: %d", ret);
 
     return OK;
 }

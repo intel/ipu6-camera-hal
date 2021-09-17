@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2012 The Android Open Source Project
- * Copyright (C) 2015-2018 Intel Corporation
+ * Copyright (C) 2015-2021 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-#define LOG_TAG "camera_metadata"
+#define LOG_TAG icamera_metadata_base
 
 #include <inttypes.h>
 #include "icamera_metadata_base.h"
@@ -24,13 +24,8 @@
 #include <stdlib.h>
 #include <errno.h>
 
-// TODO need to find out the correct print function
-#include <stdio.h>
-#define ALOGE printf
-
-#define OK         0
-#define ERROR      1
-#define NOT_FOUND (-ENOENT)
+#include "iutils/CameraLog.h"
+#include "iutils/Errors.h"
 
 /**
  * A single metadata entry, storing an array of values of a given type. If the
@@ -132,14 +127,8 @@ typedef union camera_metadata_data {
 /** Flag definitions */
 #define FLAG_SORTED 0x00000001
 
-/** Tag information */
-
-typedef struct tag_info {
-    const char *tag_name;
-    uint8_t     tag_type;
-} tag_info_t;
-
 #include "icamera_metadata_tag_info.c"
+#include "vendor_metadata_tag_info.c"
 
 const size_t icamera_metadata_type_size[ICAMERA_NUM_TYPES] = {
     sizeof(uint8_t),                    // ICAMERA_TYPE_BYTE
@@ -185,7 +174,7 @@ icamera_metadata_t *allocate_copy_icamera_metadata_checked(
     MEMCPY_S(buffer, src_size, src, src_size);
 
     icamera_metadata_t *metadata = (icamera_metadata_t*) buffer;
-    if (validate_icamera_metadata_structure(metadata, &src_size) != OK) {
+    if (validate_icamera_metadata_structure(metadata, &src_size) != icamera::OK) {
         free(buffer);
         return NULL;
     }
@@ -228,7 +217,7 @@ icamera_metadata_t *place_icamera_metadata(void *dst,
             metadata->entry_capacity) - (uint8_t*)metadata;
     metadata->data_start = ALIGN_TO(data_unaligned, DATA_ALIGNMENT);
 
-    assert(validate_icamera_metadata_structure(metadata, NULL) == OK);
+    assert(validate_icamera_metadata_structure(metadata, NULL) == icamera::OK);
     return metadata;
 }
 void free_icamera_metadata(icamera_metadata_t *metadata) {
@@ -248,13 +237,13 @@ size_t calculate_icamera_metadata_size(size_t entry_count,
 }
 
 size_t get_icamera_metadata_size(const icamera_metadata_t *metadata) {
-    if (metadata == NULL) return ERROR;
+    if (metadata == NULL) return icamera::UNKNOWN_ERROR;
 
     return metadata->size;
 }
 
 size_t get_icamera_metadata_compact_size(const icamera_metadata_t *metadata) {
-    if (metadata == NULL) return ERROR;
+    if (metadata == NULL) return icamera::UNKNOWN_ERROR;
 
     return calculate_icamera_metadata_size(metadata->entry_count,
                                           metadata->data_count);
@@ -287,7 +276,7 @@ icamera_metadata_t* copy_icamera_metadata(void *dst, size_t dst_size,
         place_icamera_metadata(dst, dst_size, src->entry_count, src->data_count);
 
     if (metadata == NULL) {
-        ALOGE("%s: metadata is null!", __func__);
+        LOGE("%s: metadata is null!", __func__);
         return NULL;
     }
     metadata->flags = src->flags;
@@ -299,16 +288,18 @@ icamera_metadata_t* copy_icamera_metadata(void *dst, size_t dst_size,
     MEMCPY_S(get_data(metadata), sizeof(uint8_t[metadata->data_count]),
              get_data(src), sizeof(uint8_t[metadata->data_count]));
 
-    assert(validate_icamera_metadata_structure(metadata, NULL) == OK);
+    assert(validate_icamera_metadata_structure(metadata, NULL) == icamera::OK);
     return metadata;
 }
 
 int validate_icamera_metadata_structure(const icamera_metadata_t *metadata,
                                         const size_t *expected_size) {
+    if (!icamera::Log::isDebugLevelEnable(icamera::CAMERA_DEBUG_LOG_METADATA))
+        return icamera::OK;
 
     if (metadata == NULL) {
-        ALOGE("%s: metadata is null!", __func__);
-        return ERROR;
+        LOGE("%s: metadata is null!", __func__);
+        return icamera::UNKNOWN_ERROR;
     }
 
     // Check that the metadata pointer is well-aligned first.
@@ -336,11 +327,10 @@ int validate_icamera_metadata_structure(const icamera_metadata_t *metadata,
             uintptr_t aligned_ptr = ALIGN_TO(metadata, alignments[i].alignment);
 
             if ((uintptr_t)metadata != aligned_ptr) {
-                ALOGE("%s: Metadata pointer is not aligned (actual %p, "
-                      "expected %p) to type %s",
-                      __func__, metadata,
-                      (void*)aligned_ptr, alignments[i].name);
-                return ERROR;
+                LOGE("%s: Metadata pointer is not aligned (actual %p, "
+                     "expected %p) to type %s", __func__, metadata,
+                     (void*)aligned_ptr, alignments[i].name);
+                return icamera::UNKNOWN_ERROR;
             }
         }
     }
@@ -350,16 +340,16 @@ int validate_icamera_metadata_structure(const icamera_metadata_t *metadata,
      */
 
     if (expected_size != NULL && metadata->size > *expected_size) {
-        ALOGE("%s: Metadata size (%" PRIu32 ") should be <= expected size (%zu)",
-              __func__, metadata->size, *expected_size);
-        return ERROR;
+        LOGE("%s: Metadata size (%" PRIu32 ") should be <= expected size (%zu)",
+             __func__, metadata->size, *expected_size);
+        return icamera::UNKNOWN_ERROR;
     }
 
     if (metadata->entry_count > metadata->entry_capacity) {
-        ALOGE("%s: Entry count (%" PRIu32 ") should be <= entry capacity "
-              "(%" PRIu32 ")",
-              __func__, metadata->entry_count, metadata->entry_capacity);
-        return ERROR;
+        LOGE("%s: Entry count (%" PRIu32 ") should be <= entry capacity "
+             "(%" PRIu32 ")",
+             __func__, metadata->entry_count, metadata->entry_capacity);
+        return icamera::UNKNOWN_ERROR;
     }
 
     const metadata_uptrdiff_t entries_end =
@@ -367,12 +357,11 @@ int validate_icamera_metadata_structure(const icamera_metadata_t *metadata,
     if (entries_end < metadata->entries_start || // overflow check
         entries_end > metadata->data_start) {
 
-        ALOGE("%s: Entry start + capacity (%" PRIu32 ") should be <= data start "
-              "(%" PRIu32 ")",
-               __func__,
-              (metadata->entries_start + metadata->entry_capacity),
-              metadata->data_start);
-        return ERROR;
+        LOGE("%s: Entry start + capacity (%" PRIu32 ") should be <= data start "
+             "(%" PRIu32 ")",  __func__,
+             (metadata->entries_start + metadata->entry_capacity),
+             metadata->data_start);
+        return icamera::UNKNOWN_ERROR;
     }
 
     const metadata_uptrdiff_t data_end =
@@ -380,12 +369,12 @@ int validate_icamera_metadata_structure(const icamera_metadata_t *metadata,
     if (data_end < metadata->data_start || // overflow check
         data_end > metadata->size) {
 
-        ALOGE("%s: Data start + capacity (%" PRIu32 ") should be <= total size "
-              "(%" PRIu32 ")",
-               __func__,
-              (metadata->data_start + metadata->data_capacity),
-              metadata->size);
-        return ERROR;
+        LOGE("%s: Data start + capacity (%" PRIu32 ") should be <= total size "
+             "(%" PRIu32 ")",
+              __func__,
+             (metadata->data_start + metadata->data_capacity),
+             metadata->size);
+        return icamera::UNKNOWN_ERROR;
     }
 
     // Validate each entry
@@ -396,25 +385,25 @@ int validate_icamera_metadata_structure(const icamera_metadata_t *metadata,
     for (i = 0; i < entry_count; ++i) {
 
         if ((uintptr_t)&entries[i] != ALIGN_TO(&entries[i], ENTRY_ALIGNMENT)) {
-            ALOGE("%s: Entry index %zu had bad alignment (address %p),"
-                  " expected alignment %zu",
-                  __func__, i, &entries[i], ENTRY_ALIGNMENT);
-            return ERROR;
+            LOGE("%s: Entry index %zu had bad alignment (address %p),"
+                 " expected alignment %zu",
+                 __func__, i, &entries[i], ENTRY_ALIGNMENT);
+            return icamera::UNKNOWN_ERROR;
         }
 
         camera_metadata_buffer_entry_t entry = entries[i];
 
         if (entry.type >= ICAMERA_NUM_TYPES) {
-            ALOGE("%s: Entry index %zu had a bad type %d",
-                  __func__, i, entry.type);
-            return ERROR;
+            LOGE("%s: Entry index %zu had a bad type %d",
+                 __func__, i, entry.type);
+            return icamera::UNKNOWN_ERROR;
         }
 
         int tag_type = get_icamera_metadata_tag_type(entry.tag);
         if (tag_type != (int)entry.type) {
-            ALOGE("%s: Entry index %zu had tag type %d, but the type was %d",
-                  __func__, i, tag_type, entry.type);
-            return ERROR;
+            LOGE("%s: Entry index %zu had tag type %d, but the type was %d",
+                 __func__, i, tag_type, entry.type);
+            return icamera::UNKNOWN_ERROR;
         }
 
         size_t data_size =
@@ -427,53 +416,53 @@ int validate_icamera_metadata_structure(const icamera_metadata_t *metadata,
                                                entry.data.offset);
 
             if ((uintptr_t)data != ALIGN_TO(data, DATA_ALIGNMENT)) {
-                ALOGE("%s: Entry index %zu had bad data alignment (address %p),"
-                      " expected align %zu, (tag name %s, data size %zu)",
-                      __func__, i, data, DATA_ALIGNMENT,
-                      get_icamera_metadata_tag_name(entry.tag) ?: "unknown",
-                      data_size);
-                return ERROR;
+                LOGE("%s: Entry index %zu had bad data alignment (address %p),"
+                     " expected align %zu, (tag name %s, data size %zu)",
+                     __func__, i, data, DATA_ALIGNMENT,
+                     get_icamera_metadata_tag_name(entry.tag) ?: "unknown",
+                     data_size);
+                return icamera::UNKNOWN_ERROR;
             }
 
             size_t data_entry_end = entry.data.offset + data_size;
             if (data_entry_end < entry.data.offset || // overflow check
                 data_entry_end > metadata->data_capacity) {
 
-                ALOGE("%s: Entry index %zu data ends (%zu) beyond the capacity "
-                      "%" PRIu32, __func__, i, data_entry_end,
-                      metadata->data_capacity);
-                return ERROR;
+                LOGE("%s: Entry index %zu data ends (%zu) beyond the capacity "
+                     "%" PRIu32, __func__, i, data_entry_end,
+                     metadata->data_capacity);
+                return icamera::UNKNOWN_ERROR;
             }
 
         } else if (entry.count == 0) {
             if (entry.data.offset != 0) {
-                ALOGE("%s: Entry index %zu had 0 items, but offset was non-0 "
+                LOGE("%s: Entry index %zu had 0 items, but offset was non-0 "
                      "(%" PRIu32 "), tag name: %s", __func__, i, entry.data.offset,
-                        get_icamera_metadata_tag_name(entry.tag) ?: "unknown");
-                return ERROR;
+                     get_icamera_metadata_tag_name(entry.tag) ?: "unknown");
+                return icamera::UNKNOWN_ERROR;
             }
         } // else data stored inline, so we look at value which can be anything.
     }
 
-    return OK;
+    return icamera::OK;
 }
 
 int append_icamera_metadata(icamera_metadata_t *dst,
         const icamera_metadata_t *src) {
-    if (dst == NULL || src == NULL ) return ERROR;
+    if (dst == NULL || src == NULL ) return icamera::UNKNOWN_ERROR;
 
-    if (dst->entry_capacity < src->entry_count + dst->entry_count) return ERROR;
-    if (dst->data_capacity < src->data_count + dst->data_count) return ERROR;
+    if (dst->entry_capacity < src->entry_count + dst->entry_count) return icamera::UNKNOWN_ERROR;
+    if (dst->data_capacity < src->data_count + dst->data_count) return icamera::UNKNOWN_ERROR;
 
     if (dst->entry_capacity - dst->entry_count < src->entry_count) {
-        ALOGE("%s: Dst available buffer size for entry is smaller than src needed.", __func__);
+        LOGE("%s: Dst available buffer size for entry is smaller than src needed.", __func__);
     }
     MEMCPY_S(get_entries(dst) + dst->entry_count,
              sizeof(camera_metadata_buffer_entry_t) * (dst->entry_capacity - dst->entry_count),
              get_entries(src), sizeof(camera_metadata_buffer_entry_t[src->entry_count]));
 
     if (dst->data_capacity - dst->data_count < src->data_count) {
-        ALOGE("%s: Dst available buffer size for data is smaller than src needed.", __func__);
+        LOGE("%s: Dst available buffer size for data is smaller than src needed.", __func__);
     }
     MEMCPY_S(get_data(dst) + dst->data_count, sizeof(uint8_t[dst->data_capacity - dst->data_count]),
              get_data(src), sizeof(uint8_t[src->data_count]));
@@ -499,8 +488,8 @@ int append_icamera_metadata(icamera_metadata_t *dst,
     dst->entry_count += src->entry_count;
     dst->data_count += src->data_count;
 
-    assert(validate_icamera_metadata_structure(dst, NULL) == OK);
-    return OK;
+    assert(validate_icamera_metadata_structure(dst, NULL) == icamera::OK);
+    return icamera::OK;
 }
 
 icamera_metadata_t *clone_icamera_metadata(const icamera_metadata_t *src) {
@@ -510,12 +499,12 @@ icamera_metadata_t *clone_icamera_metadata(const icamera_metadata_t *src) {
         get_icamera_metadata_data_count(src));
     if (clone != NULL) {
         int res = append_icamera_metadata(clone, src);
-        if (res != OK) {
+        if (res != icamera::OK) {
             free_icamera_metadata(clone);
             clone = NULL;
         }
     }
-    assert(validate_icamera_metadata_structure(clone, NULL) == OK);
+    assert(validate_icamera_metadata_structure(clone, NULL) == icamera::OK);
     return clone;
 }
 
@@ -533,17 +522,17 @@ static int add_camera_metadata_entry_raw(icamera_metadata_t *dst,
         const void *data,
         size_t data_count) {
 
-    if (dst == NULL) return ERROR;
-    if (dst->entry_count == dst->entry_capacity) return ERROR;
-    if (data == NULL) return ERROR;
+    if (dst == NULL) return icamera::UNKNOWN_ERROR;
+    if (dst->entry_count == dst->entry_capacity) return icamera::UNKNOWN_ERROR;
+    if (data == NULL) return icamera::UNKNOWN_ERROR;
 
     size_t data_bytes =
             calculate_icamera_metadata_entry_data_size(type, data_count);
-    if (data_bytes + dst->data_count > dst->data_capacity) return ERROR;
+    if (data_bytes + dst->data_count > dst->data_capacity) return icamera::UNKNOWN_ERROR;
 
     if (type >= ICAMERA_NUM_TYPES) {
-        ALOGE("%s: Bad type %d", __func__, type);
-        return ERROR;
+        LOGE("%s: Bad type %d", __func__, type);
+        return icamera::UNKNOWN_ERROR;
     }
     size_t data_payload_bytes =
             data_count * icamera_metadata_type_size[type];
@@ -562,8 +551,8 @@ static int add_camera_metadata_entry_raw(icamera_metadata_t *dst,
     }
     dst->entry_count++;
     dst->flags &= ~FLAG_SORTED;
-    assert(validate_icamera_metadata_structure(dst, NULL) == OK);
-    return OK;
+    assert(validate_icamera_metadata_structure(dst, NULL) == icamera::OK);
+    return icamera::OK;
 }
 
 int add_icamera_metadata_entry(icamera_metadata_t *dst,
@@ -573,8 +562,8 @@ int add_icamera_metadata_entry(icamera_metadata_t *dst,
 
     int type = get_icamera_metadata_tag_type(tag);
     if (type == -1) {
-        ALOGE("%s: Unknown tag %04x.", __func__, tag);
-        return ERROR;
+        LOGE("%s: Unknown tag %04x.", __func__, tag);
+        return icamera::UNKNOWN_ERROR;
     }
 
     return add_camera_metadata_entry_raw(dst,
@@ -593,23 +582,23 @@ static int compare_entry_tags(const void *p1, const void *p2) {
 }
 
 int sort_icamera_metadata(icamera_metadata_t *dst) {
-    if (dst == NULL) return ERROR;
-    if (dst->flags & FLAG_SORTED) return OK;
+    if (dst == NULL) return icamera::UNKNOWN_ERROR;
+    if (dst->flags & FLAG_SORTED) return icamera::OK;
 
     qsort(get_entries(dst), dst->entry_count,
             sizeof(camera_metadata_buffer_entry_t),
             compare_entry_tags);
     dst->flags |= FLAG_SORTED;
 
-    assert(validate_icamera_metadata_structure(dst, NULL) == OK);
-    return OK;
+    assert(validate_icamera_metadata_structure(dst, NULL) == icamera::OK);
+    return icamera::OK;
 }
 
 int get_icamera_metadata_entry(icamera_metadata_t *src,
         size_t index,
         icamera_metadata_entry_t *entry) {
-    if (src == NULL || entry == NULL) return ERROR;
-    if (index >= src->entry_count) return ERROR;
+    if (src == NULL || entry == NULL) return icamera::UNKNOWN_ERROR;
+    if (index >= src->entry_count) return icamera::UNKNOWN_ERROR;
 
     camera_metadata_buffer_entry_t *buffer_entry = get_entries(src) + index;
 
@@ -623,7 +612,7 @@ int get_icamera_metadata_entry(icamera_metadata_t *src,
     } else {
         entry->data.u8 = buffer_entry->data.value;
     }
-    return OK;
+    return icamera::OK;
 }
 
 int get_icamera_metadata_ro_entry(const icamera_metadata_t *src,
@@ -636,7 +625,7 @@ int get_icamera_metadata_ro_entry(const icamera_metadata_t *src,
 int find_icamera_metadata_entry(icamera_metadata_t *src,
         uint32_t tag,
         icamera_metadata_entry_t *entry) {
-    if (src == NULL) return ERROR;
+    if (src == NULL) return icamera::UNKNOWN_ERROR;
 
     uint32_t index;
     if (src->flags & FLAG_SORTED) {
@@ -649,7 +638,7 @@ int find_icamera_metadata_entry(icamera_metadata_t *src,
                 src->entry_count,
                 sizeof(camera_metadata_buffer_entry_t),
                 compare_entry_tags);
-        if (search_entry == NULL) return NOT_FOUND;
+        if (search_entry == NULL) return icamera::NAME_NOT_FOUND;
         index = search_entry - get_entries(src);
     } else {
         // Not sorted, linear search
@@ -659,7 +648,7 @@ int find_icamera_metadata_entry(icamera_metadata_t *src,
                 break;
             }
         }
-        if (index == src->entry_count) return NOT_FOUND;
+        if (index == src->entry_count) return icamera::NAME_NOT_FOUND;
     }
 
     return get_icamera_metadata_entry(src, index,
@@ -675,8 +664,8 @@ int find_icamera_metadata_ro_entry(const icamera_metadata_t *src,
 
 int delete_icamera_metadata_entry(icamera_metadata_t *dst,
         size_t index) {
-    if (dst == NULL) return ERROR;
-    if (index >= dst->entry_count) return ERROR;
+    if (dst == NULL) return icamera::UNKNOWN_ERROR;
+    if (index >= dst->entry_count) return icamera::UNKNOWN_ERROR;
 
     camera_metadata_buffer_entry_t *entry = get_entries(dst) + index;
     size_t data_bytes = calculate_icamera_metadata_entry_data_size(entry->type,
@@ -708,8 +697,8 @@ int delete_icamera_metadata_entry(icamera_metadata_t *dst,
             (dst->entry_count - index - 1) );
     dst->entry_count -= 1;
 
-    assert(validate_icamera_metadata_structure(dst, NULL) == OK);
-    return OK;
+    assert(validate_icamera_metadata_structure(dst, NULL) == icamera::OK);
+    return icamera::OK;
 }
 
 int update_icamera_metadata_entry(icamera_metadata_t *dst,
@@ -717,11 +706,11 @@ int update_icamera_metadata_entry(icamera_metadata_t *dst,
         const void *data,
         size_t data_count,
         icamera_metadata_entry_t *updated_entry) {
-    if (dst == NULL) return ERROR;
-    if (index >= dst->entry_count) return ERROR;
+    if (dst == NULL) return icamera::UNKNOWN_ERROR;
+    if (index >= dst->entry_count) return icamera::UNKNOWN_ERROR;
 
     camera_metadata_buffer_entry_t *entry = get_entries(dst) + index;
-    if (entry->type >= ICAMERA_NUM_TYPES) return ERROR;
+    if (entry->type >= ICAMERA_NUM_TYPES) return icamera::UNKNOWN_ERROR;
 
     size_t data_bytes =
             calculate_icamera_metadata_entry_data_size(entry->type,
@@ -736,7 +725,7 @@ int update_icamera_metadata_entry(icamera_metadata_t *dst,
         // May need to shift/add to data array
         if (dst->data_capacity < dst->data_count + data_bytes - entry_bytes) {
             // No room
-            return ERROR;
+            return icamera::UNKNOWN_ERROR;
         }
         if (entry_bytes != 0) {
             // Remove old data
@@ -784,36 +773,60 @@ int update_icamera_metadata_entry(icamera_metadata_t *dst,
                 updated_entry);
     }
 
-    assert(validate_icamera_metadata_structure(dst, NULL) == OK);
-    return OK;
+    assert(validate_icamera_metadata_structure(dst, NULL) == icamera::OK);
+    return icamera::OK;
 }
 
 const char *get_icamera_metadata_section_name(uint32_t tag) {
     uint32_t tag_section = tag >> 16;
-    if (tag_section >= CAMERA_SECTION_COUNT) {
-        return NULL;
+    if (tag_section < CAMERA_SECTION_COUNT) {
+        return icamera_metadata_section_names[tag_section];
+    } else if (tag_section >= INTEL_VENDOR_CAMERA_SECTION &&
+               tag_section < INTEL_VENDOR_CAMERA_SECTION_END) {
+        return vendor_metadata_section_names[tag_section - INTEL_VENDOR_CAMERA_SECTION];
     }
-    return icamera_metadata_section_names[tag_section];
+
+    return nullptr;
 }
 
 const char *get_icamera_metadata_tag_name(uint32_t tag) {
     uint32_t tag_section = tag >> 16;
-    if (tag_section >= CAMERA_SECTION_COUNT ||
-        tag >= icamera_metadata_section_bounds[tag_section][1] ) {
-        return NULL;
-    }
     uint32_t tag_index = tag & 0xFFFF;
-    return icamera_tag_info[tag_section][tag_index].tag_name;
+
+    if (tag_section < CAMERA_SECTION_COUNT &&
+        tag >= icamera_metadata_section_bounds[tag_section][0] &&
+        tag < icamera_metadata_section_bounds[tag_section][1]) {
+        return icamera_tag_info[tag_section][tag_index].tag_name;
+    } else if (tag_section >= INTEL_VENDOR_CAMERA_SECTION &&
+               tag_section < INTEL_VENDOR_CAMERA_SECTION_END) {
+        tag_section -= INTEL_VENDOR_CAMERA_SECTION;
+        if (tag >= vendor_metadata_section_bounds[tag_section][0] &&
+            tag < vendor_metadata_section_bounds[tag_section][1]) {
+            return vendor_tag_info[tag_section][tag_index].tag_name;
+        }
+    }
+
+    return nullptr;
 }
 
 int get_icamera_metadata_tag_type(uint32_t tag) {
     uint32_t tag_section = tag >> 16;
-    if (tag_section >= CAMERA_SECTION_COUNT ||
-            tag >= icamera_metadata_section_bounds[tag_section][1] ) {
-        return -1;
-    }
     uint32_t tag_index = tag & 0xFFFF;
-    return icamera_tag_info[tag_section][tag_index].tag_type;
+
+    if (tag_section < CAMERA_SECTION_COUNT &&
+        tag >= icamera_metadata_section_bounds[tag_section][0] &&
+        tag < icamera_metadata_section_bounds[tag_section][1]) {
+        return icamera_tag_info[tag_section][tag_index].tag_type;
+    } else if (tag_section >= INTEL_VENDOR_CAMERA_SECTION &&
+               tag_section < INTEL_VENDOR_CAMERA_SECTION_END) {
+        tag_section -= INTEL_VENDOR_CAMERA_SECTION;
+        if (tag >= vendor_metadata_section_bounds[tag_section][0] &&
+            tag < vendor_metadata_section_bounds[tag_section][1]) {
+            return vendor_tag_info[tag_section][tag_index].tag_type;
+        }
+    }
+
+    return -1;
 }
 
 static void print_data(int fd, const uint8_t *data_ptr, uint32_t tag, int type,
@@ -878,10 +891,10 @@ void dump_indented_icamera_metadata(const icamera_metadata_t *metadata,
         uint8_t *data_ptr;
         if ( type_size * entry->count > 4 ) {
             if (entry->data.offset >= metadata->data_count) {
-                ALOGE("%s: Malformed entry data offset: %" PRIu32 " (max %" PRIu32 ")",
-                        __func__,
-                        entry->data.offset,
-                        metadata->data_count);
+                LOGE("%s: Malformed entry data offset: %" PRIu32 " (max %" PRIu32 ")",
+                     __func__,
+                     entry->data.offset,
+                     metadata->data_count);
                 continue;
             }
             data_ptr = get_data(metadata) + entry->data.offset;
@@ -923,48 +936,43 @@ static void print_data(int fd, const uint8_t *data_ptr, uint32_t tag,
             switch (type) {
                 case ICAMERA_TYPE_BYTE:
                     value = *(data_ptr + index);
-                    if (icamera_metadata_enum_snprint(tag,
-                                                      value,
-                                                      value_string_tmp,
-                                                      sizeof(value_string_tmp))
-                        == OK) {
+                    if (icamera_metadata_enum_snprint(tag, value, value_string_tmp,
+                                                      sizeof(value_string_tmp)) == icamera::OK) {
+                        dprintf(fd, "%s ", value_string_tmp);
+                    } else if (vendor_metadata_enum_snprint(tag, value, value_string_tmp,
+                                                            sizeof(value_string_tmp))
+                                                            == icamera::OK) {
                         dprintf(fd, "%s ", value_string_tmp);
                     } else {
-                        dprintf(fd, "%hhu ",
-                                *(data_ptr + index));
+                        dprintf(fd, "%hhu ", *(data_ptr + index));
                     }
                     break;
                 case ICAMERA_TYPE_INT32:
-                    value =
-                            *(int32_t*)(data_ptr + index);
-                    if (icamera_metadata_enum_snprint(tag,
-                                                      value,
-                                                      value_string_tmp,
-                                                      sizeof(value_string_tmp))
-                        == OK) {
+                    value = *(int32_t*)(data_ptr + index);
+                    if (icamera_metadata_enum_snprint(tag, value, value_string_tmp,
+                                                      sizeof(value_string_tmp)) == icamera::OK) {
+                        dprintf(fd, "%s ", value_string_tmp);
+                    } else if (vendor_metadata_enum_snprint(tag, value, value_string_tmp,
+                                                            sizeof(value_string_tmp))
+                                                            == icamera::OK) {
                         dprintf(fd, "%s ", value_string_tmp);
                     } else {
-                        dprintf(fd, "%" PRId32 " ",
-                                *(int32_t*)(data_ptr + index));
+                        dprintf(fd, "%" PRId32 " ", *(int32_t*)(data_ptr + index));
                     }
                     break;
                 case ICAMERA_TYPE_FLOAT:
-                    dprintf(fd, "%0.8f ",
-                            *(float*)(data_ptr + index));
+                    dprintf(fd, "%0.8f ", *(float*)(data_ptr + index));
                     break;
                 case ICAMERA_TYPE_INT64:
-                    dprintf(fd, "%" PRId64 " ",
-                            *(int64_t*)(data_ptr + index));
+                    dprintf(fd, "%" PRId64 " ", *(int64_t*)(data_ptr + index));
                     break;
                 case ICAMERA_TYPE_DOUBLE:
-                    dprintf(fd, "%0.8f ",
-                            *(double*)(data_ptr + index));
+                    dprintf(fd, "%0.8f ", *(double*)(data_ptr + index));
                     break;
                 case ICAMERA_TYPE_RATIONAL: {
                     int32_t numerator = *(int32_t*)(data_ptr + index);
                     int32_t denominator = *(int32_t*)(data_ptr + index + 4);
-                    dprintf(fd, "(%d / %d) ",
-                            numerator, denominator);
+                    dprintf(fd, "(%d / %d) ", numerator, denominator);
                     break;
                 }
                 default:

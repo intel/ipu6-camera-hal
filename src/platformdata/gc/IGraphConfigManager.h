@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Intel Corporation
+ * Copyright (C) 2018-2021 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ class IGraphConfigManager {
 public:
     virtual ~IGraphConfigManager() = default;
 
+    virtual int queryGraphSettings(const stream_config_t *streamList) = 0;
     virtual int configStreams(const stream_config_t* streams) = 0;
     virtual int getSelectedMcId() = 0;
     virtual std::shared_ptr<IGraphConfig> getGraphConfig(ConfigMode configMode) = 0;

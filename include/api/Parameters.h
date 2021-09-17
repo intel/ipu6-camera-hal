@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2013 The Android Open Source Project
- * Copyright (C) 2015-2020 Intel Corporation.
+ * Copyright (C) 2015-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,6 +64,8 @@
  *     Version        0.76       Remove the marco for lsc grid size
  *     Version        0.77       Add API to support capture intent
  *     Version        0.78       Add API to support edge enhancement
+ *     Version        0.79       Add API to support set flags to callback rgbs statistics
+ *     Version        0.80       Add API to support set flags to callback tone map curve
  *
  *
  * ------------------------------------------------------------------------------
@@ -396,7 +398,7 @@ typedef enum {
      *           camera.scaler.cropRegion
      *           camera.statistics.faceDetectMode (if it is supported)
      *
-     * TODO: The high speed mode is not completely supported yet.
+     * Note: The high speed mode is not completely supported yet.
      *       1) Now the HAL supports up to 60fps@1080p.
      *       2) The static metadata camera.control.availableHighSpeedVideoConfigurations should be
      *           implemented.
@@ -722,6 +724,14 @@ typedef enum {
     CAMERA_DEVICE_ERROR,
     CAMERA_IPC_ERROR,
 } camera_msg_type_t;
+
+/**
+ * \enum camera_power_mode_t: Use to control power mode.
+ */
+typedef enum {
+    CAMERA_LOW_POWER = 0,
+    CAMERA_HIGH_QUALITY,
+} camera_power_mode_t;
 
 /**
  * \struct Sensor RAW data info for ZSL.
@@ -2616,6 +2626,24 @@ public:
     int getTonemapCurves(camera_tonemap_curves_t& curves) const;
 
     /**
+     * \brief Set power mode.
+     *
+     * \param[in] camera_power_mode_t mode
+     *
+     * \return 0 if set successfully, otherwise non-0 value is returned.
+     */
+    int setPowerMode(camera_power_mode_t mode);
+
+    /**
+     * \brief Get power mode
+     *
+     * \param[out] camera_power_mode_t mode
+     *
+     * \return 0 if power mode was set, otherwise non-0 value is returned.
+     */
+    int getPowerMode(camera_power_mode_t &mode) const;
+
+    /**
      * \brief Set user request id
      *
      * \param[in] user request id
@@ -2650,6 +2678,42 @@ public:
      * \return 0 if successfully, otherwise non-0 value is returned.
      */
     int getCaptureIntent(uint8_t& captureIntent) const;
+
+    /**
+     * \brief Set callback rgbs statistics flags
+     *
+     * \param[in] bool enabled
+     *
+     * \return 0 if set successfully, otherwise non-0 value is returned.
+     */
+    int setCallbackRgbs(bool enabled);
+
+    /**
+     * \brief Get callback rgbs statistics flags
+     *
+     * \param[out] bool enabled
+     *
+     * \return 0 if flag was set, otherwise non-0 value is returned.
+     */
+    int getCallbackRgbs(bool *enabled) const;
+
+    /**
+     * \brief Set callback tonemap curve flags
+     *
+     * \param[in] bool enabled
+     *
+     * \return 0 if set successfully, otherwise non-0 value is returned.
+     */
+    int setCallbackTmCurve(bool enabled);
+
+    /**
+     * \brief Get callback tonemap curve flags
+     *
+     * \param[out] bool enabled
+     *
+     * \return 0 if flag was set, otherwise non-0 value is returned.
+     */
+    int getCallbackTmCurve(bool *enabled) const;
 
 private:
     friend class ParameterHelper;

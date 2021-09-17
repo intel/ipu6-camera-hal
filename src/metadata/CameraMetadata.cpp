@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2012 The Android Open Source Project
- * Copyright (C) 2015-2020 Intel Corporation
+ * Copyright (C) 2015-2021 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-#define LOG_TAG "CameraMetadata"
+#define LOG_TAG CameraMetadata
 
 #include "iutils/CameraLog.h"
 #include "iutils/Utils.h"

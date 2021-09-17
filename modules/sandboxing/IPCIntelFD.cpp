@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Intel Corporation
+ * Copyright (C) 2019-2021 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#define LOG_TAG "IPC_FACE_DETECTION"
+#define LOG_TAG IPC_FACE_DETECTION
 
 #include "modules/sandboxing/IPCIntelFD.h"
 
@@ -34,7 +34,7 @@ IPCIntelFD::~IPCIntelFD() {
 bool IPCIntelFD::clientFlattenInit(unsigned int max_face_num, int cameraId,
                                    FaceDetectionInitParams* params) {
     LOG1("@%s, params:%p", __func__, params);
-    CheckError(params == nullptr, false, "@%s, params is nullptr", __func__);
+    CheckAndLogError(params == nullptr, false, "@%s, params is nullptr", __func__);
 
     params->max_face_num = max_face_num;
     params->cameraId = cameraId;
@@ -45,8 +45,8 @@ bool IPCIntelFD::clientFlattenInit(unsigned int max_face_num, int cameraId,
 bool IPCIntelFD::serverUnflattenRun(const FaceDetectionRunParams& inParams, void* imageData,
                                     pvl_image* image, int* cameraId) {
     LOG1("@%s, image:%p", __func__, image);
-    CheckError(image == nullptr || cameraId == nullptr, false, "@%s, image or cameraId is nullptr",
-               __func__);
+    CheckAndLogError(image == nullptr || cameraId == nullptr, false,
+                     "@%s, image or cameraId is nullptr", __func__);
 
     image->size = inParams.size;
     image->width = inParams.width;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Intel Corporation
+ * Copyright (C) 2019-2021 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@
 
 #ifdef FACE_DETECTION
 #ifdef ENABLE_SANDBOXING
-#include "modules/sandboxing/client/IntelFaceDetection.h"
+#include "modules/sandboxing/client/IntelFaceDetectionClient.h"
 #else
 #include "modules/algowrapper/IntelFaceDetection.h"
 #endif
@@ -60,7 +60,9 @@ class FaceDetection : public Thread {
     static int getResult(int cameraId, CVFaceDetectionAbstractResult *result);
 
  private:
-    int getFaceDetectionResult(FaceDetectionResult *mResult);
+    bool faceRunningByCondition();
+    void printfFDRunRate();
+    int getFaceDetectionResult(FaceDetectionResult *mResult, bool resetRes = false);
     FaceDetectionRunParams *acquireRunBuf();
     void returnRunBuf(FaceDetectionRunParams *memRunBuf);
     void getCurrentFrameWidthAndHight(int *frameWidth, int *frameHigth);
@@ -94,6 +96,14 @@ class FaceDetection : public Thread {
     int32_t mHalStreamId;
     int mWidth;
     int mHeight;
+
+    unsigned int mFDRunDefaultInterval;  // FD running's interval frames.
+    unsigned int mFDRunIntervalNoFace;   // FD running's interval frames without face.
+    unsigned int mFDRunInterval;         // run 1 frame every mFDRunInterval frames.
+    unsigned int mFrameCnt;              // from 0 to (mFDRunInterval - 1).
+
+    unsigned int mRunCount;
+    timeval mRequestRunTime;
 
     DISALLOW_COPY_AND_ASSIGN(FaceDetection);
 };

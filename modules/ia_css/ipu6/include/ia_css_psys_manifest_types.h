@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Intel Corporation.
+ * Copyright (C) 2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ typedef uint8_t ia_css_connection_bitmap_t;
 
 #define IA_CSS_CONNECTION_TYPE_BITS 32
 
-/** Describes the tranfer method of data between terminals */
+/** Describes the transfer method of data between terminals */
 typedef enum ia_css_connection_type {
     /** The data buffer must be fully written to main memory by the producer
      *  before it can be read by the consumer */

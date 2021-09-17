@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2017 Intel Corporation.
+ * Copyright (C) 2015-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#define LOG_TAG "CameraEvent"
+#define LOG_TAG CameraEvent
 
 #include "iutils/CameraLog.h"
 
@@ -36,8 +36,8 @@ void EventSource::registerListener(EventType eventType, EventListener* eventList
 {
     LOG1("@%s eventType: %d, listener: %p", __func__, eventType, eventListener);
 
-    CheckError(eventListener == nullptr, VOID_VALUE,
-          "%s: event listener is nullptr, skip registration.", __func__);
+    CheckAndLogError(eventListener == nullptr, VOID_VALUE,
+                     "%s: event listener is nullptr, skip registration.", __func__);
 
     AutoMutex l(mListenersLock);
 

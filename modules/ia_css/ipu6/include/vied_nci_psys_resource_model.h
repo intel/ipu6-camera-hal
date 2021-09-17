@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Intel Corporation.
+ * Copyright (C) 2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@
 
 #include "type_support.h"
 #include "storage_class.h"
+#include "vied_nci_psys_resource_model_common.h"
 
 #define HAS_DFM                 1
 #define HAS_DMA_INTERNAL        1
@@ -31,16 +32,6 @@
 #define VIED_NCI_RBM_MAX_VALIDATION_RULE_COUNT        17
 #define VIED_NCI_RBM_MAX_TERMINAL_DESC_COUNT        4
 #define N_PADDING_UINT8_IN_RBM_MANIFEST            2
-
-/* The amount of padding bytes needed to make
- * ia_css_process_s/ia_css_process_ext_s/
- * ia_css_program_manifest_s/ia_css_program_manifest_ext_s
- * structures 32 bit aligned (source files have check on this)
- */
-#define    N_PADDING_UINT8_IN_PROCESS_STRUCT        0
-#define N_PADDING_UINT8_IN_PROCESS_EXT_STRUCT        0
-#define    N_PADDING_UINT8_IN_PROGRAM_MANIFEST        0
-#define    N_PADDING_UINT8_IN_PROGRAM_MANIFEST_EXT        2
 
 /*
  * Cell IDs
@@ -294,10 +285,7 @@ typedef uint32_t            vied_nci_resource_bitmap_t;
 
 #define IA_CSS_PROCESS_INVALID_DEPENDENCY    ((vied_nci_resource_id_t)(-1))
 #define IA_CSS_PROCESS_INVALID_OFFSET        ((vied_nci_resource_size_t)(-1))
-#define IA_CSS_PROCESS_MAX_CELLS        1
 
-#define IA_CSS_MAX_INPUT_DEC_RESOURCES        4
-#define IA_CSS_MAX_OUTPUT_DEC_RESOURCES        4
 /*
  * Resource specifications
  * Note that the FAS uses the terminology local/remote memory. In the PSYS API,

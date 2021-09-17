@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Intel Corporation
+ * Copyright (C) 2019-2021 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -136,6 +136,7 @@ class Camera3Buffer {
     bool mInit;   /*!< Boolean to check the integrity of the
                        buffer when it is created*/
     bool mLocked; /*!< Use to track the lock status */
+    int mUsage;
     Camera3BufferType mType;
 
     buffer_handle_t mHandle = {};

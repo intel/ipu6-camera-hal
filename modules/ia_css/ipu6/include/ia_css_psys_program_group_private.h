@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Intel Corporation.
+ * Copyright (C) 2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,13 +77,13 @@ struct ia_css_program_group_manifest_s {
 };
 
 #define SIZE_OF_PROGRAM_MANIFEST_EXT_STRUCT_IN_BYTES \
-    ((VIED_NCI_RESOURCE_BITMAP_BITS * VIED_NCI_N_DEV_DFM_ID) \
-    + (VIED_NCI_RESOURCE_BITMAP_BITS * VIED_NCI_N_DEV_DFM_ID) \
-    + (VIED_NCI_RESOURCE_SIZE_BITS * VIED_NCI_N_DATA_MEM_TYPE_ID * 2) \
-    + (VIED_NCI_RESOURCE_SIZE_BITS * VIED_NCI_N_DEV_CHN_ID * 2) \
+    ((VIED_NCI_RESOURCE_BITMAP_BITS * VIED_NCI_N_DEV_DFM_ID_MAX) \
+    + (VIED_NCI_RESOURCE_BITMAP_BITS * VIED_NCI_N_DEV_DFM_ID_MAX) \
+    + (VIED_NCI_RESOURCE_SIZE_BITS * VIED_NCI_N_DATA_MEM_TYPE_ID_MAX * 2) \
+    + (VIED_NCI_RESOURCE_SIZE_BITS * VIED_NCI_N_DEV_CHN_ID_MAX * 2) \
     + (2 * IA_CSS_UINT8_T_BITS * IA_CSS_MAX_INPUT_DEC_RESOURCES) \
     + (2 * IA_CSS_UINT8_T_BITS * IA_CSS_MAX_OUTPUT_DEC_RESOURCES) \
-    + (IA_CSS_UINT8_T_BITS * VIED_NCI_N_DEV_DFM_ID) + \
+    + (IA_CSS_UINT8_T_BITS * VIED_NCI_N_DEV_DFM_ID_MAX) + \
     + (N_PADDING_UINT8_IN_PROGRAM_MANIFEST_EXT * IA_CSS_UINT8_T_BITS))
 
 /** "Extended" meta-data for a single program
@@ -91,33 +91,25 @@ struct ia_css_program_group_manifest_s {
  * Mostly, if not completely, internal to FW and of no interest to the SW stack.
  */
 struct ia_css_program_manifest_ext_s {
-#if VIED_NCI_N_DEV_DFM_ID > 0
     /** DFM port allocation of this program */
-    vied_nci_resource_bitmap_t dfm_port_bitmap[VIED_NCI_N_DEV_DFM_ID];
+    vied_nci_resource_bitmap_t dfm_port_bitmap[VIED_NCI_N_DEV_DFM_ID_MAX];
     /** Active DFM ports which need a kick
      * If an empty port is configured to run in active mode, the empty
      * port and the corresponding full port(s) in the stream must be kicked.
      * The empty port must always be kicked after the full port.
      */
-    vied_nci_resource_bitmap_t dfm_active_port_bitmap[VIED_NCI_N_DEV_DFM_ID];
-#endif
-#if VIED_NCI_N_DATA_MEM_TYPE_ID > 0
+    vied_nci_resource_bitmap_t dfm_active_port_bitmap[VIED_NCI_N_DEV_DFM_ID_MAX];
     /** (external) Memory allocation size needs of this program */
-    vied_nci_resource_size_t ext_mem_size[VIED_NCI_N_DATA_MEM_TYPE_ID];
-    vied_nci_resource_size_t ext_mem_offset[VIED_NCI_N_DATA_MEM_TYPE_ID];
-#endif
-#if VIED_NCI_N_DEV_CHN_ID > 0
+    vied_nci_resource_size_t ext_mem_size[VIED_NCI_N_DATA_MEM_TYPE_ID_MAX];
+    vied_nci_resource_size_t ext_mem_offset[VIED_NCI_N_DATA_MEM_TYPE_ID_MAX];
     /** Device channel allocation size needs of this program */
-    vied_nci_resource_size_t dev_chn_size[VIED_NCI_N_DEV_CHN_ID];
-    vied_nci_resource_size_t dev_chn_offset[VIED_NCI_N_DEV_CHN_ID];
-#endif
-#if VIED_NCI_N_DEV_DFM_ID > 0
+    vied_nci_resource_size_t dev_chn_size[VIED_NCI_N_DEV_CHN_ID_MAX];
+    vied_nci_resource_size_t dev_chn_offset[VIED_NCI_N_DEV_CHN_ID_MAX];
     /** DFM ports are relocatable if value is set to 1.
      * The flag is per dfm port type.
      * This will not be supported for now.
      */
-    uint8_t is_dfm_relocatable[VIED_NCI_N_DEV_DFM_ID];
-#endif
+    uint8_t is_dfm_relocatable[VIED_NCI_N_DEV_DFM_ID_MAX];
 #if IA_CSS_MAX_INPUT_DEC_RESOURCES > 0
     /** DEC compression flush service entry, describing which streams
      *  require flush service handling for decompression (input).

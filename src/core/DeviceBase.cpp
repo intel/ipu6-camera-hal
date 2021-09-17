@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Intel Corporation.
+ * Copyright (C) 2018-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 #include <string>
 #include <vector>
 
-#define LOG_TAG "DeviceBase"
+#define LOG_TAG DeviceBase
 
 #include "iutils/CameraLog.h"
 #include "iutils/CameraDump.h"
@@ -53,9 +53,9 @@ DeviceBase::DeviceBase(int cameraId, VideoNodeType nodeType, VideoNodeDirection 
 
     std::string devName;
     int ret = PlatformData::getDevNameByType(cameraId, nodeType, devName);
-    CheckError(ret != OK, VOID_VALUE,
-               "Failed to get video device name for cameraId: %d, node type: %d",
-               cameraId, nodeType);
+    CheckAndLogError(ret != OK, VOID_VALUE,
+                     "Failed to get video device name for cameraId: %d, node type: %d",
+                     cameraId, nodeType);
 
     mDevice = new V4L2VideoNode(devName);
 }
@@ -83,8 +83,8 @@ void DeviceBase::closeDevice()
     {
         AutoMutex l(mBufferLock);
 
-        std::vector<V4L2Buffer> bufs;
-        mDevice->SetupBuffers(0, true, mDevice->GetMemoryType(), &bufs);
+        // Release V4L2 buffers
+        mDevice->Stop(true);
 
         mPendingBuffers.clear();
         mBuffersInDevice.clear();
@@ -102,7 +102,7 @@ int DeviceBase::configure(Port port, const stream_t& config, uint32_t bufferNum)
     mMaxBufferNumber = bufferNum;
 
     int ret = createBufferPool(config);
-    CheckError(ret != OK, NO_MEMORY, "Failed to create buffer pool:%d", ret);
+    CheckAndLogError(ret != OK, NO_MEMORY, "Failed to create buffer pool:%d", ret);
 
     resetBuffers();
 
@@ -140,7 +140,7 @@ int DeviceBase::queueBuffer(long sequence)
     buffer = mPendingBuffers.front();
 
     int ret = onQueueBuffer(sequence, buffer);
-    CheckError(ret != OK, ret, "Device:%s failed to preprocess the buffer with ret=%d", mName, ret);
+    CheckAndLogError(ret != OK, ret, "Device:%s failed to preprocess the buffer with ret=%d", mName, ret);
 
     ret = mDevice->PutFrame(&buffer->getV4L2Buffer());
 
@@ -157,7 +157,7 @@ int DeviceBase::dequeueBuffer()
     LOG2("%s, camera id:%d device:%s", __func__, mCameraId, mName);
 
     shared_ptr<CameraBuffer> camBuffer = getFirstDeviceBuffer();
-    CheckError(!camBuffer, UNKNOWN_ERROR, "No buffer in device:%s.", mName);
+    CheckAndLogError(!camBuffer, UNKNOWN_ERROR, "No buffer in device:%s.", mName);
 
     int ret = OK;
     int targetIndex = camBuffer->getIndex();
@@ -165,7 +165,7 @@ int DeviceBase::dequeueBuffer()
     V4L2Buffer &vbuf = camBuffer->getV4L2Buffer();
     int actualIndex = mDevice->GrabFrame(&vbuf);
 
-    CheckError(actualIndex < 0, BAD_VALUE, "Device grabFrame failed:%d", actualIndex);
+    CheckAndLogError(actualIndex < 0, BAD_VALUE, "Device grabFrame failed:%d", actualIndex);
     if (actualIndex != targetIndex) {
         LOGE("%s, CamBuf index isn't same with index used by kernel", __func__);
         ret = BAD_VALUE;
@@ -174,7 +174,6 @@ int DeviceBase::dequeueBuffer()
     mNeedSkipFrame = needQueueBack(camBuffer);
     popBufferFromDevice();
 
-    // TODO: Will add device name info to distinguish different devices.
     PERF_CAMERA_ATRACE_PARAM3("grabFrame SeqID", camBuffer->getSequence(),
                               "csi2_port",       camBuffer->getCsi2Port(),
                               "virtual_channel", camBuffer->getVirtualChannel());
@@ -299,7 +298,7 @@ int MainDevice::createBufferPool(const stream_t& config)
     if (PlatformData::isCSIBackEndCapture(mCameraId)) {
         std::string csiBEDeviceNodeName;
         int ret = PlatformData::getDevNameByType(mCameraId, VIDEO_GENERIC, csiBEDeviceNodeName);
-        CheckError(ret != OK, ret, "failed to get CSI-BE device node name, ret=%d", ret);
+        CheckAndLogError(ret != OK, ret, "failed to get CSI-BE device node name, ret=%d", ret);
         LOG1("csiBEDeviceNodeName is %s", csiBEDeviceNodeName.c_str());
 
         V4L2Subdevice* csiBESubDev = V4l2DeviceFactory::getSubDev(mCameraId, csiBEDeviceNodeName);
@@ -355,13 +354,13 @@ int MainDevice::createBufferPool(const stream_t& config)
     if (setWithHeaderCtl) {
         V4L2Subdevice* receiverSubDev = V4l2DeviceFactory::getSubDev(mCameraId, subDeviceNodeName);
         int ret = receiverSubDev->SetControl(V4L2_CID_IPU_STORE_CSI2_HEADER, withHeader);
-        CheckError(ret != OK, ret, "set v4l2 store csi2 header failed, ret=%d", ret);
+        CheckAndLogError(ret != OK, ret, "set v4l2 store csi2 header failed, ret=%d", ret);
     }
 
     v4l2fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     V4L2Format tmpbuf {v4l2fmt};
     int ret = mDevice->SetFormat(tmpbuf);
-    CheckError(ret != OK, ret, "set v4l2 format failed ret=%d", ret);
+    CheckAndLogError(ret != OK, ret, "set v4l2 format failed ret=%d", ret);
     v4l2fmt = *tmpbuf.Get();
 
     int realBufferSize = v4l2fmt.fmt.pix.sizeimage;
@@ -372,7 +371,7 @@ int MainDevice::createBufferPool(const stream_t& config)
         calcBufferSize = CameraUtils::getFrameSize(config.format, config.width, config.height);
     }
 
-    CheckError(calcBufferSize < realBufferSize, BAD_VALUE,
+    CheckAndLogError(calcBufferSize < realBufferSize, BAD_VALUE,
         "realBufferSize %d is larger than calcBufferSize %d.", realBufferSize, calcBufferSize);
 
     LOG2("@%s: compression:%d, realBufSize:%d, calcBufSize:%d",
@@ -382,7 +381,7 @@ int MainDevice::createBufferPool(const stream_t& config)
     int bufNum = mDevice->SetupBuffers(mMaxBufferNumber, true,
                                        static_cast<enum v4l2_memory>(config.memType), &bufs);
 
-    CheckError(bufNum < 0, BAD_VALUE, "request buffers failed return=%d", bufNum);
+    CheckAndLogError(bufNum < 0, BAD_VALUE, "request buffers failed return=%d", bufNum);
 
     return OK;
 }
@@ -393,7 +392,7 @@ int MainDevice::onDequeueBuffer(shared_ptr<CameraBuffer> buffer)
 
     if (mNeedSkipFrame) return OK;
 
-    LOG2("@%s, sequence:%ld, field:%d, timestamp: sec=%ld, usec=%ld",
+    LOG2("@%s, sequence:%u, field:%d, timestamp: sec=%ld, usec=%ld",
           __func__, buffer->getSequence(), buffer->getField(),
           buffer->getTimestamp().tv_sec, buffer->getTimestamp().tv_usec);
 
@@ -424,7 +423,7 @@ bool MainDevice::needQueueBack(shared_ptr<CameraBuffer> buffer)
         // On STR2MMIO error, enqueue this buffer back to V4L2 before notifying the
         // listener/consumer and return
         needSkipFrame = true;
-        LOGW("%s: buffer error, sequence %ld", __func__, buffer->getSequence());
+        LOGW("%s: buffer error, sequence %u", __func__, buffer->getSequence());
     }
     if (PlatformData::isEnableFrameSyncCheck(mCameraId)) {
         struct camera_buf_info sharedCamBufInfo;
@@ -432,7 +431,7 @@ bool MainDevice::needQueueBack(shared_ptr<CameraBuffer> buffer)
         sharedCamBufInfo.sof_ts = buffer->getTimestamp();
         SyncManager::getInstance()->updateCameraBufInfo(mCameraId, &sharedCamBufInfo);
         if (skipFrameAfterSyncCheck(buffer->getSequence())) {
-            LOG1("@%s: CameraID:%d sequence %ld been dropped due to frame not sync",
+            LOG1("@%s: CameraID:%d sequence %u been dropped due to frame not sync",
                   __func__, mCameraId, buffer->getSequence());
             needSkipFrame = true;
         }

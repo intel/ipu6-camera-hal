@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-#define LOG_TAG "Utils"
+#define LOG_TAG Utils
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <math.h>
 #include <dlfcn.h>
 #include <dirent.h>
 #include <iostream>
@@ -67,7 +68,8 @@ enum FormatType {
 };
 
 struct FormatInfo {
-    int pixelCode;
+    int v4l2Fmt;
+    int iaFourcc;
     const char* fullName;
     const char* shortName;
     int bpp;
@@ -75,89 +77,97 @@ struct FormatInfo {
 };
 
 static const FormatInfo gFormatMapping[] = {
-    { V4L2_PIX_FMT_GREY, "V4L2_PIX_FMT_GREY", "GREY", 8, FORMAT_RAW },
+    { V4L2_PIX_FMT_GREY, 0, "V4L2_PIX_FMT_GREY", "GREY", 8, FORMAT_RAW },
 
-    { V4L2_PIX_FMT_SBGGR8, "V4L2_PIX_FMT_SBGGR8", "BGGR8", 8, FORMAT_RAW },
-    { V4L2_PIX_FMT_SGBRG8, "V4L2_PIX_FMT_SGBRG8", "GBRG8", 8, FORMAT_RAW },
-    { V4L2_PIX_FMT_SGRBG8, "V4L2_PIX_FMT_SGRBG8", "GRBG8", 8, FORMAT_RAW },
-    { V4L2_PIX_FMT_SRGGB8, "V4L2_PIX_FMT_SRGGB8", "RGGB8", 8, FORMAT_RAW },
+    { V4L2_PIX_FMT_SBGGR8, 0, "V4L2_PIX_FMT_SBGGR8", "BGGR8", 8, FORMAT_RAW },
+    { V4L2_PIX_FMT_SGBRG8, 0, "V4L2_PIX_FMT_SGBRG8", "GBRG8", 8, FORMAT_RAW },
+    { V4L2_PIX_FMT_SGRBG8, 0, "V4L2_PIX_FMT_SGRBG8", "GRBG8", 8, FORMAT_RAW },
+    { V4L2_PIX_FMT_SRGGB8, 0, "V4L2_PIX_FMT_SRGGB8", "RGGB8", 8, FORMAT_RAW },
 
-    { V4L2_PIX_FMT_SBGGR10, "V4L2_PIX_FMT_SBGGR10", "BGGR10", 16, FORMAT_RAW },
-    { V4L2_PIX_FMT_SGBRG10, "V4L2_PIX_FMT_SGBRG10", "GBRG10", 16, FORMAT_RAW },
-    { V4L2_PIX_FMT_SGRBG10, "V4L2_PIX_FMT_SGRBG10", "GRBG10", 16, FORMAT_RAW },
-    { V4L2_PIX_FMT_SRGGB10, "V4L2_PIX_FMT_SRGGB10", "RGGB10", 16, FORMAT_RAW },
+    { V4L2_PIX_FMT_SBGGR10, 0, "V4L2_PIX_FMT_SBGGR10", "BGGR10", 16, FORMAT_RAW },
+    { V4L2_PIX_FMT_SGBRG10, 0, "V4L2_PIX_FMT_SGBRG10", "GBRG10", 16, FORMAT_RAW },
+    { V4L2_PIX_FMT_SGRBG10, 0, "V4L2_PIX_FMT_SGRBG10", "GRBG10", 16, FORMAT_RAW },
+    { V4L2_PIX_FMT_SRGGB10, 0, "V4L2_PIX_FMT_SRGGB10", "RGGB10", 16, FORMAT_RAW },
 
-    { V4L2_PIX_FMT_SBGGR12, "V4L2_PIX_FMT_SBGGR12", "BGGR12", 16, FORMAT_RAW },
-    { V4L2_PIX_FMT_SGBRG12, "V4L2_PIX_FMT_SGBRG12", "GBRG12", 16, FORMAT_RAW },
-    { V4L2_PIX_FMT_SGRBG12, "V4L2_PIX_FMT_SGRBG12", "GRBG12", 16, FORMAT_RAW },
-    { V4L2_PIX_FMT_SRGGB12, "V4L2_PIX_FMT_SRGGB12", "RGGB12", 16, FORMAT_RAW },
+    { V4L2_PIX_FMT_SBGGR12, 0, "V4L2_PIX_FMT_SBGGR12", "BGGR12", 16, FORMAT_RAW },
+    { V4L2_PIX_FMT_SGBRG12, 0, "V4L2_PIX_FMT_SGBRG12", "GBRG12", 16, FORMAT_RAW },
+    { V4L2_PIX_FMT_SGRBG12, 0, "V4L2_PIX_FMT_SGRBG12", "GRBG12", 16, FORMAT_RAW },
+    { V4L2_PIX_FMT_SRGGB12, 0, "V4L2_PIX_FMT_SRGGB12", "RGGB12", 16, FORMAT_RAW },
 
-    { V4L2_PIX_FMT_SBGGR10P, "V4L2_PIX_FMT_SBGGR10P", "BGGR10P", 10, FORMAT_RAW },
-    { V4L2_PIX_FMT_SGBRG10P, "V4L2_PIX_FMT_SGBRG10P", "GBRG10P", 10, FORMAT_RAW },
-    { V4L2_PIX_FMT_SGRBG10P, "V4L2_PIX_FMT_SGRBG10P", "GRBG10P", 10, FORMAT_RAW },
-    { V4L2_PIX_FMT_SRGGB10P, "V4L2_PIX_FMT_SRGGB10P", "RGGB10P", 10, FORMAT_RAW },
+    { V4L2_PIX_FMT_SBGGR10P, 0, "V4L2_PIX_FMT_SBGGR10P", "BGGR10P", 10, FORMAT_RAW },
+    { V4L2_PIX_FMT_SGBRG10P, 0, "V4L2_PIX_FMT_SGBRG10P", "GBRG10P", 10, FORMAT_RAW },
+    { V4L2_PIX_FMT_SGRBG10P, 0, "V4L2_PIX_FMT_SGRBG10P", "GRBG10P", 10, FORMAT_RAW },
+    { V4L2_PIX_FMT_SRGGB10P, 0, "V4L2_PIX_FMT_SRGGB10P", "RGGB10P", 10, FORMAT_RAW },
 
-    { V4L2_PIX_FMT_NV12, "V4L2_PIX_FMT_NV12", "NV12", 12, FORMAT_YUV },
-    { V4L2_PIX_FMT_NV21, "V4L2_PIX_FMT_NV21", "NV21", 12, FORMAT_YUV },
-    { V4L2_PIX_FMT_NV16, "V4L2_PIX_FMT_NV16", "NV16", 16, FORMAT_YUV },
-    { V4L2_PIX_FMT_YUYV, "V4L2_PIX_FMT_YUYV", "YUYV", 16, FORMAT_YUV },
-    { V4L2_PIX_FMT_UYVY, "V4L2_PIX_FMT_UYVY", "UYVY", 16, FORMAT_YUV },
+    { V4L2_PIX_FMT_NV12, 0, "V4L2_PIX_FMT_NV12", "NV12", 12, FORMAT_YUV },
+    { V4L2_PIX_FMT_NV21, 0, "V4L2_PIX_FMT_NV21", "NV21", 12, FORMAT_YUV },
+    { V4L2_PIX_FMT_NV16, 0, "V4L2_PIX_FMT_NV16", "NV16", 16, FORMAT_YUV },
+    { V4L2_PIX_FMT_YUYV, 0, "V4L2_PIX_FMT_YUYV", "YUYV", 16, FORMAT_YUV },
+    { V4L2_PIX_FMT_UYVY, 0, "V4L2_PIX_FMT_UYVY", "UYVY", 16, FORMAT_YUV },
+    { V4L2_PIX_FMT_P010, 0, "V4L2_PIX_FMT_P010", "P010", 24, FORMAT_YUV },
 
-    { V4L2_PIX_FMT_YUV420, "V4L2_PIX_FMT_YUV420", "YUV420", 12, FORMAT_YUV },
-    { V4L2_PIX_FMT_YVU420, "V4L2_PIX_FMT_YVU420", "YVU420", 12, FORMAT_YUV },
-    { V4L2_PIX_FMT_YUV422P, "V4L2_PIX_FMT_YUV422P", "YUV422P", 16, FORMAT_YUV },
+    { V4L2_PIX_FMT_YUV420, 0, "V4L2_PIX_FMT_YUV420", "YUV420", 12, FORMAT_YUV },
+    { V4L2_PIX_FMT_YVU420, 0, "V4L2_PIX_FMT_YVU420", "YVU420", 12, FORMAT_YUV },
+    { V4L2_PIX_FMT_YUV422P, 0,  "V4L2_PIX_FMT_YUV422P", "YUV422P", 16, FORMAT_YUV },
 
-    { V4L2_PIX_FMT_BGR24, "V4L2_PIX_FMT_BGR24", "BGR24", 24, FORMAT_RGB },
-    { V4L2_PIX_FMT_BGR32, "V4L2_PIX_FMT_BGR32", "BGR32", 32, FORMAT_RGB },
-    { V4L2_PIX_FMT_RGB24, "V4L2_PIX_FMT_RGB24", "RGB24", 24, FORMAT_RGB },
-    { V4L2_PIX_FMT_RGB32, "V4L2_PIX_FMT_RGB32", "RGB32", 32, FORMAT_RGB },
-    { V4L2_PIX_FMT_XBGR32, "V4L2_PIX_FMT_XBGR32", "XBGR32", 32, FORMAT_RGB },
-    { V4L2_PIX_FMT_XRGB32, "V4L2_PIX_FMT_XRGB32", "XRGB32", 32, FORMAT_RGB },
-    { V4L2_PIX_FMT_RGB565, "V4L2_PIX_FMT_RGB565", "RGB565", 16, FORMAT_RGB },
+    { V4L2_PIX_FMT_BGR24, 0, "V4L2_PIX_FMT_BGR24", "BGR24", 24, FORMAT_RGB },
+    { V4L2_PIX_FMT_BGR32, 0, "V4L2_PIX_FMT_BGR32", "BGR32", 32, FORMAT_RGB },
+    { V4L2_PIX_FMT_RGB24, 0, "V4L2_PIX_FMT_RGB24", "RGB24", 24, FORMAT_RGB },
+    { V4L2_PIX_FMT_RGB32, 0, "V4L2_PIX_FMT_RGB32", "RGB32", 32, FORMAT_RGB },
+    { V4L2_PIX_FMT_XBGR32, 0, "V4L2_PIX_FMT_XBGR32", "XBGR32", 32, FORMAT_RGB },
+    { V4L2_PIX_FMT_XRGB32, 0, "V4L2_PIX_FMT_XRGB32", "XRGB32", 32, FORMAT_RGB },
+    { V4L2_PIX_FMT_RGB565, 0, "V4L2_PIX_FMT_RGB565", "RGB565", 16, FORMAT_RGB },
 
-    { V4L2_PIX_FMT_JPEG, "V4L2_PIX_FMT_JPEG", "JPG", 0, FORMAT_JPEG },
+    { V4L2_PIX_FMT_JPEG, 0, "V4L2_PIX_FMT_JPEG", "JPG", 0, FORMAT_JPEG },
 
-    { V4L2_MBUS_FMT_SBGGR12_1X12, "V4L2_MBUS_FMT_SBGGR12_1X12", "SBGGR12_1X12", 12, FORMAT_MBUS },
-    { V4L2_MBUS_FMT_SGBRG12_1X12, "V4L2_MBUS_FMT_SGBRG12_1X12", "SGBRG12_1X12", 12, FORMAT_MBUS },
-    { V4L2_MBUS_FMT_SGRBG12_1X12, "V4L2_MBUS_FMT_SGRBG12_1X12", "SGRBG12_1X12", 12, FORMAT_MBUS },
-    { V4L2_MBUS_FMT_SRGGB12_1X12, "V4L2_MBUS_FMT_SRGGB12_1X12", "SRGGB12_1X12", 12, FORMAT_MBUS },
+    { V4L2_MBUS_FMT_SBGGR12_1X12, 0, "V4L2_MBUS_FMT_SBGGR12_1X12", "SBGGR12_1X12", 12, FORMAT_MBUS },
+    { V4L2_MBUS_FMT_SGBRG12_1X12, 0, "V4L2_MBUS_FMT_SGBRG12_1X12", "SGBRG12_1X12", 12, FORMAT_MBUS },
+    { V4L2_MBUS_FMT_SGRBG12_1X12, 0, "V4L2_MBUS_FMT_SGRBG12_1X12", "SGRBG12_1X12", 12, FORMAT_MBUS },
+    { V4L2_MBUS_FMT_SRGGB12_1X12, 0, "V4L2_MBUS_FMT_SRGGB12_1X12", "SRGGB12_1X12", 12, FORMAT_MBUS },
 
-    { V4L2_MBUS_FMT_SBGGR10_1X10, "V4L2_MBUS_FMT_SBGGR10_1X10", "SBGGR10_1X10", 10, FORMAT_MBUS },
-    { V4L2_MBUS_FMT_SGBRG10_1X10, "V4L2_MBUS_FMT_SGBRG10_1X10", "SGBRG10_1X10", 10, FORMAT_MBUS },
-    { V4L2_MBUS_FMT_SGRBG10_1X10, "V4L2_MBUS_FMT_SGRBG10_1X10", "SGRBG10_1X10", 10, FORMAT_MBUS },
-    { V4L2_MBUS_FMT_SRGGB10_1X10, "V4L2_MBUS_FMT_SRGGB10_1X10", "SRGGB10_1X10", 10, FORMAT_MBUS },
+    { V4L2_MBUS_FMT_SBGGR10_1X10, 0, "V4L2_MBUS_FMT_SBGGR10_1X10", "SBGGR10_1X10", 10, FORMAT_MBUS },
+    { V4L2_MBUS_FMT_SGBRG10_1X10, 0, "V4L2_MBUS_FMT_SGBRG10_1X10", "SGBRG10_1X10", 10, FORMAT_MBUS },
+    { V4L2_MBUS_FMT_SGRBG10_1X10, 0, "V4L2_MBUS_FMT_SGRBG10_1X10", "SGRBG10_1X10", 10, FORMAT_MBUS },
+    { V4L2_MBUS_FMT_SRGGB10_1X10, 0, "V4L2_MBUS_FMT_SRGGB10_1X10", "SRGGB10_1X10", 10, FORMAT_MBUS },
 
-    { V4L2_MBUS_FMT_SBGGR8_1X8, "V4L2_MBUS_FMT_SBGGR8_1X8", "SBGGR8_1X8", 8, FORMAT_MBUS },
-    { V4L2_MBUS_FMT_SGBRG8_1X8, "V4L2_MBUS_FMT_SGBRG8_1X8", "SGBRG8_1X8", 8, FORMAT_MBUS },
-    { V4L2_MBUS_FMT_SGRBG8_1X8, "V4L2_MBUS_FMT_SGRBG8_1X8", "SGRBG8_1X8", 8, FORMAT_MBUS },
-    { V4L2_MBUS_FMT_SRGGB8_1X8, "V4L2_MBUS_FMT_SRGGB8_1X8", "SRGGB8_1X8", 8, FORMAT_MBUS },
+    { V4L2_MBUS_FMT_SBGGR8_1X8, 0, "V4L2_MBUS_FMT_SBGGR8_1X8", "SBGGR8_1X8", 8, FORMAT_MBUS },
+    { V4L2_MBUS_FMT_SGBRG8_1X8, 0, "V4L2_MBUS_FMT_SGBRG8_1X8", "SGBRG8_1X8", 8, FORMAT_MBUS },
+    { V4L2_MBUS_FMT_SGRBG8_1X8, 0, "V4L2_MBUS_FMT_SGRBG8_1X8", "SGRBG8_1X8", 8, FORMAT_MBUS },
+    { V4L2_MBUS_FMT_SRGGB8_1X8, 0, "V4L2_MBUS_FMT_SRGGB8_1X8", "SRGGB8_1X8", 8, FORMAT_MBUS },
 
-    { V4L2_MBUS_FMT_UYVY8_1X16, "V4L2_MBUS_FMT_UYVY8_1X16", "UYVY8_1X16", 16, FORMAT_MBUS },
-    { V4L2_MBUS_FMT_YUYV8_1X16, "V4L2_MBUS_FMT_YUYV8_1X16", "YUYV8_1X16", 16, FORMAT_MBUS },
-    { V4L2_MBUS_FMT_UYVY8_2X8, "V4L2_MBUS_FMT_UYVY8_2X8","UYVY8_2X8", 8, FORMAT_MBUS},
+    { V4L2_MBUS_FMT_UYVY8_1X16, 0, "V4L2_MBUS_FMT_UYVY8_1X16", "UYVY8_1X16", 16, FORMAT_MBUS },
+    { V4L2_MBUS_FMT_YUYV8_1X16, 0, "V4L2_MBUS_FMT_YUYV8_1X16", "YUYV8_1X16", 16, FORMAT_MBUS },
+    { V4L2_MBUS_FMT_UYVY8_2X8, 0, "V4L2_MBUS_FMT_UYVY8_2X8","UYVY8_2X8", 8, FORMAT_MBUS},
 
-    { MEDIA_BUS_FMT_RGB888_1X24, "MEDIA_BUS_FMT_RGB888_1X24", "RGB888_1X24", 0, FORMAT_MBUS },
-    { MEDIA_BUS_FMT_RGB565_1X16, "MEDIA_BUS_FMT_RGB565_1X16", "RGB565_1X16", 0, FORMAT_MBUS },
-    { MEDIA_BUS_FMT_YUYV12_1X24, "MEDIA_BUS_FMT_YUYV12_1X24", "YUYV12_1X24", 0, FORMAT_MBUS },
-    { MEDIA_BUS_FMT_SGRBG10_1X10, "MEDIA_BUS_FMT_SGRBG10_1X10", "SGRBG10_1X10", 0, FORMAT_MBUS },
+    { MEDIA_BUS_FMT_RGB888_1X24, 0, "MEDIA_BUS_FMT_RGB888_1X24", "RGB888_1X24", 0, FORMAT_MBUS },
+    { MEDIA_BUS_FMT_RGB565_1X16, 0, "MEDIA_BUS_FMT_RGB565_1X16", "RGB565_1X16", 0, FORMAT_MBUS },
+    { MEDIA_BUS_FMT_YUYV12_1X24, 0, "MEDIA_BUS_FMT_YUYV12_1X24", "YUYV12_1X24", 0, FORMAT_MBUS },
+    { MEDIA_BUS_FMT_SGRBG10_1X10, 0, "MEDIA_BUS_FMT_SGRBG10_1X10", "SGRBG10_1X10", 0, FORMAT_MBUS },
 
-    { MEDIA_BUS_FMT_RGB888_1X32_PADHI, "MEDIA_BUS_FMT_RGB888_1X32_PADHI", "RGB888_1X32_PADHI", 0, FORMAT_MBUS },
+    { MEDIA_BUS_FMT_RGB888_1X32_PADHI, 0, "MEDIA_BUS_FMT_RGB888_1X32_PADHI", "RGB888_1X32_PADHI", 0, FORMAT_MBUS },
 
-    { V4L2_FMT_IPU_ISYS_META, "V4L2_FMT_IPU_ISYS_META", "META_DATA", 0, FORMAT_MBUS },
+    { V4L2_FMT_IPU_ISYS_META, 0, "V4L2_FMT_IPU_ISYS_META", "META_DATA", 0, FORMAT_MBUS },
 
-    { GET_FOURCC_FMT('y','0','3','2'), "y032", "y032", 24, FORMAT_FOURCC },
-    { GET_FOURCC_FMT('N','V','1','2'), "YUV420_8_SP", "NV12", 12, FORMAT_FOURCC },
-    { GET_FOURCC_FMT('I','Y','U','V'), "YUV420_8_PL", "IYUV", 12, FORMAT_FOURCC },
-    { GET_FOURCC_FMT('b','V','0','K'), "bV0K", "bV0K", 16, FORMAT_FOURCC },
-    { GET_FOURCC_FMT('b','V','0','G'), "bV0G", "bV0G", 16, FORMAT_FOURCC },
-    { GET_FOURCC_FMT('V','4','2','0'), "YUV420_10_PL", "V420", 24, FORMAT_FOURCC },
-    { GET_FOURCC_FMT('B','A','1','0'), "BA10", "BA10", 16, FORMAT_FOURCC },
-    { GET_FOURCC_FMT('B','A','1','2'), "BA12", "BA12", 16, FORMAT_FOURCC },
-    { GET_FOURCC_FMT('G','R','1','0'), "GR10", "GR10", 16, FORMAT_FOURCC },
-    { GET_FOURCC_FMT('C','S','L','6'), "GRBG_12_LI", "CSL6", 15, FORMAT_FOURCC },
-    { GET_FOURCC_FMT('P','0','1','0'), "P010", "P010", 24, FORMAT_FOURCC },
-    { GET_FOURCC_FMT('Y','U','Y','2'), "YUV422_8_P64", "YUY2", 16, FORMAT_FOURCC },
-    { GET_FOURCC_FMT('G','R','B','G'), "GRBG", "GRBG", 8, FORMAT_FOURCC },
+    { V4L2_PIX_FMT_YUYV420_V32, GET_FOURCC_FMT('y','0','3','2'), "y032", "y032", 24, FORMAT_FOURCC },
+    { V4L2_PIX_FMT_NV12, GET_FOURCC_FMT('N','V','1','2'), "YUV420_8_SP", "NV12", 12, FORMAT_FOURCC },
+    { V4L2_PIX_FMT_NV12, GET_FOURCC_FMT('N','V','2','1'), "YUV420_8_SP_REV", "NV21", 12, FORMAT_FOURCC },
+    { V4L2_PIX_FMT_UYVY, GET_FOURCC_FMT('U','Y','V','Y'), "UYVY", "UYVY", 16, FORMAT_FOURCC },
+    { V4L2_PIX_FMT_YUYV, GET_FOURCC_FMT('Y','U','Y','2'), "YUV422_8_P64", "YUYV", 16, FORMAT_FOURCC },
+    { V4L2_PIX_FMT_YUV420, GET_FOURCC_FMT('I','Y','U','V'), "YUV420_8_PL", "IYUV", 12, FORMAT_FOURCC },
+    { V4L2_PIX_FMT_P010, GET_FOURCC_FMT('P','0','1','0'), "YUV420_10_SP", "P010", 24, FORMAT_FOURCC },
+    { V4L2_PIX_FMT_SGRBG12V32, GET_FOURCC_FMT('b','V','0','K'), "bV0K", "bV0K", 16, FORMAT_FOURCC },
+    { V4L2_PIX_FMT_SGRBG10V32, GET_FOURCC_FMT('b','V','0','G'), "bV0G", "bV0G", 16, FORMAT_FOURCC },
+    { 0, GET_FOURCC_FMT('V','4','2','0'), "YUV420_10_PL", "V420", 24, FORMAT_FOURCC },
+    { 0, GET_FOURCC_FMT('C','S','L','6'), "GRBG_12_LI", "CSL6", 12, FORMAT_FOURCC },
+    { 0, GET_FOURCC_FMT('C','S','4','2'), "YUV420_12_P64", "CS42", 18, FORMAT_FOURCC },
+    { 0, GET_FOURCC_FMT('C','S','4','0'), "YUV420_10_P64", "CS40", 15, FORMAT_FOURCC },
+    { V4L2_PIX_FMT_SGRBG8, GET_FOURCC_FMT('G','R','B','G'), "GRBG", "GRBG", 8, FORMAT_FOURCC },
+    { V4L2_PIX_FMT_SBGGR10, GET_FOURCC_FMT('B','G','1','0'), "BGGR10", "BG10", 16, FORMAT_FOURCC },
+    { V4L2_PIX_FMT_SGBRG10, GET_FOURCC_FMT('G','B','1','0'), "GBRG10", "GB10", 16, FORMAT_FOURCC },
+    { V4L2_PIX_FMT_SGRBG10, GET_FOURCC_FMT('B','A','1','0'), "GRBG10", "BA10", 16, FORMAT_FOURCC },
+    { V4L2_PIX_FMT_SRGGB10, GET_FOURCC_FMT('R','G','1','0'), "RGGB10", "RG10", 16, FORMAT_FOURCC },
+    { V4L2_PIX_FMT_SGRBG10, GET_FOURCC_FMT('G','R','1','0'), "GRBG10", "GR10", 16, FORMAT_FOURCC },
+    { V4L2_PIX_FMT_SGRBG12, GET_FOURCC_FMT('B','A','1','2'), "GRBG12", "BA12", 16, FORMAT_FOURCC },
 };
 
 struct TuningModeStringInfo {
@@ -203,7 +213,8 @@ const char *CameraUtils::pixelCode2String(int code)
 {
     int size = ARRAY_SIZE(gFormatMapping);
     for (int i = 0; i < size; i++) {
-        if (gFormatMapping[i].pixelCode == code) {
+        if (gFormatMapping[i].v4l2Fmt == code ||
+            gFormatMapping[i].iaFourcc == code) {
             return gFormatMapping[i].fullName;
         }
     }
@@ -214,12 +225,15 @@ const char *CameraUtils::pixelCode2String(int code)
 
 int CameraUtils::string2PixelCode(const char *code)
 {
-    CheckError(code == nullptr, -1, "Invalid null pixel format.");
+    CheckAndLogError(code == nullptr, -1, "Invalid null pixel format.");
 
     int size = ARRAY_SIZE(gFormatMapping);
     for (int i = 0; i < size; i++) {
-        if (strcmp(gFormatMapping[i].fullName, code) == 0) {
-            return gFormatMapping[i].pixelCode;
+        if (gFormatMapping[i].type != FORMAT_FOURCC) {
+            if (!strcmp(gFormatMapping[i].fullName, code) ||
+                !strcmp(gFormatMapping[i].shortName, code)) {
+                return gFormatMapping[i].v4l2Fmt;
+            }
         }
     }
 
@@ -229,14 +243,14 @@ int CameraUtils::string2PixelCode(const char *code)
 
 int CameraUtils::string2IaFourccCode(const char *code)
 {
-    CheckError(code == nullptr, -1, "Invalid null pixel format.");
+    CheckAndLogError(code == nullptr, -1, "Invalid null pixel format.");
 
     int size = ARRAY_SIZE(gFormatMapping);
     for (int i = 0; i < size; i++) {
         if (gFormatMapping[i].type == FORMAT_FOURCC){
             if (!strcmp(gFormatMapping[i].fullName, code) ||
-                 !strcmp(gFormatMapping[i].shortName, code)) {
-                return gFormatMapping[i].pixelCode;
+                !strcmp(gFormatMapping[i].shortName, code)) {
+                return gFormatMapping[i].iaFourcc;
             }
         }
     }
@@ -259,7 +273,8 @@ std::string CameraUtils::format2string(int format)
 {
     int size = ARRAY_SIZE(gFormatMapping);
     for (int i = 0; i < size; i++) {
-        if (gFormatMapping[i].pixelCode == format) {
+        if (gFormatMapping[i].v4l2Fmt == format ||
+            gFormatMapping[i].iaFourcc == format) {
             return std::string(gFormatMapping[i].shortName);
         }
     }
@@ -270,8 +285,8 @@ std::string CameraUtils::format2string(int format)
 
 unsigned int CameraUtils::fourcc2UL(char *str4cc)
 {
-    CheckError(str4cc == nullptr, 0, "Invalid null string.");
-    CheckError(strlen(str4cc) != 4, 0, "Invalid string %s, should be 4cc.", str4cc);
+    CheckAndLogError(str4cc == nullptr, 0, "Invalid null string.");
+    CheckAndLogError(strlen(str4cc) != 4, 0, "Invalid string %s, should be 4cc.", str4cc);
 
     return FOURCC_TO_UL(str4cc[0], str4cc[1], str4cc[2], str4cc[3]);
 }
@@ -280,14 +295,15 @@ bool CameraUtils::isPlanarFormat(int format)
 {
     return (format == V4L2_PIX_FMT_NV12 || format == V4L2_PIX_FMT_NV21
          || format == V4L2_PIX_FMT_YUV420 || format == V4L2_PIX_FMT_YVU420
-         || format == V4L2_PIX_FMT_YUV422P || format == V4L2_PIX_FMT_NV16);
+         || format == V4L2_PIX_FMT_YUV422P || format == V4L2_PIX_FMT_NV16
+         || format == V4L2_PIX_FMT_P010);
 }
 
 bool CameraUtils::isRaw(int format)
 {
     int size = ARRAY_SIZE(gFormatMapping);
     for (int i = 0; i < size; i++) {
-        if (gFormatMapping[i].pixelCode == format) {
+        if (gFormatMapping[i].v4l2Fmt == format) {
             // Both normal raw and vector raw treated as raw here.
             return gFormatMapping[i].type == FORMAT_RAW_VEC || gFormatMapping[i].type == FORMAT_RAW;
         }
@@ -300,13 +316,38 @@ int CameraUtils::getBpp(int format)
 {
     int size = ARRAY_SIZE(gFormatMapping);
     for (int i = 0; i < size; i++) {
-        if (gFormatMapping[i].pixelCode == format) {
+        if (gFormatMapping[i].v4l2Fmt == format ||
+            gFormatMapping[i].iaFourcc == format) {
             return gFormatMapping[i].bpp;
         }
     }
 
     LOGE("There is no bpp supplied for format %s", pixelCode2String(format));
     return -1;
+}
+
+int CameraUtils::getPlanarByte(int format)
+{
+    int planarBpp = 8;
+    switch (format) {
+        case V4L2_PIX_FMT_NV12:
+        case V4L2_PIX_FMT_NV21:
+        case V4L2_PIX_FMT_NV16:
+        case V4L2_PIX_FMT_YUV420:
+        case V4L2_PIX_FMT_YVU420:
+        case V4L2_PIX_FMT_YUV422P:
+            planarBpp = 8;
+            break;
+        case V4L2_PIX_FMT_P010:
+            planarBpp = 10;
+            break;
+        default:
+            planarBpp = 8;
+            LOGW("planar bpp defaulting to 8 for format:%s", format2string(format).c_str());
+            break;
+    }
+
+    return ceil(static_cast<double>(planarBpp) / 8);
 }
 
 /**
@@ -317,9 +358,71 @@ int CameraUtils::getStride(int format, int width)
 {
     int bpl = width * getBpp(format) / 8;
     if (isPlanarFormat(format)) {
-        bpl = width;
+        bpl = width * getPlanarByte(format);
     }
     return ALIGN_64(bpl);
+}
+
+/**
+ * Calculate bytes per line(bpl) based on fourcc format.
+ *
+ * \param[in] format fourcc code in OS specific format
+ * \return bpl bytes per line
+ */
+int32_t CameraUtils::getBpl(int32_t format, int32_t width)
+{
+    int32_t bpl = 0;
+    switch (format) {
+        case GET_FOURCC_FMT('C','S','4','2'):      // YUV
+            /*
+             * Align based on UV planes, which have half the strides compared to y plane.
+             * 42 whole pixels in each 64 byte word, rest 8 bits per word is padding.
+             * The total bpl is double the UV-plane strides.
+             */
+            bpl = ceil((static_cast<double>(width) / 2) / 42) * 64 * 2;
+            break;
+        case GET_FOURCC_FMT('y','0','3','2'):    // Y032
+            bpl = width * 6;
+            break;
+        case GET_FOURCC_FMT('C','S','L','6'):    // CSL6
+            bpl = width * 4;
+            break;
+        case GET_FOURCC_FMT('b','V','0','G'):    // BV0G
+        case GET_FOURCC_FMT('V','4','2','0'):    // V420
+        case GET_FOURCC_FMT('b','V','0','K'):    // BV0K
+        case GET_FOURCC_FMT('B','A','1','0'):    // BA10
+        case GET_FOURCC_FMT('G','R','1','0'):    // GR10
+        case GET_FOURCC_FMT('B','A','1','2'):    // BA12
+        case GET_FOURCC_FMT('P','0','1','0'):    // P010
+        case GET_FOURCC_FMT('P','0','1','L'):    // P010_LSB
+        case GET_FOURCC_FMT('T','0','1','0'):    // P010_msb_tail_y
+        case GET_FOURCC_FMT('C','0','1','0'):    // P010_msb_ceil_y
+        case GET_FOURCC_FMT('Y','U','Y','2'):    // YUY2
+            bpl = width * 2;
+            break;
+        case GET_FOURCC_FMT('N','V','1','2'):    // NV12
+        case GET_FOURCC_FMT('G','R','B','G'):    // GRBG
+            bpl = width;
+            break;
+        default:
+            bpl = width;
+            LOGW("bpl defaulting to width for format:%s", format2string(format).c_str());
+            break;
+    }
+
+    return bpl;
+}
+
+int32_t CameraUtils::getV4L2Format(const int32_t iaFourcc)
+{
+    for (size_t i = 0; i < ARRAY_SIZE(gFormatMapping); i++) {
+        if (gFormatMapping[i].iaFourcc == iaFourcc)
+            return gFormatMapping[i].v4l2Fmt;
+    }
+
+    LOGE("Failed to find any V4L2 format with format %s", pixelCode2String(iaFourcc));
+
+    return -1;
 }
 
 /*
@@ -445,7 +548,8 @@ int CameraUtils::getFrameSize(int format, int width, int height, bool needAligne
         height = ALIGN_64(height);
         LOG1("@%s buffer aligned height %d", __func__, height);
     }
-    int bufferHeight = isPlanarFormat(format) ? (height * getBpp(format) / 8) : height;
+    int bufferHeight = isPlanarFormat(format) ?
+                       ((height * getBpp(format) / 8) / getPlanarByte(format)) : height;
 
     if (!needExtraSize) {
         LOG1("%s: no need extra size, frame size is %d", __func__, alignedBpl * bufferHeight);
@@ -460,7 +564,8 @@ int CameraUtils::getFrameSize(int format, int width, int height, bool needAligne
     }
 
     // Extra size should be at least one alignedBpl
-    int extraSize = isPlanarFormat(format) ? alignedBpl * getBpp(format) / 8 : alignedBpl;
+    int extraSize = isPlanarFormat(format) ?
+                    (alignedBpl * getBpp(format) / 8 / getPlanarByte(format)) : alignedBpl;
     extraSize = std::max(extraSize , 1024);
 
     return alignedBpl * bufferHeight + extraSize;
@@ -488,7 +593,7 @@ void CameraUtils::getDeviceName(const char* entityName, string& deviceNodeName, 
         filePrefix = "v4l-subdev";
 
     DIR *dp = opendir(dirPath);
-    CheckError((dp == nullptr), VOID_VALUE, "@%s, Fail open : %s", __func__, dirPath);
+    CheckAndLogError((dp == nullptr), VOID_VALUE, "@%s, Fail open : %s", __func__, dirPath);
 
     struct dirent *dirp = nullptr;
     while ((dirp = readdir(dp)) != nullptr) {
@@ -497,7 +602,7 @@ void CameraUtils::getDeviceName(const char* entityName, string& deviceNodeName, 
             subDeviceName += dirp->d_name;
             subDeviceName += "/name";
             int fd = open(subDeviceName.c_str(), O_RDONLY);
-            CheckError((fd < 0), VOID_VALUE, "@%s, open file %s failed. err: %s",
+            CheckAndLogError((fd < 0), VOID_VALUE, "@%s, open file %s failed. err: %s",
                   __func__, subDeviceName.c_str(), strerror(errno));
 
             char buf[128] = {'\0'};
@@ -527,7 +632,7 @@ int CameraUtils::getInterlaceHeight(int field, int height)
         return height;
 }
 
-bool CameraUtils::isMultiExposureCase(TuningMode tuningMode)
+bool CameraUtils::isMultiExposureCase(int cameraId, TuningMode tuningMode)
 {
     LOG2("%s, tuningMode %d", __func__, tuningMode);
 
@@ -680,7 +785,7 @@ unsigned int CameraUtils::getMBusFormat(int cameraId, unsigned int isysFmt)
 
 void* CameraUtils::dlopenLibrary(const char* name, int flags)
 {
-    CheckError((name == nullptr), nullptr, "%s, invalid parameters", __func__);
+    CheckAndLogError((name == nullptr), nullptr, "%s, invalid parameters", __func__);
 
     void* handle = dlopen(name, flags);
 
@@ -699,7 +804,7 @@ void* CameraUtils::dlopenLibrary(const char* name, int flags)
 
 void* CameraUtils::dlsymLibrary(void* handle, const char* str)
 {
-    CheckError((handle == nullptr || str == nullptr), nullptr, "%s, invalid parameters", __func__);
+    CheckAndLogError((handle == nullptr || str == nullptr), nullptr, "%s, invalid parameters", __func__);
 
     void* sym = dlsym(handle, str);
 
@@ -718,7 +823,7 @@ void* CameraUtils::dlsymLibrary(void* handle, const char* str)
 
 int CameraUtils::dlcloseLibrary(void* handle)
 {
-    CheckError((handle == nullptr), BAD_VALUE, "%s, invalid parameters", __func__);
+    CheckAndLogError((handle == nullptr), BAD_VALUE, "%s, invalid parameters", __func__);
 
     dlclose(handle);
     LOG1("%s, handle %p has been closed", __func__, handle);

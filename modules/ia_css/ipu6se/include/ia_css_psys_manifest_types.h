@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Intel Corporation.
+ * Copyright (C) 2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,39 +43,39 @@ typedef uint8_t ia_css_connection_bitmap_t;
 
 #define IA_CSS_CONNECTION_TYPE_BITS 32
 
-/** Describes the tranfer method of data between terminals */
+/** Describes the transfer method of data between terminals */
 typedef enum ia_css_connection_type {
-	/** The data buffer must be fully written to main memory by the producer
-	 *  before it can be read by the consumer */
-	IA_CSS_CONNECTION_MEMORY = 0,
-	/** The data transfer is a (watermark) queued stream over main memory.
-	 *  The consumer may begin reading data before the data
-	 *  buffer is completely written in a controlled manner. */
-	IA_CSS_CONNECTION_MEMORY_STREAM,
-	/** The data transfer is via device ports connected such that no data
-	 *  is read or written to main memory. */
-	IA_CSS_CONNECTION_STREAM,
-	IA_CSS_N_CONNECTION_TYPES
+    /** The data buffer must be fully written to main memory by the producer
+     *  before it can be read by the consumer */
+    IA_CSS_CONNECTION_MEMORY = 0,
+    /** The data transfer is a (watermark) queued stream over main memory.
+     *  The consumer may begin reading data before the data
+     *  buffer is completely written in a controlled manner. */
+    IA_CSS_CONNECTION_MEMORY_STREAM,
+    /** The data transfer is via device ports connected such that no data
+     *  is read or written to main memory. */
+    IA_CSS_CONNECTION_STREAM,
+    IA_CSS_N_CONNECTION_TYPES
 } ia_css_connection_type_t;
 
 #define IA_CSS_PROGRAM_TYPE_BITS 8
 typedef enum ia_css_program_type {
-	IA_CSS_PROGRAM_TYPE_SINGULAR = 0,
-	IA_CSS_PROGRAM_TYPE_EXCLUSIVE_SUB,
-	IA_CSS_PROGRAM_TYPE_EXCLUSIVE_SUPER,
-	IA_CSS_PROGRAM_TYPE_PARALLEL_SUB,
-	IA_CSS_PROGRAM_TYPE_PARALLEL_SUPER,
-	IA_CSS_PROGRAM_TYPE_VIRTUAL_SUB,
-	IA_CSS_PROGRAM_TYPE_VIRTUAL_SUPER,
+    IA_CSS_PROGRAM_TYPE_SINGULAR = 0,
+    IA_CSS_PROGRAM_TYPE_EXCLUSIVE_SUB,
+    IA_CSS_PROGRAM_TYPE_EXCLUSIVE_SUPER,
+    IA_CSS_PROGRAM_TYPE_PARALLEL_SUB,
+    IA_CSS_PROGRAM_TYPE_PARALLEL_SUPER,
+    IA_CSS_PROGRAM_TYPE_VIRTUAL_SUB,
+    IA_CSS_PROGRAM_TYPE_VIRTUAL_SUPER,
 /*
  * Future extension; A bitmap coding starts making more sense
  *
-	IA_CSS_PROGRAM_TYPE_EXCLUSIVE_SUB_PARALLEL_SUB,
-	IA_CSS_PROGRAM_TYPE_EXCLUSIVE_SUB_PARALLEL_SUPER,
-	IA_CSS_PROGRAM_TYPE_EXCLUSIVE_SUPER_PARALLEL_SUB,
-	IA_CSS_PROGRAM_TYPE_EXCLUSIVE_SUPER_PARALLEL_SUPER,
+    IA_CSS_PROGRAM_TYPE_EXCLUSIVE_SUB_PARALLEL_SUB,
+    IA_CSS_PROGRAM_TYPE_EXCLUSIVE_SUB_PARALLEL_SUPER,
+    IA_CSS_PROGRAM_TYPE_EXCLUSIVE_SUPER_PARALLEL_SUB,
+    IA_CSS_PROGRAM_TYPE_EXCLUSIVE_SUPER_PARALLEL_SUPER,
  */
-	IA_CSS_N_PROGRAM_TYPES
+    IA_CSS_N_PROGRAM_TYPES
 } ia_css_program_type_t;
 
 #define IA_CSS_PROGRAM_GROUP_ID_BITS 32
@@ -97,10 +97,10 @@ ia_css_data_terminal_manifest_t;
 
 /* ============ Program Control Init Terminal Manifest - START ============ */
 typedef struct ia_css_program_control_init_manifest_program_desc_s
-	ia_css_program_control_init_manifest_program_desc_t;
+    ia_css_program_control_init_manifest_program_desc_t;
 
 typedef struct ia_css_program_control_init_terminal_manifest_s
-	ia_css_program_control_init_terminal_manifest_t;
+    ia_css_program_control_init_terminal_manifest_t;
 /* ============ Program Control Init Terminal Manifest - END ============ */
 
 /** @} */

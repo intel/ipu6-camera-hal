@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Intel Corporation.
+ * Copyright (C) 2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -156,7 +156,7 @@ EXIT:
  * does not fit the exact model as is being asserted on in
  * ia_css_is_program_group_manifest_valid. We therefore disable some checks.
  * Further investigation is needed to determine whether *_pregdc program group
- * can be canged or that the model must be changed.
+ * can be changed or that the model must be changed.
  * #define USE_SIMPLIFIED_GRAPH_MODEL 1 allows multiple programs to be
  * connected to the same terminal, and it allows a kernel be mapped over
  * multiple programs.
@@ -485,7 +485,7 @@ bool ia_css_is_program_group_manifest_valid(
                      * That must be equal for
                      * parallel subnodes,
                      * must be unequal for
-                     * exlusive and virtual subnodes
+                     * exclusive and virtual subnodes
                      */
                     verifexit(
                     ((is_j_subset_i && is_i_subset_j) ^

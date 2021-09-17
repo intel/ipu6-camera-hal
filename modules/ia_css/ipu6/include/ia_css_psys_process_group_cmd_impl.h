@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Intel Corporation.
+ * Copyright (C) 2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,7 +44,7 @@
  *
  *  This is the root structure passed in a number of PG commands via
  *  the syscom queuing interface to firmware from the host.  A pointer
- *  to this structure in main memroy is passed in the following
+ *  to this structure in main memory is passed in the following
  *  PG commands: start, resume, suspend, stop, abort.
  *
  *  A process group is created based on a program group specification
@@ -53,7 +53,7 @@
  *  also has terminals, which connect it to the outside world.  Each
  *  terminal represents either parameters or image data flowing in or
  *  out of the group.  Terminals come in different types and may have
- *  addtional attributes.  For example, a data termainal will have
+ *  additional attributes.  For example, a data terminal will have
  *  a frame format attribute.
  *  @see ia_css_process_group_create()
  *  @see ia_css_program_group_manifest_t and related API and:
@@ -64,7 +64,7 @@
  *
  *  @note Some of the fields within are used internally within the
  *  firmware only, after the firmware copies the process group structure
- *  to its internel cache.  The original in main memory is not updated.
+ *  to its internal cache.  The original in main memory is not updated.
  *  All such fields should be initialized to zero, unless otherwise
  *  noted.
  *  See the individual field descriptions for which fields are "internal".
@@ -79,14 +79,14 @@ struct ia_css_process_group_s {
     /** PG routing bitmap used to set connection between program group
      *  components */
     ia_css_rbm_t routing_bitmap;
-    /** PG kernel bitmap.  Marks which program kernels (i.e. kernel==device, when impelementation is fixed)
+    /** PG kernel bitmap.  Marks which program kernels (i.e. kernel==device, when implementation is fixed)
      *  are enabled. This bitmap covers all kernels in the group, no matter which program they belong to. */
     ia_css_kernel_bitmap_t kernel_bitmap;
     /** Size of this structure in bytes */
     uint32_t size;
     /** The timestamp when PG load starts
      *  @note Internal firmware use only. */
-    /**< PSYS server init time in cycless */
+    /**< PSYS server init time in cycles */
     uint32_t psys_server_init_cycles;
     /**< The timestamp when PG load starts */
     uint32_t pg_load_start_ts;
@@ -100,7 +100,7 @@ struct ia_css_process_group_s {
      *  @note Internal firmware use only. */
     uint32_t pg_processing_cycles;
     /** Referral ID to program group FW.  This identifies the "type" of the process group
-     *  and associcates the process group with the program group defined in the manifest. */
+     *  and associates the process group with the program group defined in the manifest. */
     /**< PG next frame init time in cycles */
     uint32_t pg_next_frame_init_cycles;
     /**< PG complete time in cycles */
@@ -139,7 +139,7 @@ struct ia_css_process_group_s {
     uint16_t terminals_offset;
     /** Parameter dependent number of processes in this process group, determined at process
      *  group creation taking into account the enabled kernels. That is, if all of a program's
-     *  associcated kernels are disabled, then no process is instantiated for that program and
+     *  associated kernels are disabled, then no process is instantiated for that program and
      *  it must not be counted in the process count.
      *
      *  @see processes_offset in this structure
@@ -150,8 +150,8 @@ struct ia_css_process_group_s {
     /** Parameter dependent number of terminals on this process group, determined at process
      *  group creation.  Must not be greater than the terminal count as defined in the manifest,
      *  but taking into account the enabled kernels.  That is, for those terminal types that have
-     *  kernel associations, the terminal is diabled if all of its associated kernels are disabled.
-     *  Execptions by terminal type:
+     *  kernel associations, the terminal is disabled if all of its associated kernels are disabled.
+     *  Exceptions by terminal type:
      *  - IA_CSS_TERMINAL_TYPE_PROGRAM - As described above, but parameter descriptors are examined to determine the
      *  kernel association, as the terminal type itself does not have an associated kernel field or kernel bitmap field.
      *  - IA_CSS_TERMINAL_TYPE_PROGRAM_CONTROL_INIT -- Always enabled
@@ -202,7 +202,7 @@ extern int ia_css_process_group_on_create(
     const ia_css_program_group_manifest_t    *program_group_manifest,
     const ia_css_program_group_param_t    *program_group_param);
 
-/*! Callback before process group is about to be destoyed. Any implementation
+/*! Callback before process group is about to be destroyed. Any implementation
  * specific cleanups can be done here.
 
  @param    process_group[in]                process group object
@@ -268,7 +268,7 @@ extern int ia_css_process_group_store(
     ia_css_process_group_t                *process_group,
     bool                        secure);
 
-/*! Need to get the right context for each PG for FW test app only
+/*! Need to get the right context for each PG for FW test application only
  *
  * @param    process_group[in]        process group object
  *

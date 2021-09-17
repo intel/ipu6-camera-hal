@@ -57,7 +57,6 @@ static const unsigned int IA_COORDINATE_HEIGHT = (IA_COORDINATE_BOTTOM - IA_COOR
 
 /**
  *  The normalized awb gain range is (4.0, 1.0) which is just experimental.
- *  TODO: Maybe need put them in configuration file later.
  */
 static const int AWB_GAIN_NORMALIZED_START = 4.0;
 static const int AWB_GAIN_NORMALIZED_END = 1.0;

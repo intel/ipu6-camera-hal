@@ -37,6 +37,7 @@ struct intel_cca_set_stats_data {
     TuningMode tuningMode;
 
     cca::cca_stats_params inParams;
+    cca::cca_out_stats outStats;
 };
 
 struct intel_cca_run_aec_data {
@@ -137,6 +138,7 @@ struct intel_cca_decode_stats_data {
 
     ia_binary_data statsBuffer;
     int32_t statsHandle;
+    uint32_t bitmap;
 
     ia_isp_bxt_statistics_query_results_t results;
 };

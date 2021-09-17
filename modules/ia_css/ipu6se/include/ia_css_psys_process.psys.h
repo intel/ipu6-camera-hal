@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Intel Corporation.
+ * Copyright (C) 2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,12 +30,12 @@
  * Process manager
  */
 
-/*! Acquire the resources specificed in process object
+/*! Acquire the resources specified in process object
 
- @param	process[in]				process object
+ @param    process[in]                process object
 
  Postcondition: This is a try process if any of the
- resources is not available, all succesfully acquired
+ resources is not available, all successfully acquired
  ones will be release and the function will return an
  error
 
@@ -43,9 +43,9 @@
  */
 extern int ia_css_process_acquire(ia_css_process_t *process);
 
-/*! Release the resources specificed in process object
+/*! Release the resources specified in process object
 
- @param	process[in]				process object
+ @param    process[in]                process object
 
  @return < 0 on error
  */

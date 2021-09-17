@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Intel Corporation.
+ * Copyright (C) 2020-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#define LOG_TAG "CIPR_EVENT"
+#define LOG_TAG CIPR_EVENT
 
 #include <errno.h>
 #include <fcntl.h>
@@ -46,7 +46,7 @@ Event::Event(const PSysEventConfig& eventConfig) {
     mInitialized = false;
     mEvent = reinterpret_cast<PSysEvent*>(CIPR::callocMemory(1, sizeof(*mEvent)));
 
-    CheckError(!mEvent, VOID_VALUE, "%s: could not allocate mEvent", __func__);
+    CheckAndLogError(!mEvent, VOID_VALUE, "%s: could not allocate mEvent", __func__);
 
     if (eventConfig.id != 0) {
         LOG2("ID-field of CIPR mEvent deprecated!");
@@ -72,8 +72,8 @@ Event::~Event() {
 }
 
 Result Event::getConfig(PSysEventConfig* eventConfig) {
-    CheckError(!mInitialized, Result::InternalError, "@%s, mInitialized is false", __func__);
-    CheckError(!eventConfig, Result::InvaildArg, "@%s, eventConfig is nullptr", __func__);
+    CheckAndLogError(!mInitialized, Result::InternalError, "@%s, mInitialized is false", __func__);
+    CheckAndLogError(!eventConfig, Result::InvaildArg, "@%s, eventConfig is nullptr", __func__);
 
     eventConfig->type = mEvent->event.type;
     eventConfig->commandToken = mEvent->event.user_token;
@@ -87,7 +87,7 @@ Result Event::getConfig(PSysEventConfig* eventConfig) {
 }
 
 Result Event::setConfig(const PSysEventConfig& eventConfig) {
-    CheckError(!mInitialized, Result::InternalError, "@%s, mInitialized is false", __func__);
+    CheckAndLogError(!mInitialized, Result::InternalError, "@%s, mInitialized is false", __func__);
 
     mEvent->event.type = eventConfig.type;
     mEvent->event.user_token = eventConfig.commandToken;
@@ -100,8 +100,8 @@ Result Event::setConfig(const PSysEventConfig& eventConfig) {
 }
 
 Result Event::wait(Context* ctx) {
-    CheckError(!mInitialized, Result::InternalError, "@%s, mInitialized is false", __func__);
-    CheckError(!ctx, Result::InvaildArg, "@%s, ctx is nullptr", __func__);
+    CheckAndLogError(!mInitialized, Result::InternalError, "@%s, mInitialized is false", __func__);
+    CheckAndLogError(!ctx, Result::InvaildArg, "@%s, ctx is nullptr", __func__);
 
     auto poller = ctx->getPoller(POLLIN | POLLHUP | POLLERR, mEvent->timeout);
     int res = poller.poll();

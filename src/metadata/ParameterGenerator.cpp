@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-#define LOG_TAG "ParameterGenerator"
+#define LOG_TAG ParameterGenerator
 
 #include <math.h>
 #include <memory>
+#include <vector>
 
 #include "iutils/Errors.h"
 #include "iutils/CameraLog.h"
@@ -31,8 +32,8 @@
 
 namespace icamera {
 
-#define CHECK_REQUEST_ID(id) CheckError((id < 0), UNKNOWN_ERROR, "%s: error request id %ld!", __func__, id);
-#define CHECK_SEQUENCE(id) CheckError((id < 0), UNKNOWN_ERROR, "%s: error sequence %ld!", __func__, id);
+#define CHECK_REQUEST_ID(id) CheckAndLogError((id < 0), UNKNOWN_ERROR, "%s: error request id %ld!", __func__, id);
+#define CHECK_SEQUENCE(id) CheckAndLogError((id < 0), UNKNOWN_ERROR, "%s: error sequence %ld!", __func__, id);
 
 ParameterGenerator::ParameterGenerator(int cameraId) :
     mCameraId(cameraId),
@@ -77,6 +78,7 @@ int ParameterGenerator::reset()
     LOG1("%s, mCameraId = %d", __func__, mCameraId);
     AutoMutex l(mParamsLock);
     mRequestParamMap.clear();
+    mRequestIdMap.clear();
 
     return OK;
 }
@@ -90,7 +92,7 @@ int ParameterGenerator::saveParameters(long sequence, long requestId, const Para
     if (param)
         mLastParam = *param;
 
-    LOG2("%s, sequence %ld", __func__, sequence);
+    LOG2("%s, sequence %ld, requestId %ld", __func__, sequence, requestId);
     std::shared_ptr<RequestParam> requestParam = nullptr;
     if (mRequestParamMap.size() < kStorageSize) {
         requestParam = std::make_shared<RequestParam>();
@@ -109,7 +111,7 @@ int ParameterGenerator::saveParameters(long sequence, long requestId, const Para
 
 void ParameterGenerator::updateParameters(long sequence, const Parameters *param)
 {
-    CheckError(!param, VOID_VALUE, "The param is nullptr!");
+    CheckAndLogError(!param, VOID_VALUE, "The param is nullptr!");
 
     LOG2("%s, sequence %ld", __func__, sequence);
 
@@ -176,21 +178,33 @@ void ParameterGenerator::updateParameters(long sequence, const Parameters *param
     mRequestParamMap[sequence] = requestParam;
 }
 
-int ParameterGenerator::getParameters(long sequence, Parameters *param, bool resultOnly)
+int ParameterGenerator::getParameters(long sequence, Parameters *param, bool setting, bool result)
 {
-    CheckError((param == nullptr), UNKNOWN_ERROR, "nullptr to get param!");
+    CheckAndLogError((param == nullptr), UNKNOWN_ERROR, "nullptr to get param!");
 
-    if (!resultOnly && sequence < 0) {
-        *param = mLastParam;
-    } else if (!resultOnly) {
-        if (mRequestParamMap.find(sequence) != mRequestParamMap.end()) {
+    if (setting) {
+        AutoMutex l(mParamsLock);
+        if (sequence < 0) {
+            *param = mLastParam;
+        } else if (mRequestParamMap.find(sequence) != mRequestParamMap.end()) {
             *param = mRequestParamMap[sequence]->param;
         } else {
-            LOGE("Can't find settings for seq %ld", sequence);
+            // Find nearest parameter
+            bool found = false;
+            for (auto it = mRequestParamMap.crbegin(); it != mRequestParamMap.crend(); ++it) {
+                if (it->first <= sequence) {
+                    *param = mRequestParamMap[it->first]->param;
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) LOGE("Can't find settings for seq %ld", sequence);
         }
     }
 
-    generateParametersL(sequence, param);
+    if (result) {
+        generateParametersL(sequence, param);
+    }
     return OK;
 }
 
@@ -207,6 +221,15 @@ int ParameterGenerator::getUserRequestId(long sequence, int32_t& userRequestId)
     return UNKNOWN_ERROR;
 }
 
+void ParameterGenerator::setRequestIdMap(long currentRequestId, long requestIdWithAiq)
+{
+    AutoMutex l(mParamsLock);
+    if (mRequestIdMap.size() >= kStorageSize) {
+        mRequestIdMap.erase(mRequestIdMap.begin());
+    }
+    mRequestIdMap[currentRequestId] = requestIdWithAiq;
+}
+
 int ParameterGenerator::getRequestId(long sequence, long& requestId)
 {
     CHECK_SEQUENCE(sequence);
@@ -215,6 +238,24 @@ int ParameterGenerator::getRequestId(long sequence, long& requestId)
     AutoMutex l(mParamsLock);
     if (mRequestParamMap.find(sequence) != mRequestParamMap.end()) {
         requestId = mRequestParamMap[sequence]->requestId;
+    }
+
+    if (requestId == -1) {
+        // Find nearest request id
+        for (auto it = mRequestParamMap.crbegin(); it != mRequestParamMap.crend(); ++it) {
+            if (it->first <= sequence) {
+                requestId = mRequestParamMap[it->first]->requestId;
+            }
+        }
+    }
+
+    if (mRequestIdMap.find(requestId) != mRequestIdMap.end()) {
+        // find the real request id of running AIQ
+        requestId = mRequestIdMap[requestId];
+    }
+
+    if (requestId != -1) {
+        LOG2("request id %ld for sequence id %ld", requestId, sequence);
         return OK;
     }
 
@@ -234,15 +275,15 @@ int ParameterGenerator::generateParametersL(long sequence, Parameters *params)
 int ParameterGenerator::updateWithAiqResultsL(long sequence, Parameters *params)
 {
     const AiqResult *aiqResult = AiqResultStorage::getInstance(mCameraId)->getAiqResult(sequence);
-    CheckError((aiqResult == nullptr), UNKNOWN_ERROR,
-           "%s Aiq result of sequence %ld does not exist", __func__, sequence);
+    CheckAndLogError((aiqResult == nullptr), UNKNOWN_ERROR,
+                     "%s Aiq result of sequence %ld does not exist", __func__, sequence);
 
     // Update AE related parameters
     camera_ae_state_t aeState = aiqResult->mAeResults.exposures[0].converged ?
             AE_STATE_CONVERGED : AE_STATE_NOT_CONVERGED;
     params->setAeState(aeState);
 
-    if (CameraUtils::isMultiExposureCase(aiqResult->mTuningMode) &&
+    if (CameraUtils::isMultiExposureCase(mCameraId, aiqResult->mTuningMode) &&
         aiqResult->mAeResults.num_exposures > 1) {
         params->setExposureTime(aiqResult->mAeResults.exposures[1].exposure[0].exposure_time_us);
     } else {
@@ -282,39 +323,22 @@ int ParameterGenerator::updateWithAiqResultsL(long sequence, Parameters *params)
     params->setAfState(afState);
 
     bool lensMoving = false;
-    float distance = 0.0;
     camera_af_mode_t afMode = AF_MODE_OFF;
     params->getAfMode(afMode);
-    if (afMode == AF_MODE_OFF) {
-        params->getFocusDistance(distance);
-    }
     if (afState == AF_STATE_LOCAL_SEARCH || afState == AF_STATE_EXTENDED_SEARCH) {
         lensMoving = (aiqResult->mAfResults.final_lens_position_reached == false);
-    } else if (afState == AF_STATE_SUCCESS && afMode == AF_MODE_OFF &&
-              fabs(distance - aiqResult->mAfDistanceDiopters) > 0.1) {
-        lensMoving = true;
+    } else if (afState == AF_STATE_SUCCESS && afMode == AF_MODE_OFF) {
+        /* In manual focus mode, AF_STATE_SUCCESS is set immediately after running algo,
+         * but lens is moving and will stop moving in next frame.
+         */
+        lensMoving = (aiqResult->mLensPosition != aiqResult->mAfResults.next_lens_position);
     }
     params->setLensState(lensMoving);
     params->setFocusDistance(aiqResult->mAfDistanceDiopters);
     params->setFocusRange(aiqResult->mFocusRange);
 
     // Update scene mode
-    camera_scene_mode_t sceneMode = SCENE_MODE_AUTO;
-    params->getSceneMode(sceneMode);
-
-    /* Use direct AE result to update sceneMode to reflect the actual mode AE want to have,
-     * Besides needed by full pipe auto-switch, this is also necessary when user want to
-     * switch pipe in user app according to AE result.
-     */
-    if (sceneMode == SCENE_MODE_AUTO) {
-        if (aiqResult->mAeResults.multiframe== ia_aiq_bracket_mode_hdr) {
-            sceneMode = SCENE_MODE_HDR;
-        } else if (aiqResult->mAeResults.multiframe == ia_aiq_bracket_mode_ull) {
-            sceneMode = SCENE_MODE_ULL;
-        }
-    }
-    LOG2("%s, sceneMode:%d", __func__, sceneMode);
-    params->setSceneMode(sceneMode);
+    params->setSceneMode(aiqResult->mSceneMode);
 
     camera_lens_shading_map_mode_type_t lensShadingMapMode = LENS_SHADING_MAP_MODE_OFF;
     params->getLensShadingMapMode(lensShadingMapMode);
@@ -369,8 +393,8 @@ int ParameterGenerator::updateTonemapCurve(long sequence, Parameters *params)
         return OK;
 
     const AiqResult *aiqResult = AiqResultStorage::getInstance(mCameraId)->getAiqResult(sequence);
-    CheckError((aiqResult == nullptr), UNKNOWN_ERROR,
-               "%s Aiq result of sequence %ld does not exist", __func__, sequence);
+    CheckAndLogError((aiqResult == nullptr), UNKNOWN_ERROR,
+                     "%s Aiq result of sequence %ld does not exist", __func__, sequence);
     const cca::cca_gbce_params &gbceResults = aiqResult->mGbceResults;
 
     int multiplier = gbceResults.gamma_lut_size / mTonemapMaxCurvePoints;
@@ -394,6 +418,39 @@ int ParameterGenerator::updateCommonMetadata(Parameters *params, const AiqResult
     metadata.update(CAMERA_SENSOR_ROLLING_SHUTTER_SKEW, &aiqResult->mRollingShutter, 1);
     int64_t frameDuration = aiqResult->mFrameDuration * 1000;  // us -> ns
     metadata.update(CAMERA_SENSOR_FRAME_DURATION, &frameDuration, 1);
+
+    if (aiqResult->mAiqParam.callbackRgbs) {
+        int32_t width = aiqResult->mOutStats.rgbs_grid.grid_width;
+        int32_t height = aiqResult->mOutStats.rgbs_grid.grid_height;
+        int32_t gridSize[] = {width, height};
+        metadata.update(INTEL_VENDOR_CAMERA_RGBS_GRID_SIZE, gridSize, ARRAY_SIZE(gridSize));
+
+        uint8_t lscFlags = aiqResult->mOutStats.rgbs_grid.shading_correction;
+        metadata.update(INTEL_VENDOR_CAMERA_SHADING_CORRECTION, &lscFlags, 1);
+
+        std::vector<uint8_t> rgbsStats(width * height * 5);
+        for (int i = 0; i < width * height; ++i) {
+            int base = i * 5;
+            rgbsStats[base] = aiqResult->mOutStats.rgbs_blocks[i].avg_gr;
+            rgbsStats[base + 1] = aiqResult->mOutStats.rgbs_blocks[i].avg_r;
+            rgbsStats[base + 2] = aiqResult->mOutStats.rgbs_blocks[i].avg_b;
+            rgbsStats[base + 3] = aiqResult->mOutStats.rgbs_blocks[i].avg_gb;
+            rgbsStats[base + 4] = aiqResult->mOutStats.rgbs_blocks[i].sat;
+        }
+        metadata.update(INTEL_VENDOR_CAMERA_RGBS_STATS_BLOCKS, rgbsStats.data(), rgbsStats.size());
+    }
+
+    if (aiqResult->mAiqParam.callbackTmCurve) {
+        const cca::cca_gbce_params &gbceResults = aiqResult->mGbceResults;
+        int multiplier = gbceResults.tone_map_lut_size / mTonemapMaxCurvePoints;
+
+        std::vector<float> tmCurve(mTonemapMaxCurvePoints * 2);
+        for (int32_t i = 0; i < mTonemapMaxCurvePoints; i++) {
+            tmCurve[i * 2] = mTonemapCurveRed[i * 2];
+            tmCurve[i * 2 + 1] = gbceResults.tone_map_lut[i * multiplier];
+        }
+        metadata.update(INTEL_VENDOR_CAMERA_TONE_MAP_CURVE, tmCurve.data(), tmCurve.size());
+    }
 
     ParameterHelper::merge(metadata, params);
     return OK;

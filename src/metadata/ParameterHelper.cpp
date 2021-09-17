@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018 Intel Corporation.
+ * Copyright (C) 2017-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#define LOG_TAG "ParameterHelper"
+#define LOG_TAG ParameterHelper
 
 #include "iutils/Utils.h"
 #include "iutils/CameraLog.h"
@@ -75,10 +75,14 @@ void ParameterHelper::merge(const CameraMetadata& metadata, Parameters* dst)
 
 void ParameterHelper::copyMetadata(const Parameters& source, CameraMetadata* metadata)
 {
-    CheckError((!metadata), VOID_VALUE, "null metadata to be updated!");
+    CheckAndLogError((!metadata), VOID_VALUE, "null metadata to be updated!");
 
     AutoRLock rl(source.mData);
     *metadata = getMetadata(source.mData);
+}
+
+const CameraMetadata& ParameterHelper::getMetadata(const Parameters& source) {
+    return getMetadata(source.mData);
 }
 
 } // end of namespace icamera

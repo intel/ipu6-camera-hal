@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Intel Corporation.
+ * Copyright (C) 2019-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,9 +32,11 @@ extern "C" {
 #include <memory>
 
 #ifdef ENABLE_SANDBOXING
-#include "modules/sandboxing/client/IntelPGParam.h"
+#include "modules/sandboxing/client/IntelPGParamClient.h"
+#include "modules/sandboxing/client/IntelCcaClient.h"
 #else
 #include "modules/algowrapper/IntelPGParam.h"
+#include "modules/algowrapper/IntelCca.h"
 #endif
 #include "IspParamAdaptor.h"
 #include "ShareReferBufferPool.h"
@@ -81,9 +83,11 @@ typedef std::map<ia_uid, std::shared_ptr<CameraBuffer>> CameraBufferMap;
 class PGCommon {
 public:
     static int getFrameSize(int format, int width, int height,
-                            bool needAlignedHeight = false, bool needExtraSize = true, bool needCompression = false);
+                            bool needAlignedHeight = false, bool needExtraSize = true,
+                            bool needCompression = false);
 
-    PGCommon(int cameraId, int pgId, const std::string& pgName, ia_uid terminalBaseUid = 0);
+    PGCommon(int cameraId, int pgId, const std::string& pgName, TuningMode tuningMode,
+             ia_uid terminalBaseUid = 0);
     virtual ~PGCommon();
     void setShareReferPool(std::shared_ptr<ShareReferBufferPool> referPool) { mShareReferPool = referPool; }
 
@@ -122,7 +126,7 @@ public:
     /**
      * config the data terminals, init, config and prepare p2p, create process group.
      */
-    virtual int prepare(IspParamAdaptor* adaptor, int streamId = -1);
+    virtual int prepare(IspParamAdaptor* adaptor, int statsCount, int streamId = -1);
 
     /**
      * run p2p to encode the params terminals, execute the PG and run p2p to decode the statistic terminals.
@@ -203,6 +207,7 @@ protected:
     int mCameraId;
     int mPGId;
     std::string mName;  // For debug
+    TuningMode mTuningMode;
     ia_uid mTerminalBaseUid;
     int32_t mStreamId;
     int mPGCount;
@@ -250,6 +255,8 @@ protected:
 
     std::vector<TerminalPair> mDvsTerminalPairs;
     std::vector<TerminalPair> mTnrSimTerminalPairs;
+
+    IntelCca *mIntelCca;
 };
 
 } //namespace icamera

@@ -52,12 +52,15 @@ public:
     float mAfDistanceDiopters;
     bool mSkip;
     camera_range_t mFocusRange;
+    uint32_t mLensPosition;
+    camera_scene_mode_t mSceneMode;
 
     cca::cca_ae_results mAeResults;
     cca::cca_awb_results mAwbResults;
     cca::cca_af_results mAfResults;
     cca::cca_gbce_params mGbceResults;
     cca::cca_pa_params mPaResults;
+    cca::cca_out_stats mOutStats;
 
     ia_isp_custom_controls mCustomControls;
 

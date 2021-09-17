@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Intel Corporation.
+ * Copyright (C) 2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@
 
 /*! Perform the run command on the process group
 
- @param	process_group[in]		process group object
+ @param    process_group[in]        process group object
 
  Note: Run indicates that the process group will execute
 
@@ -43,19 +43,19 @@
  @return < 0 on error
  */
 extern int ia_css_process_group_run(
-	ia_css_process_group_t					*process_group);
+    ia_css_process_group_t                    *process_group);
 
 /*! Perform the stop command on the process group
 
- @param	process_group[in]		process group object
+ @param    process_group[in]        process group object
 
  Note: Stop indicates that the process group has completed execution
 
- Postcondition: The external resoruces can now be detached
+ Postcondition: The external resources can now be detached
 
  @return < 0 on error
  */
 extern int ia_css_process_group_stop(
-	ia_css_process_group_t					*process_group);
+    ia_css_process_group_t                    *process_group);
 
 #endif /* __IA_CSS_PSYS_PROCESS_GROUP_PSYS_H */

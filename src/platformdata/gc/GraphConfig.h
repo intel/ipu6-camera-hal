@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Intel Corporation
+ * Copyright (C) 2019-2021 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@
 #include "iutils/Errors.h"
 
 #ifdef ENABLE_SANDBOXING
-#include "modules/sandboxing/client/GraphConfigImpl.h"
+#include "modules/sandboxing/client/GraphConfigImplClient.h"
 #else
 #include "modules/algowrapper/graph/GraphConfigImpl.h"
 #endif
@@ -52,6 +52,7 @@ public:
     void releaseGraphNodes();
 
     // These public methods called by GraphConfigManager
+    status_t queryGraphSettings(const std::vector<HalStream*> &activeStreams);
     status_t configStreams(const std::vector<HalStream*> &activeStreams);
     int getSelectedMcId() { return mGraphData.mcId; }
     virtual int getGraphId(void) { return mGraphData.graphId; }

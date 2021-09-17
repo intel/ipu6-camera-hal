@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#define LOG_TAG "JpegEncoderCore"
+#define LOG_TAG JpegEncoderCore
 
 #include "JpegEncoderCore.h"
 
@@ -49,14 +49,16 @@ std::unique_ptr<IJpegEncoder> IJpegEncoder::createJpegEncoder() {
  */
 bool JpegEncoderCore::doJpegEncode(EncodePackage* pa) {
     HAL_TRACE_CALL(CAMERA_DEBUG_LOG_LEVEL1);
-    CheckError(pa == nullptr, false, "@%s, pa is nullptr", __func__);
+    CheckAndLogError(pa == nullptr, false, "@%s, pa is nullptr", __func__);
 
-    CheckError(pa->inputWidth != pa->outputWidth || pa->inputHeight != pa->outputHeight, false,
-               "@%s, input size != output size", __func__);
-    CheckError(pa->inputWidth <= 0 || pa->outputWidth <= 0, false,
-               "@%s, inputWidth:%d, outputWidth:%d", __func__, pa->inputWidth, pa->outputWidth);
-    CheckError(pa->inputHeight <= 0 || pa->outputHeight <= 0, false,
-               "@%s, inputHeight:%d, outputHeight:%d", __func__, pa->inputHeight, pa->outputHeight);
+    CheckAndLogError(pa->inputWidth != pa->outputWidth || pa->inputHeight != pa->outputHeight,
+                     false, "@%s, input size != output size", __func__);
+    CheckAndLogError(pa->inputWidth <= 0 || pa->outputWidth <= 0, false,
+                     "@%s, inputWidth:%d, outputWidth:%d", __func__, pa->inputWidth,
+                     pa->outputWidth);
+    CheckAndLogError(pa->inputHeight <= 0 || pa->outputHeight <= 0, false,
+                     "@%s, inputHeight:%d, outputHeight:%d", __func__, pa->inputHeight,
+                     pa->outputHeight);
 
     LOG1("@%s: Using Google encoding...", __func__);
 
@@ -80,7 +82,7 @@ bool JpegEncoderCore::doJpegEncode(EncodePackage* pa) {
         LOGE("%s: Google encode input type and output type does not match", __func__);
     }
 
-    LOG1("@%s: Google encoding ret:%d, %dx%d need %u ms, jpeg size %u, quality %d)", __func__, ret,
+    LOG1("@%s: Google encoding ret:%d, %dx%d need %ld ms, jpeg size %u, quality %d)", __func__, ret,
          pa->outputWidth, pa->outputHeight, (CameraUtils::systemTime() - startTime) / 1000000,
          pa->encodedDataSize, pa->quality);
     return ret && pa->encodedDataSize > 0;

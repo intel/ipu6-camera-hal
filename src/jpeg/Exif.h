@@ -1,7 +1,7 @@
 /*
  * Copyright Samsung Electronics Co.,LTD.
  * Copyright (C) 2010 The Android Open Source Project
- * Copyright (C) 2016-2020 Intel Corporation
+ * Copyright (C) 2016-2021 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,9 +21,9 @@
 #include <math.h>
 
 #define EXIF_LOG2(x) (log((double)(x)) / log(2.0))
-#define APEX_FNUM_TO_APERTURE(x) (2 * (EXIF_LOG2((double)(x))))
+#define APEX_FNUM_TO_APERTURE(x) (2.0 * (EXIF_LOG2((double)(x))))
 #define APEX_EXPOSURE_TO_SHUTTER(x) (-1.0 * (EXIF_LOG2((double)(x))))
-#define APEX_ISO_TO_FILMSENSITIVITY(x) ((int)(EXIF_LOG2((x) / 3.125) + 0.5))
+#define APEX_ISO_TO_FILMSENSITIVITY(x) (EXIF_LOG2((x) / 3.125))
 
 #define NUM_SIZE 2
 #define IFD_SIZE 12
@@ -254,6 +254,8 @@ const uint8_t EXIF_GPS_IMG_DIRECTION = 0x20;
 #define EXIF_DEF_RESOLUTION_NUM 72
 #define EXIF_DEF_RESOLUTION_DEN 1
 #define EXIF_DEF_RESOLUTION_UNIT 2 /* inches */
+
+#define EXIF_DEF_BRIGHTNESSVALUE_DEN 100
 
 typedef struct {
     uint32_t num;

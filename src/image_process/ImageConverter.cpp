@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Intel Corporation
+ * Copyright (C) 2016-2021 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#define LOG_TAG "ColorConverter"
+#define LOG_TAG ColorConverter
 
 #include <sys/types.h>
 #include <linux/videodev2.h>

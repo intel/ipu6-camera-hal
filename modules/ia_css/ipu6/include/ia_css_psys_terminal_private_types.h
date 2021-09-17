@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Intel Corporation.
+ * Copyright (C) 2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,7 +61,7 @@ struct ia_css_data_terminal_s {
     /** Reserved
     * @note No known intent for this reservation field. */
     uint32_t reserved;
-    /** Tranfer method for send/receving data to/from this terminal. */
+    /** Transfer method for send/receiving data to/from this terminal. */
     ia_css_connection_type_t connection_type;
     /** Offset in bytes from the start of this structure to a Array[fragment_count] of
      *  type "ia_css_fragment_descriptor_t", aligned to a 64 bit boundary.

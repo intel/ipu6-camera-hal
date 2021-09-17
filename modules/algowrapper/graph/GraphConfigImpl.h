@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Intel Corporation
+ * Copyright (C) 2015-2021 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -98,7 +98,8 @@ class GraphConfigImpl {
     void releaseGraphNodes();
 
     // These public methods called by GraphConfig
-    status_t configStreams(const std::vector<HalStream*>& activeStreams);
+    bool queryGraphSettings(const std::vector<HalStream*>& activeStreams);
+    status_t configStreams(const std::vector<HalStream*>& activeStreams, bool dummyStillSink);
     status_t getGraphConfigData(IGraphType::GraphConfigData* data);
 
     int getProgramGroup(std::string pgName, ia_isp_bxt_program_group* programGroupForPG);
@@ -113,9 +114,12 @@ class GraphConfigImpl {
     bool isVideoStream(HalStream* stream);
     status_t selectSetting(int useCase,
                            std::map<int, std::vector<GCSS::IGraphConfig*> >* queryResults);
-    status_t createQueryRule(const std::vector<HalStream*>& activeStreams);
+    status_t queryGraphs(const std::vector<HalStream*>& activeStreams, bool dummyStillSink);
+    status_t createQueryRule(const std::vector<HalStream*>& activeStreams, bool dummyStillSink);
     status_t getRawInputSize(GCSS::IGraphConfig* query, camera_resolution_t* reso);
 
+    status_t queryAllMatchedResults(const std::vector<HalStream*>& activeStreams,
+                bool dummyStillSink, std::map<int, std::vector<GCSS::IGraphConfig*>> *queryResults);
     status_t getGdcKernelSetting(uint32_t* kernelId, ia_isp_bxt_resolution_info_t* resolution);
     status_t graphGetStreamIds(std::vector<int32_t>* streamIds);
     int getStreamIdByPgName(std::string pgName);

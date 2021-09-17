@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Intel Corporation.
+ * Copyright (C) 2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -144,7 +144,7 @@ uint8_t ia_css_program_group_manifest_get_terminal_count(
 
 /*! Get the (pointer to) private data blob in the manifest
 
-  Private data is used by FW and is opauque to the SW stack
+  Private data is used by FW and is opaque to the SW stack
 
  @param    manifest[in]            program group manifest object
 
@@ -288,7 +288,7 @@ ia_css_program_group_manifest_get_program_terminal_manifest(
                         sections of the program init
                         terminal,
  @param    kernel_fragment_seq_count[in]        Number of kernel fragment
-                        seqence info.
+                        sequence info.
  @param    progctrlinit_load_section_counts[in]    Number of progctrinit load
                         sections (size of array is program_count)
  @param    progctrlinit_connect_section_counts[in]    Number of progctrinit connect

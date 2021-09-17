@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#define LOG_TAG "PlatformData"
+#define LOG_TAG PlatformData
 
 #include <sys/sysinfo.h>
 #include <math.h>
@@ -90,7 +90,7 @@ PlatformData::~PlatformData() {
 int PlatformData::init() {
     LOG2("@%s", __func__);
 
-    getInstance()->parseGraphFromXmlFile();
+    parseGraphFromXmlFile();
 
     StaticCfg *staticCfg = &(getInstance()->mStaticCfg);
     for (size_t i = 0; i < staticCfg->mCameras.size(); i++) {
@@ -134,16 +134,27 @@ void PlatformData::parseGraphFromXmlFile() {
 
         LOGXML("Using graph setting file:%s for camera:%zu", fileName.c_str(), i);
         int ret  = graphConfig->parse(i, fileName.c_str());
-        CheckError(ret != OK, VOID_VALUE, "Could not read graph config file for camera %zu", i);
+        CheckAndLogError(ret != OK, VOID_VALUE, "Could not read graph config file for camera %zu", i);
     }
+}
+
+int PlatformData::queryGraphSettings(int cameraId, const stream_config_t *streamList) {
+    if (PlatformData::getGraphConfigNodes(cameraId)) {
+        IGraphConfigManager *gcInstance = IGraphConfigManager::getInstance(cameraId);
+        if (gcInstance != nullptr && OK != gcInstance->queryGraphSettings(streamList)) {
+            LOG2("@%s Failed to queryGraphSettings cameraId: %d", __func__, cameraId);
+            return NO_ENTRY;
+        }
+    }
+    return OK;
 }
 
 void PlatformData::releaseGraphConfigNodes()
 {
     std::shared_ptr<GraphConfig> graphConfig = std::make_shared<GraphConfig>();
     graphConfig->releaseGraphNodes();
-    for (uint8_t cameraId = 0; cameraId < mStaticCfg.mCameras.size(); cameraId++) {
-        IGraphConfigManager::releaseInstance(cameraId);
+    for (size_t i = 0; i < mStaticCfg.mCameras.size(); ++i) {
+        IGraphConfigManager::releaseInstance(i);
     }
 }
 
@@ -165,6 +176,16 @@ const char* PlatformData::getLensName(int cameraId)
 int PlatformData::getLensHwType(int cameraId)
 {
     return getInstance()->mStaticCfg.mCameras[cameraId].mLensHwType;
+}
+
+bool PlatformData::getSensorAwbEnable(int cameraId)
+{
+    return getInstance()->mStaticCfg.mCameras[cameraId].mSensorAwb;
+}
+
+bool PlatformData::getSensorAeEnable(int cameraId)
+{
+    return getInstance()->mStaticCfg.mCameras[cameraId].mSensorAe;
 }
 
 int PlatformData::getDVSType(int cameraId)
@@ -197,9 +218,30 @@ bool PlatformData::isEnableAIQ(int cameraId)
     return getInstance()->mStaticCfg.mCameras[cameraId].mEnableAIQ;
 }
 
+int PlatformData::getAiqRunningInterval(int cameraId)
+{
+    return getInstance()->mStaticCfg.mCameras[cameraId].mAiqRunningInterval;
+}
+
 bool PlatformData::isEnableMkn(int cameraId)
 {
     return getInstance()->mStaticCfg.mCameras[cameraId].mEnableMkn;
+}
+
+float PlatformData::getAlgoRunningRate(int algo, int cameraId)
+{
+    PlatformData::StaticCfg::CameraInfo *pCam = &getInstance()->mStaticCfg.mCameras[cameraId];
+
+    if (pCam->mAlgoRunningRateMap.find(algo) != pCam->mAlgoRunningRateMap.end()) {
+        return pCam->mAlgoRunningRateMap[algo];
+    }
+
+    return 0.0;
+}
+
+bool PlatformData::isStatsRunningRateSupport(int cameraId)
+{
+    return getInstance()->mStaticCfg.mCameras[cameraId].mStatsRunningRate;
 }
 
 bool PlatformData::isEnableLtmThread(int cameraId)
@@ -225,6 +267,11 @@ int PlatformData::faceEngineRunningIntervalNoFace(int cameraId)
 bool PlatformData::isFaceEngineSyncRunning(int cameraId)
 {
     return getInstance()->mStaticCfg.mCameras[cameraId].mFaceEngineRunningSync;
+}
+
+bool PlatformData::isIPUSupportFD(int cameraId)
+{
+    return getInstance()->mStaticCfg.mCameras[cameraId].mFaceEngineByIPU;
 }
 
 unsigned int PlatformData::getMaxFaceDetectionNumber(int cameraId)
@@ -418,7 +465,6 @@ MediaCtlConf *PlatformData::getMediaCtlConf(int cameraId)
 
 int PlatformData::getCameraInfo(int cameraId, camera_info_t& info)
 {
-    // TODO correct the version info
     info.device_version = 1;
     info.facing = getInstance()->mStaticCfg.mCameras[cameraId].mFacing;
     info.orientation= getInstance()->mStaticCfg.mCameras[cameraId].mOrientation;
@@ -653,7 +699,7 @@ stream_t PlatformData::getISysOutputByPort(int cameraId, Port port)
     CLEAR(config);
 
     MediaCtlConf *mc = PlatformData::getMediaCtlConf(cameraId);
-    CheckError(!mc, config, "Invalid media control config.");
+    CheckAndLogError(!mc, config, "Invalid media control config.");
 
     for (const auto& output : mc->outputs) {
         if (output.port == port) {
@@ -675,7 +721,7 @@ bool PlatformData::isAiqdEnabled(int cameraId)
 int PlatformData::getFormatByDevName(int cameraId, const string& devName, McFormat& format)
 {
     MediaCtlConf *mc = getMediaCtlConf(cameraId);
-    CheckError(!mc, BAD_VALUE, "getMediaCtlConf returns nullptr, cameraId:%d", cameraId);
+    CheckAndLogError(!mc, BAD_VALUE, "getMediaCtlConf returns nullptr, cameraId:%d", cameraId);
 
     for (auto &fmt : mc->formats) {
         if (fmt.formatType == FC_FORMAT && devName == fmt.entityName) {
@@ -691,7 +737,7 @@ int PlatformData::getFormatByDevName(int cameraId, const string& devName, McForm
 int PlatformData::getVideoNodeNameByType(int cameraId, VideoNodeType videoNodeType, string& videoNodeName)
 {
     MediaCtlConf *mc = getMediaCtlConf(cameraId);
-    CheckError(!mc, BAD_VALUE, "getMediaCtlConf returns nullptr, cameraId:%d", cameraId);
+    CheckAndLogError(!mc, BAD_VALUE, "getMediaCtlConf returns nullptr, cameraId:%d", cameraId);
 
     for(auto const& nd : mc->videoNodes) {
         if (videoNodeType == nd.videoNodeType) {
@@ -733,7 +779,7 @@ int PlatformData::getDevNameByType(int cameraId, VideoNodeType videoNodeType, st
             break;
     }
 
-    CheckError(!mc, NAME_NOT_FOUND, "failed to get MediaCtlConf, videoNodeType %d", videoNodeType);
+    CheckAndLogError(!mc, NAME_NOT_FOUND, "failed to get MediaCtlConf, videoNodeType %d", videoNodeType);
 
     for(auto& nd : mc->videoNodes) {
         if (videoNodeType == nd.videoNodeType) {
@@ -824,7 +870,7 @@ int PlatformData::calculateFrameParams(int cameraId, SensorFrameParams& sensorFr
         vector <camera_resolution_t> res;
         getSupportedISysSizes(cameraId, res);
 
-        CheckError(res.empty(), BAD_VALUE, "Supported ISYS resolutions are not configured.");
+        CheckAndLogError(res.empty(), BAD_VALUE, "Supported ISYS resolutions are not configured.");
         sensorFrameParams = {0, 0, static_cast<uint32_t>(res[0].width),
                              static_cast<uint32_t>(res[0].height), 1, 1, 1, 1};
 
@@ -972,7 +1018,7 @@ int PlatformData::getConfigModesByOperationMode(int cameraId, uint32_t operation
         return INVALID_OPERATION;
     }
 
-    CheckError(getInstance()->mStaticCfg.mCameras[cameraId].mSupportedTuningConfig.empty(), INVALID_OPERATION,
+    CheckAndLogError(getInstance()->mStaticCfg.mCameras[cameraId].mSupportedTuningConfig.empty(), INVALID_OPERATION,
           "@%s, the tuning config in xml does not exist", __func__);
 
     if (operationMode == CAMERA_STREAM_CONFIGURATION_MODE_AUTO) {
@@ -1001,7 +1047,7 @@ int PlatformData::getConfigModesByOperationMode(int cameraId, uint32_t operation
 int PlatformData::getTuningModeByConfigMode(int cameraId, ConfigMode configMode,
                                             TuningMode& tuningMode)
 {
-    CheckError(getInstance()->mStaticCfg.mCameras[cameraId].mSupportedTuningConfig.empty(),
+    CheckAndLogError(getInstance()->mStaticCfg.mCameras[cameraId].mSupportedTuningConfig.empty(),
           INVALID_OPERATION, "the tuning config in xml does not exist");
 
     for (auto &cfg : getInstance()->mStaticCfg.mCameras[cameraId].mSupportedTuningConfig) {
@@ -1018,7 +1064,7 @@ int PlatformData::getTuningModeByConfigMode(int cameraId, ConfigMode configMode,
 
 int PlatformData::getTuningConfigByConfigMode(int cameraId, ConfigMode mode, TuningConfig &config)
 {
-    CheckError(getInstance()->mStaticCfg.mCameras[cameraId].mSupportedTuningConfig.empty(), INVALID_OPERATION,
+    CheckAndLogError(getInstance()->mStaticCfg.mCameras[cameraId].mSupportedTuningConfig.empty(), INVALID_OPERATION,
           "@%s, the tuning config in xml does not exist.", __func__);
 
     for (auto &cfg : getInstance()->mStaticCfg.mCameras[cameraId].mSupportedTuningConfig) {
@@ -1065,7 +1111,7 @@ camera_yuv_color_range_mode_t PlatformData::getYuvColorRangeMode(int cameraId)
 
 ia_binary_data* PlatformData::getAiqd(int cameraId, TuningMode mode)
 {
-    CheckError(cameraId >= static_cast<int>(getInstance()->mAiqInitData.size()), nullptr,
+    CheckAndLogError(cameraId >= static_cast<int>(getInstance()->mAiqInitData.size()), nullptr,
                "@%s, bad cameraId:%d", __func__, cameraId);
 
     AiqInitData* aiqInitData = getInstance()->mAiqInitData[cameraId];
@@ -1074,7 +1120,7 @@ ia_binary_data* PlatformData::getAiqd(int cameraId, TuningMode mode)
 
 void PlatformData::saveAiqd(int cameraId, TuningMode tuningMode, const ia_binary_data& data)
 {
-    CheckError(cameraId >= static_cast<int>(getInstance()->mAiqInitData.size()), VOID_VALUE,
+    CheckAndLogError(cameraId >= static_cast<int>(getInstance()->mAiqInitData.size()), VOID_VALUE,
                "@%s, bad cameraId:%d", __func__, cameraId);
 
     AiqInitData* aiqInitData = getInstance()->mAiqInitData[cameraId];
@@ -1083,9 +1129,9 @@ void PlatformData::saveAiqd(int cameraId, TuningMode tuningMode, const ia_binary
 
 int PlatformData::getCpf(int cameraId, TuningMode mode, ia_binary_data* aiqbData)
 {
-    CheckError(cameraId >= MAX_CAMERA_NUMBER, BAD_VALUE,
+    CheckAndLogError(cameraId >= MAX_CAMERA_NUMBER, BAD_VALUE,
                "@%s, bad cameraId:%d", __func__, cameraId);
-    CheckError(getInstance()->mStaticCfg.mCameras[cameraId].mSupportedTuningConfig.empty(),
+    CheckAndLogError(getInstance()->mStaticCfg.mCameras[cameraId].mSupportedTuningConfig.empty(),
                INVALID_OPERATION, "@%s, the tuning config in xml does not exist", __func__);
 
     AiqInitData* aiqInitData = getInstance()->mAiqInitData[cameraId];
@@ -1096,7 +1142,7 @@ bool PlatformData::isCSIBackEndCapture(int cameraId)
 {
     bool isCsiBECapture = false;
     MediaCtlConf *mc = getMediaCtlConf(cameraId);
-    CheckError(!mc, false, "getMediaCtlConf returns nullptr, cameraId:%d", cameraId);
+    CheckAndLogError(!mc, false, "getMediaCtlConf returns nullptr, cameraId:%d", cameraId);
 
     for(const auto& node : mc->videoNodes) {
         if (node.videoNodeType == VIDEO_GENERIC &&
@@ -1114,7 +1160,7 @@ bool PlatformData::isCSIFrontEndCapture(int cameraId)
 {
     bool isCsiFeCapture = false;
     MediaCtlConf *mc = getMediaCtlConf(cameraId);
-    CheckError(!mc, false, "getMediaCtlConf returns nullptr, cameraId:%d", cameraId);
+    CheckAndLogError(!mc, false, "getMediaCtlConf returns nullptr, cameraId:%d", cameraId);
 
     for(const auto& node : mc->videoNodes) {
         if (node.videoNodeType == VIDEO_GENERIC &&
@@ -1131,7 +1177,7 @@ bool PlatformData::isTPGReceiver(int cameraId)
 {
     bool isTPGCapture = false;
     MediaCtlConf *mc = getMediaCtlConf(cameraId);
-    CheckError(!mc, false, "getMediaCtlConf returns nullptr, cameraId:%d", cameraId);
+    CheckAndLogError(!mc, false, "getMediaCtlConf returns nullptr, cameraId:%d", cameraId);
 
     for(const auto& node : mc->videoNodes) {
         if (node.videoNodeType == VIDEO_ISYS_RECEIVER &&
@@ -1146,8 +1192,13 @@ bool PlatformData::isTPGReceiver(int cameraId)
 int PlatformData::getSupportAeExposureTimeRange(int cameraId, camera_scene_mode_t sceneMode,
                                                 camera_range_t& etRange)
 {
+    Parameters* param = &getInstance()->mStaticCfg.mCameras[cameraId].mCapability;
+    int ret = param->getSupportedSensorExposureTimeRange(etRange);
+    if (ret == OK)
+        return OK;
+
     vector<camera_ae_exposure_time_range_t> ranges;
-    getInstance()->mStaticCfg.mCameras[cameraId].mCapability.getSupportedAeExposureTimeRange(ranges);
+    param->getSupportedAeExposureTimeRange(ranges);
 
     if (ranges.empty())
         return NAME_NOT_FOUND;
@@ -1192,7 +1243,7 @@ vector<MultiExpRange> PlatformData::getMultiExpRanges(int cameraId)
 
 camera_resolution_t *PlatformData::getPslOutputForRotation(int width, int height, int cameraId)
 {
-    CheckError(getInstance()->mStaticCfg.mCameras[cameraId].mOutputMap.empty(), nullptr,
+    CheckAndLogError(getInstance()->mStaticCfg.mCameras[cameraId].mOutputMap.empty(), nullptr,
           "@%s, cameraId: %d, there isn't pslOutputMapForRotation field in xml.", __func__, cameraId);
 
     vector<UserToPslOutputMap> &outputMap = getInstance()->mStaticCfg.mCameras[cameraId].mOutputMap;
@@ -1214,7 +1265,7 @@ bool PlatformData::isTestPatternSupported(int cameraId)
 
 int32_t PlatformData::getSensorTestPattern(int cameraId, int32_t mode)
 {
-    CheckError(getInstance()->mStaticCfg.mCameras[cameraId].mTestPatternMap.empty(), -1,
+    CheckAndLogError(getInstance()->mStaticCfg.mCameras[cameraId].mTestPatternMap.empty(), -1,
           "@%s, cameraId: %d, mTestPatternMap is empty!", __func__, cameraId);
     auto testPatternMap = getInstance()->mStaticCfg.mCameras[cameraId].mTestPatternMap;
 
@@ -1227,7 +1278,7 @@ int32_t PlatformData::getSensorTestPattern(int cameraId, int32_t mode)
 
 ia_binary_data *PlatformData::getNvm(int cameraId)
 {
-    CheckError(cameraId >= static_cast<int>(getInstance()->mAiqInitData.size()), nullptr,
+    CheckAndLogError(cameraId >= static_cast<int>(getInstance()->mAiqInitData.size()), nullptr,
                "@%s, bad cameraId:%d", __func__, cameraId);
 
     return getInstance()->mAiqInitData[cameraId]->getNvm(cameraId);
@@ -1301,14 +1352,14 @@ float PlatformData::getIspDigitalGain(int cameraId, float realDigitalGain)
 
 int PlatformData::initMakernote(int cameraId, TuningMode tuningMode)
 {
-    CheckError(cameraId >= static_cast<int>(getInstance()->mAiqInitData.size()), BAD_VALUE,
+    CheckAndLogError(cameraId >= static_cast<int>(getInstance()->mAiqInitData.size()), BAD_VALUE,
                "@%s, bad cameraId:%d", __func__, cameraId);
     return getInstance()->mAiqInitData[cameraId]->initMakernote(cameraId, tuningMode);
 }
 
 int PlatformData::deinitMakernote(int cameraId, TuningMode tuningMode)
 {
-    CheckError(cameraId >= static_cast<int>(getInstance()->mAiqInitData.size()), BAD_VALUE,
+    CheckAndLogError(cameraId >= static_cast<int>(getInstance()->mAiqInitData.size()), BAD_VALUE,
                "@%s, bad cameraId:%d", __func__, cameraId);
     return getInstance()->mAiqInitData[cameraId]->deinitMakernote(cameraId, tuningMode);
 }
@@ -1316,7 +1367,7 @@ int PlatformData::deinitMakernote(int cameraId, TuningMode tuningMode)
 int PlatformData::saveMakernoteData(int cameraId, camera_makernote_mode_t makernoteMode,
                                     int64_t sequence, TuningMode tuningMode)
 {
-    CheckError(cameraId >= static_cast<int>(getInstance()->mAiqInitData.size()), BAD_VALUE,
+    CheckAndLogError(cameraId >= static_cast<int>(getInstance()->mAiqInitData.size()), BAD_VALUE,
                "@%s, bad cameraId:%d", __func__, cameraId);
 
     return getInstance()->mAiqInitData[cameraId]->saveMakernoteData(cameraId, makernoteMode,
@@ -1325,7 +1376,7 @@ int PlatformData::saveMakernoteData(int cameraId, camera_makernote_mode_t makern
 
 void PlatformData::updateMakernoteTimeStamp(int cameraId, int64_t sequence, uint64_t timestamp)
 {
-    CheckError(cameraId >= static_cast<int>(getInstance()->mAiqInitData.size()), VOID_VALUE,
+    CheckAndLogError(cameraId >= static_cast<int>(getInstance()->mAiqInitData.size()), VOID_VALUE,
                "@%s, bad cameraId:%d", __func__, cameraId);
 
     getInstance()->mAiqInitData[cameraId]->updateMakernoteTimeStamp(sequence, timestamp);
@@ -1333,7 +1384,7 @@ void PlatformData::updateMakernoteTimeStamp(int cameraId, int64_t sequence, uint
 
 void PlatformData::acquireMakernoteData(int cameraId, uint64_t timestamp, Parameters *param)
 {
-    CheckError(cameraId >= static_cast<int>(getInstance()->mAiqInitData.size()), VOID_VALUE,
+    CheckAndLogError(cameraId >= static_cast<int>(getInstance()->mAiqInitData.size()), VOID_VALUE,
                "@%s, bad cameraId:%d", __func__, cameraId);
 
     getInstance()->mAiqInitData[cameraId]->acquireMakernoteData(timestamp, param);
@@ -1421,4 +1472,18 @@ int PlatformData::getSensorOrientation(int cameraId)
     return getInstance()->mStaticCfg.mCameras[cameraId].mSensorOrientation;
 }
 
+bool PlatformData::isDummyStillSink(int cameraId)
+{
+    return getInstance()->mStaticCfg.mCameras[cameraId].mDummyStillSink;
+}
+
+bool PlatformData::getForceFlushIpuBuffer(int cameraId)
+{
+    return getInstance()->mStaticCfg.mCameras[cameraId].mForceFlushIpuBuffer;
+}
+
+bool PlatformData::getPLCEnable(int cameraId)
+{
+    return getInstance()->mStaticCfg.mCameras[cameraId].mPLCEnable;
+}
 } // namespace icamera

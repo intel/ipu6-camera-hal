@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#define LOG_TAG "EXIFMetaData"
+#define LOG_TAG EXIFMetaData
 
 #include "EXIFMetaData.h"
 

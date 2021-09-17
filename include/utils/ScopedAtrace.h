@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2018 Intel Corporation.
+ * Copyright (C) 2015-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,9 @@
 #pragma once
 
 #include <unistd.h>
+
+#define PERF_LOG_TAG_STR(X) PERF_LOG_TAG_STR1(X)
+#define PERF_LOG_TAG_STR1(X) #X
 
 namespace icamera {
 
@@ -45,29 +48,29 @@ class ScopedAtrace {
 #define CAMERA_DEBUG_LOG_ATRACE_IMAGING (1<<7)
 
 #define PERF_CAMERA_ATRACE() ScopedAtrace atrace(CAMERA_DEBUG_LOG_ATRACE_OS, \
-                                                 __func__, LOG_TAG);
+                                                 __func__, PERF_LOG_TAG_STR(LOG_TAG));
 #define PERF_CAMERA_ATRACE_PARAM1(note, value) \
             ScopedAtrace atrace(CAMERA_DEBUG_LOG_ATRACE_OS, __func__, \
-                                LOG_TAG, note, value);
+                                PERF_LOG_TAG_STR(LOG_TAG), note, value);
 #define PERF_CAMERA_ATRACE_PARAM2(note, value, note2, value2) \
-            ScopedAtrace atrace(CAMERA_DEBUG_LOG_ATRACE_OS, __func__, LOG_TAG, \
+            ScopedAtrace atrace(CAMERA_DEBUG_LOG_ATRACE_OS, __func__, PERF_LOG_TAG_STR(LOG_TAG), \
                                 note, value, note2, value2);
 #define PERF_CAMERA_ATRACE_PARAM3(note, value, note2, value2, note3, value3) \
-            ScopedAtrace atrace(CAMERA_DEBUG_LOG_ATRACE_OS, __func__, LOG_TAG, \
+            ScopedAtrace atrace(CAMERA_DEBUG_LOG_ATRACE_OS, __func__, PERF_LOG_TAG_STR(LOG_TAG), \
                                 note, value, note2, value2, note3, value3);
 
 #define PERF_CAMERA_ATRACE_IMAGING() \
             ScopedAtrace atrace(CAMERA_DEBUG_LOG_ATRACE_IMAGING, __func__, \
-                                LOG_TAG);
+                                PERF_LOG_TAG_STR(LOG_TAG));
 #define PERF_CAMERA_ATRACE_PARAM1_IMAGING(note, value) \
             ScopedAtrace atrace(CAMERA_DEBUG_LOG_ATRACE_IMAGING, __func__, \
-                                LOG_TAG, note, value);
+                                PERF_LOG_TAG_STR(LOG_TAG), note, value);
 #define PERF_CAMERA_ATRACE_PARAM2_IMAGING(note, value, note2, value2) \
             ScopedAtrace atrace(CAMERA_DEBUG_LOG_ATRACE_IMAGING, __func__, \
-                                LOG_TAG, note, value, note2, value2);
+                                PERF_LOG_TAG_STR(LOG_TAG), note, value, note2, value2);
 #define PERF_CAMERA_ATRACE_PARAM3_IMAGING(note, value, note2, value2, note3, \
                                           value3) \
             ScopedAtrace atrace(CAMERA_DEBUG_LOG_ATRACE_IMAGING, __func__, \
-                                LOG_TAG, note, value, note2, value2, note3, \
+                                PERF_LOG_TAG_STR(LOG_TAG), note, value, note2, value2, note3, \
                                 value3);
 } // namespace icamera

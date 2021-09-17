@@ -31,11 +31,6 @@
 #endif
 #include "PolicyManager.h"
 
-/*************************************************
- * TODO: currently only consider video stream,
- *       will also consider still stream later.
- *************************************************/
-
 namespace icamera {
 
 /**

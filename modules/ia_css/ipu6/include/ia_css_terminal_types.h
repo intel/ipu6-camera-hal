@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Intel Corporation.
+ * Copyright (C) 2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -205,7 +205,7 @@ struct ia_css_spatial_param_terminal_s {
     uint16_t frame_grid_param_section_desc_offset;
     /**
      * Points to array of ia_css_fragment_spatial_desc_t
-     * which constain info for the fragments of spatial parameters
+     * which contain info for the fragments of spatial parameters
      */
     uint16_t fragment_grid_desc_offset;
 };
@@ -217,7 +217,7 @@ struct ia_css_spatial_param_terminal_s {
 #define SIZE_OF_SLICE_PARAM_SECTION_DESC_STRUCT_BITS \
     (N_UINT32_IN_SLICE_PARAM_SECTION_DESC_STRUCT * IA_CSS_UINT32_T_BITS)
 
-/** A Slice of parameters ready to be trasferred from/to registers */
+/** A Slice of parameters ready to be transferred from/to registers */
 struct ia_css_slice_param_section_desc_s {
     /** Offset of the parameter allocation in memory */
     uint32_t mem_offset;
@@ -235,7 +235,7 @@ struct ia_css_slice_param_section_desc_s {
 struct ia_css_fragment_slice_desc_s {
     /**
      * Points to array of ia_css_slice_param_section_desc_t
-     * which constain info for each prameter slice
+     * which contain info for each parameter slice
      */
     uint16_t slice_section_desc_offset;
     /** Number of slices for the parameters for this fragment */
@@ -263,7 +263,7 @@ struct ia_css_sliced_param_terminal_s {
     uint32_t kernel_id;
     /**
      * Points to array of ia_css_fragment_slice_desc_t
-     * which constain info for the slicing of the parameters
+     * which contain info for the slicing of the parameters
      */
     uint16_t fragment_slice_desc_offset;
     uint8_t padding[N_PADDING_UINT8_SLICED_PARAM_TERMINAL_STRUCT];
@@ -413,7 +413,7 @@ struct ia_css_fragment_param_section_desc_s {
 #define SIZE_OF_FRAG_SEQ_COMMANDS_STRUCT_BITS \
     (N_UINT16_IN_FRAG_SEQ_COMMAND_STRUCT * IA_CSS_UINT16_T_BITS)
 
-/** 4 commands packe together to save memory space */
+/** 4 commands packed together to save memory space */
 struct ia_css_kernel_fragment_sequencer_command_desc_s {
     /** Contains the "(command_index%4) == index" command desc */
     uint16_t line_count[IA_CSS_N_COMMAND_COUNT];

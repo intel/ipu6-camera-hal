@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-#define LOG_TAG "IntelAlgoClient"
+#define LOG_TAG IntelAlgoClient
 
 #include "modules/sandboxing/client/IntelAlgoClient.h"
-#include "modules/sandboxing/client/IntelCca.h"
+#include "modules/sandboxing/client/IntelCcaClient.h"
 
 #include <fcntl.h>
 #include <sys/mman.h>
@@ -74,7 +74,8 @@ IntelAlgoClient::~IntelAlgoClient() {
 
 int IntelAlgoClient::initialize() {
     LOGIPC("@%s, mMojoManagerToken: %p", __func__, mMojoManagerToken);
-    CheckError(!mMojoManagerToken, UNKNOWN_ERROR, "@%s, mMojoManagerToken is nullptr", __func__);
+    CheckAndLogError(!mMojoManagerToken, UNKNOWN_ERROR, "@%s, mMojoManagerToken is nullptr",
+                     __func__);
 
     mCallback = base::Bind(&IntelAlgoClient::callbackHandler, base::Unretained(this));
     IntelAlgoClient::return_callback = returnCallback;
@@ -84,16 +85,17 @@ int IntelAlgoClient::initialize() {
 
     mBridge = cros::CameraAlgorithmBridge::CreateInstance(cros::CameraAlgorithmBackend::kVendorCpu,
                                                           mMojoManagerToken);
-    CheckError(!mBridge, UNKNOWN_ERROR, "@%s, mBridge is nullptr", __func__);
-    CheckError(mBridge->Initialize(this) != 0, UNKNOWN_ERROR, "@%s, mBridge init fails", __func__);
+    CheckAndLogError(!mBridge, UNKNOWN_ERROR, "@%s, mBridge is nullptr", __func__);
+    CheckAndLogError(mBridge->Initialize(this) != 0, UNKNOWN_ERROR, "@%s, mBridge init fails",
+                     __func__);
 
     if (PlatformData::isUsingGpuAlgo()) {
         LOGIPC("@%s GPU algo enabled", __func__);
         mGpuBridge = cros::CameraAlgorithmBridge::CreateInstance(
             cros::CameraAlgorithmBackend::kVendorGpu, mMojoManagerToken);
-        CheckError(!mGpuBridge, UNKNOWN_ERROR, "@%s, mGpuBridge is nullptr", __func__);
-        CheckError(mGpuBridge->Initialize(this) != 0, UNKNOWN_ERROR, "@%s, mGpuBridge init fails",
-                   __func__);
+        CheckAndLogError(!mGpuBridge, UNKNOWN_ERROR, "@%s, mGpuBridge is nullptr", __func__);
+        CheckAndLogError(mGpuBridge->Initialize(this) != 0, UNKNOWN_ERROR,
+                         "@%s, mGpuBridge init fails", __func__);
     }
 
     for (int i = 0; i < IPC_GROUP_NUM; i++) {
@@ -140,7 +142,7 @@ int IntelAlgoClient::allocateShmMem(const std::string& name, int size, int* fd, 
     void* shmAddr = nullptr;
 
     shmFd = shm_open(name.c_str(), O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
-    CheckError((shmFd == -1), UNKNOWN_ERROR, "@%s, call shm_open fail", __func__);
+    CheckAndLogError((shmFd == -1), UNKNOWN_ERROR, "@%s, call shm_open fail", __func__);
 
     do {
         int ret = fcntl(shmFd, F_GETFD);
@@ -189,8 +191,8 @@ void IntelAlgoClient::releaseShmMem(const std::string& name, int size, int fd, v
 int IntelAlgoClient::requestSync(IPC_CMD cmd, int32_t bufferHandle) {
     LOGIPC("@%s, cmd:%d:%s, bufferHandle:%d, mInitialized:%d", __func__, cmd,
            IntelAlgoIpcCmdToString(cmd), bufferHandle, mInitialized);
-    CheckError(!mInitialized, UNKNOWN_ERROR, "@%s, mInitialized is false", __func__);
-    CheckError(!isIPCFine(), UNKNOWN_ERROR, "@%s, IPC error happens", __func__);
+    CheckAndLogError(!mInitialized, UNKNOWN_ERROR, "@%s, mInitialized is false", __func__);
+    CheckAndLogError(!isIPCFine(), UNKNOWN_ERROR, "@%s, IPC error happens", __func__);
 
     IPC_GROUP group = IntelAlgoIpcCmdToGroup(cmd);
 
@@ -204,9 +206,9 @@ int IntelAlgoClient::requestSync(IPC_CMD cmd) {
 int32_t IntelAlgoClient::registerBuffer(int bufferFd, void* addr, ShmMemUsage usage) {
     LOGIPC("@%s, bufferFd: %d, mInitialized: %d, addr: %p, usage: %d", __func__, bufferFd,
            mInitialized, addr, usage);
-    CheckError(!mInitialized, -1, "@%s, mInitialized is false", __func__);
-    CheckError(usage >= MAX_ALGO_SHM, -1, "@%s, usage: %d isn't supported", __func__, usage);
-    CheckError(!isIPCFine(), -1, "@%s, IPC error happens", __func__);
+    CheckAndLogError(!mInitialized, -1, "@%s, mInitialized is false", __func__);
+    CheckAndLogError(usage >= MAX_ALGO_SHM, -1, "@%s, usage: %d isn't supported", __func__, usage);
+    CheckAndLogError(!isIPCFine(), -1, "@%s, IPC error happens", __func__);
 
     int32_t handle = -1;
     if (usage == CPU_ALGO_SHM) {
@@ -225,10 +227,10 @@ int32_t IntelAlgoClient::registerBuffer(int bufferFd, void* addr, ShmMemUsage us
 void IntelAlgoClient::deregisterBuffer(int32_t bufferHandle, ShmMemUsage usage) {
     LOGIPC("@%s, bufferHandle: %d, mInitialized: %d, usage: %d", __func__, bufferHandle,
            mInitialized, usage);
-    CheckError(!mInitialized, VOID_VALUE, "@%s, mInitialized is false", __func__);
-    CheckError(usage >= MAX_ALGO_SHM, VOID_VALUE, "@%s, usage: %d isn't supported", __func__,
-               usage);
-    CheckError(!isIPCFine(), VOID_VALUE, "@%s, IPC error happens", __func__);
+    CheckAndLogError(!mInitialized, VOID_VALUE, "@%s, mInitialized is false", __func__);
+    CheckAndLogError(usage >= MAX_ALGO_SHM, VOID_VALUE, "@%s, usage: %d isn't supported", __func__,
+                     usage);
+    CheckAndLogError(!isIPCFine(), VOID_VALUE, "@%s, IPC error happens", __func__);
 
     {
         std::lock_guard<std::mutex> l(mShmMapMutex);
@@ -250,8 +252,8 @@ void IntelAlgoClient::deregisterBuffer(int32_t bufferHandle, ShmMemUsage usage) 
 
 int32_t IntelAlgoClient::registerGbmBuffer(int bufferFd, ShmMemUsage usage) {
     LOGIPC("@%s, bufferFd:%d, mInitialized:%d", __func__, bufferFd, mInitialized);
-    CheckError(!mInitialized, -1, "@%s, mInitialized is false", __func__);
-    CheckError(!isIPCFine(), -1, "@%s, IPC error happens", __func__);
+    CheckAndLogError(!mInitialized, -1, "@%s, mInitialized is false", __func__);
+    CheckAndLogError(!isIPCFine(), -1, "@%s, IPC error happens", __func__);
 
     if (usage == CPU_ALGO_SHM) {
         return mBridge->RegisterBuffer(bufferFd);
@@ -263,8 +265,8 @@ int32_t IntelAlgoClient::registerGbmBuffer(int bufferFd, ShmMemUsage usage) {
 
 void IntelAlgoClient::deregisterGbmBuffer(int32_t bufferHandle, ShmMemUsage usage) {
     LOGIPC("@%s, bufferHandle:%d, mInitialized:%d", __func__, bufferHandle, mInitialized);
-    CheckError(!mInitialized, VOID_VALUE, "@%s, mInitialized is false", __func__);
-    CheckError(!isIPCFine(), VOID_VALUE, "@%s, IPC error happens", __func__);
+    CheckAndLogError(!mInitialized, VOID_VALUE, "@%s, mInitialized is false", __func__);
+    CheckAndLogError(!isIPCFine(), VOID_VALUE, "@%s, IPC error happens", __func__);
 
     std::vector<int32_t> handles({bufferHandle});
     if (usage == CPU_ALGO_SHM) {
@@ -275,14 +277,14 @@ void IntelAlgoClient::deregisterGbmBuffer(int32_t bufferHandle, ShmMemUsage usag
 }
 
 int32_t IntelAlgoClient::getBufferHandle(void* addr, ShmMemUsage usage) {
-    CheckError(!mInitialized, -1, "@%s, mInitialized is false", __func__);
-    CheckError(usage >= MAX_ALGO_SHM, -1, "@%s, usage: %d isn't supported", __func__, usage);
+    CheckAndLogError(!mInitialized, -1, "@%s, mInitialized is false", __func__);
+    CheckAndLogError(usage >= MAX_ALGO_SHM, -1, "@%s, usage: %d isn't supported", __func__, usage);
     if (!addr) return -1;
 
     LOGIPC("%s, the buffer addr: %p, usage: %d", __func__, addr, usage);
     std::lock_guard<std::mutex> l(mShmMapMutex);
-    CheckError(mShmMap[usage].find(addr) == mShmMap[usage].end(), -1,
-               "%s, Invalid client addr: %p, usage: %d", __func__, addr, usage);
+    CheckAndLogError(mShmMap[usage].find(addr) == mShmMap[usage].end(), -1,
+                     "%s, Invalid client addr: %p, usage: %d", __func__, addr, usage);
 
     return mShmMap[usage][addr];
 }
@@ -317,7 +319,7 @@ void IntelAlgoClient::notifyHandler(uint32_t msg) {
 void IntelAlgoClient::returnCallback(const camera_algorithm_callback_ops_t* callback_ops,
                                      uint32_t req_id, uint32_t status, int32_t buffer_handle) {
     LOGIPC("@%s", __func__);
-    CheckError(!callback_ops, VOID_VALUE, "@%s, callback_ops is nullptr", __func__);
+    CheckAndLogError(!callback_ops, VOID_VALUE, "@%s, callback_ops is nullptr", __func__);
 
     auto s = const_cast<IntelAlgoClient*>(static_cast<const IntelAlgoClient*>(callback_ops));
     s->callbackHandler(req_id, status, buffer_handle);
@@ -326,7 +328,7 @@ void IntelAlgoClient::returnCallback(const camera_algorithm_callback_ops_t* call
 void IntelAlgoClient::notifyCallback(const struct camera_algorithm_callback_ops* callback_ops,
                                      camera_algorithm_error_msg_code_t msg) {
     LOGIPC("@%s", __func__);
-    CheckError(!callback_ops, VOID_VALUE, "@%s, callback_ops is nullptr", __func__);
+    CheckAndLogError(!callback_ops, VOID_VALUE, "@%s, callback_ops is nullptr", __func__);
 
     auto s = const_cast<IntelAlgoClient*>(static_cast<const IntelAlgoClient*>(callback_ops));
     s->notifyHandler((uint32_t)msg);
@@ -365,7 +367,8 @@ IntelAlgoClient::Runner::Runner(IPC_GROUP group, cros::CameraAlgorithmBridge* br
     pthread_condattr_destroy(&attr);
 
     ret = pthread_mutex_init(&mCbLock, nullptr);
-    CheckError(ret != 0, VOID_VALUE, "@%s, call pthread_mutex_init fails, ret:%d", __func__, ret);
+    CheckAndLogError(ret != 0, VOID_VALUE, "@%s, call pthread_mutex_init fails, ret:%d", __func__,
+                     ret);
 
     mInitialized = true;
 }
@@ -387,8 +390,8 @@ IntelAlgoClient::Runner::~Runner() {
 int IntelAlgoClient::Runner::requestSync(IPC_CMD cmd, int32_t bufferHandle) {
     LOGIPC("@%s, cmd:%d:%s, group:%d, bufferHandle:%d, mInitialized:%d", __func__, cmd,
            IntelAlgoIpcCmdToString(cmd), mGroup, bufferHandle, mInitialized);
-    CheckError(!mInitialized, UNKNOWN_ERROR, "@%s, mInitialized is false, cmd:%d:%s", __func__, cmd,
-               IntelAlgoIpcCmdToString(cmd));
+    CheckAndLogError(!mInitialized, UNKNOWN_ERROR, "@%s, mInitialized is false, cmd:%d:%s",
+                     __func__, cmd, IntelAlgoIpcCmdToString(cmd));
 
     std::lock_guard<std::mutex> lck(mMutex);
 
@@ -398,16 +401,16 @@ int IntelAlgoClient::Runner::requestSync(IPC_CMD cmd, int32_t bufferHandle) {
     // cmd is for request id, no duplicate command will be issued at any given time.
     mBridge->Request(cmd, reqHeader, bufferHandle);
     int ret = waitCallback();
-    CheckError((ret != OK), UNKNOWN_ERROR, "@%s, waitCallback fails, cmd:%d:%s", __func__, cmd,
-               IntelAlgoIpcCmdToString(cmd));
+    CheckAndLogError((ret != OK), UNKNOWN_ERROR, "@%s, waitCallback fails, cmd:%d:%s", __func__,
+                     cmd, IntelAlgoIpcCmdToString(cmd));
 
     LOGIPC("@%s, cmd:%d:%s, group:%d, mCbStatus:%d, done!", __func__, cmd,
            IntelAlgoIpcCmdToString(cmd), mGroup, mCbStatus);
 
     // check callback result
-    CheckError((mCbStatus != OK && mCbStatus != ia_err_not_run), mCbStatus,
-               "@%s, callback fails, cmd:%d:%s, mCbStatus:%d",
-               __func__, cmd, IntelAlgoIpcCmdToString(cmd), mCbStatus);
+    CheckAndLogError((mCbStatus != OK && mCbStatus != ia_err_not_run), mCbStatus,
+                     "@%s, callback fails, cmd:%d:%s, mCbStatus:%d",
+                     __func__, cmd, IntelAlgoIpcCmdToString(cmd), mCbStatus);
 
     return mCbStatus;
 }
@@ -424,8 +427,8 @@ void IntelAlgoClient::Runner::callbackHandler(uint32_t status, int32_t buffer_ha
     int ret = pthread_cond_signal(&mCbCond);
     pthread_mutex_unlock(&mCbLock);
 
-    CheckError(ret != 0, VOID_VALUE, "@%s, group:%d, call pthread_cond_signal fails, ret:%d",
-               __func__, mGroup, ret);
+    CheckAndLogError(ret != 0, VOID_VALUE, "@%s, group:%d, call pthread_cond_signal fails, ret:%d",
+                     __func__, mGroup, ret);
 }
 
 int IntelAlgoClient::Runner::waitCallback() {

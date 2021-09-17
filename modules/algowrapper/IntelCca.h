@@ -22,6 +22,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <map>
 
 #include "iutils/Thread.h"
 #include "CameraTypes.h"
@@ -38,7 +39,7 @@ class IntelCca {
 
     ia_err init(const cca::cca_init_params& initParams);
 
-    ia_err setStatsParams(const cca::cca_stats_params& params);
+    ia_err setStatsParams(const cca::cca_stats_params& params, cca::cca_out_stats* outStats);
 
     ia_err runAEC(uint64_t frameId, const cca::cca_ae_input_params& params,
                   cca::cca_ae_results* results);
@@ -59,9 +60,14 @@ class IntelCca {
     ia_err updateTuning(uint8_t lardTags, const ia_lard_input_params& lardParams,
                         const cca::cca_nvm& nvm);
 
+    bool allocStatsDataMem(unsigned int size);
+    void* getStatsDataBuffer();
+    void decodeHwStatsDone(int64_t sequence, unsigned int byteUsed);
+    void* fetchHwStatsData(int64_t sequence, unsigned int* byteUsed);
+
     void deinit();
 
-    ia_err decodeStats(uint64_t statsPointer, uint32_t statsSize,
+    ia_err decodeStats(uint64_t statsPointer, uint32_t statsSize, uint32_t bitmap,
                        ia_isp_bxt_statistics_query_results_t* results);
 
     uint32_t getPalDataSize(const cca::cca_program_group& programGroup);
@@ -71,10 +77,23 @@ class IntelCca {
  private:
     cca::IntelCCA* getIntelCCA();
     void releaseIntelCCA();
+    void freeStatsDataMem();
 
  private:
      int mCameraId;
      TuningMode mTuningMode;
+
+    // Only 3 buffers will be held in AiqResultStorage (kAiqResultStorageSize is 3),
+    // So it is safe to use other 3 buffers.
+    static const int kMaxQueueSize = 6;
+    struct StatsBufInfo {
+        unsigned int bufSize;
+        void* ptr;
+        unsigned int usedSize;
+    };
+    Mutex mMemStatsMLock;  // protect mMemStatsInfoMap
+    // first: sequence id, second: stats buffer info
+    std::map<int64_t, StatsBufInfo> mMemStatsInfoMap;
 
     struct CCAHandle {
         int cameraId;

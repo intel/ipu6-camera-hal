@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#define LOG_TAG "RequestThread"
+#define LOG_TAG RequestThread
 
 #include "iutils/Errors.h"
 #include "iutils/CameraLog.h"
@@ -44,7 +44,8 @@ RequestThread::RequestThread(int cameraId, AiqUnitBase *a3AControl, ParameterGen
     mLastEffectSeq(-1),
     mLastAppliedSeq(-1),
     mLastSofSeq(-1),
-    mBlockRequest(true)
+    mBlockRequest(true),
+    mSofEnabled(false)
 {
     CLEAR(mStreamConfig);
     CLEAR(mConfiguredStreams);
@@ -52,6 +53,8 @@ RequestThread::RequestThread(int cameraId, AiqUnitBase *a3AControl, ParameterGen
 
     mStreamConfig.operation_mode = CAMERA_STREAM_CONFIGURATION_MODE_END;
     mPerframeControlSupport = PlatformData::isFeatureSupported(mCameraId, PER_FRAME_CONTROL);
+
+    mSofEnabled = PlatformData::isIsysEnabled(cameraId);
 }
 
 RequestThread::~RequestThread()
@@ -98,13 +101,8 @@ void RequestThread::clearRequests()
     mBlockRequest = true;
 }
 
-void RequestThread::setConfigureModeByParam(const Parameters& param)
+void RequestThread::setConfigureModeByParam(camera_scene_mode_t sceneMode)
 {
-    camera_scene_mode_t sceneMode = SCENE_MODE_MAX;
-    if (param.getSceneMode(sceneMode) != OK) {
-        return;
-    }
-
     ConfigMode configMode = CameraUtils::getConfigModeBySceneMode(sceneMode);
     LOG2("@%s, sceneMode %d, configMode %d", __func__, sceneMode, configMode);
 
@@ -164,8 +162,8 @@ int RequestThread::configure(const stream_config_t *streamList) {
         int ret = PlatformData::getConfigModesByOperationMode(mCameraId,
                                                               mStreamConfig.operation_mode,
                                                               configModes);
-        CheckError((ret != OK || configModes.empty()), ret,
-                   "%s, get real ConfigMode failed %d", __func__, ret);
+        CheckAndLogError((ret != OK || configModes.empty()), ret,
+                         "%s, get real ConfigMode failed %d", __func__, ret);
 
         mRequestConfigMode = configModes[0];
         LOG2("%s: use concrete mode %d as default initial mode for auto op mode",
@@ -278,7 +276,7 @@ RequestThread::copyRequestParams(const Parameters *srcParams)
 
     if (mReqParamsPool.empty()) {
         shared_ptr<Parameters> sParams = std::make_shared<Parameters>();
-        CheckError(!sParams, nullptr, "%s: no memory!", __func__);
+        CheckAndLogError(!sParams, nullptr, "%s: no memory!", __func__);
         mReqParamsPool.push(sParams);
     }
 
@@ -389,7 +387,7 @@ void RequestThread::handleEvent(EventData eventData)
                         frameQueue.mFrameAvailableSignal.signal();
                     }
                 } else {
-                    LOG2("%s: fake request return %ld", __func__, eventData.buffer->getSequence());
+                    LOG2("%s: fake request return %u", __func__, eventData.buffer->getSequence());
                 }
 
                 AutoMutex l(mPendingReqLock);
@@ -397,7 +395,7 @@ void RequestThread::handleEvent(EventData eventData)
                 if (mGet3AStatWithFakeRequest &&
                     eventData.buffer->getSequence() >= mLastEffectSeq &&
                     mPendingRequests.empty()) {
-                    LOGW("No request, insert fake req after req %d to keep 3A stats update",
+                    LOGW("No request, insert fake req after req %ld to keep 3A stats update",
                          mLastRequestId);
                     CameraRequest fakeRequest;
                     fakeRequest.mBufferNum = 1;
@@ -475,7 +473,8 @@ bool RequestThread::threadLoop()
          if (blockRequest()) {
             int ret = mRequestSignal.waitRelative(lock, kWaitDuration * SLOWLY_MULTIPLIER);
             if (ret == TIMED_OUT) {
-                LOGW("%s: wait event time out", __func__);
+                LOGW("wait event time out, %d requests processing, %zu requests in HAL",
+                     mRequestsInProcessing, mPendingRequests.size());
                 return true;
             }
 
@@ -513,7 +512,7 @@ bool RequestThread::threadLoop()
                 LOG2("%s, skip processing request for AE delay issue", __func__);
                 return true;
             }
-            LOG2("%s, trigger event %x, SOF %ld, predict %ld, processed %d request id %d",
+            LOG2("%s, trigger event %x, SOF %ld, predict %ld, processed %d request id %ld",
                  __func__, mRequestTriggerEvent, mLastSofSeq, mLastAppliedSeq,
                  mRequestsInProcessing, mLastRequestId);
         }
@@ -527,7 +526,10 @@ bool RequestThread::threadLoop()
     if (fetchNextRequest(request)) {
         // Update for reconfiguration
         if (request.mParams.get()) {
-            setConfigureModeByParam(*(request.mParams.get()));
+            camera_scene_mode_t sceneMode = SCENE_MODE_MAX;
+            if (request.mParams.get()->getSceneMode(sceneMode) == OK) {
+                setConfigureModeByParam(sceneMode);
+            }
         }
         // Re-check
         if (restart && isReconfigurationNeeded()) {
@@ -583,7 +585,9 @@ void RequestThread::handleRequest(CameraRequest& request, long applyingSeq)
             }
         }
 
-        if (requestId >= 0) m3AControl->run3A(requestId, applyingSeq, &effectSeq);
+        if (requestId >= 0) {
+            m3AControl->run3A(requestId, applyingSeq, mSofEnabled ? &effectSeq : nullptr);
+        }
 
         {
             AutoMutex l(mPendingReqLock);

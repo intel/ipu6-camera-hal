@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Intel Corporation.
+ * Copyright (C) 2018-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#define LOG_TAG "IntelPGParam"
+#define LOG_TAG IntelPGParam
 
 #include "modules/algowrapper/IntelPGParam.h"
 
@@ -59,12 +59,12 @@ IntelPGParam::~IntelPGParam() {
 
 int IntelPGParam::init(ia_p2p_platform_t platform, const PgConfiguration& pgConfig) {
     mP2pHandle = ia_p2p_init(platform);
-    CheckError(!mP2pHandle, UNKNOWN_ERROR, "ia_p2p_init has failed");
+    CheckAndLogError(!mP2pHandle, UNKNOWN_ERROR, "ia_p2p_init has failed");
 
     mP2pCacheBuffer.size = ia_p2p_get_cache_buffer_size(mP2pHandle);
     mP2pCacheBuffer.data = CIPR::callocMemory(1, mP2pCacheBuffer.size);
     LOG1("%s: mP2pCacheBuffer.size=%d", __func__, mP2pCacheBuffer.size);
-    CheckError(!mP2pCacheBuffer.data, UNKNOWN_ERROR, "Failed to allocate P2P cache buffer.");
+    CheckAndLogError(!mP2pCacheBuffer.data, UNKNOWN_ERROR, "Failed to allocate P2P cache buffer.");
 
     mPgManifest = pgConfig.pgManifest;
     mDisableDataTermials = pgConfig.disableDataTermials;
@@ -119,14 +119,14 @@ static int kernel_id_ffs(ia_css_kernel_bitmap_t bitmap) {
 }
 
 int IntelPGParam::getFragmentDescriptors(int descCount, ia_p2p_fragment_desc* descs) {
-    CheckError(descCount < mTerminalCount * mFragmentCount, BAD_VALUE, "descCount is small",
-               descCount);
+    CheckAndLogError(descCount < mTerminalCount * mFragmentCount, BAD_VALUE,
+                     "descCount %d is small", descCount);
 
     int descLen = sizeof(ia_p2p_fragment_desc) * mFragmentCount;
     int terminalCount = ia_css_process_group_get_terminal_count(mProcessGroup);
     for (int i = 0; i < terminalCount; i++) {
         ia_css_terminal_t* terminal = ia_css_process_group_get_terminal(mProcessGroup, i);
-        CheckError(!terminal, BAD_VALUE, "terminal is nullptr");
+        CheckAndLogError(!terminal, BAD_VALUE, "terminal is nullptr");
 
         int termIdx = terminal->tm_index;
         if ((mPgReqs.terminals[termIdx].type != IA_CSS_TERMINAL_TYPE_DATA_OUT) &&
@@ -136,8 +136,8 @@ int IntelPGParam::getFragmentDescriptors(int descCount, ia_p2p_fragment_desc* de
 
         if (mFragmentConfig) {
             int kernelId = kernel_id_ffs(mPgReqs.terminals[termIdx].kernelBitmap);
-            CheckError((kernelId < 0 || kernelId >= IA_CSS_KERNEL_BITMAP_BITS), -1,
-                       "error terminal %d", termIdx);
+            CheckAndLogError((kernelId < 0 || kernelId >= IA_CSS_KERNEL_BITMAP_BITS), -1,
+                             "error terminal %d", termIdx);
             MEMCPY_S(&descs[termIdx * mFragmentCount], descLen,
                      mFragmentConfig->pixel_fragment_descs[kernelId], descLen);
             LOG2("PG %d: Terminal %d: selected fragment desc (<%d,%d> %dx%d) with kernel id %d",
@@ -157,25 +157,25 @@ int IntelPGParam::getFragmentDescriptors(int descCount, ia_p2p_fragment_desc* de
 
 int IntelPGParam::prepare(const ia_binary_data* ipuParameters, const ia_css_rbm_t* rbm,
                           ia_css_kernel_bitmap_t* bitmap, uint32_t* maxStatsSize) {
-    CheckError(ipuParameters == nullptr || bitmap == nullptr, BAD_VALUE,
-               "The input paramter is nullptr.");
+    CheckAndLogError(ipuParameters == nullptr || bitmap == nullptr, BAD_VALUE,
+                     "The input paramter is nullptr.");
 
     ia_css_terminal_type_t terminalType;
     int8_t termIndex;
     int kernelId = 0;
 
     ia_err err = ia_p2p_parse(mP2pHandle, ipuParameters, mP2pCacheBuffer.data);
-    CheckError(err != ia_err_none, UNKNOWN_ERROR, "Failed to parse PAL data.");
+    CheckAndLogError(err != ia_err_none, UNKNOWN_ERROR, "Failed to parse PAL data.");
 
     int ret = calcFragmentDescriptors(mFragmentCount, mInputMainFrame, mOutputMainFrame, rbm);
-    CheckError(ret != OK, ret, "Failed to calc fragment desc.");
+    CheckAndLogError(ret != OK, ret, "Failed to calc fragment desc.");
 
     int outputDataTerminalCount = FRAG_TERM_TYPE_OUTPUT_START;
     for (termIndex = 0; termIndex < mTerminalCount; termIndex++) {
         ia_css_terminal_manifest_t* terminalManifest =
             ia_css_program_group_manifest_get_term_mnfst(mPgManifest, (unsigned int)termIndex);
-        CheckError(!terminalManifest, css_err_internal, "No terminal manifest for terminal %d",
-                   termIndex);
+        CheckAndLogError(!terminalManifest, css_err_internal,
+                         "No terminal manifest for terminal %d", termIndex);
 
         terminalType = ia_css_terminal_manifest_get_type(terminalManifest);
         mPgReqs.terminals[termIndex].type = terminalType;
@@ -193,7 +193,8 @@ int IntelPGParam::prepare(const ia_binary_data* ipuParameters, const ia_css_rbm_
                        kernelInfoSize);
                 ret = getKernelOrderForParamCachedInTerm(paramMani,
                                                          mPgReqs.terminals[termIndex].kernelOrder);
-                CheckError(ret != css_err_none, ret, "getKernelOrderForParamCachedInTerm failed");
+                CheckAndLogError(ret != css_err_none, ret,
+                                 "getKernelOrderForParamCachedInTerm failed");
                 break;
             }
             case IA_CSS_TERMINAL_TYPE_PROGRAM: {
@@ -206,7 +207,7 @@ int IntelPGParam::prepare(const ia_binary_data* ipuParameters, const ia_css_rbm_
 
                 ret =
                     getKernelOrderForProgramTerm(proMani, mPgReqs.terminals[termIndex].kernelOrder);
-                CheckError(ret != css_err_none, ret, "getKernelOrderForProgramTerm failed");
+                CheckAndLogError(ret != css_err_none, ret, "getKernelOrderForProgramTerm failed");
                 break;
             }
             case IA_CSS_TERMINAL_TYPE_DATA_IN: {
@@ -268,14 +269,15 @@ int IntelPGParam::prepare(const ia_binary_data* ipuParameters, const ia_css_rbm_
 
     while (!ia_css_is_kernel_bitmap_empty(kernelBitmap)) {
         kernelId = getKernelIdByBitmap(kernelBitmap);
-        CheckError((kernelId < 0 || kernelId >= PSYS_MAX_KERNELS_PER_PG), ia_err_internal,
-                   "kernelId is out of range! %d", kernelId);
+        CheckAndLogError((kernelId < 0 || kernelId >= PSYS_MAX_KERNELS_PER_PG), ia_err_internal,
+                         "kernelId is out of range! %d", kernelId);
 
         /* Get terminal requirements */
         ret = ia_p2p_get_kernel_terminal_requirements(mP2pHandle, mPgId, (uint32_t)kernelId,
                                                       &mKernel.mSections[kernelId]);
-        CheckError(ret != ia_err_none, ret, "%s: failed to get requirements for pg %d kernel %d",
-                   __func__, mPgId, kernelId);
+        CheckAndLogError(ret != ia_err_none, ret,
+                         "%s: failed to get requirements for pg %d kernel %d", __func__,
+                         mPgId, kernelId);
 
         /* Get payload descriptor */
         ret = ia_p2p_get_kernel_payload_desc(
@@ -288,8 +290,9 @@ int IntelPGParam::prepare(const ia_binary_data* ipuParameters, const ia_css_rbm_
             (mFragmentConfig ? mFragmentConfig->pixel_fragment_descs[kernelId]
                              : &mFragmentDesc[FRAG_TERM_TYPE_INPUT * mFragmentCount]),
             &mKernel.mPayloads[kernelId]);
-        CheckError(ret != ia_err_none, ret, "%s: failed to get payload for pg %d kernel %d, ret %d",
-                   __func__, mPgId, kernelId, ret);
+        CheckAndLogError(ret != ia_err_none, ret,
+                         "%s: failed to get payload for pg %d kernel %d, ret %d", __func__, mPgId,
+                         kernelId, ret);
 
         uint8_t kernelOrder = 0;
         termIndex = -1;
@@ -298,7 +301,8 @@ int IntelPGParam::prepare(const ia_binary_data* ipuParameters, const ia_css_rbm_
 
             /* P2P assumes single CACHED IN, cumulate to first */
             termIndex = terminalEnumerateByType(&mPgReqs, terminalType, 0);
-            CheckError(termIndex < 0, ia_err_internal, "No PARAM_CACHED_IN according to manifest!");
+            CheckAndLogError(termIndex < 0, ia_err_internal,
+                             "No PARAM_CACHED_IN according to manifest!");
             if (isKernelIdInKernelOrder(&mPgReqs, termIndex, kernelId, &kernelOrder)) {
                 if (mPgReqs.terminals[termIndex].kernelOrder[kernelOrder].sections !=
                     mKernel.mSections[kernelId].param_in_section_count) {
@@ -415,7 +419,7 @@ int IntelPGParam::prepare(const ia_binary_data* ipuParameters, const ia_css_rbm_
 
     /* disable params terminals which payload size are zero */
     ret = disableZeroSizedTerminals(&kernelBitmap);
-    CheckError(ret != OK, ret, "%s: failed to disable zero size terminals", __func__);
+    CheckAndLogError(ret != OK, ret, "%s: failed to disable zero size terminals", __func__);
 
     *bitmap = kernelBitmap;
 
@@ -438,25 +442,27 @@ void IntelPGParam::destroyPGBuffer() {
 }
 
 int IntelPGParam::setPGAndPrepareProgram(ia_css_process_group_t* pg) {
-    CheckError(!pg, UNKNOWN_ERROR, "input pg nullptr!");
+    CheckAndLogError(!pg, UNKNOWN_ERROR, "input pg nullptr!");
     mProcessGroup = pg;
 
     int ret = OK;
     int terminalCount = ia_css_process_group_get_terminal_count(mProcessGroup);
     for (int i = 0; i < terminalCount; i++) {
         ia_css_terminal_t* terminal = ia_css_process_group_get_terminal(mProcessGroup, i);
-        CheckError(!terminal, UNKNOWN_ERROR, "failed to get terminal");
+        CheckAndLogError(!terminal, UNKNOWN_ERROR, "failed to get terminal");
         int termIdx = terminal->tm_index;
 
         if (mPgReqs.terminals[termIdx].type == IA_CSS_TERMINAL_TYPE_PROGRAM_CONTROL_INIT) {
             unsigned int payloadSize = 0;
             ret = pg_control_init_get_payload_size(pg, &payloadSize);
-            CheckError(ret != OK, UNKNOWN_ERROR, "call pg_control_init_get_payload_size fail");
+            CheckAndLogError(ret != OK, UNKNOWN_ERROR,
+                             "call pg_control_init_get_payload_size fail");
             mPgReqs.terminals[termIdx].payloadSize = payloadSize;
 
             ret = pg_control_init_terminal_init(
                 mProcessGroup, reinterpret_cast<ia_css_program_control_init_terminal_t*>(terminal));
-            CheckError(ret != ia_err_none, ret, "Failed to call pg_control_init_terminal_init.");
+            CheckAndLogError(ret != ia_err_none, ret,
+                             "Failed to call pg_control_init_terminal_init.");
         }
 
         if (mPgReqs.terminals[termIdx].type == IA_CSS_TERMINAL_TYPE_PROGRAM) {
@@ -469,14 +475,15 @@ int IntelPGParam::setPGAndPrepareProgram(ia_css_process_group_t* pg) {
                     mP2pHandle, mPgId, mFragmentCount, mFragmentDesc,
                     reinterpret_cast<ia_css_program_terminal_t*>(terminal));
             }
-            CheckError(ret != ia_err_none, ret, "Failed to init program terminal.");
+            CheckAndLogError(ret != ia_err_none, ret, "Failed to init program terminal.");
         }
     }
     return OK;
 }
 
 int IntelPGParam::getPayloadSizes(int payloadCount, ia_binary_data* payloads) {
-    CheckError(payloadCount < mTerminalCount || !payloads, BAD_VALUE, "Can't get payload sizes!");
+    CheckAndLogError(payloadCount < mTerminalCount || !payloads, BAD_VALUE,
+                     "Can't get payload sizes!");
     for (int termIdx = 0; termIdx < mTerminalCount; termIdx++) {
         payloads[termIdx].size = mPgReqs.terminals[termIdx].payloadSize;
     }
@@ -484,13 +491,14 @@ int IntelPGParam::getPayloadSizes(int payloadCount, ia_binary_data* payloads) {
 }
 
 int IntelPGParam::allocatePayloads(int payloadCount, ia_binary_data* payloads) {
-    CheckError(!payloads, BAD_VALUE, "nullptr payloads!");
+    CheckAndLogError(!payloads, BAD_VALUE, "nullptr payloads!");
     for (int idx = 0; idx < payloadCount; idx++) {
         ia_binary_data payload = {nullptr, payloads[idx].size};
         if (payload.size) {
             payload.data = CIPR::mallocAlignedMemory(PAGE_ALIGN(payload.size),
                 CIPR::getPageSize());
-            CheckError(!payload.data, BAD_VALUE, "no memory for payload size %d!", payload.size);
+            CheckAndLogError(!payload.data, BAD_VALUE, "no memory for payload size %d!",
+                             payload.size);
             mAllocatedPayloads.push_back(payload);
         }
         payloads[idx].data = payload.data;
@@ -509,19 +517,19 @@ void IntelPGParam::destroyPayloads() {
 int IntelPGParam::updatePALAndEncode(const ia_binary_data* ipuParams, int payloadCount,
                                      ia_binary_data* payloads) {
     ia_err err = ia_p2p_parse(mP2pHandle, ipuParams, mP2pCacheBuffer.data);
-    CheckError(err != ia_err_none, UNKNOWN_ERROR, "Failed to parse PAL data.");
+    CheckAndLogError(err != ia_err_none, UNKNOWN_ERROR, "Failed to parse PAL data.");
 
-    CheckError(!payloads, UNKNOWN_ERROR, "no payloads for encode.");
-    CheckError(payloadCount < mTerminalCount, UNKNOWN_ERROR, "small payload count %d, should be %d",
-               payloadCount, mTerminalCount);
-    CheckError(!mProcessGroup, INVALID_OPERATION, "Can't encode due to null pg.");
+    CheckAndLogError(!payloads, UNKNOWN_ERROR, "no payloads for encode.");
+    CheckAndLogError(payloadCount < mTerminalCount, UNKNOWN_ERROR,
+                     "small payload count %d, should be %d", payloadCount, mTerminalCount);
+    CheckAndLogError(!mProcessGroup, INVALID_OPERATION, "Can't encode due to null pg.");
 
     int ret = OK;
     int terminalCount = ia_css_process_group_get_terminal_count(mProcessGroup);
     ia_css_terminal_t* programControlInitTerminal = nullptr;
     for (int i = 0; i < terminalCount; i++) {
         ia_css_terminal_t* terminal = ia_css_process_group_get_terminal(mProcessGroup, i);
-        CheckError(!terminal, UNKNOWN_ERROR, "failed to get terminal");
+        CheckAndLogError(!terminal, UNKNOWN_ERROR, "failed to get terminal");
         if (!payloads[terminal->tm_index].data) {
             continue;
         }
@@ -533,13 +541,13 @@ int IntelPGParam::updatePALAndEncode(const ia_binary_data* ipuParams, int payloa
         }
 
         ret = encodeTerminal(terminal, payloads[terminal->tm_index]);
-        CheckError(ret != OK, ret, "Failed to encode for terminal %d.", terminal->tm_index);
+        CheckAndLogError(ret != OK, ret, "Failed to encode for terminal %d.", terminal->tm_index);
     }
     if (programControlInitTerminal) {
         ret = encodeTerminal(programControlInitTerminal,
                              payloads[programControlInitTerminal->tm_index]);
-        CheckError(ret != OK, ret, "Failed to encode for program control init terminal %d.",
-                   programControlInitTerminal->tm_index);
+        CheckAndLogError(ret != OK, ret, "Failed to encode for program control init terminal %d.",
+                         programControlInitTerminal->tm_index);
     }
 
     return ret;
@@ -552,8 +560,8 @@ int IntelPGParam::encodeTerminal(ia_css_terminal_t* terminal, ia_binary_data pay
     if (mPgReqs.terminals[terminalIndex].type == IA_CSS_TERMINAL_TYPE_PROGRAM_CONTROL_INIT) {
         unsigned int kupSize = 0;
         ret = ia_p2p_get_kernel_user_parameter_size(mP2pHandle, mPgId, mFragmentCount, &kupSize);
-        CheckError(ret != ia_err_none, ret,
-                   "Failed to call ia_p2p_get_kernel_user_parameter_size.");
+        CheckAndLogError(ret != ia_err_none, ret,
+                         "Failed to call ia_p2p_get_kernel_user_parameter_size.");
         if (kupSize != mPgReqs.terminals[terminalIndex].userParamSize) {
             mPgReqs.terminals[terminalIndex].userParamSize = kupSize;
             mPgReqs.terminals[terminalIndex].userParamAddress =
@@ -564,20 +572,20 @@ int IntelPGParam::encodeTerminal(ia_css_terminal_t* terminal, ia_binary_data pay
             ret = ia_p2p_get_kernel_user_parameters_v2(
                 mP2pHandle, mPgId, mFragmentCount, mFragmentConfig,
                 mPgReqs.terminals[terminalIndex].userParamAddress.get());
-            CheckError(ret != ia_err_none, ret,
+            CheckAndLogError(ret != ia_err_none, ret,
                        "Failed to call ia_p2p_get_kernel_user_parameters_v2.");
         } else {
             ret = ia_p2p_get_kernel_user_parameters(
                 mP2pHandle, mPgId, mFragmentCount, mFragmentDesc,
                 mPgReqs.terminals[terminalIndex].userParamAddress.get());
-            CheckError(ret != ia_err_none, ret,
-                       "Failed to call ia_p2p_get_kernel_user_parameters.");
+            CheckAndLogError(ret != ia_err_none, ret,
+                             "Failed to call ia_p2p_get_kernel_user_parameters.");
         }
 
         ia_css_kernel_user_param_t* userParam = reinterpret_cast<ia_css_kernel_user_param_t*>(
             mPgReqs.terminals[terminalIndex].userParamAddress.get());
         ret = pg_control_init_fill_payload(mProcessGroup, userParam, payload.data);
-        CheckError(ret != ia_err_none, ret, "Failed to call pg_control_init_fill_payload.");
+        CheckAndLogError(ret != ia_err_none, ret, "Failed to call pg_control_init_fill_payload.");
         return ret;
     }
 
@@ -612,8 +620,8 @@ int IntelPGParam::encodeTerminal(ia_css_terminal_t* terminal, ia_binary_data pay
         /* Sanity check sections sizes and return the size to be used */
         css_err_t result = payloadSectionSizeSanityTest(&tmpPayloadDesc, kernelId, terminalIndex,
                                                         curOffset, payload.size);
-        CheckError((result != css_err_none), UNKNOWN_ERROR,
-                   "Failed sanity check of terminal payload sizes");
+        CheckAndLogError((result != css_err_none), UNKNOWN_ERROR,
+                         "Failed sanity check of terminal payload sizes");
 
         switch (mPgReqs.terminals[terminalIndex].type) {
             case IA_CSS_TERMINAL_TYPE_PARAM_CACHED_IN:
@@ -621,7 +629,7 @@ int IntelPGParam::encodeTerminal(ia_css_terminal_t* terminal, ia_binary_data pay
                     mP2pHandle, mPgId, kernelId,
                     reinterpret_cast<ia_css_param_terminal_t*>(terminal), curSection,
                     reinterpret_cast<uint8_t*>(payload.data), payload.size, curOffset);
-                CheckError(ret != ia_err_none, ret, "Failed to encode param in terminal.");
+                CheckAndLogError(ret != ia_err_none, ret, "Failed to encode param in terminal.");
 
                 curSection += mKernel.mSections[kernelId].param_in_section_count;
                 curOffset += tmpPayloadDesc.param_in_payload_size;
@@ -634,7 +642,7 @@ int IntelPGParam::encodeTerminal(ia_css_terminal_t* terminal, ia_binary_data pay
                                      : mFragmentDesc),
                     reinterpret_cast<ia_css_param_terminal_t*>(terminal), curSection,
                     mPgReqs.terminals[terminalIndex].sectionCount, payload.size, curOffset);
-                CheckError(ret != ia_err_none, ret, "Failed to prepare param out terminal.");
+                CheckAndLogError(ret != ia_err_none, ret, "Failed to prepare param out terminal.");
 
                 curSection += mKernel.mSections[kernelId].param_out_section_count_per_fragment;
                 curOffset += tmpPayloadDesc.param_out_payload_size;
@@ -652,7 +660,7 @@ int IntelPGParam::encodeTerminal(ia_css_terminal_t* terminal, ia_binary_data pay
                     reinterpret_cast<ia_css_program_terminal_t*>(terminal), curSection,
                     mPgReqs.terminals[terminalIndex].sectionCount,
                     reinterpret_cast<uint8_t*>(payload.data), payload.size, curOffset);
-                CheckError(ret != ia_err_none, ret, "Failed to encode program terminal.");
+                CheckAndLogError(ret != ia_err_none, ret, "Failed to encode program terminal.");
 
                 curSection += mKernel.mSections[kernelId].program_section_count_per_fragment;
                 curOffset += tmpPayloadDesc.program_payload_size;
@@ -666,7 +674,7 @@ int IntelPGParam::encodeTerminal(ia_css_terminal_t* terminal, ia_binary_data pay
                                      : mFragmentDesc),
                     reinterpret_cast<ia_css_spatial_param_terminal_t*>(terminal), curSection,
                     reinterpret_cast<uint8_t*>(payload.data), payload.size, curOffset);
-                CheckError(ret != ia_err_none, ret, "Failed to encode spatial in terminal.");
+                CheckAndLogError(ret != ia_err_none, ret, "Failed to encode spatial in terminal.");
 
                 curOffset += tmpPayloadDesc.spatial_param_in_payload_size;
                 curSection += mKernel.mSections[kernelId].spatial_param_in_section_count;
@@ -679,7 +687,8 @@ int IntelPGParam::encodeTerminal(ia_css_terminal_t* terminal, ia_binary_data pay
                                      : mFragmentDesc),
                     reinterpret_cast<ia_css_spatial_param_terminal_t*>(terminal), curSection,
                     payload.size, curOffset);
-                CheckError(ret != ia_err_none, ret, "Failed to prepare spatial out terminal.");
+                CheckAndLogError(ret != ia_err_none, ret,
+                                 "Failed to prepare spatial out terminal.");
 
                 curOffset += tmpPayloadDesc.spatial_param_out_payload_size;
                 curSection += mKernel.mSections[kernelId].spatial_param_out_section_count;
@@ -705,8 +714,8 @@ int IntelPGParam::encodeTerminal(ia_css_terminal_t* terminal, ia_binary_data pay
 }
 
 int IntelPGParam::decode(int payloadCount, ia_binary_data* payload, ia_binary_data* statistics) {
-    CheckError(!mProcessGroup, INVALID_OPERATION, "Can't decode due to null pg.");
-    CheckError(!payload, INVALID_OPERATION, "nullptr payload.");
+    CheckAndLogError(!mProcessGroup, INVALID_OPERATION, "Can't decode due to null pg.");
+    CheckAndLogError(!payload, INVALID_OPERATION, "nullptr payload.");
 
     if (statistics && statistics->data) {
         ia_p2p_set_statistics_buffer(mP2pHandle, statistics->data);
@@ -715,15 +724,15 @@ int IntelPGParam::decode(int payloadCount, ia_binary_data* payload, ia_binary_da
     int terminalCount = ia_css_process_group_get_terminal_count(mProcessGroup);
     for (int i = 0; i < terminalCount; i++) {
         ia_css_terminal_t* terminal = ia_css_process_group_get_terminal(mProcessGroup, i);
-        CheckError(!terminal, UNKNOWN_ERROR, "failed to get terminal");
+        CheckAndLogError(!terminal, UNKNOWN_ERROR, "failed to get terminal");
         if ((terminal->terminal_type != IA_CSS_TERMINAL_TYPE_PARAM_CACHED_OUT) &&
             (terminal->terminal_type != IA_CSS_TERMINAL_TYPE_PARAM_SPATIAL_OUT)) {
             continue;
         }
-        CheckError(terminal->tm_index >= payloadCount, UNKNOWN_ERROR,
-                   "no payload for term %d decoding", terminal->tm_index);
+        CheckAndLogError(terminal->tm_index >= payloadCount, UNKNOWN_ERROR,
+                         "no payload for term %d decoding", terminal->tm_index);
         ret = decodeTerminal(terminal, payload[terminal->tm_index]);
-        CheckError(ret != OK, ret, "%s, call p2p decode fail", __func__);
+        CheckAndLogError(ret != OK, ret, "%s, call p2p decode fail", __func__);
     }
 
     return serializeDecodeCache(statistics);
@@ -740,9 +749,9 @@ int IntelPGParam::decodeTerminal(ia_css_terminal_t* terminal, ia_binary_data pay
         /* Use specific ordering of kernels when available */
         if (mPgReqs.terminals[terminalIndex].kernelOrder) {
             kernelId = mPgReqs.terminals[terminalIndex].kernelOrder[kernelIndex++].id;
-            CheckError(kernelId >= PSYS_MAX_KERNELS_PER_PG, css_err_internal,
-                       "%s: Kernel bitmap for terminal %d covers more kernels than in manifest",
-                       __func__, terminalIndex);
+            CheckAndLogError(kernelId >= PSYS_MAX_KERNELS_PER_PG, css_err_internal,
+                           "%s: Kernel bitmap for terminal %d covers more kernels than in manifest",
+                            __func__, terminalIndex);
         } else {
             kernelId = getKernelIdByBitmap(kernelBitmap);
         }
@@ -771,8 +780,8 @@ int IntelPGParam::decodeTerminal(ia_css_terminal_t* terminal, ia_binary_data pay
                 return UNKNOWN_ERROR;
         }
 
-        CheckError(ret != ia_err_none, ret, "%s: failed to decode terminal %d", __func__,
-                   terminalIndex);
+        CheckAndLogError(ret != ia_err_none, ret, "%s: failed to decode terminal %d", __func__,
+                         terminalIndex);
         kernelBitmap = ia_css_kernel_bitmap_unset(kernelBitmap, kernelId);
     }
 
@@ -780,10 +789,10 @@ int IntelPGParam::decodeTerminal(ia_css_terminal_t* terminal, ia_binary_data pay
 }
 
 int IntelPGParam::serializeDecodeCache(ia_binary_data* result) {
-    CheckError(!result, UNKNOWN_ERROR, "The statistics buffer is nullptr");
+    CheckAndLogError(!result, UNKNOWN_ERROR, "The statistics buffer is nullptr");
 
     ia_err ia_ret = ia_p2p_serialize_statistics(mP2pHandle, result, nullptr);
-    CheckError(ia_ret != ia_err_none, UNKNOWN_ERROR, "Serializ statistics fail");
+    CheckAndLogError(ia_ret != ia_err_none, UNKNOWN_ERROR, "Serializ statistics fail");
 
     return OK;
 }
@@ -797,7 +806,7 @@ void IntelPGParam::deinit() {
 
 int IntelPGParam::getKernelIdByBitmap(ia_css_kernel_bitmap_t bitmap) {
     int kernelId = 0;
-    CheckError(ia_css_is_kernel_bitmap_empty(bitmap), BAD_VALUE, "The bitmap is empty");
+    CheckAndLogError(ia_css_is_kernel_bitmap_empty(bitmap), BAD_VALUE, "The bitmap is empty");
     while (!ia_css_is_kernel_bitmap_set(bitmap, (unsigned int)kernelId)) {
         kernelId++;
     }
@@ -815,7 +824,7 @@ ia_css_kernel_bitmap_t IntelPGParam::getCachedTerminalKernelBitmap(
     for (section = 0; section < sectionCount; section++) {
         ia_css_param_manifest_section_desc_t* desc =
             ia_css_param_terminal_manifest_get_prm_sct_desc(manifest, section);
-        CheckError(!desc, kernelBitmap, "failed to get desc");
+        CheckAndLogError(!desc, kernelBitmap, "failed to get desc");
         int index = ia_css_param_manifest_section_desc_get_kernel_id(desc);
         kernelBitmap = ia_css_kernel_bitmap_set(kernelBitmap, index);
     }
@@ -833,7 +842,7 @@ ia_css_kernel_bitmap_t IntelPGParam::getProgramTerminalKernelBitmap(
     for (section = 0; section < sectionCount; section++) {
         ia_css_fragment_param_manifest_section_desc_t* desc =
             ia_css_program_terminal_manifest_get_frgmnt_prm_sct_desc(manifest, section);
-        CheckError(!desc, kernelBitmap, "failed to get desc");
+        CheckAndLogError(!desc, kernelBitmap, "failed to get desc");
         int index = ia_css_fragment_param_manifest_section_desc_get_kernel_id(desc);
         kernelBitmap = ia_css_kernel_bitmap_set(kernelBitmap, index);
     }
@@ -895,16 +904,17 @@ int IntelPGParam::disableZeroSizedTerminals(ia_css_kernel_bitmap_t* kernelBitmap
 
 css_err_t IntelPGParam::getKernelOrderForParamCachedInTerm(
     ia_css_param_terminal_manifest_t* terminalManifest, IpuPgTerminalKernelInfo* kernelOrder) {
-    CheckError((!terminalManifest || !kernelOrder), ia_err_argument, "No manifest or order info");
+    CheckAndLogError((!terminalManifest || !kernelOrder), ia_err_argument,
+                     "No manifest or order info");
 
     uint16_t sectionCount = terminalManifest->param_manifest_section_desc_count;
-    CheckError(sectionCount == 0, css_err_argument, "No static sections in manifest");
+    CheckAndLogError(sectionCount == 0, css_err_argument, "No static sections in manifest");
     uint8_t kernelCount = 0;
 
     for (uint16_t section = 0; section < sectionCount; section++) {
         ia_css_param_manifest_section_desc_t* param =
             ia_css_param_terminal_manifest_get_prm_sct_desc(terminalManifest, section);
-        CheckError(!param, css_err_internal, "Failed to get param from terminal manifest!");
+        CheckAndLogError(!param, css_err_internal, "Failed to get param from terminal manifest!");
 
         /* there is agreement that sections of the same kernel are
          * encoded in a row. Here, skipping sections of the same kernel
@@ -931,15 +941,16 @@ css_err_t IntelPGParam::getKernelOrderForParamCachedInTerm(
 
 css_err_t IntelPGParam::getKernelOrderForProgramTerm(
     ia_css_program_terminal_manifest_t* terminalManifest, IpuPgTerminalKernelInfo* kernelOrder) {
-    CheckError((!terminalManifest || !kernelOrder), css_err_argument, "No manifest or order info");
+    CheckAndLogError((!terminalManifest || !kernelOrder), css_err_argument,
+                     "No manifest or order info");
     uint16_t sectionCount = terminalManifest->fragment_param_manifest_section_desc_count;
-    CheckError(sectionCount == 0, ia_err_internal, "No static sections in manifest");
+    CheckAndLogError(sectionCount == 0, ia_err_internal, "No static sections in manifest");
     uint8_t kernelCount = 0;
 
     for (uint16_t section = 0; section < sectionCount; section++) {
         ia_css_fragment_param_manifest_section_desc_t* param =
             ia_css_program_terminal_manifest_get_frgmnt_prm_sct_desc(terminalManifest, section);
-        CheckError(!param, css_err_internal, "Failed to get param from terminal manifest!");
+        CheckAndLogError(!param, css_err_internal, "Failed to get param from terminal manifest!");
 
         /* there is agreement that sections of the same kernel are
          * encoded in a row. Here, skipping sections of the same kernel
@@ -966,7 +977,7 @@ css_err_t IntelPGParam::getKernelOrderForProgramTerm(
 
 int8_t IntelPGParam::terminalEnumerateByType(IpuPgRequirements* reqs,
                                              ia_css_terminal_type_t terminalType, uint8_t num) {
-    CheckError(reqs->terminalCount == 0, -1, "%s: no terminals!", __func__);
+    CheckAndLogError(reqs->terminalCount == 0, -1, "%s: no terminals!", __func__);
 
     for (uint8_t terminal = 0; terminal < reqs->terminalCount; terminal++) {
         if (reqs->terminals[terminal].type == terminalType) {
@@ -983,7 +994,7 @@ int8_t IntelPGParam::terminalEnumerateByType(IpuPgRequirements* reqs,
 int8_t IntelPGParam::terminalEnumerateByBitmap(IpuPgRequirements* reqs,
                                                ia_css_terminal_type_t terminal_type,
                                                ia_css_kernel_bitmap_t bitmap) {
-    CheckError(reqs->terminalCount == 0, -1, "%s: no terminals!", __func__);
+    CheckAndLogError(reqs->terminalCount == 0, -1, "%s: no terminals!", __func__);
 
     for (uint8_t terminal = 0; terminal < reqs->terminalCount; terminal++) {
         if (reqs->terminals[terminal].type == terminal_type &&
@@ -1092,8 +1103,8 @@ css_err_t IntelPGParam::payloadSectionSizeSanityTest(ia_p2p_payload_desc* curren
 #endif
         (mFragmentConfig ? mFragmentConfig->pixel_fragment_descs[kernelId] : mFragmentDesc),
         current);
-    CheckError(ia_ret != ia_err_none, css_err_internal,
-               "Failed to get payload description during sanity check (kernel %d)", kernelId);
+    CheckAndLogError(ia_ret != ia_err_none, css_err_internal,
+                     "Failed to get payload description during sanity check (kernel %d)", kernelId);
 
     switch (mPgReqs.terminals[terminalIndex].type) {
         case IA_CSS_TERMINAL_TYPE_PARAM_CACHED_IN:
@@ -1167,9 +1178,9 @@ css_err_t IntelPGParam::payloadSectionSizeSanityTest(ia_p2p_payload_desc* curren
             return css_err_argument;
     }
 
-    CheckError(
+    CheckAndLogError(
         (currentOffset + nextPayloadSize > payloadSize), css_err_nomemory,
-        "pg %d terminal %d payload size small, encoding for kernel %d will exceed size by %u bytes",
+        "pg %d terminal %d payload size small, encoding for kernel %d exceed size by %lu bytes",
         mPgId, terminalIndex, kernelId, currentOffset + nextPayloadSize - payloadSize);
     return css_err_none;
 }

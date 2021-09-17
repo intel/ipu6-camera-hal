@@ -27,17 +27,6 @@ namespace icamera {
 #define DEFAULT_LSC_GRID_SIZE (64 * 64)
 #define DEFAULT_TONEMAP_CURVE_POINT_NUM 2048
 
-// Imaging algorithms that are supported
-typedef enum {
-    IMAGING_ALGO_NONE = 0,
-    IMAGING_ALGO_AE   = 1,
-    IMAGING_ALGO_AWB  = 1 << 1,
-    IMAGING_ALGO_AF   = 1 << 2,
-    IMAGING_ALGO_GBCE = 1 << 3,
-    IMAGING_ALGO_PA   = 1 << 4,
-    IMAGING_ALGO_SA   = 1 << 5
-} imaging_algorithm_t;
-
 typedef struct {
     char data[MAX_CUSTOM_CONTROLS_PARAM_SIZE];
     unsigned int length;
@@ -116,6 +105,9 @@ struct aiq_parameter_t {
     camera_tonemap_curves_t tonemapCurves;
     float tonemapCurveMem[DEFAULT_TONEMAP_CURVE_POINT_NUM * 3];  // r, g, b
     camera_test_pattern_mode_t testPatternMode;
+    bool callbackRgbs;
+    bool callbackTmCurve;
+    camera_power_mode_t powerMode;
 
     aiq_parameter_t() { reset(); }
     void reset();

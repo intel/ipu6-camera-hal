@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Intel Corporation
+ * Copyright (C) 2019-2021 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#define LOG_TAG "FaceDetection"
+#define LOG_TAG FaceDetection
 #include "src/fd/FaceDetection.h"
 
 #include <algorithm>
@@ -26,12 +26,14 @@
 #include "PlatformData.h"
 
 namespace icamera {
+#define FPS_FD_COUNT 60  // the face detection interval to print fps
+
 std::unordered_map<int, FaceDetection*> FaceDetection::sInstances;
 Mutex FaceDetection::sLock;
 FaceDetection *FaceDetection::getInstance(int cameraId) {
     LOG1("@%s, cameraId:%d", __func__, cameraId);
-    CheckError(cameraId < 0 || cameraId >= PlatformData::numberOfCameras(),
-               nullptr, "cameraId %d is error", cameraId);
+    CheckAndLogError(cameraId < 0 || cameraId >= PlatformData::numberOfCameras(),
+                     nullptr, "cameraId %d is error", cameraId);
 
     if (sInstances.find(cameraId) == sInstances.end()) {
         return nullptr;
@@ -45,10 +47,10 @@ FaceDetection *FaceDetection::createInstance(int cameraId,
                                              int width, int height) {
     LOG1("@%s, cameraId:%d, maxFaceNum:%u, halStreamId:%u, width:%d, height:%d",
          __func__, cameraId, maxFaceNum, halStreamId, width, height);
-    CheckError(maxFaceNum > MAX_FACES_DETECTABLE, nullptr,
-               "maxFaceNum %d is error", maxFaceNum);
-    CheckError(cameraId < 0 || cameraId >= PlatformData::numberOfCameras(),
-               nullptr, "cameraId %d is error", cameraId);
+    CheckAndLogError(maxFaceNum > MAX_FACES_DETECTABLE, nullptr,
+                     "maxFaceNum %d is error", maxFaceNum);
+    CheckAndLogError(cameraId < 0 || cameraId >= PlatformData::numberOfCameras(),
+                     nullptr, "cameraId %d is error", cameraId);
 
     AutoMutex lock(sLock);
     if (sInstances.find(cameraId) == sInstances.end()) {
@@ -61,8 +63,8 @@ FaceDetection *FaceDetection::createInstance(int cameraId,
 
 void FaceDetection::destoryInstance(int cameraId) {
     LOG1("@%s, cameraId:%d", __func__, cameraId);
-    CheckError(cameraId < 0 || cameraId >= PlatformData::numberOfCameras(),
-               VOID_VALUE, "cameraId is error");
+    CheckAndLogError(cameraId < 0 || cameraId >= PlatformData::numberOfCameras(),
+                     VOID_VALUE, "cameraId is error");
 
     AutoMutex lock(sLock);
     if (sInstances.find(cameraId) != sInstances.end()) {
@@ -77,8 +79,15 @@ FaceDetection::FaceDetection(int cameraId, unsigned int maxFaceNum, int32_t halS
     mInitialized(false),
     mHalStreamId(halStreamId),
     mWidth(width),
-    mHeight(height) {
-    LOG1("@%s, cameraId:%d, maxFaceNum:%d", __func__, cameraId, maxFaceNum);
+    mHeight(height),
+    mFDRunDefaultInterval(icamera::PlatformData::faceEngineRunningInterval(cameraId)),
+    mFDRunIntervalNoFace(icamera::PlatformData::faceEngineRunningIntervalNoFace(cameraId)),
+    mFDRunInterval(icamera::PlatformData::faceEngineRunningInterval(cameraId)),
+    mFrameCnt(0),
+    mRunCount(0) {
+    LOG1("@%s, cameraId:%d, maxFaceNum:%d,", __func__, cameraId, maxFaceNum);
+    LOG1("@%s, mFDRunDefaultInterval:%d, mFDRunIntervalNoFace:%d, mFDRunInterval:%d",
+         __func__, mFDRunDefaultInterval, mFDRunIntervalNoFace, mFDRunInterval);
     CLEAR(mResult);
 
     /* TODO: we should add CameraOrientationDetector to change the camera orientation */
@@ -88,7 +97,7 @@ FaceDetection::FaceDetection(int cameraId, unsigned int maxFaceNum, int32_t halS
 
     /* start face engine pthread */
     int ret = run("FaceDetection" + std::to_string(cameraId), PRIORITY_NORMAL);
-    CheckError(ret != OK, VOID_VALUE, "Camera thread failed to start, ret %d", ret);
+    CheckAndLogError(ret != OK, VOID_VALUE, "Camera thread failed to start, ret %d", ret);
 
     /* init IntelFaceDetection */
     FaceDetectionInitParams params;
@@ -96,27 +105,30 @@ FaceDetection::FaceDetection(int cameraId, unsigned int maxFaceNum, int32_t halS
     params.cameraId = mCameraId;
     mFace = std::unique_ptr<IntelFaceDetection>(new IntelFaceDetection());
     ret = mFace->init(&params, sizeof(FaceDetectionInitParams));
-    CheckError(ret != OK, VOID_VALUE, "mFace.init fails, ret %d", ret);
+    CheckAndLogError(ret != OK, VOID_VALUE, "mFace.init fails, ret %d", ret);
 
     for (int i = 0; i < MAX_STORE_FACE_DATA_BUF_NUM; i++) {
         FaceDetectionRunParams *memRunBuf = mFace->prepareRunBuffer(i);
-        CheckError(!memRunBuf, VOID_VALUE, "prepareRunBuffer fails");
+        CheckAndLogError(!memRunBuf, VOID_VALUE, "prepareRunBuffer fails");
         mMemRunPool.push(memRunBuf);
     }
+
+    gettimeofday(&mRequestRunTime, nullptr);
 
     mInitialized = true;
 }
 
 FaceDetection::~FaceDetection() {
     LOG1("@%s", __func__);
-    requestExit();
-
-    AutoMutex l(mRunBufQueueLock);
-    mRunCondition.notify_one();
 
     FaceDetectionDeinitParams params;
     params.cameraId = mCameraId;
     mFace->deinit(&params, sizeof(FaceDetectionDeinitParams));
+
+    requestExit();
+
+    AutoMutex l(mRunBufQueueLock);
+    mRunCondition.notify_one();
 }
 
 FaceDetectionRunParams *FaceDetection::acquireRunBuf() {
@@ -139,9 +151,73 @@ void FaceDetection::returnRunBuf(FaceDetectionRunParams *memRunBuf) {
     mMemRunPool.push(memRunBuf);
 }
 
+bool FaceDetection::faceRunningByCondition() {
+    CheckAndLogError(mInitialized == false, false, "mInitialized is false");
+
+    LOG2("@%s", __func__);
+
+    /*
+     * FD runs 1 frame every mFDRunInterval frames.
+     * And the default value of mFDRunInterval is mFDRunDefaultInterval
+    */
+    if (mFrameCnt % mFDRunInterval == 0) {
+        ++mFrameCnt;
+        return true;
+    }
+
+    /*
+     * When face doesn't be detected during mFDRunIntervalNoFace's frame,
+     * we may change FD running's interval frames.
+    */
+    if (mFDRunIntervalNoFace > mFDRunDefaultInterval) {
+        static unsigned int noFaceCnt = 0;
+        int faceNum = getFaceNum();
+
+        /*
+         * The purpose of changing the value of the variable is to run FD
+         * immediately when face is detected.
+        */
+        if (faceNum == 0) {
+            if (mFDRunInterval != mFDRunIntervalNoFace) {
+                noFaceCnt = ++noFaceCnt % mFDRunIntervalNoFace;
+                if (noFaceCnt == 0) {
+                    mFDRunInterval = mFDRunIntervalNoFace;
+                }
+            }
+        } else {
+            if (mFDRunInterval != mFDRunDefaultInterval) {
+                mFDRunInterval = mFDRunDefaultInterval;
+                mFrameCnt = mFDRunInterval - 1;
+                noFaceCnt = 0;
+            }
+        }
+        LOG2("%s, Currently running one time face detection every %d frames", __func__,
+             mFDRunInterval);
+    }
+
+    mFrameCnt = ++mFrameCnt % mFDRunInterval;
+    return false;
+}
+
+void FaceDetection::printfFDRunRate() {
+    if (!Log::isDebugLevelEnable(CAMERA_DEBUG_LOG_FACE_DETECTION_FPS)) return;
+
+    mRunCount++;
+    if (mRunCount % FPS_FD_COUNT != 0) return;
+
+    struct timeval curTime;
+    gettimeofday(&curTime, nullptr);
+    int duration = static_cast<int>(curTime.tv_usec - mRequestRunTime.tv_usec +
+                                    ((curTime.tv_sec - mRequestRunTime.tv_sec) * 1000000));
+    float curFps =
+        static_cast<float>(1000000) / static_cast<float>(duration / FPS_FD_COUNT);
+    LOGFDFPS("@%s, face detection fps: %02f", __func__, curFps);
+    mRequestRunTime = curTime;
+}
+
 void FaceDetection::runFaceDetection(const camera_buffer_t &buffer) {
     LOG1("@%s", __func__);
-    CheckError(mInitialized == false, VOID_VALUE, "mInitialized is false");
+    CheckAndLogError(mInitialized == false, VOID_VALUE, "mInitialized is false");
 
     if (PlatformData::isFaceEngineSyncRunning(mCameraId)) {
         runFaceDetectionBySync(buffer);
@@ -152,15 +228,17 @@ void FaceDetection::runFaceDetection(const camera_buffer_t &buffer) {
 
 void FaceDetection::runFaceDetectionBySync(const camera_buffer_t &buffer) {
     LOG1("@%s", __func__);
-    CheckError(mInitialized == false, VOID_VALUE, "mInitialized is false");
+    CheckAndLogError(mInitialized == false, VOID_VALUE, "mInitialized is false");
+
+    if (!faceRunningByCondition()) return;
 
     int size = buffer.s.size;
-    CheckError(size > MAX_FACE_FRAME_SIZE_SYNC, VOID_VALUE,
-               "face frame buffer is too small!, w:%d,h:%d,size:%d",
-               buffer.s.width, buffer.s.height, size);
+    CheckAndLogError(size > MAX_FACE_FRAME_SIZE_SYNC, VOID_VALUE,
+                     "face frame buffer is too small!, w:%d,h:%d,size:%d",
+                     buffer.s.width, buffer.s.height, size);
 
     FaceDetectionRunParams *params = acquireRunBuf();
-    CheckError(!params, VOID_VALUE, "Fail to acquire face engine buffer");
+    CheckAndLogError(!params, VOID_VALUE, "Fail to acquire face engine buffer");
 
     params->size = size;
     params->width = buffer.s.width;
@@ -173,13 +251,14 @@ void FaceDetection::runFaceDetectionBySync(const camera_buffer_t &buffer) {
     params->cameraId = mCameraId;
 
     nsecs_t startTime = CameraUtils::systemTime();
-
 #ifdef ENABLE_SANDBOXING
+    LOG1("@%s, w:%d, h:%d, dmafd:%d", __func__, params->width, params->height, buffer.dmafd);
     int ret = mFace->run(params, sizeof(FaceDetectionRunParams), buffer.dmafd);
 #else
     int ret = mFace->run(params, sizeof(FaceDetectionRunParams), buffer.addr);
 #endif
 
+    printfFDRunRate();
     LOG2("@%s: ret:%d, it takes need %ums", __func__, ret,
          (unsigned)((CameraUtils::systemTime() - startTime) / 1000000));
 
@@ -187,6 +266,7 @@ void FaceDetection::runFaceDetectionBySync(const camera_buffer_t &buffer) {
         AutoMutex l(mFaceResultLock);
         if (ret == OK) {
             mResult = params->results;
+            mResult.faceUpdated = true;
         } else {
             CLEAR(mResult);
         }
@@ -197,15 +277,17 @@ void FaceDetection::runFaceDetectionBySync(const camera_buffer_t &buffer) {
 
 void FaceDetection::runFaceDetectionByAsync(const camera_buffer_t &buffer) {
     LOG1("@%s", __func__);
-    CheckError(mInitialized == false, VOID_VALUE, "mInitialized is false");
+    CheckAndLogError(mInitialized == false, VOID_VALUE, "mInitialized is false");
+
+    if (!faceRunningByCondition()) return;
 
     int size = buffer.s.stride * buffer.s.height;
-    CheckError(size > MAX_FACE_FRAME_SIZE_ASYNC, VOID_VALUE,
-               "face frame buffer is too small!, w:%d,h:%d,size:%d",
-               buffer.s.width, buffer.s.height, size);
+    CheckAndLogError(size > MAX_FACE_FRAME_SIZE_ASYNC, VOID_VALUE,
+                     "face frame buffer is too small!, w:%d,h:%d,size:%d",
+                     buffer.s.width, buffer.s.height, size);
 
     FaceDetectionRunParams *params = acquireRunBuf();
-    CheckError(!params, VOID_VALUE, "Fail to acquire face engine buffer");
+    CheckAndLogError(!params, VOID_VALUE, "Fail to acquire face engine buffer");
 
     params->size = size;
     MEMCPY_S(params->data, MAX_FACE_FRAME_SIZE_ASYNC, buffer.addr, size);
@@ -247,6 +329,8 @@ bool FaceDetection::threadLoop() {
     nsecs_t startTime = CameraUtils::systemTime();
 
     int ret = mFace->run(faceParams, sizeof(FaceDetectionRunParams));
+
+    printfFDRunRate();
     LOG2("@%s: ret:%d, it takes need %ums", __func__, ret,
          (unsigned)((CameraUtils::systemTime() - startTime) / 1000000));
 
@@ -254,6 +338,7 @@ bool FaceDetection::threadLoop() {
         AutoMutex l(mFaceResultLock);
         if (ret == OK) {
             mResult = faceParams->results;
+            mResult.faceUpdated = true;
         } else {
             CLEAR(mResult);
         }
@@ -265,28 +350,33 @@ bool FaceDetection::threadLoop() {
 
 int FaceDetection::getFaceNum() {
     LOG2("@%s", __func__);
-    CheckError(mInitialized == false, 0, "mInitialized is false");
+    CheckAndLogError(mInitialized == false, 0, "mInitialized is false");
 
     AutoMutex l(mFaceResultLock);
     return mResult.faceNum;
 }
 
 /* The result is pvl's original reuslt */
-int FaceDetection::getFaceDetectionResult(FaceDetectionResult *result) {
+int FaceDetection::getFaceDetectionResult(FaceDetectionResult *result, bool resetRes) {
     LOG1("@%s", __func__);
-    CheckError(mInitialized == false, UNKNOWN_ERROR, "mInitialized is false");
-    CheckError(!result, UNKNOWN_ERROR, "mResult is nullptr");
+    CheckAndLogError(mInitialized == false, UNKNOWN_ERROR, "mInitialized is false");
+    CheckAndLogError(!result, UNKNOWN_ERROR, "mResult is nullptr");
 
     AutoMutex l(mFaceResultLock);
     MEMCPY_S(result, sizeof(FaceDetectionResult), &mResult, sizeof(FaceDetectionResult));
+
+    if (resetRes) {
+        mResult.faceUpdated = false;
+    }
+
     return OK;
 }
 
 /* Get current frame width and hight */
 void FaceDetection::getCurrentFrameWidthAndHight(int *frameWidth, int *frameHigth) {
     LOG2("@%s", __func__);
-    CheckError(mInitialized == false, VOID_VALUE, "mInitialized is false");
-    CheckError(!frameWidth || !frameHigth, VOID_VALUE, "input paramter is error");
+    CheckAndLogError(mInitialized == false, VOID_VALUE, "mInitialized is false");
+    CheckAndLogError(!frameWidth || !frameHigth, VOID_VALUE, "input paramter is error");
 
     *frameWidth = mWidth;
     *frameHigth = mHeight;
@@ -295,8 +385,8 @@ void FaceDetection::getCurrentFrameWidthAndHight(int *frameWidth, int *frameHigt
 /* Get current hal stream id */
 void FaceDetection::getHalStreamId(int32_t *halStreamId) {
     LOG2("@%s", __func__);
-    CheckError(mInitialized == false, VOID_VALUE, "mInitialized is false");
-    CheckError(!halStreamId, VOID_VALUE, "halStreamId is nullptr");
+    CheckAndLogError(mInitialized == false, VOID_VALUE, "mInitialized is false");
+    CheckAndLogError(!halStreamId, VOID_VALUE, "halStreamId is nullptr");
 
     *halStreamId = mHalStreamId;
 }
@@ -304,9 +394,9 @@ void FaceDetection::getHalStreamId(int32_t *halStreamId) {
 /* The result for 3A AE */
 int FaceDetection::getResult(int cameraId, cca::cca_face_state *faceState) {
     LOG1("@%s", __func__);
-    CheckError(!faceState, UNKNOWN_ERROR, "faceState is nullptr");
-    CheckError(cameraId < 0 || cameraId >= PlatformData::numberOfCameras(),
-               UNKNOWN_ERROR, "cameraId %d is error", cameraId);
+    CheckAndLogError(!faceState, UNKNOWN_ERROR, "faceState is nullptr");
+    CheckAndLogError(cameraId < 0 || cameraId >= PlatformData::numberOfCameras(),
+                     UNKNOWN_ERROR, "cameraId %d is error", cameraId);
 
     int width = 0;
     int height = 0;
@@ -316,25 +406,27 @@ int FaceDetection::getResult(int cameraId, cca::cca_face_state *faceState) {
     {
         AutoMutex lock(sLock);
         FaceDetection *fdInstance = FaceDetection::getInstance(cameraId);
-        CheckError(!fdInstance, UNKNOWN_ERROR, "Failed to get instance");
-
-        int ret = fdInstance->getFaceDetectionResult(&faceDetectionResult);
-        CheckError(ret != OK, UNKNOWN_ERROR, "Failed to get result, ret %d", ret);
+        if (!fdInstance) {
+            LOG2("%s, It doesn't have face detection instance", __func__);
+            return UNKNOWN_ERROR;
+        }
+        int ret = fdInstance->getFaceDetectionResult(&faceDetectionResult, true);
+        CheckAndLogError(ret != OK, UNKNOWN_ERROR, "Failed to get result, ret %d", ret);
         fdInstance->getCurrentFrameWidthAndHight(&width, &height);
         fdInstance->getHalStreamId(&halStreamId);
     }
 
     /*
-    face rectangle from face lib: (Ln, Tn, Rn, Bn)
-    3A statistics Surface: ((IA_COORDINATE_RIGHT - IA_COORDINATE_LEFT) *
-                            (IA_COORDINATE_BOTTOM - IA_COORDINATE_TOP))
-    target coordinate of face rectangle to the 3A lib: (LL, TT, RR, BB)
-    FOV ratio (which is <= 1): (fovRatioW * fovRatioH)
-
-    formular:
-    LL = Ln * fovRatioW + (1 - fovRatioW) / 2 * (IA_COORDINATE_RIGHT - IA_COORDINATE_LEFT)
-    TT = Tn * fovRatioH + (1 - fovRatioH) / 2 * (IA_COORDINATE_BOTTOM - IA_COORDINATE_TOP)
-    RR and BB are the similar.
+    * face rectangle from face lib: (Ln, Tn, Rn, Bn)
+    * 3A statistics Surface: ((IA_COORDINATE_RIGHT - IA_COORDINATE_LEFT) *
+    *                         (IA_COORDINATE_BOTTOM - IA_COORDINATE_TOP))
+    * target coordinate of face rectangle to the 3A lib: (LL, TT, RR, BB)
+    * FOV ratio (which is <= 1): (fovRatioW * fovRatioH)
+    *
+    * formular:
+    * LL = Ln * fovRatioW + (1 - fovRatioW) / 2 * (IA_COORDINATE_RIGHT - IA_COORDINATE_LEFT)
+    * TT = Tn * fovRatioH + (1 - fovRatioH) / 2 * (IA_COORDINATE_BOTTOM - IA_COORDINATE_TOP)
+    * RR and BB are the similar.
     */
 
     float fovRatioW = 1;
@@ -349,9 +441,11 @@ int FaceDetection::getResult(int cameraId, cca::cca_face_state *faceState) {
     float offsetW = (1.0 - fovRatioWTmp) / 2.0 * (IA_COORDINATE_RIGHT - IA_COORDINATE_LEFT);
     float offsetH = (1.0 - fovRatioHTmp) / 2.0 * (IA_COORDINATE_BOTTOM - IA_COORDINATE_TOP);
 
-    LOG1("@%s, faceNum:%d, mHeight:%d, mWidth:%d", __func__,
-         faceDetectionResult.faceNum, height, width);
+    LOG1("@%s, faceNum:%d, mHeight:%d, mWidth:%d, faceUpdated: %d", __func__,
+         faceDetectionResult.faceNum, height, width, faceDetectionResult.faceUpdated);
 
+    faceState->is_video_conf = true;
+    faceState->updated = faceDetectionResult.faceUpdated;
     faceState->num_faces = faceDetectionResult.faceNum;
 
     for (int i = 0; i < faceDetectionResult.faceNum; i++) {
@@ -391,9 +485,9 @@ int FaceDetection::getResult(int cameraId, cca::cca_face_state *faceState) {
 /* The result for android statistics metadata */
 int FaceDetection::getResult(int cameraId, CVFaceDetectionAbstractResult *result) {
     LOG1("@%s", __func__);
-    CheckError(!result, UNKNOWN_ERROR, "result is nullptr");
-    CheckError(cameraId < 0 || cameraId >= PlatformData::numberOfCameras(),
-               UNKNOWN_ERROR, "cameraId %d is error", cameraId);
+    CheckAndLogError(!result, UNKNOWN_ERROR, "result is nullptr");
+    CheckAndLogError(cameraId < 0 || cameraId >= PlatformData::numberOfCameras(),
+                     UNKNOWN_ERROR, "cameraId %d is error", cameraId);
 
     int width = 0;
     int height = 0;
@@ -401,10 +495,13 @@ int FaceDetection::getResult(int cameraId, CVFaceDetectionAbstractResult *result
     {
         AutoMutex lock(sLock);
         FaceDetection *fdInstance = FaceDetection::getInstance(cameraId);
-        CheckError(!fdInstance, UNKNOWN_ERROR, "Failed to get instance");
+        if (!fdInstance) {
+            LOG2("%s, It doesn't have face detection instance", __func__);
+            return UNKNOWN_ERROR;
+        }
 
         int ret = fdInstance->getFaceDetectionResult(&faceDetectionResult);
-        CheckError(ret != OK, UNKNOWN_ERROR, "Failed to get result");
+        CheckAndLogError(ret != OK, UNKNOWN_ERROR, "Failed to get result");
         fdInstance->getCurrentFrameWidthAndHight(&width, &height);
     }
 

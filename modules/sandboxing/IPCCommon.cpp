@@ -27,6 +27,7 @@ const char* IntelAlgoIpcCmdToString(IPC_CMD cmd) {
                                            "IPC_GRAPH_ADD_KEY",
                                            "IPC_GRAPH_PARSE",
                                            "IPC_GRAPH_RELEASE_NODES",
+                                           "IPC_GRAPH_QUERY_GRAPH_SETTINGS",
                                            "IPC_GRAPH_CONFIG_STREAMS",
                                            "IPC_GRAPH_GET_CONFIG_DATA",
                                            "IPC_GRAPH_GET_CONNECTION",

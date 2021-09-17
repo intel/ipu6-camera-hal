@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Intel Corporation.
+ * Copyright (C) 2015-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#define LOG_TAG "Parameters"
+#define LOG_TAG Parameters
 
 #include "iutils/Errors.h"
 #include "iutils/CameraLog.h"
@@ -1104,7 +1104,7 @@ int Parameters::getAwbConvergeSpeedMode(camera_converge_speed_mode_t& mode) cons
 
 int Parameters::setMakernoteData(const void* data, unsigned int size)
 {
-    CheckError(!data || size == 0, BAD_VALUE, "%s, invalid parameters", __func__);
+    CheckAndLogError(!data || size == 0, BAD_VALUE, "%s, invalid parameters", __func__);
     ParameterHelper::AutoWLock wl(mData);
 
     return ParameterHelper::getMetadata(mData).update(INTEL_CONTROL_MAKERNOTE_DATA, (uint8_t*)data, size);
@@ -1112,7 +1112,7 @@ int Parameters::setMakernoteData(const void* data, unsigned int size)
 
 int Parameters::getMakernoteData(void* data, unsigned int* size) const
 {
-    CheckError(!data || !size, BAD_VALUE, "%s, invalid parameters", __func__);
+    CheckAndLogError(!data || !size, BAD_VALUE, "%s, invalid parameters", __func__);
     ParameterHelper::AutoRLock rl(mData);
 
     auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_CONTROL_MAKERNOTE_DATA);
@@ -1128,7 +1128,7 @@ int Parameters::getMakernoteData(void* data, unsigned int* size) const
 
 int Parameters::setCustomAicParam(const void* data, unsigned int length)
 {
-    CheckError(!data, BAD_VALUE, "%s, invalid parameters", __func__);
+    CheckAndLogError(!data, BAD_VALUE, "%s, invalid parameters", __func__);
     ParameterHelper::AutoWLock wl(mData);
 
     return ParameterHelper::getMetadata(mData).update(INTEL_CONTROL_CUSTOM_AIC_PARAM, (uint8_t*)data, length);
@@ -1136,7 +1136,7 @@ int Parameters::setCustomAicParam(const void* data, unsigned int length)
 
 int Parameters::getCustomAicParam(void* data, unsigned int* length) const
 {
-    CheckError(!data || !length, BAD_VALUE, "%s, invalid parameters", __func__);
+    CheckAndLogError(!data || !length, BAD_VALUE, "%s, invalid parameters", __func__);
     ParameterHelper::AutoRLock rl(mData);
 
     auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_CONTROL_CUSTOM_AIC_PARAM);
@@ -2002,6 +2002,25 @@ int Parameters::getTonemapCurves(camera_tonemap_curves_t& curves) const {
     return (curves.rSize && curves.bSize && curves.gSize) ? OK : NAME_NOT_FOUND;
 }
 
+int Parameters::setPowerMode(camera_power_mode_t mode)
+{
+    uint8_t value = mode;
+    ParameterHelper::AutoWLock wl(mData);
+    return ParameterHelper::getMetadata(mData).update(INTEL_VENDOR_CAMERA_POWER_MODE, &value, 1);
+}
+
+int Parameters::getPowerMode(camera_power_mode_t &mode) const
+{
+    ParameterHelper::AutoRLock rl(mData);
+    auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_VENDOR_CAMERA_POWER_MODE);
+    if (entry.count != 1) {
+        return NAME_NOT_FOUND;
+    }
+
+    mode = (camera_power_mode_t)entry.data.u8[0];
+    return OK;
+}
+
 int Parameters::setUserRequestId(int32_t userRequestId) {
     ParameterHelper::AutoWLock wl(mData);
 
@@ -2035,6 +2054,44 @@ int Parameters::getCaptureIntent(uint8_t& captureIntent) const
         return NAME_NOT_FOUND;
     }
     captureIntent = entry.data.u8[0];
+    return OK;
+}
+
+int Parameters::setCallbackRgbs(bool enabled)
+{
+    uint8_t lockValue = enabled ? 1 : 0;
+    ParameterHelper::AutoWLock wl(mData);
+    return ParameterHelper::getMetadata(mData).update(INTEL_VENDOR_CAMERA_CALLBACK_RGBS,
+                                                      &lockValue, 1);
+}
+
+int Parameters::getCallbackRgbs(bool *enabled) const
+{
+    ParameterHelper::AutoRLock rl(mData);
+    auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_VENDOR_CAMERA_CALLBACK_RGBS);
+    if (entry.count != 1) {
+        return NAME_NOT_FOUND;
+    }
+    *enabled = entry.data.u8[0];
+    return OK;
+}
+
+int Parameters::setCallbackTmCurve(bool enabled)
+{
+    uint8_t value = enabled ? 1 : 0;
+    ParameterHelper::AutoWLock wl(mData);
+    return ParameterHelper::getMetadata(mData).update(INTEL_VENDOR_CAMERA_CALLBACK_TM_CURVE,
+                                                      &value, 1);
+}
+
+int Parameters::getCallbackTmCurve(bool *enabled) const
+{
+    ParameterHelper::AutoRLock rl(mData);
+    auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_VENDOR_CAMERA_CALLBACK_TM_CURVE);
+    if (entry.count != 1) {
+        return NAME_NOT_FOUND;
+    }
+    *enabled = entry.data.u8[0];
     return OK;
 }
 

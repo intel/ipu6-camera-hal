@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Intel Corporation.
+ * Copyright (C) 2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -202,7 +202,7 @@ ia_css_rbm_t ia_css_rbm_create_from_uint64(
 
     result = ia_css_rbm_clear();
     for (i = 0; i < MIN(nof_elems_bits64, IA_CSS_RBM_NOF_ELEMS); i++) {
-        /* masking is done implictly, the MSB bits of casting will be chopped off */
+        /* masking is done implicitly, the MSB bits of casting will be chopped off */
         result.data[i] = (IA_CSS_RBM_ELEM_TYPE)
             (value >> (i * IA_CSS_RBM_ELEM_BITS));
     }
@@ -308,7 +308,7 @@ int ia_css_rbm_range_val(
 
     IA_CSS_TRACE_0(RBM, VERBOSE, "ia_css_rbm_range_val(): enter:\n");
     assert(index < IA_CSS_RBM_BITS);
-    /* Extract the bit range from the data array relevane entry */
+    /* Extract the bit range from the data array relevant entry */
     elem_index = index / IA_CSS_RBM_ELEM_BITS;
     elem_index_end = (index + size - 1) / IA_CSS_RBM_ELEM_BITS;
     elem_bit_index = index % IA_CSS_RBM_ELEM_BITS;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2018 Intel Corporation.
+ * Copyright (C) 2015-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,30 @@
 #ifdef CAMERA_TRACE
 #include "CameraTrace.h"
 #endif
+
+// ***********************************************************
+#include <stdint.h>
+#include <stdio.h>
+
+struct GroupDesc {
+    uint32_t level;
+};
+
+extern GroupDesc globalGroupsDescp[];
+
+#include "LogSink.h"
+#include "ModuleTags.h"
+
+#define STR1(X) #X
+#define STR(X) STR1(X)
+
+#define GENERATED_TAG_NAME(X) GENERATED_TAGS_##X
+#define GET_FILE_SHIFT(X) GENERATED_TAG_NAME(X)
+
+#define LOG_GROUP(X) GENERATED_TAGS_##X
+
+extern const char* tagNames[];
+extern icamera::LogOutputSink* globalLogSink;
 
 namespace icamera {
 /**
@@ -61,7 +85,7 @@ extern int gSlowlyRunRatio;
  * PERF TRACES BREAKDOWN provides further level of detail on the performance
  * metrics
  */
-enum  {
+enum {
     /* verbosity level of general traces */
     CAMERA_DEBUG_LOG_LEVEL1 = 1,
     CAMERA_DEBUG_LOG_LEVEL2 = 1 << 1,
@@ -69,26 +93,30 @@ enum  {
     /* Bitmask to enable a concrete set of traces */
     CAMERA_DEBUG_LOG_REQ_STATE = 1 << 2,
     CAMERA_DEBUG_LOG_AIQ = 1 << 3,
+
     CAMERA_DEBUG_LOG_XML = 1 << 4,
     CAMERA_DEBUG_LOG_VC_SYNC = 1 << 5,
     CAMERA_DEBUG_LOG_FPS = 1 << 6,
+    CAMERA_DEBUG_LOG_CCA = 1 << 7,
+
     CAMERA_DEBUG_LOG_KERNEL_TOGGLE = 1 << 8,
     CAMERA_DEBUG_LOG_SANDBOXING = 1 << 9,
+    CAMERA_DEBUG_LOG_FACE_DETECTION_FPS = 1 << 10,
 
     /* Make logs persistent, retrying if logcat is busy */
     CAMERA_DEBUG_LOG_PERSISTENT = 1 << 12, /* 4096 */
-
     /* reserved for any components */
     CAMERA_DEBUG_LOG_GRAPH = 1 << 13,
+    CAMERA_DEBUG_LOG_METADATA = 1 << 14, /* 16384 */
 
-    CAMERA_DEBUG_LOG_DBG = 1 <<16,
-    CAMERA_DEBUG_LOG_INFO = 1 <<17,
-    CAMERA_DEBUG_LOG_ERR = 1 <<18,
-    CAMERA_DEBUG_LOG_WARNING = 1 <<19,
-    CAMERA_DEBUG_LOG_VERBOSE = 1 <<20
+    CAMERA_DEBUG_LOG_DBG = 1 << 16,
+    CAMERA_DEBUG_LOG_INFO = 1 << 17,
+    CAMERA_DEBUG_LOG_ERR = 1 << 18,
+    CAMERA_DEBUG_LOG_WARNING = 1 << 19,
+    CAMERA_DEBUG_LOG_VERBOSE = 1 << 20,
 };
 
-enum  {
+enum {
     /* Emit well-formed performance traces */
     CAMERA_DEBUG_LOG_PERF_TRACES = 1,
 
@@ -96,84 +124,165 @@ enum  {
     CAMERA_DEBUG_LOG_PERF_TRACES_BREAKDOWN = 2,
 
     /* Print out detailed timing analysis for IOCTL */
-    CAMERA_DEBUG_LOG_PERF_IOCTL_BREAKDOWN = 1<<2,
+    CAMERA_DEBUG_LOG_PERF_IOCTL_BREAKDOWN = 1 << 2,
 
     /* Print out detailed memory information analysis for IOCTL */
-    CAMERA_DEBUG_LOG_PERF_MEMORY = 1<<3,
+    CAMERA_DEBUG_LOG_PERF_MEMORY = 1 << 3,
 
     /*enable camera atrace level 0 for camtune-record*/
-    CAMERA_DEBUG_LOG_ATRACE_LEVEL0 = 1<<4,
+    CAMERA_DEBUG_LOG_ATRACE_LEVEL0 = 1 << 4,
 
     /*enable media topology dump*/
-    CAMERA_DEBUG_LOG_MEDIA_TOPO_LEVEL = 1<<5,
+    CAMERA_DEBUG_LOG_MEDIA_TOPO_LEVEL = 1 << 5,
 
     /*enable media controller info dump*/
-    CAMERA_DEBUG_LOG_MEDIA_CONTROLLER_LEVEL = 1<<6,
+    CAMERA_DEBUG_LOG_MEDIA_CONTROLLER_LEVEL = 1 << 6,
 
     /*enable camera imaging atrace level 1 for camtune-record*/
-    CAMERA_DEBUG_LOG_ATRACE_LEVEL1 = 1<<7,
+    CAMERA_DEBUG_LOG_ATRACE_LEVEL1 = 1 << 7,
 };
 
 enum {
-    CAMERA_POWERBREAKDOWN_DISABLE_PREVIEW = 1<<0,
-    CAMERA_POWERBREAKDOWN_DISABLE_FDFR = 1<<1,
-    CAMERA_POWERBREAKDOWN_DISABLE_3A = 1<<2,
+    CAMERA_POWERBREAKDOWN_DISABLE_PREVIEW = 1 << 0,
+    CAMERA_POWERBREAKDOWN_DISABLE_FDFR = 1 << 1,
+    CAMERA_POWERBREAKDOWN_DISABLE_3A = 1 << 2,
 };
+
+const char* cameraDebugLogToString(int level);
 
 namespace Log {
 void setDebugLevel(void);
-void print_log(bool enable, const char *module, const int level, const char *format, ...);
+void print_log(bool enable, const char* module, const int level,
+               const char* format, ...);
 bool isDebugLevelEnable(int level);
-bool isModulePrintable(const char *module);
+bool isModulePrintable(const char* module);
 bool isDumpMediaTopo(void);
 bool isDumpMediaInfo(void);
-void ccaPrintError(const char *fmt, va_list ap);
-void ccaPrintInfo(const char *fmt, va_list ap);
-void ccaPrintDebug(const char *fmt, va_list ap);
-};
+void ccaPrintError(const char* fmt, va_list ap);
+void ccaPrintInfo(const char* fmt, va_list ap);
+void ccaPrintDebug(const char* fmt, va_list ap);
+};  // namespace Log
 
-#define SLOWLY_MULTIPLIER (icamera::gSlowlyRunRatio ? icamera::gSlowlyRunRatio : 1)
+#define SLOWLY_MULTIPLIER \
+    (icamera::gSlowlyRunRatio ? icamera::gSlowlyRunRatio : 1)
 
-#ifdef HAVE_LINUX_OS //Linux OS
+extern void doLogBody(int logTag, int level, int grpPosition, const char* fmt,
+                      ...);
+extern void doLogBody(int logTag, int level, const char* fmt, ...);
 
-#define LOG1(format, args...) \
-    icamera::Log::print_log(icamera::gLogLevel & icamera::CAMERA_DEBUG_LOG_LEVEL1, LOG_TAG, \
-                            icamera::CAMERA_DEBUG_LOG_LEVEL1, format, ##args)
-#define LOG2(format, args...) \
-    icamera::Log::print_log(icamera::gLogLevel & icamera::CAMERA_DEBUG_LOG_LEVEL2, LOG_TAG, \
-                            icamera::CAMERA_DEBUG_LOG_LEVEL2, format, ##args)
-#define LOGR(format, args...) \
-    icamera::Log::print_log(icamera::gLogLevel & icamera::CAMERA_DEBUG_LOG_REQ_STATE, LOG_TAG, \
-                            icamera::CAMERA_DEBUG_LOG_REQ_STATE, format, ##args)
-#define LOG3A(format, args...) \
-    icamera::Log::print_log(icamera::gLogLevel & icamera::CAMERA_DEBUG_LOG_AIQ, LOG_TAG, \
-                            icamera::CAMERA_DEBUG_LOG_AIQ, format, ##args)
-#define LOGXML(format, args...) \
-    icamera::Log::print_log(icamera::gLogLevel & icamera::CAMERA_DEBUG_LOG_XML, LOG_TAG, \
-                            icamera::CAMERA_DEBUG_LOG_XML, format, ##args)
-#define LOGVCSYNC(format, args...) \
-    icamera::Log::print_log(icamera::gLogLevel & icamera::CAMERA_DEBUG_LOG_VC_SYNC, LOG_TAG, \
-                            icamera::CAMERA_DEBUG_LOG_VC_SYNC, format, ##args)
-#define LOGG(format, args...) \
-    icamera::Log::print_log(icamera::gLogLevel & icamera::CAMERA_DEBUG_LOG_GRAPH, LOG_TAG, \
-                            icamera::CAMERA_DEBUG_LOG_GRAPH, format, ##args)
-#define LOGIPC(format, args...) \
-    icamera::Log::print_log(icamera::gLogLevel & icamera::CAMERA_DEBUG_LOG_SANDBOXING, LOG_TAG, \
-                            icamera::CAMERA_DEBUG_LOG_SANDBOXING, format, ##args)
-#define LOGFPS(format, args...) \
-    icamera::Log::print_log(icamera::gLogLevel& icamera::CAMERA_DEBUG_LOG_FPS, LOG_TAG, \
-                            icamera::CAMERA_DEBUG_LOG_FPS, format, ##args)
+#ifdef HAVE_LINUX_OS  // Linux OS
 
-#define LOGD(format, args...) \
-    icamera::Log::print_log(true, LOG_TAG, icamera::CAMERA_DEBUG_LOG_DBG, format, ##args)
-#define LOGI(format, args...) \
-    icamera::Log::print_log(true, LOG_TAG, icamera::CAMERA_DEBUG_LOG_INFO, format, ##args)
-#define LOGE(format, args...) \
-    icamera::Log::print_log(true, LOG_TAG, icamera::CAMERA_DEBUG_LOG_ERR, format, ##args)
-#define LOGW(format, args...) \
-    icamera::Log::print_log(true, LOG_TAG, icamera::CAMERA_DEBUG_LOG_WARNING, format, ##args)
-#define LOGV(format, args...) \
-    icamera::Log::print_log(true, LOG_TAG, icamera::CAMERA_DEBUG_LOG_VERBOSE, format, ##args)
+#define LOG1(...)                                                       \
+    do {                                                                \
+        {                                                               \
+            doLogBody(GET_FILE_SHIFT(LOG_TAG),                          \
+                      icamera::CAMERA_DEBUG_LOG_LEVEL1, ##__VA_ARGS__); \
+        }                                                               \
+    } while (0)
+
+#define LOG2(...)                                                       \
+    do {                                                                \
+        {                                                               \
+            doLogBody(GET_FILE_SHIFT(LOG_TAG),                          \
+                      icamera::CAMERA_DEBUG_LOG_LEVEL2, ##__VA_ARGS__); \
+        }                                                               \
+    } while (0)
+
+#define LOG3A(...)                                                            \
+    do {                                                                      \
+        {                                                                     \
+            doLogBody(GET_FILE_SHIFT(LOG_TAG), icamera::CAMERA_DEBUG_LOG_AIQ, \
+                      ##__VA_ARGS__);                                         \
+        }                                                                     \
+    } while (0)
+
+#define LOGXML(...)                                                           \
+    do {                                                                      \
+        {                                                                     \
+            doLogBody(GET_FILE_SHIFT(LOG_TAG), icamera::CAMERA_DEBUG_LOG_XML, \
+                      ##__VA_ARGS__);                                         \
+        }                                                                     \
+    } while (0)
+
+#define LOGVCSYNC(...)                                                   \
+    do {                                                                 \
+        {                                                                \
+            doLogBody(GET_FILE_SHIFT(LOG_TAG),                           \
+                      icamera::CAMERA_DEBUG_LOG_VC_SYNC, ##__VA_ARGS__); \
+        }                                                                \
+    } while (0)
+
+#define LOGG(...)                                                      \
+    do {                                                               \
+        {                                                              \
+            doLogBody(GET_FILE_SHIFT(LOG_TAG),                         \
+                      icamera::CAMERA_DEBUG_LOG_GRAPH, ##__VA_ARGS__); \
+        }                                                              \
+    } while (0)
+
+#define LOGIPC(...)                                                         \
+    do {                                                                    \
+        {                                                                   \
+            doLogBody(GET_FILE_SHIFT(LOG_TAG),                              \
+                      icamera::CAMERA_DEBUG_LOG_SANDBOXING, ##__VA_ARGS__); \
+        }                                                                   \
+    } while (0)
+
+#define LOGFPS(...)                                                           \
+    do {                                                                      \
+        {                                                                     \
+            doLogBody(GET_FILE_SHIFT(LOG_TAG), icamera::CAMERA_DEBUG_LOG_FPS, \
+                      ##__VA_ARGS__);                                         \
+        }                                                                     \
+    } while (0)
+
+#define LOGFDFPS(...)                                                         \
+    do {                                                                      \
+        {                                                                     \
+            doLogBody(GET_FILE_SHIFT(LOG_TAG), icamera::CAMERA_DEBUG_LOG_FPS, \
+                      ##__VA_ARGS__);                                         \
+        }                                                                     \
+    } while (0)
+
+#define LOGD(...)                                                             \
+    do {                                                                      \
+        {                                                                     \
+            doLogBody(GET_FILE_SHIFT(LOG_TAG), icamera::CAMERA_DEBUG_LOG_DBG, \
+                      ##__VA_ARGS__);                                         \
+        }                                                                     \
+    } while (0)
+
+#define LOGI(...)                                                              \
+    do {                                                                       \
+        {                                                                      \
+            doLogBody(GET_FILE_SHIFT(LOG_TAG), icamera::CAMERA_DEBUG_LOG_INFO, \
+                      ##__VA_ARGS__);                                          \
+        }                                                                      \
+    } while (0)
+
+#define LOGE(...)                                                             \
+    do {                                                                      \
+        {                                                                     \
+            doLogBody(GET_FILE_SHIFT(LOG_TAG), icamera::CAMERA_DEBUG_LOG_ERR, \
+                      ##__VA_ARGS__);                                         \
+        }                                                                     \
+    } while (0)
+
+#define LOGW(...)                                                        \
+    do {                                                                 \
+        {                                                                \
+            doLogBody(GET_FILE_SHIFT(LOG_TAG),                           \
+                      icamera::CAMERA_DEBUG_LOG_WARNING, ##__VA_ARGS__); \
+        }                                                                \
+    } while (0)
+
+#define LOGV(...)                                                        \
+    do {                                                                 \
+        {                                                                \
+            doLogBody(GET_FILE_SHIFT(LOG_TAG),                           \
+                      icamera::CAMERA_DEBUG_LOG_VERBOSE, ##__VA_ARGS__); \
+        }                                                                \
+    } while (0)
 
 #define ALOGE LOGE
 #define ALOGD LOGD
@@ -184,60 +293,84 @@ void ccaPrintDebug(const char *fmt, va_list ap);
 #define LOG_ALWAYS_FATAL_IF
 #define LOG_FATAL_IF
 
-#else //Android OS
+#else  // Android OS
 
-void __camera_hal_log(bool condition, int prio, const char *tag, const char *fmt, ...);
+void __camera_hal_log(bool condition, int prio, const char* tag,
+                      const char* fmt, ...);
 
-#define LOG1(...) \
-    icamera::__camera_hal_log(icamera::gLogLevel & icamera::CAMERA_DEBUG_LOG_LEVEL1, \
-                              ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
-#define LOG2(...) \
-    icamera::__camera_hal_log(icamera::gLogLevel & icamera::CAMERA_DEBUG_LOG_LEVEL2, \
-                              ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
-#define LOGR(...) \
-    icamera::__camera_hal_log(icamera::gLogLevel & icamera::CAMERA_DEBUG_LOG_REQ_STATE, \
-                              ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
-#define LOG3A(...) \
-    icamera::__camera_hal_log(icamera::gLogLevel & icamera::CAMERA_DEBUG_LOG_AIQ, \
-                              ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
-#define LOGXML(...) \
-    icamera::__camera_hal_log(icamera::gLogLevel & icamera::CAMERA_DEBUG_LOG_XML, \
-                              ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
-#define LOGVCSYNC(...) \
-    icamera::__camera_hal_log(icamera::gLogLevel & icamera::CAMERA_DEBUG_LOG_VC_SYNC, \
-                              ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
-#define LOGG(...) \
-    icamera::__camera_hal_log(icamera::gLogLevel & icamera::CAMERA_DEBUG_LOG_GRAPH, \
-                              ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
-#define LOGIPC(format, args...) \
-    icamera::__camera_hal_log(icamera::gLogLevel & icamera::CAMERA_DEBUG_LOG_SANDBOXING, \
-                              ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
-#define LOGFPS(format, args...) \
-    icamera::__camera_hal_log(icamera::gLogLevel & icamera::CAMERA_DEBUG_LOG_FPS, \
-                              ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
+#define LOG1(...)                                             \
+    icamera::__camera_hal_log(                                \
+        icamera::gLogLevel& icamera::CAMERA_DEBUG_LOG_LEVEL1, \
+        ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
+#define LOG2(...)                                             \
+    icamera::__camera_hal_log(                                \
+        icamera::gLogLevel& icamera::CAMERA_DEBUG_LOG_LEVEL2, \
+        ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
+#define LOGR(...)                                                \
+    icamera::__camera_hal_log(                                   \
+        icamera::gLogLevel& icamera::CAMERA_DEBUG_LOG_REQ_STATE, \
+        ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
+#define LOG3A(...)                                                            \
+    icamera::__camera_hal_log(                                                \
+        icamera::gLogLevel& icamera::CAMERA_DEBUG_LOG_AIQ, ANDROID_LOG_DEBUG, \
+        LOG_TAG, __VA_ARGS__)
+#define LOGXML(...)                                                           \
+    icamera::__camera_hal_log(                                                \
+        icamera::gLogLevel& icamera::CAMERA_DEBUG_LOG_XML, ANDROID_LOG_DEBUG, \
+        LOG_TAG, __VA_ARGS__)
+#define LOGVCSYNC(...)                                         \
+    icamera::__camera_hal_log(                                 \
+        icamera::gLogLevel& icamera::CAMERA_DEBUG_LOG_VC_SYNC, \
+        ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
+#define LOGG(...)                                            \
+    icamera::__camera_hal_log(                               \
+        icamera::gLogLevel& icamera::CAMERA_DEBUG_LOG_GRAPH, \
+        ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
+#define LOGIPC(format, args...)                                   \
+    icamera::__camera_hal_log(                                    \
+        icamera::gLogLevel& icamera::CAMERA_DEBUG_LOG_SANDBOXING, \
+        ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
+#define LOGFPS(format, args...)                                               \
+    icamera::__camera_hal_log(                                                \
+        icamera::gLogLevel& icamera::CAMERA_DEBUG_LOG_FPS, ANDROID_LOG_DEBUG, \
+        LOG_TAG, __VA_ARGS__)
+#define LOGFDFPS(format, args...)                                         \
+    icamera::Log::print_log(                                              \
+        icamera::gLogLevel& icamera::CAMERA_DEBUG_LOG_FACE_DETECTION_FPS, \
+        LOG_TAG, icamera::CAMERA_DEBUG_LOG_FACE_DETECTION_FPS, format, ##args)
 
-#define LOGE(...) icamera::__camera_hal_log(true, ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
-#define LOGI(...) icamera::__camera_hal_log(true, ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
-#define LOGD(...) icamera::__camera_hal_log(true, ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
-#define LOGW(...) icamera::__camera_hal_log(true, ANDROID_LOG_WARN, LOG_TAG, __VA_ARGS__)
-#define LOGV(...) icamera::__camera_hal_log(true, ANDROID_LOG_VERBOSE, LOG_TAG, __VA_ARGS__)
+#define LOGE(...) \
+    icamera::__camera_hal_log(true, ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
+#define LOGI(...) \
+    icamera::__camera_hal_log(true, ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
+#define LOGD(...) \
+    icamera::__camera_hal_log(true, ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
+#define LOGW(...) \
+    icamera::__camera_hal_log(true, ANDROID_LOG_WARN, LOG_TAG, __VA_ARGS__)
+#define LOGV(...) \
+    icamera::__camera_hal_log(true, ANDROID_LOG_VERBOSE, LOG_TAG, __VA_ARGS__)
 
 #endif
-#define HAL_TRACE_NAME(level, name) ScopedTrace ___tracer(level, name )
+#define HAL_TRACE_NAME(level, name) ScopedTrace ___tracer(level, name)
 #define HAL_TRACE_CALL(level) HAL_TRACE_NAME(level, __PRETTY_FUNCTION__)
 
 #ifdef CAMERA_TRACE
 #define CONCAT_(a, b) a##b
 #define CONCAT(a, b) CONCAT_(a, b)
 #define MAKE_COLOR(data) (icamera::CameraTrace::setColor(data))
-#define TRACE_LOG_TYPE(type, ...) icamera::CameraTrace CONCAT(_Trace_, __LINE__)(type, __VA_ARGS__)
+#define TRACE_LOG_TYPE(type, ...) \
+    icamera::CameraTrace CONCAT(_Trace_, __LINE__)(type, __VA_ARGS__)
 
-#define TRACE_LOG_PROCESS(...) TRACE_LOG_TYPE(icamera::TraceEventStart, __VA_ARGS__)
-#define TRACE_STRUCT_PROCESS(name, struct_name, ...) \
-    TRACE_LOG_TYPE(icamera::TraceEventStart, name, #struct_name, sizeof(struct_name), __VA_ARGS__)
-#define TRACE_LOG_POINT(...) TRACE_LOG_TYPE(icamera::TraceEventPoint, __VA_ARGS__)
-#define TRACE_STRUCT_POINT(name, struct_name, ...) \
-    TRACE_LOG_TYPE(icamera::TraceEventPoint, name, #struct_name, sizeof(struct_name), __VA_ARGS__)
+#define TRACE_LOG_PROCESS(...) \
+    TRACE_LOG_TYPE(icamera::TraceEventStart, __VA_ARGS__)
+#define TRACE_STRUCT_PROCESS(name, struct_name, ...)             \
+    TRACE_LOG_TYPE(icamera::TraceEventStart, name, #struct_name, \
+                   sizeof(struct_name), __VA_ARGS__)
+#define TRACE_LOG_POINT(...) \
+    TRACE_LOG_TYPE(icamera::TraceEventPoint, __VA_ARGS__)
+#define TRACE_STRUCT_POINT(name, struct_name, ...)               \
+    TRACE_LOG_TYPE(icamera::TraceEventPoint, name, #struct_name, \
+                   sizeof(struct_name), __VA_ARGS__)
 
 #else
 #define MAKE_COLOR(data) (data)
@@ -248,22 +381,21 @@ void __camera_hal_log(bool condition, int prio, const char *tag, const char *fmt
 #endif
 
 class ScopedTrace {
-    public:
-        inline ScopedTrace(int level, const char* name) :
-            mLevel(level),
-            mName(name) {
-                if ((mLevel <= gLogLevel) && !(gLogLevel & CAMERA_DEBUG_LOG_VC_SYNC))
-                    LOGD("ENTER-%s",name);
-            }
+   public:
+    inline ScopedTrace(int level, const char* name)
+        : mLevel(level), mName(name) {
+        if ((mLevel <= gLogLevel) && !(gLogLevel & CAMERA_DEBUG_LOG_VC_SYNC))
+            LOGD("ENTER-%s", name);
+    }
 
-        inline ~ScopedTrace() {
-                if ((mLevel <= gLogLevel)  && !(gLogLevel & CAMERA_DEBUG_LOG_VC_SYNC))
-                    LOGD("EXIT-%s", mName);
-        }
+    inline ~ScopedTrace() {
+        if ((mLevel <= gLogLevel) && !(gLogLevel & CAMERA_DEBUG_LOG_VC_SYNC))
+            LOGD("EXIT-%s", mName);
+    }
 
-    private:
-        int mLevel;
-        const char* mName;
+   private:
+    int mLevel;
+    const char* mName;
 };
 
-} //namespace icamera
+}  // namespace icamera

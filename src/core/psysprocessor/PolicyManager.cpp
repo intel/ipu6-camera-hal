@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2020 Intel Corporation
+ * Copyright (C) 2017-2021 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#define LOG_TAG "Camera_PolicyManager"
+#define LOG_TAG Camera_PolicyManager
 
 #include "PolicyManager.h"
 
@@ -79,8 +79,8 @@ int PolicyManager::addExecutorBundle(const std::vector<std::string>& executors,
     AutoMutex lock(mPolicyLock);
 
     uint8_t size = executors.size();
-    CheckError(size != depths.size(),
-          BAD_VALUE, "The size for executor and its depth not match");
+    CheckAndLogError(size != depths.size(),
+                     BAD_VALUE, "The size for executor and its depth not match");
 
     int maxDepth = 0;
     std::map<std::string, ExecutorData> executorData;

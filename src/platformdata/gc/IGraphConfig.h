@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Intel Corporation
+ * Copyright (C) 2018-2021 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,6 +50,8 @@ static const int32_t VIDEO_STREAM_ID = 60001;
 static const int32_t STILL_TNR_STREAM_ID = 60009;
 // Stream id associated with still capture.
 static const int32_t STILL_STREAM_ID = 60000;
+
+#define MAX_RBM_STR_SIZE    128
 
 namespace IGraphType {
 class ConnectionConfig {
@@ -118,9 +120,9 @@ struct PipelineConnection {
 };
 
 struct StageAttr{
-    void *rbm;
+    char rbm[MAX_RBM_STR_SIZE];
     uint32_t rbm_bytes;
-    StageAttr() : rbm(nullptr), rbm_bytes(0) {}
+    StageAttr() : rbm_bytes(0) {}
 };
 
 enum terminal_connection_type {

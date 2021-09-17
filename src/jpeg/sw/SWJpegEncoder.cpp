@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2011 The Android Open Source Project
- * Copyright (C) 2016-2020 Intel Corporation. All Rights Reserved.
+ * Copyright (C) 2016-2021 Intel Corporation. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#define LOG_TAG "SWJpegEncoder"
+#define LOG_TAG SWJpegEncoder
 
 #include "SWJpegEncoder.h"
 
@@ -52,7 +52,7 @@ std::unique_ptr<IJpegEncoder> IJpegEncoder::createJpegEncoder() {
  * \return false if encoding fails
  */
 bool SWJpegEncoder::doJpegEncode(EncodePackage* package) {
-    CheckError(package == nullptr, false, "@%s, package is nullptr", __func__);
+    CheckAndLogError(package == nullptr, false, "@%s, package is nullptr", __func__);
 
     int status = 0;
     nsecs_t startTime = CameraUtils::systemTime();

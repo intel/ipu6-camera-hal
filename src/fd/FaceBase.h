@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Intel Corporation.
+ * Copyright (C) 2019-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,6 +64,7 @@ struct FaceDetectionDeinitParams {
 #ifdef FACE_DETECTION
 struct FaceDetectionResult {
     int faceNum;
+    bool faceUpdated;
     pvl_face_detection_result faceResults[MAX_FACES_DETECTABLE];
     pvl_eye_detection_result eyeResults[MAX_FACES_DETECTABLE];
     pvl_mouth_detection_result mouthResults[MAX_FACES_DETECTABLE];

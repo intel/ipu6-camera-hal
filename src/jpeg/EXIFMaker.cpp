@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Intel Corporation
+ * Copyright (C) 2016-2021 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#define LOG_TAG "EXIFMaker"
+#define LOG_TAG EXIFMaker
 
 #include "EXIFMaker.h"
 
@@ -106,16 +106,6 @@ void EXIFMaker::readProperty() {
  */
 void EXIFMaker::pictureTaken(ExifMetaData* exifmetadata) {
     LOG2("@%s", __func__);
-
-    // brightness, -99.99 to 99.99. FFFFFFFF.H means unknown.
-    float brightness;
-    // TODO: The check for getAeManualBrightness of 3A should be moved
-    //       to MetaData class, because the metadata collection happen
-    //       at capture time
-    brightness = 99;
-    mExifAttributes.brightness.num = static_cast<int>(brightness * 100);
-    mExifAttributes.brightness.den = 100;
-    LOG2("EXIF: brightness = %.2f", brightness);
 
     mExifAttributes.contrast = 0;
     mExifAttributes.saturation = 0;
@@ -249,7 +239,6 @@ void EXIFMaker::initialize(int width, int height) {
     mExifAttributes.focal_length.num = EXIF_DEF_FOCAL_LEN_NUM;
     mExifAttributes.focal_length.den = EXIF_DEF_FOCAL_LEN_DEN;
 
-    // TODO: should ISO be omitted if the value cannot be trusted?
     mExifAttributes.iso_speed_rating = DEFAULT_ISO_SPEED;
 
     mExifAttributes.aperture.den = EXIF_DEF_APEX_DEN;
@@ -264,7 +253,6 @@ void EXIFMaker::initialize(int width, int height) {
 
     // light source, 0 means light source unknown
     mExifAttributes.light_source = 0;
-    // TODO: for awb mode
 
     // gain control, 0 = none;
     // 1 = low gain up; 2 = high gain up; 3 = low gain down; 4 = high gain down
@@ -468,6 +456,18 @@ void EXIFMaker::setSensorAeConfig(const Parameters& params) {
          mExifAttributes.shutter_speed.den);
     LOG2("EXIF: exposure time=%u/%u", mExifAttributes.exposure_time.num,
          mExifAttributes.exposure_time.den);
+
+    if (mExifAttributes.fnumber.den > 0 && expTime > 0 && mExifAttributes.iso_speed_rating > 0) {
+        // 'dAv + dTv = dSv + dBv' based on the equation of APEX system
+        double dAv = APEX_FNUM_TO_APERTURE(static_cast<double>(mExifAttributes.fnumber.num) /
+                                           mExifAttributes.fnumber.den);
+        double dTv = APEX_EXPOSURE_TO_SHUTTER(static_cast<double>(expTime) / 1000000);
+        double dSv = APEX_ISO_TO_FILMSENSITIVITY(mExifAttributes.iso_speed_rating);
+        mExifAttributes.brightness.num = (dAv + dTv - dSv) * EXIF_DEF_BRIGHTNESSVALUE_DEN;
+        mExifAttributes.brightness.den = EXIF_DEF_BRIGHTNESSVALUE_DEN;
+        LOG2("EXIF: brightness = %d / %d", mExifAttributes.brightness.num,
+             mExifAttributes.brightness.den);
+    }
 }
 
 /*
@@ -558,7 +558,7 @@ bool EXIFMaker::isThumbnailSet() const {
 
 size_t EXIFMaker::makeExif(unsigned char* data) {
     LOG1("@%s", __func__);
-    CheckError(!data, 0, "nullptr passed for EXIF. Cannot generate EXIF!");
+    CheckAndLogError(!data, 0, "nullptr passed for EXIF. Cannot generate EXIF!");
 
     if (mEncoder.makeExif(data, &mExifAttributes, &mExifSize) == EXIF_SUCCESS) {
         LOG1("Generated EXIF (@%p) of size: %zu", data, mExifSize);
@@ -598,10 +598,9 @@ void EXIFMaker::updateSensorInfo(const Parameters& params) {
 
     if (focal < EPSILON) {
         // Focal length is not supported, set to default value
-        icamera::CameraMetadata meta;
-        icamera::ParameterHelper::copyMetadata(params, &meta);
+        const icamera::CameraMetadata& meta = icamera::ParameterHelper::getMetadata(params);
 
-        icamera_metadata_entry entry = meta.find(CAMERA_LENS_INFO_AVAILABLE_FOCAL_LENGTHS);
+        icamera_metadata_ro_entry entry = meta.find(CAMERA_LENS_INFO_AVAILABLE_FOCAL_LENGTHS);
         if (entry.count >= 1) {
             focal = entry.data.f[0];
         }

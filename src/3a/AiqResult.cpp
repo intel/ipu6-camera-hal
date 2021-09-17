@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#define LOG_TAG "AiqResult"
+#define LOG_TAG AiqResult
 
 #include "iutils/Errors.h"
 #include "iutils/CameraLog.h"
@@ -30,6 +30,8 @@ AiqResult::AiqResult(int cameraId) :
     mTuningMode(TUNING_MODE_VIDEO),
     mAfDistanceDiopters(0.0f),
     mSkip(false),
+    mLensPosition(0),
+    mSceneMode(SCENE_MODE_AUTO),
     mFrameDuration(0),
     mRollingShutter(0)
 {
@@ -42,6 +44,7 @@ AiqResult::AiqResult(int cameraId) :
     CLEAR(mPaResults);
     CLEAR(mAeResults);
     CLEAR(mAfResults);
+    CLEAR(mOutStats);
     CLEAR(mFocusRange);
     CLEAR(mLensShadingMap);
 }
@@ -60,6 +63,7 @@ int AiqResult::init()
     CLEAR(mAfResults);
     CLEAR(mAwbResults);
     CLEAR(mPaResults);
+    CLEAR(mOutStats);
 
     mAiqParam.reset();
 
@@ -87,6 +91,8 @@ AiqResult &AiqResult::operator=(const AiqResult &other)
     mTuningMode = other.mTuningMode;
     mAfDistanceDiopters = other.mAfDistanceDiopters;
     mSkip = other.mSkip;
+    mLensPosition = other.mLensPosition;
+    mSceneMode = other.mSceneMode;
     mFocusRange = other.mFocusRange;
 
     mAeResults = other.mAeResults;
@@ -94,6 +100,7 @@ AiqResult &AiqResult::operator=(const AiqResult &other)
     mAfResults = other.mAfResults;
     mGbceResults = other.mGbceResults;
     mPaResults = other.mPaResults;
+    mOutStats = other.mOutStats;
 
     mCustomControls.count = other.mCustomControls.count;
     for (int i = 0; i < mCustomControls.count; i++) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Intel Corporation.
+ * Copyright (C) 2018-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#define LOG_TAG "SyncManager"
+#define LOG_TAG SyncManager
 
 #include <sys/sysinfo.h>
 #include <math.h>
@@ -142,14 +142,14 @@ void SyncManager::updateCameraBufInfo(int cameraId, camera_buf_info* info)
 void SyncManager::updateSyncCamNum()
 {
     AutoMutex l(mLock);
-    CheckError(mTotalSyncCamNum >= MAX_CAMERA_NUMBER, VOID_VALUE,
-               "%s: sync cameras enough!", __func__);
+    CheckAndLogError(mTotalSyncCamNum >= MAX_CAMERA_NUMBER, VOID_VALUE,
+                     "%s: sync cameras enough!", __func__);
     mTotalSyncCamNum++;
 }
 
 bool SyncManager::vcSynced(int vc)
 {
-    CheckError(vc >= MAX_CAMERA_NUMBER, false, "%s: vc %d error!", __func__, vc);
+    CheckAndLogError(vc >= MAX_CAMERA_NUMBER, false, "%s: vc %d error!", __func__, vc);
 
     AutoMutex l(mVcSyncLock);
     int count = mVcSyncCount[vc];
@@ -183,7 +183,7 @@ bool SyncManager::vcSynced(int vc)
 
 void SyncManager::updateVcSyncCount(int vc)
 {
-    CheckError(vc >= MAX_CAMERA_NUMBER, VOID_VALUE, "%s: vc %d error!", __func__, vc);
+    CheckAndLogError(vc >= MAX_CAMERA_NUMBER, VOID_VALUE, "%s: vc %d error!", __func__, vc);
     AutoMutex l(mVcSyncLock);
     mVcSyncCount[vc] = (mVcSyncCount[vc] + 1) % (max_vc_sync_count + 1);
 };

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Intel Corporation
+ * Copyright (C) 2020-2021 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 #pragma once
 
 #include <base/threading/thread.h>
+#include <pthread.h>
 
 #include <memory>
 #include <unordered_map>
@@ -86,6 +87,7 @@ class IntelTNR7US {
     void handleParamUpdate(int gain, bool forceUpdate);
 
  private:
+    const uint32_t kMaxDuration = 5U;  // 5s
     int mCameraId;
     int mWidth;
     int mHeight;
@@ -94,6 +96,10 @@ class IntelTNR7US {
     std::unordered_map<void*, CmSurface2DUP*> mCMSurfaceMap;
     Tnr7Param* mTnrParam;
     std::unique_ptr<base::Thread> mThread;
+    pthread_mutex_t mLock;
+    pthread_cond_t mUpdateDoneCondition;
+
+    bool mParamUpdating;
 
     DISALLOW_COPY_AND_ASSIGN(IntelTNR7US);
 };

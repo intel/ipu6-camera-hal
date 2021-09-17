@@ -17,7 +17,12 @@
 #pragma once
 
 #include <limits.h>
+
+#ifdef CAL_BUILD
+#include <cros-camera/v4l2_device.h>
+#else
 #include <v4l2_device.h>
+#endif
 
 #include <vector>
 #include <string>
@@ -86,6 +91,8 @@ namespace icamera {
 #define CAMERA_GRAPH_SETTINGS_DIR "gcss/"
 #endif
 
+#define TNR7US_RESTART_THRESHOLD 5
+
 class GraphConfigNodes;
 class PlatformData {
 private:
@@ -111,6 +118,8 @@ public:
                 sensorDescription("unset"),
                 mLensName(""),
                 mLensHwType(LENS_NONE_HW),
+                mSensorAwb(false),
+                mSensorAe(false),
                 mAutoSwitchType(AUTO_SWITCH_PSYS),
                 mLtmEnabled(false),
                 mSensorExposureNum(2),
@@ -118,6 +127,8 @@ public:
                 mSensorGainType(SENSOR_GAIN_NONE),
                 mLensCloseCode(0),
                 mEnableAIQ(false),
+                mAiqRunningInterval(1),
+                mStatsRunningRate(false),
                 mEnableMkn(true),
                 mSkipFrameV4L2Error(false),
                 mCITMaxMargin(0),
@@ -158,13 +169,17 @@ public:
                 mFaceEngineRunningInterval(FACE_ENGINE_DEFAULT_RUNNING_INTERVAL),
                 mFaceEngineRunningIntervalNoFace(FACE_ENGINE_DEFAULT_RUNNING_INTERVAL),
                 mFaceEngineRunningSync(false),
+                mFaceEngineByIPU(false),
                 mMaxFaceDetectionNumber(MAX_FACES_DETECTABLE),
                 mPsysAlignWithSof(false),
                 mPsysBundleWithAic(false),
                 mSwProcessingAlignWithIsp(false),
                 mMaxNvmDataSize(0),
                 mVideoStreamNum(DEFAULT_VIDEO_STREAM_NUM),
-                mTnrExtraFrameNum(DEFAULT_TNR_EXTRA_FRAME_NUM)
+                mTnrExtraFrameNum(DEFAULT_TNR_EXTRA_FRAME_NUM),
+                mDummyStillSink(false),
+                mForceFlushIpuBuffer(false),
+                mPLCEnable(false)
             {
             }
 
@@ -174,6 +189,8 @@ public:
             std::string sensorDescription;
             std::string mLensName;
             int mLensHwType;
+            bool mSensorAwb;
+            bool mSensorAe;
             int mAutoSwitchType;
             bool mLtmEnabled;
             int mSensorExposureNum;
@@ -181,7 +198,11 @@ public:
             int mSensorGainType;
             int mLensCloseCode;
             bool mEnableAIQ;
+            int mAiqRunningInterval;
+            bool mStatsRunningRate;
             bool mEnableMkn;
+            // first: one algo type in imaging_algorithm_t, second: running rate
+            std::unordered_map<int, float> mAlgoRunningRateMap;
             bool mSkipFrameV4L2Error;
             int mCITMaxMargin;
             camera_yuv_color_range_mode_t mYuvColorRangeMode;
@@ -237,6 +258,7 @@ public:
             int mFaceEngineRunningInterval;
             int mFaceEngineRunningIntervalNoFace;
             int mFaceEngineRunningSync;
+            bool mFaceEngineByIPU;
             unsigned int mMaxFaceDetectionNumber;
             bool mPsysAlignWithSof;
             bool mPsysBundleWithAic;
@@ -256,6 +278,9 @@ public:
             std::vector<IGraphType::ScalerInfo> mScalerInfo;
             int mVideoStreamNum;
             int mTnrExtraFrameNum;
+            bool mDummyStillSink;
+            bool mForceFlushIpuBuffer;
+            bool mPLCEnable;
         };
 
         std::vector<CameraInfo> mCameras;
@@ -275,11 +300,6 @@ private:
     static PlatformData* sInstance;
     static Mutex sLock;
     static PlatformData* getInstance();
-
-    /**
-     * Parse graph descriptor and settings from configuration files.
-     */
-    void parseGraphFromXmlFile();
 
     /**
      * Release GraphConfigNodes in StaticCfg::CameraInfo
@@ -321,6 +341,16 @@ public:
      * \return OK if init PlatformData successfully, otherwise return ERROR.
      */
     static int init();
+
+    /**
+     * Parse graph descriptor and settings from configuration files.
+     */
+    static void parseGraphFromXmlFile();
+
+    /**
+     * Query GraphSettings
+     */
+    static int queryGraphSettings(int cameraId, const stream_config_t *streamList);
 
     /**
      * get the camera numbers
@@ -367,6 +397,22 @@ public:
      * \return int: the Lens HW type
      */
     static int getLensHwType(int cameraId);
+
+    /**
+     * get the sensor AWB
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return bool: the sensor AWB enable
+     */
+    static bool getSensorAwbEnable(int cameraId);
+
+    /**
+     * get the sensor AE
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return bool: the sensor AE enable
+     */
+    static bool getSensorAeEnable(int cameraId);
 
     /**
      * get the DVS type
@@ -417,12 +463,37 @@ public:
     static bool isEnableAIQ(int cameraId);
 
     /**
+     * get running rate of AIQ
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return int: the running rate of AIQ
+     */
+    static int getAiqRunningInterval(int cameraId);
+
+    /**
      * Check Mkn is enabled or not
      *
      * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
      * \return if Mkn is enabled or not.
      */
     static bool isEnableMkn(int cameraId);
+
+    /**
+     * get running rate of every Algorithms
+     *
+     * \param algo: one type of imaging_algorithm_t
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return float: the running rate of every Algorithms, otherwise return 0.0
+     */
+    static float getAlgoRunningRate(int algo, int cameraId);
+
+    /**
+     * if running rate is supported
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \\return if running rate is supported or not.
+     */
+    static bool isStatsRunningRateSupport(int cameraId);
 
     /**
      * Check if sensor digital gain is used or not
@@ -594,12 +665,20 @@ public:
     static int faceEngineRunningIntervalNoFace(int cameraId);
 
     /**
-     * Check face detection runs  synchronously or not
+     * Check face detection runs synchronously or not
      *
      * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
      * \return if face detection runs synchronously or not.
      */
     static bool isFaceEngineSyncRunning(int cameraId);
+
+    /**
+     * Whether IPU has a single output to support face detection
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return true or false.
+     */
+    static bool isIPUSupportFD(int cameraId);
 
     /**
      * get the max number of face detection
@@ -1199,44 +1278,45 @@ public:
      */
     static void setScalerInfo(int cameraId, std::vector<IGraphType::ScalerInfo> scalerInfo);
 
-     /**
+    /**
      * Check gpu tnr is enabled or not
      *
      * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
      * \return true if tnr is enabled.
      */
-     static bool isGpuTnrEnabled();
+    static bool isGpuTnrEnabled();
 
-     /**
+    /**
      * get the video stream number supported
      *
      * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
      * \return HAL video stream number.
      */
-     static int getVideoStreamNum(int cameraId);
+    static int getVideoStreamNum(int cameraId);
 
-     /**
+    /**
      * Check should connect gpu algo or not
      * should connect gpu algo service if any gpu algorithm is used
      * \return true if should connect gpu algo.
      */
-     static bool isUsingGpuAlgo();
+    static bool isUsingGpuAlgo();
 
-     /**
+    /**
      * Check if still stream tnr is prior to video tnr
      */
-     static bool isStillTnrPrior();
+    static bool isStillTnrPrior();
 
-     /**
+    /**
      * Check if update tnr7us params every frame
      */
-     static bool isTnrParamForceUpdate();
-     /**
+    static bool isTnrParamForceUpdate();
+
+    /**
      * the extra frame count for still stream
      */
-     static int getTnrExtraFrameCount(int cameraId);
+    static int getTnrExtraFrameCount(int cameraId);
 
-     /*
+    /*
      * Set the orientation Info
      *
      * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
@@ -1251,5 +1331,29 @@ public:
      * \return sensor orientation
      */
     static int getSensorOrientation(int cameraId);
+
+    /**
+     * check if support dummy still stream
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return true if supported.
+     */
+    static bool isDummyStillSink(int cameraId);
+
+    /*
+     * check if forcing flushing IPU buffer is enabled
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return true if forcing flush IPU buffer.
+     */
+    static bool getForceFlushIpuBuffer(int cameraId);
+
+    /*
+     * Get PLC Enable status
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return true if supported.
+     */
+    static bool getPLCEnable(int cameraId);
 };
 } /* namespace icamera */

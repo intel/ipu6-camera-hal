@@ -79,7 +79,7 @@ protected:
     template<typename T>
     int parseXmlConvertStrings(const char *str, std::vector<T> &vectorT,
                                T (*parseXmlString)(const char *)) {
-        CheckError(str == nullptr || parseXmlString == nullptr, -1, "@%s, input parameter is nullptr", __func__);
+        CheckAndLogError(str == nullptr || parseXmlString == nullptr, -1, "@%s, input parameter is nullptr", __func__);
 
         int sz = strlen(str);
         char src[sz + 1];

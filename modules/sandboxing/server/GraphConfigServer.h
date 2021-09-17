@@ -32,6 +32,7 @@ class GraphConfigServer {
     void addCustomKeyMap();
     status_t parse(void* pData, size_t dataSize);
     void releaseGraphNodes();
+    status_t queryGraphSettings(void* pData, size_t dataSize);
     status_t configStreams(void* pData, size_t dataSize);
     status_t getGraphConfigData(void* pData, size_t dataSize);
     status_t getPgIdForKernel(void* pData, size_t dataSize);

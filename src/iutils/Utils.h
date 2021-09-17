@@ -17,7 +17,11 @@
 #pragma once
 
 #include <linux/videodev2.h>
+#ifdef CAL_BUILD
+#include <cros-camera/v4l2_device.h>
+#else
 #include <v4l2_device.h>
+#endif
 
 #include <string.h>
 #include <vector>
@@ -53,6 +57,18 @@ typedef ::cros::V4L2Format V4L2Format;
 #define UNUSED(param) (void)(param)
 #endif
 
+#ifdef CAL_BUILD
+#ifndef V4L2_PIX_FMT_P010
+#define V4L2_PIX_FMT_P010           v4l2_fourcc('P', '0', '1', '0')
+#endif
+#endif
+
+#ifdef CAL_BUILD
+#define V4L2_PIX_FMT_YUYV420_V32    v4l2_fourcc('y', '0', '3', '2')
+#define V4L2_PIX_FMT_SGRBG12V32     v4l2_fourcc('b', 'V', '0', 'K')
+#define V4L2_PIX_FMT_SGRBG10V32     v4l2_fourcc('b', 'V', '0', 'G')
+#endif
+
 /**
  * Align to page boundary
  * \ingroup ia_tools
@@ -73,7 +89,7 @@ typedef ::cros::V4L2Format V4L2Format;
  * Use to check input parameter and if failed, return err_code and print error message
  */
 #define VOID_VALUE
-#define CheckError(condition, err_code, err_msg, args...) \
+#define CheckAndLogError(condition, err_code, err_msg, args...) \
             do { \
                 if (condition) { \
                     LOGE(err_msg, ##args);\
@@ -240,6 +256,12 @@ namespace CameraUtils {
 
     int getStride (int format, int width);
 
+    int getPlanarByte(int format);
+
+    int32_t getBpl(int32_t format, int32_t width);
+
+    int32_t getV4L2Format(const int32_t iaFourcc);
+
     int getCompressedFrameSize(int format, int width, int height);
 
     int getFrameSize(int format, int width, int height, bool needAlignedHeight = false, bool needExtraSize = true, bool needCompression = false);
@@ -252,7 +274,7 @@ namespace CameraUtils {
 
     int getInterlaceHeight(int field, int height);
 
-    bool isMultiExposureCase(TuningMode tuningMode);
+    bool isMultiExposureCase(int cameraId, TuningMode tuningMode);
 
     bool isUllPsysPipe(TuningMode tuningMode);
 

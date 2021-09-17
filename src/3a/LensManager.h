@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Intel Corporation.
+ * Copyright (C) 2016-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,13 @@
 
 #pragma once
 
+#include <map>
+
 #include "ia_aiq.h"
 
 #include "LensHw.h"
 #include "AiqSetting.h"
+#include "CameraEventType.h"
 
 namespace icamera {
 
@@ -44,15 +47,21 @@ public:
     int stop();
 
     /**
+     * \brief handle SOF event
+     */
+    void handleSofEvent(EventData eventData);
+
+    /**
      * \brief Set Lens results
      *
-     * \param[in] cca::cca_ae_results includes aperture result
-     *            and ia_aiq_af_results includes focus result.
+     * \param[in] cca::cca_af_results includes focus result
+     * \param[in] int64_t sequence id
+     * \param[in] aiq_parameter_t includes focus settings
      *
      * \return OK if set successfully.
      */
-    int setLensResult(const cca::cca_ae_results &aeResults,
-                      const cca::cca_af_results &afResults);
+    int setLensResult(const cca::cca_af_results &afResults,
+                      int64_t sequence, const aiq_parameter_t &aiqParam);
     /**
      * \brief Get Lens info
      *
@@ -64,6 +73,8 @@ public:
 private:
     DISALLOW_COPY_AND_ASSIGN(LensManager);
 
+    void setFocusPosition(int focusPostion);
+
 private:
     int mCameraId;
     LensHw *mLensHw;
@@ -72,6 +83,9 @@ private:
 
     // Guard for LensManager public API.
     Mutex mLock;
+    // first: sequence id, second: focus position
+    std::map<int64_t, int> mSeqToPositionMap;
+    int64_t mLastSofSequence;
 };
 
 } /* namespace icamera */

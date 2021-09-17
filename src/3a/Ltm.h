@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Intel Corporation.
+ * Copyright (C) 2016-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@
 #include <queue>
 
 #ifdef ENABLE_SANDBOXING
-#include "modules/sandboxing/client/IntelCca.h"
+#include "modules/sandboxing/client/IntelCcaClient.h"
 #else
 #include "modules/algowrapper/IntelCca.h"
 #endif

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Intel Corporation.
+ * Copyright (C) 2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,17 +35,17 @@
 /** Base structure for all terminal types.
  *
  *  Terminals describe an opening between a program group and the outside world.
- *  They come in various types (data, statisitics, parameters, etc.) which may have
+ *  They come in various types (data, statistics, parameters, etc.) which may have
  *  extensions specific to those types.  This structure is the base for all of those and
- *  must be the first field in any  subclassed terminal structure type.
+ *  must be the first field in any  subclasses terminal structure type.
  */
 struct ia_css_terminal_s {                        /**< Base terminal */
     ia_css_terminal_type_t            terminal_type;        /**< Type ID of the terminal.  This type enum defines the purpose of the terminal and its structure. */
     uint32_t                payload_size;    /**< Size of buffer passed in buffer set for this terminal */
     int16_t                    parent_offset;        /**< Offset to the containing process group */
-    uint16_t                size;            /**< Size of this whole terminal layout-structure, including subclassed extensions. */
+    uint16_t                size;            /**< Size of this whole terminal layout-structure, including subclasses extensions. */
     uint16_t                tm_index;        /**< Index of the terminal manifest object in the program group manifest. */
-    ia_css_terminal_ID_t            ID;            /**< Absolute referal ID for this terminal, valid ID's != 0 */
+    ia_css_terminal_ID_t            ID;            /**< Absolute referral ID for this terminal, valid ID's != 0 */
     uint8_t                    padding[N_PADDING_UINT8_IN_TERMINAL_STRUCT];
 };
 /* ==================== Base Terminal - END ==================== */

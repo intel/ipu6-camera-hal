@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#define LOG_TAG "CameraParser"
+#define LOG_TAG CameraParser
 
 #include <string.h>
 #include <expat.h>
@@ -47,12 +47,12 @@ CameraParser::CameraParser(MediaControl *mc, PlatformData::StaticCfg *cfg) :
     mMC(mc),
     mMetadataCache(nullptr) {
     LOGXML("@%s", __func__);
-    CheckError(cfg == nullptr, VOID_VALUE, "@%s, cfg is nullptr", __func__);
+    CheckAndLogError(cfg == nullptr, VOID_VALUE, "@%s, cfg is nullptr", __func__);
 
     // Get common data from libcamhal_profile.xml
     int ret = getDataFromXmlFile(LIBCAMHAL_PROFILE_NAME);
-    CheckError(ret != OK, VOID_VALUE, "Failed to get libcamhal profile data from %s",
-               LIBCAMHAL_PROFILE_NAME);
+    CheckAndLogError(ret != OK, VOID_VALUE, "Failed to get libcamhal profile data from %s",
+                     LIBCAMHAL_PROFILE_NAME);
 
     mGenericStaticMetadataToTag = {
         {"ae.lockAvailable", CAMERA_AE_LOCK_AVAILABLE},
@@ -62,12 +62,14 @@ CameraParser::CameraParser(MediaControl *mc, PlatformData::StaticCfg *cfg) :
         {"control.maxRegions", CAMERA_CONTROL_MAX_REGIONS},
         {"statistics.info.availableFaceDetectModes", CAMERA_STATISTICS_INFO_AVAILABLE_FACE_DETECT_MODES},
         {"statistics.info.maxFaceCount", CAMERA_STATISTICS_INFO_MAX_FACE_COUNT},
+        {"sensor.maxAnalogSensitivity", CAMERA_SENSOR_MAX_ANALOG_SENSITIVITY},
         {"sensor.info.activeArraySize", CAMERA_SENSOR_INFO_ACTIVE_ARRAY_SIZE},
         {"sensor.info.pixelArraySize", CAMERA_SENSOR_INFO_PIXEL_ARRAY_SIZE},
         {"sensor.info.physicalSize", CAMERA_SENSOR_INFO_PHYSICAL_SIZE},
         {"sensor.info.sensitivityRange", CAMERA_SENSOR_INFO_SENSITIVITY_RANGE},
         {"sensor.info.exposureTimeRange", CAMERA_SENSOR_INFO_EXPOSURE_TIME_RANGE},
         {"sensor.info.colorFilterArrangement", CAMERA_SENSOR_INFO_COLOR_FILTER_ARRANGEMENT},
+        {"sensor.info.whitelevel", CAMERA_SENSOR_INFO_WHITE_LEVEL},
         {"sensor.availableTestPatternModes", CAMERA_SENSOR_AVAILABLE_TEST_PATTERN_MODES},
         {"sensor.orientation", CAMERA_SENSOR_ORIENTATION},
         {"sensor.opaqueRawSize", CAMERA_SENSOR_OPAQUE_RAW_SIZE},
@@ -128,7 +130,7 @@ CameraParser::~CameraParser()
 string CameraParser::replaceStringInXml(CameraParser *profiles, const char *value)
 {
     string valueTmp;
-    CheckError(value == nullptr, valueTmp, "value is nullptr");
+    CheckAndLogError(value == nullptr, valueTmp, "value is nullptr");
 
     valueTmp = value;
     string::size_type found = string::npos;
@@ -249,8 +251,9 @@ void CameraParser::checkField(CameraParser *profiles, const char *name, const ch
  */
 void CameraParser::handleCommon(CameraParser *profiles, const char *name, const char **atts)
 {
-    CheckError(strcmp(atts[0], "value") != 0 || (atts[1] == nullptr), VOID_VALUE
-         ,"@%s, name:%s, atts[0]:%s or atts[1] is nullptr, xml format wrong", __func__, name, atts[0]);
+    CheckAndLogError(strcmp(atts[0], "value") != 0 || (atts[1] == nullptr), VOID_VALUE,
+                     "@%s, name:%s, atts[0]:%s or atts[1] is nullptr, xml format wrong", __func__,
+                     name, atts[0]);
 
     LOGXML("@%s, name:%s, atts[0]:%s, atts[1]: %s", __func__, name, atts[0], atts[1]);
     CommonConfig *cfg = &profiles->mStaticCfg->mCommonConfig;
@@ -283,8 +286,9 @@ void CameraParser::handleCommon(CameraParser *profiles, const char *name, const 
 void CameraParser::handleSensor(CameraParser *profiles, const char *name, const char **atts)
 {
     LOGXML("@%s, name:%s, profiles->mCurrentSensor:%d", __func__, name, profiles->mCurrentSensor);
-    CheckError(strcmp(atts[0], "value") != 0 || (atts[1] == nullptr), VOID_VALUE
-        ,"@%s, name:%s, atts[0]:%s or atts[1] is nullptr, xml format wrong", __func__, name, atts[0]);
+    CheckAndLogError(strcmp(atts[0], "value") != 0 || (atts[1] == nullptr), VOID_VALUE,
+                     "@%s, name:%s, atts[0]:%s or atts[1] is nullptr, xml format wrong",
+                     __func__, name, atts[0]);
 
     LOGXML("@%s, name:%s, atts[0]:%s, atts[1]:%s", __func__, name, atts[0], atts[1]);
     if (strcmp(name, "supportedISysSizes") == 0) {
@@ -298,7 +302,7 @@ void CameraParser::handleSensor(CameraParser *profiles, const char *name, const 
         pCurrentCam->mISysRawFormat = CameraUtils::string2PixelCode(atts[1]);
     } else if (strcmp(name, "configModeToStreamId") == 0) {
         char* srcDup = strdup(atts[1]);
-        CheckError(!srcDup, VOID_VALUE, "Create a copy of source string failed.");
+        CheckAndLogError(!srcDup, VOID_VALUE, "Create a copy of source string failed.");
 
         char* endPtr = (char*)strchr(srcDup, ',');
         if (endPtr) {
@@ -314,6 +318,46 @@ void CameraParser::handleSensor(CameraParser *profiles, const char *name, const 
         pCurrentCam->mEnableAIQ = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "enableMkn") == 0) {
         pCurrentCam->mEnableMkn = strcmp(atts[1], "true") == 0;
+    } else if (strcmp(name, "AiqRunningInterval") == 0) {
+        pCurrentCam->mAiqRunningInterval = atoi(atts[1]);
+    } else if (strcmp(name, "AlgoRunningRate") == 0) {
+        int size = strlen(atts[1]);
+        char src[size + 1];
+        MEMCPY_S(src, size, atts[1], size);
+        src[size] = '\0';
+        int algo = IMAGING_ALGO_NONE;
+        char* savePtr = nullptr;
+
+        char* tablePtr = strtok_r(src, ",", &savePtr);
+        float awbRunningRate = 0.0;
+        float aeRunningRate = 0.0;
+        while (tablePtr) {
+            if (strcmp(tablePtr, "AE") == 0) {
+                algo = IMAGING_ALGO_AE;
+            } else if (strcmp(tablePtr, "AWB") == 0) {
+                algo = IMAGING_ALGO_AWB;
+            } else if (strcmp(tablePtr, "AF") == 0) {
+                algo = IMAGING_ALGO_AF;
+            } else {
+                LOGE("The wrong algo type %s", tablePtr);
+                return;
+            }
+
+            tablePtr = strtok_r(nullptr, ",", &savePtr);
+            CheckAndLogError(!tablePtr, VOID_VALUE, "the run rate of algo %d is nullptr", algo);
+
+            if (algo == IMAGING_ALGO_AE) aeRunningRate = atof(tablePtr);
+            if (algo == IMAGING_ALGO_AWB) awbRunningRate = atof(tablePtr);
+
+            pCurrentCam->mAlgoRunningRateMap[algo] = atof(tablePtr);
+            tablePtr = strtok_r(nullptr, ",", &savePtr);
+        }
+
+        if (awbRunningRate > EPSILON && aeRunningRate > EPSILON
+            && fabs(awbRunningRate - aeRunningRate) < EPSILON) {
+            // if same runnning rate of AE and AWB, stats running rate is supported
+            pCurrentCam->mStatsRunningRate = true;
+        }
     } else if (strcmp(name, "useCrlModule") == 0) {
         pCurrentCam->mUseCrlModule = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "skipFrameV4L2Error") == 0) {
@@ -343,6 +387,10 @@ void CameraParser::handleSensor(CameraParser *profiles, const char *name, const 
             LOGE("unknown Lens HW type %s, set to LENS_NONE_HW", atts[1]);
             pCurrentCam->mLensHwType = LENS_NONE_HW;
         }
+    } else if (strcmp(name, "sensorAwb") == 0) {
+        pCurrentCam->mSensorAwb = strcmp(atts[1], "true") == 0;
+    } else if (strcmp(name, "sensorAe") == 0) {
+        pCurrentCam->mSensorAe = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "autoSwitchType") == 0) {
         if (strcmp(atts[1], "full") == 0) {
             pCurrentCam->mAutoSwitchType = AUTO_SWITCH_FULL;
@@ -445,7 +493,7 @@ void CameraParser::handleSensor(CameraParser *profiles, const char *name, const 
             }
 
             tablePtr = strtok_r(nullptr, ",", &savePtr);
-            CheckError(tablePtr == nullptr, VOID_VALUE, "Driver test pattern is nullptr");
+            CheckAndLogError(tablePtr == nullptr, VOID_VALUE, "Driver test pattern is nullptr");
 
             pCurrentCam->mTestPatternMap[mode] = atoi(tablePtr);
 
@@ -465,12 +513,25 @@ void CameraParser::handleSensor(CameraParser *profiles, const char *name, const 
         }
     } else if (strcmp(name, "pslOutputMapForRotation") == 0) {
         parseOutputMap(atts[1], pCurrentCam->mOutputMap);
-    } else if (strcmp(name, "maxNvmDataSize") == 0) {
-        pCurrentCam->mMaxNvmDataSize = atoi(atts[1]);
-    } else if (strcmp(name, "nvmDirectory") == 0) {
-        pCurrentCam->mNvmDirectory = atts[1];
-    } else if (strcmp(name, "nvmNodeName") == 0) {
-        mNvmNodeName = atts[1];
+    } else if (strcmp(name, "nvmDeviceInfo") == 0) {
+        int size = strlen(atts[1]);
+        char src[size + 1];
+        MEMCPY_S(src, size, atts[1], size);
+        src[size] = '\0';
+        char* savePtr = nullptr;
+        char* tablePtr = strtok_r(src, ",", &savePtr);
+        struct NvmDeviceInfo info;
+        while (tablePtr) {
+            info.nodeName = tablePtr;
+
+            tablePtr = strtok_r(nullptr, ",", &savePtr);
+            CheckAndLogError(tablePtr == nullptr, VOID_VALUE, "failed to parse nvmDeviceInfo");
+            info.dataSize = atoi(tablePtr);
+
+            mNvmDeviceInfo.push_back(info);
+
+            tablePtr = strtok_r(nullptr, ",", &savePtr);
+        }
     } else if (strcmp(name, "isISYSCompression") == 0) {
         pCurrentCam->mISYSCompression = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "isPSACompression") == 0) {
@@ -495,6 +556,8 @@ void CameraParser::handleSensor(CameraParser *profiles, const char *name, const 
             val > 0 ? val : FACE_ENGINE_DEFAULT_RUNNING_INTERVAL;
     } else if (strcmp(name, "faceEngineRunningSync") == 0) {
         pCurrentCam->mFaceEngineRunningSync = strcmp(atts[1], "true") == 0;
+    } else if (strcmp(name, "faceEngineByIPU") == 0) {
+        pCurrentCam->mFaceEngineByIPU = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "maxFaceDetectionNumber") == 0) {
         int val = atoi(atts[1]);
         pCurrentCam->mMaxFaceDetectionNumber =
@@ -505,12 +568,18 @@ void CameraParser::handleSensor(CameraParser *profiles, const char *name, const 
     } else if (strcmp(name, "tnrExtraFrameNum") == 0) {
         int val = atoi(atts[1]);
         pCurrentCam->mTnrExtraFrameNum = val > 0 ? val : DEFAULT_TNR_EXTRA_FRAME_NUM;
+    } else if (strcmp(name, "dummyStillSink") == 0) {
+        pCurrentCam->mDummyStillSink = strcmp(atts[1], "true") == 0;
+    } else if (!strcmp(name, "forceFlushIpuBuffer")) {
+        pCurrentCam->mForceFlushIpuBuffer = strcmp(atts[1], "true") == 0;
+    } else if (!strcmp(name, "isPLCEnable")) {
+        pCurrentCam->mPLCEnable = strcmp(atts[1], "true") == 0;
     }
 }
 
 int CameraParser::parseSupportedTuningConfig(const char *str, vector <TuningConfig> &config)
 {
-    CheckError(str == nullptr, -1, "@%s, str is nullptr", __func__);
+    CheckAndLogError(str == nullptr, -1, "@%s, str is nullptr", __func__);
     LOGXML("@%s, str = %s", __func__, str);
 
     int sz = strlen(str);
@@ -523,8 +592,8 @@ int CameraParser::parseSupportedTuningConfig(const char *str, vector <TuningConf
     while (configMode) {
         char* tuningMode = strtok_r(nullptr, ",", &savePtr);
         char* aiqb = strtok_r(nullptr, ",", &savePtr);
-        CheckError(configMode == nullptr || tuningMode == nullptr
-              || aiqb == nullptr, -1, "@%s, wrong str %s", __func__, str);
+        CheckAndLogError(configMode == nullptr || tuningMode == nullptr
+                         || aiqb == nullptr, -1, "@%s, wrong str %s", __func__, str);
 
         LOGXML("@%s, configMode %s, tuningMode %s, aiqb name %s",
                 __func__, configMode, tuningMode, aiqb);
@@ -541,7 +610,7 @@ int CameraParser::parseSupportedTuningConfig(const char *str, vector <TuningConf
 
 int CameraParser::parseLardTags(const char *str, vector <LardTagConfig> &lardTags)
 {
-    CheckError(str == nullptr, -1, "@%s, str is nullptr", __func__);
+    CheckAndLogError(str == nullptr, -1, "@%s, str is nullptr", __func__);
     LOGXML("@%s, str = %s", __func__, str);
 
     int sz = strlen(str);
@@ -563,8 +632,8 @@ int CameraParser::parseLardTags(const char *str, vector <LardTagConfig> &lardTag
         cfg.aiqTag = CameraUtils::fourcc2UL(aiqTag);
         cfg.ispTag = CameraUtils::fourcc2UL(ispTag);
         cfg.othersTag = CameraUtils::fourcc2UL(othersTag);
-        CheckError(cfg.cmcTag == 0 || cfg.aiqTag == 0 || cfg.ispTag == 0
-              || cfg.othersTag == 0, -1, "@%s, wrong str %s", __func__, str);
+        CheckAndLogError(cfg.cmcTag == 0 || cfg.aiqTag == 0 || cfg.ispTag == 0
+                         || cfg.othersTag == 0, -1, "@%s, wrong str %s", __func__, str);
 
         lardTags.push_back(cfg);
         LOGXML("@%s, tuningMode %s, cmc %s, aiq %s, isp %s, others %s",
@@ -777,11 +846,11 @@ void CameraParser::parseStreamConfig(const char* src, stream_array_t& configs)
             case 1: // Step 1: Parse format
                 LOGXML("stream format is %s", src);
                 config.format = CameraUtils::string2PixelCode(src);
-                CheckError(config.format == -1, VOID_VALUE, "@%s, format fails", __func__);
+                CheckAndLogError(config.format == -1, VOID_VALUE, "@%s, format fails", __func__);
                 break;
             case 2: // Step 2: Parse the resolution
                 config.width = strtol(src, &endPtr, 10);
-                CheckError(!endPtr || *endPtr != 'x', VOID_VALUE, "@%s, width fails", __func__);
+                CheckAndLogError(!endPtr || *endPtr != 'x', VOID_VALUE, "@%s, width fails", __func__);
                 src = endPtr + 1;
                 config.height = strtol(src, &endPtr, 10);
                 LOGXML("(%dx%d)", config.width, config.height);
@@ -792,7 +861,7 @@ void CameraParser::parseStreamConfig(const char* src, stream_array_t& configs)
                 break;
             case 4: // Step 4: Parse MediaCtlConf id.
                 mcId = strtol(src, &endPtr, 10);
-                CheckError(mcId < 0, VOID_VALUE, "@%s, mcId fails", __func__);
+                CheckAndLogError(mcId < 0, VOID_VALUE, "@%s, mcId fails", __func__);
                 LOGXML("the mcId for supported stream config is %d", mcId);
                 break;
         }
@@ -866,7 +935,7 @@ void CameraParser::parseSupportedFeatures(const char* src, camera_features_list_
 int CameraParser::parseSupportedVideoStabilizationMode(const char* str, camera_video_stabilization_list_t &supportedModes)
 {
     HAL_TRACE_CALL(1);
-    CheckError(str == nullptr, -1, "@%s, str is nullptr", __func__);
+    CheckAndLogError(str == nullptr, -1, "@%s, str is nullptr", __func__);
 
     char *savePtr, *tablePtr;
     int sz = strlen(str);
@@ -895,7 +964,7 @@ int CameraParser::parseSupportedVideoStabilizationMode(const char* str, camera_v
 int CameraParser::parseSupportedAeMode(const char* str, vector <camera_ae_mode_t> &supportedModes)
 {
     HAL_TRACE_CALL(1);
-    CheckError(str == nullptr, -1, "@%s, str is nullptr", __func__);
+    CheckAndLogError(str == nullptr, -1, "@%s, str is nullptr", __func__);
 
     char *savePtr, *tablePtr;
     int sz = strlen(str);
@@ -923,7 +992,7 @@ int CameraParser::parseSupportedAeMode(const char* str, vector <camera_ae_mode_t
 int CameraParser::parseSupportedAfMode(const char* str, vector <camera_af_mode_t> &supportedModes)
 {
     HAL_TRACE_CALL(1);
-    CheckError(str == NULL, -1, "@%s, str is NULL", __func__);
+    CheckAndLogError(str == NULL, -1, "@%s, str is NULL", __func__);
 
     char *savePtr, *tablePtr;
     int sz = strlen(str);
@@ -957,7 +1026,7 @@ int CameraParser::parseSupportedAfMode(const char* str, vector <camera_af_mode_t
 int CameraParser::parseSupportedAntibandingMode(const char* str, vector <camera_antibanding_mode_t> &supportedModes)
 {
     HAL_TRACE_CALL(1);
-    CheckError(str == nullptr, -1, "@%s, str is nullptr", __func__);
+    CheckAndLogError(str == nullptr, -1, "@%s, str is nullptr", __func__);
 
     char *savePtr, *tablePtr;
     int sz = strlen(str);
@@ -991,7 +1060,7 @@ int CameraParser::parseSupportedAeParamRange(const char* src, vector<int>& scene
 {
     HAL_TRACE_CALL(1);
     char* srcDup = strdup(src);
-    CheckError((srcDup == nullptr), NO_MEMORY, "Create a copy of source string failed.");
+    CheckAndLogError((srcDup == nullptr), NO_MEMORY, "Create a copy of source string failed.");
 
     char* srcTmp = srcDup;
     char* endPtr = nullptr;
@@ -1210,7 +1279,7 @@ void CameraParser::parseMultiExpRange(const char* src)
     static const int MULTI_EXPOSURE_TAG_SHS3 = 4;
 
     string srcDup = src;
-    CheckError((srcDup.c_str() == nullptr), VOID_VALUE, "Create a copy of source string failed.");
+    CheckAndLogError((srcDup.c_str() == nullptr), VOID_VALUE, "Create a copy of source string failed.");
 
     const char* srcTmp = srcDup.c_str();
     char* endPtr = nullptr;
@@ -1239,12 +1308,12 @@ void CameraParser::parseMultiExpRange(const char* src)
 
         CLEAR(multiRange);
         multiRange.Resolution.width = strtol(srcTmp, &endPtr, 10);
-        CheckError((endPtr == nullptr || *endPtr != ','), VOID_VALUE, "Malformed resolution for multi-exposure range configuration");
+        CheckAndLogError((endPtr == nullptr || *endPtr != ','), VOID_VALUE, "Malformed resolution for multi-exposure range configuration");
 
         srcTmp = endPtr + 1;
         srcTmp = const_cast<char*>(skipWhiteSpace(srcTmp));
         multiRange.Resolution.height = strtol(srcTmp, &endPtr, 10);
-        CheckError((endPtr == nullptr || *endPtr != ','), VOID_VALUE, "Malformed resolution for multi-exposure range configuration");
+        CheckAndLogError((endPtr == nullptr || *endPtr != ','), VOID_VALUE, "Malformed resolution for multi-exposure range configuration");
 
         pCurrRange = nullptr;
         for (unsigned int i = 0; i < pCurrentCam->mMultiExpRanges.size(); i++) {
@@ -1301,22 +1370,22 @@ void CameraParser::parseMultiExpRange(const char* src)
         srcTmp = endPtr + 1;
         srcTmp = const_cast<char*>(skipWhiteSpace(srcTmp));
         range->min = strtol(srcTmp, &endPtr, 10);
-        CheckError((endPtr == nullptr || *endPtr != ','), VOID_VALUE, "Malformed range for multi-exposure range configuration");
+        CheckAndLogError((endPtr == nullptr || *endPtr != ','), VOID_VALUE, "Malformed range for multi-exposure range configuration");
 
         srcTmp = endPtr + 1;
         srcTmp = const_cast<char*>(skipWhiteSpace(srcTmp));
         range->max = strtol(srcTmp, &endPtr, 10);
-        CheckError((endPtr == nullptr || *endPtr != ','), VOID_VALUE, "Malformed range for multi-exposure range configuration");
+        CheckAndLogError((endPtr == nullptr || *endPtr != ','), VOID_VALUE, "Malformed range for multi-exposure range configuration");
 
         srcTmp = endPtr + 1;
         srcTmp = const_cast<char*>(skipWhiteSpace(srcTmp));
         range->step = strtol(srcTmp, &endPtr, 10);
-        CheckError((endPtr == nullptr || *endPtr != ','), VOID_VALUE, "Malformed range for multi-exposure range configuration");
+        CheckAndLogError((endPtr == nullptr || *endPtr != ','), VOID_VALUE, "Malformed range for multi-exposure range configuration");
 
         srcTmp = endPtr + 1;
         srcTmp = const_cast<char*>(skipWhiteSpace(srcTmp));
         range->lowerBound = strtol(srcTmp, &endPtr, 10);
-        CheckError((endPtr == nullptr || *endPtr != ','), VOID_VALUE, "Malformed range for multi-exposure range configuration");
+        CheckAndLogError((endPtr == nullptr || *endPtr != ','), VOID_VALUE, "Malformed range for multi-exposure range configuration");
 
         srcTmp = endPtr + 1;
         srcTmp = const_cast<char*>(skipWhiteSpace(srcTmp));
@@ -1392,7 +1461,7 @@ void CameraParser::parseSizesList(const char *sizesStr, vector <camera_resolutio
 void CameraParser::parseOutputMap(const char *str, vector<UserToPslOutputMap> &outputMap)
 {
     char *srcDup = strdup(str);
-    CheckError((srcDup == nullptr), VOID_VALUE, "Create a copy of source string failed.");
+    CheckAndLogError((srcDup == nullptr), VOID_VALUE, "Create a copy of source string failed.");
 
     char *srcTmp = srcDup;
     char *endPtr = nullptr;
@@ -1533,7 +1602,7 @@ void CameraParser::handleStaticMetaData(CameraParser *profiles, const char *name
     } else if (strcmp(name, "evStep") == 0) {
         vector<int> rationalType;
         int ret = parseXmlConvertStrings(atts[1], rationalType, atoi);
-        CheckError((ret != OK), VOID_VALUE, "Parse evStep failed");
+        CheckAndLogError((ret != OK), VOID_VALUE, "Parse evStep failed");
 
         icamera_metadata_rational_t evStep = {rationalType[0], rationalType[1]};
         LOGXML("@%s, the numerator: %d, denominator: %d", __func__, evStep.numerator, evStep.denominator);
@@ -1552,7 +1621,7 @@ void CameraParser::handleStaticMetaData(CameraParser *profiles, const char *name
         vector<int> scenes;
         vector<float> minValues, maxValues;
         int ret = parseSupportedAeParamRange(atts[1], scenes, minValues, maxValues);
-        CheckError((ret != OK), VOID_VALUE, "Parse AE eExposure time range failed");
+        CheckAndLogError((ret != OK), VOID_VALUE, "Parse AE eExposure time range failed");
 
         const int MEMBER_COUNT = 3;
         const int dataSize = scenes.size() * MEMBER_COUNT;
@@ -1571,7 +1640,7 @@ void CameraParser::handleStaticMetaData(CameraParser *profiles, const char *name
         vector<int> scenes;
         vector<float> minValues, maxValues;
         int ret = parseSupportedAeParamRange(atts[1], scenes, minValues, maxValues);
-        CheckError((ret != OK), VOID_VALUE, "Parse AE gain range failed");
+        CheckAndLogError((ret != OK), VOID_VALUE, "Parse AE gain range failed");
 
         const int MEMBER_COUNT = 3;
         const int dataSize = scenes.size() * MEMBER_COUNT;
@@ -1664,7 +1733,7 @@ void CameraParser::handleStaticMetaData(CameraParser *profiles, const char *name
 void CameraParser::handleGenericStaticMetaData(const char* name, const char* src,
                                                CameraMetadata* metadata)
 {
-    CheckError(!metadata, VOID_VALUE, "metadata is nullptr");
+    CheckAndLogError(!metadata, VOID_VALUE, "metadata is nullptr");
     uint32_t tag = -1;
     if (mGenericStaticMetadataToTag.find(name) != mGenericStaticMetadataToTag.end()) {
         tag = mGenericStaticMetadataToTag[name];
@@ -1831,11 +1900,11 @@ void CameraParser::endParseElement(void *userData, const char *name)
             }
 
             // I2CBus is adaptor-bus, like 18-0010, and use adaptor id to select NVM path.
-            if ((profiles->mI2CBus.size() >= 2) && !profiles->mNvmNodeName.empty()) {
+            if ((profiles->mI2CBus.size() >= 2) && !profiles->mNvmDeviceInfo.empty()) {
                 getNVMDirectory(profiles);
             }
 
-            profiles->mNvmNodeName.clear();
+            profiles->mNvmDeviceInfo.clear();
 
             // Merge the content of mMetadata into mCapability.
             ParameterHelper::merge(profiles->mMetadata, &profiles->pCurrentCam->mCapability);
@@ -1881,7 +1950,7 @@ void CameraParser::getNVMDirectory(CameraParser* profiles)
     std::string nvmPath("/sys/bus/i2c/devices/i2c-");
     // attach i2c adaptor id, like 18-0010
     std::size_t found = profiles->mI2CBus.find("-");
-    CheckError(found == std::string::npos, VOID_VALUE, "Failed to get adaptor id");
+    CheckAndLogError(found == std::string::npos, VOID_VALUE, "Failed to get adaptor id");
     nvmPath += profiles->mI2CBus.substr(0,found);
     nvmPath += "/firmware_node/";
     DIR* dir = opendir(nvmPath.c_str());
@@ -1904,15 +1973,28 @@ void CameraParser::getNVMDirectory(CameraParser* profiles)
                 size_t readSize = fread(ptr.get(), sizeof(char), size, fp);
                 fclose(fp);
 
-                if (readSize > 0 && strstr(ptr.get(), profiles->mNvmNodeName.c_str()) != nullptr) {
-                    profiles->pCurrentCam->mNvmDirectory = "i2c-";
-                    profiles->pCurrentCam->mNvmDirectory += direntPtr->d_name;
-                    LOGXML("NVM dir %s", profiles->pCurrentCam->mNvmDirectory.c_str());
-                    break;
+                if (readSize > 0) {
+                    for (auto &nvm : profiles->mNvmDeviceInfo) {
+                        if (strstr(ptr.get(), nvm.nodeName.c_str()) != nullptr) {
+                            nvm.directory = "i2c-";
+                            nvm.directory += direntPtr->d_name;
+                            break;
+                        }
+                    }
                 }
             }
         }
         closedir(dir);
+    }
+
+    for (auto nvm : profiles->mNvmDeviceInfo) {
+        if (!nvm.directory.empty()) {
+            // The first one in list is prioritized and should be selected.
+            profiles->pCurrentCam->mNvmDirectory = nvm.directory;
+            profiles->pCurrentCam->mMaxNvmDataSize = nvm.dataSize;
+            LOGXML("NVM dir %s", profiles->pCurrentCam->mNvmDirectory.c_str());
+            break;
+        }
     }
 }
 
@@ -2007,7 +2089,7 @@ void CameraParser::getSensorDataFromXmlFile(void)
         }
         sensorName.append(".xml");
         int ret = getDataFromXmlFile(sensorName);
-        CheckError(ret != OK, VOID_VALUE, "Failed to get sensor profile data from %s", sensorName.c_str());
+        CheckAndLogError(ret != OK, VOID_VALUE, "Failed to get sensor profile data from %s", sensorName.c_str());
     }
 }
 

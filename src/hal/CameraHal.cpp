@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Intel Corporation.
+ * Copyright (C) 2015-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#define LOG_TAG "CameraHal"
+#define LOG_TAG CameraHal
 
 #include <vector>
 
@@ -42,7 +42,8 @@ namespace icamera {
 
 CameraHal::CameraHal() :
     mInitTimes(0),
-    mState(HAL_UNINIT)
+    mState(HAL_UNINIT),
+    mCameraOpenNum(0)
 {
     PERF_CAMERA_ATRACE();
     LOG1("@%s", __func__);
@@ -67,7 +68,7 @@ int CameraHal::init()
     }
 
     int ret = PlatformData::init();
-    CheckError(ret != OK, NO_INIT, "PlatformData init failed");
+    CheckAndLogError(ret != OK, NO_INIT, "PlatformData init failed");
 
     mState = HAL_INIT;
 
@@ -106,7 +107,7 @@ int CameraHal::deviceOpen(int cameraId)
     PERF_CAMERA_ATRACE();
 
     AutoMutex l(mLock);
-    CheckError(mState == HAL_UNINIT, NO_INIT,"HAL is not initialized");
+    CheckAndLogError(mState == HAL_UNINIT, NO_INIT,"HAL is not initialized");
 
     //Create the camera device that will be freed in close
     if (mCameraDevices[cameraId]) {
@@ -114,12 +115,13 @@ int CameraHal::deviceOpen(int cameraId)
         return INVALID_OPERATION;
     }
 
-    mCameraOpenNum++;
     mCameraDevices[cameraId] = new CameraDevice(cameraId);
+
+    mCameraOpenNum++;
 
     if (mCameraOpenNum == 1) {
         MediaControl *mc = MediaControl::getInstance();
-        CheckError(!mc, UNKNOWN_ERROR, "%s, MediaControl init failed", __func__);
+        CheckAndLogError(!mc, UNKNOWN_ERROR, "%s, MediaControl init failed", __func__);
         mc->resetAllLinks();
     }
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#define LOG_TAG "IntelCca"
+#define LOG_TAG IntelCca
 
 #include <vector>
 
@@ -29,7 +29,7 @@ std::vector<IntelCca::CCAHandle> IntelCca::sCcaInstance;
 Mutex IntelCca::sLock;
 
 IntelCca* IntelCca::getInstance(int cameraId, TuningMode mode) {
-    LOG2("@%s, cameraId:%d, tuningMode:%d, cca instance size:%d", __func__,
+    LOG2("@%s, cameraId:%d, tuningMode:%d, cca instance size:%zu", __func__,
          cameraId, mode, sCcaInstance.size());
 
     AutoMutex lock(sLock);
@@ -65,7 +65,7 @@ void IntelCca::releaseInstance(int cameraId, TuningMode mode) {
 
 void IntelCca::releaseAllInstances() {
     AutoMutex lock(sLock);
-    LOG2("@%s, cca instance size:%d", __func__, sCcaInstance.size());
+    LOG2("@%s, cca instance size:%zu", __func__, sCcaInstance.size());
     for (auto &it : sCcaInstance) {
         for (auto &oneCcaHandle : it.ccaHandle) {
             IntelCca* intelCca = oneCcaHandle.second;
@@ -85,6 +85,8 @@ IntelCca::IntelCca(int cameraId, TuningMode mode) :
 IntelCca::~IntelCca() {
     LOG2("@%s", __func__);
     releaseIntelCCA();
+    freeStatsDataMem();
+    mMemStatsInfoMap.clear();
 }
 
 cca::IntelCCA* IntelCca::getIntelCCA() {
@@ -107,10 +109,12 @@ ia_err IntelCca::init(const cca::cca_init_params& initParams) {
     return ret;
 }
 
-ia_err IntelCca::setStatsParams(const cca::cca_stats_params& params) {
+ia_err IntelCca::setStatsParams(const cca::cca_stats_params& params,
+                                cca::cca_out_stats* outStats) {
     LOG2("@%s", __func__);
+    CheckAndLogError(!outStats, ia_err_argument, "@%s, outStats is nullptr", __func__);
 
-    ia_err ret = getIntelCCA()->setStatsParams(params);
+    ia_err ret = getIntelCCA()->setStatsParams(params, outStats);
     LOG2("@%s, ret:%d", __func__, ret);
 
     return ret;
@@ -119,7 +123,7 @@ ia_err IntelCca::setStatsParams(const cca::cca_stats_params& params) {
 ia_err IntelCca::runAEC(uint64_t frameId, const cca::cca_ae_input_params& params,
                         cca::cca_ae_results* results) {
     LOG2("@%s", __func__);
-    CheckError(!results, ia_err_argument, "@%s, results is nullptr", __func__);
+    CheckAndLogError(!results, ia_err_argument, "@%s, results is nullptr", __func__);
 
     ia_err ret = getIntelCCA()->runAEC(frameId, params, results);
     LOG2("@%s, ret:%d", __func__, ret);
@@ -130,7 +134,7 @@ ia_err IntelCca::runAEC(uint64_t frameId, const cca::cca_ae_input_params& params
 ia_err IntelCca::runAIQ(uint64_t frameId, const cca::cca_aiq_params& params,
                         cca::cca_aiq_results* results) {
     LOG2("@%s", __func__);
-    CheckError(!results, ia_err_argument, "@%s, results is nullptr", __func__);
+    CheckAndLogError(!results, ia_err_argument, "@%s, results is nullptr", __func__);
 
     ia_err ret = getIntelCCA()->runAIQ(frameId, params, results);
     LOG2("@%s, ret:%d", __func__, ret);
@@ -168,8 +172,8 @@ ia_err IntelCca::runDVS(uint64_t frameId) {
 ia_err IntelCca::runAIC(uint64_t frameId, const cca::cca_pal_input_params* params,
                         ia_binary_data* pal) {
     LOG2("@%s", __func__);
-    CheckError(!params, ia_err_argument, "@%s, params is nullptr", __func__);
-    CheckError(!pal, ia_err_argument, "@%s, pal is nullptr", __func__);
+    CheckAndLogError(!params, ia_err_argument, "@%s, params is nullptr", __func__);
+    CheckAndLogError(!pal, ia_err_argument, "@%s, pal is nullptr", __func__);
 
     ia_err ret = getIntelCCA()->runAIC(frameId, *params, pal);
 
@@ -183,7 +187,7 @@ ia_err IntelCca::runAIC(uint64_t frameId, const cca::cca_pal_input_params* param
 
 ia_err IntelCca::getCMC(cca::cca_cmc* cmc) {
     LOG2("@%s", __func__);
-    CheckError(!cmc, ia_err_argument, "@%s, cmc is nullptr", __func__);
+    CheckAndLogError(!cmc, ia_err_argument, "@%s, cmc is nullptr", __func__);
 
     ia_err ret = getIntelCCA()->getCMC(*cmc);
     LOG2("@%s, ret:%d", __func__, ret);
@@ -193,7 +197,7 @@ ia_err IntelCca::getCMC(cca::cca_cmc* cmc) {
 
 ia_err IntelCca::getMKN(ia_mkn_trg type, cca::cca_mkn* mkn) {
     LOG2("@%s", __func__);
-    CheckError(!mkn, ia_err_argument, "@%s, mkn is nullptr", __func__);
+    CheckAndLogError(!mkn, ia_err_argument, "@%s, mkn is nullptr", __func__);
 
     ia_err ret = getIntelCCA()->getMKN(type, *mkn);
     LOG2("@%s, ret:%d", __func__, ret);
@@ -203,7 +207,7 @@ ia_err IntelCca::getMKN(ia_mkn_trg type, cca::cca_mkn* mkn) {
 
 ia_err IntelCca::getAiqd(cca::cca_aiqd* aiqd) {
     LOG2("@%s", __func__);
-    CheckError(!aiqd, ia_err_argument, "@%s, aiqd is nullptr", __func__);
+    CheckAndLogError(!aiqd, ia_err_argument, "@%s, aiqd is nullptr", __func__);
 
     ia_err ret = getIntelCCA()->getAiqd(*aiqd);
     LOG2("@%s, ret:%d", __func__, ret);
@@ -221,6 +225,84 @@ ia_err IntelCca::updateTuning(uint8_t lardTags, const ia_lard_input_params& lard
     return ret;
 }
 
+bool IntelCca::allocStatsDataMem(unsigned int size) {
+    LOG2("@%s, mCameraId:%d, tuningMode:%d, size:%d", __func__, mCameraId, mTuningMode, size);
+
+    {
+        AutoMutex l(mMemStatsMLock);
+        if (!mMemStatsInfoMap.empty() &&
+            mMemStatsInfoMap.begin()->second.bufSize >= size) {
+            return true;
+        }
+    }
+
+    freeStatsDataMem();
+
+    AutoMutex l(mMemStatsMLock);
+    for (int i = 0; i < kMaxQueueSize; i++) {
+        void* p = malloc(size);
+        CheckAndLogError(!p, false, "failed to malloc stats buffer");
+        StatsBufInfo info = { size, p, 0 };
+
+        LOG2("the buffer address: %p", p);
+        int64_t index = i * (-1) - 1;  // default index list: -1, -2, -3, ...
+        mMemStatsInfoMap[index] = info;
+    }
+
+    return true;
+}
+
+void IntelCca::freeStatsDataMem() {
+    LOG2("@%s, mCameraId:%d, tuningMode:%d", __func__, mCameraId, mTuningMode);
+
+    AutoMutex l(mMemStatsMLock);
+    for (auto it = mMemStatsInfoMap.begin(); it != mMemStatsInfoMap.end(); ++it) {
+        free(it->second.ptr);
+    }
+
+    mMemStatsInfoMap.clear();
+}
+
+void* IntelCca::getStatsDataBuffer() {
+    LOG2("@%s, mCameraId:%d, tuningMode:%d", __func__, mCameraId, mTuningMode);
+
+    AutoMutex l(mMemStatsMLock);
+    if (mMemStatsInfoMap.empty()) return nullptr;
+
+    void* p = mMemStatsInfoMap.begin()->second.ptr;
+    LOG2("get stats buffer address %p", p);
+    return p;
+}
+
+void IntelCca::decodeHwStatsDone(int64_t sequence, unsigned int byteUsed) {
+    LOG2("@%s, mCameraId:%d, tuningMode:%d, sequence:%ld, byteUsed:%d", __func__, mCameraId,
+         mTuningMode, sequence, byteUsed);
+
+    AutoMutex l(mMemStatsMLock);
+    if (mMemStatsInfoMap.empty()) return;
+
+    auto it = mMemStatsInfoMap.begin();
+    it->second.usedSize = byteUsed;
+    mMemStatsInfoMap[sequence] = it->second;
+    mMemStatsInfoMap.erase(it->first);
+}
+
+void* IntelCca::fetchHwStatsData(int64_t sequence, unsigned int* byteUsed) {
+    LOG2("@%s, mCameraId:%d, tuningMode:%d, sequence:%ld", __func__, mCameraId,
+         mTuningMode, sequence);
+    CheckAndLogError(!byteUsed, nullptr, "byteUsed is nullptr");
+
+    AutoMutex l(mMemStatsMLock);
+    if (mMemStatsInfoMap.find(sequence) != mMemStatsInfoMap.end()) {
+        *byteUsed = mMemStatsInfoMap[sequence].usedSize;
+        void* p = mMemStatsInfoMap[sequence].ptr;
+        LOG2("decode stats address %p", p);
+        return p;
+    }
+
+    return nullptr;
+}
+
 void IntelCca::deinit() {
     LOG2("@%s", __func__);
 
@@ -228,12 +310,13 @@ void IntelCca::deinit() {
     releaseIntelCCA();
 }
 
-ia_err IntelCca::decodeStats(uint64_t statsPointer, uint32_t statsSize,
+ia_err IntelCca::decodeStats(uint64_t statsPointer, uint32_t statsSize, uint32_t bitmap,
                              ia_isp_bxt_statistics_query_results_t* results) {
-    LOG2("@%s, statsPointer: 0x%lu, statsSize:%d", __func__, statsPointer, statsSize);
-    CheckError(!results, ia_err_argument, "@%s, results is nullptr", __func__);
+    LOG2("@%s, statsPointer: 0x%lu, statsSize:%d, bitmap:%x", __func__, statsPointer,
+         statsSize, bitmap);
+    CheckAndLogError(!results, ia_err_argument, "@%s, results is nullptr", __func__);
 
-    ia_err ret = getIntelCCA()->decodeStats(statsPointer, statsSize, results);
+    ia_err ret = getIntelCCA()->decodeStats(statsPointer, statsSize, bitmap, results);
     LOG2("@%s, ret:%d", __func__, ret);
 
     return ret;
@@ -241,7 +324,7 @@ ia_err IntelCca::decodeStats(uint64_t statsPointer, uint32_t statsSize,
 
 uint32_t IntelCca::getPalDataSize(const cca::cca_program_group& programGroup) {
     uint32_t size = getIntelCCA()->getPalSize(programGroup);
-    LOG2("@%s, pal data size: %zu", __func__, size);
+    LOG2("@%s, pal data size: %u", __func__, size);
 
     return size;
 }

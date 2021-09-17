@@ -18,7 +18,6 @@ cmake_minimum_required(VERSION 2.8)
 
 project(libcamhal)
 
-option(USE_STATIC_GRAPH "Use static graph" OFF)
 
 #---------------------------- Fold settings ----------------------------
 
@@ -124,6 +123,11 @@ if (IPU_VER MATCHES "ipu6sepla")
     add_definitions(-DIPU_SYSVER_ipu6v3)
 endif()
 # IPU6_SE_FEATURE_E
+
+if (IPU_VER MATCHES "ipu6ep")
+    message(INFO "add definition -DIPU_SYSVER_ipu6v5 for ipu6ep")
+    add_definitions(-DIPU_SYSVER_ipu6v5)
+endif()
 
 include_directories(include
                     include/api include/utils
@@ -255,18 +259,18 @@ endif()
     target_link_libraries(camhal ${IA_IMAGING_LIBS})
     target_link_libraries(camhal_static ${IA_IMAGING_LIBS})
 
-    if(USE_PG_LITE_PIPE)
-        find_package(LIBGCSS)
-        include_directories(${LIBGCSS_INCLUDE_DIRS})
-        target_link_libraries(camhal ${LIBGCSS_LIBS})
-        target_link_libraries(camhal_static ${LIBGCSS_LIBS})
-    else()
-        # Link libiacss
-        find_package(LIBIACSS)
-        include_directories(${LIBIACSS_INCLUDE_DIRS})
-        target_link_libraries(camhal ${LIBIACSS_LIBS})
-        target_link_libraries(camhal_static ${LIBIACSS_LIBS})
-    endif()
+if(USE_PG_LITE_PIPE)
+    find_package(LIBGCSS)
+    include_directories(${LIBGCSS_INCLUDE_DIRS})
+    target_link_libraries(camhal ${LIBGCSS_LIBS})
+    target_link_libraries(camhal_static ${LIBGCSS_LIBS})
+else()
+    # Link libiacss
+    find_package(LIBIACSS)
+    include_directories(${LIBIACSS_INCLUDE_DIRS})
+    target_link_libraries(camhal ${LIBIACSS_LIBS})
+    target_link_libraries(camhal_static ${LIBIACSS_LIBS})
+endif()
 
 # Include libipu(4) headers
 find_package(LIBIPU)
@@ -364,6 +368,17 @@ if("${IPU_VER}" STREQUAL "ipu6")
     else()
         message("Install IPU6 configure files")
         install(DIRECTORY config/linux/ipu6/ DESTINATION share/defaults/etc/camera)
+    endif()
+elseif("${IPU_VER}" STREQUAL "ipu6ep")
+    if("${PRODUCTION_NAME}" STREQUAL "ccg_platform")
+        message("Install ccg_platform configure files")
+        install(DIRECTORY config/linux/ccg_platform/ DESTINATION share/defaults/etc/camera)
+    elseif("${PRODUCTION_NAME}" STREQUAL "ccg_cce_tributo")
+        message("Install ccg_cce_tributo configure files")
+        install(DIRECTORY config/linux/ccg_cce_tributo/ DESTINATION share/defaults/etc/camera)
+    else()
+        message("Install IPU6EP configure files")
+        install(DIRECTORY config/linux/ipu6ep/ DESTINATION share/defaults/etc/camera)
     endif()
 else()
     message("Install IPU4 configure files")

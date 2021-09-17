@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#define LOG_TAG "CameraDump"
+#define LOG_TAG CameraDump
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -56,7 +56,8 @@ static const char *ModuleName[] = {
     "de-inter",
     "swip-op",
     "gpu-tnr",
-    "nvm"
+    "nvm",
+    "mkn"
 }; // map to the ModuleType
 
 static const char *StreamUsage[] = {
@@ -171,10 +172,11 @@ const char* CameraDump::getDumpPath(void)
 }
 
 void CameraDump::writeData(const void* data, int size, const char* fileName) {
-    CheckError((data == nullptr || size == 0 || fileName == nullptr), VOID_VALUE, "Nothing needs to be dumped");
+    CheckAndLogError((data == nullptr || size == 0 || fileName == nullptr),
+                     VOID_VALUE, "Nothing needs to be dumped");
 
     FILE *fp = fopen (fileName, "w+");
-    CheckError(fp == nullptr, VOID_VALUE, "open dump file %s failed", fileName);
+    CheckAndLogError(fp == nullptr, VOID_VALUE, "open dump file %s failed", fileName);
 
     LOG1("Write data to file:%s", fileName);
     if ((fwrite(data, size, 1, fp)) != 1)
@@ -215,7 +217,8 @@ static string getAiqSettingAppendix(int cameraId, long sequence)
     if (aiqResults == nullptr) {
         LOGW("%s: no result for sequence %ld! use the latest instead", __func__, sequence);
         aiqResults = const_cast<AiqResult*>(AiqResultStorage::getInstance(cameraId)->getAiqResult());
-        CheckError((aiqResults == nullptr), string(settingAppendix), "Cannot find available aiq result.");
+        CheckAndLogError((aiqResults == nullptr), string(settingAppendix),
+                         "Cannot find available aiq result.");
     }
 
     ia_aiq_exposure_sensor_parameters *sensorExposure =
@@ -223,11 +226,14 @@ static string getAiqSettingAppendix(int cameraId, long sequence)
     ia_aiq_exposure_parameters *exposure =
                                        aiqResults->mAeResults.exposures[0].exposure;
 
-    CheckError((sensorExposure == nullptr || exposure == nullptr), string(settingAppendix), "Cannot find aiq exposures");
+    CheckAndLogError((sensorExposure == nullptr || exposure == nullptr), string(settingAppendix),
+                     "Cannot find aiq exposures");
 
     double ag = sensorExposure->analog_gain_code_global;
     double dg = sensorExposure->digital_gain_global;
     float ispDg = 1.0f;
+    const int nSteps = 256;
+    const char* sensorName = PlatformData::getSensorName(cameraId);
 
     LOG2("%s: original sensorExposure AG: %f, DG: %f, exposure: AG: %f, DG: %f",
            __func__, ag, dg, exposure->analog_gain, exposure->digital_gain);
@@ -235,8 +241,6 @@ static string getAiqSettingAppendix(int cameraId, long sequence)
     if (icamera::CameraDump::isDumpFormatEnable(DUMP_FORMAT_IQSTUDIO)) {
 
         // Convert AG and DG per sensor for IQ Studio input.
-        const int nSteps = 256;
-        const char* sensorName = PlatformData::getSensorName(cameraId);
         ispDg = sensorExposure->digital_gain_global;
 
         if (strstr(sensorName, "imx185") != nullptr) {
@@ -255,12 +259,29 @@ static string getAiqSettingAppendix(int cameraId, long sequence)
             dg = nSteps * PlatformData::getSensorDigitalGain(cameraId, exposure->digital_gain);
             ispDg = nSteps * PlatformData::getIspDigitalGain(cameraId, exposure->digital_gain);
             LOG2("%s: converted AG: %f, DG: %f ispDG: %f for %s", __func__, ag, dg, ispDg, sensorName);
+        } else if (strstr(sensorName, "imx390") != nullptr) {
+            ag = nSteps * pow(10, (double)sensorExposure->analog_gain_code_global * 0.3 / 20);
+            dg = 1.0 * nSteps;
+            LOG2("%s: converted AG: %f, DG: %f for %s", __func__, ag, dg, sensorName);
         }
 
         if (aiqResults->mAeResults.num_exposures == 2) {
-            snprintf(settingAppendix, (MAX_NAME_LEN - 1), "~ag#%.0f~dg#%.0f~cmnt#ispdg_%.0f~exp#%d,%d",
-                ag, dg, ispDg, exposure->exposure_time_us,
-                aiqResults->mAeResults.exposures[1].exposure->exposure_time_us);
+            if (strstr(sensorName, "imx390") != nullptr) {
+                double ag_1 = aiqResults->mAeResults.exposures[1].sensor_exposure[0].analog_gain_code_global;
+                LOG2("%s: ag_0: %f, ag_1: %f", __func__, ag, ag_1);
+
+                ag_1 = nSteps * pow(10, (double)ag_1 * 0.3 / 20);
+                LOG2("%s: after convert: ag_0: %f, ag_1: %f", __func__, ag, ag_1);
+
+                snprintf(settingAppendix, (MAX_NAME_LEN - 1),
+                    "~ag#%.0f,%.0f~dg#%.0f~cmnt#ispdg_%.0f~exp#%d,%d",
+                    ag, ag_1, dg, ispDg, exposure->exposure_time_us,
+                    aiqResults->mAeResults.exposures[1].exposure->exposure_time_us);
+            } else {
+                snprintf(settingAppendix, (MAX_NAME_LEN - 1), "~ag#%.0f~dg#%.0f~cmnt#ispdg_%.0f~exp#%d,%d",
+                    ag, dg, ispDg, exposure->exposure_time_us,
+                    aiqResults->mAeResults.exposures[1].exposure->exposure_time_us);
+            }
         } else {
             snprintf(settingAppendix, (MAX_NAME_LEN - 1), "~ag#%.0f~dg#%.0f~cmnt#ispdg_%.0f~exp#%d",
                 ag, dg, ispDg, exposure->exposure_time_us);
@@ -273,9 +294,22 @@ static string getAiqSettingAppendix(int cameraId, long sequence)
         }
 
         if (aiqResults->mAeResults.num_exposures == 2) {
-            snprintf(settingAppendix, (MAX_NAME_LEN - 1), "_ag#%.0f_dg#%.0f_ispdg#%.3f_exp#%d,%d",
-                ag, dg, ispDg, exposure->exposure_time_us,
-                aiqResults->mAeResults.exposures[1].exposure->exposure_time_us);
+          if (strstr(sensorName, "imx390") != nullptr) {
+                double ag_1 = aiqResults->mAeResults.exposures[1].sensor_exposure[0].analog_gain_code_global;
+                LOG2("%s: ag_0: %f, ag_1: %f", __func__, ag, ag_1);
+
+                ag_1 = nSteps * pow(10, (double)ag_1 * 0.3 / 20);
+                LOG2("%s: after convert: ag_0: %f, ag_1: %f", __func__, ag, ag_1);
+
+                snprintf(settingAppendix, (MAX_NAME_LEN - 1),
+                    "_ag#%.0f,%.0f_dg#%.0f_ispdg#%.3f_exp#%d,%d",
+                    ag, ag_1, dg, ispDg, exposure->exposure_time_us,
+                    aiqResults->mAeResults.exposures[1].exposure->exposure_time_us);
+            } else {
+                snprintf(settingAppendix, (MAX_NAME_LEN - 1), "_ag#%.0f_dg#%.0f_ispdg#%.3f_exp#%d,%d",
+                    ag, dg, ispDg, exposure->exposure_time_us,
+                    aiqResults->mAeResults.exposures[1].exposure->exposure_time_us);
+            }
         } else {
             snprintf(settingAppendix, (MAX_NAME_LEN - 1), "_ag#%.0f_dg#%.0f_ispdg#%.3f_exp#%d",
                 ag, dg, ispDg, exposure->exposure_time_us);
@@ -352,9 +386,9 @@ static string formatBinFileName(int cameraId, const char *prefix, BinParam_t *bi
 }
 
 void CameraDump::dumpImage(int cameraId, const shared_ptr<CameraBuffer> &camBuffer,
-                           ModuleType_t type, Port port)
+                           ModuleType_t type, Port port, const char* desc)
 {
-    CheckError(camBuffer == nullptr, VOID_VALUE, "invalid param");
+    CheckAndLogError(camBuffer == nullptr, VOID_VALUE, "invalid param");
 
     if (camBuffer->getSequence() < gDumpSkipNum) return;
 
@@ -368,6 +402,7 @@ void CameraDump::dumpImage(int cameraId, const shared_ptr<CameraBuffer> &camBuff
 
     string prefix   = getNamePrefix(cameraId, type, port, camBuffer->getUserBuffer()->s.usage);
     string appendix = getAiqSettingAppendix(cameraId, camBuffer->getSequence());
+    if (desc) appendix.append(desc);
 
     string fileName = formatFrameFileName(prefix.c_str(), appendix.c_str(),
                                           CameraUtils::format2string(camBuffer->getFormat()).c_str(),
@@ -390,7 +425,7 @@ void CameraDump::dumpImage(int cameraId, const shared_ptr<CameraBuffer> &camBuff
 
 void CameraDump::dumpBinary(int cameraId, const void *data, int size, BinParam_t *binParam)
 {
-    CheckError(binParam == nullptr, VOID_VALUE, "invalid param");
+    CheckAndLogError(binParam == nullptr, VOID_VALUE, "invalid param");
 
     if (binParam->sequence < gDumpSkipNum) return;
 

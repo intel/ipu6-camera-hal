@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Intel Corporation.
+ * Copyright (C) 2016-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#define LOG_TAG "SwImageConverter"
+#define LOG_TAG SwImageConverter
 
 #include "Errors.h"
 #include "Utils.h"
@@ -360,7 +360,7 @@ int SwImageConverter::convertFormat(unsigned int width, unsigned int height,
                         unsigned char *inBuf, unsigned int inLength, unsigned int srcFmt,
                         unsigned char *outBuf, unsigned int outLength, unsigned int dstFmt)
 {
-    CheckError((inBuf == nullptr || outBuf == nullptr), BAD_VALUE, "Invalid input(%p) or output buffer(%p)", inBuf, outBuf);
+    CheckAndLogError((inBuf == nullptr || outBuf == nullptr), BAD_VALUE, "Invalid input(%p) or output buffer(%p)", inBuf, outBuf);
 
     unsigned int x, y;
     unsigned short bayer_data[4];

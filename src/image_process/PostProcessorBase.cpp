@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Intel Corporation.
+ * Copyright (C) 2019-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#define LOG_TAG "PostProcessorBase"
+#define LOG_TAG PostProcessorBase
 
 #include <vector>
 #include <hardware/camera3.h>
@@ -48,11 +48,11 @@ status_t ScaleProcess::doPostProcessing(const shared_ptr<camera3::Camera3Buffer>
                                         shared_ptr<camera3::Camera3Buffer> &outBuf)
 {
     LOG1("@%s processor name: %s", __func__, mName.c_str());
-    CheckError(!inBuf, UNKNOWN_ERROR, "%s, the inBuf is nullptr", __func__);
-    CheckError(!outBuf, UNKNOWN_ERROR, "%s, the outBuf is nullptr", __func__);
+    CheckAndLogError(!inBuf, UNKNOWN_ERROR, "%s, the inBuf is nullptr", __func__);
+    CheckAndLogError(!outBuf, UNKNOWN_ERROR, "%s, the outBuf is nullptr", __func__);
 
     int ret = mProcessor->scaleFrame(inBuf, outBuf);
-    CheckError(ret != OK, UNKNOWN_ERROR, "Failed to do post processing, name: %s", mName.c_str());
+    CheckAndLogError(ret != OK, UNKNOWN_ERROR, "Failed to do post processing, name: %s", mName.c_str());
 
     return OK;
 }
@@ -69,12 +69,12 @@ status_t RotateProcess::doPostProcessing(const shared_ptr<camera3::Camera3Buffer
                                          shared_ptr<camera3::Camera3Buffer> &outBuf)
 {
     LOG1("@%s processor name: %s", __func__, mName.c_str());
-    CheckError(!inBuf, UNKNOWN_ERROR, "%s, the inBuf is nullptr", __func__);
-    CheckError(!outBuf, UNKNOWN_ERROR, "%s, the outBuf is nullptr", __func__);
+    CheckAndLogError(!inBuf, UNKNOWN_ERROR, "%s, the inBuf is nullptr", __func__);
+    CheckAndLogError(!outBuf, UNKNOWN_ERROR, "%s, the outBuf is nullptr", __func__);
     std::vector<uint8_t> rotateBuf;
 
     int ret = mProcessor->rotateFrame(inBuf, outBuf, mAngle, rotateBuf);
-    CheckError(ret != OK, UNKNOWN_ERROR, "Failed to do post processing, name: %s", mName.c_str());
+    CheckAndLogError(ret != OK, UNKNOWN_ERROR, "Failed to do post processing, name: %s", mName.c_str());
 
     return OK;
 }
@@ -90,11 +90,11 @@ status_t CropProcess::doPostProcessing(const shared_ptr<camera3::Camera3Buffer> 
                                        shared_ptr<camera3::Camera3Buffer> &outBuf)
 {
     LOG1("@%s processor name: %s", __func__, mName.c_str());
-    CheckError(!inBuf, UNKNOWN_ERROR, "%s, the inBuf is nullptr", __func__);
-    CheckError(!outBuf, UNKNOWN_ERROR, "%s, the outBuf is nullptr", __func__);
+    CheckAndLogError(!inBuf, UNKNOWN_ERROR, "%s, the inBuf is nullptr", __func__);
+    CheckAndLogError(!outBuf, UNKNOWN_ERROR, "%s, the outBuf is nullptr", __func__);
 
     int ret = mProcessor->cropFrame(inBuf, outBuf);
-    CheckError(ret != OK, UNKNOWN_ERROR, "Failed to do post processing, name: %s", mName.c_str());
+    CheckAndLogError(ret != OK, UNKNOWN_ERROR, "Failed to do post processing, name: %s", mName.c_str());
 
     return OK;
 }
@@ -110,11 +110,11 @@ status_t ConvertProcess::doPostProcessing(const shared_ptr<camera3::Camera3Buffe
                                           shared_ptr<camera3::Camera3Buffer> &outBuf)
 {
     LOG1("@%s processor name: %s", __func__, mName.c_str());
-    CheckError(!inBuf, UNKNOWN_ERROR, "%s, the inBuf is nullptr", __func__);
-    CheckError(!outBuf, UNKNOWN_ERROR, "%s, the outBuf is nullptr", __func__);
+    CheckAndLogError(!inBuf, UNKNOWN_ERROR, "%s, the inBuf is nullptr", __func__);
+    CheckAndLogError(!outBuf, UNKNOWN_ERROR, "%s, the outBuf is nullptr", __func__);
 
     int ret = mProcessor->convertFrame(inBuf, outBuf);
-    CheckError(ret != OK, UNKNOWN_ERROR, "Failed to do post processing, name: %s", mName.c_str());
+    CheckAndLogError(ret != OK, UNKNOWN_ERROR, "Failed to do post processing, name: %s", mName.c_str());
 
     return OK;
 }
@@ -180,17 +180,18 @@ std::shared_ptr<camera3::Camera3Buffer> JpegProcess::cropAndDownscaleThumbnail(i
         if (mCropBuffer && (mCropBuffer->width() != width || mCropBuffer->height() != height))
             mCropBuffer.reset();
         if (!mCropBuffer) {
-            int size = CameraUtils::getFrameSize(inBuf->v4l2Fmt(), width, height);
+            int size = CameraUtils::getFrameSize(inBuf->v4l2Fmt(), width, height,
+                                                 false, false, false);
             mCropBuffer = camera3::MemoryUtils::allocateHeapBuffer(width, height,
                                                                    width, inBuf->v4l2Fmt(),
                                                                    mCameraId, size);
-            CheckError(!mCropBuffer, nullptr, "%s, Failed to allocate the internal crop buffer", __func__);
+            CheckAndLogError(!mCropBuffer, nullptr, "%s, Failed to allocate the internal crop buffer", __func__);
         }
 
         LOG2("@%s, Crop the main buffer from %dx%d to %dx%d",
              __func__, inBuf->width(), inBuf->height(), width, height);
         ret = mProcessor->cropFrame(inBuf, mCropBuffer);
-        CheckError(ret != OK, nullptr, "%s, Failed to crop the frame", __func__);
+        CheckAndLogError(ret != OK, nullptr, "%s, Failed to crop the frame", __func__);
         tempBuffer = mCropBuffer;
     }
 
@@ -199,17 +200,18 @@ std::shared_ptr<camera3::Camera3Buffer> JpegProcess::cropAndDownscaleThumbnail(i
             || mScaleBuffer->height() != thumbHeight))
             mScaleBuffer.reset();
         if (!mScaleBuffer) {
-            int size = CameraUtils::getFrameSize(inBuf->v4l2Fmt(), thumbWidth, thumbHeight);
+            int size = CameraUtils::getFrameSize(inBuf->v4l2Fmt(), thumbWidth, thumbHeight,
+                                                 false, false, false);
             mScaleBuffer = camera3::MemoryUtils::allocateHeapBuffer(thumbWidth, thumbHeight,
                                                                     thumbWidth, inBuf->v4l2Fmt(),
                                                                     mCameraId, size);
-            CheckError(!mScaleBuffer, nullptr, "%s, Failed to allocate the internal scale buffer", __func__);
+            CheckAndLogError(!mScaleBuffer, nullptr, "%s, Failed to allocate the internal scale buffer", __func__);
         }
 
         LOG2("@%s, Scale the buffer from %dx%d to %dx%d",
               __func__, inBuf->width(), inBuf->height(), thumbWidth, thumbHeight);
         ret = mProcessor->scaleFrame(tempBuffer, mScaleBuffer);
-        CheckError(ret != OK, nullptr, "%s, Failed to crop the frame", __func__);
+        CheckAndLogError(ret != OK, nullptr, "%s, Failed to crop the frame", __func__);
         tempBuffer = mScaleBuffer;
     }
 
@@ -254,7 +256,7 @@ status_t JpegProcess::doPostProcessing(const shared_ptr<camera3::Camera3Buffer> 
 
     icamera::ExifMetaData exifMetadata;
     status_t status = mJpegMaker->setupExifWithMetaData(inBuf->width(), inBuf->height(), parameter, &exifMetadata);
-    CheckError(status != OK, UNKNOWN_ERROR, "@%s, Setup exif metadata failed.", __func__);
+    CheckAndLogError(status != OK, UNKNOWN_ERROR, "@%s, Setup exif metadata failed.", __func__);
     LOG2("@%s: setting exif metadata done!", __func__);
 
     std::shared_ptr<camera3::Camera3Buffer> thumbInput =
@@ -273,7 +275,7 @@ status_t JpegProcess::doPostProcessing(const shared_ptr<camera3::Camera3Buffer> 
                                exifMetadata.mJpegSetting.thumbWidth, outBuf->v4l2Fmt(),
                                mCameraId,
                                exifMetadata.mJpegSetting.thumbWidth * exifMetadata.mJpegSetting.thumbHeight * 3 / 2);
-            CheckError(!mThumbOutput, NO_MEMORY, "%s, Failed to allocate the mThumbOutput", __func__);
+            CheckAndLogError(!mThumbOutput, NO_MEMORY, "%s, Failed to allocate the mThumbOutput", __func__);
         }
 
         // encode thumbnail image
@@ -303,7 +305,7 @@ status_t JpegProcess::doPostProcessing(const shared_ptr<camera3::Camera3Buffer> 
     uint8_t* finalExifDataPtr = static_cast<uint8_t*>(mExifData.get());
     uint32_t finalExifDataSize = 0;
     status = mJpegMaker->getExif(thumbnailPackage, finalExifDataPtr, &finalExifDataSize);
-    CheckError(status != OK, status, "@%s, Failed to get Exif", __func__);
+    CheckAndLogError(status != OK, status, "@%s, Failed to get Exif", __func__);
     LOG2("%s, exifBufSize %d, finalExifDataSize %d", __func__, exifBufSize, finalExifDataSize);
 
     // encode main image
@@ -313,7 +315,7 @@ status_t JpegProcess::doPostProcessing(const shared_ptr<camera3::Camera3Buffer> 
     finalEncodePackage.exifData = finalExifDataPtr;
     finalEncodePackage.exifDataSize = finalExifDataSize;
     isEncoded = mJpegEncoder->doJpegEncode(&finalEncodePackage);
-    CheckError(!isEncoded, UNKNOWN_ERROR, "@%s, Failed to encode main image", __func__);
+    CheckAndLogError(!isEncoded, UNKNOWN_ERROR, "@%s, Failed to encode main image", __func__);
     mJpegMaker->writeExifData(&finalEncodePackage);
     attachJpegBlob(finalEncodePackage);
 

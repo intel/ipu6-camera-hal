@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Intel Corporation
+ * Copyright (C) 2016-2021 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,7 +63,7 @@ class HalStream
  public:
     uint32_t mWidth;
     uint32_t mHeight;
-    int mFormat;  // TODO: use v4l2 definition
+    int mFormat;
     int mStreamId;
     StreamUseCase mUseCase;
 

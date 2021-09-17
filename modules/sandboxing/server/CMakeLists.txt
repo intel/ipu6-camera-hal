@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019 Intel Corporation
+#  Copyright (C) 2019-2021 Intel Corporation
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -27,7 +27,6 @@ set(LIBCAM_ALGO_SRCS
     ${IUTILS_DIR}/ScopedAtrace.cpp
     ${IUTILS_DIR}/Thread.cpp
     ${IUTILS_DIR}/CameraLog.cpp
-    ${PLATFORMDATA_DIR}/gc/FormatUtils.cpp
     ${PLATFORMDATA_DIR}/gc/GraphUtils.cpp
     ${SANDBOXING_DIR}/IPCCommon.cpp
     ${SANDBOXING_DIR}/IPCIntelLard.cpp

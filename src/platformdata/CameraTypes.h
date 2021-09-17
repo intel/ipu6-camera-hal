@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Intel Corporation.
+ * Copyright (C) 2015-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -101,6 +101,17 @@ typedef enum {
     MORPH_TABLE = 0,
     IMG_TRANS
 } DvsType;
+
+// Imaging algorithms
+typedef enum {
+    IMAGING_ALGO_NONE = 0,
+    IMAGING_ALGO_AE   = 1,
+    IMAGING_ALGO_AWB  = 1 << 1,
+    IMAGING_ALGO_AF   = 1 << 2,
+    IMAGING_ALGO_GBCE = 1 << 3,
+    IMAGING_ALGO_PA   = 1 << 4,
+    IMAGING_ALGO_SA   = 1 << 5
+} imaging_algorithm_t;
 
 // Note AUTO is not real config mode in the HAL.
 typedef camera_stream_configuration_mode_t ConfigMode;

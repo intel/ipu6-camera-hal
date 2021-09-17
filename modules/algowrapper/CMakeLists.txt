@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019 Intel Corporation
+#  Copyright (C) 2019-2021 Intel Corporation
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -17,14 +17,9 @@
 
 set(ALGOWRAPPER_SRCS
     ${ALGOWRAPPER_DIR}/IntelCca.cpp
+    ${ALGOWRAPPER_DIR}/graph/GraphConfigImpl.cpp
+    ${ALGOWRAPPER_DIR}/graph/GraphConfigPipe.cpp
     CACHE INTERNAL "algo wrapper sources"
-    )
-
-    set(ALGOWRAPPER_SRCS
-        ${ALGOWRAPPER_SRCS}
-        ${ALGOWRAPPER_DIR}/graph/GraphConfigImpl.cpp
-        ${ALGOWRAPPER_DIR}/graph/GraphConfigPipe.cpp
-        CACHE INTERNAL "algo wrapper sources"
     )
 
 if (USE_PG_LITE_PIPE)

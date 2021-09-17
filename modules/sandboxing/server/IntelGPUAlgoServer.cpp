@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#define LOG_TAG "IntelGPUAlgoServer"
+#define LOG_TAG IntelGPUAlgoServer
 
 #include "modules/sandboxing/server/IntelGPUAlgoServer.h"
 

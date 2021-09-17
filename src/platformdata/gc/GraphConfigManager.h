@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Intel Corporation
+ * Copyright (C) 2015-2021 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,6 +59,7 @@ public:
     virtual ~GraphConfigManager();
 
     // Public APIs in IGraphConfigManager
+    virtual status_t queryGraphSettings(const stream_config_t *streamList);
     virtual status_t configStreams(const stream_config_t *streamList);
     virtual std::shared_ptr<IGraphConfig> getGraphConfig(ConfigMode configMode);
     virtual int getSelectedMcId() { LOGG("%s: %d", __func__, mMcId); return mMcId; }
@@ -68,8 +69,11 @@ private:
     // Disable copy constructor and assignment operator
     DISALLOW_COPY_AND_ASSIGN(GraphConfigManager);
 
+    int createHalStreamVector(ConfigMode configMode, const stream_config_t *streamList,
+                              std::vector<HalStream*> *halStreamVec);
+
     StreamUseCase getUseCaseFromStream(ConfigMode configMode, const stream_t &stream);
-    void releaseHalStream();
+    void releaseHalStream(std::vector<HalStream*> *halStreamVec);
 
     // Debuging helpers
     void dumpStreamConfig();

@@ -16,7 +16,11 @@
 
 #pragma once
 
+#ifdef CAL_BUILD
+#include <cros-camera/v4l2_device.h>
+#else
 #include <v4l2_device.h>
+#endif
 
 #include <memory>
 #include <vector>
@@ -37,7 +41,7 @@ extern "C" {
 }
 
 #ifdef ENABLE_SANDBOXING
-#include "modules/sandboxing/client/IntelCca.h"
+#include "modules/sandboxing/client/IntelCcaClient.h"
 #else
 #include "modules/algowrapper/IntelCca.h"
 #endif
@@ -75,7 +79,8 @@ public:
 
     int init();
     int deinit();
-    int configure(const stream_t &stream, ConfigMode configMode, TuningMode tuningMode);
+    int configure(const stream_t &stream, ConfigMode configMode, TuningMode tuningMode,
+                  int ipuOutputFormat = -1);
 
     int getParameters(Parameters& param);
     int decodeStatsData(TuningMode tuningMode,
@@ -121,7 +126,7 @@ private:
     void releaseIspParamBuffers();
 
     // Dumping methods for debugging purposes.
-    void dumpIspParameter(long sequence, ia_binary_data binaryData);
+    void dumpIspParameter(int streamId, long sequence, ia_binary_data binaryData);
 
     // Enable or disable kernels according to environment variables for debug purpose.
     void updateKernelToggles(cca::cca_program_group *programGroup);
@@ -141,6 +146,7 @@ private:
     int mCameraId;
     PgParamType mPgParamType;
     TuningMode mTuningMode;
+    int mIpuOutputFormat;
 
     //Guard for IspParamAdaptor public API
     Mutex mIspAdaptorLock;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Intel Corporation.
+ * Copyright (C) 2015-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,28 +42,28 @@ class CameraHal {
 //HAL API
 public:
     CameraHal();
-    ~CameraHal();
-    int init();
-    int deinit();
+    virtual ~CameraHal();
+    virtual int init();
+    virtual int deinit();
 
 //Device API
 public:
-    int deviceOpen(int cameraId);
-    void deviceClose(int cameraId);
+    virtual int deviceOpen(int cameraId);
+    virtual void deviceClose(int cameraId);
 
-    void deviceCallbackRegister(int cameraId, const camera_callback_ops_t* callback);
-    int deviceConfigInput(int cameraId, const stream_t *inputConfig);
-    int deviceConfigStreams(int cameraId, stream_config_t *streamList);
-    int deviceStart(int cameraId);
-    int deviceStop(int cameraId);
-    int deviceAllocateMemory(int cameraId, camera_buffer_t *ubuffer);
+    virtual void deviceCallbackRegister(int cameraId, const camera_callback_ops_t* callback);
+    virtual int deviceConfigInput(int cameraId, const stream_t *inputConfig);
+    virtual int deviceConfigStreams(int cameraId, stream_config_t *streamList);
+    virtual int deviceStart(int cameraId);
+    virtual int deviceStop(int cameraId);
+    virtual int deviceAllocateMemory(int cameraId, camera_buffer_t *ubuffer);
 //Stream API
-    int streamQbuf(int cameraId, camera_buffer_t **ubuffer,
-                   int bufferNum = 1, const Parameters* settings = nullptr);
-    int streamDqbuf(int cameraId, int streamId, camera_buffer_t **ubuffer,
-                    Parameters* settings = nullptr);
-    int setParameters(int cameraId, const Parameters& param);
-    int getParameters(int cameraId, Parameters& param, long sequence);
+    virtual int streamQbuf(int cameraId, camera_buffer_t **ubuffer,
+                           int bufferNum = 1, const Parameters* settings = nullptr);
+    virtual int streamDqbuf(int cameraId, int streamId, camera_buffer_t **ubuffer,
+                            Parameters* settings = nullptr);
+    virtual int setParameters(int cameraId, const Parameters& param);
+    virtual int getParameters(int cameraId, Parameters& param, long sequence);
 
 private:
     DISALLOW_COPY_AND_ASSIGN(CameraHal);
@@ -79,7 +79,7 @@ private:
         HAL_INIT
     } mState;
 
-    int mCameraOpenNum = 0;
+    int mCameraOpenNum;
 };
 
 } // namespace icamera

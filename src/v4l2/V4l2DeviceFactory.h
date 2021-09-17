@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Intel Corporation.
+ * Copyright (C) 2015-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,11 @@
 
 #pragma once
 
+#ifdef CAL_BUILD
+#include <cros-camera/v4l2_device.h>
+#else
 #include <v4l2_device.h>
+#endif
 
 #include <map>
 #include <string>
@@ -32,8 +36,6 @@ namespace icamera {
  * all devices will be released together by releaseDeviceFactory.
  *
  * Currently only sub device is supported.
- *
- * TODO: Next step, all v4l2 devices should be managed by this class
  */
 class V4l2DeviceFactory {
 public:

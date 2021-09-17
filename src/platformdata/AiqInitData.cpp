@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#define LOG_TAG "AiqInitData"
+#define LOG_TAG AiqInitData
 
 #include <unordered_map>
 #include <dirent.h>
@@ -65,7 +65,7 @@ void AiqData::saveData(const ia_binary_data& data) {
 
 void AiqData::loadFile(const std::string& fileName, ia_binary_data* data, int maxSize) {
     LOG1("%s, file name %s", __func__, fileName.c_str());
-    CheckError(data == nullptr, VOID_VALUE, "data is nullptr");
+    CheckAndLogError(data == nullptr, VOID_VALUE, "data is nullptr");
 
     // Get file size
     struct stat fileStat;
@@ -101,7 +101,7 @@ void AiqData::loadFile(const std::string& fileName, ia_binary_data* data, int ma
 
 void AiqData::saveDataToFile(const std::string& fileName, const ia_binary_data* data) {
     LOG1("%s", __func__);
-    CheckError(data == nullptr, VOID_VALUE, "data is nullptr");
+    CheckAndLogError(data == nullptr, VOID_VALUE, "data is nullptr");
 
     // Open file
     FILE* fp = fopen(fileName.c_str(), "wb");
@@ -178,7 +178,8 @@ AiqInitData::AiqInitData(const std::string& sensorName, const std::string& camCf
             return;
         }
 
-        mCpf[cfg.tuningMode] = new AiqData(aiqbName);
+        if (mCpf.find(cfg.tuningMode) == mCpf.end())
+            mCpf[cfg.tuningMode] = new AiqData(aiqbName);
     }
 
     mMkn = std::unique_ptr<MakerNote>(new MakerNote);
@@ -202,14 +203,15 @@ int AiqInitData::getCameraModuleFromEEPROM(const std::string& nvmPath, std::stri
 {
     LOG1("@%s, nvmPath %s", __func__, nvmPath.c_str());
 
-    CheckError(nvmPath.empty(), NAME_NOT_FOUND, "nvmPath is empty");
+    CheckAndLogError(nvmPath.empty(), NAME_NOT_FOUND, "nvmPath is empty");
 
     const int moduleInfoSize = CAMERA_MODULE_INFO_SIZE;
     const int moduleInfoOffset = CAMERA_MODULE_INFO_OFFSET;
     struct CameraModuleInfo cameraModuleInfo;
     CLEAR(cameraModuleInfo);
     FILE* eepromFile = fopen(nvmPath.c_str(), "rb");
-    CheckError(!eepromFile, UNKNOWN_ERROR, "Failed to open EEPROM file in %s", nvmPath.c_str());
+    CheckAndLogError(!eepromFile, UNKNOWN_ERROR, "Failed to open EEPROM file in %s",
+                     nvmPath.c_str());
 
     // file size should be larger than CAMERA_MODULE_INFO_OFFSET
     fseek(eepromFile, 0, SEEK_END);
@@ -223,7 +225,7 @@ int AiqInitData::getCameraModuleFromEEPROM(const std::string& nvmPath, std::stri
     fseek(eepromFile, -1 * moduleInfoOffset, SEEK_END);
     int ret = fread(&cameraModuleInfo, moduleInfoSize, 1, eepromFile);
     fclose(eepromFile);
-    CheckError(!ret, UNKNOWN_ERROR, "Failed to read module info %d", ret);
+    CheckAndLogError(!ret, UNKNOWN_ERROR, "Failed to read module info %d", ret);
 
     if (strncmp(cameraModuleInfo.mOsInfo, NVM_OS, strlen(NVM_OS)) != 0) {
         LOG1("NVM OS string doesn't match with module info");
@@ -247,7 +249,7 @@ int AiqInitData::getCameraModuleFromEEPROM(const std::string& nvmPath, std::stri
  */
 int AiqInitData::findConfigFile(const std::string& camCfgDir, std::string* cpfPathName) {
     LOG1("@%s, cpfPathName:%p", __func__, cpfPathName);
-    CheckError(!cpfPathName, BAD_VALUE, "@%s, cpfPathName is nullptr", __func__);
+    CheckAndLogError(!cpfPathName, BAD_VALUE, "@%s, cpfPathName is nullptr", __func__);
 
     std::vector<string> configFilePath;
     configFilePath.push_back("./");
@@ -275,15 +277,16 @@ int AiqInitData::findConfigFile(const std::string& camCfgDir, std::string* cpfPa
 
 int AiqInitData::getCpf(TuningMode mode, ia_binary_data* cpfData) {
     LOG1("@%s mode = %d", __func__, mode);
-    CheckError(cpfData == nullptr, BAD_VALUE, "@%s, cpfData is nullptr", __func__);
+    CheckAndLogError(cpfData == nullptr, BAD_VALUE, "@%s, cpfData is nullptr", __func__);
 
-    CheckError(mCpf.find(mode) == mCpf.end(), NO_INIT, "@%s, no aiqb, mode = %d", __func__, mode);
+    CheckAndLogError(mCpf.find(mode) == mCpf.end(), NO_INIT, "@%s, no aiqb, mode = %d", __func__,
+                     mode);
 
     AiqData* cpf = mCpf[mode];
-    CheckError(cpf == nullptr, NO_INIT, "@%s, cpf is nullptr", __func__);
+    CheckAndLogError(cpf == nullptr, NO_INIT, "@%s, cpf is nullptr", __func__);
 
     auto dataPtr = cpf->getData();
-    CheckError(dataPtr == nullptr, BAD_VALUE, "@%s, cpf->getData() is nullptr", __func__);
+    CheckAndLogError(dataPtr == nullptr, BAD_VALUE, "@%s, cpf->getData() is nullptr", __func__);
 
     *cpfData = *dataPtr;
 
@@ -330,7 +333,7 @@ ia_binary_data* AiqInitData::getAiqd(TuningMode mode) {
         mAiqd[mode] = new AiqData(getAiqdFileNameWithPath(mode));
     }
     AiqData* aiqd = mAiqd[mode];
-    CheckError(!aiqd, nullptr, "@%s, aiqd is nullptr", __func__);
+    CheckAndLogError(!aiqd, nullptr, "@%s, aiqd is nullptr", __func__);
 
     return aiqd->getData();
 }
@@ -341,7 +344,7 @@ void AiqInitData::saveAiqd(TuningMode mode, const ia_binary_data& data) {
     }
 
     AiqData* aiqd = mAiqd[mode];
-    CheckError(!aiqd, VOID_VALUE, "@%s, aiqd is nullptr", __func__);
+    CheckAndLogError(!aiqd, VOID_VALUE, "@%s, aiqd is nullptr", __func__);
 
     aiqd->saveData(data);
 

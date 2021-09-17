@@ -28,11 +28,12 @@
 
 #include "AiqSetting.h"
 #include "AiqResult.h"
+#include "AiqStatistics.h"
 
 #include "Intel3AParameter.h"
 
 #ifdef ENABLE_SANDBOXING
-#include "modules/sandboxing/client/IntelCca.h"
+#include "modules/sandboxing/client/IntelCcaClient.h"
 #else
 #include "modules/algowrapper/IntelCca.h"
 #endif
@@ -66,10 +67,8 @@ public:
 
     /**
      * \brief AiqCore configure
-     *
-     * Configure AiqPlus ConfigMode
      */
-    int configure(const std::vector<ConfigMode>& configModes);
+    int configure();
 
     /**
      * \brief Set sensor and frame info
@@ -83,14 +82,15 @@ public:
     /**
      * \brief update param and set converge speed
      *
-     * \param param: the parameter update to AiqPlus and Aiq3A or custom 3A
+     * \param param: the parameter update to AiqCore
      */
     int updateParameter(const aiq_parameter_t &param);
 
     /**
-     * \brief Set ispStatistics to AiqPlus and Aiq3A or custom 3A
+     * \brief Set ispStatistics to AiqCore
      */
-    int setStatsParams(const cca::cca_stats_params &statsParams);
+    int setStatsParams(const cca::cca_stats_params &statsParams, cca::cca_out_stats *outStats,
+                       AiqStatistics* aiqStats);
 
     /**
      * \brief run AE
@@ -147,6 +147,21 @@ private:
     int calculateHyperfocalDistance(TuningMode mode);
     int calculateDepthOfField(const cca::cca_af_results &afResults, camera_range_t *focusRange);
     int initAiqPlusParams();
+
+    struct RunRateInfo {
+        int runCcaTime;     // cca (like runAEC, runAIQ) running time after converged
+        int runAlgoTime;    // algo (like AE, AF ...) running time after converged
+        RunRateInfo() { reset(); }
+        void reset() { runCcaTime = 0; runAlgoTime = 0; }
+    };
+    bool bypassAe(const aiq_parameter_t &param);
+    bool bypassAf(const aiq_parameter_t &param);
+    bool bypassAwb(const aiq_parameter_t &param);
+    // return ture if skip algo running
+    bool skipAlgoRunning(RunRateInfo *info, int algo, bool converged);
+    // return true if run rate is larger than config run rate
+    bool checkRunRate(float configRunningRate, const RunRateInfo *info);
+
     IntelCca* getIntelCca(TuningMode tuningMode);
 
 private:
@@ -159,11 +174,6 @@ private:
     bool mAfForceLock;
 
     std::unique_ptr<Intel3AParameter> mIntel3AParameter;
-
-    // Original AeResult class arrays are kept in 3a engine which is safely used here.
-    cca::cca_ae_results mLastAeResult;
-    cca::cca_awb_results mLastAwbResult;
-    cca::cca_af_results mLastAfResult;
 
     uint64_t mAeRunTime;
     uint64_t mAwbRunTime;
@@ -202,10 +212,23 @@ private:
 
     camera_tonemap_mode_t mTonemapMode;
 
+    cca::cca_ae_results mLastAeResult;
+
     std::unique_ptr<cca::cca_aiq_params> mAiqParams;
     std::unique_ptr<cca::cca_aiq_results> mAiqResults;
 
-    int32_t mTonemapMaxCurvePoints;
+    bool mAeAndAwbConverged;
+    bool mRgbStatsBypassed;
+
+    bool mAeBypassed;
+    RunRateInfo mAeRunRateInfo;
+    bool mAfBypassed;
+    RunRateInfo mAfRunRateInfo;
+    bool mAwbBypassed;
+    RunRateInfo mAwbRunRateInfo;
+
+    uint32_t mLockedExposureTimeUs;
+    uint16_t mLockedIso;
 };
 
 } /* namespace icamera */

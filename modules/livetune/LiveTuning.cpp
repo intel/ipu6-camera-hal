@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Intel Corporation.
+ * Copyright (C) 2020-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#define LOG_TAG "LiveTuning"
+#define LOG_TAG LiveTuning
 
 #include "iutils/CameraLog.h"
 #include "iutils/CameraDump.h"
@@ -35,7 +35,7 @@ int setupIPCEnvForLiveTune(cros::CameraMojoChannelManagerToken* token) {
     PERF_CAMERA_ATRACE();
     HAL_TRACE_CALL(1);
 
-    CheckError(token == nullptr, BAD_VALUE, "@%s, Invalid token!", __func__);
+    CheckAndLogError(token == nullptr, BAD_VALUE, "@%s, Invalid token!", __func__);
 
     // Set debug level and dump level
     icamera::Log::setDebugLevel();
@@ -45,8 +45,8 @@ int setupIPCEnvForLiveTune(cros::CameraMojoChannelManagerToken* token) {
     icamera::IntelAlgoClient::getInstance()->setMojoManagerToken(token);
 
     // Run initialization of IntelAlgoClient
-    CheckError(icamera::IntelAlgoClient::getInstance()->initialize() != icamera::OK, -EINVAL,
-               "%s, Connect to algo service fails", __func__);
+    CheckAndLogError(icamera::IntelAlgoClient::getInstance()->initialize() != icamera::OK, -EINVAL,
+                     "%s, Connect to algo service fails", __func__);
 
     return OK;
 }
@@ -64,10 +64,10 @@ int getSupportedRawInfo(int cameraId, int* width, int* height, int* format, int*
     HAL_TRACE_CALL(1);
 
     bool isInvalidParam = (!width || !height || !format || !mcId);
-    CheckError(isInvalidParam == true, BAD_VALUE, "@%s, Invalid Params!", __func__);
+    CheckAndLogError(isInvalidParam == true, BAD_VALUE, "@%s, Invalid Params!", __func__);
 
     MediaCtlConf* selectedMc = PlatformData::getMediaCtlConf(cameraId);
-    CheckError(selectedMc == nullptr, BAD_VALUE, "@%s, getMediaCtlConf failed!", __func__);
+    CheckAndLogError(selectedMc == nullptr, BAD_VALUE, "@%s, getMediaCtlConf failed!", __func__);
 
     *width = selectedMc->outputWidth;
     *height = selectedMc->outputHeight;
@@ -82,7 +82,7 @@ int acquireMakernoteData(int cameraId, int64_t sequence, uint64_t timestamp,
     PERF_CAMERA_ATRACE();
     HAL_TRACE_CALL(1);
 
-    CheckError(param == nullptr, BAD_VALUE, "@%s, Invalid Params!", __func__);
+    CheckAndLogError(param == nullptr, BAD_VALUE, "@%s, Invalid Params!", __func__);
 
     PlatformData::updateMakernoteTimeStamp(cameraId, sequence, timestamp);
     PlatformData::acquireMakernoteData(cameraId, timestamp, param);

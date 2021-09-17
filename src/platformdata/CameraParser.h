@@ -27,6 +27,8 @@
 
 #pragma once
 
+#include <list>
+
 #include <unordered_map>
 #include "PlatformData.h"
 #include "ParserBase.h"
@@ -75,7 +77,12 @@ private:
     CameraMetadata mMetadata;
     std::string mCameraModuleName;
     CameraMetadata mCameraModuleMetadata;
-    std::string mNvmNodeName;
+    struct NvmDeviceInfo {
+        int dataSize;
+        std::string nodeName;
+        std::string directory;
+    };
+    std::list<NvmDeviceInfo> mNvmDeviceInfo;
 
     long* mMetadataCache;
     static const int mMetadataCacheSize = 4096;

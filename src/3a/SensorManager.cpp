@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#define LOG_TAG "SensorManager"
+#define LOG_TAG SensorManager
 
 #include "iutils/Errors.h"
 #include "iutils/CameraLog.h"
@@ -73,15 +73,7 @@ void SensorManager::reset()
     mSofEventInfo.clear();
 }
 
-EventListener *SensorManager::getSofEventListener()
-{
-    AutoMutex l(mLock);
-    LOG1("@%s mCameraId = %d", __func__, mCameraId);
-
-    return this;
-}
-
-void SensorManager::handleEvent(EventData eventData)
+void SensorManager::handleSofEvent(EventData eventData)
 {
     AutoMutex l(mLock);
     LOG3A("@%s", __func__);
@@ -224,7 +216,7 @@ int SensorManager::getSensorInfo(ia_aiq_frame_params &frameParams,
         vector <camera_resolution_t> res;
         PlatformData::getSupportedISysSizes(mCameraId, res);
 
-        CheckError(res.empty(), BAD_VALUE, "Supported ISYS resolutions are not configured.");
+        CheckAndLogError(res.empty(), BAD_VALUE, "Supported ISYS resolutions are not configured.");
         // In none-ISYS cases, only take 30 fps into account.
         int fps = 30;
         float freq = res[0].width * res[0].height * fps / 1000000;
@@ -269,23 +261,23 @@ int SensorManager::getSensorModeData(ia_aiq_exposure_sensor_descriptor& sensorDa
 {
     int pixel = 0;
     int status =  mSensorHwCtrl->getPixelRate(pixel);
-    CheckError(status != OK, status, "Failed to get pixel clock ret:%d", status);
+    CheckAndLogError(status != OK, status, "Failed to get pixel clock ret:%d", status);
     sensorData.pixel_clock_freq_mhz = (float)pixel / 1000000;
 
     int width = 0, height = 0, pixelCode = 0;
     status = mSensorHwCtrl->getActivePixelArraySize(width, height, pixelCode);
-    CheckError(status != OK, status, "Failed to get active pixel array size ret:%d", status);
+    CheckAndLogError(status != OK, status, "Failed to get active pixel array size ret:%d", status);
 
     int pixel_periods_per_line, line_periods_per_field;
     status = mSensorHwCtrl->getFrameDuration(pixel_periods_per_line, line_periods_per_field);
-    CheckError(status != OK, status, "Failed to get frame Durations ret:%d", status);
+    CheckAndLogError(status != OK, status, "Failed to get frame Durations ret:%d", status);
 
     sensorData.pixel_periods_per_line = CLIP(pixel_periods_per_line, USHRT_MAX, 0);
     sensorData.line_periods_per_field = CLIP(line_periods_per_field, USHRT_MAX, 0);
 
     int coarse_int_time_min, integration_step = 0, integration_max = 0;
     status = mSensorHwCtrl->getExposureRange(coarse_int_time_min, integration_max, integration_step);
-    CheckError(status != OK, status, "Failed to get Exposure Range ret:%d", status);
+    CheckAndLogError(status != OK, status, "Failed to get Exposure Range ret:%d", status);
 
     sensorData.coarse_integration_time_min = CLIP(coarse_int_time_min, USHRT_MAX, 0);
     sensorData.coarse_integration_time_max_margin = PlatformData::getCITMaxMargin(mCameraId);
@@ -295,7 +287,7 @@ int SensorManager::getSensorModeData(ia_aiq_exposure_sensor_descriptor& sensorDa
     sensorData.fine_integration_time_max_margin = sensorData.pixel_periods_per_line;
     int vblank;
     status = mSensorHwCtrl->getVBlank(vblank);
-    CheckError(status != OK, status, "Failed to get vblank ret:%d", status);
+    CheckAndLogError(status != OK, status, "Failed to get vblank ret:%d", status);
     sensorData.line_periods_vertical_blanking = CLIP(vblank, USHRT_MAX, 0);
 
     return OK;

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#define LOG_TAG "PolicyParser"
+#define LOG_TAG PolicyParser
 
 #include <string.h>
 #include <expat.h>
@@ -29,12 +29,12 @@ PolicyParser::PolicyParser(PlatformData::StaticCfg *cfg) :
     mCurrentDataField(FIELD_INVALID),
     pCurrentConf(nullptr) {
     LOGXML("@%s", __func__);
-    CheckError(!mStaticCfg, VOID_VALUE, "@%s, cfg parameter is wrong", __func__);
+    CheckAndLogError(!mStaticCfg, VOID_VALUE, "@%s, cfg parameter is wrong", __func__);
     mStaticCfg->mPolicyConfig.clear();
 
     int ret = getDataFromXmlFile(PSYS_POLICY_FILE_NAME);
-    CheckError(ret != OK, VOID_VALUE,
-               "Failed to get policy profiles data frome %s", PSYS_POLICY_FILE_NAME);
+    CheckAndLogError(ret != OK, VOID_VALUE,
+                     "Failed to get policy profiles data frome %s", PSYS_POLICY_FILE_NAME);
 }
 
 /**
@@ -129,7 +129,7 @@ void PolicyParser::handleBundles(PolicyParser *profiles, const char *name, const
     LOGXML("%s: name: %s, value: %s", __func__, atts[idx], atts[idx + 1]);
     const char *key = atts[idx];
 
-    CheckError(strcmp(key, "executors") != 0, VOID_VALUE, "Invalid policy attribute %s in bundle label.", key);
+    CheckAndLogError(strcmp(key, "executors") != 0, VOID_VALUE, "Invalid policy attribute %s in bundle label.", key);
 
     // The structure of a bundle looks like: "proc:0,post:1" which uses ',' to split
     // different executors' names, and uses ':' to specify the executor's depth.
@@ -139,7 +139,7 @@ void PolicyParser::handleBundles(PolicyParser *profiles, const char *name, const
 
     for (const auto & item : executors) {
         std::vector<std::string> executorDepth = CameraUtils::splitString(item.c_str(), ':');
-        CheckError(executorDepth.size() != 2, VOID_VALUE, "Invalid executor-depth mapping.");
+        CheckAndLogError(executorDepth.size() != 2, VOID_VALUE, "Invalid executor-depth mapping.");
 
         bundledExecutors.push_back(executorDepth[0]);
         depths.push_back(std::stoi(executorDepth[1]));

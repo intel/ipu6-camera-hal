@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019 Intel Corporation
+#  Copyright (C) 2019-2021 Intel Corporation
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -16,10 +16,10 @@
 
 set(SANDBOXING_CLIENT_SRCS
     ${SANDBOXING_DIR}/client/IntelAlgoClient.cpp
-    ${SANDBOXING_DIR}/client/IntelAlgoCommon.cpp
+    ${SANDBOXING_DIR}/client/IntelAlgoCommonClient.cpp
     ${SANDBOXING_DIR}/client/IntelLard.cpp
-    ${SANDBOXING_DIR}/client/IntelFaceDetection.cpp
-    ${SANDBOXING_DIR}/client/GraphConfigImpl.cpp
+    ${SANDBOXING_DIR}/client/IntelFaceDetectionClient.cpp
+    ${SANDBOXING_DIR}/client/GraphConfigImplClient.cpp
     ${SANDBOXING_DIR}/IPCCommon.cpp
     ${SANDBOXING_DIR}/IPCIntelLard.cpp
     ${SANDBOXING_DIR}/IPCIntelFD.cpp

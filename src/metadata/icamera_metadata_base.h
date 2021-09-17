@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2012 The Android Open Source Project
- * Copyright (C) 2015-2018 Intel Corporation
+ * Copyright (C) 2015-2021 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,7 @@ extern "C" {
  * maintain
  */
 #include "icamera_metadata_tags.h"
+#include "intel_vendor_metadata_tags.h"
 
 /**
  * Enum range for each top-level category
@@ -71,6 +72,12 @@ typedef struct icamera_metadata_rational {
     int32_t numerator;
     int32_t denominator;
 } icamera_metadata_rational_t;
+
+/** Tag information */
+typedef struct tag_info {
+    const char *tag_name;
+    uint8_t     tag_type;
+} tag_info_t;
 
 /**
  * A reference to a metadata entry in a buffer.

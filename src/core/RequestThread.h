@@ -73,9 +73,9 @@ public:
     stream_config_t getStreamConfig() { return mStreamConfig; };
 
     /**
-     * \brief set request configure mode by parameters.
+     * \brief set request configure mode.
      */
-    void setConfigureModeByParam(const Parameters& param);
+    void setConfigureModeByParam(camera_scene_mode_t sceneMode);
 
     /**
      * \brief post config for fake request
@@ -165,6 +165,7 @@ private:
     long mLastSofSeq;
     bool mBlockRequest;  // Process the 2nd or 3th request after the 1st 3A event
                          // to avoid unstable AWB at the beginning of stream on
+    bool mSofEnabled;
 };
 
 } //namespace icamera

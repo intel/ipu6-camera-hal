@@ -77,6 +77,7 @@ enum {
     DUMP_AAL_INPUT = 1 << 24, // 0x1000000 Decimal val 16777216
     DUMP_GPU_TNR = 1 << 25, // 0x2000000 Decimal val 33554432
     DUMP_NVM_DATA = 1 << 26, // 0x4000000 Decimal val 67108864
+    DUMP_MAKER_NOTE = 1 << 27, // 0x8000000 Decimal val 134217728
 };
 
 enum {
@@ -95,6 +96,7 @@ typedef enum {
     M_SWIPOP, // Sw Image processor frame dump
     M_GPUTNR, // GPU TNR frame dump
     M_NVM,    // NVM data dump
+    M_MKN,    // Makernote dump
 } ModuleType_t;
 
 typedef enum {
@@ -164,7 +166,7 @@ namespace CameraDump {
      * Dump image according to CameraBuffer properties
      */
     void dumpImage(int cameraId, const std::shared_ptr<CameraBuffer> &camBuffer,
-                   ModuleType_t mType = M_NA, Port port = INVALID_PORT);
+                   ModuleType_t mType = M_NA, Port port = INVALID_PORT, const char* desc = nullptr);
     /**
      * Dump any buffer to binary file
      */

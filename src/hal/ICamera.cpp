@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Intel Corporation.
+ * Copyright (C) 2015-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#define LOG_TAG "ICamera"
+#define LOG_TAG ICamera
 
 #include "iutils/CameraDump.h"
 #include "iutils/CameraLog.h"
@@ -93,7 +93,7 @@ int camera_hal_init()
     gCameraHal = new CameraHal;
 #endif
 
-    CheckError(!gCameraHal, INVALID_OPERATION, "camera hal is NULL.");
+    CheckAndLogError(!gCameraHal, INVALID_OPERATION, "camera hal is NULL.");
     return gCameraHal->init();
 }
 
@@ -107,7 +107,7 @@ int camera_hal_deinit()
     PERF_CAMERA_ATRACE();
     HAL_TRACE_CALL(1);
 
-    CheckError(!gCameraHal, INVALID_OPERATION, "camera hal is NULL.");
+    CheckAndLogError(!gCameraHal, INVALID_OPERATION, "camera hal is NULL.");
     int ret = gCameraHal->deinit();
 
 #ifndef LINUX_BUILD
@@ -126,7 +126,7 @@ void camera_callback_register(int camera_id, const camera_callback_ops_t* callba
     PERF_CAMERA_ATRACE();
     HAL_TRACE_CALL(1);
 
-    CheckError(!gCameraHal, VOID_VALUE, "camera hal is NULL.");
+    CheckAndLogError(!gCameraHal, VOID_VALUE, "camera hal is NULL.");
     gCameraHal->deviceCallbackRegister(camera_id, callback);
 }
 
@@ -142,7 +142,7 @@ int camera_device_open(int camera_id)
     PERF_CAMERA_ATRACE();
     HAL_TRACE_CALL(1);
 
-    CheckError(!gCameraHal, INVALID_OPERATION, "camera hal is NULL.");
+    CheckAndLogError(!gCameraHal, INVALID_OPERATION, "camera hal is NULL.");
     CheckCameraId(camera_id, BAD_VALUE);
 
     return gCameraHal->deviceOpen(camera_id);
@@ -158,7 +158,7 @@ void camera_device_close(int camera_id)
     PERF_CAMERA_ATRACE();
     HAL_TRACE_CALL(1);
 
-    CheckError(!gCameraHal, VOID_VALUE, "camera hal is NULL.");
+    CheckAndLogError(!gCameraHal, VOID_VALUE, "camera hal is NULL.");
     CheckCameraId(camera_id,);
 
     gCameraHal->deviceClose(camera_id);
@@ -177,8 +177,8 @@ int camera_device_config_sensor_input(int camera_id, const stream_t *input_confi
     PERF_CAMERA_ATRACE();
     HAL_TRACE_CALL(1);
 
-    CheckError(!gCameraHal, INVALID_OPERATION, "camera hal is NULL.");
-    CheckError(!input_config, BAD_VALUE, "camera input_config is NULL.");
+    CheckAndLogError(!gCameraHal, INVALID_OPERATION, "camera hal is NULL.");
+    CheckAndLogError(!input_config, BAD_VALUE, "camera input_config is NULL.");
     CheckCameraId(camera_id, BAD_VALUE);
 
     return gCameraHal->deviceConfigInput(camera_id, input_config);
@@ -198,8 +198,8 @@ int camera_device_config_streams(int camera_id, stream_config_t *stream_list)
     PERF_CAMERA_ATRACE();
     HAL_TRACE_CALL(1);
 
-    CheckError(!gCameraHal, INVALID_OPERATION, "camera hal is NULL.");
-    CheckError(!stream_list, BAD_VALUE, "camera stream is NULL.");
+    CheckAndLogError(!gCameraHal, INVALID_OPERATION, "camera hal is NULL.");
+    CheckAndLogError(!stream_list, BAD_VALUE, "camera stream is NULL.");
     CheckCameraId(camera_id, BAD_VALUE);
 
     if (stream_list->operation_mode == CAMERA_STREAM_CONFIGURATION_MODE_STILL_CAPTURE) {
@@ -224,7 +224,7 @@ int camera_device_start(int camera_id)
 {
     PERF_CAMERA_ATRACE();
     HAL_TRACE_CALL(1);
-    CheckError(!gCameraHal, INVALID_OPERATION ,"camera hal is NULL.");
+    CheckAndLogError(!gCameraHal, INVALID_OPERATION ,"camera hal is NULL.");
     CheckCameraId(camera_id, BAD_VALUE);
 
     return gCameraHal->deviceStart(camera_id);
@@ -243,7 +243,7 @@ int camera_device_stop(int camera_id)
 {
     PERF_CAMERA_ATRACE();
     HAL_TRACE_CALL(1);
-    CheckError(!gCameraHal, INVALID_OPERATION, "camera hal is NULL.");
+    CheckAndLogError(!gCameraHal, INVALID_OPERATION, "camera hal is NULL.");
     CheckCameraId(camera_id, BAD_VALUE);
 
     return gCameraHal->deviceStop(camera_id);
@@ -261,10 +261,10 @@ int camera_device_allocate_memory(int camera_id, camera_buffer_t *buffer)
 {
     PERF_CAMERA_ATRACE();
     HAL_TRACE_CALL(2);
-    CheckError(!gCameraHal, INVALID_OPERATION, "camera hal is NULL.");
+    CheckAndLogError(!gCameraHal, INVALID_OPERATION, "camera hal is NULL.");
     CheckCameraId(camera_id, BAD_VALUE);
-    CheckError(!buffer, BAD_VALUE, "buffer is NULL.");
-    CheckError(buffer->s.memType != V4L2_MEMORY_MMAP, BAD_VALUE, "memory type %d is not supported.", buffer->s.memType);
+    CheckAndLogError(!buffer, BAD_VALUE, "buffer is NULL.");
+    CheckAndLogError(buffer->s.memType != V4L2_MEMORY_MMAP, BAD_VALUE, "memory type %d is not supported.", buffer->s.memType);
 
     return gCameraHal->deviceAllocateMemory(camera_id, buffer);
 }
@@ -283,7 +283,7 @@ int camera_stream_qbuf(int camera_id, int stream_id, camera_buffer_t *buffer,
 {
     PERF_CAMERA_ATRACE();
     HAL_TRACE_CALL(2);
-    CheckError(!gCameraHal, INVALID_OPERATION, "camera hal is NULL.");
+    CheckAndLogError(!gCameraHal, INVALID_OPERATION, "camera hal is NULL.");
     CheckCameraId(camera_id, BAD_VALUE);
 
     LOGW("camera_stream_qbuf(cam_id, stream_id, *buffer, num_buffers, *settings) is deprecated and will be removed soon.");
@@ -306,7 +306,7 @@ int camera_stream_qbuf(int camera_id, camera_buffer_t **buffer,
 {
     PERF_CAMERA_ATRACE();
     HAL_TRACE_CALL(2);
-    CheckError(!gCameraHal, INVALID_OPERATION, "camera hal is NULL.");
+    CheckAndLogError(!gCameraHal, INVALID_OPERATION, "camera hal is NULL.");
     CheckCameraId(camera_id, BAD_VALUE);
 
     return gCameraHal->streamQbuf(camera_id, buffer, num_buffers, settings);
@@ -326,9 +326,9 @@ int camera_stream_dqbuf(int camera_id, int stream_id, camera_buffer_t **buffer,
 {
     PERF_CAMERA_ATRACE();
     HAL_TRACE_CALL(2);
-    CheckError(!gCameraHal, INVALID_OPERATION, "camera hal is NULL.");
+    CheckAndLogError(!gCameraHal, INVALID_OPERATION, "camera hal is NULL.");
     CheckCameraId(camera_id, BAD_VALUE);
-    CheckError(!buffer, BAD_VALUE, "camera stream buffer is null.");
+    CheckAndLogError(!buffer, BAD_VALUE, "camera stream buffer is null.");
 
     return gCameraHal->streamDqbuf(camera_id, stream_id, buffer, settings);
 }
@@ -337,7 +337,7 @@ int camera_set_parameters(int camera_id, const Parameters& param)
 {
     HAL_TRACE_CALL(2);
     CheckCameraId(camera_id, BAD_VALUE);
-    CheckError(!gCameraHal, INVALID_OPERATION, "camera device is not open before setting parameters.");
+    CheckAndLogError(!gCameraHal, INVALID_OPERATION, "camera device is not open before setting parameters.");
 
     return gCameraHal->setParameters(camera_id, param);
 }
@@ -346,16 +346,16 @@ int camera_get_parameters(int camera_id, Parameters& param, long sequence)
 {
     HAL_TRACE_CALL(2);
     CheckCameraId(camera_id, BAD_VALUE);
-    CheckError(!gCameraHal, INVALID_OPERATION, "camera device is not open before getting parameters.");
+    CheckAndLogError(!gCameraHal, INVALID_OPERATION, "camera device is not open before getting parameters.");
 
     return gCameraHal->getParameters(camera_id, param, sequence);
 }
 
 int get_frame_size(int camera_id, int format, int width, int height, int field, int *bpp)
 {
-    CheckError(width <= 0, BAD_VALUE, "width <=0");
-    CheckError(height <= 0, BAD_VALUE, "height <=0");
-    CheckError(field < 0, BAD_VALUE, "field <0");
+    CheckAndLogError(width <= 0, BAD_VALUE, "width <=0");
+    CheckAndLogError(height <= 0, BAD_VALUE, "height <=0");
+    CheckAndLogError(field < 0, BAD_VALUE, "field <0");
 
     int frameSize = 0;
     bool isOFSCompression = PlatformData::getOFSCompression(camera_id);

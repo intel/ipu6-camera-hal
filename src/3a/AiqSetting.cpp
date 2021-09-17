@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#define LOG_TAG "AiqSetting"
+#define LOG_TAG AiqSetting
 
 #include <algorithm>
 
@@ -149,6 +149,8 @@ int AiqSetting::setParameters(const Parameters& params)
     params.getAeConvergeSpeedMode(mAiqParam.aeConvergeSpeedMode);
     params.getAeConvergeSpeed(mAiqParam.aeConvergeSpeed);
     params.getRun3ACadence(mAiqParam.run3ACadence);
+    params.getCallbackRgbs(&mAiqParam.callbackRgbs);
+    params.getCallbackTmCurve(&mAiqParam.callbackTmCurve);
 
     int ev = 0;
     params.getAeCompensation(ev);
@@ -207,11 +209,9 @@ int AiqSetting::setParameters(const Parameters& params)
     int ret = params.getMakernoteMode(mAiqParam.makernoteMode);
     if (ret == NAME_NOT_FOUND) mAiqParam.makernoteMode = MAKERNOTE_MODE_OFF;
 
-    CameraMetadata meta;
-    ParameterHelper::copyMetadata(params, &meta);
-
+    const CameraMetadata& meta = ParameterHelper::getMetadata(params);
     uint32_t tag = CAMERA_LENS_INFO_MINIMUM_FOCUS_DISTANCE;
-    icamera_metadata_entry entry = meta.find(tag);
+    icamera_metadata_ro_entry entry = meta.find(tag);
     if (entry.count == 1) {
         mAiqParam.minFocusDistance = entry.data.f[0];
     }
@@ -267,6 +267,8 @@ int AiqSetting::setParameters(const Parameters& params)
             break;
         }
     }
+
+    params.getPowerMode(mAiqParam.powerMode);
 
     mAiqParam.dump();
 
@@ -349,6 +351,10 @@ void aiq_parameter_t::reset()
     tonemapCurves.rCurve = &tonemapCurveMem[0];
     tonemapCurves.gCurve = &tonemapCurveMem[DEFAULT_TONEMAP_CURVE_POINT_NUM];
     tonemapCurves.bCurve = &tonemapCurveMem[DEFAULT_TONEMAP_CURVE_POINT_NUM * 2];
+    callbackRgbs = false;
+    callbackTmCurve = false;
+
+    powerMode = CAMERA_LOW_POWER;
 
     CLEAR(resolution);
 }
@@ -418,6 +424,9 @@ void aiq_parameter_t::dump()
     LOG3A("tonemap mode %d, preset curve %d, gamma %f, curve points %d",
           tonemapMode, tonemapPresetCurve, tonemapGamma, tonemapCurves.gSize);
     LOG3A("testPatternMode %d", testPatternMode);
+    LOG3A("callback RGBS stats %s", callbackRgbs ? "true" : "false");
+    LOG3A("callback Tonemap curve: %s", callbackTmCurve ? "true" : "false");
+    LOG3A("power mode %d", powerMode);
 }
 
 } /* namespace icamera */

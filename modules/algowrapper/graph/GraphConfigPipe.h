@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Intel Corporation
+ * Copyright (C) 2015-2021 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -130,7 +130,7 @@ class GraphConfigPipe {
     status_t portGetClientStream(Node* port, HalStream** stream);
     int32_t portGetDirection(Node* port);
     bool portIsVirtual(Node* port);
-    bool isPipeEdgePort(Node* port);  // TODO: should be renamed as portIsEdgePort
+    bool portIsEdgePort(Node* port);
 
     bool getSensorEmbeddedMetadataEnabled() const { return mMetaEnabled; }
     /*

@@ -21,7 +21,7 @@
 #include "ia_aiq.h"
 
 #include "iutils/Thread.h"
-#include "CameraEvent.h"
+#include "CameraEventType.h"
 #include "SensorHwCtrl.h"
 
 namespace icamera {
@@ -53,17 +53,14 @@ typedef std::vector <SensorExposure> SensorExpGroup;
  * This class is used to control exposure and gain synchronization mechanism
  * and get some sensor info.
  */
-class SensorManager : public EventListener {
+class SensorManager {
 
 public:
     SensorManager(int cameraId, SensorHwCtrl *sensorHw);
     ~SensorManager();
     void reset();
 
-    // get EventListener
-    EventListener *getSofEventListener();
-
-    void handleEvent(EventData eventData);
+    void handleSofEvent(EventData eventData);
     /* sensorExposures are exposure results, applyingSeq is the sequence to apply results */
     uint32_t updateSensorExposure(SensorExpGroup sensorExposures, long applyingSeq);
     int getSensorInfo(ia_aiq_frame_params &frameParams,

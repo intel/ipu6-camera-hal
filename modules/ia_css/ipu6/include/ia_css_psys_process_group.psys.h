@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Intel Corporation.
+ * Copyright (C) 2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,7 +51,7 @@ extern int ia_css_process_group_run(
 
  Note: Stop indicates that the process group has completed execution
 
- Postcondition: The external resoruces can now be detached
+ Postcondition: The external resources can now be detached
 
  @return < 0 on error
  */

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Intel Corporation.
+ * Copyright (C) 2015-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@
 #include "AiqResultStorage.h"
 #include "SensorManager.h"
 #include "LensManager.h"
+#include "CameraEvent.h"
 #include "ParameterGenerator.h"
 
 namespace icamera {
@@ -34,7 +35,7 @@ namespace icamera {
  * and set result to HW layer.
  * This is sub thread class.
  */
-class AiqEngine {
+class AiqEngine : public EventListener {
 
 public:
     AiqEngine(int cameraId, SensorHwCtrl *sensorHw, LensHw *lensHw, AiqSetting *setting,
@@ -54,7 +55,7 @@ public:
     /**
      * \brief configure with ConfigMode
      */
-    int configure(const std::vector<ConfigMode>& configModes);
+    int configure();
 
     /**
      * \brief Calculate and set frame and sensor info, and run 3a with default setting.
@@ -80,9 +81,14 @@ public:
     int stopEngine();
 
     /**
-     * \brief Get software EventListener
+     * \brief Get SOF EventListener
      */
     EventListener *getSofEventListener();
+
+    /**
+     * \brief handle event
+     */
+    void handleEvent(EventData eventData);
 
 private:
     DISALLOW_COPY_AND_ASSIGN(AiqEngine);
@@ -108,8 +114,8 @@ private:
         AIQ_STATE_MAX
     };
 
-    AiqState prepareInputParam(AiqStatistics* aiqStats);
-    AiqState runAiq(long requestId, AiqResult *aiqResult, long applyingSeq);
+    AiqState prepareInputParam(AiqStatistics* aiqStats, AiqResult *aiqResult);
+    AiqState runAiq(long requestId, long applyingSeq, AiqResult *aiqResult, bool *aiqRun);
     AiqState handleAiqResult(AiqResult *aiqResult);
     AiqState done(AiqResult *aiqResult);
 
@@ -139,7 +145,12 @@ private:
 
     aiq_parameter_t mAiqParam;
 
-    long mLastStatsSequence;
+    struct AiqRunningHistory {
+        AiqResult* aiqResult;
+        long requestId;
+        long statsSequnce;
+    };
+    AiqRunningHistory mAiqRunningHistory;
 };
 
 } /* namespace icamera */
