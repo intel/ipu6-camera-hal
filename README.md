@@ -32,7 +32,7 @@ For ADL:
 cd ipu6-camera-hal
 mkdir -p ./build/out/install/usr && cd ./build/
 
-cmake -DCMAKE_BUILD_TYPE=Release -DIPU_VER=ipu6ep -DPRODUCTION_NAME=Tributo -DENABLE_VIRTUAL_IPU_PIPE=OFF -DUSE_PG_LITE_PIPE=ON -DUSE_STATIC_GRAPH=OFF -DCMAKE_INSTALL_PREFIX=/usr ..
+cmake -DCMAKE_BUILD_TYPE=Release -DIPU_VER=ipu6ep -DPRODUCTION_NAME=ccg_cce_tributo -DENABLE_VIRTUAL_IPU_PIPE=OFF -DUSE_PG_LITE_PIPE=ON -DUSE_STATIC_GRAPH=OFF -DCMAKE_INSTALL_PREFIX=/usr ..
 # if don't want install to /usr, use -DCMAKE_INSTALL_PREFIX=./out/install/usr, export PKG_CONFIG_PATH="$workdir/build/out/install/usr/lib/pkgconfig"
 
 make -j8
