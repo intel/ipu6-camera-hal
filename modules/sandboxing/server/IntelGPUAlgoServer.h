@@ -37,7 +37,7 @@ namespace icamera {
 
 class IntelGPUAlgoServer : public RequestHandler {
  public:
-    explicit IntelGPUAlgoServer(IntelAlgoServer* server);
+    explicit IntelGPUAlgoServer(IntelAlgoServer* server) : RequestHandler(server) {}
     virtual ~IntelGPUAlgoServer() {}
     void handleRequest(const MsgReq& msg);
 

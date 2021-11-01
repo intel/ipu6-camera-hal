@@ -41,7 +41,7 @@ Command::Command(const PSysCommandConfig& cfg) {
             CIPR::callocMemory(cfg.buffers.size(), sizeof(struct ipu_psys_buffer)));
 
         if (!mCmd->iocCmd.buffers) {
-            LOG2("Could not allocate DMA-BUF handle array");
+            LOGE("Failed to allocate memory for psys command");
             delete mCmd;
             return;
         }
@@ -53,18 +53,14 @@ Command::Command(const PSysCommandConfig& cfg) {
 }
 
 Command::~Command() {
-    if (!mInitialized) return;
-
-    mInitialized = false;
-    if (!mCmd) return;
-
-    CIPR::freeMemory(mCmd->iocCmd.buffers);
-    delete mCmd;
+    if (mCmd) {
+        CIPR::freeMemory(mCmd->iocCmd.buffers);
+        delete mCmd;
+    }
 }
 
 Result Command::getConfig(PSysCommandConfig* cfg) {
-    CheckAndLogError(!mInitialized, Result::InternalError, "@%s mInitialized false", __func__);
-    CheckAndLogError(!cfg, Result::InvaildArg, "@%s, cfg is nullptr", __func__);
+    CheckAndLogError(!cfg, Result::InvaildArg, "cfg is nullptr");
 
     cfg->token = mCmd->iocCmd.user_token;
     cfg->issueID = mCmd->iocCmd.issue_id;
@@ -91,7 +87,10 @@ Result Command::updateKernel(const PSysCommandConfig& cfg, const MemoryDesc& mem
                      cfg.extBuf);
 
     if (ppg_command_ext->header.version == psys_command_ext_ppg_1) {
-        CIPR::memoryCopy(
+        CheckAndLogError(sizeof(mCmd->iocCmd.kernel_enable_bitmap) !=
+                         sizeof(ppg_command_ext->dynamicKernelBitmap), Result::DataError,
+                         "Invalid bitmap buffer size");
+        MEMCPY_S(
             &(mCmd->iocCmd.kernel_enable_bitmap), sizeof(mCmd->iocCmd.kernel_enable_bitmap),
             ppg_command_ext->dynamicKernelBitmap, sizeof(ppg_command_ext->dynamicKernelBitmap));
     }
@@ -125,32 +124,28 @@ Result Command::updatePG(const PSysCommandConfig& cfg) {
     mCmd->pgManifestBuf = cfg.pgManifestBuf;
 
     ret = getLegacyPGMem(cfg, &memory);
-    CheckAndLogError(ret != Result::OK, ret, "@%s: getLegacyPGMem error", __func__);
+    CheckAndLogError(ret != Result::OK, ret, "Failed to get legacy PG memory");
 
     if (memory.flags & MemoryFlag::PSysAPI) {
-        updateKernel(cfg, memory);
+        ret = updateKernel(cfg, memory);
     } else {
         mCmd->pgParams = memory.cpuPtr;
         mCmd->pgParamsSize = memory.size;
     }
 
-    return Result::OK;
+    return ret;
 }
 
 Result Command::setConfig(const PSysCommandConfig& cfg) {
-    CheckAndLogError(!mInitialized, Result::InternalError, "@%s, mInitialized == false", __func__);
     CheckAndLogError(mCmd->userBuffers.size() < cfg.buffers.size(), Result::InvaildArg,
                      "Config bufcount cannot be higher than in the command!");
     CheckAndLogError(cfg.buffers.empty() && mCmd->iocCmd.buffers, Result::InvaildArg,
                      "To nullify buffers, create command with bufcount 0");
 
     Result ret = updatePG(cfg);
-    if (ret != Result::OK) return ret;
+    CheckAndLogError(ret != Result::OK, ret, "Failed to update PG");
 
     mCmd->extBuf = cfg.extBuf;
-    if (cfg.id != 0) {
-        LOG2("ID-field of CIPR command deprecated!");
-    }
 
     mCmd->iocCmd.user_token = cfg.token;
     mCmd->iocCmd.issue_id = cfg.issueID;
@@ -160,7 +155,7 @@ Result Command::setConfig(const PSysCommandConfig& cfg) {
     mCmd->pg = cfg.pg;
     if (cfg.pg && cfg.pg->mMemoryDesc.sysBuff) {
         CheckAndLogError(!((cfg.pg->mMemoryDesc.sysBuff)->flags & IPU_BUFFER_FLAG_DMA_HANDLE),
-                         Result::GeneralError, "@%s, Wrong flag!", __func__);
+                         Result::GeneralError, "Wrong flag and not a DMA handle");
 
         mCmd->iocCmd.pg = cfg.pg->mMemoryDesc.sysBuff->base.fd;
     }
@@ -184,7 +179,7 @@ Result Command::grokBuffers(const PSysCommandConfig& cfg) {
 
         CheckAndLogError(
             !current->mMemoryDesc.sysBuff || !(current->mMemoryDesc.flags & MemoryFlag::Migrated),
-            Result::InvaildArg, "%s, Cannot queue singular buffer object %p", __func__, current);
+            Result::InvaildArg, "Cannot queue singular buffer object %p", current);
 
         mCmd->iocCmd.buffers[i] = *current->mMemoryDesc.sysBuff;
         mCmd->iocCmd.buffers[i].data_offset = current->mOffset;
@@ -195,10 +190,10 @@ Result Command::grokBuffers(const PSysCommandConfig& cfg) {
 }
 
 Result Command::enqueue(Context* ctx) {
-    CheckAndLogError(!mInitialized, Result::InternalError, "@%s, mInitialized is false", __func__);
-    CheckAndLogError(!ctx, Result::InvaildArg, "@%s, ctx is nullptr", __func__);
+    CheckAndLogError(!ctx, Result::InvaildArg, "Context is nullptr");
 
     return ctx->doIoctl(static_cast<int>(IPU_IOC_QCMD), mCmd);
 }
+
 }  // namespace CIPR
 }  // namespace icamera

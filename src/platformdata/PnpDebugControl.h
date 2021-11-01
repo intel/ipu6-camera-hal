@@ -44,11 +44,11 @@ namespace icamera {
 class PnpDebugControl {
  public:
     /**
-     * check if AAL layer is skipped for PNP test
+     * check if using mock AAL layer for PNP test
      *
-     * \return true if feature is skipped, otherwise return false.
+     * \return true if feature is enabled, otherwise return false.
      */
-    static bool isBypassAAL();
+    static bool useMockAAL();
 
     /**
      * check if 3A algo is skipped for PNP test
@@ -86,11 +86,11 @@ class PnpDebugControl {
     static bool isBypassISys();
 
     /**
-     * check if camhal is skipped for PNP test
+     * check if using mock camhal for PNP test
      *
-     * \return true if feature is skipped, otherwise return false.
+     * \return true if feature is enabled, otherwise return false.
      */
-    static bool isBypassHal();
+    static bool useMockHal();
 
     /**
      * check if video P2p is skipped for PNP test
@@ -99,27 +99,29 @@ class PnpDebugControl {
      */
     static bool isBypassP2p();
 
+    static void updateConfig();
+
     static void releaseInstance();
 
  public:
     struct StaticCfg {
      public:
         StaticCfg()
-                : isBypassAAL(false),
+                : useMockAAL(false),
                   isBypass3A(false),
                   isBypassPAL(false),
                   isBypassPG(false),
                   isBypassFDAlgo(false),
                   isBypassISys(false),
-                  isBypassHal(false),
+                  useMockHal(false),
                   isBypassP2p(false) {}
-        bool isBypassAAL;
+        bool useMockAAL;
         bool isBypass3A;
         bool isBypassPAL;
         bool isBypassPG;
         bool isBypassFDAlgo;
         bool isBypassISys;
-        bool isBypassHal;
+        bool useMockHal;
         bool isBypassP2p;
     };
 

@@ -37,11 +37,9 @@ IntelTNR7US::IntelTNR7US(int cameraId)
           mTnrType(TNR_INSTANCE_MAX),
           mTnrParam(nullptr),
           mParamUpdating(false) {
-    LOG1("%s mCameraId %d", __func__, mCameraId);
 }
 
 IntelTNR7US::~IntelTNR7US() {
-    LOG1("%s mCameraId %d type %d", __func__, mCameraId, mTnrType);
     for (auto surface : mCMSurfaceMap) {
         destroyCMSurface(surface.second);
     }
@@ -58,17 +56,15 @@ IntelTNR7US::~IntelTNR7US() {
 }
 
 int IntelTNR7US::init(int width, int height, TnrType type) {
-    LOG1("%s size %dx%d, mCameraId %d type %d", __func__, width, height, mCameraId, type);
+    LOG1("<id:%d>@%s size %dx%d, type %d", mCameraId, __func__, width, height, type);
     mWidth = width;
     mHeight = height;
     mTnrType = type;
 
     pthread_condattr_t attr;
     int ret = pthread_condattr_init(&attr);
-    if (ret != 0) {
-        LOGE("@%s, call pthread_condattr_init fails, ret:%d", __func__, ret);
-        return UNKNOWN_ERROR;
-    }
+    CheckAndLogError(ret != 0, UNKNOWN_ERROR, "@%s, call pthread_condattr_init fails, ret:%d",
+                     __func__, ret);
 
     ret = pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
     if (ret != 0) {
@@ -97,13 +93,13 @@ int IntelTNR7US::init(int width, int height, TnrType type) {
 }
 
 Tnr7Param* IntelTNR7US::allocTnr7ParamBuf() {
-    LOG1("%s mCameraId %d, type %d", __func__, mCameraId, mTnrType);
+    LOG1("<%d>@%s, type %d", mCameraId, __func__, mTnrType);
     mTnrParam = new Tnr7Param;
     return mTnrParam;
 }
 
 void* IntelTNR7US::allocCamBuf(uint32_t bufSize, int id) {
-    LOG1("%s mCameraId %d type %d, id: %d", __func__, mCameraId, mTnrType, id);
+    LOG1("<%d>@%s, type %d, id: %d", mCameraId, __func__, mTnrType, id);
     void* buffer = nullptr;
     int ret = posix_memalign(&buffer, getpagesize(), bufSize);
     CheckAndLogError(ret != 0, nullptr, "%s, posix_memalign fails, ret:%d", __func__, ret);
@@ -118,7 +114,7 @@ void* IntelTNR7US::allocCamBuf(uint32_t bufSize, int id) {
 }
 
 void IntelTNR7US::freeAllBufs() {
-    LOG1("%s mCameraId %d, type %d", __func__, mCameraId, mTnrType);
+    LOG1("<%d>@%s, type %d", mCameraId, __func__, mTnrType);
     for (auto surface : mCMSurfaceMap) {
         ::free(surface.first);
     }
@@ -141,7 +137,7 @@ int IntelTNR7US::runTnrFrame(const void* inBufAddr, void* outBufAddr, uint32_t i
                              uint32_t outBufSize, Tnr7Param* tnrParam, bool syncUpdate, int fd) {
     PERF_CAMERA_ATRACE();
     TRACE_LOG_PROCESS("IntelTNR7US", "runTnrFrame");
-    LOG1("%s mCameraId %d, type %d", __func__, mCameraId, mTnrType);
+    LOG2("<%d>@%s type %d", mCameraId, __func__, mTnrType);
     CheckAndLogError(inBufAddr == nullptr || outBufAddr == nullptr || tnrParam == nullptr,
                      UNKNOWN_ERROR, "@%s, buffer is nullptr", __func__);
 
@@ -191,8 +187,6 @@ int IntelTNR7US::runTnrFrame(const void* inBufAddr, void* outBufAddr, uint32_t i
 }
 
 int IntelTNR7US::asyncParamUpdate(int gain, bool forceUpdate) {
-    LOG1("%s gain: %d", __func__, gain);
-
     pthread_mutex_lock(&mLock);
     mParamUpdating = true;
     pthread_mutex_unlock(&mLock);
@@ -206,7 +200,8 @@ int IntelTNR7US::asyncParamUpdate(int gain, bool forceUpdate) {
 }
 
 void IntelTNR7US::handleParamUpdate(int gain, bool forceUpdate) {
-    LOG1("%s gain: %d", __func__, gain);
+    PERF_CAMERA_ATRACE();
+    LOG2("@%s gain: %d", __func__, gain);
     // gain value is from AE expore analog_gain * digital_gain
 
     tnr7usParamUpdate(gain, forceUpdate, mTnrType);
@@ -228,7 +223,7 @@ CmSurface2DUP* IntelTNR7US::getBufferCMSurface(void* bufAddr) {
 }
 
 CmSurface2DUP* IntelTNR7US::createCMSurface(void* bufAddr) {
-    LOG1("%s ", __func__);
+    PERF_CAMERA_ATRACE();
     CmSurface2DUP* cmSurface = nullptr;
     int32_t ret = createCmSurface2DUP(mWidth, mHeight, CM_SURFACE_FORMAT_NV12, bufAddr, cmSurface);
     CheckAndLogError(ret != 0, nullptr, "failed to create CmSurface2DUP object");
@@ -236,7 +231,6 @@ CmSurface2DUP* IntelTNR7US::createCMSurface(void* bufAddr) {
 }
 
 int32_t IntelTNR7US::destroyCMSurface(CmSurface2DUP* surface) {
-    LOG1("%s ", __func__);
     return destroyCMSurface2DUP(surface);
 }
 }  // namespace icamera

@@ -24,12 +24,10 @@
 
 namespace icamera {
 IntelFaceDetection::IntelFaceDetection() : mInitialized(false) {
-    LOG1("@%s", __func__);
-
     uintptr_t personal = reinterpret_cast<uintptr_t>(this);
     mMems = {{("/faceDetectionInit" + std::to_string(personal) + "Shm"),
               sizeof(FaceDetectionInitParams), &mMemInit, false},
-              {("/faceDetectionDeinit" + std::to_string(personal) + "Shm"),
+             {("/faceDetectionDeinit" + std::to_string(personal) + "Shm"),
               sizeof(FaceDetectionDeinitParams), &mMemDeinit, false}};
 
     for (int i = 0; i < MAX_STORE_FACE_DATA_BUF_NUM; i++) {
@@ -45,26 +43,25 @@ IntelFaceDetection::IntelFaceDetection() : mInitialized(false) {
         return;
     }
 
-    LOG1("@%s, done", __func__);
+    LOG1("@%s, Construct done", __func__);
     mInitialized = true;
 }
 
 IntelFaceDetection::~IntelFaceDetection() {
-    LOG1("@%s", __func__);
+    LOG1("@%s, Destroy", __func__);
     mCommon.releaseAllShmMems(mMems);
 }
 
 status_t IntelFaceDetection::init(FaceDetectionInitParams* initParams, int dataSize) {
     CheckAndLogError(!mInitialized, UNKNOWN_ERROR, "@%s, mInitialized is false", __func__);
 
-    LOG1("@%s, initParams:%p, dataSize:%d", __func__, initParams, dataSize);
-    CheckAndLogError(initParams == nullptr, UNKNOWN_ERROR, "@%s, initParams is nullptr", __func__);
-    CheckAndLogError(dataSize < static_cast<int>(sizeof(FaceDetectionInitParams)), UNKNOWN_ERROR,
-                     "@%s, buffer is small", __func__);
+    CheckAndLogError(
+        initParams == nullptr || dataSize < static_cast<int>(sizeof(FaceDetectionInitParams)),
+        UNKNOWN_ERROR, "@%s, initParams: %p, dataSize: %d", __func__, initParams, dataSize);
 
     unsigned int maxFacesNum =
         std::min(initParams->max_face_num, static_cast<unsigned int>(MAX_FACES_DETECTABLE));
-    LOG2("@%s, maxFacesNum:%d, cameraId:%d", __func__, maxFacesNum, initParams->cameraId);
+    LOG1("<id%d> @%s, maxFacesNum:%d", initParams->cameraId, __func__, maxFacesNum);
 
     FaceDetectionInitParams* params = static_cast<FaceDetectionInitParams*>(mMemInit.mAddr);
 
@@ -80,10 +77,9 @@ status_t IntelFaceDetection::init(FaceDetectionInitParams* initParams, int dataS
 status_t IntelFaceDetection::deinit(FaceDetectionDeinitParams* deinitParams, int dataSize) {
     LOG1("@%s", __func__);
     CheckAndLogError(!mInitialized, UNKNOWN_ERROR, "@%s, mInitialized is false", __func__);
-    CheckAndLogError(deinitParams == nullptr, UNKNOWN_ERROR, "@%s, deinitParams is nullptr",
-                     __func__);
-    CheckAndLogError(dataSize < static_cast<int>(sizeof(FaceDetectionDeinitParams)), UNKNOWN_ERROR,
-                     "@%s, buffer is small", __func__);
+    CheckAndLogError(
+        deinitParams == nullptr || dataSize < static_cast<int>(sizeof(FaceDetectionDeinitParams)),
+        UNKNOWN_ERROR, "@%s, deinitParams: %p, dataSize: %d", __func__, deinitParams, dataSize);
 
     FaceDetectionDeinitParams* params = static_cast<FaceDetectionDeinitParams*>(mMemDeinit.mAddr);
     params->cameraId = deinitParams->cameraId;
@@ -94,20 +90,20 @@ status_t IntelFaceDetection::deinit(FaceDetectionDeinitParams* deinitParams, int
 }
 
 FaceDetectionRunParams* IntelFaceDetection::prepareRunBuffer(unsigned int index) {
-    LOG1("@%s", __func__);
-    CheckAndLogError(index >= MAX_STORE_FACE_DATA_BUF_NUM, nullptr, "@%s, index is error %d",
-                     __func__, index);
     CheckAndLogError(!mInitialized, nullptr, "@%s, mInitialized is false", __func__);
+    CheckAndLogError(index >= MAX_STORE_FACE_DATA_BUF_NUM, nullptr, "@%s, index: %d is error",
+                     __func__, index);
+    LOG2("%s, index: %d", __func__, index);
 
     return static_cast<FaceDetectionRunParams*>(mMemRunBufs[index].mAddr);
 }
 
 status_t IntelFaceDetection::run(FaceDetectionRunParams* runParams, int dataSize, int dmafd) {
-    LOG2("@%s", __func__);
     CheckAndLogError(!mInitialized, UNKNOWN_ERROR, "@%s, mInitialized is false", __func__);
-    CheckAndLogError(!runParams, UNKNOWN_ERROR, "@%s,runParams is nullptr", __func__);
-    CheckAndLogError(dataSize < static_cast<int>(sizeof(FaceDetectionRunParams)), UNKNOWN_ERROR,
-                     "@%s, buffer is small", __func__);
+    CheckAndLogError(!runParams || dataSize < static_cast<int>(sizeof(FaceDetectionRunParams)),
+                     UNKNOWN_ERROR, "@%s, runParams: %p dataSize: %d", __func__, runParams,
+                     dataSize);
+    LOG2("@%s, dmafd: %d", __func__, dmafd);
 
     if (dmafd >= 0) {
         runParams->bufferHandle = mCommon.registerGbmBuffer(dmafd);

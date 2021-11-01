@@ -218,6 +218,7 @@ void CameraDevice::bindListeners()
 
     if (!mProcessors.empty()) {
         mProcessors.front()->registerListener(EVENT_PSYS_REQUEST_BUF_READY, this);
+        mProcessors.front()->registerListener(EVENT_REQUEST_METADATA_READY, this);
     }
 
     mSofSource->registerListener(EVENT_ISYS_SOF, mRequestThread);
@@ -252,6 +253,7 @@ void CameraDevice::unbindListeners()
 
     if (!mProcessors.empty()) {
         mProcessors.front()->removeListener(EVENT_PSYS_REQUEST_BUF_READY, this);
+        mProcessors.front()->removeListener(EVENT_REQUEST_METADATA_READY, this);
     }
 
     if (mPerframeControlSupport || !PlatformData::isIsysEnabled(mCameraId)) {
@@ -265,8 +267,6 @@ void CameraDevice::unbindListeners()
 
 int CameraDevice::configureInput(const stream_t *inputConfig)
 {
-    PERF_CAMERA_ATRACE();
-
     AutoMutex lock(mDeviceLock);
     mInputConfig = *inputConfig;
 
@@ -510,30 +510,6 @@ bool CameraDevice::isProcessorNeeded(const stream_config_t *streamList,
     return false;
 }
 
-/**
- * Return true only if there are both still and video stream configured.
- */
-bool CameraDevice::isStillDuringVideo(const stream_config_t *streamList)
-{
-    bool containStill = false;
-    bool containVideo = false;
-    for (int streamId = 0; streamId < streamList->num_streams; streamId++) {
-        switch (streamList->streams[streamId].usage) {
-        case CAMERA_STREAM_PREVIEW:
-        case CAMERA_STREAM_VIDEO_CAPTURE:
-            containVideo = true;
-            break;
-        case CAMERA_STREAM_STILL_CAPTURE:
-            containStill = true;
-            break;
-        default:
-            break;
-        }
-    }
-
-    return (containStill && containVideo);
-}
-
 int CameraDevice::createStreams(stream_config_t *streamList)
 {
     LOG1("@%s, mCameraId:%d", __func__, mCameraId);
@@ -717,6 +693,7 @@ int CameraDevice::stop()
 //No Lock for this fuction as it doesn't update any class member
 int CameraDevice::allocateMemory(camera_buffer_t *ubuffer)
 {
+    PERF_CAMERA_ATRACE();
     LOG1("@%s, mCameraId:%d", __func__, mCameraId);
     CheckAndLogError(mState < DEVICE_CONFIGURE, BAD_VALUE, "@%s: Wrong state id %d", __func__,
                      mState);
@@ -736,7 +713,7 @@ int CameraDevice::dqbuf(int streamId, camera_buffer_t **ubuffer, Parameters* set
 {
     CheckAndLogError(streamId < 0 || streamId > mStreamNum, BAD_VALUE,
                      "@%s: the given stream(%d) is invalid.", __func__, streamId);
-
+    PERF_CAMERA_ATRACE();
     LOG2("@%s, camera id:%d, stream id:%d", __func__, mCameraId, streamId);
 
     int ret = mRequestThread->waitFrame(streamId, ubuffer);
@@ -831,6 +808,7 @@ int CameraDevice::registerBuffer(camera_buffer_t **ubuffer, int bufferNum)
 int CameraDevice::qbuf(camera_buffer_t **ubuffer,
                        int bufferNum, const Parameters *settings)
 {
+    PERF_CAMERA_ATRACE();
     LOG2("@%s, mCameraId:%d", __func__, mCameraId);
 
     {
@@ -859,7 +837,7 @@ int CameraDevice::qbuf(camera_buffer_t **ubuffer,
 int CameraDevice::getParameters(Parameters& param, long sequence)
 {
     PERF_CAMERA_ATRACE();
-    LOG1("@%s mCameraId:%d", __func__, mCameraId);
+    LOG2("<id%d:seq%ld>@%s", mCameraId, sequence, __func__);
     AutoMutex   m(mDeviceLock);
 
     if (sequence >= 0 && mState != DEVICE_STOP) {
@@ -1124,20 +1102,34 @@ void CameraDevice::handleEvent(EventData eventData)
 
     case EVENT_PSYS_REQUEST_BUF_READY: {
         if (mCallback) {
-            camera_msg_data_t data;
-            CLEAR(data);
-            data.type = CAMERA_ISP_BUF_READY;
+            camera_msg_data_t data = {CAMERA_ISP_BUF_READY, {}};
             int32_t userRequestId = 0;
             int ret = mParamGenerator->getUserRequestId(eventData.data.requestReady.sequence,
                                                         userRequestId);
             CheckAndLogError(ret != OK, VOID_VALUE, "failed to find request id,  seq %ld",
                              eventData.data.requestReady.sequence);
-            data.data.buffer_ready.sequence = eventData.data.requestReady.sequence;
+
             data.data.buffer_ready.timestamp = eventData.data.requestReady.timestamp;
             data.data.buffer_ready.frameNumber = static_cast<uint32_t>(userRequestId);
             mCallback->notify(mCallback, data);
             PlatformData::updateMakernoteTimeStamp(mCameraId, eventData.data.requestReady.sequence,
                                                    data.data.buffer_ready.timestamp);
+        }
+        break;
+    }
+
+    case EVENT_REQUEST_METADATA_READY: {
+        if (mCallback) {
+            camera_msg_data_t data = {CAMERA_METADATA_READY, {}};
+            int32_t userRequestId = 0;
+            int ret = mParamGenerator->getUserRequestId(eventData.data.requestReady.sequence,
+                                                        userRequestId);
+            CheckAndLogError(ret != OK, VOID_VALUE, "failed to find request id,  seq %ld",
+                             eventData.data.requestReady.sequence);
+
+            data.data.metadata_ready.sequence = eventData.data.requestReady.sequence;
+            data.data.metadata_ready.frameNumber = static_cast<uint32_t>(userRequestId);
+            mCallback->notify(mCallback, data);
         }
         break;
     }
@@ -1150,7 +1142,6 @@ void CameraDevice::handleEvent(EventData eventData)
 
 int CameraDevice::initDefaultParameters()
 {
-    PERF_CAMERA_ATRACE();
     LOG1("@%s mCameraId:%d", __func__, mCameraId);
 
     camera_info_t info;

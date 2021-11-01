@@ -90,8 +90,8 @@ private:
     void returnRawBuffer();
     void handleStillPipeForTnr(long sequence, CameraBufferPortMap *dstBuffers);
     void sendPsysFrameDoneEvent(const CameraBufferPortMap* dstBuffers);
-    void sendPsysBufReadyEvent(const CameraBufferPortMap* dstBuffers,
-                               int64_t sequence, uint64_t timestamp);
+    void sendPsysRequestEvent(const CameraBufferPortMap* dstBuffers,
+                              int64_t sequence, uint64_t timestamp, EventType eventType);
 
 private:
     int mCameraId;

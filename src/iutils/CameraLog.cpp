@@ -44,7 +44,9 @@ char *gLogModules = nullptr;
 int gPerfLevel = 0;
 int gEnforceDvs = 0;
 int gSlowlyRunRatio = 0;
+// DUMP_ENTITY_TOPOLOGY_S
 bool gIsDumpMediaTopo = false;
+// DUMP_ENTITY_TOPOLOGY_E
 bool gIsDumpMediaInfo = false;
 
 const char *cameraDebugLogToString(int level) {
@@ -53,10 +55,10 @@ const char *cameraDebugLogToString(int level) {
             return "LV1";
         case CAMERA_DEBUG_LOG_LEVEL2:
             return "LV2";
+        case CAMERA_DEBUG_LOG_LEVEL3:
+            return "LV3";
         case CAMERA_DEBUG_LOG_REQ_STATE:
             return "REQ";
-        case CAMERA_DEBUG_LOG_AIQ:
-            return "AIQ";
         case CAMERA_DEBUG_LOG_XML:
             return "XML";
         case CAMERA_DEBUG_LOG_DBG:
@@ -73,6 +75,8 @@ const char *cameraDebugLogToString(int level) {
             return "VCSYNC";
         case CAMERA_DEBUG_LOG_GRAPH:
             return "GRAPH";
+        case CAMERA_DEBUG_LOG_SANDBOXING:
+            return "IPC";
         default:
             return "UKN";
     }
@@ -170,25 +174,13 @@ static void fancyLogInitSinks() {
     }
 
     if (!::strcmp(sinkName, "GLOG")) {
-        globalLogSink = new gLogSink();
+        globalLogSink = new GLogSink();
     } else {
         globalLogSink = new StdconLogSink();
     }
 #else
     globalLogSink = new StdconLogSink();
 #endif
-}
-
-static void fancyLogSetDefaultLevel() {
-    static const char* SUPPRESS_DEFLOG = "SUPPRESS_DEFLOG";
-    if (::getenv(SUPPRESS_DEFLOG))
-        return;
-
-    for (int i = 0; i < TAGS_MAX_NUM; ++i) {
-        globalGroupsDescp[i].level |= CAMERA_DEBUG_LOG_ERR;
-        globalGroupsDescp[i].level |= CAMERA_DEBUG_LOG_WARNING;
-        globalGroupsDescp[i].level |= CAMERA_DEBUG_LOG_INFO;
-    }
 }
 
 static void fancyLogSetLevel() {
@@ -214,25 +206,16 @@ static void fancyLogSetLevel() {
 
         int itemIdx = 0;
         for (; itemIdx < TAGS_MAX_NUM; ++itemIdx) {
-            if (name == tagNames[itemIdx]) {
-                if (levelStr.empty()) {
-                    globalGroupsDescp[itemIdx].level = 0xffff;
-                } else {
-                    std::stringstream level_stream(levelStr);
-                    std::string levelNum;
-                    while (std::getline(level_stream, levelNum, ',')) {
-                        int level = std::stoi(levelNum);
-                        globalGroupsDescp[itemIdx].level |= 1 << (level - 1);
-                    }
-                }
+            if (name != tagNames[itemIdx])
+                continue;
+
+            if (levelStr.empty()) {
+                globalGroupsDescp[itemIdx].level = gLogLevel;
+            } else {
+                globalGroupsDescp[itemIdx].level = strtoul(levelStr.c_str(), nullptr, 0);
             }
         }
     }
-}
-
-static void fancyLogInitTags() {
-    fancyLogSetDefaultLevel();
-    fancyLogSetLevel();
 }
 
 void setDebugLevel(void) {
@@ -246,20 +229,18 @@ void setDebugLevel(void) {
 
     // debug
     char *dbgLevel = getenv(PROP_CAMERA_HAL_DEBUG);
+    gLogLevel = CAMERA_DEBUG_LOG_ERR | CAMERA_DEBUG_LOG_WARNING | CAMERA_DEBUG_LOG_INFO;
+
     if (dbgLevel) {
         gLogLevel = strtoul(dbgLevel, nullptr, 0);
         LOG1("Debug level is 0x%x", gLogLevel);
-
-        // to enable both LOG1 and LOG2 traces
-        if (gLogLevel & CAMERA_DEBUG_LOG_LEVEL2)
-            gLogLevel |= CAMERA_DEBUG_LOG_LEVEL1;
-
-        for (size_t i = 0; i < TAGS_MAX_NUM; ++i) {
-            globalGroupsDescp[i].level = gLogLevel;
-        }
     }
 
-    fancyLogInitTags();
+    for (size_t i = 0; i < TAGS_MAX_NUM; ++i) {
+        globalGroupsDescp[i].level = gLogLevel;
+    }
+
+    fancyLogSetLevel();
 
     char *slowlyRunRatio = getenv(PROP_CAMERA_RUN_RATIO);
     if (slowlyRunRatio) {
@@ -289,9 +270,11 @@ void setDebugLevel(void) {
         if (gPerfLevel & CAMERA_DEBUG_LOG_PERF_MEMORY) {
             LOGD("Perf memory breakdown trace is not yet supported");
         }
+        // DUMP_ENTITY_TOPOLOGY_S
         if (gPerfLevel & CAMERA_DEBUG_LOG_MEDIA_TOPO_LEVEL) {
             gIsDumpMediaTopo = true;
         }
+        // DUMP_ENTITY_TOPOLOGY_E
         if (gPerfLevel & CAMERA_DEBUG_LOG_MEDIA_CONTROLLER_LEVEL) {
             gIsDumpMediaInfo = true;
         }
@@ -308,6 +291,11 @@ void setDebugLevel(void) {
 
 bool isDebugLevelEnable(int level) { return gLogLevel & level; }
 
+bool isFancyLogEnabled(int module) {
+    if (module < 0 || module >= TAGS_MAX_NUM) return false;
+    return globalGroupsDescp[module].level > 0;
+}
+
 bool isModulePrintable(const char *module) {
     if (gLogModules == nullptr) {
         return true;
@@ -318,7 +306,9 @@ bool isModulePrintable(const char *module) {
     }
 }
 
+// DUMP_ENTITY_TOPOLOGY_S
 bool isDumpMediaTopo(void) { return gIsDumpMediaTopo; }
+// DUMP_ENTITY_TOPOLOGY_E
 
 bool isDumpMediaInfo(void) { return gIsDumpMediaInfo; }
 

@@ -85,27 +85,20 @@ class GraphConfigPipe {
     explicit GraphConfigPipe(int pipeUseCase);
     ~GraphConfigPipe();
 
-    void init(int32_t reqId);
     int getGraphId(void);
-    void setActiveSinks(const std::vector<uid_t>& activeSinks);
-    void setActiveStreamId(const std::vector<uid_t>& activeSinks);
     /*
      * Convert Node to GraphConfig interface
      */
     const GCSS::IGraphConfig* getInterface(Node* node) const;
-    const GCSS::IGraphConfig* getInterface() const;
     ia_isp_bxt_program_group* getProgramGroup(int32_t streamId);
     int getProgramGroup(std::string pgName, ia_isp_bxt_program_group* programGroupForPG);
     status_t getGdcKernelSetting(uint32_t* kernelId, ia_isp_bxt_resolution_info_t* resolution);
     const ia_isp_bxt_resolution_info_t* getKernelResolutionInfo(uint32_t streamId,
                                                                 uint32_t kernelId);
-    bool hasStreamInGraph(int streamId);
     bool isKernelInStream(uint32_t streamId, uint32_t kernelId);
     status_t getPgIdForKernel(const uint32_t streamId, const int32_t kernelId, int32_t* pgId);
-    int32_t getTuningMode(int32_t streamId);
     status_t getMBRData(int32_t streamId, ia_isp_bxt_gdc_limits* data);
     status_t prepare(Node* settings, const StreamToSinkMap& streamToSinkIdMap);
-    bool containPgs(std::vector<std::string> pgNames);
 
     /*
      * Find distinct stream ids from the graph
@@ -132,7 +125,6 @@ class GraphConfigPipe {
     bool portIsVirtual(Node* port);
     bool portIsEdgePort(Node* port);
 
-    bool getSensorEmbeddedMetadataEnabled() const { return mMetaEnabled; }
     /*
      * Pipeline connection support
      */
@@ -157,11 +149,7 @@ class GraphConfigPipe {
      * -1 will be returned if cannot find the valid PG id.
      */
     int getStreamIdByPgName(std::string pgName);
-    /*
-     * re-cycler static method
-     */
-    static void reset(GraphConfigPipe* me);
-    void fullReset();
+
     /*
      * Debugging support
      */
@@ -171,73 +159,15 @@ class GraphConfigPipe {
     void getCSIOutputResolution(camera_resolution_t* reso) { *reso = mCsiOutput; }
 
  private:
-    struct ResolutionMemPool {
-        std::vector<ia_isp_bxt_resolution_info_t*> resHistorys;
-        std::vector<ia_isp_bxt_resolution_info_t*> resInfos;
-    };
-    /* Helper structures to access Sensor Node information easily */
-    class Rectangle {
-     public:
-        Rectangle();
-        int32_t w; /*<! width */
-        int32_t h; /*<! height */
-        int32_t t; /*<! top */
-        int32_t l; /*<! left */
-    };
-    class SubdevPad : public Rectangle {
-     public:
-        SubdevPad();
-        int32_t mbusFormat;
-    };
-    struct BinFactor {
-        int32_t h;
-        int32_t v;
-    };
-    struct ScaleFactor {
-        int32_t num;
-        int32_t denom;
-    };
-    union RcFactor {  // Resolution Changing factor
-        BinFactor bin;
-        ScaleFactor scale;
-    };
-    struct SubdevInfo {
-        std::string name;
-        SubdevPad in;
-        SubdevPad out;
-        RcFactor factor;
-        SubdevInfo() { CLEAR(factor); }
-    };
-    class SourceNodeInfo {
-     public:
-        SourceNodeInfo();
-        std::string name;
-        std::string i2cAddress;
-        std::string modeId;
-        bool metadataEnabled;
-        std::string csiPort;
-        std::string nativeBayer;
-        SubdevInfo tpg;
-        SubdevInfo pa;
-        SubdevInfo binner;
-        SubdevInfo scaler;
-        SubdevPad output;
-        int32_t interlaced;
-        std::string verticalFlip;
-        std::string horizontalFlip;
-        std::string link_freq;
-    };
     status_t analyzeSourceType();
     status_t analyzeCSIOutput();
     void calculateSinkDependencies();
-    void storeTuningModes();
     HalStream* getHalStreamByVirtualId(uid_t vPortId);
 
     // Format options methods
     status_t getActiveOutputPorts(const StreamToSinkMap& streamToSinkIdMap);
     Node* getOutputPortForSink(const std::string& sinkName);
     status_t getSinkFormatOptions();
-    status_t handleDynamicOptions();
     status_t setPortFormats();
     bool isVideoRecordPort(Node* sink);
     status_t getProgramGroupsByName(const std::vector<std::string>& pgNames,
@@ -253,40 +183,9 @@ class GraphConfigPipe {
 
  private:
     GCSS::GraphConfigNode* mSettings;
-    int32_t mReqId;
     std::map<int32_t, ia_isp_bxt_program_group> mProgramGroup;
     GCSS::BxtAicUtils mGCSSAicUtil;
-
-    bool mMetaEnabled;  // indicates if the specific sensor provides sensor
-                        // embedded metadata
-    enum SourceType {
-        SRC_NONE = 0,
-        SRC_SENSOR,
-        SRC_TPG,
-    };
-    SourceType mSourceType;
     camera_resolution_t mCsiOutput;
-    std::string mSourcePortName;  // Sensor or TPG port name
-
-    /**
-     * pre-computed state done *per request*.
-     * This map holds the terminal id's of the ISA's peer ports (this is
-     * the terminal id's of the input port of the video or still pipe)
-     * that are required to fulfill a request.
-     * Ideally this gets initialized during init() call.
-     * But for now the GcManager will set it via a private method.
-     * we use a map so that we can handle the case when a request has 2 buffers
-     * that are generated from the same pipe.
-     */
-    std::map<uid_t, uid_t> mIsaActiveDestinations;
-    std::set<int32_t> mActiveStreamId;
-    /**
-     * vector holding one structure per virtual sink that stores the stream id
-     * (pipeline id) associated with it and the terminal id of the input port
-     * of that stream.
-     * This vector is updated once per stream config.
-     */
-    std::vector<SinkDependency> mSinkDependencies;
     /**
      * vector holding the peers to the sink nodes. Map contains pairs of
      * {sink, peer}.
@@ -297,13 +196,6 @@ class GraphConfigPipe {
      *copy of the map provided from GraphConfigManager to be used internally.
      */
     StreamToSinkMap mStreamToSinkIdMap;
-    std::map<std::string, int32_t> mIsaOutputPort2StreamId;
-    /**
-     * Map of tuning modes per stream id
-     * Key: stream id
-     * Value: tuning mode
-     */
-    std::map<int32_t, int32_t> mStream2TuningMap;
     int mPipeUseCase;
 
     // Disable copy constructor and assignment operator

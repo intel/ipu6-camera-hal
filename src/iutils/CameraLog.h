@@ -89,10 +89,10 @@ enum {
     /* verbosity level of general traces */
     CAMERA_DEBUG_LOG_LEVEL1 = 1,
     CAMERA_DEBUG_LOG_LEVEL2 = 1 << 1,
+    CAMERA_DEBUG_LOG_LEVEL3 = 1 << 2,
 
     /* Bitmask to enable a concrete set of traces */
-    CAMERA_DEBUG_LOG_REQ_STATE = 1 << 2,
-    CAMERA_DEBUG_LOG_AIQ = 1 << 3,
+    CAMERA_DEBUG_LOG_REQ_STATE = 1 << 3,
 
     CAMERA_DEBUG_LOG_XML = 1 << 4,
     CAMERA_DEBUG_LOG_VC_SYNC = 1 << 5,
@@ -132,8 +132,10 @@ enum {
     /*enable camera atrace level 0 for camtune-record*/
     CAMERA_DEBUG_LOG_ATRACE_LEVEL0 = 1 << 4,
 
+    // DUMP_ENTITY_TOPOLOGY_S
     /*enable media topology dump*/
     CAMERA_DEBUG_LOG_MEDIA_TOPO_LEVEL = 1 << 5,
+    // DUMP_ENTITY_TOPOLOGY_E
 
     /*enable media controller info dump*/
     CAMERA_DEBUG_LOG_MEDIA_CONTROLLER_LEVEL = 1 << 6,
@@ -155,8 +157,11 @@ void setDebugLevel(void);
 void print_log(bool enable, const char* module, const int level,
                const char* format, ...);
 bool isDebugLevelEnable(int level);
+bool isFancyLogEnabled(int module);
 bool isModulePrintable(const char* module);
+// DUMP_ENTITY_TOPOLOGY_S
 bool isDumpMediaTopo(void);
+// DUMP_ENTITY_TOPOLOGY_E
 bool isDumpMediaInfo(void);
 void ccaPrintError(const char* fmt, va_list ap);
 void ccaPrintInfo(const char* fmt, va_list ap);
@@ -188,12 +193,12 @@ extern void doLogBody(int logTag, int level, const char* fmt, ...);
         }                                                               \
     } while (0)
 
-#define LOG3A(...)                                                            \
-    do {                                                                      \
-        {                                                                     \
-            doLogBody(GET_FILE_SHIFT(LOG_TAG), icamera::CAMERA_DEBUG_LOG_AIQ, \
-                      ##__VA_ARGS__);                                         \
-        }                                                                     \
+#define LOG3(...)                                                       \
+    do {                                                                \
+        {                                                               \
+            doLogBody(GET_FILE_SHIFT(LOG_TAG),                          \
+                      icamera::CAMERA_DEBUG_LOG_LEVEL3, ##__VA_ARGS__); \
+        }                                                               \
     } while (0)
 
 #define LOGXML(...)                                                           \
@@ -239,7 +244,7 @@ extern void doLogBody(int logTag, int level, const char* fmt, ...);
 #define LOGFDFPS(...)                                                         \
     do {                                                                      \
         {                                                                     \
-            doLogBody(GET_FILE_SHIFT(LOG_TAG), icamera::CAMERA_DEBUG_LOG_FPS, \
+            doLogBody(GET_FILE_SHIFT(LOG_TAG), icamera::CAMERA_DEBUG_LOG_FACE_DETECTION_FPS, \
                       ##__VA_ARGS__);                                         \
         }                                                                     \
     } while (0)
@@ -306,14 +311,14 @@ void __camera_hal_log(bool condition, int prio, const char* tag,
     icamera::__camera_hal_log(                                \
         icamera::gLogLevel& icamera::CAMERA_DEBUG_LOG_LEVEL2, \
         ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
+#define LOG3(...)                                             \
+    icamera::__camera_hal_log(                                \
+        icamera::gLogLevel& icamera::CAMERA_DEBUG_LOG_LEVEL3, \
+        ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
 #define LOGR(...)                                                \
     icamera::__camera_hal_log(                                   \
         icamera::gLogLevel& icamera::CAMERA_DEBUG_LOG_REQ_STATE, \
         ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
-#define LOG3A(...)                                                            \
-    icamera::__camera_hal_log(                                                \
-        icamera::gLogLevel& icamera::CAMERA_DEBUG_LOG_AIQ, ANDROID_LOG_DEBUG, \
-        LOG_TAG, __VA_ARGS__)
 #define LOGXML(...)                                                           \
     icamera::__camera_hal_log(                                                \
         icamera::gLogLevel& icamera::CAMERA_DEBUG_LOG_XML, ANDROID_LOG_DEBUG, \
@@ -335,9 +340,9 @@ void __camera_hal_log(bool condition, int prio, const char* tag,
         icamera::gLogLevel& icamera::CAMERA_DEBUG_LOG_FPS, ANDROID_LOG_DEBUG, \
         LOG_TAG, __VA_ARGS__)
 #define LOGFDFPS(format, args...)                                         \
-    icamera::Log::print_log(                                              \
-        icamera::gLogLevel& icamera::CAMERA_DEBUG_LOG_FACE_DETECTION_FPS, \
-        LOG_TAG, icamera::CAMERA_DEBUG_LOG_FACE_DETECTION_FPS, format, ##args)
+    icamera::__camera_hal_log(                                                \
+        icamera::gLogLevel& icamera::CAMERA_DEBUG_LOG_FACE_DETECTION_FPS, ANDROID_LOG_DEBUG, \
+        LOG_TAG, __VA_ARGS__)
 
 #define LOGE(...) \
     icamera::__camera_hal_log(true, ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)

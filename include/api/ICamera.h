@@ -77,6 +77,7 @@
 
 #include <stdlib.h> // For including definition of NULL
 
+extern "C" {
 namespace icamera {
 
 /**
@@ -361,7 +362,7 @@ int camera_device_stop(int camera_id);
  *
  *   buf = buffers;
  *   for (int i = 0; i < buffer_count; i++, buf++) {
- *       camera_stream_qbuf(camera_id, stream_id, buf);
+ *       camera_stream_qbuf(camera_id, &buf);
  *   }
  *
  *   camera_device_start(camera_id);
@@ -369,33 +370,6 @@ int camera_device_stop(int camera_id);
  *
  */
 int camera_device_allocate_memory(int camera_id, camera_buffer_t *buffer);
-
-/**
- * \brief
- *   Queue a buffer to device (deprecated, will be removed soon.)
- *
- * \param[in]
- *   int camera_id: ID of the camera
- * \param[in]
- *   int stream_id: ID of stream
- * \param[in]
- *   camera_buffer_t buffer: buffer queued to device
- * \param[in]
- *   int num_buffers: indicates how many buffers need to be queued at the same time,
-                      and these buffers MUST be for different streams.
-                      And stream id in buffer MUST be filled correctly.
- * \param[in]
- *   Parameters settings: Settings used for this group of buffers.
- *
- * \return
- *   0 succeed to queue buffers
- * \return
- *   <0 error code, failed to queue buffers
- *
- * \see camera_stream_dqbuf();
- **/
-int camera_stream_qbuf(int camera_id, int stream_id, camera_buffer_t *buffer,
-                       int num_buffers = 1, const Parameters* settings = NULL);
 
 /**
  * \brief
@@ -464,7 +438,7 @@ int camera_stream_qbuf(int camera_id, camera_buffer_t **buffer,
  *
  *   for (int i = 0; i < buffer_count; i++) {
  *       buf = &buffers[i];
- *       camera_stream_qbuf(camera_id, stream_id, &buf);
+ *       camera_stream_qbuf(camera_id, &buf);
  *   }
  *
  *   camera_device_start(camera_id);
@@ -576,3 +550,4 @@ int camera_get_parameters(int camera_id, Parameters& param, long sequence = -1);
 int get_frame_size(int camera_id, int format, int width, int height, int field, int *bpp);
 
 } // namespace icamera
+} // extern "C"

@@ -16,18 +16,18 @@
 
 #define LOG_TAG AiqInitData
 
-#include <unordered_map>
-#include <dirent.h>
-
 #include "AiqInitData.h"
 
+#include <dirent.h>
 #include <sys/stat.h>
+
+#include <unordered_map>
 
 #include "AiqUtils.h"
 #include "PlatformData.h"
 #include "ia_types.h"
-#include "iutils/CameraLog.h"
 #include "iutils/CameraDump.h"
+#include "iutils/CameraLog.h"
 
 using std::string;
 
@@ -81,8 +81,8 @@ void AiqData::loadFile(const std::string& fileName, ia_binary_data* data, int ma
 
     // Open file
     FILE* fp = fopen(fileName.c_str(), "rb");
-    CheckWarning(fp == nullptr, VOID_VALUE, "Failed to open file %s, error %s",
-                 fileName.c_str(), strerror(errno));
+    CheckWarning(fp == nullptr, VOID_VALUE, "Failed to open file %s, error %s", fileName.c_str(),
+                 strerror(errno));
 
     std::unique_ptr<char[]> dataPtr(new char[usedFileSize]);
 
@@ -105,8 +105,8 @@ void AiqData::saveDataToFile(const std::string& fileName, const ia_binary_data* 
 
     // Open file
     FILE* fp = fopen(fileName.c_str(), "wb");
-    CheckWarning(fp == nullptr, VOID_VALUE, "Failed to open file %s, error %s",
-                 fileName.c_str(), strerror(errno));
+    CheckWarning(fp == nullptr, VOID_VALUE, "Failed to open file %s, error %s", fileName.c_str(),
+                 strerror(errno));
 
     // Write data to file
     size_t writeSize = fwrite(data->data, 1, data->size, fp);
@@ -136,8 +136,7 @@ AiqInitData::AiqInitData(const std::string& sensorName, const std::string& camCf
         mNvmPath.append(NVM_DATA_PATH);
 
         mNvmPath.append(nvmDir);
-        if (mNvmPath.back() != '/')
-            mNvmPath.append("/");
+        if (mNvmPath.back() != '/') mNvmPath.append("/");
 
         mNvmPath.append("eeprom");
         LOG2("NVM data is located in %s", mNvmPath.c_str());
@@ -178,8 +177,7 @@ AiqInitData::AiqInitData(const std::string& sensorName, const std::string& camCf
             return;
         }
 
-        if (mCpf.find(cfg.tuningMode) == mCpf.end())
-            mCpf[cfg.tuningMode] = new AiqData(aiqbName);
+        if (mCpf.find(cfg.tuningMode) == mCpf.end()) mCpf[cfg.tuningMode] = new AiqData(aiqbName);
     }
 
     mMkn = std::unique_ptr<MakerNote>(new MakerNote);
@@ -199,8 +197,7 @@ AiqInitData::~AiqInitData() {
     delete mNvm;
 }
 
-int AiqInitData::getCameraModuleFromEEPROM(const std::string& nvmPath, std::string* cameraModule)
-{
+int AiqInitData::getCameraModuleFromEEPROM(const std::string& nvmPath, std::string* cameraModule) {
     LOG1("@%s, nvmPath %s", __func__, nvmPath.c_str());
 
     CheckAndLogError(nvmPath.empty(), NAME_NOT_FOUND, "nvmPath is empty");

@@ -36,8 +36,7 @@ namespace icamera {
  * Camera Module Information is gotten from the EEPROM, which needs to be programmed with
  * an identification block located in the last 32 bytes of the EEPROM.
  */
-struct CameraModuleInfo
-{
+struct CameraModuleInfo {
     char mOsInfo[4];
     uint16_t mCRC;
     uint8_t mVersion;
@@ -63,9 +62,6 @@ class AiqData {
     ia_binary_data* getData();
     void saveData(const ia_binary_data& data);
 
- private:
-    DISALLOW_COPY_AND_ASSIGN(AiqData);
-
     void loadFile(const std::string& fileName, ia_binary_data* data, int maxSize);
     void saveDataToFile(const std::string& fileName, const ia_binary_data* data);
 
@@ -73,6 +69,9 @@ class AiqData {
     std::string mFileName;
     ia_binary_data mData;
     std::unique_ptr<char[]> mDataPtr;
+
+ private:
+    DISALLOW_COPY_AND_ASSIGN(AiqData);
 };
 
 /**
@@ -98,13 +97,10 @@ class AiqInitData {
     // maker note
     int initMakernote(int cameraId, TuningMode tuningMode);
     int deinitMakernote(int cameraId, TuningMode tuningMode);
-    int saveMakernoteData(int cameraId, camera_makernote_mode_t makernoteMode,
-                          int64_t sequence, TuningMode tuningMode);
+    int saveMakernoteData(int cameraId, camera_makernote_mode_t makernoteMode, int64_t sequence,
+                          TuningMode tuningMode);
     void updateMakernoteTimeStamp(int64_t sequence, uint64_t timestamp);
     void acquireMakernoteData(uint64_t timestamp, Parameters* param);
-
- private:
-    DISALLOW_COPY_AND_ASSIGN(AiqInitData);
 
     int getCameraModuleFromEEPROM(const std::string& nvmPath, std::string* cameraModule);
     std::string getAiqdFileNameWithPath(TuningMode mode);
@@ -127,6 +123,9 @@ class AiqInitData {
 
     // makernote
     std::unique_ptr<MakerNote> mMkn;
+
+ private:
+    DISALLOW_COPY_AND_ASSIGN(AiqInitData);
 };
 
 }  // namespace icamera

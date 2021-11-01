@@ -28,11 +28,11 @@
 #pragma once
 
 #include <list>
-
 #include <unordered_map>
-#include "PlatformData.h"
-#include "ParserBase.h"
+
 #include "CameraMetadata.h"
+#include "ParserBase.h"
+#include "PlatformData.h"
 
 namespace icamera {
 
@@ -44,23 +44,16 @@ namespace icamera {
  * This class will use the expat lib to do the xml parser.
  */
 class CameraParser : public ParserBase {
-public:
-    CameraParser(MediaControl *mc, PlatformData::StaticCfg *cfg);
+ public:
+    CameraParser(MediaControl* mc, PlatformData::StaticCfg* cfg);
     ~CameraParser();
 
-    unsigned getSensorNum(void) {return mSensorNum;};
+    unsigned getSensorNum(void) { return mSensorNum; }
 
-private:
-    DISALLOW_COPY_AND_ASSIGN(CameraParser);
+ private:
+    PlatformData::StaticCfg* mStaticCfg;
 
-private:
-    PlatformData::StaticCfg *mStaticCfg;
-
-    enum DataField {
-        FIELD_INVALID = 0,
-        FIELD_SENSOR,
-        FIELD_COMMON
-    } mCurrentDataField;
+    enum DataField { FIELD_INVALID = 0, FIELD_SENSOR, FIELD_COMMON } mCurrentDataField;
     int mSensorNum;
     int mCurrentSensor;
     std::string mI2CBus;
@@ -70,7 +63,7 @@ private:
         bool sensorFlag;
     };
     std::unordered_map<std::string, AvailableSensorInfo> mAvailableSensor;
-    PlatformData::StaticCfg::CameraInfo *pCurrentCam;
+    PlatformData::StaticCfg::CameraInfo* pCurrentCam;
     bool mInMediaCtlCfg;
     bool mInStaticMetadata;
     MediaControl* mMC;
@@ -84,61 +77,68 @@ private:
     };
     std::list<NvmDeviceInfo> mNvmDeviceInfo;
 
-    long* mMetadataCache;
+    int64_t* mMetadataCache;
     static const int mMetadataCacheSize = 4096;
 
     std::unordered_map<std::string, enum icamera_metadata_tag> mGenericStaticMetadataToTag;
 
-    void startParseElement(void *userData, const char *name, const char **atts);
-    void endParseElement(void *userData, const char *name);
+    void startParseElement(void* userData, const char* name, const char** atts);
+    void endParseElement(void* userData, const char* name);
 
-    static void parseSizesList(const char *sizesStr, std::vector <camera_resolution_t> &sizes);
-    static int getSupportedFormat(const char* str, std::vector <int>& supportedFormat);
-    static int parsePair(const char *str, int *first, int *second, char delim, char **endptr = nullptr);
+    static void parseSizesList(const char* sizesStr, std::vector<camera_resolution_t>& sizes);
+    static int getSupportedFormat(const char* str, std::vector<int>& supportedFormat);
+    static int parsePair(const char* str, int* first, int* second, char delim,
+                         char** endptr = nullptr);
 
-    std::vector<std::string> getAvailableSensors(const std::string &ipuName,
-                                                 const std::vector<std::string> &sensorsList);
+    std::vector<std::string> getAvailableSensors(const std::string& ipuName,
+                                                 const std::vector<std::string>& sensorsList);
     void getSensorDataFromXmlFile(void);
-    void getCsiPortAndI2CBus(CameraParser *profiles);
-    void checkField(CameraParser *profiles, const char *name, const char **atts);
+    void getCsiPortAndI2CBus(CameraParser* profiles);
+    void checkField(CameraParser* profiles, const char* name, const char** atts);
 
-    void handleSensor(CameraParser *profiles, const char *name, const char **atts);
-    void handleCommon(CameraParser *profiles, const char *name, const char **atts);
+    void handleSensor(CameraParser* profiles, const char* name, const char** atts);
+    void handleCommon(CameraParser* profiles, const char* name, const char** atts);
 
     void parseStreamConfig(const char* src, stream_array_t& configs);
     void parseSupportedFeatures(const char* src, camera_features_list_t& features);
     void parseSupportedIspControls(const char* src, std::vector<uint32_t>& features);
-    int parseSupportedVideoStabilizationMode(const char* str, camera_video_stabilization_list_t &supportedModes);
-    int parseSupportedAeMode(const char* str, std::vector <camera_ae_mode_t> &supportedModes);
-    int parseSupportedAfMode(const char* str, std::vector <camera_af_mode_t> &supportedModes);
-    int parseSupportedAntibandingMode(const char* str, std::vector <camera_antibanding_mode_t> &supportedModes);
+    int parseSupportedVideoStabilizationMode(const char* str,
+                                             camera_video_stabilization_list_t& supportedModes);
+    int parseSupportedAeMode(const char* str, std::vector<camera_ae_mode_t>& supportedModes);
+    int parseSupportedAfMode(const char* str, std::vector<camera_af_mode_t>& supportedModes);
+    int parseSupportedAntibandingMode(const char* str,
+                                      std::vector<camera_antibanding_mode_t>& supportedModes);
     int parseSupportedAeParamRange(const char* src, std::vector<int>& scenes,
                                    std::vector<float>& minValues, std::vector<float>& maxValues);
 
-// parse the media controller configuration in xml, the MediaControl MUST be run before the parser to run.
-    void handleMediaCtlCfg(CameraParser *profiles, const char *name, const char **atts);
-    void handleStaticMetaData(CameraParser *profiles, const char *name, const char **atts);
+    // parse the media controller configuration in xml, the MediaControl MUST be run before the
+    // parser to run.
+    void handleMediaCtlCfg(CameraParser* profiles, const char* name, const char** atts);
+    void handleStaticMetaData(CameraParser* profiles, const char* name, const char** atts);
     void handleGenericStaticMetaData(const char* name, const char* src, CameraMetadata* metadata);
-    void parseMediaCtlConfigElement(CameraParser *profiles, const char *name, const char **atts);
+    void parseMediaCtlConfigElement(CameraParser* profiles, const char* name, const char** atts);
     void storeMcMappForConfig(int mcId, stream_t streamCfg);
-    void parseLinkElement(CameraParser *profiles, const char *name, const char **atts);
-    void parseRouteElement(CameraParser *profiles, const char *name, const char **atts);
-    void parseControlElement(CameraParser *profiles, const char *name, const char **atts);
-    void parseSelectionElement(CameraParser *profiles, const char *name, const char **atts);
-    void parseFormatElement(CameraParser *profiles, const char *name, const char **atts);
-    void parseVideoElement(CameraParser *profiles, const char *name, const char **atts);
-    void parseOutputElement(CameraParser *profiles, const char *name, const char **atts);
+    void parseLinkElement(CameraParser* profiles, const char* name, const char** atts);
+    void parseRouteElement(CameraParser* profiles, const char* name, const char** atts);
+    void parseControlElement(CameraParser* profiles, const char* name, const char** atts);
+    void parseSelectionElement(CameraParser* profiles, const char* name, const char** atts);
+    void parseFormatElement(CameraParser* profiles, const char* name, const char** atts);
+    void parseVideoElement(CameraParser* profiles, const char* name, const char** atts);
+    void parseOutputElement(CameraParser* profiles, const char* name, const char** atts);
     void parseMultiExpRange(const char* src);
 
-    int parseSupportedTuningConfig(const char *str, std::vector <TuningConfig> &config);
-    int parseLardTags(const char *str, std::vector <LardTagConfig> &lardTags);
+    int parseSupportedTuningConfig(const char* str, std::vector<TuningConfig>& config);
+    int parseLardTags(const char* str, std::vector<LardTagConfig>& lardTags);
 
     void dumpSensorInfo(void);
 
-    void parseOutputMap(const char *str, std::vector<UserToPslOutputMap> &outputMap);
+    void parseOutputMap(const char* str, std::vector<UserToPslOutputMap>& outputMap);
 
-    std::string replaceStringInXml(CameraParser *profiles, const char *value);
+    std::string replaceStringInXml(CameraParser* profiles, const char* value);
     void getNVMDirectory(CameraParser* profiles);
+
+ private:
+    DISALLOW_COPY_AND_ASSIGN(CameraParser);
 };
 
-} // namespace icamera
+}  // namespace icamera

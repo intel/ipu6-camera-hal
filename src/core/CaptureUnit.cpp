@@ -80,7 +80,6 @@ CaptureUnit::~CaptureUnit()
 
 int CaptureUnit::init()
 {
-    PERF_CAMERA_ATRACE();
     LOG1("%s, mCameraId:%d", __func__, mCameraId);
 
     mState = CAPTURE_INIT;

@@ -254,6 +254,11 @@ bool PlatformData::isFaceAeEnabled(int cameraId)
     return getInstance()->mStaticCfg.mCameras[cameraId].mFaceAeEnabled;
 }
 
+int PlatformData::faceEngineVendor(int cameraId)
+{
+    return getInstance()->mStaticCfg.mCameras[cameraId].mFaceEngineVendor;
+}
+
 int PlatformData::faceEngineRunningInterval(int cameraId)
 {
     return getInstance()->mStaticCfg.mCameras[cameraId].mFaceEngineRunningInterval;
@@ -1435,9 +1440,9 @@ bool PlatformData::isGpuTnrEnabled()
     return getInstance()->mStaticCfg.mCommonConfig.isGpuTnrEnabled;
 }
 
-int PlatformData::getVideoStreamNum(int cameraId)
+int PlatformData::getVideoStreamNum()
 {
-    return getInstance()->mStaticCfg.mCameras[cameraId].mVideoStreamNum;
+    return getInstance()->mStaticCfg.mCommonConfig.videoStreamNum;
 }
 
 bool PlatformData::isUsingGpuAlgo()

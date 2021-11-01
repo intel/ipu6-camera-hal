@@ -30,10 +30,6 @@
 
 namespace icamera {
 
-IntelGPUAlgoServer::IntelGPUAlgoServer(IntelAlgoServer* server) : RequestHandler(server) {
-    LOGIPC("@%s", __func__);
-}
-
 void IntelGPUAlgoServer::handleRequest(const MsgReq& msg) {
     uint32_t req_id = msg.req_id;
     int32_t buffer_handle = msg.buffer_handle;
@@ -48,8 +44,7 @@ void IntelGPUAlgoServer::handleRequest(const MsgReq& msg) {
 
     size_t requestSize = info.size;
     void* addr = info.addr;
-    LOGIPC("@%s, req_id:%d:%s, requestSize:%zu, buffer_handle:%d addr:%p", __func__, req_id,
-           IntelAlgoIpcCmdToString(static_cast<IPC_CMD>(req_id)), requestSize, buffer_handle, addr);
+
     switch (req_id) {
 #ifdef TNR7_CM
         case IPC_GPU_TNR_INIT:
@@ -85,14 +80,14 @@ void IntelGPUAlgoServer::handleRequest(const MsgReq& msg) {
             if (requestInfo->outHandle >= 0) {
                 status = getIntelAlgoServer()->getShmInfo(requestInfo->outHandle, &outBuffer);
                 if (status != OK) {
-                    LOGE("%s, the buffer handle for inBuffer data is invalid", __func__);
+                    LOGE("%s, the buffer handle for outBuffer data is invalid", __func__);
                     break;
                 }
             }
             if (requestInfo->paramHandle >= 0) {
                 status = getIntelAlgoServer()->getShmInfo(requestInfo->paramHandle, &paramBuffer);
                 if (status != OK) {
-                    LOGE("%s, the buffer handle for inBuffer data is invalid", __func__);
+                    LOGE("%s, the buffer handle for parameter is invalid", __func__);
                     break;
                 }
             }
@@ -118,6 +113,8 @@ void IntelGPUAlgoServer::handleRequest(const MsgReq& msg) {
             status = UNKNOWN_ERROR;
             break;
     }
+    LOG1("@%s, req_id:%d:%s, status", __func__, req_id,
+         IntelAlgoIpcCmdToString(static_cast<IPC_CMD>(req_id)), status);
 
     getIntelAlgoServer()->returnCallback(req_id, status, buffer_handle);
 }

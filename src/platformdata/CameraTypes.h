@@ -180,6 +180,8 @@ struct PolicyConfig {
     PolicyConfig() { graphId = -1; enableBundleInSdv = true; }
 };
 
+#define DEFAULT_VIDEO_STREAM_NUM 2
+
 struct CommonConfig {
     float xmlVersion;
     std::string ipuName;
@@ -188,6 +190,7 @@ struct CommonConfig {
     bool isStillTnrPrior;
     bool isTnrParamForceUpdate;
     int cameraNumber;
+    int videoStreamNum;
 
     CommonConfig() {
         xmlVersion = 1.0;
@@ -195,6 +198,7 @@ struct CommonConfig {
         isStillTnrPrior = true;
         isTnrParamForceUpdate = false;
         cameraNumber = -1;
+        videoStreamNum = DEFAULT_VIDEO_STREAM_NUM;
     }
 };
 

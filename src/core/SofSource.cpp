@@ -15,35 +15,32 @@
  */
 #define LOG_TAG SofSource
 
+#include "SofSource.h"
+
 #include <poll.h>
 
+#include "PlatformData.h"
+#include "V4l2DeviceFactory.h"
 #include "iutils/CameraLog.h"
 #include "iutils/Utils.h"
-#include "V4l2DeviceFactory.h"
-#include "PlatformData.h"
-
-#include "SofSource.h"
 
 namespace icamera {
 
-SofSource::SofSource(int cameraId) :
-    mPollThread(nullptr),
-    mCameraId(cameraId),
-    mIsysReceiverSubDev(nullptr),
-    mExitPending(false)
-{
+SofSource::SofSource(int cameraId)
+        : mPollThread(nullptr),
+          mCameraId(cameraId),
+          mIsysReceiverSubDev(nullptr),
+          mExitPending(false) {
     LOG1("%s: SofSource is constructed", __func__);
 
     mSofDisabled = !PlatformData::isIsysEnabled(cameraId);
 }
 
-SofSource::~SofSource()
-{
+SofSource::~SofSource() {
     LOG1("%s: SofSource is distructed.", __func__);
 }
 
-int SofSource::init()
-{
+int SofSource::init() {
     if (mSofDisabled) {
         return OK;
     }
@@ -53,8 +50,7 @@ int SofSource::init()
     return OK;
 }
 
-int SofSource::deinit()
-{
+int SofSource::deinit() {
     if (mSofDisabled) {
         return OK;
     }
@@ -65,9 +61,8 @@ int SofSource::deinit()
     return status;
 }
 
-int SofSource::initDev()
-{
-    //Create and open receiver subdevice.
+int SofSource::initDev() {
+    // Create and open receiver subdevice.
     std::string subDeviceNodeName;
 
     if (PlatformData::getDevNameByType(mCameraId, VIDEO_ISYS_RECEIVER, subDeviceNodeName) == OK) {
@@ -80,20 +75,19 @@ int SofSource::initDev()
 
 #ifdef CAL_BUILD
     int status = mIsysReceiverSubDev->SubscribeEvent(V4L2_EVENT_FRAME_SYNC);
-    CheckAndLogError(status != OK, status, "%s: Failed to subscribe sync event 0", __func__);
+    CheckAndLogError(status != OK, status, "Failed to subscribe sync event 0");
     LOG1("%s: Using SOF event id 0 for sync", __func__);
 #else
     int id = 0;
     int status = mIsysReceiverSubDev->SubscribeEvent(V4L2_EVENT_FRAME_SYNC, id);
-    CheckAndLogError(status != OK, status, "%s: Failed to subscribe sync event %d", __func__, id);
+    CheckAndLogError(status != OK, status, "Failed to subscribe sync event %d", id);
     LOG1("%s: Using SOF event id %d for sync", __func__, id);
 #endif
 
     return OK;
 }
 
-int SofSource::deinitDev()
-{
+int SofSource::deinitDev() {
     if (mIsysReceiverSubDev == nullptr) return OK;
 
     int status = 0;
@@ -102,7 +96,7 @@ int SofSource::deinitDev()
     if (status == OK) {
         LOG1("%s: Unsubscribe SOF event id 0 done", __func__);
     } else {
-        LOGE("%s: Failed to unsubscribe SOF event 0, status: %d", __func__, status);
+        LOGE("Failed to unsubscribe SOF event 0, status: %d", status);
     }
 #else
     int id = 0;
@@ -110,15 +104,14 @@ int SofSource::deinitDev()
     if (status == OK) {
         LOG1("%s: Unsubscribe SOF event id %d done", __func__, id);
     } else {
-        LOGE("%s: Failed to unsubscribe SOF event %d", __func__, id);
+        LOGE("Failed to unsubscribe SOF event %d", id);
     }
 #endif
 
     return status;
 }
 
-int SofSource::configure()
-{
+int SofSource::configure() {
     if (mSofDisabled) {
         return OK;
     }
@@ -126,8 +119,7 @@ int SofSource::configure()
     return initDev();
 }
 
-int SofSource::start()
-{
+int SofSource::start() {
     LOG1("%s", __func__);
     if (mSofDisabled) {
         return OK;
@@ -136,11 +128,9 @@ int SofSource::start()
     int status = mPollThread->run("SofSource", PRIORITY_URGENT_AUDIO);
     mExitPending = false;
     return status;
-
 }
 
-int SofSource::stop()
-{
+int SofSource::stop() {
     LOG1("%s", __func__);
     if (mSofDisabled) {
         return OK;
@@ -149,47 +139,42 @@ int SofSource::stop()
     mExitPending = true;
     int status = mPollThread->requestExitAndWait();
     return status;
-
 }
 
-int SofSource::poll()
-{
+int SofSource::poll() {
     int ret = 0;
     const int pollTimeoutCount = 10;
     const int pollTimeout = 1000;
 
     std::vector<V4L2Device*> pollDevs;
     pollDevs.push_back(mIsysReceiverSubDev);
-    V4L2DevicePoller poller {pollDevs, -1};
+    V4L2DevicePoller poller{pollDevs, -1};
 
     std::vector<V4L2Device*> readyDevices;
-
-    LOG2("@%s", __func__);
 
     int timeOutCount = pollTimeoutCount;
 
     while (timeOutCount-- && ret == 0) {
-
         ret = poller.Poll(pollTimeout, POLLPRI | POLLIN | POLLOUT | POLLERR, &readyDevices);
 
         if (ret == 0 && mExitPending) {
-            //timed out
-            LOGD("@%s: Timedout or thread is not running, ret = %d", __func__, ret);
+            // timed out
+            LOGI("Time out or thread is not running, ret = %d", ret);
             return BAD_VALUE;
         }
     }
 
-    //handle the poll error
+    // handle the poll error
     if (ret < 0) {
         if (mExitPending) {
-            //Exiting, no error
+            // Exiting, no error
             return 0;
         }
 
-        LOGE("%s: Poll error", __func__);
+        LOGE("Poll error");
         return ret;
     } else if (ret == 0) {
-        LOGD("@%s, Sof poll timeout.", __func__);
+        LOGI("Sof poll time out.");
         return 0;
     }
 
@@ -201,7 +186,7 @@ int SofSource::poll()
     syncData.sequence = event.u.frame_sync.frame_sequence;
     syncData.timestamp.tv_sec = event.timestamp.tv_sec;
     syncData.timestamp.tv_usec = (event.timestamp.tv_nsec / 1000);
-    LOG2("%s:sof event sequence %ld, event.id %u", __func__, syncData.sequence, event.id);
+    LOG2("<seq%ld> %s:sof event, event.id %u", syncData.sequence, __func__, event.id);
     TRACE_LOG_POINT("SofSource", "receive sof event", MAKE_COLOR(syncData.sequence),
                     syncData.sequence);
     EventData eventData;
@@ -213,4 +198,4 @@ int SofSource::poll()
     return 0;
 }
 
-}
+}  // namespace icamera

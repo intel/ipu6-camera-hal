@@ -22,8 +22,8 @@
 namespace icamera {
 class IPCIntelFD {
  public:
-    IPCIntelFD();
-    virtual ~IPCIntelFD();
+    IPCIntelFD() {}
+    virtual ~IPCIntelFD() {}
 
     bool clientFlattenInit(unsigned int max_face_num, int cameraId,
                            FaceDetectionInitParams* params);

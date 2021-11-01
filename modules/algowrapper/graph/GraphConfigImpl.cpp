@@ -97,7 +97,7 @@ void GraphConfigImpl::addCustomKeyMap() {
     };
 #undef GCSS_KEY
 
-    LOG1("Adding %zu custom specific keys to graph config parser", CUSTOM_GRAPH_KEYS.size());
+    LOG2("Adding %zu custom specific keys to graph config parser", CUSTOM_GRAPH_KEYS.size());
 
     /*
      * add custom specific tags so parser can use them
@@ -122,14 +122,14 @@ status_t GraphConfigImpl::parse(int cameraId, const char* graphDescFile, const c
         AutoMutex lock(sLock);
         auto it = mGraphNode.find(cameraId);
         if (it != mGraphNode.end()) {
-            LOG2("The graph config for cameraId: %d has been parsed", cameraId);
+            LOG2("<id%d>, The graph config has been parsed", cameraId);
             return OK;
         }
     }
 
     GCSSParser parser;
     GraphConfigNodes* nodes = new GraphConfigNodes;
-    LOG2("Start to parse graph config file for cameraId: %d", cameraId);
+    LOG2("<id%d>, Start to parse graph config file", cameraId);
 
     parser.parseGCSSXmlFile(graphDescFile, &nodes->mDesc);
     if (!nodes->mDesc) {
@@ -171,14 +171,14 @@ status_t GraphConfigImpl::parse(int cameraId, char* graphDescData, size_t descDa
         AutoMutex lock(sLock);
         auto it = mGraphNode.find(cameraId);
         if (it != mGraphNode.end()) {
-            LOG2("The graph config for cameraId: %d has been parsed", cameraId);
+            LOG2("<id%d>, the graph config has been parsed", cameraId);
             return OK;
         }
     }
 
     GCSSParser parser;
     GraphConfigNodes* nodes = new GraphConfigNodes;
-    LOG2("Start to parse graph config data for cameraId: %d", cameraId);
+    LOG2("<id%d>, Start to parse graph config data", cameraId);
 
     parser.parseGCSSXmlData(graphDescData, descDataSize, &nodes->mDesc);
     if (!nodes->mDesc) {
@@ -260,7 +260,7 @@ status_t GraphConfigImpl::createQueryRule(const vector<HalStream*>& activeStream
         query[w] = std::to_string(stream->width());
         query[h] = std::to_string(stream->height());
         streamToSinkId[stream] = key;
-        LOG1("Adding stream %p to map %s", stream, ItemUID::key2str(key));
+        LOG2("Adding stream %p to map %s", stream, ItemUID::key2str(key));
     }
 
     if (mType == COUPLED) {
@@ -537,10 +537,10 @@ status_t GraphConfigImpl::selectSetting(
     for (auto& result : mFirstQueryResults) {
         vector<ConfigMode> cfgModes;
         result->getValue(GCSS_KEY_OP_MODE, opMode);
-        LOG1("The operation mode str in xml: %s", opMode.c_str());
+        LOG2("The operation mode str in xml: %s", opMode.c_str());
 
         CameraUtils::getConfigModeFromString(opMode, cfgModes);
-        LOG1("The query results supports configModes size: %zu", cfgModes.size());
+        LOG2("The query results supports configModes size: %zu", cfgModes.size());
 
         for (const auto mode : cfgModes) {
             if (mConfigMode == mode) {

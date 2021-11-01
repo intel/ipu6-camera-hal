@@ -16,15 +16,15 @@
 
 #pragma once
 
-#include "AiqSetting.h"
 #include "AiqCore.h"
 #include "AiqResult.h"
-#include "AiqStatistics.h"
 #include "AiqResultStorage.h"
-#include "SensorManager.h"
-#include "LensManager.h"
+#include "AiqSetting.h"
+#include "AiqStatistics.h"
 #include "CameraEvent.h"
+#include "LensManager.h"
 #include "ParameterGenerator.h"
+#include "SensorManager.h"
 
 namespace icamera {
 
@@ -36,9 +36,8 @@ namespace icamera {
  * This is sub thread class.
  */
 class AiqEngine : public EventListener {
-
-public:
-    AiqEngine(int cameraId, SensorHwCtrl *sensorHw, LensHw *lensHw, AiqSetting *setting,
+ public:
+    AiqEngine(int cameraId, SensorHwCtrl* sensorHw, LensHw* lensHw, AiqSetting* setting,
               ParameterGenerator* paramGen);
     ~AiqEngine();
 
@@ -83,25 +82,22 @@ public:
     /**
      * \brief Get SOF EventListener
      */
-    EventListener *getSofEventListener();
+    EventListener* getSofEventListener();
 
     /**
      * \brief handle event
      */
     void handleEvent(EventData eventData);
 
-private:
-    DISALLOW_COPY_AND_ASSIGN(AiqEngine);
-
-    int prepareStatsParams(cca::cca_stats_params *statsParams, AiqStatistics *aiqStatistics);
+    int prepareStatsParams(cca::cca_stats_params* statsParams, AiqStatistics* aiqStatistics);
 
     // Handle AIQ results except Exposure results which are handled in setSensorExposure
-    void setAiqResult(AiqResult *aiqResult, bool skip);
+    void setAiqResult(AiqResult* aiqResult, bool skip);
     void setSensorExposure(AiqResult* aiqResult, long applyingSeq = -1);
 
-    int getSkippingNum(AiqResult *aiqResult);
+    int getSkippingNum(AiqResult* aiqResult);
 
-    bool needRun3A(AiqStatistics *aiqStatistics, long requestId);
+    bool needRun3A(AiqStatistics* aiqStatistics, long requestId);
 
     enum AiqState {
         AIQ_STATE_IDLE = 0,
@@ -114,29 +110,29 @@ private:
         AIQ_STATE_MAX
     };
 
-    AiqState prepareInputParam(AiqStatistics* aiqStats, AiqResult *aiqResult);
-    AiqState runAiq(long requestId, long applyingSeq, AiqResult *aiqResult, bool *aiqRun);
-    AiqState handleAiqResult(AiqResult *aiqResult);
-    AiqState done(AiqResult *aiqResult);
+    AiqState prepareInputParam(AiqStatistics* aiqStats, AiqResult* aiqResult);
+    AiqState runAiq(long requestId, long applyingSeq, AiqResult* aiqResult, bool* aiqRun);
+    AiqState handleAiqResult(AiqResult* aiqResult);
+    AiqState done(AiqResult* aiqResult);
 
     int run();
 
     // For manual ISP settings
-    int applyManualTonemaps(AiqResult *aiqResult);
+    int applyManualTonemaps(AiqResult* aiqResult);
 
-private:
-    static const nsecs_t kWaitDuration = 1000000000; //1000ms
+ private:
+    static const nsecs_t kWaitDuration = 1000000000;  // 1000ms
     static const int kMaxStatisticsDataSize = 3;
     static const int kMaxExposureAppliedDelay = 5;
 
-private:
+ private:
     int mCameraId;
     AiqResultStorage* mAiqResultStorage;
-    AiqSetting *mAiqSetting;
+    AiqSetting* mAiqSetting;
     ParameterGenerator* mParamGen;
-    AiqCore *mAiqCore;
-    SensorManager *mSensorManager;
-    LensManager *mLensManager;
+    AiqCore* mAiqCore;
+    SensorManager* mSensorManager;
+    LensManager* mLensManager;
     bool mFirstAiqRunning;
     bool mAiqRunningForPerframe;
 
@@ -151,7 +147,9 @@ private:
         long statsSequnce;
     };
     AiqRunningHistory mAiqRunningHistory;
+
+ private:
+    DISALLOW_COPY_AND_ASSIGN(AiqEngine);
 };
 
 } /* namespace icamera */
-

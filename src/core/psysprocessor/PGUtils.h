@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Intel Corporation.
+ * Copyright (C) 2019-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,8 @@
 
 extern "C" {
 #include <ia_css_program_group_data.h>
-#include <ia_css_psys_program_group_manifest.h>
 #include <ia_css_psys_process_group.h>
-
+#include <ia_css_psys_program_group_manifest.h>
 #include <ia_p2p.h>
 }
 
@@ -53,10 +52,7 @@ struct PgConfiguration {
     PgFrameDesc outputMainFrame;
 };
 
-enum {
-    PAIR_BUFFER_IN_INDEX = 0,
-    PAIR_BUFFER_OUT_INDEX
-};
+enum { PAIR_BUFFER_IN_INDEX = 0, PAIR_BUFFER_OUT_INDEX };
 #define PAIR_BUFFER_COUNT (PAIR_BUFFER_OUT_INDEX + 1)
 
 struct TerminalPair {
@@ -78,12 +74,8 @@ bool isCompressionTerminal(int terminalId);
 /* ************************************************************
  * Difference between PGs
  * ***********************************************************/
-enum TERMINAL_PAIR_TYPE {
-    TERMINAL_PAIR_TNR,
-    TERMINAL_PAIR_TNR_SIM,
-    TERMINAL_PAIR_DVS
-};
+enum TERMINAL_PAIR_TYPE { TERMINAL_PAIR_TNR, TERMINAL_PAIR_TNR_SIM, TERMINAL_PAIR_DVS };
 
 bool getTerminalPairs(int pgId, TERMINAL_PAIR_TYPE type, std::vector<TerminalPair>* pairs);
-} // name space PGUtils
-} // namespace icamera
+}  // namespace PGUtils
+}  // namespace icamera

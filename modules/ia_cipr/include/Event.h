@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Intel Corporation.
+ * Copyright (C) 2020-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ class Event {
  public:
     explicit Event(const PSysEventConfig& eventConfig);
     ~Event();
+    bool isInitialized() { return mInitialized; }
 
     Result getConfig(PSysEventConfig* eventConfig);
     Result setConfig(const PSysEventConfig& eventConfig);
@@ -36,5 +37,6 @@ class Event {
 
     DISALLOW_COPY_AND_ASSIGN(Event);
 };
+
 }  // namespace CIPR
 }  // namespace icamera

@@ -244,6 +244,7 @@ typedef struct {
     int dmafd;    /**< buffer dmafd for DMA import and export mode */
     int flags;    /**< buffer flags, its type is camera_buffer_flags_t, used to specify buffer properties */
     uint64_t timestamp; /**< buffer timestamp, it's a time reference measured in nanosecond */
+    uint32_t requestId; /**< buffer requestId, it's a request id of buffer */
     int reserved; /**< reserved for future */
 } camera_buffer_t;
 
@@ -460,11 +461,11 @@ typedef enum {
 
 /*******************Start of Camera Parameters Definition**********************/
 /**
- * \enum camera_features: camera supportted features.
+ * \enum camera_features: camera supported features.
  */
 typedef enum {
-    MANUAL_EXPOSURE,       /**< Allow user to controll exposure time and ISO manually */
-    MANUAL_WHITE_BALANCE,  /**< Allow user to controll AWB mode, cct range, and gain */
+    MANUAL_EXPOSURE,       /**< Allow user to control exposure time and ISO manually */
+    MANUAL_WHITE_BALANCE,  /**< Allow user to control AWB mode, cct range, and gain */
     IMAGE_ENHANCEMENT,     /**< Sharpness, Brightness, Contrast, Hue, Saturation */
     NOISE_REDUCTION,       /**< Allow user to control NR mode and NR level */
     SCENE_MODE,            /**< Allow user to control scene mode */
@@ -721,6 +722,7 @@ typedef struct {
 typedef enum {
     CAMERA_EVENT_NONE = 0,
     CAMERA_ISP_BUF_READY,
+    CAMERA_METADATA_READY,
     CAMERA_DEVICE_ERROR,
     CAMERA_IPC_ERROR,
 } camera_msg_type_t;
@@ -747,8 +749,15 @@ typedef struct {
 typedef struct {
     uint32_t frameNumber;
     uint64_t timestamp;
-    long sequence;
 } isp_buffer_ready_t;
+
+/**
+ * \struct metadata_ready_t: Use to send metadata ready event data.
+ */
+typedef struct {
+    uint32_t frameNumber;
+    long sequence;
+} metadata_ready_t;
 
 /**
  * \struct camera_msg_data_t: Use to specify msg data.
@@ -757,6 +766,7 @@ typedef struct {
     camera_msg_type_t type;
     union {
         isp_buffer_ready_t buffer_ready;
+        metadata_ready_t metadata_ready;
     } data;
 } camera_msg_data_t;
 
@@ -923,7 +933,7 @@ typedef enum {
  * \enum camera_converge_speed_mode_t: Used to control AE/AWB converge speed mode.
  */
 typedef enum {
-    CONVERGE_SPEED_MODE_AIQ, /*!< Use AIQ Aglo to control converge speed. */
+    CONVERGE_SPEED_MODE_AIQ, /*!< Use AIQ algo to control converge speed. */
     CONVERGE_SPEED_MODE_HAL  /*!< Implement converge speed control in HAL. */
 } camera_converge_speed_mode_t;
 
@@ -931,7 +941,7 @@ typedef enum {
  * \enum camera_ae_distribution_priority_t: Used to control exposure priority mode.
  */
 typedef enum {
-    DISTRIBUTION_AUTO,    /*!< The AIQ Aglo decides completely */
+    DISTRIBUTION_AUTO,    /*!< The AIQ algo decides completely */
     DISTRIBUTION_SHUTTER, /*!< Shutter speed priority mode */
     DISTRIBUTION_ISO,     /*!< ISO priority mode */
     DISTRIBUTION_APERTURE /*!< Aperture priority mode */
@@ -998,7 +1008,7 @@ typedef enum {
 } camera_mono_downscale_mode_t;
 
 /**
- * \enum camera_video_stabilization_mode_t: Used to control the video stabiliztion mode.
+ * \enum camera_video_stabilization_mode_t: Used to control the video stabilization mode.
  */
 typedef enum {
     VIDEO_STABILIZATION_MODE_OFF,
@@ -1228,7 +1238,7 @@ public:
      * \brief Get supported video stabilization mode
      *
      * Camera application MUST check if the video stabilization mode is supported before trying
-     * to enable it. Otherwise one error occuring, HAL may just ignore the request.
+     * to enable it. Otherwise one error occurring, HAL may just ignore the request.
      *
      * \param[out] supportedModes: All supported video stabilization mode will be filled in "supportedModes"
      *
@@ -1240,7 +1250,7 @@ public:
      * \brief Get supported ae mode
      *
      * Camera application MUST check if the ae mode is supported before trying to enable it.
-     * Otherwise one error occuring, HAL may just ignore the request.
+     * Otherwise one error occurring, HAL may just ignore the request.
      *
      * \param[out] supportedAeModes: All supported ae mode will be filled in "supportedAeModes"
      *
@@ -1252,7 +1262,7 @@ public:
      * \brief Get supported awb mode
      *
      * Camera application MUST check if the awb mode is supported before trying to enable it.
-     * Otherwise one error occuring, HAL may just ignore the request.
+     * Otherwise one error occurring, HAL may just ignore the request.
      *
      * \param[out] supportedAwbModes: All supported awb mode will be filled in "supportedAwbModes"
      *
@@ -1264,7 +1274,7 @@ public:
      * \brief Get supported af mode
      *
      * Camera application MUST check if the af mode is supported before trying to enable it.
-     * Otherwise one error occuring, HAL may just ignore the request.
+     * Otherwise one error occurring, HAL may just ignore the request.
      *
      * \param[out] supportedAfModes: All supported af mode will be filled in "supportedAfModes"
      *
@@ -1276,7 +1286,7 @@ public:
      * \brief Get supported scene mode
      *
      * Camera application MUST check if the scene mode is supported before trying to enable it.
-     * Otherwise one error occuring, HAL may just ignore the request.
+     * Otherwise one error occurring, HAL may just ignore the request.
      *
      * \param[out] supportedSceneModes: All supported scene mode will be filled in "supportedSceneModes"
      *
@@ -1288,7 +1298,7 @@ public:
      * \brief Get supported antibanding mode
      *
      * Camera application MUST check if the antibanding mode is supported before trying to enable it.
-     * Otherwise one error occuring, HAL may just ignore the request.
+     * Otherwise one error occurring, HAL may just ignore the request.
      *
      * \param[out] supportedAntibindingModes: All supported scene mode will be filled in "supportedAntibindingModes"
      *
@@ -1300,7 +1310,7 @@ public:
      * \brief Get if ae lock is available
      *
      * Camera application MUST check if ae lock is supported before trying to lock it.
-     * Otherwise one error occuring, HAL may just ignore the request.
+     * Otherwise one error occurring, HAL may just ignore the request.
      *
      * \return: true if lock is supported, false if not
      */
@@ -1310,7 +1320,7 @@ public:
      * \brief Get if awb lock is available
      *
      * Camera application MUST check if awb lock is supported before trying to lock it.
-     * Otherwise one error occuring, HAL may just ignore the request.
+     * Otherwise one error occurring, HAL may just ignore the request.
      *
      * \return: true if lock is supported, false if not
      */
@@ -1320,7 +1330,7 @@ public:
      * \brief Set AE region
      *
      * Current only fisrt region can take effect when BLC mode is BLC_AREA_MODE_ON;
-     * if BLC_AREA_MODE_OFF, AE region function will be diabled.
+     * if BLC_AREA_MODE_OFF, AE region function will be disabled.
      *
      * \param[in] camera_window_list_t aeRegions
      *
@@ -2644,6 +2654,24 @@ public:
     int getPowerMode(camera_power_mode_t &mode) const;
 
     /**
+     * \brief Set total exposure target
+     *
+     * \param[in] int64_t
+     *
+     * \return 0 if set successfully, otherwise non-0 value is returned.
+     */
+    int setTotalExposureTarget(int64_t totalExposureTarget);
+
+    /**
+     * \brief Get total exposure target
+     *
+     * \param[out] int64_t
+     *
+     * \return 0 if total exposure target was set, otherwise non-0 value is returned.
+     */
+    int getTotalExposureTarget(int64_t &totalExposureTarget) const;
+
+    /**
      * \brief Set user request id
      *
      * \param[in] user request id
@@ -2714,6 +2742,82 @@ public:
      * \return 0 if flag was set, otherwise non-0 value is returned.
      */
     int getCallbackTmCurve(bool *enabled) const;
+
+// ENABLE_EVCP_S
+    /**
+     * \brief Set EVCP ECC status
+     *
+     * \param[in] int enabled
+     *
+     * \return 0 if set successfully, otherwise non-0 value is returned.
+     */
+    int setEvcpEccMode(uint8_t enabled);
+    /**
+     * \brief Get EVCP ECC enable status
+     *
+     * \param[out] int enabled
+     *
+     * \return 0 if flag was set, otherwise non-0 value is returned.
+     */
+    int getEvcpEccMode(uint8_t* enabled) const;
+
+    /**
+     * \brief Set EVCP BC Mode
+     *
+     * \param[in] uint8_t Mode
+     *
+     * \return 0 if set successfully, otherwise non-0 value is returned.
+     */
+    int setEvcpBCMode(uint8_t mode);
+
+    /**
+     * \brief Get EVCP BC Mode
+     *
+     * \param[out] uint8_t mode
+     *
+     * \return 0 if flag was set, otherwise non-0 value is returned.
+     */
+    int getEvcpBCMode(uint8_t* mode) const;
+
+    /**
+     * \brief Set EVCP BR Parameters
+     *
+     * \param[in] int height
+     * \param[in] int width
+     * \param[in] int fd
+     *
+     * \return 0 if set successfully, otherwise non-0 value is returned.
+     */
+    int setEvcpBRParameters(int height, int width, int fd);
+    /**
+     * \brief Get EVCP BR Parameters
+     *
+     * \param[out] int height
+     * \param[out] int width
+     * \param[out] int fd
+     *
+     * \return 0 if flag was set, otherwise non-0 value is returned.
+     */
+    int getEvcpBRParameters(int* height, int* width, int* fd) const;
+
+    /**
+     * \brief Set EVCP FF Mode
+     *
+     * \param[in] uint8_t Mode
+     *
+     * \return 0 if set successfully, otherwise non-0 value is returned.
+     */
+    int setEvcpFFMode(uint8_t mode);
+
+    /**
+     * \brief Get EVCP FF Mode
+     *
+     * \param[out] uint8_t mode
+     *
+     * \return 0 if flag was set, otherwise non-0 value is returned.
+     */
+    int getEvcpFFMode(uint8_t* mode) const;
+// ENABLE_EVCP_E
 
 private:
     friend class ParameterHelper;

@@ -26,19 +26,16 @@
 
 namespace icamera {
 IntelAlgoCommon::IntelAlgoCommon() {
-    LOGIPC("@%s", __func__);
-
     mClient = IntelAlgoClient::getInstance();
-    LOGIPC("@%s, mClient:%p", __func__, mClient);
+    LOG1("@%s, Construct, mClient:%p", __func__, mClient);
 }
 
 IntelAlgoCommon::~IntelAlgoCommon() {
-    LOGIPC("@%s", __func__);
+    LOG1("@%s Destroy", __func__);
 }
 
 bool IntelAlgoCommon::allocShmMem(const std::string& name, int size, ShmMemInfo* shm,
                                   ShmMemUsage usage) {
-    LOGIPC("@%s", __func__);
     CheckAndLogError(mClient == nullptr, false, "@%s, mClient is nullptr", __func__);
 
     shm->mName = name;
@@ -57,50 +54,42 @@ bool IntelAlgoCommon::allocShmMem(const std::string& name, int size, ShmMemInfo*
 }
 
 int32_t IntelAlgoCommon::registerGbmBuffer(int bufferFd, ShmMemUsage usage) {
-    LOGIPC("@%s, bufferFd:%d", __func__, bufferFd);
     CheckAndLogError(mClient == nullptr, -1, "@%s, mClient is nullptr", __func__);
 
     return mClient->registerGbmBuffer(bufferFd, usage);
 }
 
 void IntelAlgoCommon::deregisterGbmBuffer(int32_t bufferHandle, ShmMemUsage usage) {
-    LOGIPC("@%s, bufferHandle:%d", __func__, bufferHandle);
     CheckAndLogError(mClient == nullptr, VOID_VALUE, "@%s, mClient is nullptr", __func__);
 
     mClient->deregisterGbmBuffer(bufferHandle, usage);
 }
 
 bool IntelAlgoCommon::requestSync(IPC_CMD cmd, int32_t handle) {
-    LOGIPC("@%s", __func__);
     CheckAndLogError(mClient == nullptr, false, "@%s, mClient is nullptr", __func__);
 
     return mClient->requestSync(cmd, handle) == OK ? true : false;
 }
 
 bool IntelAlgoCommon::requestSync(IPC_CMD cmd) {
-    LOGIPC("@%s", __func__);
     CheckAndLogError(mClient == nullptr, false, "@%s, mClient is nullptr", __func__);
 
     return mClient->requestSync(cmd) == OK ? true : false;
 }
 
 ia_err IntelAlgoCommon::requestSyncCca(IPC_CMD cmd, int32_t handle) {
-    LOGIPC("@%s", __func__);
     CheckAndLogError(mClient == nullptr, ia_err_argument, "@%s, mClient is nullptr", __func__);
 
     return (ia_err)(mClient->requestSync(cmd, handle));
 }
 
 ia_err IntelAlgoCommon::requestSyncCca(IPC_CMD cmd) {
-    LOGIPC("@%s", __func__);
     CheckAndLogError(mClient == nullptr, ia_err_argument, "@%s, mClient is nullptr", __func__);
 
     return (ia_err)(mClient->requestSync(cmd));
 }
 
 void IntelAlgoCommon::freeShmMem(const ShmMemInfo& shm, ShmMemUsage usage) {
-    LOGIPC("@%s, mHandle:%d, mFd:%d, mName:%s, mSize:%d, mAddr:%p", __func__, shm.mHandle, shm.mFd,
-           shm.mName.c_str(), shm.mSize, shm.mAddr);
     CheckAndLogError(mClient == nullptr, VOID_VALUE, "@%s, mClient is nullptr", __func__);
     if (shm.mHandle < 0 || shm.mFd < 0) {
         LOGE("@%s, mHandle:%d, mFd:%d, one of them < 0", __func__, shm.mHandle, shm.mFd);
@@ -112,8 +101,6 @@ void IntelAlgoCommon::freeShmMem(const ShmMemInfo& shm, ShmMemUsage usage) {
 }
 
 bool IntelAlgoCommon::allocateAllShmMems(std::vector<ShmMem>* mems) {
-    LOGIPC("@%s", __func__);
-
     for (auto& it : *mems) {
         ShmMemInfo* mem = it.mem;
         mem->mName = it.name;
@@ -128,8 +115,6 @@ bool IntelAlgoCommon::allocateAllShmMems(std::vector<ShmMem>* mems) {
 }
 
 void IntelAlgoCommon::releaseAllShmMems(const std::vector<ShmMem>& mems) {
-    LOGIPC("@%s", __func__);
-
     for (auto& it : mems) {
         if (it.allocated) {
             freeShmMem(*it.mem);

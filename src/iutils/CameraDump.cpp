@@ -352,8 +352,10 @@ static string formatBinFileName(int cameraId, const char *prefix, BinParam_t *bi
 
     switch(binParam->bType) {
     case BIN_TYPE_GENERAL:
-        snprintf(fileName, (MAX_NAME_LEN - 1), "%s_bin_%04ld_%s.bin",
-                 prefix, binParam->sequence, binParam->gParam.appendix);
+        static int binIndex = 0;
+        snprintf(fileName, (MAX_NAME_LEN - 1), "%s_bin_%04ld_%s_%d.bin",
+                 prefix, binParam->sequence, binParam->gParam.appendix, binIndex);
+        binIndex++;
         break;
     case BIN_TYPE_STATISTIC:
         snprintf(fileName, (MAX_NAME_LEN - 1),

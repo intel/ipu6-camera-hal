@@ -27,13 +27,12 @@ namespace icamera {
 bool IPCIntelPGParam::clientFlattenInit(void* pData, int dataSize, int pgId, uintptr_t client,
                                         ia_p2p_platform_t platform,
                                         const PgConfiguration& pgConfig) {
-    CheckAndLogError(!pData, false, "@%s, pData is nullptr", __func__);
-    CheckAndLogError(dataSize < sizeof(pg_param_init_params), false, "@%s, dataSize is small",
-                     __func__);
+    CheckAndLogError(!pData || dataSize < sizeof(pg_param_init_params), false,
+                     "@%s, Wrong parameters, pData: %p, dataSize: %d", __func__, pData, dataSize);
 
     pg_param_init_params* params = static_cast<pg_param_init_params*>(pData);
     CheckAndLogError(pgConfig.pgManifestSize > sizeof(params->pgManifestData), false,
-                     "@%s, manifest buffer is small", __func__);
+                     "@%s, manifest buffer size: %d is big", __func__, pgConfig.pgManifestSize);
 
     params->pgId = pgId;
     params->client = client;
@@ -49,7 +48,8 @@ bool IPCIntelPGParam::clientFlattenInit(void* pData, int dataSize, int pgId, uin
 
     params->disableDataTermialsCount = pgConfig.disableDataTermials.size();
     CheckAndLogError(params->disableDataTermialsCount > IPU_MAX_TERMINAL_COUNT, false,
-                     "@%s, disableDataTermials is big", __func__);
+                     "@%s, disableDataTermials cound: %d is big", __func__,
+                     params->disableDataTermialsCount);
     memset(params->disableDataTermialsData, -1, sizeof(params->disableDataTermialsData));
     for (int i = 0; i < params->disableDataTermialsCount; i++) {
         params->disableDataTermialsData[i] = pgConfig.disableDataTermials[i];
@@ -60,11 +60,11 @@ bool IPCIntelPGParam::clientFlattenInit(void* pData, int dataSize, int pgId, uin
 
 bool IPCIntelPGParam::serverUnflattenInit(void* pData, int dataSize, int* pgId, uintptr_t* client,
                                           ia_p2p_platform_t* platform, PgConfiguration* pgConfig) {
-    CheckAndLogError(!pData, false, "@%s, pData is nullptr", __func__);
-    CheckAndLogError(dataSize < sizeof(pg_param_init_params), false, "@%s, buffer is small",
-                     __func__);
-    CheckAndLogError(!pgId || !client, false, "@%s, nullptr client", __func__);
-    CheckAndLogError(!platform || !pgConfig, false, "@%s, nullptr config", __func__);
+    CheckAndLogError(!pData || !pgId || !client || !platform || !pgConfig ||
+                     dataSize < sizeof(pg_param_init_params), false,
+                     "@%s, Wrong parameters, pData: %p, pgId: %p, client: %p, platform: %p, "
+                     "pgConfig: %p, dataSize: %d",
+                     __func__, pData, pgId, client, platform, pgConfig, dataSize);
 
     pg_param_init_params* params = static_cast<pg_param_init_params*>(pData);
     *pgId = params->pgId;
@@ -80,7 +80,8 @@ bool IPCIntelPGParam::serverUnflattenInit(void* pData, int dataSize, int* pgId, 
 
     pgConfig->disableDataTermials.clear();
     CheckAndLogError(params->disableDataTermialsCount > IPU_MAX_TERMINAL_COUNT, false,
-                     "@%s, disableDataTermials is big", __func__);
+                     "@%s, disableDataTermials cound: %d is big", __func__,
+                     params->disableDataTermialsCount);
     for (int i = 0; i < params->disableDataTermialsCount; i++) {
         pgConfig->disableDataTermials.push_back(params->disableDataTermialsData[i]);
     }
@@ -91,9 +92,8 @@ bool IPCIntelPGParam::serverUnflattenInit(void* pData, int dataSize, int* pgId, 
 bool IPCIntelPGParam::clientFlattenPrepare(void* pData, int dataSize, uintptr_t client,
                                            unsigned int ipuParamSize, int32_t ipuParamHandle,
                                            const ia_css_rbm_t* rbm) {
-    CheckAndLogError(!pData, false, "@%s, pData is nullptr", __func__);
-    CheckAndLogError(dataSize < sizeof(pg_param_prepare_params), false, "@%s, buffer is small",
-                     __func__);
+    CheckAndLogError(!pData || dataSize < sizeof(pg_param_prepare_params), false,
+                     "@%s, Wrong parameters, pData: %p, dataSize: %d", __func__, pData, dataSize);
 
     pg_param_prepare_params* params = static_cast<pg_param_prepare_params*>(pData);
     params->client = client;
@@ -114,12 +114,11 @@ bool IPCIntelPGParam::serverUnflattenPrepare(void* pData, int dataSize, uintptr_
                                              void* palDataAddr, ia_binary_data* ipuParameters,
                                              ia_css_rbm_t** rbm, ia_css_kernel_bitmap_t** bitmap,
                                              uint32_t** maxStatsSize) {
-    CheckAndLogError(!pData, false, "@%s, pData is nullptr", __func__);
-    CheckAndLogError(dataSize < sizeof(pg_param_prepare_params), false, "@%s, buffer is small",
-                     __func__);
-    CheckAndLogError(!client, false, "@%s, nullptr client", __func__);
-    CheckAndLogError(!ipuParameters || !rbm || !bitmap, false, "@%s, nullptr outputs", __func__);
-    CheckAndLogError(!palDataAddr, false, "%s, palDataAddr is nullptr", __func__);
+    CheckAndLogError(!pData || !client || !ipuParameters || !rbm || !bitmap || !palDataAddr ||
+                     dataSize < sizeof(pg_param_prepare_params), false,
+                     "@%s, Wrong parameters, pData: %p, client: %p, ipuParameters: %p, rbm: %p, "
+                     "bitmap: %p, palDataAddr: %p, dataSize: %d",
+                     __func__, pData, client, ipuParameters, rbm, bitmap, palDataAddr, dataSize);
 
     pg_param_prepare_params* params = static_cast<pg_param_prepare_params*>(pData);
     *client = params->client;
@@ -134,10 +133,9 @@ bool IPCIntelPGParam::serverUnflattenPrepare(void* pData, int dataSize, uintptr_
 bool IPCIntelPGParam::clientUnflattenPrepare(const void* pData, int dataSize,
                                              ia_css_kernel_bitmap_t* bitmap,
                                              uint32_t* maxStatsSize) {
-    CheckAndLogError(!pData, false, "@%s, pData is nullptr", __func__);
-    CheckAndLogError(dataSize < sizeof(pg_param_prepare_params), false, "@%s, buffer is small",
-                     __func__);
-    CheckAndLogError(!bitmap, false, "@%s, bitmap is nullptr", __func__);
+    CheckAndLogError(!pData || !bitmap || dataSize < sizeof(pg_param_prepare_params), false,
+                     "@%s, Wrong parameters, pData: %p, bitmap: %p, dataSize: %d", __func__,
+                     pData, bitmap, dataSize);
 
     const pg_param_prepare_params* params = static_cast<const pg_param_prepare_params*>(pData);
     MEMCPY_S(bitmap, sizeof(*bitmap), &params->bitmapData, sizeof(params->bitmapData));
@@ -153,9 +151,9 @@ int IPCIntelPGParam::getTotalPGBufferSize(int pgSize) {
 }
 
 bool IPCIntelPGParam::assignPGBuffer(void* pData, int dataSize, int pgSize, void** pgBuffer) {
-    CheckAndLogError(!pData, false, "@%s, pData is nullptr", __func__);
-    CheckAndLogError(dataSize < pgSize, false, "@%s, buffer is small", __func__);
-    CheckAndLogError(!pgBuffer, false, "@%s, payloads is nullptr", __func__);
+    CheckAndLogError(!pData || !pgBuffer || dataSize < pgSize, false,
+                     "@%s, Wrong parameters, pData: %p, pgBuffer: %p, dataSize: %d, pgSize: %d",
+                     __func__, pData, pgBuffer, dataSize, pgSize);
 
     uintptr_t pgAddr = reinterpret_cast<uintptr_t>(pData);
     CheckAndLogError(pgAddr & ((getpagesize() - 1)), false, "@%s, pg addr is not aligned",
@@ -170,7 +168,7 @@ bool IPCIntelPGParam::clientFlattenAllocatePGBuffer(void* pData, int dataSize, u
     uintptr_t paramAddr =
         reinterpret_cast<uintptr_t>(pData) + dataSize - sizeof(pg_param_allocate_pg_params);
     CheckAndLogError(paramAddr < reinterpret_cast<uintptr_t>(pData) + pgSize, false,
-                     "@%s, dataSize is small", __func__);
+                     "@%s, dataSize: %d is small", __func__, dataSize);
 
     pg_param_allocate_pg_params* params = reinterpret_cast<pg_param_allocate_pg_params*>(paramAddr);
     params->client = client;
@@ -181,11 +179,10 @@ bool IPCIntelPGParam::clientFlattenAllocatePGBuffer(void* pData, int dataSize, u
 
 bool IPCIntelPGParam::serverUnflattenAllocatePGBuffer(const void* pData, int dataSize,
                                                       uintptr_t* client, int* pgSize) {
-    CheckAndLogError(!pData, false, "@%s, pData is nullptr", __func__);
-    CheckAndLogError(dataSize < sizeof(pg_param_allocate_pg_params), false, "@%s, buffer is small",
-                     __func__);
-    CheckAndLogError(!client || !pgSize, false, "@%s, nullptr input", __func__);
-
+    CheckAndLogError(!pData || !client || !pgSize ||
+                     dataSize < sizeof(pg_param_allocate_pg_params), false,
+                     "@%s, Wrong parameters, pData: %p, client: %p, pgSize: %p, dataSize: %d",
+                     __func__, pData, client, pgSize, dataSize);
     uintptr_t paramAddr =
         reinterpret_cast<uintptr_t>(pData) + dataSize - sizeof(pg_param_allocate_pg_params);
     pg_param_allocate_pg_params* params = reinterpret_cast<pg_param_allocate_pg_params*>(paramAddr);
@@ -199,14 +196,13 @@ bool IPCIntelPGParam::serverUnflattenAllocatePGBuffer(const void* pData, int dat
 
 bool IPCIntelPGParam::clientFlattenGetFragDescs(void* pData, int dataSize, uintptr_t client,
                                                 int descCount) {
-    CheckAndLogError(!pData, false, "@%s, pData is nullptr", __func__);
-    CheckAndLogError(dataSize < sizeof(pg_param_get_fragment_desc_params), false,
-                     "@%s, dataSize is small", __func__);
+    CheckAndLogError(!pData || dataSize < sizeof(pg_param_get_fragment_desc_params), false,
+                     "@%s, Wrong parameters, pData: %p, dataSize: %d", __func__, pData, dataSize);
 
     pg_param_get_fragment_desc_params* params =
         static_cast<pg_param_get_fragment_desc_params*>(pData);
-    CheckAndLogError(descCount > sizeof(params->descsData), false, "@%s, descCount is big",
-                     __func__);
+    CheckAndLogError(descCount > sizeof(params->descsData), false, "@%s, descCount: %d is big",
+                     __func__, descCount);
 
     params->client = client;
     params->descCount = descCount;
@@ -215,11 +211,11 @@ bool IPCIntelPGParam::clientFlattenGetFragDescs(void* pData, int dataSize, uintp
 
 bool IPCIntelPGParam::serverUnflattenGetFragDescs(void* pData, int dataSize, uintptr_t* client,
                                                   int* descCount, ia_p2p_fragment_desc** descs) {
-    CheckAndLogError(!pData, false, "@%s, pData is nullptr", __func__);
-    CheckAndLogError(dataSize < sizeof(pg_param_get_fragment_desc_params), false,
-                     "@%s, dataSize is small", __func__);
-    CheckAndLogError(!client, false, "@%s, nullptr client", __func__);
-    CheckAndLogError(!descCount || !descs, false, "@%s, nullptr outputs", __func__);
+    CheckAndLogError(!pData || !client || !descCount || !descs ||
+                     dataSize < sizeof(pg_param_get_fragment_desc_params), false,
+                     "@%s, Wrong parameters, pData: %p, client: %p, descCount: %p, "
+                     "descs: %p, dataSize: %d",
+                     __func__, pData, client, descCount, descs, dataSize);
 
     pg_param_get_fragment_desc_params* params =
         static_cast<pg_param_get_fragment_desc_params*>(pData);
@@ -230,9 +226,8 @@ bool IPCIntelPGParam::serverUnflattenGetFragDescs(void* pData, int dataSize, uin
 }
 
 bool IPCIntelPGParam::serverFlattenGetFragDescs(void* pData, int dataSize, int count) {
-    CheckAndLogError(!pData, false, "@%s, pData is nullptr", __func__);
-    CheckAndLogError(dataSize < sizeof(pg_param_get_fragment_desc_params), false,
-                     "@%s, dataSize is small", __func__);
+    CheckAndLogError(!pData || dataSize < sizeof(pg_param_get_fragment_desc_params), false,
+                     "@%s, Wrong parameters, pData: %p, dataSize: %d", __func__, pData, dataSize);
 
     pg_param_get_fragment_desc_params* params =
         static_cast<pg_param_get_fragment_desc_params*>(pData);
@@ -242,10 +237,10 @@ bool IPCIntelPGParam::serverFlattenGetFragDescs(void* pData, int dataSize, int c
 
 bool IPCIntelPGParam::clientUnflattenGetFragDescs(const void* pData, int dataSize, int* count,
                                                   ia_p2p_fragment_desc* descs) {
-    CheckAndLogError(!pData, false, "@%s, pData is nullptr", __func__);
-    CheckAndLogError(dataSize < sizeof(pg_param_get_fragment_desc_params), false,
-                     "@%s, dataSize is small", __func__);
-    CheckAndLogError(!count || !descs, false, "@%s, nullptr outputs", __func__);
+    CheckAndLogError(!pData || !count || !descs ||
+                     dataSize < sizeof(pg_param_get_fragment_desc_params), false,
+                     "@%s, Wrong parameters, pData: %p, count: %p, descs: %p, dataSize: %d",
+                     __func__, pData, count, descs, dataSize);
 
     const pg_param_get_fragment_desc_params* params =
         static_cast<const pg_param_get_fragment_desc_params*>(pData);
@@ -256,9 +251,8 @@ bool IPCIntelPGParam::clientUnflattenGetFragDescs(const void* pData, int dataSiz
 }
 
 bool IPCIntelPGParam::clientFlattenPrepareProgram(void* pData, int dataSize, uintptr_t client) {
-    CheckAndLogError(!pData, false, "@%s, pData is nullptr", __func__);
-    CheckAndLogError(dataSize < sizeof(pg_param_prepare_program_params), false,
-                     "@%s, dataSize is small", __func__);
+    CheckAndLogError(!pData || dataSize < sizeof(pg_param_prepare_program_params), false,
+                     "@%s, Wrong parameters, pData: %p, dataSize: %d", __func__, pData, dataSize);
 
     pg_param_prepare_program_params* params = static_cast<pg_param_prepare_program_params*>(pData);
     params->client = client;
@@ -267,10 +261,9 @@ bool IPCIntelPGParam::clientFlattenPrepareProgram(void* pData, int dataSize, uin
 
 bool IPCIntelPGParam::serverUnflattenPrepareProgram(const void* pData, int dataSize,
                                                     uintptr_t* client) {
-    CheckAndLogError(!pData, false, "@%s, pData is nullptr", __func__);
-    CheckAndLogError(dataSize < sizeof(pg_param_prepare_program_params), false,
-                     "@%s, dataSize is small", __func__);
-    CheckAndLogError(!client, false, "@%s, nullptr client", __func__);
+    CheckAndLogError(!pData || !client || dataSize < sizeof(pg_param_prepare_program_params), false,
+                     "@%s, Wrong parameters, pData: %p, client: %p, dataSize: %d", __func__,
+                     pData, client, dataSize);
 
     const pg_param_prepare_program_params* params =
         static_cast<const pg_param_prepare_program_params*>(pData);
@@ -280,12 +273,10 @@ bool IPCIntelPGParam::serverUnflattenPrepareProgram(const void* pData, int dataS
 
 bool IPCIntelPGParam::serverFlattenPrepareProgram(void* pData, int dataSize, int payloadCount,
                                                   const ia_binary_data* payloads) {
-    CheckAndLogError(!pData, false, "@%s, pData is nullptr", __func__);
-    CheckAndLogError(dataSize < sizeof(pg_param_prepare_program_params), false,
-                     "@%s, dataSize is small", __func__);
-    CheckAndLogError(payloadCount > IPU_MAX_TERMINAL_COUNT, false, "@%s, payloadCount is big",
-                     __func__);
-    CheckAndLogError(!payloads, false, "@%s, payloads is nullptr", __func__);
+    CheckAndLogError(!pData || !payloads || dataSize < sizeof(pg_param_prepare_program_params) ||
+                     payloadCount > IPU_MAX_TERMINAL_COUNT, false,
+                     "@%s, Wrong parameters, pData: %p, payloads: %p, dataSize: %d, count: %d",
+                     __func__, pData, payloads, dataSize, payloadCount);
 
     pg_param_prepare_program_params* params = static_cast<pg_param_prepare_program_params*>(pData);
     params->payloadCount = payloadCount;
@@ -296,10 +287,9 @@ bool IPCIntelPGParam::serverFlattenPrepareProgram(void* pData, int dataSize, int
 
 bool IPCIntelPGParam::clientUnflattenPrepareProgram(const void* pData, int dataSize,
                                                     int* payloadCount, ia_binary_data* payloads) {
-    CheckAndLogError(!pData, false, "@%s, pData is nullptr", __func__);
-    CheckAndLogError(dataSize < sizeof(pg_param_prepare_program_params), false,
-                     "@%s, dataSize is small", __func__);
-    CheckAndLogError(!payloads, false, "@%s, payloads is nullptr", __func__);
+    CheckAndLogError(!pData || !payloads || dataSize < sizeof(pg_param_prepare_program_params),
+                     false, "@%s, Wrong parameters, pData: %p, payloads: %p, dataSize: %d",
+                     __func__, pData, payloads, dataSize);
 
     const pg_param_prepare_program_params* params =
         static_cast<const pg_param_prepare_program_params*>(pData);
@@ -327,8 +317,8 @@ int IPCIntelPGParam::getTotalPayloadSize(int payloadCount, const ia_binary_data*
 
 bool IPCIntelPGParam::assignPayloads(void* pData, int dataSize, int payloadCount,
                                      ia_binary_data* payloads) {
-    CheckAndLogError(!pData, false, "@%s, pData is nullptr", __func__);
-    CheckAndLogError(!payloads, false, "@%s, payloads is nullptr", __func__);
+    CheckAndLogError(!pData || !payloads, false, "@%s, pData: %p, payloads: %p is nullptr",
+                     __func__, pData, payloads);
 
     uintptr_t payloadAddr = reinterpret_cast<uintptr_t>(pData);
     CheckAndLogError(payloadAddr & ((getpagesize() - 1)), false, "@%s, payload addr is not aligned",
@@ -347,12 +337,10 @@ bool IPCIntelPGParam::assignPayloads(void* pData, int dataSize, int payloadCount
 bool IPCIntelPGParam::clientFlattenRegisterPayloads(void* pData, int dataSize, uintptr_t client,
                                                     int payloadCount,
                                                     const ia_binary_data* payloads) {
-    CheckAndLogError(!pData, false, "@%s, pData is nullptr", __func__);
-    CheckAndLogError(dataSize < sizeof(pg_param_register_payloads_params), false,
-                     "@%s, dataSize is small", __func__);
-    CheckAndLogError(!payloads, false, "@%s, payloads is nullptr", __func__);
-    CheckAndLogError(payloadCount > IPU_MAX_TERMINAL_COUNT, false, "@%s, payloadCount is big",
-                     __func__);
+    CheckAndLogError(!pData || !payloads || dataSize < sizeof(pg_param_register_payloads_params) ||
+                     payloadCount > IPU_MAX_TERMINAL_COUNT, false,
+                     "@%s, Wrong parameters, pData: %p, payloads: %p, dataSize: %d, count: %d",
+                     __func__, pData, payloads, dataSize, payloadCount);
 
     uintptr_t paramAddr =
         reinterpret_cast<uintptr_t>(pData) + dataSize - sizeof(pg_param_register_payloads_params);
@@ -360,31 +348,28 @@ bool IPCIntelPGParam::clientFlattenRegisterPayloads(void* pData, int dataSize, u
         reinterpret_cast<pg_param_register_payloads_params*>(paramAddr);
     params->client = client;
     params->payloadCount = payloadCount;
-    MEMCPY_S(params->cPayloads, sizeof(params->cPayloads),
-             payloads, sizeof(ia_binary_data) * payloadCount);
+    MEMCPY_S(params->cPayloads, sizeof(params->cPayloads), payloads,
+             sizeof(ia_binary_data) * payloadCount);
     getPayloadOffsets(pData, dataSize, payloadCount, payloads, params->payloadOffsets);
     return true;
 }
 
 bool IPCIntelPGParam::serverUnflattenRegisterPayloads(void* pData, int dataSize, uintptr_t* client,
-                                                      int* payloadCount,
-                                                      ia_binary_data** cPayloads,
+                                                      int* payloadCount, ia_binary_data** cPayloads,
                                                       ia_binary_data** sPayloads) {
-    CheckAndLogError(!pData, false, "@%s, pData is nullptr", __func__);
-    CheckAndLogError(dataSize < sizeof(pg_param_register_payloads_params), false,
-                     "@%s, dataSize is small", __func__);
-    CheckAndLogError(!client, false, "@%s, nullptr client", __func__);
-    CheckAndLogError(!payloadCount, false, "@%s, zero payloadCount", __func__);
-    CheckAndLogError(!cPayloads, false, "@%s, cPayloads is nullptr", __func__);
-    CheckAndLogError(!sPayloads, false, "@%s, sPayloads is nullptr", __func__);
+    CheckAndLogError(!pData || !client || !payloadCount || !cPayloads || !sPayloads ||
+                     dataSize < sizeof(pg_param_register_payloads_params), false,
+                     "@%s, Wrong parameters, pData: %p, client: %p, payloadCount: %p, "
+                     "cPayloads: %p, sPayloads: %p, dataSize: %d",
+                     __func__, pData, client, payloadCount, cPayloads, sPayloads, dataSize);
 
     uintptr_t paramAddr =
         reinterpret_cast<uintptr_t>(pData) + dataSize - sizeof(pg_param_register_payloads_params);
     pg_param_register_payloads_params* params =
         reinterpret_cast<pg_param_register_payloads_params*>(paramAddr);
     *client = params->client;
-    MEMCPY_S(params->sPayloads, sizeof(params->sPayloads),
-             params->cPayloads, sizeof(params->cPayloads));  // save size to sPayloads
+    MEMCPY_S(params->sPayloads, sizeof(params->sPayloads), params->cPayloads,
+             sizeof(params->cPayloads));  // save size to sPayloads
     *payloadCount = params->payloadCount;
     getPayloadData(pData, dataSize, *payloadCount, params->payloadOffsets, params->sPayloads);
     *cPayloads = params->cPayloads;
@@ -394,9 +379,9 @@ bool IPCIntelPGParam::serverUnflattenRegisterPayloads(void* pData, int dataSize,
 
 bool IPCIntelPGParam::getPayloadOffsets(const void* pData, int dataSize, int payloadCount,
                                         const ia_binary_data* payloads, int32_t* payloadOffsets) {
-    CheckAndLogError(!pData, false, "@%s, pData is nullptr", __func__);
-    CheckAndLogError(!payloads, false, "@%s, nullptr payloads", __func__);
-    CheckAndLogError(!payloadOffsets, false, "@%s, nullptr payloadOffsets", __func__);
+    CheckAndLogError(!pData || !payloads || !payloadOffsets, false,
+                     "@%s, pData: %p, payloads: %p, payloadOffsets: %p is nullptr", __func__, pData,
+                     payloads);
 
     uintptr_t startAddr = reinterpret_cast<uintptr_t>(pData);
     for (int i = 0; i < payloadCount; i++) {
@@ -404,7 +389,7 @@ bool IPCIntelPGParam::getPayloadOffsets(const void* pData, int dataSize, int pay
 
         int32_t offset = reinterpret_cast<uintptr_t>(payloads[i].data) - startAddr;
         CheckAndLogError((offset > (dataSize - payloads[i].size) || offset < 0), false,
-                   "@%s, error offset %d", __func__, offset);
+                         "@%s, error offset %d", __func__, offset);
         payloadOffsets[i] = offset;
     }
     return 0;
@@ -412,9 +397,9 @@ bool IPCIntelPGParam::getPayloadOffsets(const void* pData, int dataSize, int pay
 
 bool IPCIntelPGParam::getPayloadData(void* pData, int dataSize, int payloadCount,
                                      const int32_t* payloadOffsets, ia_binary_data* payloads) {
-    CheckAndLogError(!pData, false, "@%s, pData is nullptr", __func__);
-    CheckAndLogError(!payloads, false, "@%s, nullptr payloads", __func__);
-    CheckAndLogError(!payloadOffsets, false, "@%s, nullptr payloadOffsets", __func__);
+    CheckAndLogError(!pData || !payloads || !payloadOffsets, false,
+                     "@%s, pData: %p, payloads: %p, payloadOffsets: %p is nullptr", __func__, pData,
+                     payloads, payloadOffsets);
 
     unsigned char* startAddr = reinterpret_cast<unsigned char*>(pData);
     for (int i = 0; i < payloadCount; i++) {
@@ -430,12 +415,10 @@ bool IPCIntelPGParam::getPayloadData(void* pData, int dataSize, int payloadCount
 bool IPCIntelPGParam::clientFlattenEncode(void* pData, int dataSize, uintptr_t client,
                                           unsigned int ipuParamSize, int32_t ipuParamHandle,
                                           int32_t payloadCount, const ia_binary_data* payloads) {
-    CheckAndLogError(!pData, false, "@%s, pData is nullptr", __func__);
-    CheckAndLogError(dataSize < sizeof(pg_param_encode_params), false, "@%s, buffer is small",
-                     __func__);
-    CheckAndLogError(!payloads, false, "@%s, nullptr payloads", __func__);
-    CheckAndLogError(payloadCount > IPU_MAX_TERMINAL_COUNT, false, "@%s, wrong payloadCount",
-                     __func__);
+    CheckAndLogError(!pData || !payloads || dataSize < sizeof(pg_param_encode_params) ||
+                     payloadCount > IPU_MAX_TERMINAL_COUNT, false,
+                     "@%s, Wrong parameters, pData: %p, payloads: %p, dataSize: %d, count: %d",
+                     __func__, pData, payloads, dataSize, payloadCount);
 
     pg_param_encode_params* params = static_cast<pg_param_encode_params*>(pData);
     params->client = client;
@@ -450,14 +433,12 @@ bool IPCIntelPGParam::clientFlattenEncode(void* pData, int dataSize, uintptr_t c
 bool IPCIntelPGParam::serverUnflattenEncode(void* pData, int dataSize, uintptr_t* client,
                                             void* palDataAddr, ia_binary_data* ipuParameters,
                                             int32_t* payloadCount, ia_binary_data** payloads) {
-    CheckAndLogError(!pData, false, "@%s, pData is nullptr", __func__);
-    CheckAndLogError(dataSize < sizeof(pg_param_encode_params), false, "@%s, small dataSize",
-                     __func__);
-    CheckAndLogError(!client, false, "@%s, nullptr client", __func__);
-    CheckAndLogError(!ipuParameters, false, "@%s, nullptr output", __func__);
-    CheckAndLogError(!palDataAddr, false, "%s, palDataAddr is nullptr", __func__);
-    CheckAndLogError(!payloadCount, false, "%s, payloadCount is nullptr", __func__);
-    CheckAndLogError(!payloads, false, "%s, payloads is nullptr", __func__);
+    CheckAndLogError(!pData || !client || !ipuParameters || !palDataAddr || !payloadCount ||
+                     !payloads || dataSize < sizeof(pg_param_encode_params), false,
+                     "@%s, Wrong parameters, pData: %p, client: %p, ipuParameters: %p, "
+                     "palDataAddr: %p, payloadCount: %p, payloads: %p, dataSize: %d",
+                     __func__, pData, client, ipuParameters, palDataAddr, payloadCount, payloads,
+                     dataSize);
 
     pg_param_encode_params* params = static_cast<pg_param_encode_params*>(pData);
     *client = params->client;
@@ -471,12 +452,10 @@ bool IPCIntelPGParam::serverUnflattenEncode(void* pData, int dataSize, uintptr_t
 bool IPCIntelPGParam::clientFlattenDecode(void* pData, int dataSize, uintptr_t client,
                                           int32_t payloadCount, const ia_binary_data* payloads,
                                           int32_t statsHandle) {
-    CheckAndLogError(!pData, false, "@%s, pData is nullptr", __func__);
-    CheckAndLogError(dataSize < sizeof(pg_param_decode_params), false, "@%s, size is small",
-                     __func__);
-    CheckAndLogError(!payloads, false, "@%s, nullptr payloads", __func__);
-    CheckAndLogError(payloadCount > IPU_MAX_TERMINAL_COUNT, false, "@%s, wrong payloadCount",
-                     __func__);
+    CheckAndLogError(!pData || !payloads || dataSize < sizeof(pg_param_decode_params) ||
+                     payloadCount > IPU_MAX_TERMINAL_COUNT, false,
+                     "@%s, Wrong parameters, pData: %p, payloads: %p, dataSize: %d, count: %d",
+                     __func__, pData, payloads, dataSize, payloadCount);
 
     pg_param_decode_params* params = static_cast<pg_param_decode_params*>(pData);
     params->client = client;
@@ -489,12 +468,11 @@ bool IPCIntelPGParam::clientFlattenDecode(void* pData, int dataSize, uintptr_t c
 
 bool IPCIntelPGParam::serverUnflattenDecode(void* pData, int dataSize, uintptr_t* client,
                                             int32_t* payloadCount, ia_binary_data** payloads) {
-    CheckAndLogError(!pData, false, "@%s, pData is nullptr", __func__);
-    CheckAndLogError(dataSize < sizeof(pg_param_decode_params), false, "@%s, size is small",
-                     __func__);
-    CheckAndLogError(!client, false, "@%s, nullptr client", __func__);
-    CheckAndLogError(!payloadCount, false, "%s, payloadCount is nullptr", __func__);
-    CheckAndLogError(!payloads, false, "%s, payloads is nullptr", __func__);
+    CheckAndLogError(!pData || !client || !payloadCount || !payloads ||
+                     dataSize < sizeof(pg_param_decode_params), false,
+                     "@%s, Wrong parameters, pData: %p, client: %p, payloadCount: %p, "
+                     "payloads: %p, dataSize: %d",
+                     __func__, pData, client, payloadCount, payloads, dataSize);
 
     pg_param_decode_params* params = static_cast<pg_param_decode_params*>(pData);
     *client = params->client;
@@ -505,20 +483,17 @@ bool IPCIntelPGParam::serverUnflattenDecode(void* pData, int dataSize, uintptr_t
 
 bool IPCIntelPGParam::serverFlattenDecode(void* pData, int dataSize,
                                           const ia_binary_data& statistics) {
-    CheckAndLogError(!pData, false, "@%s, pData is nullptr", __func__);
-    CheckAndLogError(dataSize < sizeof(pg_param_decode_params), false, "@%s, size is small",
-                     __func__);
-
+    CheckAndLogError(!pData || dataSize < sizeof(pg_param_decode_params), false,
+                     "@%s, Wrong parameters, pData: %p, dataSize: %d", __func__, pData, dataSize);
     pg_param_decode_params* params = static_cast<pg_param_decode_params*>(pData);
     params->clientStatsSize = statistics.size;
     return true;
 }
 
 bool IPCIntelPGParam::clientUnflattenDecode(void* pData, int dataSize, ia_binary_data* statistics) {
-    CheckAndLogError(!pData, false, "@%s, pData is nullptr", __func__);
-    CheckAndLogError(dataSize < sizeof(pg_param_decode_params), false, "@%s, size is small",
-                     __func__);
-    CheckAndLogError(!statistics, false, "@%s, statistics is nullptr", __func__);
+    CheckAndLogError(!pData || !statistics || dataSize < sizeof(pg_param_decode_params), false,
+                     "@%s, Wrong parameters, pData: %p, statistics: %p, dataSize: %d", __func__,
+                     pData, statistics, dataSize);
 
     pg_param_decode_params* params = static_cast<pg_param_decode_params*>(pData);
     statistics->size = params->clientStatsSize;
@@ -526,9 +501,8 @@ bool IPCIntelPGParam::clientUnflattenDecode(void* pData, int dataSize, ia_binary
 }
 
 bool IPCIntelPGParam::clientFlattenDeinit(void* pData, int dataSize, uintptr_t client) {
-    CheckAndLogError(!pData, false, "@%s, pData is nullptr", __func__);
-    CheckAndLogError(dataSize < sizeof(pg_param_deinit_params), false, "@%s, buffer is small",
-                     __func__);
+    CheckAndLogError(!pData || dataSize < sizeof(pg_param_deinit_params), false,
+                     "@%s, Wrong parameters, pData: %p, dataSize: %d", __func__, pData, dataSize);
 
     pg_param_deinit_params* params = static_cast<pg_param_deinit_params*>(pData);
     params->client = client;
@@ -537,10 +511,9 @@ bool IPCIntelPGParam::clientFlattenDeinit(void* pData, int dataSize, uintptr_t c
 }
 
 bool IPCIntelPGParam::serverUnflattenDeinit(const void* pData, int dataSize, uintptr_t* client) {
-    CheckAndLogError(!pData, false, "@%s, pData is nullptr", __func__);
-    CheckAndLogError(dataSize < sizeof(pg_param_deinit_params), false, "@%s, size is small",
-                     __func__);
-    CheckAndLogError(!client, false, "@%s, nullptr client", __func__);
+    CheckAndLogError(!pData || !client || dataSize < sizeof(pg_param_deinit_params), false,
+                     "@%s, Wrong parameters, pData: %p, client: %p, dataSize: %d", __func__,
+                     pData, client, dataSize);
 
     const pg_param_deinit_params* params = static_cast<const pg_param_deinit_params*>(pData);
     *client = params->client;

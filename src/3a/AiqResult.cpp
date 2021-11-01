@@ -33,10 +33,7 @@ AiqResult::AiqResult(int cameraId) :
     mLensPosition(0),
     mSceneMode(SCENE_MODE_AUTO),
     mFrameDuration(0),
-    mRollingShutter(0)
-{
-    LOG3A("@%s", __func__);
-
+    mRollingShutter(0) {
     CLEAR(mCustomControls);
     CLEAR(mCustomControlsParams);
     CLEAR(mAwbResults);
@@ -49,16 +46,11 @@ AiqResult::AiqResult(int cameraId) :
     CLEAR(mLensShadingMap);
 }
 
-AiqResult::~AiqResult()
-{
-    LOG3A("@%s", __func__);
+AiqResult::~AiqResult() {
     deinit();
 }
 
-int AiqResult::init()
-{
-    LOG3A("@%s", __func__);
-
+int AiqResult::init() {
     CLEAR(mAeResults);
     CLEAR(mAfResults);
     CLEAR(mAwbResults);
@@ -76,15 +68,11 @@ int AiqResult::init()
     return OK;
 }
 
-int AiqResult::deinit()
-{
-    LOG3A("@%s", __func__);
-
+int AiqResult::deinit() {
     return OK;
 }
 
-AiqResult &AiqResult::operator=(const AiqResult &other)
-{
+AiqResult &AiqResult::operator=(const AiqResult &other) {
     mCameraId = other.mCameraId;
     mSequence = other.mSequence;
     mTimestamp = other.mTimestamp;

@@ -36,6 +36,7 @@ enum EventType
     EVENT_DEVICE_RECONFIGURE,
     EVENT_FRAME_AVAILABLE,
     EVENT_PSYS_REQUEST_BUF_READY,
+    EVENT_REQUEST_METADATA_READY,
 };
 
 struct EventDataStatsReady
@@ -81,7 +82,7 @@ struct EventFrameAvailable
     int streamId;
 };
 
-struct EventRequestBufferReady
+struct EventRequestReady
 {
     int64_t timestamp;
     long sequence;
@@ -107,7 +108,7 @@ struct EventData
         EventRequestData request;
         EventConfigData config;
         EventFrameAvailable frameDone;
-        EventRequestBufferReady requestReady;
+        EventRequestReady requestReady;  // use for returning metadata and shutter event
     } data;
 };
 

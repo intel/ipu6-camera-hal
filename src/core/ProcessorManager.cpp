@@ -27,24 +27,20 @@ namespace icamera {
 
 ProcessorManager::ProcessorManager(int cameraId) :
         mCameraId(cameraId),
-        mPsysUsage(PSYS_NOT_USED)
-{
-    LOG1("@%s, cameraId:%d", __func__, mCameraId);
+        mPsysUsage(PSYS_NOT_USED) {
 }
 
-ProcessorManager::~ProcessorManager()
-{
-    LOG1("@%s, cameraId:%d", __func__, mCameraId);
-
+ProcessorManager::~ProcessorManager() {
     deleteProcessors();
 }
 
-std::vector<BufferQueue*> ProcessorManager::createProcessors(int inputFmt,
-        const std::map<Port, stream_t>& producerConfigs,
-        const std::map<int, Port>& streamIdToPortMap,
-        stream_config_t *streamList, const Parameters& param, ParameterGenerator* paramGenerator)
-{
-    LOG1("@%s, mCameraId:%d", __func__, mCameraId);
+std::vector<BufferQueue*>
+ProcessorManager::createProcessors(int inputFmt,
+                                   const std::map<Port, stream_t>& producerConfigs,
+                                   const std::map<int, Port>& streamIdToPortMap,
+                                   stream_config_t *streamList, const Parameters& param,
+                                   ParameterGenerator* paramGenerator) {
+    LOG1("<id%d>@%s", mCameraId, __func__);
 
     ProcessorConfig processorItem;
     processorItem.mInputConfigs = producerConfigs;
@@ -66,13 +62,13 @@ std::vector<BufferQueue*> ProcessorManager::createProcessors(int inputFmt,
     }
 
     if (mPsysUsage == PSYS_NORMAL) {
-        LOG1("Using normal Psys to do image processing.");
+        LOG1("%s, Using normal Psys to do image processing.", __func__);
         processorItem.mProcessor = new PSysProcessor(mCameraId, paramGenerator);
         mProcessors.push_back(processorItem);
     }
 
     if (mPsysUsage == PSYS_NOT_USED) {
-        LOG1("Using software to do color conversion.");
+        LOG1("%s, Using software to do color conversion.", __func__);
         processorItem.mProcessor = new SwImageProcessor(mCameraId);
         mProcessors.push_back(processorItem);
     }
@@ -85,8 +81,7 @@ std::vector<BufferQueue*> ProcessorManager::createProcessors(int inputFmt,
     return processors;
 }
 
-int ProcessorManager::deleteProcessors()
-{
+int ProcessorManager::deleteProcessors() {
     for (auto& item : mProcessors) {
         delete item.mProcessor;
     }
@@ -101,10 +96,8 @@ int ProcessorManager::deleteProcessors()
  * Configure processor with input and output streams
  */
 int ProcessorManager::configureProcessors(const std::vector<ConfigMode>& configModes,
-                                          BufferProducer* producer,
-                                          const Parameters& param)
-{
-    LOG1("@%s, mCameraId:%d", __func__, mCameraId);
+                                          BufferProducer* producer, const Parameters& param) {
+    LOG1("<id%d>@%s", mCameraId, __func__);
 
     BufferProducer* preProcess =  nullptr;
     for (auto& item : mProcessors) {

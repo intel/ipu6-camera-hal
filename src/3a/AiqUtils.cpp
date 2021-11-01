@@ -27,158 +27,143 @@
 
 namespace icamera {
 
-int AiqUtils::dumpAeResults(const cca::cca_ae_results& aeResult)
-{
-    if (!Log::isDebugLevelEnable(CAMERA_DEBUG_LOG_AIQ)) return OK;
-    LOG3A("@%s", __func__);
+int AiqUtils::dumpAeResults(const cca::cca_ae_results& aeResult) {
+    if (!Log::isDebugLevelEnable(CAMERA_DEBUG_LOG_LEVEL3)) return OK;
 
-    LOG3A("num_exposures :%d", aeResult.num_exposures);
+    LOG3("num_exposures :%d", aeResult.num_exposures);
     for (unsigned int i = 0; i < aeResult.num_exposures; i++) {
-        LOG3A("AE sensor exp[%u] result ag %u dg %u coarse: %u fine: %u llp:%u fll:%u", i,
-              aeResult.exposures[i].sensor_exposure[0].analog_gain_code_global,
-              aeResult.exposures[i].sensor_exposure[0].digital_gain_global,
-              aeResult.exposures[i].sensor_exposure[0].coarse_integration_time,
-              aeResult.exposures[i].sensor_exposure[0].fine_integration_time,
-              aeResult.exposures[i].sensor_exposure[0].line_length_pixels,
-              aeResult.exposures[i].sensor_exposure[0].frame_length_lines);
+        LOG3("AE sensor exp[%u] result ag %u dg %u coarse: %u fine: %u llp:%u fll:%u", i,
+             aeResult.exposures[i].sensor_exposure[0].analog_gain_code_global,
+             aeResult.exposures[i].sensor_exposure[0].digital_gain_global,
+             aeResult.exposures[i].sensor_exposure[0].coarse_integration_time,
+             aeResult.exposures[i].sensor_exposure[0].fine_integration_time,
+             aeResult.exposures[i].sensor_exposure[0].line_length_pixels,
+             aeResult.exposures[i].sensor_exposure[0].frame_length_lines);
 
-        LOG3A("AE exp[%d] ag %f dg %f Fn %f time %uus total %u filter[%s] iso %d", i,
-              aeResult.exposures[i].exposure[0].analog_gain,
-              aeResult.exposures[i].exposure[0].digital_gain,
-              aeResult.exposures[i].exposure[0].aperture_fn,
-              aeResult.exposures[i].exposure[0].exposure_time_us,
-              aeResult.exposures[i].exposure[0].total_target_exposure,
-              aeResult.exposures[i].exposure[0].nd_filter_enabled? "YES": "NO",
-              aeResult.exposures[i].exposure[0].iso);
-        LOG3A("Distance convergence: %f, AE Converged : %s",
-              aeResult.exposures[i].distance_from_convergence,
-              aeResult.exposures[i].converged ? "YES" : "NO");
+        LOG3("AE exp[%d] ag %f dg %f Fn %f time %uus total %u filter[%s] iso %d", i,
+             aeResult.exposures[i].exposure[0].analog_gain,
+             aeResult.exposures[i].exposure[0].digital_gain,
+             aeResult.exposures[i].exposure[0].aperture_fn,
+             aeResult.exposures[i].exposure[0].exposure_time_us,
+             aeResult.exposures[i].exposure[0].total_target_exposure,
+             aeResult.exposures[i].exposure[0].nd_filter_enabled? "YES": "NO",
+             aeResult.exposures[i].exposure[0].iso);
+        LOG3("AE distance convergence: %f, AE Converged : %s",
+             aeResult.exposures[i].distance_from_convergence,
+             aeResult.exposures[i].converged ? "YES" : "NO");
     }
-    LOG3A("AE bracket mode = %d %s", aeResult.multiframe,
-          aeResult.multiframe == ia_aiq_bracket_mode_ull ? "ULL" : "none-ULL");
+    LOG3("AE bracket mode = %d %s", aeResult.multiframe,
+         aeResult.multiframe == ia_aiq_bracket_mode_ull ? "ULL" : "none-ULL");
 
     const cca::cca_hist_weight_grid& wg = aeResult.weight_grid;
     if (wg.width != 0 && wg.height != 0) {
-        LOG3A("AE weight grid [%dx%d]", wg.width, wg.height);
+        LOG3("AE weight grid [%dx%d]", wg.width, wg.height);
         for (int i = 0; i < 5 && i < wg.height; i++) {
-            LOG3A("AE weight_grid[%d] = %d ", wg.width/2, wg.weights[wg.width/2]);
+            LOG3("AE weight_grid[%d] = %d ", wg.width/2, wg.weights[wg.width/2]);
         }
     }
 
     const ia_aiq_aperture_control& ac = aeResult.aperture_control;
-    LOG3A("AE aperture fn = %f, iris command = %d, code = %d",
-          ac.aperture_fn, ac.dc_iris_command, ac.code);
+    LOG3("AE aperture fn = %f, iris command = %d, code = %d",
+         ac.aperture_fn, ac.dc_iris_command, ac.code);
 
     return OK;
 }
 
-int AiqUtils::dumpAfResults(const cca::cca_af_results& afResult)
-{
-    if (!Log::isDebugLevelEnable(CAMERA_DEBUG_LOG_AIQ)) return OK;
-    LOG3A("@%s", __func__);
+int AiqUtils::dumpAfResults(const cca::cca_af_results& afResult) {
+    if (!Log::isDebugLevelEnable(CAMERA_DEBUG_LOG_LEVEL3)) return OK;
 
-    LOG3A("AF results current_focus_distance %d final_position_reached %s",
-          afResult.current_focus_distance,
-          afResult.final_lens_position_reached ? "TRUE":"FALSE");
-    LOG3A("AF results next_lens_position %d", afResult.next_lens_position);
+    LOG3("AF results: current distance %d, next position %d, final_position_reached %s, status %d",
+         afResult.current_focus_distance, afResult.next_lens_position,
+         afResult.final_lens_position_reached ? "TRUE":"FALSE", afResult.status);
 
     switch (afResult.status) {
     case ia_aiq_af_status_local_search:
-        LOG3A("AF result state _local_search");
+        LOG3("AF result state _local_search");
         break;
     case ia_aiq_af_status_extended_search:
-        LOG3A("AF result state extended_search");
+        LOG3("AF result state extended_search");
         break;
     case ia_aiq_af_status_success:
-        LOG3A("AF state success");
+        LOG3("AF state success");
         break;
     case ia_aiq_af_status_fail:
-        LOG3A("AF state fail");
+        LOG3("AF state fail");
         break;
     case ia_aiq_af_status_idle:
     default:
-        LOG3A("AF state idle");
+        LOG3("AF state idle");
     }
 
     return OK;
 }
 
-int AiqUtils::dumpAwbResults(const cca::cca_awb_results& awbResult)
-{
-    if (!Log::isDebugLevelEnable(CAMERA_DEBUG_LOG_AIQ)) return OK;
-    LOG3A("@%s", __func__);
+int AiqUtils::dumpAwbResults(const cca::cca_awb_results& awbResult) {
+    if (!Log::isDebugLevelEnable(CAMERA_DEBUG_LOG_LEVEL3)) return OK;
 
-    LOG3A("AWB result: accurate_r/g %f, accurate_b/g %f",
-          awbResult.accurate_r_per_g, awbResult.accurate_b_per_g);
-    LOG3A("AWB result: distance_from_convergence %f", awbResult.distance_from_convergence);
+    LOG3("AWB result: accurate_r/g %f, accurate_b/g %f, distance_from_convergence %f",
+         awbResult.accurate_r_per_g, awbResult.accurate_b_per_g,
+         awbResult.distance_from_convergence);
 
     return OK;
 }
 
-int AiqUtils::dumpGbceResults(const cca::cca_gbce_params& gbceResult)
-{
-    if (!Log::isDebugLevelEnable(CAMERA_DEBUG_LOG_AIQ)) return OK;
-    LOG3A("@%s", __func__);
+int AiqUtils::dumpGbceResults(const cca::cca_gbce_params& gbceResult) {
+    if (!Log::isDebugLevelEnable(CAMERA_DEBUG_LOG_LEVEL3)) return OK;
 
-    LOG3A("gamma_lut_size: %u, tone_map_lut_size: %u",
-          gbceResult.gamma_lut_size, gbceResult.tone_map_lut_size);
+    LOG3("gamma_lut_size: %u, tone_map_lut_size: %u",
+         gbceResult.gamma_lut_size, gbceResult.tone_map_lut_size);
 
     if (gbceResult.gamma_lut_size <= 0 || gbceResult.tone_map_lut_size <= 0) return OK;
 
-    LOG3A("gamma table: R: 0(%f), %u(%f), %u(%f)", gbceResult.r_gamma_lut[0],
-          (gbceResult.gamma_lut_size / 2), gbceResult.r_gamma_lut[gbceResult.gamma_lut_size / 2],
-          (gbceResult.gamma_lut_size - 1),  gbceResult.r_gamma_lut[gbceResult.gamma_lut_size - 1]);
+    LOG3("gamma table: R: 0(%f), %u(%f), %u(%f)", gbceResult.r_gamma_lut[0],
+         (gbceResult.gamma_lut_size / 2), gbceResult.r_gamma_lut[gbceResult.gamma_lut_size / 2],
+         (gbceResult.gamma_lut_size - 1),  gbceResult.r_gamma_lut[gbceResult.gamma_lut_size - 1]);
 
-    LOG3A("gamma table: G: 0(%f), %u(%f), %u(%f)", gbceResult.g_gamma_lut[0],
-          (gbceResult.gamma_lut_size / 2), gbceResult.g_gamma_lut[gbceResult.gamma_lut_size / 2],
-          (gbceResult.gamma_lut_size - 1),  gbceResult.g_gamma_lut[gbceResult.gamma_lut_size - 1]);
+    LOG3("gamma table: G: 0(%f), %u(%f), %u(%f)", gbceResult.g_gamma_lut[0],
+         (gbceResult.gamma_lut_size / 2), gbceResult.g_gamma_lut[gbceResult.gamma_lut_size / 2],
+         (gbceResult.gamma_lut_size - 1),  gbceResult.g_gamma_lut[gbceResult.gamma_lut_size - 1]);
 
-    LOG3A("gamma table: B: 0(%f), %u(%f), %u(%f)", gbceResult.b_gamma_lut[0],
-          (gbceResult.gamma_lut_size / 2), gbceResult.b_gamma_lut[gbceResult.gamma_lut_size / 2],
-          (gbceResult.gamma_lut_size - 1),  gbceResult.b_gamma_lut[gbceResult.gamma_lut_size - 1]);
+    LOG3("gamma table: B: 0(%f), %u(%f), %u(%f)", gbceResult.b_gamma_lut[0],
+         (gbceResult.gamma_lut_size / 2), gbceResult.b_gamma_lut[gbceResult.gamma_lut_size / 2],
+         (gbceResult.gamma_lut_size - 1),  gbceResult.b_gamma_lut[gbceResult.gamma_lut_size - 1]);
 
-    LOG3A("tonemap table: 0(%f), %u(%f), %u(%f)", gbceResult.tone_map_lut[0],
-          (gbceResult.tone_map_lut_size / 2),
-          gbceResult.tone_map_lut[gbceResult.tone_map_lut_size / 2],
-          (gbceResult.tone_map_lut_size - 1),
-          gbceResult.tone_map_lut[gbceResult.tone_map_lut_size - 1]);
+    LOG3("tonemap table: 0(%f), %u(%f), %u(%f)", gbceResult.tone_map_lut[0],
+         (gbceResult.tone_map_lut_size / 2),
+         gbceResult.tone_map_lut[gbceResult.tone_map_lut_size / 2],
+         (gbceResult.tone_map_lut_size - 1),
+         gbceResult.tone_map_lut[gbceResult.tone_map_lut_size - 1]);
 
     return OK;
 }
 
-int AiqUtils::dumpPaResults(const cca::cca_pa_params& paResult)
-{
-    if (!Log::isDebugLevelEnable(CAMERA_DEBUG_LOG_AIQ)) return OK;
-    LOG3A("@%s", __func__);
+int AiqUtils::dumpPaResults(const cca::cca_pa_params& paResult) {
+    if (!Log::isDebugLevelEnable(CAMERA_DEBUG_LOG_LEVEL3)) return OK;
 
     for (int i = 0; i < 3; i++) {
-        LOG3A("color_conversion_matrix  [%.3f %.3f %.3f] ",
-              paResult.color_conversion_matrix[i][0],
-              paResult.color_conversion_matrix[i][1],
-              paResult.color_conversion_matrix[i][2]);
+        LOG3("color_conversion_matrix  [%.3f %.3f %.3f] ",
+             paResult.color_conversion_matrix[i][0],
+             paResult.color_conversion_matrix[i][1],
+             paResult.color_conversion_matrix[i][2]);
     }
 
-    LOG3A("color_gains, gr:%f, r:%f, b:%f, gb:%f",
-          paResult.color_gains.gr, paResult.color_gains.r,
-          paResult.color_gains.b, paResult.color_gains.gb);
+    LOG3("color_gains, gr:%f, r:%f, b:%f, gb:%f",
+         paResult.color_gains.gr, paResult.color_gains.r,
+         paResult.color_gains.b, paResult.color_gains.gb);
 
     return OK;
 }
 
-int AiqUtils::dumpSaResults(const cca::cca_sa_results& saResult)
-{
-    if (!Log::isDebugLevelEnable(CAMERA_DEBUG_LOG_AIQ)) return OK;
-    LOG3A("@%s", __func__);
+int AiqUtils::dumpSaResults(const cca::cca_sa_results& saResult) {
+    if (!Log::isDebugLevelEnable(CAMERA_DEBUG_LOG_LEVEL3)) return OK;
 
-    LOG3A("SA results color_order %d size %dx%d",
-          saResult.color_order, saResult.width,  saResult.height);
+    LOG3("SA results color_order %d size %dx%d",
+         saResult.color_order, saResult.width,  saResult.height);
 
     return OK;
 }
 
-int AiqUtils::convertError(ia_err iaErr)
-{
-    LOG3A("%s, iaErr = %d", __func__, iaErr);
+int AiqUtils::convertError(ia_err iaErr) {
     switch (iaErr) {
     case ia_err_none:
         return OK;
@@ -200,8 +185,7 @@ int AiqUtils::convertError(ia_err iaErr)
 /**
  * Convert SensorFrameParams defined in PlatformData to ia_aiq_frame_params in aiq
  */
-void AiqUtils::convertToAiqFrameParam(const SensorFrameParams &sensor, ia_aiq_frame_params &aiq)
-{
+void AiqUtils::convertToAiqFrameParam(const SensorFrameParams &sensor, ia_aiq_frame_params &aiq) {
     aiq.cropped_image_height = sensor.cropped_image_height;
     aiq.cropped_image_width = sensor.cropped_image_width;
     aiq.horizontal_crop_offset = sensor.horizontal_crop_offset;
@@ -214,8 +198,7 @@ void AiqUtils::convertToAiqFrameParam(const SensorFrameParams &sensor, ia_aiq_fr
 
 camera_coordinate_t AiqUtils::convertCoordinateSystem(const camera_coordinate_system_t& srcSystem,
                                                       const camera_coordinate_system_t& dstSystem,
-                                                      const camera_coordinate_t& srcCoordinate)
-{
+                                                      const camera_coordinate_t& srcCoordinate) {
     int dstWidth = dstSystem.right - dstSystem.left;
     int dstHeight = dstSystem.bottom - dstSystem.top;
     int srcWidth = srcSystem.right - srcSystem.left;
@@ -229,8 +212,7 @@ camera_coordinate_t AiqUtils::convertCoordinateSystem(const camera_coordinate_sy
 }
 
 camera_coordinate_t AiqUtils::convertToIaCoordinate(const camera_coordinate_system_t& srcSystem,
-                                                    const camera_coordinate_t& srcCoordinate)
-{
+                                                    const camera_coordinate_t& srcCoordinate) {
     camera_coordinate_system_t iaCoordinate = {IA_COORDINATE_LEFT, IA_COORDINATE_TOP,
                                                IA_COORDINATE_RIGHT, IA_COORDINATE_BOTTOM};
 
@@ -238,8 +220,7 @@ camera_coordinate_t AiqUtils::convertToIaCoordinate(const camera_coordinate_syst
 }
 
 camera_window_t AiqUtils::convertToIaWindow(const camera_coordinate_system_t& srcSystem,
-                                            const camera_window_t& srcWindow)
-{
+                                            const camera_window_t& srcWindow) {
     camera_coordinate_t leftTop;
     camera_coordinate_t rightBottom;
     leftTop.x     = srcWindow.left;
@@ -261,22 +242,19 @@ camera_window_t AiqUtils::convertToIaWindow(const camera_coordinate_system_t& sr
 /**
  * Map user input manual gain(0, 255) to (AWB_GAIN_NORMALIZED_START, AWB_GAIN_NORMALIZED_END)
  */
-float AiqUtils::normalizeAwbGain(int gain)
-{
+float AiqUtils::normalizeAwbGain(int gain) {
     gain = CLIP(gain, AWB_GAIN_MAX, AWB_GAIN_MIN);
     return AWB_GAIN_NORMALIZED_START + (float)(gain - AWB_GAIN_MIN) * \
                                        AWB_GAIN_RANGE_NORMALIZED / AWB_GAIN_RANGE_USER;
 }
 
-int AiqUtils::convertToUserAwbGain(float normalizedGain)
-{
+int AiqUtils::convertToUserAwbGain(float normalizedGain) {
     normalizedGain = CLIP(normalizedGain, AWB_GAIN_NORMALIZED_START, AWB_GAIN_NORMALIZED_END);
     return AWB_GAIN_MIN + (normalizedGain - AWB_GAIN_NORMALIZED_START) * \
                           AWB_GAIN_RANGE_USER / AWB_GAIN_RANGE_NORMALIZED;
 }
 
-float AiqUtils::convertSpeedModeToTime(camera_converge_speed_t mode)
-{
+float AiqUtils::convertSpeedModeToTime(camera_converge_speed_t mode) {
     float convergenceTime = -1;
     /*
      * The unit of manual_convergence_time is second, and 3.0 means 3 seconds.
@@ -302,8 +280,7 @@ float AiqUtils::convertSpeedModeToTime(camera_converge_speed_t mode)
  *
  * Convert frame usage to ia_aiq_frame_use
  */
-ia_aiq_frame_use AiqUtils::convertFrameUsageToIaFrameUsage(int frameUsage)
-{
+ia_aiq_frame_use AiqUtils::convertFrameUsageToIaFrameUsage(int frameUsage) {
     switch (frameUsage) {
         case FRAME_USAGE_VIDEO:
             return ia_aiq_frame_use_video;
@@ -442,8 +419,6 @@ void AiqUtils::applyAwbGainForTonemapCurve(const camera_tonemap_curves_t& curves
 }
 
 float AiqUtils::calculateHyperfocalDistance(const cca::cca_cmc &cmc) {
-    LOG2("@%s", __func__);
-
     const float DEFAULT_HYPERFOCAL_DISTANCE = 5000.0f;
 
     // Pixel size is stored in CMC in hundreds of micrometers

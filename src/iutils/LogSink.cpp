@@ -28,7 +28,8 @@
 #include <sys/time.h>
 #include <time.h>
 
-#include "src/iutils/LogSink.h"
+#include "iutils/LogSink.h"
+#include "iutils/Utils.h"
 
 namespace icamera {
 extern const char* cameraDebugLogToString(int level);
@@ -37,25 +38,25 @@ extern const char* cameraDebugLogToString(int level);
 #define CAMERA_DEBUG_LOG_VERBOSE (1 << 20)
 
 #ifdef CAL_BUILD
-const char* gLogSink::getName() const { return "Google gLOG"; }
+const char* GLogSink::getName() const { return "Google gLOG"; }
 
-void gLogSink::sendOffLog(const char* prefix, const char* logEntry,
+void GLogSink::sendOffLog(const char* prefix, const char* logEntry,
                                int level, const char* logTags) {
     switch (level) {
         case CAMERA_DEBUG_LOG_ERR:
             ::logging::LogMessage(prefix, 0, -::logging::LOGGING_ERROR)
                     .stream()
-                << logTags << logEntry;
+                << logTags << ':' << logEntry;
             break;
         case CAMERA_DEBUG_LOG_WARNING:
             ::logging::LogMessage(prefix, 0, -::logging::LOGGING_WARNING)
                     .stream()
-                << logTags << logEntry;
+                << logTags << ':'  << logEntry;
             break;
         default:
             ::logging::LogMessage(prefix, 0, -::logging::LOGGING_INFO)
                     .stream()
-                << logTags << logEntry;
+                << logTags << ':'  << logEntry;
             break;
     }
 }
@@ -65,11 +66,11 @@ const char* StdconLogSink::getName() const { return "Stdcon LOG"; }
 
 void StdconLogSink::sendOffLog(const char* prefix, const char* logEntry,
                                int level, const char* logTags) {
+    UNUSED(level);
 #define TIME_BUF_SIZE 128
     char timeInfo[TIME_BUF_SIZE];
     setLogTime(timeInfo);
-    fprintf(stdout, "[%s] [%s] %s %s\n", timeInfo,
-            cameraDebugLogToString(level), prefix, logEntry);
+    fprintf(stdout, "[%s] %s %s\n", timeInfo, prefix, logEntry);
 }
 
 void LogOutputSink::setLogTime(char* buf) {
@@ -87,6 +88,7 @@ void LogOutputSink::setLogTime(char* buf) {
     }
 }
 
+#ifdef CAMERA_TRACE
 FtraceLogSink::FtraceLogSink() {
     mFtraceFD = open("/sys/kernel/debug/tracing/trace_marker", O_WRONLY);
     if (mFtraceFD == -1) {
@@ -105,5 +107,6 @@ void FtraceLogSink::sendOffLog(const char* prefix, const char* logEntry,
     dprintf(mFtraceFD, "[%s] [%s] %s %s\n", timeInfo,
             cameraDebugLogToString(level), prefix, logEntry);
 }
+#endif
 
 };  // namespace icamera

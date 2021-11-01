@@ -30,7 +30,7 @@ class LogOutputSink {
 };
 
 #ifdef CAL_BUILD
-class gLogSink : public LogOutputSink {
+class GLogSink : public LogOutputSink {
  public:
     const char* getName() const override;
     void sendOffLog(const char* prefix, const char* logEntry,
@@ -38,6 +38,7 @@ class gLogSink : public LogOutputSink {
 };
 #endif
 
+#ifdef CAMERA_TRACE
 class FtraceLogSink : public LogOutputSink {
  public:
     FtraceLogSink();
@@ -49,6 +50,7 @@ class FtraceLogSink : public LogOutputSink {
  private:
     int mFtraceFD;
 };
+#endif
 
 class StdconLogSink : public LogOutputSink {
  public:

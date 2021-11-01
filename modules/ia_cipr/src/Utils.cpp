@@ -49,14 +49,6 @@ void freeMemory(void* p) {
     ::free(p);
 }
 
-void memoryCopy(void* dst, size_t dsz, const void* src, size_t sz) {
-    if (dsz < sz) {
-        LOG2("%s: destination size < source size, potential coding error", __func__);
-    }
-
-    MEMCPY_S(dst, dsz, src, sz);
-}
-
 size_t getPageSize() {
     return static_cast<size_t>(sysconf(_SC_PAGESIZE));
 }

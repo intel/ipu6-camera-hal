@@ -428,16 +428,9 @@ int ParameterGenerator::updateCommonMetadata(Parameters *params, const AiqResult
         uint8_t lscFlags = aiqResult->mOutStats.rgbs_grid.shading_correction;
         metadata.update(INTEL_VENDOR_CAMERA_SHADING_CORRECTION, &lscFlags, 1);
 
-        std::vector<uint8_t> rgbsStats(width * height * 5);
-        for (int i = 0; i < width * height; ++i) {
-            int base = i * 5;
-            rgbsStats[base] = aiqResult->mOutStats.rgbs_blocks[i].avg_gr;
-            rgbsStats[base + 1] = aiqResult->mOutStats.rgbs_blocks[i].avg_r;
-            rgbsStats[base + 2] = aiqResult->mOutStats.rgbs_blocks[i].avg_b;
-            rgbsStats[base + 3] = aiqResult->mOutStats.rgbs_blocks[i].avg_gb;
-            rgbsStats[base + 4] = aiqResult->mOutStats.rgbs_blocks[i].sat;
-        }
-        metadata.update(INTEL_VENDOR_CAMERA_RGBS_STATS_BLOCKS, rgbsStats.data(), rgbsStats.size());
+        metadata.update(INTEL_VENDOR_CAMERA_RGBS_STATS_BLOCKS,
+                        reinterpret_cast<const uint8_t*>(aiqResult->mOutStats.rgbs_blocks),
+                        (width * height * 5));
     }
 
     if (aiqResult->mAiqParam.callbackTmCurve) {
@@ -446,7 +439,7 @@ int ParameterGenerator::updateCommonMetadata(Parameters *params, const AiqResult
 
         std::vector<float> tmCurve(mTonemapMaxCurvePoints * 2);
         for (int32_t i = 0; i < mTonemapMaxCurvePoints; i++) {
-            tmCurve[i * 2] = mTonemapCurveRed[i * 2];
+            tmCurve[i * 2] = static_cast<float>(i) / (mTonemapMaxCurvePoints - 1);
             tmCurve[i * 2 + 1] = gbceResults.tone_map_lut[i * multiplier];
         }
         metadata.update(INTEL_VENDOR_CAMERA_TONE_MAP_CURVE, tmCurve.data(), tmCurve.size());

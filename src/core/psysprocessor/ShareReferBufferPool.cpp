@@ -113,8 +113,8 @@ int32_t ShareReferBufferPool::registerReferBuffers(int64_t id, CIPR::Buffer* buf
         pair->mProducerBuffers.front().buffer->getMemorySize(&srcSize);
         pair->mConsumerBuffers.front().buffer->getMemorySize(&dstSize);
         if (srcSize != dstSize) {
-            LOG2("%s, disable share buffer pool due to different size. src: %d, dst: %d",
-                 __func__, srcSize, dstSize);
+            LOG2("%s, disable share buffer pool due to different size. src: %d, dst: %d", __func__,
+                 srcSize, dstSize);
             pair->active = false;
         }
     }

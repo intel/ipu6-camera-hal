@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Intel Corporation.
+ * Copyright (C) 2019-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ namespace icamera {
  * or external source producer.
  */
 class StreamSource : public BufferProducer {
-public:
+ public:
     StreamSource(int memType) : BufferProducer(memType) {}
     virtual ~StreamSource() {}
     /* Initialize stream source */
@@ -45,4 +45,4 @@ public:
     virtual void removeAllFrameAvailableListener() = 0;
 };
 
-} //namespace icamera
+}  // namespace icamera

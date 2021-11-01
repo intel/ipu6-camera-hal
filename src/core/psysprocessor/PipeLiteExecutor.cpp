@@ -429,7 +429,7 @@ void PipeLiteExecutor::notifyStop()
 
 int PipeLiteExecutor::releaseStatsBuffer(const shared_ptr<CameraBuffer> &statsBuf)
 {
-    LOG3A("%s executor:%s", __func__, mName.c_str());
+    LOG2("%s executor:%s", __func__, mName.c_str());
     AutoMutex lock(mStatsBuffersLock);
 
     mStatsBuffers.push(statsBuf);
@@ -601,22 +601,19 @@ int PipeLiteExecutor::processNewFrame()
         if (gLogLevel & CAMERA_DEBUG_LOG_VC_SYNC) {
             int seq = cInBuffer->getSequence();
             SyncManager::getInstance()->printVcSyncCount();
-            LOGVCSYNC("[start runPipe], CPU-timestamp:%lu, sequence:%d, vc:%d, kernel-timestamp:%.3lfms, endl",
-                      CameraUtils::systemTime(),
-                      seq,
-                      cInBuffer->getVirtualChannel(),
-                      cInBuffer->getTimestamp().tv_sec*1000.0 + cInBuffer->getTimestamp().tv_usec/1000.0);
+            LOG2("[start runPipe], CPU-timestamp:%lu, seq:%d, vc:%d, kernel-timestamp:%.3l, endl",
+                 CameraUtils::systemTime(), seq, cInBuffer->getVirtualChannel(),
+                 cInBuffer->getTimestamp().tv_sec * 1000.0 +
+                 cInBuffer->getTimestamp().tv_usec / 1000.0);
         }
 
         SyncManager::getInstance()->updateVcSyncCount(vc);
 
         // Run pipe with buffers
         ret = runPipe(inBuffers, outBuffers, outStatsBuffers, eventType);
-        LOGVCSYNC("[done runPipe], CPU-timestamp:%lu, sequence:%u, vc:%d, kernel-timestamp:%.3lfms, endl",
-                  CameraUtils::systemTime(),
-                  cInBuffer->getSequence(),
-                  cInBuffer->getVirtualChannel(),
-                  cInBuffer->getTimestamp().tv_sec*1000.0 + cInBuffer->getTimestamp().tv_usec/1000.0);
+        LOG2("[done runPipe], CPU-timestamp:%lu, seq:%u, vc:%d, kernel-timestamp:%.3lf, endl",
+             CameraUtils::systemTime(), cInBuffer->getSequence(), cInBuffer->getVirtualChannel(),
+             cInBuffer->getTimestamp().tv_sec*1000.0 + cInBuffer->getTimestamp().tv_usec/1000.0);
     } else {
         // Run pipe with buffers
         ret = runPipe(inBuffers, outBuffers, outStatsBuffers, eventType);
@@ -700,7 +697,7 @@ int PipeLiteExecutor::runPipe(map<Port, shared_ptr<CameraBuffer> > &inBuffers,
     if (mAdaptor) {
         ipuParameters = mAdaptor->getIpuParameter(sequence, mStreamId);
         if (!ipuParameters) {
-            LOG1("%s: executor %s doesn't run for sequence %ld due to no pal",
+            LOG2("%s: executor %s doesn't run for sequence %ld due to no pal",
                  __func__, mName.c_str(), sequence);
             return OK;
         }
@@ -1096,21 +1093,21 @@ void PipeLiteExecutor::getTerminalBuffersFromExternal(
 
 void PipeLiteExecutor::dumpPGs() const
 {
-    if (!Log::isDebugLevelEnable(CAMERA_DEBUG_LOG_LEVEL2)) return;
+    if (!Log::isDebugLevelEnable(CAMERA_DEBUG_LOG_LEVEL3)) return;
 
-    LOG2("============= dump PGs for executor %s =================", getName());
+    LOG3("============= dump PGs for executor %s =================", getName());
     if (mIsInputEdge) {
-        LOG2("This is input edge");
+        LOG3("This is input edge");
     }
     if (mIsOutputEdge) {
-        LOG2("This is output edge");
+        LOG3("This is output edge");
     }
     for (auto const &unit : mPGExecutors) {
         ia_uid stageId = unit.stageId;
-        LOG2("    PG: %d: %s, stageId %d",
+        LOG3("    PG: %d: %s, stageId %d",
              unit.pgId, unit.pg ? unit.pg->getName() : "GPU-TNR", stageId);
 
-        LOG2("        InTerms: %zu", unit.inputTerminals.size());
+        LOG3("        InTerms: %zu", unit.inputTerminals.size());
         for (auto const &term : unit.inputTerminals) {
             shared_ptr<CameraBuffer> buffer= nullptr;
             if (mPGBuffers.find(term) != mPGBuffers.end()) {
@@ -1119,20 +1116,20 @@ void PipeLiteExecutor::dumpPGs() const
 
             const TerminalDescriptor& termDesc = mTerminalsDesc.at(term);
             if (termDesc.enabled) {
-                LOG2("            %d: %dx%d, 0x%x, port %d, buf %p",
+                LOG3("            %d: %dx%d, 0x%x, port %d, buf %p",
                      termDesc.terminal - termDesc.stageId - 1,
                      termDesc.frameDesc.mWidth, termDesc.frameDesc.mHeight,
                      termDesc.frameDesc.mFormat,
                      termDesc.assignedPort, buffer.get());
             } else {
-                LOG2("            %d: %dx%d, 0x%x, disabled",
+                LOG3("            %d: %dx%d, 0x%x, disabled",
                      termDesc.terminal - termDesc.stageId - 1,
                      termDesc.frameDesc.mWidth, termDesc.frameDesc.mHeight,
                      termDesc.frameDesc.mFormat);
             }
         }
 
-        LOG2("        OutTerms: %zu", unit.outputTerminals.size());
+        LOG3("        OutTerms: %zu", unit.outputTerminals.size());
         for (auto const &term : unit.outputTerminals) {
             shared_ptr<CameraBuffer> buffer= nullptr;
             if (mPGBuffers.find(term) != mPGBuffers.end()) {
@@ -1141,20 +1138,20 @@ void PipeLiteExecutor::dumpPGs() const
 
             const TerminalDescriptor& termDesc = mTerminalsDesc.at(term);
             if (termDesc.enabled) {
-                LOG2("            %d: %dx%d, 0x%x, port %d, buf %p",
+                LOG3("            %d: %dx%d, 0x%x, port %d, buf %p",
                      termDesc.terminal - termDesc.stageId - 1,
                      termDesc.frameDesc.mWidth, termDesc.frameDesc.mHeight,
                      termDesc.frameDesc.mFormat,
                      termDesc.assignedPort, buffer.get());
             } else {
-                LOG2("            %d: %dx%d, 0x%x, disabled",
+                LOG3("            %d: %dx%d, 0x%x, disabled",
                      termDesc.terminal - termDesc.stageId - 1,
                      termDesc.frameDesc.mWidth, termDesc.frameDesc.mHeight,
                      termDesc.frameDesc.mFormat);
             }
         }
     }
-    LOG2("============= dump done for %s =================", getName());
+    LOG3("============= dump done for %s =================", getName());
 }
 
 }

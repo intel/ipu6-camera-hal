@@ -39,8 +39,8 @@ namespace icamera {
 
 typedef enum {
     FD_MODE_OFF,
-    FD_MODE_SIMPLE,  /**< Provide face area */
-    FD_MODE_FULL,    /**< Provide face area, eye and mouth coordinates */
+    FD_MODE_SIMPLE, /**< Provide face area */
+    FD_MODE_FULL,   /**< Provide face area, eye and mouth coordinates */
 } face_detection_mode;
 
 /* Face Detection results */

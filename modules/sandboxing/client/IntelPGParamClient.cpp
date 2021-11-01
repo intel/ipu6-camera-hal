@@ -64,8 +64,8 @@ IntelPGParam::IntelPGParam(int pgId)
     mMemStatistics.mSize = 0;
     mMaxStatsSize = 0;
 
-    LOGIPC("@%s, done", __func__);
     mInitialized = true;
+    LOG1("@%s, Construct done", __func__);
 }
 
 IntelPGParam::~IntelPGParam() {
@@ -80,6 +80,7 @@ IntelPGParam::~IntelPGParam() {
     if (mMemStatistics.mSize) {
         mCommon.freeShmMem(mMemStatistics);
     }
+    LOG1("@%s", __func__);
 }
 
 int IntelPGParam::init(ia_p2p_platform_t platform, const PgConfiguration& pgConfig) {
@@ -200,12 +201,12 @@ int IntelPGParam::setPGAndPrepareProgram(ia_css_process_group_t* pg) {
 int IntelPGParam::getPayloadSizes(int payloadCount, ia_binary_data* payloads) {
     CheckAndLogError(mInitialized == false, INVALID_OPERATION, "@%s, mInitialized is false",
                      __func__);
-    CheckAndLogError(payloadCount < mPayloadCount, UNKNOWN_ERROR, "@%s, payloadCount is small",
-                     __func__);
+    CheckAndLogError(payloadCount < mPayloadCount, UNKNOWN_ERROR,
+                     "@%s, payloadCount: %d is small than %d", __func__, payloadCount,
+                     mPayloadCount);
     CheckAndLogError(!payloads, UNKNOWN_ERROR, "@%s, payloads is nullptr", __func__);
 
-    MEMCPY_S(payloads, sizeof(ia_binary_data) * payloadCount,
-             mPayloads, sizeof(mPayloads));
+    MEMCPY_S(payloads, sizeof(ia_binary_data) * payloadCount, mPayloads, sizeof(mPayloads));
     return mPayloadCount;
 }
 
@@ -213,7 +214,7 @@ int IntelPGParam::allocatePayloads(int payloadCount, ia_binary_data* payloads) {
     CheckAndLogError(mInitialized == false, INVALID_OPERATION, "@%s, mInitialized is false",
                      __func__);
     CheckAndLogError(payloadCount > IPU_MAX_TERMINAL_COUNT, UNKNOWN_ERROR,
-                     "@%s, payloadCount is small", __func__);
+                     "@%s, payloadCount: %d exceeded max count", __func__, payloadCount);
     CheckAndLogError(!payloads, UNKNOWN_ERROR, "@%s, payloads is nullptr", __func__);
 
     // Allocate memory
@@ -222,8 +223,8 @@ int IntelPGParam::allocatePayloads(int payloadCount, ia_binary_data* payloads) {
     mMemAllocatePayloads.resize(mMemAllocatePayloads.size() + 1);
 
     ShmMemInfo& info = mMemAllocatePayloads.back();
-    info.mName = "/pgParamAllocPayloads" + std::to_string(mClient)
-                 + std::to_string(mMemAllocatePayloads.size()) + SHM_NAME;
+    info.mName = "/pgParamAllocPayloads" + std::to_string(mClient) +
+                 std::to_string(mMemAllocatePayloads.size()) + SHM_NAME;
     info.mSize = size;
     info.mAddr = nullptr;
     bool ret = mCommon.allocShmMem(info.mName, info.mSize, &info);
@@ -233,8 +234,8 @@ int IntelPGParam::allocatePayloads(int payloadCount, ia_binary_data* payloads) {
     ret = mIpc.assignPayloads(info.mAddr, info.mSize, payloadCount, payloads);
     CheckAndLogError(ret == false, UNKNOWN_ERROR, "@%s, allocatePayloads fails", __func__);
 
-    ret = mIpc.clientFlattenRegisterPayloads(info.mAddr, info.mSize,
-                                             mClient, payloadCount, payloads);
+    ret =
+        mIpc.clientFlattenRegisterPayloads(info.mAddr, info.mSize, mClient, payloadCount, payloads);
     CheckAndLogError(ret == false, UNKNOWN_ERROR, "@%s, clientFlattenRegisterPayloads fails",
                      __func__);
 
@@ -250,12 +251,13 @@ int IntelPGParam::updatePALAndEncode(const ia_binary_data* ipuParameters, int pa
                      __func__);
     CheckAndLogError(!ipuParameters, INVALID_OPERATION, "@%s, ipuParams error", __func__);
     // Check shared memory of payloads
-    CheckAndLogError(payloadCount != mPayloadCount, BAD_VALUE, "@%s, payloadCount error", __func__);
+    CheckAndLogError(payloadCount != mPayloadCount, BAD_VALUE,
+                     "@%s, payloadCount :%d should equal to %d", __func__, payloadCount,
+                     mPayloadCount);
 
     int32_t palHandle = mCommon.getShmMemHandle(ipuParameters->data);
     bool ret = mIpc.clientFlattenEncode(mMemEncode.mAddr, mMemEncode.mSize, mClient,
-                                        ipuParameters->size, palHandle,
-                                        payloadCount, payloads);
+                                        ipuParameters->size, palHandle, payloadCount, payloads);
     CheckAndLogError(ret == false, UNKNOWN_ERROR, "@%s, clientFlattenEncode fails", __func__);
 
     ret = mCommon.requestSync(IPC_PG_PARAM_ENCODE, mMemEncode.mHandle);
@@ -268,7 +270,9 @@ int IntelPGParam::decode(int payloadCount, ia_binary_data* payloads, ia_binary_d
     CheckAndLogError(mInitialized == false, INVALID_OPERATION, "@%s, mInitialized is false",
                      __func__);
     // Check shared memory of payloads
-    CheckAndLogError(payloadCount != mPayloadCount, BAD_VALUE, "@%s, payloadCount error", __func__);
+    CheckAndLogError(payloadCount != mPayloadCount, BAD_VALUE,
+                     "@%s, payloadCount :%d should equal to %d", __func__, payloadCount,
+                     mPayloadCount);
 
     // Check share memory of statistics
     CheckAndLogError(!statistics, BAD_VALUE, "@%s, statistics nullptr", __func__);
@@ -287,8 +291,8 @@ int IntelPGParam::decode(int payloadCount, ia_binary_data* payloads, ia_binary_d
         statsHandle = mCommon.getShmMemHandle(statistics->data);
     }
 
-    ret = mIpc.clientFlattenDecode(mMemDecode.mAddr, mMemDecode.mSize, mClient,
-                                   payloadCount, payloads, statsHandle);
+    ret = mIpc.clientFlattenDecode(mMemDecode.mAddr, mMemDecode.mSize, mClient, payloadCount,
+                                   payloads, statsHandle);
     CheckAndLogError(ret == false, UNKNOWN_ERROR, "@%s, clientFlattenDecode fails", __func__);
 
     ret = mCommon.requestSync(IPC_PG_PARAM_DECODE, mMemDecode.mHandle);

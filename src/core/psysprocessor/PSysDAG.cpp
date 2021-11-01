@@ -16,38 +16,38 @@
 
 #define LOG_TAG PSysDAG
 
-#include <algorithm>
-#include "iutils/Utils.h"
-#include "iutils/CameraLog.h"
 #include "PSysDAG.h"
+
+#include <algorithm>
+
+#include "iutils/CameraLog.h"
+#include "iutils/Utils.h"
 #ifdef TNR7_CM
 #include "GPUExecutor.h"
 #endif
 
 namespace icamera {
-PSysDAG::PSysDAG(int cameraId, PSysDagCallback* psysDagCB) :
-    mCameraId(cameraId),
-    mPSysDagCB(psysDagCB),
-    mConfigMode(CAMERA_STREAM_CONFIGURATION_MODE_AUTO),
-    mTuningMode(TUNING_MODE_MAX),
+PSysDAG::PSysDAG(int cameraId, PSysDagCallback* psysDagCB)
+        : mCameraId(cameraId),
+          mPSysDagCB(psysDagCB),
+          mConfigMode(CAMERA_STREAM_CONFIGURATION_MODE_AUTO),
+          mTuningMode(TUNING_MODE_MAX),
 #ifdef USE_PG_LITE_PIPE
-    mShareReferPool(nullptr),
+          mShareReferPool(nullptr),
 #endif
-    mDefaultMainInputPort(MAIN_PORT),
-    mVideoTnrExecutor(nullptr),
-    mStillTnrExecutor(nullptr),
-    mStillExecutor(nullptr),
-    mRunAicAfterQbuf(false)
-{
-    LOG1("@%s, mCameraId:%d", __func__, mCameraId);
+          mDefaultMainInputPort(MAIN_PORT),
+          mVideoTnrExecutor(nullptr),
+          mStillTnrExecutor(nullptr),
+          mStillExecutor(nullptr),
+          mRunAicAfterQbuf(false) {
+    LOG1("<id%d>@%s", mCameraId, __func__);
 
     mPolicyManager = new PolicyManager(mCameraId);
     mIspParamAdaptor = new IspParamAdaptor(mCameraId, PG_PARAM_PSYS_ISA);
 }
 
-PSysDAG::~PSysDAG()
-{
-    LOG1("@%s, mCameraId:%d", __func__, mCameraId);
+PSysDAG::~PSysDAG() {
+    LOG1("<id%d>@%s", mCameraId, __func__);
 
     releasePipeExecutors();
 
@@ -72,9 +72,8 @@ void PSysDAG::setFrameInfo(const std::map<Port, stream_t>& inputInfo,
     }
 }
 
-void PSysDAG::releasePipeExecutors()
-{
-    for (auto &executor : mExecutorsPool) {
+void PSysDAG::releasePipeExecutors() {
+    for (auto& executor : mExecutorsPool) {
         delete executor;
     }
     mExecutorsPool.clear();
@@ -85,15 +84,14 @@ void PSysDAG::releasePipeExecutors()
  * According to the policy config to create the executors,
  * and use the graph config data to configure the executors.
  */
-int PSysDAG::createPipeExecutors(bool useTnrOutBuffer)
-{
-    LOG1("@%s, mCameraId:%d", __func__, mCameraId);
+int PSysDAG::createPipeExecutors(bool useTnrOutBuffer) {
+    LOG1("<id%d>@%s", mCameraId, __func__);
 
     releasePipeExecutors();
 
     mOngoingPalMap.clear();
 
-    IGraphConfigManager *GCM = IGraphConfigManager::getInstance(mCameraId);
+    IGraphConfigManager* GCM = IGraphConfigManager::getInstance(mCameraId);
     CheckAndLogError(!GCM, UNKNOWN_ERROR, "Failed to get GC manager in PSysDAG!");
 
     std::shared_ptr<IGraphConfig> gc = GCM->getGraphConfig(mConfigMode);
@@ -111,13 +109,13 @@ int PSysDAG::createPipeExecutors(bool useTnrOutBuffer)
     gc->getPgNames(&pgNames);
     bool hasVideoPipe = false, hasStillPipe = false;
 
-    for (auto &item : cfg->pipeExecutorVec) {
+    for (auto& item : cfg->pipeExecutorVec) {
         int streamId = -1;
         bool pgFound = true;
 
         // Not support multiple streamId in one executor,
         // so need to the check the streamId of pgList.
-        for (auto &pgName : item.pgList) {
+        for (auto& pgName : item.pgList) {
             if (std::find(pgNames.begin(), pgNames.end(), pgName) == pgNames.end()) {
                 pgFound = false;
                 break;
@@ -128,29 +126,29 @@ int PSysDAG::createPipeExecutors(bool useTnrOutBuffer)
                              "the streamId: %d for pgName(%s) is different with previous: %d",
                              tmpId, pgName.c_str(), streamId);
             streamId = tmpId;
-            LOG1("%s executor:%s pg name:%s streamId: %d",
-                  __func__, item.exeName.c_str(), pgName.c_str(), streamId);
+            LOG1("%s executor:%s pg name:%s streamId: %d", __func__, item.exeName.c_str(),
+                 pgName.c_str(), streamId);
         }
-        if (!pgFound)
-            continue;
+        if (!pgFound) continue;
 
-        if (!hasVideoPipe)
-            hasVideoPipe = (streamId == VIDEO_STREAM_ID);
+        if (!hasVideoPipe) hasVideoPipe = (streamId == VIDEO_STREAM_ID);
         if (!hasStillPipe)
             hasStillPipe = (streamId == STILL_STREAM_ID || streamId == STILL_TNR_STREAM_ID);
 #ifdef TNR7_CM
-        PipeExecutor *executor;
+        PipeExecutor* executor;
         if (strstr(item.exeName.c_str(), "gputnr") != nullptr) {
-            executor = new GPUExecutor(mCameraId, item, cfg->exclusivePgs, this, gc,
-                                       useTnrOutBuffer);
-            if (streamId == VIDEO_STREAM_ID) mVideoTnrExecutor = executor;
-            else if (streamId == STILL_TNR_STREAM_ID) mStillTnrExecutor = executor;
+            executor =
+                new GPUExecutor(mCameraId, item, cfg->exclusivePgs, this, gc, useTnrOutBuffer);
+            if (streamId == VIDEO_STREAM_ID)
+                mVideoTnrExecutor = executor;
+            else if (streamId == STILL_TNR_STREAM_ID)
+                mStillTnrExecutor = executor;
         } else {
             executor = new PipeExecutor(mCameraId, item, cfg->exclusivePgs, this, gc);
             if (streamId == STILL_STREAM_ID) mStillExecutor = executor;
         }
 #else
-        PipeExecutor *executor = new PipeExecutor(mCameraId, item, cfg->exclusivePgs, this, gc);
+        PipeExecutor* executor = new PipeExecutor(mCameraId, item, cfg->exclusivePgs, this, gc);
 #endif
         executor->setIspParamAdaptor(mIspParamAdaptor);
         executor->setStreamId(streamId);
@@ -169,8 +167,8 @@ int PSysDAG::createPipeExecutors(bool useTnrOutBuffer)
         mExecutorsPool.push_back(executor);
         mExecutorStreamId[executor] = streamId;
     }
-    LOG2("%s, hasVideoPipe: %d, hasStillPipe: %d, enableBundleInSdv: %d",
-         __func__, hasVideoPipe, hasStillPipe, cfg->enableBundleInSdv);
+    LOG2("%s, hasVideoPipe: %d, hasStillPipe: %d, enableBundleInSdv: %d", __func__, hasVideoPipe,
+         hasStillPipe, cfg->enableBundleInSdv);
 
     // Only enable psys bundle with aic when has video pipe only
     if (!hasStillPipe && PlatformData::psysBundleWithAic(mCameraId)) {
@@ -179,13 +177,12 @@ int PSysDAG::createPipeExecutors(bool useTnrOutBuffer)
 
     if (hasStillPipe && hasVideoPipe && !cfg->enableBundleInSdv) return OK;
 
-    for (auto &bundle : cfg->bundledExecutorDepths) {
+    for (auto& bundle : cfg->bundledExecutorDepths) {
         bool foundExecutor = true;
-        for (auto &executor : bundle.bundledExecutors) {
-            std::vector<PipeExecutor*>::iterator it = std::find_if(mExecutorsPool.begin(),
-                    mExecutorsPool.end(), [executor](PipeExecutor* exec) {
-                        return exec->getName() == executor;
-                    });
+        for (auto& executor : bundle.bundledExecutors) {
+            std::vector<PipeExecutor*>::iterator it = std::find_if(
+                mExecutorsPool.begin(), mExecutorsPool.end(),
+                [executor](PipeExecutor* exec) { return exec->getName() == executor; });
             if (it == mExecutorsPool.end()) {
                 foundExecutor = false;
                 break;
@@ -199,34 +196,40 @@ int PSysDAG::createPipeExecutors(bool useTnrOutBuffer)
     return OK;
 }
 
-bool PSysDAG::fetchTnrOutBuffer(int64_t seq, std::shared_ptr<CameraBuffer> buf)
-{
+bool PSysDAG::fetchTnrOutBuffer(int64_t seq, std::shared_ptr<CameraBuffer> buf) {
     return mVideoTnrExecutor != nullptr ? mVideoTnrExecutor->fetchTnrOutBuffer(seq, buf) : false;
 }
 
-bool PSysDAG::isBypassStillTnr(int64_t seq)
-{
+bool PSysDAG::isBypassStillTnr(int64_t seq) {
     return mStillTnrExecutor != nullptr ? mStillTnrExecutor->isBypassStillTnr(seq) : true;
 }
 
-int PSysDAG::getTnrExtraFrameCount(int64_t seq)
-{
+int PSysDAG::getTnrExtraFrameCount(int64_t seq) {
     return mStillTnrExecutor != nullptr ? mStillTnrExecutor->getTnrExtraFrameCount(seq) : 0;
 }
 
 /* multi-streams can bind to the same output port, but only one stream is active */
-bool PSysDAG::isInactiveStream(int streamId, const PSysTaskData* task)
-{
+bool PSysDAG::isInactiveStillStream(int streamId, const PSysTaskData* task, Port port) {
+    if (streamId == VIDEO_STREAM_ID) return false;
     if (mStillExecutor == nullptr || mStillTnrExecutor == nullptr) return false;
     long sequence = task->mInputBuffers.at(mDefaultMainInputPort)->getSequence();
-    bool isTnrTask = !isBypassStillTnr(sequence) || task->mFakeTask;
+    bool hasStill = false;
 
-    return ((!isTnrTask && (streamId == STILL_TNR_STREAM_ID))
-     || (isTnrTask && (streamId == STILL_STREAM_ID)));
+    if (task->mOutputBuffers.find(port) != task->mOutputBuffers.end()) {
+        std::shared_ptr<CameraBuffer> camBuf =
+            (const_cast<PSysTaskData*>(task))->mOutputBuffers[port];
+        if (camBuf && camBuf->getStreamUsage() == CAMERA_STREAM_STILL_CAPTURE) hasStill = true;
+    }
+    bool isStillTnrTask = hasStill && (!isBypassStillTnr(sequence) || task->mFakeTask);
+
+    /* STILL_STREAM_ID, isStillTnrTask = false hasStill = true/false, active stream
+    ** STILL_TNR_STREAM_ID, isStillTnrTask = true hasStill = true, active stream
+    */
+    return (!isStillTnrTask && (streamId == STILL_TNR_STREAM_ID)) ||
+           (isStillTnrTask && (streamId == STILL_STREAM_ID));
 }
 
-int PSysDAG::linkAndConfigExecutors()
-{
+int PSysDAG::linkAndConfigExecutors() {
     for (auto& consumer : mExecutorsPool) {
         std::map<ia_uid, Port> input;
 
@@ -254,8 +257,7 @@ int PSysDAG::linkAndConfigExecutors()
     return OK;
 }
 
-PipeExecutor* PSysDAG::findExecutorProducer(PipeExecutor* consumer)
-{
+PipeExecutor* PSysDAG::findExecutorProducer(PipeExecutor* consumer) {
     std::map<ia_uid, Port> inputTerminals;
     consumer->getInputTerminalPorts(inputTerminals);
 
@@ -279,14 +281,14 @@ PipeExecutor* PSysDAG::findExecutorProducer(PipeExecutor* consumer)
  * Search all the stream Ids in one pipe which provides frame buffer to the output port
  * mOutputPortToStreamIds: store all the different stream Ids to output port mapping table
  */
-status_t PSysDAG::searchStreamIdsForOutputPort(PipeExecutor *executor, Port port) {
-    LOG2("@%s, mCameraId:%d", __func__, mCameraId);
+status_t PSysDAG::searchStreamIdsForOutputPort(PipeExecutor* executor, Port port) {
+    LOG2("<id%d>@%s", mCameraId, __func__);
 
     CheckAndLogError(!executor || !executor->isOutputEdge(), BAD_VALUE,
                      "%s, the executor is nullptr or is not output edge", __func__);
 
     auto& streamIds = mOutputPortToStreamIds[port];
-    PipeExecutor *tmpExecutor = executor;
+    PipeExecutor* tmpExecutor = executor;
     // Loop to find the producer executor's stream id
     do {
         int32_t streamId = mExecutorStreamId[tmpExecutor];
@@ -305,9 +307,8 @@ status_t PSysDAG::searchStreamIdsForOutputPort(PipeExecutor *executor, Port port
  * Bind the port between DAG and its edge executors.
  * After the binding we'll know where the task buffer should be queued to.
  */
-int PSysDAG::bindExternalPortsToExecutor()
-{
-    LOG1("@%s, mCameraId:%d", __func__, mCameraId);
+int PSysDAG::bindExternalPortsToExecutor() {
+    LOG1("<id%d>@%s", mCameraId, __func__);
 
     mInputMaps.clear();
     mOutputMaps.clear();
@@ -330,7 +331,8 @@ int PSysDAG::bindExternalPortsToExecutor()
                 if (!portInfo.second.format) {
                     continue;
                 }
-                if (executor->isSameStreamConfig(portInfo.second, frameInfo.second, mConfigMode, false)) {
+                if (executor->isSameStreamConfig(portInfo.second, frameInfo.second, mConfigMode,
+                                                 false)) {
                     PortMapping portMap;
                     portMap.mExecutor = executor;
                     portMap.mDagPort = frameInfo.first;
@@ -360,7 +362,8 @@ int PSysDAG::bindExternalPortsToExecutor()
                 if (!portInfo.second.format) {
                     continue;
                 }
-                if (executor->isSameStreamConfig(portInfo.second, frameInfo.second, mConfigMode, true)) {
+                if (executor->isSameStreamConfig(portInfo.second, frameInfo.second, mConfigMode,
+                                                 true)) {
                     PortMapping portMap;
                     portMap.mExecutor = executor;
                     portMap.mDagPort = frameInfo.first;
@@ -379,14 +382,15 @@ int PSysDAG::bindExternalPortsToExecutor()
 
     // Each required port must be mapped to one of (edge) executor's port.
     // One input port may be mapped to more of (edge) executor's ports.
-    CheckAndLogError(mInputMaps.size() < mInputFrameInfo.size(), BAD_VALUE, "Failed to bind input ports");
-    CheckAndLogError(mOutputMaps.size() < mOutputFrameInfo.size(), BAD_VALUE, "Failed to bind output ports");
+    CheckAndLogError(mInputMaps.size() < mInputFrameInfo.size(), BAD_VALUE,
+                     "Failed to bind input ports");
+    CheckAndLogError(mOutputMaps.size() < mOutputFrameInfo.size(), BAD_VALUE,
+                     "Failed to bind output ports");
 
     return OK;
 }
 
-int PSysDAG::registerUserOutputBufs(Port port, const std::shared_ptr<CameraBuffer> &camBuffer)
-{
+int PSysDAG::registerUserOutputBufs(Port port, const std::shared_ptr<CameraBuffer>& camBuffer) {
     for (auto& outputMap : mOutputMaps) {
         if (port == outputMap.mDagPort) {
             outputMap.mExecutor->registerOutBuffers(outputMap.mExecutorPort, camBuffer);
@@ -397,8 +401,7 @@ int PSysDAG::registerUserOutputBufs(Port port, const std::shared_ptr<CameraBuffe
     return OK;
 }
 
-int PSysDAG::registerInternalBufs(std::map<Port, CameraBufVector> &internalBufs)
-{
+int PSysDAG::registerInternalBufs(std::map<Port, CameraBufVector>& internalBufs) {
     for (auto& portToBuffers : internalBufs) {
         for (auto& inputMap : mInputMaps) {
             if (inputMap.mDagPort == portToBuffers.first) {
@@ -416,14 +419,14 @@ int PSysDAG::registerInternalBufs(std::map<Port, CameraBufVector> &internalBufs)
 /**
  * Queue the buffers in PSysTaskData to the cooresponding executors.
  */
-int PSysDAG::queueBuffers(const PSysTaskData& task)
-{
-    LOG2("@%s, mCameraId:%d", __func__, mCameraId);
+int PSysDAG::queueBuffers(const PSysTaskData& task) {
+    LOG2("<id%d>@%s", mCameraId, __func__);
     // Provide the input buffers for the input edge executor.
     for (auto& inputFrame : task.mInputBuffers) {
         for (auto& inputMap : mInputMaps) {
             if (inputMap.mDagPort == inputFrame.first) {
-                if (isInactiveStream(mExecutorStreamId[inputMap.mExecutor], &task))
+                if (isInactiveStillStream(mExecutorStreamId[inputMap.mExecutor], &task,
+                                          inputFrame.first))
                     continue;
                 inputMap.mExecutor->onFrameAvailable(inputMap.mExecutorPort, inputFrame.second);
                 LOG2("%s, queue input buffer: dagPort: %d, executorPort: %d, name: %s", __func__,
@@ -436,14 +439,15 @@ int PSysDAG::queueBuffers(const PSysTaskData& task)
     for (auto& outputFrame : task.mOutputBuffers) {
         for (auto& outputMap : mOutputMaps) {
             if (outputMap.mDagPort == outputFrame.first) {
-                if (isInactiveStream(mExecutorStreamId[outputMap.mExecutor], &task))
+                if (isInactiveStillStream(mExecutorStreamId[outputMap.mExecutor], &task,
+                                          outputFrame.first))
                     continue;
                 outputMap.mExecutor->qbuf(outputMap.mExecutorPort, outputFrame.second);
                 LOG2("%s, queue output buffer, dagPort: %d, executorPort: %d, name: %s", __func__,
                      outputMap.mDagPort, outputMap.mExecutorPort, outputMap.mExecutor->getName());
                 if (outputFrame.second) {
                     LOG2("outputFrame.second %p, outputFrame.first %d", outputFrame.second.get(),
-                          outputFrame.first);
+                         outputFrame.first);
                 }
                 break;
             }
@@ -460,11 +464,9 @@ void PSysDAG::configShareReferPool(std::shared_ptr<IGraphConfig> gc) {
         return;
     }
 
-    CheckWarning(cfg->shareReferPairList.size() % 2 != 0, VOID_VALUE,
-                 "bad share refer pair count");
+    CheckWarning(cfg->shareReferPairList.size() % 2 != 0, VOID_VALUE, "bad share refer pair count");
 
-    if (!mShareReferPool.get())
-        mShareReferPool = std::make_shared<ShareReferBufferPool>(mCameraId);
+    if (!mShareReferPool.get()) mShareReferPool = std::make_shared<ShareReferBufferPool>(mCameraId);
 
     for (size_t i = 0; i < cfg->shareReferPairList.size(); i += 2) {
         ShareReferIdDesc& pDesc = cfg->shareReferPairList[i];
@@ -477,17 +479,16 @@ void PSysDAG::configShareReferPool(std::shared_ptr<IGraphConfig> gc) {
         int32_t cPort = cDesc.second;
         // Check producer only because sometimes there is no consumer (such as still pipe)
         if (pPgId > 0) {
-           int64_t pReferId = ShareReferBufferPool::constructReferId(pStream, pPgId, pPort);
-           int64_t cReferId = ShareReferBufferPool::constructReferId(cStream, cPgId, cPort);
-           mShareReferPool->setReferPair(pDesc.first, pReferId, cDesc.first, cReferId);
+            int64_t pReferId = ShareReferBufferPool::constructReferId(pStream, pPgId, pPort);
+            int64_t cReferId = ShareReferBufferPool::constructReferId(cStream, cPgId, cPort);
+            mShareReferPool->setReferPair(pDesc.first, pReferId, cDesc.first, cReferId);
         }
     }
 }
 #endif
 
-int PSysDAG::configure(ConfigMode configMode, TuningMode tuningMode, bool useTnrOutBuffer)
-{
-    LOG1("@%s, mCameraId:%d", __func__, mCameraId);
+int PSysDAG::configure(ConfigMode configMode, TuningMode tuningMode, bool useTnrOutBuffer) {
+    LOG1("<id%d>@%s", mCameraId, __func__);
 
     mConfigMode = configMode;
     mTuningMode = tuningMode;
@@ -515,9 +516,8 @@ int PSysDAG::configure(ConfigMode configMode, TuningMode tuningMode, bool useTnr
     return OK;
 }
 
-int PSysDAG::start()
-{
-    LOG1("@%s, mCameraId:%d", __func__, mCameraId);
+int PSysDAG::start() {
+    LOG1("<id%d>@%s", mCameraId, __func__);
 
     mPolicyManager->setActive(true);
 
@@ -527,9 +527,8 @@ int PSysDAG::start()
     return OK;
 }
 
-int PSysDAG::stop()
-{
-    LOG1("@%s, mCameraId:%d", __func__, mCameraId);
+int PSysDAG::stop() {
+    LOG1("<id%d>@%s", mCameraId, __func__);
 
     mPolicyManager->setActive(false);
 
@@ -543,21 +542,18 @@ int PSysDAG::stop()
     return OK;
 }
 
-int PSysDAG::resume()
-{
+int PSysDAG::resume() {
     mPolicyManager->setActive(true);
     return OK;
 }
 
-int PSysDAG::pause()
-{
+int PSysDAG::pause() {
     mPolicyManager->setActive(false);
     return OK;
 }
 
-void PSysDAG::addTask(PSysTaskData taskParam)
-{
-    LOG2("@%s, mCameraId:%d", __func__, mCameraId);
+void PSysDAG::addTask(PSysTaskData taskParam) {
+    LOG2("<id%d>@%s", mCameraId, __func__);
 
     if (taskParam.mTuningMode != mTuningMode) {
         tuningReconfig(taskParam.mTuningMode);
@@ -573,9 +569,9 @@ void PSysDAG::addTask(PSysTaskData taskParam)
                 task.mNumOfValidBuffers++;
             }
         }
-        LOG2("%s:Id:%d push task with %d output buffers, sequence: %u",
-                __func__, mCameraId, task.mNumOfValidBuffers,
-                taskParam.mInputBuffers.at(mDefaultMainInputPort)->getSequence());
+        LOG2("%s:<id%d:seq%u> push task with %d output buffers", __func__, mCameraId,
+             taskParam.mInputBuffers.at(mDefaultMainInputPort)->getSequence(),
+             task.mNumOfValidBuffers);
         AutoMutex taskLock(mTaskLock);
         mOngoingTasks.push_back(task);
     }
@@ -586,26 +582,20 @@ void PSysDAG::addTask(PSysTaskData taskParam)
 
     long sequence = taskParam.mInputBuffers.at(mDefaultMainInputPort)->getSequence();
     if (runIspAdaptor) {
-        LOG2("%s, run AIC before execute psys for sequence: %ld", __func__, sequence);
+        LOG2("%s, <seq%ld> run AIC before execute psys", __func__, sequence);
         prepareIpuParams(sequence, false, &task);
     }
 
     queueBuffers(taskParam);
 
     if (runIspAdaptor && mRunAicAfterQbuf) {
-        LOG2("%s, run AIC bundle with execute psys for sequence: %ld", __func__, sequence + 1);
+        LOG2("%s, <seq%ld> run AIC bundle with execute psys", __func__, sequence + 1);
         // if running psys bundle with aic, current aic result is for next sequence
         prepareIpuParams((sequence + 1), false, &task);
     }
 }
 
-int PSysDAG::getParameters(Parameters& param)
-{
-    return mIspParamAdaptor->getParameters(param);
-}
-
-TuningMode PSysDAG::getTuningMode(long sequence)
-{
+TuningMode PSysDAG::getTuningMode(long sequence) {
     AutoMutex taskLock(mTaskLock);
 
     if (sequence < 0) return mTuningMode;
@@ -635,11 +625,10 @@ TuningMode PSysDAG::getTuningMode(long sequence)
  * output buffer returned, if so, then it'll return the whole corresponding task data to
  * PSysProcessor.
  */
-int PSysDAG::onFrameDone(Port port, const std::shared_ptr<CameraBuffer>& buffer)
-{
-    LOG2("@%s, mCameraId:%d buffer=%p", __func__, mCameraId, buffer.get());
+int PSysDAG::onFrameDone(Port port, const std::shared_ptr<CameraBuffer>& buffer) {
+    LOG2("<id%d>@%s buffer=%p", mCameraId, __func__, buffer.get());
 
-    if (!buffer) return OK; // No need to handle if the buffer is nullptr.
+    if (!buffer) return OK;  // No need to handle if the buffer is nullptr.
 
     long sequence = buffer->getSequence();
     bool needReturn = false;
@@ -667,8 +656,8 @@ int PSysDAG::onFrameDone(Port port, const std::shared_ptr<CameraBuffer>& buffer)
             if (it->mNumOfReturnedBuffers >= it->mNumOfValidBuffers) {
                 result = it->mTaskData;
                 needReturn = true;
-                LOG2("%s:Id:%d finish task with %d returned output buffers, sequence: %ld",
-                     __func__, mCameraId, it->mNumOfReturnedBuffers, sequence);
+                LOG2("<Id%d:seq%ld> finish task with %d returned output buffers, ", mCameraId,
+                     sequence, it->mNumOfReturnedBuffers);
                 // Remove the task data from mOngoingTasks since it's already processed.
                 mOngoingTasks.erase(it);
 
@@ -696,8 +685,7 @@ int PSysDAG::onFrameDone(Port port, const std::shared_ptr<CameraBuffer>& buffer)
     return OK;
 }
 
-int PSysDAG::prepareIpuParams(long sequence, bool forceUpdate, TaskInfo *task)
-{
+int PSysDAG::prepareIpuParams(long sequence, bool forceUpdate, TaskInfo* task) {
     TRACE_LOG_PROCESS("PSysDAG", __func__, MAKE_COLOR(sequence), sequence);
     if (task == nullptr) {
         AutoMutex taskLock(mTaskLock);
@@ -709,31 +697,30 @@ int PSysDAG::prepareIpuParams(long sequence, bool forceUpdate, TaskInfo *task)
             }
         }
     }
-    CheckAndLogError(!task, UNKNOWN_ERROR,
-                     "%s, Failed to find the task for sequence: %ld", __func__, sequence);
+    CheckAndLogError(!task, UNKNOWN_ERROR, "%s, <seq%ld> Failed to find the task", __func__,
+                     sequence);
 
     // According to the output port to filter the valid executor stream Ids, and then run AIC
     std::vector<int32_t> activeStreamIds;
     for (auto& outputFrame : task->mTaskData.mOutputBuffers) {
-        if (outputFrame.second.get() == nullptr)
-            continue;
+        if (outputFrame.second.get() == nullptr) continue;
 
-        std::map<Port, std::vector<int32_t> >::iterator
-            it = mOutputPortToStreamIds.find(outputFrame.first);
+        std::map<Port, std::vector<int32_t> >::iterator it =
+            mOutputPortToStreamIds.find(outputFrame.first);
         CheckAndLogError(it == mOutputPortToStreamIds.end(), UNKNOWN_ERROR,
-                         "%s, failed to find streamIds for output port: %d",
-                         __func__, outputFrame.first);
+                         "%s, failed to find streamIds for output port: %d", __func__,
+                         outputFrame.first);
 
         for (auto& streamId : it->second) {
-            if (isInactiveStream(streamId, &(task->mTaskData))) continue;
-            if (std::find(activeStreamIds.begin(), activeStreamIds.end(), streamId)
-                    == activeStreamIds.end()) {
+            if (isInactiveStillStream(streamId, &(task->mTaskData), outputFrame.first)) continue;
+            if (std::find(activeStreamIds.begin(), activeStreamIds.end(), streamId) ==
+                activeStreamIds.end()) {
                 activeStreamIds.push_back(streamId);
             }
         }
     }
-    LOG2("%s, the active streamId size for aic(sequence: %ld) is %zu",
-         __func__, sequence, activeStreamIds.size());
+    LOG2("%s, <seq%ld> the active streamId size for aic is %zu", __func__, sequence,
+         activeStreamIds.size());
 
     int ret = OK;
     for (auto& id : activeStreamIds) {
@@ -750,10 +737,10 @@ int PSysDAG::prepareIpuParams(long sequence, bool forceUpdate, TaskInfo *task)
             }
         }
 
-        ret = mIspParamAdaptor->runIspAdapt(&task->mTaskData.mIspSettings, task->mTaskData.mRequestId,
-                                            sequence, id);
-        CheckAndLogError(ret != OK, UNKNOWN_ERROR,
-                         "%s, Failed to run AIC: sequence: %ld streamId: %d", __func__, sequence, id);
+        ret = mIspParamAdaptor->runIspAdapt(&task->mTaskData.mIspSettings,
+                                            task->mTaskData.mRequestId, sequence, id);
+        CheckAndLogError(ret != OK, UNKNOWN_ERROR, "%s, <seq%ld> Failed to run AIC: streamId: %d",
+                         __func__, sequence, id);
 
         // Store the new sequence.
         AutoMutex l(mOngoingPalMapLock);
@@ -763,9 +750,8 @@ int PSysDAG::prepareIpuParams(long sequence, bool forceUpdate, TaskInfo *task)
     return OK;
 }
 
-int PSysDAG::returnBuffers(PSysTaskData& result)
-{
-    LOG2("@%s, mCameraId:%d", __func__, mCameraId);
+int PSysDAG::returnBuffers(PSysTaskData& result) {
+    LOG2("<id%d>@%s", mCameraId, __func__);
 
     CheckAndLogError(!mPSysDagCB, INVALID_OPERATION, "Invalid PSysProcessor");
 
@@ -773,24 +759,21 @@ int PSysDAG::returnBuffers(PSysTaskData& result)
     return OK;
 }
 
-void PSysDAG::registerListener(EventType eventType, EventListener* eventListener)
-{
-    //Pass through event registration to PipeExecutor
+void PSysDAG::registerListener(EventType eventType, EventListener* eventListener) {
+    // Pass through event registration to PipeExecutor
     for (auto const& executor : mExecutorsPool) {
         executor->registerListener(eventType, eventListener);
     }
 }
 
-void PSysDAG::removeListener(EventType eventType, EventListener* eventListener)
-{
-    //Pass through event unregistration to PipeExecutor
+void PSysDAG::removeListener(EventType eventType, EventListener* eventListener) {
+    // Pass through event unregistration to PipeExecutor
     for (auto const& executor : mExecutorsPool) {
         executor->removeListener(eventType, eventListener);
     }
 }
 
-void PSysDAG::tuningReconfig(TuningMode newTuningMode)
-{
+void PSysDAG::tuningReconfig(TuningMode newTuningMode) {
     LOG1("@%s ", __func__);
 
     if (mIspParamAdaptor) {
@@ -800,16 +783,17 @@ void PSysDAG::tuningReconfig(TuningMode newTuningMode)
     }
 
     int ret = mIspParamAdaptor->init();
-    CheckAndLogError(ret != OK, VOID_VALUE, "Init isp Adaptor failed, tuningMode %d", newTuningMode);
+    CheckAndLogError(ret != OK, VOID_VALUE, "Init isp Adaptor failed, tuningMode %d",
+                     newTuningMode);
 
-    ret = mIspParamAdaptor->configure(mInputFrameInfo[mDefaultMainInputPort], mConfigMode, newTuningMode);
+    ret = mIspParamAdaptor->configure(mInputFrameInfo[mDefaultMainInputPort], mConfigMode,
+                                      newTuningMode);
     CheckAndLogError(ret != OK, VOID_VALUE, "Failed to reconfig isp Adaptor.");
 
     mTuningMode = newTuningMode;
 }
 
-void PSysDAG::dumpExternalPortMap()
-{
+void PSysDAG::dumpExternalPortMap() {
     if (!Log::isDebugLevelEnable(CAMERA_DEBUG_LOG_LEVEL2)) return;
 
     for (auto& inputMap : mInputMaps) {
@@ -830,4 +814,4 @@ void PSysDAG::dumpExternalPortMap()
     }
 }
 
-}
+}  // namespace icamera

@@ -29,19 +29,13 @@ namespace icamera {
 
 AiqSetting::AiqSetting(int cameraId) :
     mCameraId(cameraId),
-    mPipeSwitchFrameCount(0)
-{
-    LOG3A("@%s", __func__);
+    mPipeSwitchFrameCount(0) {
 }
 
-AiqSetting::~AiqSetting()
-{
-    LOG3A("@%s", __func__);
+AiqSetting::~AiqSetting() {
 }
 
-int AiqSetting::init(void)
-{
-    LOG3A("@%s", __func__);
+int AiqSetting::init(void) {
     AutoWMutex wlock(mParamLock);
 
     mPipeSwitchFrameCount = 0;
@@ -58,17 +52,11 @@ int AiqSetting::init(void)
     return OK;
 }
 
-int AiqSetting::deinit(void)
-{
-    LOG3A("@%s", __func__);
-    AutoWMutex wlock(mParamLock);
-
+int AiqSetting::deinit(void) {
     return OK;
 }
 
-int AiqSetting::configure(const stream_config_t *streamList)
-{
-    LOG3A("@%s", __func__);
+int AiqSetting::configure(const stream_config_t *streamList) {
     AutoWMutex wlock(mParamLock);
 
     camera_resolution_t resolution = {streamList->streams[0].width, streamList->streams[0].height};
@@ -104,13 +92,14 @@ int AiqSetting::configure(const stream_config_t *streamList)
     if (!mTuningModes.empty()) {
         mAiqParam.tuningMode = mTuningModes[0];
     }
-    LOG3A("%s, tuningMode %d, configMode %x", __func__, mAiqParam.tuningMode, configModes[0]);
+    LOG1("%s, tuningMode %d, configMode %x, fame usage %d, res %dx%d", __func__,
+         mAiqParam.tuningMode, configModes[0], mAiqParam.frameUsage,
+         mAiqParam.resolution.width, mAiqParam.resolution.height);
 
     return OK;
 }
 
-void AiqSetting::updateFrameUsage(const stream_config_t *streamList)
-{
+void AiqSetting::updateFrameUsage(const stream_config_t *streamList) {
     bool preview = false, still = false, video = false;
     for (int i = 0; i < streamList->num_streams; i++) {
         if (streamList->streams[i].usage == CAMERA_STREAM_VIDEO_CAPTURE) {
@@ -133,9 +122,7 @@ void AiqSetting::updateFrameUsage(const stream_config_t *streamList)
     }
 }
 
-int AiqSetting::setParameters(const Parameters& params)
-{
-    LOG3A("@%s", __func__);
+int AiqSetting::setParameters(const Parameters& params) {
     AutoWMutex wlock(mParamLock);
 
     // Update AE related parameters
@@ -149,6 +136,10 @@ int AiqSetting::setParameters(const Parameters& params)
     params.getAeConvergeSpeedMode(mAiqParam.aeConvergeSpeedMode);
     params.getAeConvergeSpeed(mAiqParam.aeConvergeSpeed);
     params.getRun3ACadence(mAiqParam.run3ACadence);
+    if (mAiqParam.run3ACadence < 1) {
+        LOGW("Invalid 3A cadence %d, use default 1.", mAiqParam.run3ACadence);
+        mAiqParam.run3ACadence = 1;
+    }
     params.getCallbackRgbs(&mAiqParam.callbackRgbs);
     params.getCallbackTmCurve(&mAiqParam.callbackTmCurve);
 
@@ -269,23 +260,21 @@ int AiqSetting::setParameters(const Parameters& params)
     }
 
     params.getPowerMode(mAiqParam.powerMode);
+    params.getTotalExposureTarget(mAiqParam.totalExposureTarget);
 
     mAiqParam.dump();
 
     return OK;
 }
 
-int AiqSetting::getAiqParameter(aiq_parameter_t &param)
-{
-    LOG3A("@%s", __func__);
+int AiqSetting::getAiqParameter(aiq_parameter_t &param) {
     AutoRMutex rlock(mParamLock);
 
     param = mAiqParam;
     return OK;
 }
 
-void aiq_parameter_t::reset()
-{
+void aiq_parameter_t::reset() {
     frameUsage = FRAME_USAGE_VIDEO;
     aeMode = AE_MODE_AUTO;
     aeForceLock = false;
@@ -355,78 +344,86 @@ void aiq_parameter_t::reset()
     callbackTmCurve = false;
 
     powerMode = CAMERA_LOW_POWER;
+    totalExposureTarget = 0;
 
     CLEAR(resolution);
 }
 
-void aiq_parameter_t::dump()
-{
-    // Log only printed when 3a log enabled.
-    if (!Log::isDebugLevelEnable(CAMERA_DEBUG_LOG_AIQ)) return;
+void aiq_parameter_t::dump() {
+    if (!Log::isDebugLevelEnable(CAMERA_DEBUG_LOG_LEVEL3)) return;
 
-    LOG3A("Application parameters:");
-    LOG3A("frame usage mode %d", frameUsage);
-    LOG3A("ae mode:%d, awb mode:%d, af mode:%d, scene mode:%d", aeMode, awbMode, afMode, sceneMode);
-    LOG3A("ae lock:%d, awb lock:%d, af trigger:%d", aeForceLock, awbForceLock, afTrigger);
-    LOG3A("EV:%f, manualExpTimeUs:%ld, manualGain:%f, manualIso %d",
-          evShift, manualExpTimeUs, manualGain, manualIso);
-    LOG3A("FPS:%f", fps);
-    LOG3A("FPS range:(%f-%f)", aeFpsRange.min, aeFpsRange.max);
-    LOG3A("Antibanding mode:%d", antibandingMode);
-    LOG3A("cctRange:(%f-%f)", cctRange.min, cctRange.max);
-    LOG3A("manual white point:(%d,%d)", whitePoint.x, whitePoint.y);
-    LOG3A("manual awb gain:(%d,%d,%d)", awbManualGain.r_gain, awbManualGain.g_gain, awbManualGain.b_gain);
-    LOG3A("manual awb gain shift:(%d,%d,%d)", awbGainShift.r_gain, awbGainShift.g_gain, awbGainShift.b_gain);
-    for (int i = 0; i < 3; i++) {
-        LOG3A("manual color matrix:  [%.3f %.3f %.3f]",
-            manualColorMatrix.color_transform[i][0],
-            manualColorMatrix.color_transform[i][1],
-            manualColorMatrix.color_transform[i][2]);
-    }
-    LOG3A("manual color gains in rggb:(%.3f,%.3f,%.3f,%.3f)",
-        manualColorGains.color_gains_rggb[0], manualColorGains.color_gains_rggb[1],
-        manualColorGains.color_gains_rggb[2], manualColorGains.color_gains_rggb[3]);
-    LOG3A("ae region size:%zu, blc area mode:%d", aeRegions.size(), blcAreaMode);
+    LOG3("Application parameters:");
+    LOG3("3A mode: ae %d, awb %d, af %d, scene %d", aeMode, awbMode, afMode, sceneMode);
+    LOG3("lock: ae %d, awb %d, af trigger:%d", aeForceLock, awbForceLock, afTrigger);
+    LOG3("converge speed mode: ae %d, awb %d", aeConvergeSpeedMode, awbConvergeSpeedMode);
+    LOG3("converge speed: ae %d, awb %d", aeConvergeSpeed, awbConvergeSpeed);
+
+    LOG3("EV:%f, range (%f-%f), step %d/%d", evShift, evRange.min, evRange.max,
+         evStep.numerator, evStep.denominator);
+    LOG3("manualExpTimeUs:%ld, time range (%f-%f)", manualExpTimeUs,
+         exposureTimeRange.min, exposureTimeRange.max);
+    LOG3("manualGain %f, manualIso %d, gain range (%f-%f)", manualGain, manualIso,
+         sensitivityGainRange.min, sensitivityGainRange.max);
+    LOG3("FPS %f, range (%f-%f)", fps, aeFpsRange.min, aeFpsRange.max);
     for (auto &region : aeRegions) {
-        LOG3A("ae region (%d, %d, %d, %d, %d)",
-            region.left, region.top, region.right, region.bottom, region.weight);
+        LOG3("ae region (%d, %d, %d, %d, %d)",
+             region.left, region.top, region.right, region.bottom, region.weight);
     }
-    LOG3A("af region size:%zu", aeRegions.size());
-    for (auto &region : afRegions) {
-        LOG3A("af region (%d, %d, %d, %d, %d)",
-            region.left, region.top, region.right, region.bottom, region.weight);
-    }
-    LOG3A("manual focus distance: %f, min focus distance: %f", focusDistance, minFocusDistance);
+    LOG3("Antibanding mode:%d", antibandingMode);
+    LOG3("AE Distribution Priority:%d", aeDistributionPriority);
 
-    LOG3A("ae converge speed mode:(%d) awb converge speed mode:(%d)", aeConvergeSpeedMode, awbConvergeSpeedMode);
-    LOG3A("ae converge speed:(%d) awb converge speed:(%d)", aeConvergeSpeed, awbConvergeSpeed);
-    LOG3A("custom AIC parameter length:%d", customAicParam.length);
+    LOG3("cctRange:(%f-%f)", cctRange.min, cctRange.max);
+    LOG3("manual awb: white point:(%d,%d)", whitePoint.x, whitePoint.y);
+    LOG3("manual awb gain:(%d,%d,%d), gain shift:(%d,%d,%d)",
+         awbManualGain.r_gain, awbManualGain.g_gain, awbManualGain.b_gain,
+         awbGainShift.r_gain, awbGainShift.g_gain, awbGainShift.b_gain);
+    for (int i = 0; i < 3; i++) {
+        LOG3("manual color matrix: [%.3f %.3f %.3f]",
+             manualColorMatrix.color_transform[i][0],
+             manualColorMatrix.color_transform[i][1],
+             manualColorMatrix.color_transform[i][2]);
+    }
+    LOG3("manual color gains in rggb:(%.3f,%.3f,%.3f,%.3f)",
+         manualColorGains.color_gains_rggb[0], manualColorGains.color_gains_rggb[1],
+         manualColorGains.color_gains_rggb[2], manualColorGains.color_gains_rggb[3]);
+
+    for (auto &region : afRegions) {
+        LOG3("af region (%d, %d, %d, %d, %d)",
+             region.left, region.top, region.right, region.bottom, region.weight);
+    }
+    LOG3("manual focus distance: %f, min focus distance: %f", focusDistance, minFocusDistance);
+    LOG3("Focus position %d, start timestamp %llu", lensPosition, lensMovementStartTimestamp);
+
+    LOG3("digitalZoomRatio %f", digitalZoomRatio);
+
+    LOG3("custom AIC parameter length:%u", customAicParam.length);
     if (customAicParam.length > 0) {
-        LOG3A("custom AIC parameter data:%s", customAicParam.data);
+        LOG3("custom AIC parameter data:%s", customAicParam.data);
     }
     if (tuningMode != TUNING_MODE_MAX) {
-        LOG3A("camera mode:%d", tuningMode);
+        LOG3("camera mode:%d", tuningMode);
     }
-    LOG3A("ltm strength:(%d)", ltmStrength);
-    LOG3A("weight grid mode:%d", weightGridMode);
-    LOG3A("AE Distribution Priority:%d", aeDistributionPriority);
-    LOG3A("Yuv Color Range Mode:%d", yuvColorRangeMode);
-    LOG3A("AE exposure time range, min %f, max %f", exposureTimeRange.min, exposureTimeRange.max);
-    LOG3A("AE sensitivity gain range, min %.2f, max %.2f", sensitivityGainRange.min, sensitivityGainRange.max);
-    LOG3A("DVS mode %d", videoStabilizationMode);
+    LOG3("blc area mode:%d", blcAreaMode);
+    LOG3("ltm strength:(%u)", ltmStrength);
+    LOG3("weight grid mode:%d", weightGridMode);
+    LOG3("Yuv Color Range Mode:%d", yuvColorRangeMode);
+    LOG3("DVS mode %d", videoStabilizationMode);
 
-    LOG3A("Focus position %d, start timestamp %llu", lensPosition, lensMovementStartTimestamp);
-    LOG3A("makernoteMode %d", makernoteMode);
-    LOG3A("shadingMode %d", shadingMode);
-    LOG3A("lensShadingMapMode %d", lensShadingMapMode);
-    LOG3A("lensShadingMapSize x:%d, y:%d", lensShadingMapSize.x, lensShadingMapSize.y);
+    LOG3("makernoteMode %d", makernoteMode);
+    LOG3("shadingMode %d, lensShadingMapMode %d, size %dx%d", shadingMode,
+         lensShadingMapMode, lensShadingMapSize.x, lensShadingMapSize.y);
 
-    LOG3A("tonemap mode %d, preset curve %d, gamma %f, curve points %d",
+    LOG3("ldcMode %d, rscMode %d, flipMode %d", ldcMode, ldcMode, flipMode);
+
+    LOG3("run3ACadence %d", run3ACadence);
+    LOG3("tonemap mode %d, preset curve %d, gamma %f, curve points %d",
           tonemapMode, tonemapPresetCurve, tonemapGamma, tonemapCurves.gSize);
-    LOG3A("testPatternMode %d", testPatternMode);
-    LOG3A("callback RGBS stats %s", callbackRgbs ? "true" : "false");
-    LOG3A("callback Tonemap curve: %s", callbackTmCurve ? "true" : "false");
-    LOG3A("power mode %d", powerMode);
+    LOG3("testPatternMode %d", testPatternMode);
+    LOG3("power mode %d", powerMode);
+    LOG3("totalExposureTarget %ld", totalExposureTarget);
+
+    LOG3("callback RGBS stats %s", callbackRgbs ? "true" : "false");
+    LOG3("callback Tonemap curve: %s", callbackTmCurve ? "true" : "false");
 }
 
 } /* namespace icamera */

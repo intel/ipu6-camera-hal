@@ -27,46 +27,51 @@
 #endif
 
 #include <ia_types.h>
-#include <unordered_map>
+
 #include <memory>
 #include <queue>
+#include <unordered_map>
 
-#include "iutils/Utils.h"
-#include "Parameters.h"
+#ifdef CAL_BUILD
+#include "Camera3Buffer.h"
+#endif
 #include "FaceBase.h"
-
 #include "IntelCCATypes.h"
+#include "Parameters.h"
+#include "iutils/Utils.h"
 
 namespace icamera {
 
 #ifdef FACE_DETECTION
 class FaceDetection : public Thread {
  public:
-    FaceDetection(int cameraId, unsigned int maxFaceNum, int32_t halStreamId,
-                  int width, int height);
+    FaceDetection(int cameraId, unsigned int maxFaceNum, int32_t halStreamId, int width,
+                  int height);
     ~FaceDetection();
 
-    static FaceDetection *createInstance(int cameraId, unsigned int maxFaceNum,
-                                         int32_t halStreamId, int width, int height);
+    static FaceDetection* createInstance(int cameraId, unsigned int maxFaceNum, int32_t halStreamId,
+                                         int width, int height);
     static void destoryInstance(int cameraId);
-    static FaceDetection *getInstance(int cameraId);
+    static FaceDetection* getInstance(int cameraId);
 
-    void runFaceDetection(const camera_buffer_t &buffer);
-    void runFaceDetectionBySync(const camera_buffer_t &buffer);
-    void runFaceDetectionByAsync(const camera_buffer_t &buffer);
-    int getFaceNum();
+    void runFaceDetection(const std::shared_ptr<camera3::Camera3Buffer> ccBuf);
+    void runFaceDetectionBySync(const std::shared_ptr<camera3::Camera3Buffer> ccBuf);
+    void runFaceDetectionByAsync(const std::shared_ptr<camera3::Camera3Buffer> ccBuf);
     virtual bool threadLoop();
-    static int getResult(int cameraId, cca::cca_face_state *faceState);
-    static int getResult(int cameraId, CVFaceDetectionAbstractResult *result);
+    static int getResult(int cameraId, cca::cca_face_state* faceState);
+    static int getResult(int cameraId, CVFaceDetectionAbstractResult* result);
 
  private:
+    bool isInitialized() { return mInitialized; }
+
     bool faceRunningByCondition();
     void printfFDRunRate();
-    int getFaceDetectionResult(FaceDetectionResult *mResult, bool resetRes = false);
-    FaceDetectionRunParams *acquireRunBuf();
-    void returnRunBuf(FaceDetectionRunParams *memRunBuf);
-    void getCurrentFrameWidthAndHight(int *frameWidth, int *frameHigth);
-    void getHalStreamId(int32_t *halStreamId);
+    int getFaceDetectionResult(FaceDetectionResult* mResult, bool resetRes = false);
+    int getFaceNum();
+    FaceDetectionRunParams* acquireRunBuf();
+    void returnRunBuf(FaceDetectionRunParams* memRunBuf);
+    void getCurrentFrameWidthAndHight(int* frameWidth, int* frameHigth);
+    void getHalStreamId(int32_t* halStreamId);
 
     // Guard for face engine instance
     static Mutex sLock;
@@ -84,12 +89,12 @@ class FaceDetection : public Thread {
     std::condition_variable mRunCondition;
     // Guard for running buffer queue of thread
     std::mutex mRunBufQueueLock;
-    std::queue<FaceDetectionRunParams *> mRunBufQueue;
+    std::queue<FaceDetectionRunParams*> mRunBufQueue;
     const uint64_t kMaxDuration = 2000000000;  // 2000ms
 
     // Guard for running buffer pool of face engine
     std::mutex mMemRunPoolLock;
-    std::queue<FaceDetectionRunParams *> mMemRunPool;
+    std::queue<FaceDetectionRunParams*> mMemRunPool;
 
     int mSensorOrientation;
 
@@ -100,7 +105,7 @@ class FaceDetection : public Thread {
     unsigned int mFDRunDefaultInterval;  // FD running's interval frames.
     unsigned int mFDRunIntervalNoFace;   // FD running's interval frames without face.
     unsigned int mFDRunInterval;         // run 1 frame every mFDRunInterval frames.
-    unsigned int mFrameCnt;              // from 0 to (mFDRunInterval - 1).
+    unsigned int mFrameCnt;  // from 0 to (mFDRunInterval - 1).
 
     unsigned int mRunCount;
     timeval mRequestRunTime;
@@ -110,22 +115,22 @@ class FaceDetection : public Thread {
 #else
 class FaceDetection {
  public:
-    static int getResult(int cameraId, cca::cca_face_state *faceState) {
+    static int getResult(int cameraId, cca::cca_face_state* faceState) {
         faceState->num_faces = 0;
         return 0;
     }
-    static int getResult(int cameraId, CVFaceDetectionAbstractResult *result) {
+    static int getResult(int cameraId, CVFaceDetectionAbstractResult* result) {
         CLEAR(*result);
         return 0;
     }
-    static FaceDetection *createInstance(int cameraId,
-                                         unsigned int maxFaceNum, int32_t halStreamId,
+    static FaceDetection* createInstance(int cameraId, unsigned int maxFaceNum, int32_t halStreamId,
                                          int width, int height) {
         return nullptr;
     }
     static void destoryInstance(int cameraId) {}
-    void runFaceDetection(const camera_buffer_t &buffer) {}
-    int getFaceNum() {return 0;}
+#ifdef CAL_BUILD
+    void runFaceDetection(const std::shared_ptr<camera3::Camera3Buffer> ccBuf) {}
+#endif
 };
 #endif
 

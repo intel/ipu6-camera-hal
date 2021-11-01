@@ -209,7 +209,6 @@ private:
     StreamSource* createBufferProducer();
     std::map<Port, stream_t> selectProducerConfig(const stream_config_t *streamList, int mcId);
     bool isProcessorNeeded(const stream_config_t *streamList, const stream_t &producerConfig);
-    bool isStillDuringVideo(const stream_config_t *streamList);
     int analyzeStream(stream_config_t *streamList);
     int createStreams(stream_config_t *streamList);
     int bindStreams(stream_config_t *streamList);
@@ -248,8 +247,6 @@ private:
 
     // Guard for CameraDevice public API
     Mutex mDeviceLock;
-
-    static const nsecs_t kWaitDuration = 5000000000; //5000ms
 
     // Pipeline elements
     CameraStream* mStreams[MAX_STREAM_NUMBER];

@@ -108,6 +108,7 @@ struct aiq_parameter_t {
     bool callbackRgbs;
     bool callbackTmCurve;
     camera_power_mode_t powerMode;
+    int64_t totalExposureTarget;
 
     aiq_parameter_t() { reset(); }
     void reset();

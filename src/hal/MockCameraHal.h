@@ -97,7 +97,7 @@ class MockCameraHal : public CameraHal, public Thread {
 
     std::deque<std::shared_ptr<CaptureRequest>> mCaptureRequest[MAX_CAMERA_NUMBER];
     std::deque<camera_buffer_t*> mCaptureResult[MAX_CAMERA_NUMBER][kMaxStreamNum];
-    std::condition_variable mBufferReadyCondition[MAX_CAMERA_NUMBER];
+    std::condition_variable mBufferReadyCondition[MAX_CAMERA_NUMBER][kMaxStreamNum];
     int mCameraOpenNum;
     uint64_t mTimestamp;
 

@@ -41,7 +41,7 @@ struct VideoNodeInfo {
 };
 
 enum EncodeBufferType {
-    ENCODE_ISA_CONFIG  = 0,
+    ENCODE_ISA_CONFIG = 0,
     ENCODE_STATS = 1,
 };
 

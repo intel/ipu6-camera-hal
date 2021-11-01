@@ -38,10 +38,7 @@ AiqUnit::AiqUnit(int cameraId, SensorHwCtrl *sensorHw, LensHw *lensHw,
     // INTEL_DVS_S
     mDvs(nullptr),
     // INTEL_DVS_S
-    mCcaInitialized(false)
-{
-    LOG1("@%s mCameraId = %d", __func__, mCameraId);
-
+    mCcaInitialized(false) {
     mAiqSetting = new AiqSetting(cameraId);
     mAiqEngine = new AiqEngine(cameraId, sensorHw, lensHw, mAiqSetting, paramGen);
 
@@ -57,10 +54,7 @@ AiqUnit::AiqUnit(int cameraId, SensorHwCtrl *sensorHw, LensHw *lensHw,
     // LOCAL_TONEMAP_E
 }
 
-AiqUnit::~AiqUnit()
-{
-    LOG1("@%s mCameraId = %d", __func__, mCameraId);
-
+AiqUnit::~AiqUnit() {
     if (mAiqUnitState == AIQ_UNIT_START) {
         stop();
     }
@@ -78,10 +72,9 @@ AiqUnit::~AiqUnit()
     delete mAiqSetting;
 }
 
-int AiqUnit::init()
-{
+int AiqUnit::init() {
     AutoMutex l(mAiqUnitLock);
-    LOG1("@%s mCameraId = %d", __func__, mCameraId);
+    LOG1("<id%d>@%s", mCameraId, __func__);
 
     int ret = mAiqSetting->init();
     if (ret != OK) {
@@ -108,10 +101,9 @@ int AiqUnit::init()
     return OK;
 }
 
-int AiqUnit::deinit()
-{
+int AiqUnit::deinit() {
     AutoMutex l(mAiqUnitLock);
-    LOG1("@%s mCameraId = %d", __func__, mCameraId);
+    LOG1("<id%d>@%s", mCameraId, __func__);
 
     // LOCAL_TONEMAP_S
     if (mLtm) {
@@ -132,7 +124,7 @@ int AiqUnit::configure(const stream_config_t *streamList) {
     CheckAndLogError(streamList == nullptr, BAD_VALUE, "streamList is nullptr");
 
     AutoMutex l(mAiqUnitLock);
-    LOG1("@%s mCameraId = %d", __func__, mCameraId);
+    LOG1("<id%d>@%s", mCameraId, __func__);
 
     if (mAiqUnitState != AIQ_UNIT_INIT && mAiqUnitState != AIQ_UNIT_STOP) {
         LOGW("%s: configure in wrong state: %d", __func__, mAiqUnitState);
@@ -163,10 +155,9 @@ int AiqUnit::configure(const stream_config_t *streamList) {
 }
 
 int AiqUnit::initIntelCcaHandle(const std::vector<ConfigMode> &configModes) {
-    LOG2("@%s", __func__);
-
     if (mCcaInitialized) return OK;
 
+    LOG1("<id%d>@%s", mCameraId, __func__);
     mTuningModes.clear();
     for (auto &cfg : configModes) {
         TuningMode tuningMode;
@@ -263,10 +254,9 @@ int AiqUnit::initIntelCcaHandle(const std::vector<ConfigMode> &configModes) {
 }
 
 void AiqUnit::deinitIntelCcaHandle() {
-    LOG2("@%s", __func__);
-
     if (!mCcaInitialized) return;
 
+    LOG1("<id%d>@%s", mCameraId, __func__);
     for (auto &mode : mTuningModes) {
         IntelCca *intelCca = IntelCca::getInstance(mCameraId, mode);
         CheckAndLogError(!intelCca, VOID_VALUE, "%s, Failed to get cca: mode(%d), cameraId(%d)",
@@ -295,10 +285,9 @@ void AiqUnit::deinitIntelCcaHandle() {
     mCcaInitialized = false;
 }
 
-int AiqUnit::start()
-{
+int AiqUnit::start() {
     AutoMutex l(mAiqUnitLock);
-    LOG1("@%s mCameraId = %d", __func__, mCameraId);
+    LOG1("<id%d>@%s", mCameraId, __func__);
 
     if (mAiqUnitState != AIQ_UNIT_CONFIGURED && mAiqUnitState != AIQ_UNIT_STOP) {
         LOGW("%s: configure in wrong state: %d", __func__, mAiqUnitState);
@@ -318,10 +307,9 @@ int AiqUnit::start()
     return OK;
 }
 
-int AiqUnit::stop()
-{
+int AiqUnit::stop() {
     AutoMutex l(mAiqUnitLock);
-    LOG1("@%s mCameraId = %d", __func__, mCameraId);
+    LOG1("<id%d>@%s", mCameraId, __func__);
 
     if (mAiqUnitState == AIQ_UNIT_START) {
         mAiqEngine->stopEngine();
@@ -337,8 +325,7 @@ int AiqUnit::stop()
     return OK;
 }
 
-int AiqUnit::run3A(long requestId, long applyingSeq, long* effectSeq)
-{
+int AiqUnit::run3A(long requestId, long applyingSeq, long* effectSeq) {
     AutoMutex l(mAiqUnitLock);
     TRACE_LOG_PROCESS("AiqUnit", "run3A");
 
@@ -353,20 +340,15 @@ int AiqUnit::run3A(long requestId, long applyingSeq, long* effectSeq)
     return OK;
 }
 
-std::vector<EventListener*> AiqUnit::getSofEventListener()
-{
+std::vector<EventListener*> AiqUnit::getSofEventListener() {
     AutoMutex l(mAiqUnitLock);
-    LOG1("@%s mCameraId = %d", __func__, mCameraId);
-
     std::vector<EventListener*> eventListenerList;
     eventListenerList.push_back(mAiqEngine->getSofEventListener());
     return eventListenerList;
 }
 
-std::vector<EventListener*> AiqUnit::getStatsEventListener()
-{
+std::vector<EventListener*> AiqUnit::getStatsEventListener() {
     AutoMutex l(mAiqUnitLock);
-    LOG1("@%s mCameraId = %d", __func__, mCameraId);
 
     std::vector<EventListener*> eventListenerList;
     // LOCAL_TONEMAP_S
@@ -382,25 +364,24 @@ std::vector<EventListener*> AiqUnit::getStatsEventListener()
     return eventListenerList;
 }
 
-int AiqUnit::setParameters(const Parameters &params)
-{
+int AiqUnit::setParameters(const Parameters &params) {
     AutoMutex l(mAiqUnitLock);
-    LOG1("@%s mCameraId = %d", __func__, mCameraId);
-
     return mAiqSetting->setParameters(params);
 }
 
 void AiqUnit::dumpCcaInitParam(const cca::cca_init_params params) {
-    LOG2("aiqStorageLen:%d", params.aiqStorageLen);
-    LOG2("aecFrameDelay:%d", params.aecFrameDelay);
-    LOG2("horizontal_crop_offset:%d", params.frameParams.horizontal_crop_offset);
-    LOG2("vertical_crop_offset:%d", params.frameParams.vertical_crop_offset);
-    LOG2("cropped_image_width:%d", params.frameParams.cropped_image_width);
-    LOG2("cropped_image_height:%d", params.frameParams.cropped_image_height);
-    LOG2("horizontal_scaling_numerator:%d", params.frameParams.horizontal_scaling_numerator);
-    LOG2("horizontal_scaling_denominator:%d", params.frameParams.horizontal_scaling_denominator);
-    LOG2("vertical_scaling_numerator:%d", params.frameParams.vertical_scaling_numerator);
-    LOG2("vertical_scaling_denominator:%d", params.frameParams.vertical_scaling_denominator);
+    if (!Log::isDebugLevelEnable(CAMERA_DEBUG_LOG_LEVEL3)) return;
+
+    LOG3("aiqStorageLen:%d", params.aiqStorageLen);
+    LOG3("aecFrameDelay:%d", params.aecFrameDelay);
+    LOG3("horizontal_crop_offset:%d", params.frameParams.horizontal_crop_offset);
+    LOG3("vertical_crop_offset:%d", params.frameParams.vertical_crop_offset);
+    LOG3("cropped_image_width:%d", params.frameParams.cropped_image_width);
+    LOG3("cropped_image_height:%d", params.frameParams.cropped_image_height);
+    LOG3("horizontal_scaling_numerator:%d", params.frameParams.horizontal_scaling_numerator);
+    LOG3("horizontal_scaling_denominator:%d", params.frameParams.horizontal_scaling_denominator);
+    LOG3("vertical_scaling_numerator:%d", params.frameParams.vertical_scaling_numerator);
+    LOG3("vertical_scaling_denominator:%d", params.frameParams.vertical_scaling_denominator);
 }
 
 } /* namespace icamera */

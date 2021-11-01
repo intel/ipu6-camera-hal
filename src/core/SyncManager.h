@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Intel Corporation.
+ * Copyright (C) 2018-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,16 +24,18 @@ struct camera_buf_info {
     long sequence;
     struct timeval sof_ts;
 };
+
 class SyncManager {
-private:
-    //Prevent to create multiple instances
+ private:
+    // Prevent to create multiple instances
     SyncManager();
     ~SyncManager();
-public:
-     /**
-      * releaseInstance
-      * This function must be called when the hal is destroyed.
-      */
+
+ public:
+    /**
+     * releaseInstance
+     * This function must be called when the hal is destroyed.
+     */
     static void releaseInstance();
     static SyncManager* getInstance();
 
@@ -45,7 +47,8 @@ public:
     bool vcSynced(int vc);
     void updateVcSyncCount(int vc);
     void printVcSyncCount();
-private:
+
+ private:
     static SyncManager* sInstance;
     static Mutex sLock;
     Mutex mLock;
@@ -55,4 +58,5 @@ private:
     Mutex mVcSyncLock;
     int mTotalSyncCamNum;
 };
+
 } /* namespace icamera */

@@ -16,14 +16,14 @@
 
 #pragma once
 
-#include <set>
 #include <map>
+#include <set>
 #include <unordered_map>
 
-#include "Parameters.h"
-#include "PlatformData.h"
 #include "CameraBuffer.h"
 #include "IspParamAdaptor.h"
+#include "Parameters.h"
+#include "PlatformData.h"
 #ifdef USE_PG_LITE_PIPE
 #include "PipeLiteExecutor.h"
 #else
@@ -44,7 +44,11 @@ struct PSysTaskData {
 
     CameraBufferPortMap mInputBuffers;
     CameraBufferPortMap mOutputBuffers;
-    PSysTaskData() { mTuningMode = TUNING_MODE_MAX; mFakeTask = false; mRequestId = -1; }
+    PSysTaskData() {
+        mTuningMode = TUNING_MODE_MAX;
+        mFakeTask = false;
+        mRequestId = -1;
+    }
 };
 
 // Used to save all on-processing tasks.
@@ -56,17 +60,16 @@ struct TaskInfo {
 };
 
 class PSysDagCallback {
-public:
+ public:
     PSysDagCallback() {}
     virtual ~PSysDagCallback() {}
     virtual void onFrameDone(const PSysTaskData& result) {}
     virtual void onBufferDone(int64_t sequence, Port port,
-                              const std::shared_ptr<CameraBuffer> &camBuffer) {}
+                              const std::shared_ptr<CameraBuffer>& camBuffer) {}
 };
 
 class PSysDAG {
-
-public:
+ public:
     PSysDAG(int cameraId, PSysDagCallback* psysDagCB);
     virtual ~PSysDAG();
     void setFrameInfo(const std::map<Port, stream_t>& inputInfo,
@@ -78,17 +81,16 @@ public:
     int resume();
     int pause();
 
-    int registerInternalBufs(std::map<Port, CameraBufVector> &internalBufs);
-    int registerUserOutputBufs(Port port, const std::shared_ptr<CameraBuffer> &camBuffer);
+    int registerInternalBufs(std::map<Port, CameraBufVector>& internalBufs);
+    int registerUserOutputBufs(Port port, const std::shared_ptr<CameraBuffer>& camBuffer);
 
     void addTask(PSysTaskData taskParam);
-    int getParameters(Parameters& param);
 
     void registerListener(EventType eventType, EventListener* eventListener);
     void removeListener(EventType eventType, EventListener* eventListener);
 
     TuningMode getTuningMode(long sequence);
-    int prepareIpuParams(long sequence, bool forceUpdate = false, TaskInfo *task = nullptr);
+    int prepareIpuParams(long sequence, bool forceUpdate = false, TaskInfo* task = nullptr);
 
     bool fetchTnrOutBuffer(int64_t seq, std::shared_ptr<CameraBuffer> buf);
     bool isBypassStillTnr(int64_t seq);
@@ -99,7 +101,7 @@ public:
      */
     int onFrameDone(Port port, const std::shared_ptr<CameraBuffer>& buffer);
 
-private:
+ private:
     DISALLOW_COPY_AND_ASSIGN(PSysDAG);
 
     void tuningReconfig(TuningMode newTuningMode);
@@ -112,19 +114,19 @@ private:
     void configShareReferPool(std::shared_ptr<IGraphConfig> gc);
 #endif
     PipeExecutor* findExecutorProducer(PipeExecutor* consumer);
-    status_t searchStreamIdsForOutputPort(PipeExecutor *executor, Port port);
+    status_t searchStreamIdsForOutputPort(PipeExecutor* executor, Port port);
 
     int queueBuffers(const PSysTaskData& task);
     int returnBuffers(PSysTaskData& result);
-    bool isInactiveStream(int streamId, const PSysTaskData* task);
+    bool isInactiveStillStream(int streamId, const PSysTaskData* task, Port port);
 
     void dumpExternalPortMap();
 
-private:
+ private:
     int mCameraId;
-    PSysDagCallback* mPSysDagCB; //Used to callback notify frame done handling
+    PSysDagCallback* mPSysDagCB;  // Used to callback notify frame done handling
     PolicyManager* mPolicyManager;
-    ConfigMode mConfigMode; //It is actually real config mode.
+    ConfigMode mConfigMode;  // It is actually real config mode.
     TuningMode mTuningMode;
     IspParamAdaptor* mIspParamAdaptor;
 #ifdef USE_PG_LITE_PIPE
@@ -137,7 +139,7 @@ private:
 
     std::vector<PipeExecutor*> mExecutorsPool;
     std::unordered_map<PipeExecutor*, int32_t> mExecutorStreamId;
-    std::map<Port, std::vector<int32_t> > mOutputPortToStreamIds;
+    std::map<Port, std::vector<int32_t>> mOutputPortToStreamIds;
     PipeExecutor* mVideoTnrExecutor;
     PipeExecutor* mStillTnrExecutor;
     PipeExecutor* mStillExecutor;
@@ -164,4 +166,4 @@ private:
     std::vector<PortMapping> mInputMaps;
     std::vector<PortMapping> mOutputMaps;
 };
-}
+}  // namespace icamera

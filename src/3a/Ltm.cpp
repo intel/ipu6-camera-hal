@@ -44,21 +44,17 @@ Ltm::Ltm(int cameraId)
     } else {
         mLtmThread = nullptr;
     }
-    LOG3A("%s", __func__);
 }
 
 Ltm::~Ltm() {
-    LOG3A("%s", __func__);
-
     if (PlatformData::isEnableLtmThread(mCameraId)) {
         mLtmThread->join();
         delete mLtmThread;
     }
+    LOG2("%s", __func__);
 }
 
 int Ltm::init() {
-    LOG3A("%s", __func__);
-
     AutoMutex l(mLtmLock);
 
     for (int i = 0; i < kMaxLtmParamsNum; i++) {
@@ -74,8 +70,6 @@ int Ltm::init() {
 }
 
 int Ltm::deinit() {
-    LOG3A("%s", __func__);
-
     AutoMutex l(mLtmLock);
 
     for (int i = 0; i < kMaxLtmParamsNum; i++) {
@@ -88,8 +82,6 @@ int Ltm::deinit() {
 }
 
 int Ltm::configure(const std::vector<ConfigMode>& configModes) {
-    LOG3A("%s", __func__);
-
     TuningMode tMode = TUNING_MODE_MAX;
     for (auto cfg : configModes) {
         // Only support the 1st tuning mode if multiple config mode is configured.
@@ -110,12 +102,10 @@ int Ltm::configure(const std::vector<ConfigMode>& configModes) {
     mTuningMode = tMode;
     mLtmState = LTM_CONFIGURED;
 
-    LOG3A("%s Ltm algo is Configured", __func__);
     return OK;
 }
 
 int Ltm::start() {
-    LOG1("@%s", __func__);
     AutoMutex l(mLtmLock);
 
     if (!PlatformData::isEnableLtmThread(mCameraId)) return OK;
@@ -127,8 +117,6 @@ int Ltm::start() {
 }
 
 void Ltm::stop() {
-    LOG1("@%s", __func__);
-
     if (!PlatformData::isEnableLtmThread(mCameraId)) return;
 
     mLtmThread->requestExit();
@@ -149,7 +137,7 @@ void Ltm::handleEvent(EventData eventData) {
         (eventData.pipeType != STILL_STREAM_ID))
         return;
 
-    LOG3A("%s: handle EVENT_PSYS_STATS_SIS_BUF_READY", __func__);
+    LOG2("%s: handle EVENT_PSYS_STATS_SIS_BUF_READY", __func__);
     handleSisLtm(eventData.buffer);
 }
 
@@ -160,7 +148,7 @@ AiqResult* Ltm::getAiqResult(long sequence) {
         ltmSequence += PlatformData::getLtmGainLag(mCameraId);
     }
 
-    LOG3A("%s, ltmSequence %ld, sequence %ld", __func__, ltmSequence, sequence);
+    LOG2("<seq%ld>%s, ltmSequence %ld", sequence, __func__, ltmSequence);
     AiqResult* feedback = const_cast<AiqResult*>(resultStorage->getAiqResult(ltmSequence));
     if (feedback == nullptr) {
         LOGW("%s: no feed back result for sequence %ld! use the latest instead", __func__,
@@ -172,7 +160,6 @@ AiqResult* Ltm::getAiqResult(long sequence) {
 }
 
 int Ltm::handleSisLtm(const std::shared_ptr<CameraBuffer>& cameraBuffer) {
-    LOG3A("@%s", __func__);
     AutoMutex l(mLtmLock);
 
     ia_binary_data* sisFrame = (ia_binary_data*)cameraBuffer->getBufferAddr();
@@ -254,10 +241,9 @@ int Ltm::runLtmAsync() {
 }
 
 int Ltm::runLtm(const LtmInputParams& ltmInputParams) {
-    LOG3A("%s", __func__);
+    LOG2("%s", __func__);
     PERF_CAMERA_ATRACE();
 
-    LOG3A("%s: begin running LTM", __func__);
     ia_err iaErr;
     {
         PERF_CAMERA_ATRACE_PARAM1_IMAGING("ia_ltm_run", 0);

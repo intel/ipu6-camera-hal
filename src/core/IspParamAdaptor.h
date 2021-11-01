@@ -82,7 +82,6 @@ public:
     int configure(const stream_t &stream, ConfigMode configMode, TuningMode tuningMode,
                   int ipuOutputFormat = -1);
 
-    int getParameters(Parameters& param);
     int decodeStatsData(TuningMode tuningMode,
                         std::shared_ptr<CameraBuffer> statsBuffer,
                         std::shared_ptr<IGraphConfig> graphConfig = nullptr);
@@ -135,6 +134,7 @@ private:
                           ia_media_format* mediaFormat, bool* useLinearGamma);
     void dumpCscMatrix(const ia_isp_bxt_csc* cscMatrix);
     void applyCscMatrix(ia_isp_bxt_csc* cscMatrix);
+    void updateResultFromAlgo(ia_binary_data* binaryData, long sequence);
 
  private:
     enum IspAdaptorState {
@@ -161,6 +161,7 @@ private:
 
     std::shared_ptr<IGraphConfig> mGraphConfig;
     IntelCca *mIntelCca;
+    int mGammaTmOffset;
 
     struct PalRecord {
         int uuid;

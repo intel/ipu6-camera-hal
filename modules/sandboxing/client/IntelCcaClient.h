@@ -18,11 +18,11 @@
 
 #include <IntelCCA.h>
 
+#include <map>
 #include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include <map>
 
 #include "CameraTypes.h"
 #include "IntelAlgoCommonClient.h"
@@ -32,9 +32,6 @@
 namespace icamera {
 class IntelCca {
  public:
-    IntelCca(int cameraId, TuningMode mode);
-    virtual ~IntelCca();
-
     static IntelCca* getInstance(int cameraId, TuningMode mode);
     static void releaseInstance(int cameraId, TuningMode mode);
     static void releaseAllInstances();
@@ -77,6 +74,8 @@ class IntelCca {
     void freeMem(void* addr);
 
  private:
+    IntelCca(int cameraId, TuningMode mode);
+    virtual ~IntelCca();
     void freeStatsDataMem();
 
  private:
@@ -84,8 +83,6 @@ class IntelCca {
     TuningMode mTuningMode;
 
     IntelAlgoCommon mCommon;
-
-    bool mInitialized;
 
     ShmMemInfo mMemStruct;
     ShmMemInfo mMemInit;

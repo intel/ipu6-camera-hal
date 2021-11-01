@@ -44,12 +44,16 @@ void PnpDebugControl::releaseInstance() {
     }
 }
 
+void PnpDebugControl::updateConfig() {
+    PnpDebugParser PnpDebugParser(&(getInstance()->mStaticCfg));
+}
+
 PnpDebugControl::PnpDebugControl() {
     PnpDebugParser PnpDebugParser(&mStaticCfg);
 }
 
-bool PnpDebugControl::isBypassAAL() {
-    return getInstance()->mStaticCfg.isBypassAAL;
+bool PnpDebugControl::useMockAAL() {
+    return getInstance()->mStaticCfg.useMockAAL;
 }
 
 bool PnpDebugControl::isBypass3A() {
@@ -72,8 +76,8 @@ bool PnpDebugControl::isBypassISys() {
     return getInstance()->mStaticCfg.isBypassISys;
 }
 
-bool PnpDebugControl::isBypassHal() {
-    return getInstance()->mStaticCfg.isBypassHal;
+bool PnpDebugControl::useMockHal() {
+    return getInstance()->mStaticCfg.useMockHal;
 }
 
 bool PnpDebugControl::isBypassP2p() {
@@ -127,8 +131,8 @@ void PnpDebugParser::checkField(PnpDebugParser* profiles, const char* name, cons
 void PnpDebugParser::handlePowerConfig(PnpDebugParser* profiles, const char* name,
                                        const char** atts) {
     LOG2("@%s, name:%s, atts[0]:%s, atts[1]: %s", __func__, name, atts[0], atts[1]);
-    if (strcmp(name, "bypassAAL") == 0) {
-        mStaticCfg->isBypassAAL = strcmp(atts[1], "true") == 0;
+    if (strcmp(name, "useMockAAL") == 0) {
+        mStaticCfg->useMockAAL = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "bypass3A") == 0) {
         mStaticCfg->isBypass3A = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "bypassPAL") == 0) {
@@ -139,8 +143,8 @@ void PnpDebugParser::handlePowerConfig(PnpDebugParser* profiles, const char* nam
         mStaticCfg->isBypassFDAlgo = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "bypassISys") == 0) {
         mStaticCfg->isBypassISys = strcmp(atts[1], "true") == 0;
-    } else if (strcmp(name, "bypassHal") == 0) {
-        mStaticCfg->isBypassHal = strcmp(atts[1], "true") == 0;
+    } else if (strcmp(name, "useMockHal") == 0) {
+        mStaticCfg->useMockHal = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "bypassP2p") == 0) {
         mStaticCfg->isBypassP2p = strcmp(atts[1], "true") == 0;
     }

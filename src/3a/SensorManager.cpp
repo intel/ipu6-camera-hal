@@ -33,10 +33,7 @@ SensorManager::SensorManager(int cameraId, SensorHwCtrl *sensorHw) :
     mModeSwitched(false),
     mLastSofSequence(-1),
     mAnalogGainDelay(0),
-    mDigitalGainDelay(0)
-{
-    LOG1("@%s mCameraId = %d", __func__, mCameraId);
-
+    mDigitalGainDelay(0) {
     CLEAR(mWdrModeSetting);
 
     if (PlatformData::getAnalogGainLag(mCameraId) > 0) {
@@ -51,14 +48,11 @@ SensorManager::SensorManager(int cameraId, SensorHwCtrl *sensorHw) :
     }
 }
 
-SensorManager::~SensorManager()
-{
-    LOG1("@%s mCameraId = %d", __func__, mCameraId);
+SensorManager::~SensorManager() {
 }
 
-void SensorManager::reset()
-{
-    LOG1("@%s mCameraId = %d", __func__, mCameraId);
+void SensorManager::reset() {
+    LOG1("<id%d>@%s", mCameraId, __func__);
 
     AutoMutex l(mLock);
     mLastSofSequence = -1;
@@ -73,15 +67,11 @@ void SensorManager::reset()
     mSofEventInfo.clear();
 }
 
-void SensorManager::handleSofEvent(EventData eventData)
-{
+void SensorManager::handleSofEvent(EventData eventData) {
     AutoMutex l(mLock);
-    LOG3A("@%s", __func__);
-
     if (eventData.type == EVENT_ISYS_SOF) {
-        LOG3A("sequence = %ld, timestamp = %ld",
-                eventData.data.sync.sequence,
-                TIMEVAL2USECS(eventData.data.sync.timestamp));
+        LOG2("<seq%ld> SOF timestamp = %ld", eventData.data.sync.sequence,
+             TIMEVAL2USECS(eventData.data.sync.timestamp));
         mLastSofSequence = eventData.data.sync.sequence;
         handleSensorExposure();
 
@@ -96,8 +86,7 @@ void SensorManager::handleSofEvent(EventData eventData)
     }
 }
 
-uint64_t SensorManager::getSofTimestamp(long sequence)
-{
+uint64_t SensorManager::getSofTimestamp(long sequence) {
     AutoMutex l(mLock);
 
     for (auto info : mSofEventInfo) {
@@ -108,8 +97,7 @@ uint64_t SensorManager::getSofTimestamp(long sequence)
     return 0;
 }
 
-void SensorManager::handleSensorExposure()
-{
+void SensorManager::handleSensorExposure() {
     if (mExposureDataMap.find(mLastSofSequence) != mExposureDataMap.end()) {
         const ExposureData& exposureData = mExposureDataMap[mLastSofSequence];
         mSensorHwCtrl->setFrameDuration(exposureData.lineLengthPixels,
@@ -129,15 +117,13 @@ void SensorManager::handleSensorExposure()
     }
 }
 
-int SensorManager::getCurrentExposureAppliedDelay()
-{
+int SensorManager::getCurrentExposureAppliedDelay() {
     AutoMutex l(mLock);
 
     return mExposureDataMap.size() + PlatformData::getExposureLag(mCameraId);
 }
 
-uint32_t SensorManager::updateSensorExposure(SensorExpGroup sensorExposures, long applyingSeq)
-{
+uint32_t SensorManager::updateSensorExposure(SensorExpGroup sensorExposures, long applyingSeq) {
     AutoMutex l(mLock);
 
     long effectSeq = mLastSofSequence < 0 ? 0 : \
@@ -195,15 +181,13 @@ uint32_t SensorManager::updateSensorExposure(SensorExpGroup sensorExposures, lon
         mSensorHwCtrl->setDigitalGains(digitalGains);
     }
 
-    LOG3A("@%s, mLastSofSequence:%ld, effectSeq %ld, applyingSeq %ld",
-          __func__, mLastSofSequence, effectSeq, applyingSeq);
+    LOG2("<seq%ld>@%s: effectSeq %ld, applyingSeq %ld", mLastSofSequence, __func__,
+         effectSeq, applyingSeq);
     return ((uint32_t)effectSeq);
 }
 
 int SensorManager::getSensorInfo(ia_aiq_frame_params &frameParams,
-                                 ia_aiq_exposure_sensor_descriptor &sensorDescriptor)
-{
-    LOG3A("@%s", __func__);
+                                 ia_aiq_exposure_sensor_descriptor &sensorDescriptor) {
     SensorFrameParams sensorFrameParams;
     CLEAR(sensorFrameParams);
 
@@ -223,31 +207,31 @@ int SensorManager::getSensorInfo(ia_aiq_frame_params &frameParams,
         sensorDescriptor = {freq, static_cast<unsigned short>(res[0].width),
                             static_cast<unsigned short>(res[0].height), 24, 0,
                             static_cast<unsigned short>(res[0].width), 6, 0};
-        LOG3A("freq %f, width %d, height %d", freq, res[0].width, res[0].height);
+        LOG2("freq %f, width %d, height %d", freq, res[0].width, res[0].height);
         return OK;
     }
 
     ret |= getSensorModeData(sensorDescriptor);
 
-    LOG3A("ia_aiq_frame_params=[%d, %d, %d, %d, %d, %d, %d, %d]",
-        frameParams.horizontal_crop_offset,
-        frameParams.vertical_crop_offset,
-        frameParams.cropped_image_height,
-        frameParams.cropped_image_width,
-        frameParams.horizontal_scaling_numerator,
-        frameParams.horizontal_scaling_denominator,
-        frameParams.vertical_scaling_numerator,
-        frameParams.vertical_scaling_denominator);
+    LOG3("ia_aiq_frame_params=[%d, %d, %d, %d, %d, %d, %d, %d]",
+         frameParams.horizontal_crop_offset,
+         frameParams.vertical_crop_offset,
+         frameParams.cropped_image_height,
+         frameParams.cropped_image_width,
+         frameParams.horizontal_scaling_numerator,
+         frameParams.horizontal_scaling_denominator,
+         frameParams.vertical_scaling_numerator,
+         frameParams.vertical_scaling_denominator);
 
-    LOG3A("ia_aiq_exposure_sensor_descriptor=[%f, %d, %d, %d, %d, %d, %d, %d]",
-        sensorDescriptor.pixel_clock_freq_mhz,
-        sensorDescriptor.pixel_periods_per_line,
-        sensorDescriptor.line_periods_per_field,
-        sensorDescriptor.line_periods_vertical_blanking,
-        sensorDescriptor.coarse_integration_time_min,
-        sensorDescriptor.coarse_integration_time_max_margin,
-        sensorDescriptor.fine_integration_time_min,
-        sensorDescriptor.fine_integration_time_max_margin);
+    LOG3("ia_aiq_exposure_sensor_descriptor=[%f, %d, %d, %d, %d, %d, %d, %d]",
+         sensorDescriptor.pixel_clock_freq_mhz,
+         sensorDescriptor.pixel_periods_per_line,
+         sensorDescriptor.line_periods_per_field,
+         sensorDescriptor.line_periods_vertical_blanking,
+         sensorDescriptor.coarse_integration_time_min,
+         sensorDescriptor.coarse_integration_time_max_margin,
+         sensorDescriptor.fine_integration_time_min,
+         sensorDescriptor.fine_integration_time_max_margin);
 
     return ret;
 }
@@ -257,8 +241,7 @@ int SensorManager::getSensorInfo(ia_aiq_frame_params &frameParams,
  *
  * \return OK if successfully.
  */
-int SensorManager::getSensorModeData(ia_aiq_exposure_sensor_descriptor& sensorData)
-{
+int SensorManager::getSensorModeData(ia_aiq_exposure_sensor_descriptor& sensorData) {
     int pixel = 0;
     int status =  mSensorHwCtrl->getPixelRate(pixel);
     CheckAndLogError(status != OK, status, "Failed to get pixel clock ret:%d", status);

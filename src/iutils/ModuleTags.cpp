@@ -19,6 +19,7 @@
 #include "src/iutils/ModuleTags.h"
 
 const char* tagNames[] = {
+    "FDFPS",
     "3atest",
     "ATEUnit",
     "AiqCore",

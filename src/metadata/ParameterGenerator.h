@@ -72,12 +72,6 @@ private:
     int updateCommonMetadata(Parameters *params, const AiqResult *aiqResult);
 
 private:
-    typedef enum {
-        RESULT_TYPE_AIQ = 1,
-        RESULT_TYPE_SENSOR_EMD = 1 << 1,
-        RESULT_TYPE_STATISTICS = 1 << 2
-    } ResultType;
-
     class RequestParam {
     public:
         RequestParam() : requestId(-1) {}
