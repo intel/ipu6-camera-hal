@@ -237,9 +237,9 @@ endif() #ENABLE_SANDBOXING
     set(LIBCAMHAL_SRCS ${LIBCAMHAL_SRCS} ${IIO_SRCS})
 
 # Add libcamhal using the specified sources
-add_library(camhal SHARED ${LIBCAMHAL_SRCS})
 add_library(camhal_static STATIC ${LIBCAMHAL_SRCS})
 set_target_properties(camhal_static PROPERTIES OUTPUT_NAME "camhal")
+add_library(camhal SHARED $<TARGET_OBJECTS:camhal_static>)
 
 #---------------------------- Link settings ----------------------------
 target_link_libraries(camhal ${CMAKE_DL_LIBS})
