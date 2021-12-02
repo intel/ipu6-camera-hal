@@ -173,7 +173,7 @@ void PGCommon::deInit() {
     mRoutingBitmap.reset();
 }
 
-void PGCommon::setInputInfo(const TerminalFrameInfoMap& inputInfos) {
+void PGCommon::setInputInfo(const TerminalFrameInfoMap& inputInfos, FrameInfo tnrFrameInfo) {
     mInputMainTerminal = -1;
     int maxFrameSize = 0;
     for (const auto& item : inputInfos) {
@@ -195,23 +195,22 @@ void PGCommon::setInputInfo(const TerminalFrameInfoMap& inputInfos) {
         }
     }
 
-    // Create frame info for tnr terminals (i.e. data terminals)
-    FrameInfo config = mTerminalFrameInfos[mInputMainTerminal];
-    if (config.mHeight % 32) {
-        LOG1("%s: height %d not multiple of 32, rounding up!", __func__, config.mHeight);
-        config.mHeight = ((config.mHeight / 32) + 1) * 32;
+    if (tnrFrameInfo.mHeight % 32) {
+        LOG1("%s: height %d not multiple of 32, rounding up!", __func__, tnrFrameInfo.mHeight);
+        tnrFrameInfo.mHeight = ((tnrFrameInfo.mHeight / 32) + 1) * 32;
     }
 
     for (int i = PAIR_BUFFER_IN_INDEX; i <= PAIR_BUFFER_OUT_INDEX; i++) {
         int tnrId = (i == PAIR_BUFFER_IN_INDEX) ? mTnrTerminalPair.inId : mTnrTerminalPair.outId;
         if (tnrId < 0) continue;
 
-        mFrameFormatType[tnrId] = IA_CSS_DATA_FORMAT_NV12;  // for IPU6
-        // tnr terminal format is NV12, different from main terminal
-        config.mFormat = V4L2_PIX_FMT_NV12;
-        config.mBpp = CameraUtils::getBpp(config.mFormat);
-        config.mStride = CameraUtils::getStride(config.mFormat, config.mWidth);
-        mTerminalFrameInfos[tnrId] = config;
+        mFrameFormatType[tnrId] = PGUtils::getCssFmt(tnrFrameInfo.mFormat);
+        tnrFrameInfo.mBpp = CameraUtils::getBpp(tnrFrameInfo.mFormat);
+        tnrFrameInfo.mStride = CameraUtils::getStride(tnrFrameInfo.mFormat, tnrFrameInfo.mWidth);
+        mTerminalFrameInfos[tnrId] = tnrFrameInfo;
+        LOG2("%s, tnr ref info: %dx%d, stride: %d, bpp: %d, format: %s", __func__,
+             tnrFrameInfo.mWidth, tnrFrameInfo.mHeight, tnrFrameInfo.mStride, tnrFrameInfo.mBpp,
+             CameraUtils::format2string(tnrFrameInfo.mFormat).c_str());
     }
 
     LOG1("%s:%d use input terminal %d as main", __func__, mPGId, mInputMainTerminal);
@@ -733,9 +732,6 @@ int PGCommon::configureTerminalFragmentDesc(int termIdx, const ia_p2p_fragment_d
             case IA_CSS_DATA_FORMAT_YUV420:
             case IA_CSS_DATA_FORMAT_YYUVYY_VECTORIZED:
             case IA_CSS_DATA_FORMAT_BAYER_VECTORIZED:
-                /** \todo Fragmentation with DMA packed formats is still open, need to
-                 * check this again when it is more clear (see #H1804344344).
-                 */
                 pixels_per_word = (uint16_t)floor(DDR_WORD_BYTES * 8 / dimension_bpp);
                 colOffset =
                     (uint16_t)(floor(dstFragDesc->index[IA_CSS_COL_DIMENSION] / pixels_per_word) *
@@ -851,25 +847,34 @@ int PGCommon::configureFrameDesc() {
                 LOG1("%s set compression flag to PG %d terminal %d", __func__, mPGId, termIdx);
                 break;
             }
-            case IA_CSS_DATA_FORMAT_NV12: {
+            case IA_CSS_DATA_FORMAT_NV12:
+            case IA_CSS_DATA_FORMAT_P010: {
                 if (!PlatformData::getPSACompression(mCameraId)) break;
-                // now the bpl of NV12 format is width
-                int alignedBpl = ALIGN(width, PSYS_COMPRESSION_TNR_STRIDE_ALIGNMENT);
-                int alignedHeight = ALIGN(height, PSYS_COMPRESSION_TNR_LINEAR_HEIGHT_ALIGNMENT);
-                int alignedHeightUV = ALIGN(alignedHeight / UV_HEIGHT_DIVIDER,
-                                            PSYS_COMPRESSION_TNR_LINEAR_HEIGHT_ALIGNMENT);
+
+                unsigned int bpl = 0, heightAlignment = 0, tsBit = 0, tileSize = 0;
+                if (dstFrameDesc->frame_format_type == IA_CSS_DATA_FORMAT_NV12) {
+                    bpl = width;
+                    heightAlignment = PSYS_COMPRESSION_TNR_LINEAR_HEIGHT_ALIGNMENT;
+                    tsBit = TILE_STATUS_BITS_TNR_NV12_TILE_Y;
+                    tileSize = TILE_SIZE_TNR_NV12_Y;
+                } else {
+                    bpl = width * 2;
+                    heightAlignment = PSYS_COMPRESSION_OFS_TILE_HEIGHT_ALIGNMENT;
+                    tsBit = TILE_STATUS_BITS_OFS_P010_TILE_Y;
+                    tileSize = TILE_SIZE_OFS10_12_TILEY;
+                }
+
+                int alignedBpl = ALIGN(bpl, PSYS_COMPRESSION_TNR_STRIDE_ALIGNMENT);
+                int alignedHeight = ALIGN(height, heightAlignment);
+                int alignedHeightUV = ALIGN(height / UV_HEIGHT_DIVIDER, heightAlignment);
                 int imageBufferSize = ALIGN(alignedBpl * (alignedHeight + alignedHeightUV),
                                             PSYS_COMPRESSION_PAGE_SIZE);
                 int planarYTileStatus =
-                    CAMHAL_CEIL_DIV((alignedBpl * alignedHeight / TILE_SIZE_TNR_NV12_Y) *
-                                        TILE_STATUS_BITS_TNR_NV12_TILE_Y,
-                                    8);
+                    CAMHAL_CEIL_DIV((alignedBpl * alignedHeight / tileSize) * tsBit, 8);
                 planarYTileStatus = ALIGN(planarYTileStatus, PSYS_COMPRESSION_PAGE_SIZE);
 
                 int planarUVTileStatus =
-                    CAMHAL_CEIL_DIV((alignedBpl * alignedHeightUV / TILE_SIZE_TNR_NV12_LINEAR) *
-                                        TILE_STATUS_BITS_TNR_NV12_LINEAR,
-                                    8);
+                    CAMHAL_CEIL_DIV((alignedBpl * alignedHeightUV / tileSize) * tsBit, 8);
                 planarUVTileStatus = ALIGN(planarUVTileStatus, PSYS_COMPRESSION_PAGE_SIZE);
 
                 dstFrameDesc->bpp = cssBpp;
@@ -897,7 +902,7 @@ int PGCommon::iterate(CameraBufferMap& inBufs, CameraBufferMap& outBufs, ia_bina
     PERF_CAMERA_ATRACE();
     LOG2("%s:%s ++", getName(), __func__);
 
-    long sequence = 0;
+    int64_t sequence = 0;
     if (!inBufs.empty()) {
         sequence = inBufs.begin()->second->getSequence();
     }
@@ -1092,7 +1097,7 @@ int PGCommon::allocateTnrSimBuffers() {
 
 int PGCommon::prepareTerminalBuffers(const ia_binary_data* ipuParameters,
                                      const CameraBufferMap& inBufs, const CameraBufferMap& outBufs,
-                                     long sequence) {
+                                     int64_t sequence) {
     CIPR::Buffer* ciprBuf = nullptr;
     // Prepare payload
     for (int termIdx = 0; termIdx < mTerminalCount; termIdx++) {
@@ -1156,7 +1161,7 @@ int PGCommon::prepareTerminalBuffers(const ia_binary_data* ipuParameters,
     return mPGParamAdapt->updatePALAndEncode(ipuParameters, mTerminalCount, mParamPayload);
 }
 
-void PGCommon::postTerminalBuffersDone(long sequence) {
+void PGCommon::postTerminalBuffersDone(int64_t sequence) {
     if (!mTnrDataBuffers.empty() && mShareReferIds[mTnrTerminalPair.inId]) {
         mShareReferPool->releaseBuffer(mShareReferIds[mTnrTerminalPair.inId],
                                        mTerminalBuffers[mTnrTerminalPair.inId],
@@ -1515,7 +1520,8 @@ CIPR::Buffer* PGCommon::registerUserBuffer(int size, int fd, bool flush) {
     return ciprBuf;
 }
 
-void PGCommon::dumpTerminalPyldAndDesc(int pgId, long sequence, ia_css_process_group_t* pgGroup) {
+void PGCommon::dumpTerminalPyldAndDesc(int pgId, int64_t sequence,
+                                       ia_css_process_group_t* pgGroup) {
     if (!CameraDump::isDumpTypeEnable(DUMP_PSYS_PG)) return;
 
     char fileName[MAX_NAME_LEN] = {'\0'};

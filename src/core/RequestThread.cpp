@@ -45,8 +45,7 @@ RequestThread::RequestThread(int cameraId, AiqUnitBase *a3AControl, ParameterGen
     mLastAppliedSeq(-1),
     mLastSofSeq(-1),
     mBlockRequest(true),
-    mSofEnabled(false)
-{
+    mSofEnabled(false) {
     CLEAR(mStreamConfig);
     CLEAR(mConfiguredStreams);
     CLEAR(mFakeReqBuf);
@@ -57,15 +56,13 @@ RequestThread::RequestThread(int cameraId, AiqUnitBase *a3AControl, ParameterGen
     mSofEnabled = PlatformData::isIsysEnabled(cameraId);
 }
 
-RequestThread::~RequestThread()
-{
+RequestThread::~RequestThread() {
     while (!mReqParamsPool.empty()) {
         mReqParamsPool.pop();
     }
 }
 
-void RequestThread::requestExit()
-{
+void RequestThread::requestExit() {
     clearRequests();
 
     Thread::requestExit();
@@ -73,8 +70,7 @@ void RequestThread::requestExit()
     mRequestSignal.signal();
 }
 
-void RequestThread::clearRequests()
-{
+void RequestThread::clearRequests() {
     LOG1("%s", __func__);
 
     mActive = false;
@@ -101,8 +97,7 @@ void RequestThread::clearRequests()
     mBlockRequest = true;
 }
 
-void RequestThread::setConfigureModeByParam(camera_scene_mode_t sceneMode)
-{
+void RequestThread::setConfigureModeByParam(camera_scene_mode_t sceneMode) {
     ConfigMode configMode = CameraUtils::getConfigModeBySceneMode(sceneMode);
     LOG2("@%s, sceneMode %d, configMode %d", __func__, sceneMode, configMode);
 
@@ -153,7 +148,8 @@ int RequestThread::configure(const stream_config_t *streamList) {
             hasVideoStream = true;
         }
     }
-    LOG1("%s: user specified Configmode: %d, hasVideoStream %d", __func__, mUserConfigMode, hasVideoStream);
+    LOG1("%s: user specified Configmode: %d, hasVideoStream %d", __func__,
+         mUserConfigMode, hasVideoStream);
     mStreamConfig.streams = mConfiguredStreams;
 
     // Use concrete mode in RequestThread
@@ -166,7 +162,7 @@ int RequestThread::configure(const stream_config_t *streamList) {
                          "%s, get real ConfigMode failed %d", __func__, ret);
 
         mRequestConfigMode = configModes[0];
-        LOG2("%s: use concrete mode %d as default initial mode for auto op mode",
+        LOG1("%s: use concrete mode %d as default initial mode for auto op mode",
              __func__, mRequestConfigMode);
         mStreamConfig.operation_mode = mRequestConfigMode;
     }
@@ -174,7 +170,7 @@ int RequestThread::configure(const stream_config_t *streamList) {
     // Don't block request handling if no 3A stats (from video pipe)
     mBlockRequest = PlatformData::isEnableAIQ(mCameraId) && hasVideoStream;
 
-    LOG2("%s: mRequestConfigMode initial value: %d", __func__, mRequestConfigMode);
+    LOG1("%s: mRequestConfigMode initial value: %d", __func__, mRequestConfigMode);
     return OK;
 }
 
@@ -236,8 +232,8 @@ bool RequestThread::blockRequest() {
         (mPerframeControlSupport && (mRequestTriggerEvent == NONE_EVENT)));
 }
 
-int RequestThread::processRequest(int bufferNum, camera_buffer_t **ubuffer, const Parameters* params)
-{
+int RequestThread::processRequest(int bufferNum, camera_buffer_t **ubuffer,
+                                  const Parameters* params) {
     AutoMutex l(mPendingReqLock);
     CameraRequest request;
     request.mBufferNum = bufferNum;
@@ -269,8 +265,7 @@ int RequestThread::processRequest(int bufferNum, camera_buffer_t **ubuffer, cons
 }
 
 shared_ptr<Parameters>
-RequestThread::copyRequestParams(const Parameters *srcParams)
-{
+RequestThread::copyRequestParams(const Parameters *srcParams) {
     if (srcParams == nullptr)
         return nullptr;
 
@@ -286,8 +281,7 @@ RequestThread::copyRequestParams(const Parameters *srcParams)
     return sParams;
 }
 
-int RequestThread::waitFrame(int streamId, camera_buffer_t **ubuffer)
-{
+int RequestThread::waitFrame(int streamId, camera_buffer_t **ubuffer) {
     FrameQueue& frameQueue = mOutputFrames[streamId];
     ConditionLock lock(frameQueue.mFrameMutex);
 
@@ -298,10 +292,8 @@ int RequestThread::waitFrame(int streamId, camera_buffer_t **ubuffer)
                       kWaitFrameDuration * SLOWLY_MULTIPLIER);
         if (!mActive) return NO_INIT;
 
-        if (ret == TIMED_OUT) {
-            LOGW("@%s, mCameraId:%d, time out happens, wait recovery", __func__, mCameraId);
-            return ret;
-        }
+        CheckWarning(ret == TIMED_OUT, ret, "<id%d>@%s, time out happens, wait recovery",
+                     mCameraId, __func__);
     }
 
     shared_ptr<CameraBuffer> camBuffer = frameQueue.mFrameQueue.front();
@@ -313,13 +305,11 @@ int RequestThread::waitFrame(int streamId, camera_buffer_t **ubuffer)
     return OK;
 }
 
-int RequestThread::wait1stRequestDone()
-{
-    LOG1("%s", __func__);
+int RequestThread::wait1stRequestDone() {
     int ret = OK;
     ConditionLock lock(mFirstRequestLock);
     if (mFirstRequest) {
-        LOG1("%s, waiting the first request done", __func__);
+        LOG2("%s, waiting the first request done", __func__);
         ret = mFirstRequestSignal.waitRelative(
                   lock,
                   kWaitFirstRequestDoneDuration * SLOWLY_MULTIPLIER);
@@ -330,8 +320,7 @@ int RequestThread::wait1stRequestDone()
     return ret;
 }
 
-void RequestThread::handleEvent(EventData eventData)
-{
+void RequestThread::handleEvent(EventData eventData) {
     if (!mActive) return;
 
     /* Notes:
@@ -419,8 +408,7 @@ void RequestThread::handleEvent(EventData eventData)
  * Get the next request for processing.
  * Return false if no pending requests or it is not ready for reconfiguration.
  */
-bool RequestThread::fetchNextRequest(CameraRequest& request)
-{
+bool RequestThread::fetchNextRequest(CameraRequest& request) {
     ConditionLock lock(mPendingReqLock);
     if (isReconfigurationNeeded() && !isReadyForReconfigure()) {
         return false;
@@ -442,8 +430,7 @@ bool RequestThread::fetchNextRequest(CameraRequest& request)
  * If new ConfigMode is different with previous configured ConfigMode,
  * return true.
  */
-bool RequestThread::isReconfigurationNeeded()
-{
+bool RequestThread::isReconfigurationNeeded() {
     bool needReconfig = (mUserConfigMode == CAMERA_STREAM_CONFIGURATION_MODE_AUTO &&
                          PlatformData::getAutoSwitchType(mCameraId) == AUTO_SWITCH_FULL &&
                          mNeedReconfigPipe &&
@@ -458,25 +445,21 @@ bool RequestThread::isReconfigurationNeeded()
  * 1, there is no buffer in processing; 2, there is buffer in mPendingRequests.
  * Return true if reconfiguration is ready.
  */
-bool RequestThread::isReadyForReconfigure()
-{
+bool RequestThread::isReadyForReconfigure() {
     return (!mPendingRequests.empty() && mRequestsInProcessing == 0);
 }
 
-bool RequestThread::threadLoop()
-{
+bool RequestThread::threadLoop() {
     bool restart = false;
-    long applyingSeq = -1;
+    int64_t applyingSeq = -1;
     {
          ConditionLock lock(mPendingReqLock);
 
          if (blockRequest()) {
             int ret = mRequestSignal.waitRelative(lock, kWaitDuration * SLOWLY_MULTIPLIER);
-            if (ret == TIMED_OUT) {
-                LOGW("wait event time out, %d requests processing, %zu requests in HAL",
-                     mRequestsInProcessing, mPendingRequests.size());
-                return true;
-            }
+            CheckWarning(ret == TIMED_OUT, true,
+                         "wait event time out, %d requests processing, %zu requests in HAL",
+                         mRequestsInProcessing, mPendingRequests.size());
 
             if (blockRequest()) {
                 LOG2("Pending request processing, mBlockRequest %d, Req in processing %d",
@@ -546,10 +529,9 @@ bool RequestThread::threadLoop()
     return true;
 }
 
-void RequestThread::handleReconfig()
-{
+void RequestThread::handleReconfig() {
     LOG1("%s, ConfigMode change from %x to %x", __func__,
-            mStreamConfig.operation_mode, mRequestConfigMode);
+         mStreamConfig.operation_mode, mRequestConfigMode);
     mStreamConfig.operation_mode = mRequestConfigMode;
     EventConfigData configData;
     configData.streamList = &mStreamConfig;
@@ -562,9 +544,8 @@ void RequestThread::handleReconfig()
     return;
 }
 
-void RequestThread::handleRequest(CameraRequest& request, long applyingSeq)
-{
-    long effectSeq = mLastEffectSeq + 1;
+void RequestThread::handleRequest(CameraRequest& request, int64_t applyingSeq) {
+    int64_t effectSeq = mLastEffectSeq + 1;
     // Raw reprocessing case, don't run 3A.
     if (request.mBuffer[0]->sequence >= 0 && request.mBuffer[0]->timestamp > 0) {
         effectSeq = request.mBuffer[0]->sequence;

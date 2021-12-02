@@ -120,7 +120,7 @@ int MakerNote::saveMakernoteData(int cameraId, camera_makernote_mode_t makernote
 }
 
 void MakerNote::updateTimestamp(int64_t sequence, uint64_t timestamp) {
-    LOG1("@%s, mMknState:%d", __func__, mMknState);
+    LOG2("@%s, mMknState:%d", __func__, mMknState);
     AutoMutex lock(mMknLock);
     CheckAndLogError(mMknState != INIT, VOID_VALUE, "@%s, mkn isn't initialized", __func__);
 

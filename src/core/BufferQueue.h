@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Intel Corporation.
+ * Copyright (C) 2015-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,11 @@
 
 #include <map>
 #include <vector>
-#include "iutils/Thread.h"
-#include "iutils/Errors.h"
 
-#include "CameraEvent.h"
 #include "CameraBuffer.h"
+#include "CameraEvent.h"
+#include "iutils/Errors.h"
+#include "iutils/Thread.h"
 
 /**
  * These are the abstract Classes for buffer communication between different class of HAL
@@ -36,10 +36,10 @@ class BufferProducer;
  * calling setBufferProducer
  */
 class BufferConsumer {
-public:
-    virtual ~BufferConsumer() {};
-    virtual int onFrameAvailable(Port port, const std::shared_ptr<CameraBuffer> &camBuffer) = 0;
-    virtual void setBufferProducer(BufferProducer *producer) = 0;
+ public:
+    virtual ~BufferConsumer() {}
+    virtual int onFrameAvailable(Port port, const std::shared_ptr<CameraBuffer>& camBuffer) = 0;
+    virtual void setBufferProducer(BufferProducer* producer) = 0;
 };
 
 /**
@@ -49,21 +49,21 @@ public:
  * any buffer done notification.
  */
 class BufferProducer : public EventSource {
-public:
-    BufferProducer(int memType = V4L2_MEMORY_USERPTR);
-    virtual ~BufferProducer() {};
-    virtual int qbuf(Port port, const std::shared_ptr<CameraBuffer> &camBuffer) = 0;
-    virtual int allocateMemory(Port port, const std::shared_ptr<CameraBuffer> &camBuffer) = 0;
-    virtual void addFrameAvailableListener(BufferConsumer *listener) = 0;
-    virtual void removeFrameAvailableListener(BufferConsumer *listener) = 0;
-    int getMemoryType(void) const {return mMemType;}
+ public:
+    explicit BufferProducer(int memType = V4L2_MEMORY_USERPTR);
+    virtual ~BufferProducer() {}
+    virtual int qbuf(Port port, const std::shared_ptr<CameraBuffer>& camBuffer) = 0;
+    virtual int allocateMemory(Port port, const std::shared_ptr<CameraBuffer>& camBuffer) = 0;
+    virtual void addFrameAvailableListener(BufferConsumer* listener) = 0;
+    virtual void removeFrameAvailableListener(BufferConsumer* listener) = 0;
+    int getMemoryType(void) const { return mMemType; }
 
-private:
+ private:
     int mMemType;
 };
 
-class BufferQueue: public BufferConsumer, public BufferProducer, public EventListener {
-public:
+class BufferQueue : public BufferConsumer, public BufferProducer, public EventListener {
+ public:
     BufferQueue();
     virtual ~BufferQueue();
 
@@ -72,39 +72,40 @@ public:
      *
      * Push the CameraBuffer to InputQueue and send a signal if needed
      */
-    virtual int onFrameAvailable(Port port, const std::shared_ptr<CameraBuffer> &camBuffer);
+    virtual int onFrameAvailable(Port port, const std::shared_ptr<CameraBuffer>& camBuffer);
 
     /**
      * \brief Register the BufferProducer
      *
      * Register the BufferProducer: Psys, software, or captureUnit
      */
-    virtual void setBufferProducer(BufferProducer *producer);
+    virtual void setBufferProducer(BufferProducer* producer);
 
     /**
      * \brief Queue one buffer to producer
      *
      * Push this buffer to output queue
      */
-    virtual int qbuf(Port port, const std::shared_ptr<CameraBuffer> &camBuffer);
+    virtual int qbuf(Port port, const std::shared_ptr<CameraBuffer>& camBuffer);
 
     /**
      * \brief allocate memory
      *
      * Not support this function in Psys and SWProcessor
      */
-    virtual int allocateMemory(Port port,
-                               const std::shared_ptr<CameraBuffer> &camBuffer) { return -1; }
+    virtual int allocateMemory(Port port, const std::shared_ptr<CameraBuffer>& camBuffer) {
+        return -1;
+    }
 
     /**
      * \brief Add the get frame listener
      */
-    virtual void addFrameAvailableListener(BufferConsumer *listener);
+    virtual void addFrameAvailableListener(BufferConsumer* listener);
 
     /**
      * \brief Remove the get frame listener
      */
-    virtual void removeFrameAvailableListener(BufferConsumer *listener);
+    virtual void removeFrameAvailableListener(BufferConsumer* listener);
 
     /**
      * \brief Set all frames configuration
@@ -123,8 +124,9 @@ public:
     /**
      * \brief Register user buffers to processor(PSys)
      */
-    virtual int registerUserOutputBufs(Port port,
-            const std::shared_ptr<CameraBuffer> &camBuffer) { return OK; }
+    virtual int registerUserOutputBufs(Port port, const std::shared_ptr<CameraBuffer>& camBuffer) {
+        return OK;
+    }
 
     /**
      * \brief Common Interface
@@ -135,7 +137,7 @@ public:
     virtual int getParameters(Parameters& param) { return OK; }
     virtual int configure(const std::vector<ConfigMode>& configModes) { return OK; }
 
-protected:
+ protected:
     virtual int processNewFrame() = 0;
 
     /**
@@ -149,35 +151,35 @@ protected:
      * the queue after the buffer is used, and need to be protected by mBufferQueueLock.
      */
     int waitFreeBuffersInQueue(ConditionLock& lock,
-                               std::map<Port, std::shared_ptr<CameraBuffer> > &cInBuffer,
-                               std::map<Port, std::shared_ptr<CameraBuffer> > &cOutBuffer,
+                               std::map<Port, std::shared_ptr<CameraBuffer> >& cInBuffer,
+                               std::map<Port, std::shared_ptr<CameraBuffer> >& cOutBuffer,
                                int64_t timeout = 0);
     /**
      * \brief Buffers allocation for producer
      */
     int allocProducerBuffers(int camId, int bufNum);
 
-protected:
+ protected:
     /**
      * \brief The process new frame buffer thread
      *
      * Use this thread listen to the input queue and output queue.
      * And do process if these two queues are not empty
      */
-    class ProcessThread: public Thread {
-        BufferQueue *mProcessor;
-        public:
-            ProcessThread(BufferQueue *p)
-                : mProcessor(p) { }
+    class ProcessThread : public Thread {
+        BufferQueue* mProcessor;
 
-            virtual bool threadLoop() {
-                int ret = mProcessor->processNewFrame();
-                return (ret == 0);
-            }
+     public:
+        explicit ProcessThread(BufferQueue* p) : mProcessor(p) {}
+
+        virtual bool threadLoop() {
+            int ret = mProcessor->processNewFrame();
+            return (ret == 0);
+        }
     };
-    static const nsecs_t kWaitDuration = 10000000000; //10000ms
+    static const nsecs_t kWaitDuration = 10000000000;  // 10000ms
 
-    BufferProducer *mBufferProducer;
+    BufferProducer* mBufferProducer;
     std::vector<BufferConsumer*> mBufferConsumerList;
 
     std::map<Port, stream_t> mInputFrameInfo;
@@ -190,17 +192,16 @@ protected:
     std::map<Port, CameraBufVector> mInternalBuffers;
 
     // Guard for BufferQueue public API
-    Mutex  mBufferQueueLock;
+    Mutex mBufferQueueLock;
     Condition mFrameAvailableSignal;
     Condition mOutputAvailableSignal;
 
-    //for the thread loop
+    // for the thread loop
     ProcessThread* mProcessThread;
-    bool mThreadRunning;   //state of the processor. true after start and false after stop
+    bool mThreadRunning;  // state of the processor. true after start and false after stop
 
-private:
-    int queueInputBuffer(Port port, const std::shared_ptr<CameraBuffer> &camBuffer);
-
+ private:
+    int queueInputBuffer(Port port, const std::shared_ptr<CameraBuffer>& camBuffer);
 };
 
-} //namespace icamera
+}  // namespace icamera

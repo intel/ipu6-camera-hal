@@ -343,14 +343,14 @@ void aiq_parameter_t::reset() {
     callbackRgbs = false;
     callbackTmCurve = false;
 
-    powerMode = CAMERA_LOW_POWER;
+    powerMode = CAMERA_HIGH_QUALITY;
     totalExposureTarget = 0;
 
     CLEAR(resolution);
 }
 
 void aiq_parameter_t::dump() {
-    if (!Log::isDebugLevelEnable(CAMERA_DEBUG_LOG_LEVEL3)) return;
+    if (!Log::isLogTagEnabled(GET_FILE_SHIFT(AiqSetting))) return;
 
     LOG3("Application parameters:");
     LOG3("3A mode: ae %d, awb %d, af %d, scene %d", aeMode, awbMode, afMode, sceneMode);

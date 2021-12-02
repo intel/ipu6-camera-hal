@@ -17,29 +17,29 @@
 #define LOG_TAG ParameterGenerator
 
 #include <math.h>
+
 #include <memory>
 #include <vector>
 
-#include "iutils/Errors.h"
-#include "iutils/CameraLog.h"
-#include "iutils/Utils.h"
-
-#include "MakerNote.h"
 #include "AiqResultStorage.h"
 #include "AiqUtils.h"
+#include "MakerNote.h"
 #include "ParameterHelper.h"
+#include "iutils/CameraLog.h"
 #include "ParameterGenerator.h"
+#include "iutils/Errors.h"
+#include "iutils/Utils.h"
 
 namespace icamera {
 
-#define CHECK_REQUEST_ID(id) CheckAndLogError((id < 0), UNKNOWN_ERROR, "%s: error request id %ld!", __func__, id);
-#define CHECK_SEQUENCE(id) CheckAndLogError((id < 0), UNKNOWN_ERROR, "%s: error sequence %ld!", __func__, id);
+#define CHECK_REQUEST_ID(id) \
+    CheckAndLogError((id < 0), UNKNOWN_ERROR, "%s: error request id %ld!", __func__, id);
+#define CHECK_SEQUENCE(id) \
+    CheckAndLogError((id < 0), UNKNOWN_ERROR, "%s: error sequence %ld!", __func__, id);
 
-ParameterGenerator::ParameterGenerator(int cameraId) :
-    mCameraId(cameraId),
-    mTonemapMaxCurvePoints(0)
-{
-    LOG1("%s, mCameraId = %d", __func__, mCameraId);
+ParameterGenerator::ParameterGenerator(int cameraId)
+        : mCameraId(cameraId),
+          mTonemapMaxCurvePoints(0) {
     reset();
 
     camera_info_t info;
@@ -68,14 +68,10 @@ ParameterGenerator::ParameterGenerator(int cameraId) :
     }
 }
 
-ParameterGenerator::~ParameterGenerator()
-{
-    LOG1("%s, mCameraId = %d", __func__, mCameraId);
-}
+ParameterGenerator::~ParameterGenerator() {}
 
-int ParameterGenerator::reset()
-{
-    LOG1("%s, mCameraId = %d", __func__, mCameraId);
+int ParameterGenerator::reset() {
+    LOG1("<id%d>%s", mCameraId, __func__);
     AutoMutex l(mParamsLock);
     mRequestParamMap.clear();
     mRequestIdMap.clear();
@@ -83,16 +79,14 @@ int ParameterGenerator::reset()
     return OK;
 }
 
-int ParameterGenerator::saveParameters(long sequence, long requestId, const Parameters* param)
-{
+int ParameterGenerator::saveParameters(int64_t sequence, long requestId, const Parameters* param) {
     CHECK_REQUEST_ID(requestId);
     CHECK_SEQUENCE(sequence);
 
     AutoMutex l(mParamsLock);
-    if (param)
-        mLastParam = *param;
+    if (param) mLastParam = *param;
 
-    LOG2("%s, sequence %ld, requestId %ld", __func__, sequence, requestId);
+    LOG2("<req%ld:seq%ld>%s", requestId, sequence, __func__);
     std::shared_ptr<RequestParam> requestParam = nullptr;
     if (mRequestParamMap.size() < kStorageSize) {
         requestParam = std::make_shared<RequestParam>();
@@ -109,11 +103,10 @@ int ParameterGenerator::saveParameters(long sequence, long requestId, const Para
     return OK;
 }
 
-void ParameterGenerator::updateParameters(long sequence, const Parameters *param)
-{
+void ParameterGenerator::updateParameters(int64_t sequence, const Parameters* param) {
     CheckAndLogError(!param, VOID_VALUE, "The param is nullptr!");
 
-    LOG2("%s, sequence %ld", __func__, sequence);
+    LOG2("<seq%ld>%s, sequence %ld", sequence, __func__);
 
     AutoMutex l(mParamsLock);
     std::shared_ptr<RequestParam> requestParam = nullptr;
@@ -145,7 +138,7 @@ void ParameterGenerator::updateParameters(long sequence, const Parameters *param
     if (ret == OK) {
         requestParam->param.setJpegGpsTimeStamp(timestamp);
     }
-    double gpsCoordinates[3] = { 0 };
+    double gpsCoordinates[3] = {0};
     int retLat = param->getJpegGpsLatitude(gpsCoordinates[0]);
     int retLon = param->getJpegGpsLongitude(gpsCoordinates[1]);
     int retAlt = param->getJpegGpsAltitude(gpsCoordinates[2]);
@@ -178,8 +171,8 @@ void ParameterGenerator::updateParameters(long sequence, const Parameters *param
     mRequestParamMap[sequence] = requestParam;
 }
 
-int ParameterGenerator::getParameters(long sequence, Parameters *param, bool setting, bool result)
-{
+int ParameterGenerator::getParameters(int64_t sequence, Parameters* param, bool setting,
+                                      bool result) {
     CheckAndLogError((param == nullptr), UNKNOWN_ERROR, "nullptr to get param!");
 
     if (setting) {
@@ -208,8 +201,7 @@ int ParameterGenerator::getParameters(long sequence, Parameters *param, bool set
     return OK;
 }
 
-int ParameterGenerator::getUserRequestId(long sequence, int32_t& userRequestId)
-{
+int ParameterGenerator::getUserRequestId(int64_t sequence, int32_t& userRequestId) {
     CHECK_SEQUENCE(sequence);
 
     AutoMutex l(mParamsLock);
@@ -217,12 +209,11 @@ int ParameterGenerator::getUserRequestId(long sequence, int32_t& userRequestId)
         return mRequestParamMap[sequence]->param.getUserRequestId(userRequestId);
     }
 
-    LOGE("Can't find user requestId for seq %ld", sequence);
+    LOGE("<seq%ld>Can't find user requestId", sequence);
     return UNKNOWN_ERROR;
 }
 
-void ParameterGenerator::setRequestIdMap(long currentRequestId, long requestIdWithAiq)
-{
+void ParameterGenerator::setRequestIdMap(long currentRequestId, long requestIdWithAiq) {
     AutoMutex l(mParamsLock);
     if (mRequestIdMap.size() >= kStorageSize) {
         mRequestIdMap.erase(mRequestIdMap.begin());
@@ -230,8 +221,7 @@ void ParameterGenerator::setRequestIdMap(long currentRequestId, long requestIdWi
     mRequestIdMap[currentRequestId] = requestIdWithAiq;
 }
 
-int ParameterGenerator::getRequestId(long sequence, long& requestId)
-{
+int ParameterGenerator::getRequestId(int64_t sequence, long& requestId) {
     CHECK_SEQUENCE(sequence);
     requestId = -1;
 
@@ -255,16 +245,15 @@ int ParameterGenerator::getRequestId(long sequence, long& requestId)
     }
 
     if (requestId != -1) {
-        LOG2("request id %ld for sequence id %ld", requestId, sequence);
+        LOG2("<req%ld:seq%ld>%s", requestId, sequence, __func__);
         return OK;
     }
 
-    LOGE("Can't find requestId for seq %ld", sequence);
+    LOGE("<seq%ld>Can't find requestId", sequence);
     return UNKNOWN_ERROR;
 }
 
-int ParameterGenerator::generateParametersL(long sequence, Parameters *params)
-{
+int ParameterGenerator::generateParametersL(int64_t sequence, Parameters* params) {
     if (PlatformData::isEnableAIQ(mCameraId)) {
         updateWithAiqResultsL(sequence, params);
         updateTonemapCurve(sequence, params);
@@ -272,15 +261,14 @@ int ParameterGenerator::generateParametersL(long sequence, Parameters *params)
     return OK;
 }
 
-int ParameterGenerator::updateWithAiqResultsL(long sequence, Parameters *params)
-{
-    const AiqResult *aiqResult = AiqResultStorage::getInstance(mCameraId)->getAiqResult(sequence);
+int ParameterGenerator::updateWithAiqResultsL(int64_t sequence, Parameters* params) {
+    const AiqResult* aiqResult = AiqResultStorage::getInstance(mCameraId)->getAiqResult(sequence);
     CheckAndLogError((aiqResult == nullptr), UNKNOWN_ERROR,
                      "%s Aiq result of sequence %ld does not exist", __func__, sequence);
 
     // Update AE related parameters
-    camera_ae_state_t aeState = aiqResult->mAeResults.exposures[0].converged ?
-            AE_STATE_CONVERGED : AE_STATE_NOT_CONVERGED;
+    camera_ae_state_t aeState =
+        aiqResult->mAeResults.exposures[0].converged ? AE_STATE_CONVERGED : AE_STATE_NOT_CONVERGED;
     params->setAeState(aeState);
 
     if (CameraUtils::isMultiExposureCase(mCameraId, aiqResult->mTuningMode) &&
@@ -308,18 +296,22 @@ int ParameterGenerator::updateWithAiqResultsL(long sequence, Parameters *params)
     colorGains.color_gains_rggb[3] = aiqResult->mPaResults.color_gains.b;
     params->setColorGains(colorGains);
 
-    camera_awb_state_t awbState = (fabs(aiqResult->mAwbResults.distance_from_convergence) < 0.001) ?
-            AWB_STATE_CONVERGED : AWB_STATE_NOT_CONVERGED;
+    camera_awb_state_t awbState = (fabs(aiqResult->mAwbResults.distance_from_convergence) < 0.001)
+                                      ? AWB_STATE_CONVERGED
+                                      : AWB_STATE_NOT_CONVERGED;
     params->setAwbState(awbState);
 
     // Update AF related parameters
-    camera_af_state_t afState = \
-            (aiqResult->mAfResults.status == ia_aiq_af_status_local_search) ? AF_STATE_LOCAL_SEARCH
-          : (aiqResult->mAfResults.status == ia_aiq_af_status_extended_search) ? AF_STATE_EXTENDED_SEARCH
-          : ((aiqResult->mAfResults.status == ia_aiq_af_status_success)
-             && aiqResult->mAfResults.final_lens_position_reached) ? AF_STATE_SUCCESS
-          : (aiqResult->mAfResults.status == ia_aiq_af_status_fail) ? AF_STATE_FAIL
-          : AF_STATE_IDLE;
+    camera_af_state_t afState =
+        (aiqResult->mAfResults.status == ia_aiq_af_status_local_search)
+            ? AF_STATE_LOCAL_SEARCH
+            : (aiqResult->mAfResults.status == ia_aiq_af_status_extended_search)
+                  ? AF_STATE_EXTENDED_SEARCH
+                  : ((aiqResult->mAfResults.status == ia_aiq_af_status_success) &&
+                     aiqResult->mAfResults.final_lens_position_reached)
+                        ? AF_STATE_SUCCESS
+                        : (aiqResult->mAfResults.status == ia_aiq_af_status_fail) ? AF_STATE_FAIL
+                                                                                  : AF_STATE_IDLE;
     params->setAfState(afState);
 
     bool lensMoving = false;
@@ -351,8 +343,7 @@ int ParameterGenerator::updateWithAiqResultsL(long sequence, Parameters *params)
     return updateCommonMetadata(params, aiqResult);
 }
 
-int ParameterGenerator::updateAwbGainsL(Parameters *params, const cca::cca_awb_results &result)
-{
+int ParameterGenerator::updateAwbGainsL(Parameters* params, const cca::cca_awb_results& result) {
     camera_awb_gains_t awbGains;
     CLEAR(awbGains);
     float normalizedR, normalizedG, normalizedB;
@@ -363,7 +354,7 @@ int ParameterGenerator::updateAwbGainsL(Parameters *params, const cca::cca_awb_r
         normalizedG = AiqUtils::normalizeAwbGain(awbGains.g_gain);
     } else {
         // non-manual AWB gains, try to find a proper G that makes R/G/B all in the gain range.
-        normalizedG = sqrt((AWB_GAIN_NORMALIZED_START * AWB_GAIN_NORMALIZED_END) / \
+        normalizedG = sqrt((AWB_GAIN_NORMALIZED_START * AWB_GAIN_NORMALIZED_END) /
                            (result.accurate_r_per_g * result.accurate_b_per_g));
         awbGains.g_gain = AiqUtils::convertToUserAwbGain(normalizedG);
     }
@@ -387,32 +378,33 @@ int ParameterGenerator::updateAwbGainsL(Parameters *params, const cca::cca_awb_r
     return OK;
 }
 
-int ParameterGenerator::updateTonemapCurve(long sequence, Parameters *params)
-{
-    if (!mTonemapMaxCurvePoints)
-        return OK;
+int ParameterGenerator::updateTonemapCurve(int64_t sequence, Parameters* params) {
+    if (!mTonemapMaxCurvePoints) return OK;
 
-    const AiqResult *aiqResult = AiqResultStorage::getInstance(mCameraId)->getAiqResult(sequence);
+    const AiqResult* aiqResult = AiqResultStorage::getInstance(mCameraId)->getAiqResult(sequence);
     CheckAndLogError((aiqResult == nullptr), UNKNOWN_ERROR,
                      "%s Aiq result of sequence %ld does not exist", __func__, sequence);
-    const cca::cca_gbce_params &gbceResults = aiqResult->mGbceResults;
+    const cca::cca_gbce_params& gbceResults = aiqResult->mGbceResults;
 
     int multiplier = gbceResults.gamma_lut_size / mTonemapMaxCurvePoints;
-    for (int32_t i=0; i < mTonemapMaxCurvePoints; i++) {
+    for (int32_t i = 0; i < mTonemapMaxCurvePoints; i++) {
         mTonemapCurveRed[i * 2 + 1] = gbceResults.r_gamma_lut[i * multiplier];
         mTonemapCurveBlue[i * 2 + 1] = gbceResults.g_gamma_lut[i * multiplier];
         mTonemapCurveGreen[i * 2 + 1] = gbceResults.b_gamma_lut[i * multiplier];
     }
 
     int count = mTonemapMaxCurvePoints * 2;
-    camera_tonemap_curves_t curves =
-            {count, count, count,
-             mTonemapCurveRed.get(), mTonemapCurveBlue.get(), mTonemapCurveGreen.get()};
+    camera_tonemap_curves_t curves = {count,
+                                      count,
+                                      count,
+                                      mTonemapCurveRed.get(),
+                                      mTonemapCurveBlue.get(),
+                                      mTonemapCurveGreen.get()};
     params->setTonemapCurves(curves);
     return OK;
 }
 
-int ParameterGenerator::updateCommonMetadata(Parameters *params, const AiqResult *aiqResult) {
+int ParameterGenerator::updateCommonMetadata(Parameters* params, const AiqResult* aiqResult) {
     CameraMetadata metadata;
 
     metadata.update(CAMERA_SENSOR_ROLLING_SHUTTER_SKEW, &aiqResult->mRollingShutter, 1);
@@ -428,13 +420,29 @@ int ParameterGenerator::updateCommonMetadata(Parameters *params, const AiqResult
         uint8_t lscFlags = aiqResult->mOutStats.rgbs_grid.shading_correction;
         metadata.update(INTEL_VENDOR_CAMERA_SHADING_CORRECTION, &lscFlags, 1);
 
+        if (Log::isLogTagEnabled(ST_STATS)) {
+            const cca::cca_out_stats *outStats = &aiqResult->mOutStats;
+            const rgbs_grid_block *rgbsPtr = aiqResult->mOutStats.rgbs_blocks;
+            int size = outStats->rgbs_grid.grid_width * outStats->rgbs_grid.grid_height;
+
+            int sumLuma = 0;
+            for (int j = 0; j < size; j++) {
+                sumLuma += (rgbsPtr[j].avg_b + rgbsPtr[j].avg_r +
+                            (rgbsPtr[j].avg_gb + rgbsPtr[j].avg_gr) / 2) / 3;
+            }
+
+            LOG2(ST_STATS, "RGB stat %dx%d, sequence %lld, y_mean %d",
+                 outStats->rgbs_grid.grid_width,
+                 outStats->rgbs_grid.grid_height, aiqResult->mSequence, sumLuma/size);
+        }
+
         metadata.update(INTEL_VENDOR_CAMERA_RGBS_STATS_BLOCKS,
                         reinterpret_cast<const uint8_t*>(aiqResult->mOutStats.rgbs_blocks),
                         (width * height * 5));
     }
 
     if (aiqResult->mAiqParam.callbackTmCurve) {
-        const cca::cca_gbce_params &gbceResults = aiqResult->mGbceResults;
+        const cca::cca_gbce_params& gbceResults = aiqResult->mGbceResults;
         int multiplier = gbceResults.tone_map_lut_size / mTonemapMaxCurvePoints;
 
         std::vector<float> tmCurve(mTonemapMaxCurvePoints * 2);

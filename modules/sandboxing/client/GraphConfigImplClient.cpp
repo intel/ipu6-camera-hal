@@ -160,7 +160,8 @@ status_t GraphConfigImpl::getGraphConfigData(IGraphType::GraphConfigData* data) 
 
 status_t GraphConfigImpl::pipelineGetConnections(
     const std::vector<std::string>& pgList, std::vector<IGraphType::ScalerInfo>* scalerInfo,
-    std::vector<IGraphType::PipelineConnection>* confVector) {
+    std::vector<IGraphType::PipelineConnection>* confVector,
+    std::vector<IGraphType::PrivPortFormat>* tnrPortFormat) {
     CheckAndLogError(!mInitialized, UNKNOWN_ERROR, "GetConnections mInitialized is false");
 
     GraphBaseInfo info = {mCameraId, mConfigMode};
@@ -172,7 +173,7 @@ status_t GraphConfigImpl::pipelineGetConnections(
     CheckAndLogError(!ret, UNKNOWN_ERROR, "GetConnections requestSync fails");
 
     ret = mIpc.clientUnFlattenGetConnection(mMemGetConnection.mAddr, mMemGetConnection.mSize,
-                                            scalerInfo, confVector);
+                                            scalerInfo, confVector, tnrPortFormat);
     CheckAndLogError(!ret, UNKNOWN_ERROR, "clientUnFlattenGetConnection fails");
 
     return OK;

@@ -19,27 +19,25 @@
 #include <map>
 #include <vector>
 
-#include "iutils/Thread.h"
-
-#include "StreamSource.h"
 #include "CameraBuffer.h"
 #include "DeviceBase.h"
 #include "IspParamAdaptor.h"
+#include "StreamSource.h"
+#include "iutils/Thread.h"
 
 namespace icamera {
 
 /**
-  * CaptureUnit abstract the ISYS function.
-  * It implements the BufferProducer Interface and it is the source of any pipeline
-  * It hides the v4l2 and media controller to the upper layer.
-  */
+ * CaptureUnit abstract the ISYS function.
+ * It implements the BufferProducer Interface and it is the source of any pipeline
+ * It hides the v4l2 and media controller to the upper layer.
+ */
 class CaptureUnit : public StreamSource, public DeviceCallback {
-
-public:
-    CaptureUnit(int cameraId, int memType = V4L2_MEMORY_MMAP);
+ public:
+    explicit CaptureUnit(int cameraId, int memType = V4L2_MEMORY_MMAP);
     virtual ~CaptureUnit();
 
-public:
+ public:
     /**
      * \brief Queue on buffer to driver
      *
@@ -51,7 +49,7 @@ public:
      *
      * \return 0 if succeed, other value indicates failed
      */
-    virtual int qbuf(Port port, const std::shared_ptr<CameraBuffer> &camBuffer);
+    virtual int qbuf(Port port, const std::shared_ptr<CameraBuffer>& camBuffer);
 
     /**
      * \brief allocate memory
@@ -62,21 +60,21 @@ public:
      *
      * \return OK if succeed, other value indicates failed
      */
-    virtual int allocateMemory(Port port, const std::shared_ptr<CameraBuffer> &camBuffer);
+    virtual int allocateMemory(Port port, const std::shared_ptr<CameraBuffer>& camBuffer);
 
     /**
      * \brief Add the frame buffer listener
      *
      * \param listener: the listener need to add
      */
-    virtual void addFrameAvailableListener(BufferConsumer *listener);
+    virtual void addFrameAvailableListener(BufferConsumer* listener);
 
     /**
      * \brief Remove the frame buffer listener
      *
      * \param listener: the listener need to remove
      */
-    virtual void removeFrameAvailableListener(BufferConsumer *listener);
+    virtual void removeFrameAvailableListener(BufferConsumer* listener);
 
     /**
      * \brief Remove all the listeners
@@ -135,9 +133,6 @@ public:
     // Overwrite DeviceCallback API
     void onDequeueBuffer();
 
-private:
-    DISALLOW_COPY_AND_ASSIGN(CaptureUnit);
-
     int createDevices();
     void destroyDevices();
     DeviceBase* findDeviceByPort(Port port);
@@ -153,22 +148,21 @@ private:
     int processPendingBuffers();
     int queueAllBuffers();
 
-private:
+ private:
     /**
      * \brief The pool frame buffer thread
      */
-    class PollThread: public Thread {
-        CaptureUnit *mCaptureU;
-        public:
-            PollThread(CaptureUnit *hw) : mCaptureU(hw) { }
+    class PollThread : public Thread {
+        CaptureUnit* mCaptureU;
 
-            virtual bool threadLoop() {
-                return (mCaptureU->poll() == 0);
-            }
+     public:
+        explicit PollThread(CaptureUnit* hw) : mCaptureU(hw) {}
+
+        virtual bool threadLoop() { return (mCaptureU->poll() == 0); }
     };
 
     PollThread* mPollThread;
-    int mFlushFd[2];    // Flush file descriptor
+    int mFlushFd[2];  // Flush file descriptor
 
     // Guard for mCaptureUnit public API except dqbuf and qbuf
     Mutex mLock;
@@ -193,7 +187,9 @@ private:
         CAPTURE_STOP,
     } mState;
     bool mExitPending;
+
+ private:
+    DISALLOW_COPY_AND_ASSIGN(CaptureUnit);
 };
 
-} // namespace icamera
-
+}  // namespace icamera

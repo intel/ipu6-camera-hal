@@ -50,6 +50,7 @@ Intel3AParameter::Intel3AParameter(int cameraId)
           mManualFocusDistance(0.0),
           mAeMode(AE_MODE_AUTO),
           mDuringAfTriggerScan(false) {
+    CLEAR(mCMC);
     CLEAR(mAeParams);
     CLEAR(mAfParams);
     CLEAR(mAwbParams);
@@ -86,6 +87,16 @@ int Intel3AParameter::init() {
     mAeMode = AE_MODE_AUTO;
     mAfTrigger = AF_TRIGGER_IDLE;
     mDuringAfTriggerScan = false;
+    return OK;
+}
+
+int Intel3AParameter::getCMCInfo(TuningMode tuningMode) {
+    IntelCca* intelCca = IntelCca::getInstance(mCameraId, tuningMode);
+    CheckAndLogError(!intelCca, BAD_VALUE, "cca is nullptr, mode:%d", tuningMode);
+
+    int ret = intelCca->getCMC(&mCMC);
+    CheckAndLogError(ret != OK, ret, "failed to load CMC info");
+
     return OK;
 }
 
@@ -221,19 +232,11 @@ void Intel3AParameter::setAeManualLimits(const aiq_parameter_t& param) {
     }
 
     if (gainRange.min >= 0 && gainRange.max >= gainRange.min) {
-        IntelCca* intelCca = IntelCca::getInstance(mCameraId, param.tuningMode);
-        CheckAndLogError(!intelCca, VOID_VALUE, "%s, cca is nullptr, mode:%d", __func__,
-                         param.tuningMode);
-
-        cca::cca_cmc cmc;
-        int ret = intelCca->getCMC(&cmc);
-        if (ret == OK) {
-            float isoMin = convertdBGainToISO(gainRange.min, cmc.base_iso);
-            float isoMax = convertdBGainToISO(gainRange.max, cmc.base_iso);
-            if (isoMin <= INT_MAX && isoMax <= INT_MAX) {
-                limit->manual_iso_min = static_cast<int>(isoMin);
-                limit->manual_iso_max = static_cast<int>(isoMax);
-            }
+        float isoMin = convertdBGainToISO(gainRange.min, mCMC.base_iso);
+        float isoMax = convertdBGainToISO(gainRange.max, mCMC.base_iso);
+        if (isoMin <= INT_MAX && isoMax <= INT_MAX) {
+            limit->manual_iso_min = static_cast<int>(isoMin);
+            limit->manual_iso_max = static_cast<int>(isoMax);
         }
     }
 }
@@ -385,9 +388,19 @@ void Intel3AParameter::updateAeParameter(const aiq_parameter_t& param) {
 
     CLEAR(mAeParams.manual_total_target_exposure);
     if (param.totalExposureTarget > 0) {
+        camera_range_t range = { -1, -1 };
+        int ret = PlatformData::getSupportAeExposureTimeRange(mCameraId, param.sceneMode, range);
+        camera_range_t gainRange = { -1, -1 };
+        ret |= PlatformData::getSupportAeGainRange(mCameraId, param.sceneMode, gainRange);
+        int64_t tet = param.totalExposureTarget;
+        if (ret == OK && mCMC.base_iso > 0) {
+            int64_t maxTet = static_cast<int64_t>(range.max * gainRange.max / mCMC.base_iso);
+            int64_t minTet = static_cast<int64_t>(range.min * gainRange.min / mCMC.base_iso);
+            tet = CLIP(tet, maxTet, minTet);
+        }
         // Will overwrite total exposure
         for (unsigned int i = 0; i < mAeParams.num_exposures; i++) {
-            mAeParams.manual_total_target_exposure[i] = param.totalExposureTarget;
+            mAeParams.manual_total_target_exposure[i] = tet;
         }
     }
 }
@@ -686,7 +699,7 @@ void Intel3AParameter::fillAfTriggerResult(cca::cca_af_results* afResults) {
 }
 
 void Intel3AParameter::dumpParameter() {
-    if (!Log::isDebugLevelEnable(CAMERA_DEBUG_LOG_LEVEL3)) return;
+    if (!Log::isLogTagEnabled(GET_FILE_SHIFT(Intel3AParameter))) return;
 
     LOG3("AE parameters: mode %d, bypass %d, frame_use %d, PerTicks %d", mAeMode,
          mAeParams.is_bypass, mAeParams.frame_use, mAePerTicks);

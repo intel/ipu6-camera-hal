@@ -68,8 +68,6 @@ message(STATUS "install prefix: " ${CMAKE_INSTALL_PREFIX})
 
 #------------------------- Compilation settings -------------------------
 
-include(GNUInstallDirs)
-
 # -fPIC in xos way
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
@@ -245,11 +243,6 @@ set_target_properties(camhal_static PROPERTIES OUTPUT_NAME "camhal")
 target_link_libraries(camhal ${CMAKE_DL_LIBS})
 target_link_libraries(camhal_static ${CMAKE_DL_LIBS})
 
-set (THREADS_PREFER_PTHREAD_FLAG ON)
-find_package (Threads REQUIRED)
-target_link_libraries(camhal ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(camhal_static ${CMAKE_THREAD_LIBS_INIT})
-
 target_link_libraries(camhal expat rt)
 target_link_libraries(camhal_static expat rt)
 
@@ -370,36 +363,43 @@ endif() #SUPPORT_LIVE_TUNING
 # By default ipu4 is used
 if("${IPU_VER}" STREQUAL "ipu6")
     if("${PRODUCTION_NAME}" STREQUAL "Andrews")
-        message("Install Andrews configure files")
-        install(DIRECTORY config/linux/ubuntu/andrews/ DESTINATION share/defaults/etc/camera)
+        message("Install TGL Andrews configure files")
+        install(DIRECTORY config/ubuntu/tgl/ DESTINATION share/defaults/etc/camera)
     else()
-        message("Install IPU6 configure files")
+        message("Install TGL IPU6 configure files")
         install(DIRECTORY config/linux/ipu6/ DESTINATION share/defaults/etc/camera)
     endif()
 elseif("${IPU_VER}" STREQUAL "ipu6ep")
     if("${PRODUCTION_NAME}" STREQUAL "ccg_platform")
-        message("Install ccg_platform configure files")
-        install(DIRECTORY config/linux/ccg_platform/ DESTINATION share/defaults/etc/camera)
-    elseif("${PRODUCTION_NAME}" STREQUAL "ccg_cce_tributo")
-        message("Install ccg_cce_tributo configure files")
-        install(DIRECTORY config/linux/ccg_cce_tributo/ DESTINATION share/defaults/etc/camera)
+        message("Install ADL Platform configure files")
+        install(DIRECTORY config/ubuntu/adl/ DESTINATION share/defaults/etc/camera)
+    elseif("${PRODUCTION_NAME}" STREQUAL "Tributo")
+        message("Install ADL Tributo configure files")
+        install(DIRECTORY config/ubuntu/adl/ DESTINATION share/defaults/etc/camera)
     else()
-        message("Install IPU6EP configure files")
+        message("Install ADL IPU6EP configure files")
         install(DIRECTORY config/linux/ipu6ep/ DESTINATION share/defaults/etc/camera)
     endif()
+elseif("${IPU_VER}" STREQUAL "ipu6sepla")
+    if("${PRODUCTION_NAME}" STREQUAL "penguin_peak")
+        message("Install JSL penguin peak configure files")
+        install(DIRECTORY config/ubuntu/jsl/ DESTINATION share/defaults/etc/camera)
+    endif()
 else()
-    message("Install IPU4 configure files")
+    message("Install APL IPU4 configure files")
     install(DIRECTORY config/linux/ipu4/ DESTINATION share/defaults/etc/camera)
 endif()
 
 # Install libraries
-install(TARGETS camhal camhal_static)
+install(TARGETS camhal camhal_static
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+        )
 
 # Install package config file
 configure_file(${PROJECT_SOURCE_DIR}/cmake/libcamhal.pc.cmakein
                ${PROJECT_SOURCE_DIR}/libcamhal.pc @ONLY)
-install(FILES libcamhal.pc
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+install(FILES libcamhal.pc DESTINATION lib/pkgconfig)
 
 endif() #NOT CAL_BUILD
 

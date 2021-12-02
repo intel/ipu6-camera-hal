@@ -62,7 +62,7 @@ class CameraHal {
     virtual int streamDqbuf(int cameraId, int streamId, camera_buffer_t** ubuffer,
                             Parameters* settings = nullptr);
     virtual int setParameters(int cameraId, const Parameters& param);
-    virtual int getParameters(int cameraId, Parameters& param, long sequence);
+    virtual int getParameters(int cameraId, Parameters& param, int64_t sequence);
 
  private:
     DISALLOW_COPY_AND_ASSIGN(CameraHal);

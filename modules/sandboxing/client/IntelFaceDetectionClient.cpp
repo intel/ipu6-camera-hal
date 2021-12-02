@@ -20,7 +20,7 @@
 
 #include <algorithm>
 
-#include "FaceBase.h"
+#include "FaceType.h"
 
 namespace icamera {
 IntelFaceDetection::IntelFaceDetection() : mInitialized(false) {

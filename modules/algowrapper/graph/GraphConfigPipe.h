@@ -128,12 +128,11 @@ class GraphConfigPipe {
     /*
      * Pipeline connection support
      */
-    status_t pipelineGetConnections(const std::string& sinkName, int* streamId,
-                                    std::vector<IGraphType::PipelineConnection>* confVector);
     status_t portGetOwner(Node* port, IGraphType::ConnectionConfig* connectionInfo);
     status_t pipelineGetConnections(const std::vector<std::string>& pgList,
                                     std::vector<IGraphType::ScalerInfo>* scalerInfo,
-                                    std::vector<IGraphType::PipelineConnection>* confVector);
+                                    std::vector<IGraphType::PipelineConnection>* confVector,
+                                    std::vector<IGraphType::PrivPortFormat>* tnrPortFormat);
 
     status_t getPgNames(std::vector<std::string>* pgNames);
     status_t getPgRbmValue(std::string pgName, IGraphType::StageAttr* stageAttr);
@@ -180,6 +179,8 @@ class GraphConfigPipe {
     status_t getScalerByStreamId(
         std::map<Node*, IGraphType::PipelineConnection> edgePort2Connection,
         std::vector<IGraphType::ScalerInfo>* scalerInfo);
+    status_t getPrivatePortFormat(Node* port,
+                                  std::vector<IGraphType::PrivPortFormat>* tnrPortFormat);
 
  private:
     GCSS::GraphConfigNode* mSettings;

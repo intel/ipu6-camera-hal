@@ -56,6 +56,7 @@ int AiqResult::init() {
     CLEAR(mAwbResults);
     CLEAR(mPaResults);
     CLEAR(mOutStats);
+    mOutStats.rgbs_grid.blocks_ptr = mOutStats.rgbs_blocks;
 
     mAiqParam.reset();
 
@@ -89,6 +90,7 @@ AiqResult &AiqResult::operator=(const AiqResult &other) {
     mGbceResults = other.mGbceResults;
     mPaResults = other.mPaResults;
     mOutStats = other.mOutStats;
+    mOutStats.rgbs_grid.blocks_ptr = mOutStats.rgbs_blocks;
 
     mCustomControls.count = other.mCustomControls.count;
     for (int i = 0; i < mCustomControls.count; i++) {

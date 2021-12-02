@@ -28,26 +28,20 @@
 
 namespace icamera {
 
-SwImageProcessor::SwImageProcessor(int cameraId) : mCameraId(cameraId)
-{
-    LOGW("@%s: You are running the SwProcessor instead of PSYS pipeline. SwProcessor is for debug only", __func__);
-    LOG1("@%s camera id:%d", __func__, mCameraId);
+SwImageProcessor::SwImageProcessor(int cameraId) : mCameraId(cameraId) {
+    LOG1("<id%d>@%s", mCameraId, __func__);
 
     mProcessThread = new ProcessThread(this);
 }
 
-SwImageProcessor::~SwImageProcessor()
-{
-    LOGW("@%s: You are running the SwProcessor instead of PSYS pipeline. SwProcessor is for debug only", __func__);
-
+SwImageProcessor::~SwImageProcessor() {
     mProcessThread->join();
     delete mProcessThread;
 }
 
-int SwImageProcessor::start()
-{
+int SwImageProcessor::start() {
     PERF_CAMERA_ATRACE();
-    LOG1("%s", __func__);
+    LOG1("<id%d>@%s", mCameraId, __func__);
     AutoMutex   l(mBufferQueueLock);
 
     int memType = mOutputFrameInfo.begin()->second.memType;
@@ -62,10 +56,9 @@ int SwImageProcessor::start()
     return 0;
 }
 
-void SwImageProcessor::stop()
-{
+void SwImageProcessor::stop() {
     PERF_CAMERA_ATRACE();
-    LOG1("%s", __func__);
+    LOG1("<id%d>@%s", mCameraId, __func__);
 
     mProcessThread->requestExit();
     {
@@ -82,36 +75,34 @@ void SwImageProcessor::stop()
     clearBufferQueues();
 }
 
-int SwImageProcessor::processNewFrame()
-{
+int SwImageProcessor::processNewFrame() {
     PERF_CAMERA_ATRACE();
-    LOG2("%s", __func__);
 
     int ret = OK;
     std::map<Port, std::shared_ptr<CameraBuffer> > srcBuffers, dstBuffers;
     std::shared_ptr<CameraBuffer> cInBuffer;
     Port inputPort = INVALID_PORT;
+    LOG1("<id%d>@%s", mCameraId, __func__);
 
     { // Auto lock mBufferQueueLock scope
-    ConditionLock lock(mBufferQueueLock);
-    ret = waitFreeBuffersInQueue(lock, srcBuffers, dstBuffers);
+        ConditionLock lock(mBufferQueueLock);
+        ret = waitFreeBuffersInQueue(lock, srcBuffers, dstBuffers);
 
-    if (!mThreadRunning) return -1;
+        if (!mThreadRunning) return -1;
+        CheckAndLogError((ret < 0), -1,
+                         "@%s: wake up from the wait abnomal such as stop", __func__);
 
-    CheckAndLogError((ret < 0), -1, "@%s: wake up from the wait abnomal such as stop", __func__);
+        inputPort = srcBuffers.begin()->first;
+        cInBuffer = srcBuffers[inputPort];
 
-    inputPort = srcBuffers.begin()->first;
-    cInBuffer = srcBuffers[inputPort];
+        for (auto& output: mOutputQueue) {
+            output.second.pop();
+        }
 
-    for (auto& output: mOutputQueue) {
-        output.second.pop();
-    }
-
-    for (auto& input: mInputQueue) {
-        input.second.pop();
-    }
+        for (auto& input: mInputQueue) {
+            input.second.pop();
+        }
     } // End of auto lock mBufferQueueLock scope
-
     CheckAndLogError(!cInBuffer, BAD_VALUE, "Invalid input buffer.");
 
     for (auto& dst : dstBuffers) {
@@ -124,9 +115,12 @@ int SwImageProcessor::processNewFrame()
         }
 
         //No Lock for this function make sure buffers are not freed before the stop
-        ret = SwImageConverter::convertFormat(cInBuffer->getWidth(), cInBuffer->getHeight(),
-                (unsigned char *)cInBuffer->getBufferAddr(), cInBuffer->getBufferSize(), cInBuffer->getFormat(),
-                (unsigned char *)cOutBuffer->getBufferAddr(), cOutBuffer->getBufferSize(), cOutBuffer->getFormat());
+        ret = SwImageConverter::convertFormat(
+                cInBuffer->getWidth(), cInBuffer->getHeight(),
+                static_cast<unsigned char*>(cInBuffer->getBufferAddr()),
+                cInBuffer->getBufferSize(), cInBuffer->getFormat(),
+                static_cast<unsigned char*>(cOutBuffer->getBufferAddr()),
+                cOutBuffer->getBufferSize(), cOutBuffer->getFormat());
         CheckAndLogError((ret < 0), ret, "format convertion failed with %d", ret);
 
         if (CameraDump::isDumpTypeEnable(DUMP_SW_IMG_PROC_OUTPUT)) {
@@ -140,11 +134,6 @@ int SwImageProcessor::processNewFrame()
         for (auto &it : mBufferConsumerList) {
             it->onFrameAvailable(port, cOutBuffer);
         }
-    }
-
-    {
-        PERF_CAMERA_ATRACE_PARAM3("sof.sequence", cInBuffer->getSequence(), "csi2_port", cInBuffer->getCsi2Port(), \
-                                    "virtual_channel", cInBuffer->getVirtualChannel());
     }
 
     // Return the buffers to the producer

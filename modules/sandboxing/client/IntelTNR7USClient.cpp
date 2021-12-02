@@ -189,4 +189,19 @@ int IntelTNR7US::asyncParamUpdate(int gain, bool forceUpdate) {
     return OK;
 }
 
+int IntelTNR7US::getSurfaceInfo(int width, int height, uint32_t* size) {
+    mTnrRequestInfo->width = width;
+    mTnrRequestInfo->height = height;
+    mTnrRequestInfo->type = mTnrType;
+    mTnrRequestInfo->cameraId = mCameraId;
+
+    int32_t requestHandle =
+        mCommon.getShmMemHandle(static_cast<void*>(mTnrRequestInfo), GPU_ALGO_SHM);
+
+    bool ret = mCommon.requestSync(IPC_GPU_TNR_GET_SURFACE_INFO, requestHandle);
+    CheckAndLogError(!ret, UNKNOWN_ERROR, "@%s, IPC_GPU_TNR_GET_SURFACE_INFO requestSync fails",
+                     __func__);
+    if (size) *size = mTnrRequestInfo->surfaceSize;
+    return OK;
+}
 }  // namespace icamera

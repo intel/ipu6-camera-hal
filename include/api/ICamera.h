@@ -500,7 +500,7 @@ int camera_set_parameters(int camera_id, const Parameters& param);
  * \param[out]
  *   Parameters param:  parameters need to be filled in
  * \param[in]
- *   long sequence: sequence used to find target parameter and results, default is -1
+ *   int64_t sequence: sequence used to find target parameter and results, default is -1
  *
  * \return
  *   0 succeed to get camera parameters
@@ -518,7 +518,7 @@ int camera_set_parameters(int camera_id, const Parameters& param);
  * \endcode
  *
  **/
-int camera_get_parameters(int camera_id, Parameters& param, long sequence = -1);
+int camera_get_parameters(int camera_id, Parameters& param, int64_t sequence = -1);
 
 /**************************************Optional API ******************************
  * The API defined in this section is optional.

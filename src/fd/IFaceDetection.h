@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Intel Corporation.
+ * Copyright (C) 2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,20 +15,19 @@
  */
 
 #pragma once
+#include "FaceDetection.h"
 
-#include <string>
+namespace icamera {
 
-namespace graphconfig {
-namespace utils {
+/*
+ * \factory class IFaceDetection
+ * This class is used to create FaceDetection
+ */
+class IFaceDetection {
+ public:
+    static FaceDetection* createFaceDetection(int cameraId, unsigned int maxFaceNum,
+                                              int32_t halStreamId, int width, int height,
+                                              int gfxFmt, int usage);
+};
 
-int32_t getV4L2Format(const int32_t commonPixelFormat);
-const std::string format2string(int32_t format);
-bool isPlanarFormat(int32_t v4l2Format);
-bool isRaw(int32_t format);
-bool isVectorizedRaw(int32_t format);
-int32_t getBpl(int32_t format, int32_t width);
-int32_t getBpp(int32_t format);
-int32_t getBppFromCommon(int32_t format);
-
-}  // namespace utils
-}  // namespace graphconfig
+}  // namespace icamera

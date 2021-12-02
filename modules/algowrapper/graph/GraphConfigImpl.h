@@ -107,7 +107,8 @@ class GraphConfigImpl {
 
     status_t pipelineGetConnections(const std::vector<std::string>& pgList,
                                     std::vector<IGraphType::ScalerInfo>* scalerInfo,
-                                    std::vector<IGraphType::PipelineConnection>* confVector);
+                                    std::vector<IGraphType::PipelineConnection>* confVector,
+                                    std::vector<IGraphType::PrivPortFormat>* tnrPortFormat);
 
  private:
     status_t prepareGraphConfig();
@@ -128,6 +129,8 @@ class GraphConfigImpl {
     status_t getPgRbmValue(std::string pgName, IGraphType::StageAttr* stageAttr);
     status_t getMBRData(int32_t streamId, ia_isp_bxt_gdc_limits* data);
     status_t getPgNames(std::vector<std::string>* pgNames);
+    std::string format2GraphStr(int format);
+    std::string format2GraphBpp(int format);
 
     // Debug helper
     void dumpQuery(int useCase, const std::map<GCSS::ItemUID, std::string>& query);

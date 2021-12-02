@@ -221,7 +221,7 @@ int MockCameraHal::streamDqbuf(int cameraId, int streamId, camera_buffer_t** ubu
     return OK;
 }
 
-int MockCameraHal::getParameters(int cameraId, Parameters& param, long sequence) {
+int MockCameraHal::getParameters(int cameraId, Parameters& param, int64_t sequence) {
     param = mParameter[cameraId];
     return OK;
 }

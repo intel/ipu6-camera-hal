@@ -45,7 +45,7 @@ EXIFMaker::EXIFMaker()
           mInitialized(false),
           mProductName("<not_set>"),
           mManufacturerName("<not set>") {
-    LOG2("@%s", __func__);
+    LOG1("@%s", __func__);
 
     CLEAR(mExifAttributes);
     mMakernoteSection = new unsigned char[MAKERNOTE_SECTION1_SIZE + MAKERNOTE_SECTION2_SIZE];
@@ -53,7 +53,7 @@ EXIFMaker::EXIFMaker()
 }
 
 EXIFMaker::~EXIFMaker() {
-    LOG2("@%s", __func__);
+    LOG1("@%s", __func__);
     delete[] mMakernoteSection;
 }
 
@@ -281,7 +281,6 @@ void EXIFMaker::initialize(int width, int height) {
 }
 
 void EXIFMaker::initializeLocation(ExifMetaData* metadata) {
-    LOG1("@%s", __func__);
     // GIS information
     bool gpsEnabled = false;
     double latitude = metadata->mGpsSetting.latitude;
@@ -298,7 +297,7 @@ void EXIFMaker::initializeLocation(ExifMetaData* metadata) {
         gpsEnabled = true;
 
     mExifAttributes.enableGps = 0;
-    LOG1("EXIF: gpsEnabled: %d", gpsEnabled);
+    LOG1("@%s,EXIF: gpsEnabled: %d", __func__, gpsEnabled);
 
     // the version is given as 2.2.0.0, it is mandatory when GPSInfo tag is present
     if (gpsEnabled) {
@@ -552,12 +551,11 @@ void EXIFMaker::setThumbnail(unsigned char* data, size_t size, int width, int he
 }
 
 bool EXIFMaker::isThumbnailSet() const {
-    LOG1("@%s", __func__);
     return mEncoder.isThumbDataSet();
 }
 
 size_t EXIFMaker::makeExif(unsigned char* data) {
-    LOG1("@%s", __func__);
+    LOG2("@%s", __func__);
     CheckAndLogError(!data, 0, "nullptr passed for EXIF. Cannot generate EXIF!");
 
     if (mEncoder.makeExif(data, &mExifAttributes, &mExifSize) == EXIF_SUCCESS) {
@@ -568,19 +566,19 @@ size_t EXIFMaker::makeExif(unsigned char* data) {
 }
 
 void EXIFMaker::setMaker(const char* data) {
-    LOG1("@%s: data = %s", __func__, data);
+    LOG2("@%s: data = %s", __func__, data);
 
     snprintf((char*)mExifAttributes.maker, sizeof(mExifAttributes.maker), "%s", data);
 }
 
 void EXIFMaker::setModel(const char* data) {
-    LOG1("@%s: data = %s", __func__, data);
+    LOG2("@%s: data = %s", __func__, data);
 
     snprintf((char*)mExifAttributes.model, sizeof(mExifAttributes.model), "%s", data);
 }
 
 void EXIFMaker::setSoftware(const char* data) {
-    LOG1("@%s: data = %s", __func__, data);
+    LOG2("@%s: data = %s", __func__, data);
 
     snprintf((char*)mExifAttributes.software, sizeof(mExifAttributes.software), "%s", data);
 }

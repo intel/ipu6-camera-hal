@@ -50,6 +50,11 @@ void IntelGPUAlgoServer::handleRequest(const MsgReq& msg) {
         case IPC_GPU_TNR_INIT:
             status = mTNR.init(addr, requestSize);
             break;
+        case IPC_GPU_TNR_GET_SURFACE_INFO: {
+            TnrRequestInfo* requestInfo = static_cast<TnrRequestInfo*>(addr);
+            status = mTNR.getSurfaceInfo(requestInfo);
+            break;
+        }
         case IPC_GPU_TNR_PREPARE_SURFACE: {
             TnrRequestInfo* requestInfo = static_cast<TnrRequestInfo*>(addr);
             ShmInfo surfaceBuffer = {};
@@ -108,6 +113,36 @@ void IntelGPUAlgoServer::handleRequest(const MsgReq& msg) {
             break;
         }
 #endif
+// ENABLE_EVCP_S
+        case IPC_EVCP_INIT:
+            status = mEvcp.init(addr, requestSize);
+            break;
+        case IPC_EVCP_UPDCONF:
+            status = mEvcp.updateEvcpParam(reinterpret_cast<EvcpParam*>(addr));
+            break;
+        case IPC_EVCP_GETCONF:
+            mEvcp.getEvcpParam(reinterpret_cast<EvcpParam*>(addr));
+            status = OK;
+            break;
+        case IPC_EVCP_RUN_FRAME: {
+            status = UNKNOWN_ERROR;
+            EvcpRunInfo* runInfo = static_cast<EvcpRunInfo*>(addr);
+            ShmInfo inBuffer = {};
+            if (runInfo->inHandle < 0) break;
+
+            status = getIntelAlgoServer()->getShmInfo(runInfo->inHandle, &inBuffer);
+            if (status != OK) {
+                LOGE("%s, the buffer handle for EVCP inBuffer data is invalid", __func__);
+                break;
+            }
+
+            status = mEvcp.runEvcpFrame(inBuffer.addr, inBuffer.size);
+            break;
+        }
+        case IPC_EVCP_DEINIT:
+            status = mEvcp.deInit();
+            break;
+// ENABLE_EVCP_E
         default:
             LOGE("@%s, req_id:%d is not defined", __func__, req_id);
             status = UNKNOWN_ERROR;

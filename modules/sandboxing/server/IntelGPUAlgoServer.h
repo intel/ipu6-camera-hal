@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Intel Corporation.
+ * Copyright (C) 2020-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,10 @@
 #include "modules/sandboxing/server/IntelTNRServer.h"
 #endif
 
+// ENABLE_EVCP_S
+#include "modules/sandboxing/server/IntelEvcpServer.h"
+// ENABLE_EVCP_E
+
 namespace icamera {
 
 class IntelGPUAlgoServer : public RequestHandler {
@@ -45,6 +49,11 @@ class IntelGPUAlgoServer : public RequestHandler {
  private:
     IntelTNRServer mTNR;
 #endif
+
+// ENABLE_EVCP_S
+ private:
+    IntelEvcpServer mEvcp;
+// ENABLE_EVCP_E
 };
 
 }  // namespace icamera

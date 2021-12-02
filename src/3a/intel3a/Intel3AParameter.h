@@ -33,6 +33,7 @@ class Intel3AParameter {
     ~Intel3AParameter();
 
     int init();
+    int getCMCInfo(TuningMode tuningMode);
     int setSensorInfo(ia_aiq_exposure_sensor_descriptor descriptor);
     int updateParameter(aiq_parameter_t param);
     void updateAeResult(cca::cca_ae_results* aeResult);
@@ -60,6 +61,9 @@ class Intel3AParameter {
 
  public:
     int mCameraId;
+
+    cca::cca_cmc mCMC;
+
     // aiq 3a parameters
     cca::cca_ae_input_params mAeParams;
     cca::cca_af_input_params mAfParams;

@@ -16,13 +16,14 @@
 
 #pragma once
 
-#include <string.h>
-#include <vector>
-#include <string>
 #include <linux/v4l2-subdev.h>
+#include <string.h>
 
-#include "CameraTypes.h"
+#include <string>
+#include <vector>
+
 #include "CameraBuffer.h"
+#include "CameraTypes.h"
 
 namespace icamera {
 
@@ -89,14 +90,14 @@ const int MAX_NAME_LEN = 256;
 
 typedef enum {
     M_NA,
-    M_SENSOR, // MIPI frame dump
-    M_ISYS,   // ISYS param, payload, frame dump
-    M_PSYS,   // PSYS param, payload, frame dump
-    M_DEINTR, // De-interlaced frame dump
-    M_SWIPOP, // Sw Image processor frame dump
-    M_GPUTNR, // GPU TNR frame dump
-    M_NVM,    // NVM data dump
-    M_MKN,    // Makernote dump
+    M_SENSOR,  // MIPI frame dump
+    M_ISYS,    // ISYS param, payload, frame dump
+    M_PSYS,    // PSYS param, payload, frame dump
+    M_DEINTR,  // De-interlaced frame dump
+    M_SWIPOP,  // Sw Image processor frame dump
+    M_GPUTNR,  // GPU TNR frame dump
+    M_NVM,     // NVM data dump
+    M_MKN,     // Makernote dump
 } ModuleType_t;
 
 typedef enum {
@@ -130,14 +131,14 @@ typedef struct {
 } BufferParam_t;
 
 typedef struct {
-    BinType_t       bType;
-    ModuleType_t    mType;
-    long sequence;
+    BinType_t bType;
+    ModuleType_t mType;
+    int64_t sequence;
     union {
-        GeneralParam_t        gParam;
-        StatParam_t           sParam;
+        GeneralParam_t gParam;
+        StatParam_t sParam;
         SensorMetadataParam_t mParam;
-        BufferParam_t         bParam;
+        BufferParam_t bParam;
     };
     int sUsage;
 } BinParam_t;
@@ -154,23 +155,23 @@ typedef struct {
  *      frame(pal/stats/)_sequence_resolution_appendix.suffix
  */
 namespace CameraDump {
-    /**
-     * File dump control functions.
-     */
-    void setDumpLevel(void);
-    bool isDumpTypeEnable(int dumpType);
-    bool isDumpFormatEnable(int dumpFormat);
-    void writeData(const void* data, int size, const char* fileName);
-    const char* getDumpPath(void);
-    /**
-     * Dump image according to CameraBuffer properties
-     */
-    void dumpImage(int cameraId, const std::shared_ptr<CameraBuffer> &camBuffer,
-                   ModuleType_t mType = M_NA, Port port = INVALID_PORT, const char* desc = nullptr);
-    /**
-     * Dump any buffer to binary file
-     */
-    void dumpBinary(int cameraId, const void *data, int size, BinParam_t *binParam);
-}
+/**
+ * File dump control functions.
+ */
+void setDumpLevel(void);
+bool isDumpTypeEnable(int dumpType);
+bool isDumpFormatEnable(int dumpFormat);
+void writeData(const void* data, int size, const char* fileName);
+const char* getDumpPath(void);
+/**
+ * Dump image according to CameraBuffer properties
+ */
+void dumpImage(int cameraId, const std::shared_ptr<CameraBuffer>& camBuffer,
+               ModuleType_t mType = M_NA, Port port = INVALID_PORT, const char* desc = nullptr);
+/**
+ * Dump any buffer to binary file
+ */
+void dumpBinary(int cameraId, const void* data, int size, BinParam_t* binParam);
+}  // namespace CameraDump
 
-} //namespace icamera
+}  // namespace icamera

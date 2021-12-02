@@ -16,11 +16,11 @@
 
 #pragma once
 
-#include <memory>
 #include <map>
+#include <memory>
 
-#include "iutils/Thread.h"
 #include "Parameters.h"
+#include "iutils/Thread.h"
 
 namespace icamera {
 
@@ -32,7 +32,7 @@ namespace icamera {
  * frame the parameters are active.
  */
 class ParameterGenerator {
-public:
+ public:
     ParameterGenerator(int cameraId);
     ~ParameterGenerator();
 
@@ -45,35 +45,35 @@ public:
      * \brief Save parameters with sequence id indicating the active frame.
      *           And update the aiq result parameters as well.
      */
-    int saveParameters(long predictSequence, long requestId, const Parameters *param = nullptr);
+    int saveParameters(int64_t predictSequence, long requestId, const Parameters* param = nullptr);
 
     /**
      * \brief Update parameters per sequence id.
      */
-    void updateParameters(long sequence, const Parameters *param);
-    int getUserRequestId(long sequence, int32_t& userRequestId);
+    void updateParameters(int64_t sequence, const Parameters* param);
+    int getUserRequestId(int64_t sequence, int32_t& userRequestId);
 
     /**
      * \brief Get the parameters for the frame indicated by the sequence id.
      */
-    int getParameters(long sequence, Parameters *param, bool setting = true, bool result = true);
-    int getRequestId(long predictSequence, long& requestId);
+    int getParameters(int64_t sequence, Parameters* param, bool setting = true, bool result = true);
+    int getRequestId(int64_t predictSequence, long& requestId);
     void setRequestIdMap(long currentRequestId, long requestIdWithAiq);
 
-private:
+ private:
     ParameterGenerator(const ParameterGenerator& other);
     ParameterGenerator& operator=(const ParameterGenerator& other);
 
-    int generateParametersL(long sequence, Parameters *params);
-    int updateWithAiqResultsL(long sequence, Parameters *params);
-    int updateAwbGainsL(Parameters *params, const cca::cca_awb_results &result);
-    int updateTonemapCurve(long sequence, Parameters *params);
+    int generateParametersL(int64_t sequence, Parameters* params);
+    int updateWithAiqResultsL(int64_t sequence, Parameters* params);
+    int updateAwbGainsL(Parameters* params, const cca::cca_awb_results& result);
+    int updateTonemapCurve(int64_t sequence, Parameters* params);
 
-    int updateCommonMetadata(Parameters *params, const AiqResult *aiqResult);
+    int updateCommonMetadata(Parameters* params, const AiqResult* aiqResult);
 
-private:
+ private:
     class RequestParam {
-    public:
+     public:
         RequestParam() : requestId(-1) {}
 
         ~RequestParam() {}
@@ -81,19 +81,19 @@ private:
         long requestId;
         Parameters param;
 
-    private:
+     private:
         RequestParam(const RequestParam& other);
         RequestParam& operator=(const RequestParam& other);
     };
 
-private:
+ private:
     int mCameraId;
     static const int kStorageSize = MAX_SETTING_COUNT;
 
     // Guard for ParameterGenerator public API.
     Mutex mParamsLock;
     // first: sequence id, second: RequestParam data
-    std::map<long, std::shared_ptr<RequestParam>> mRequestParamMap;
+    std::map<int64_t, std::shared_ptr<RequestParam> > mRequestParamMap;
     Parameters mLastParam;
 
     // first: request id of none running AIQ, second: request id of running AIQ

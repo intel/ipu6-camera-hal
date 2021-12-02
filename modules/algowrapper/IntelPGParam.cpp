@@ -667,7 +667,6 @@ int IntelPGParam::encodeTerminal(ia_css_terminal_t* terminal, ia_binary_data pay
                 break;
 
             case IA_CSS_TERMINAL_TYPE_PARAM_SPATIAL_IN:
-                /* TODO: ensure program terminal gets encoded first */
                 ret = ia_p2p_spatial_param_in_terminal_encode(
                     mP2pHandle, mPgId, kernelId, mFragmentCount,
                     (mFragmentConfig ? mFragmentConfig->pixel_fragment_descs[kernelId]
@@ -1186,7 +1185,7 @@ css_err_t IntelPGParam::payloadSectionSizeSanityTest(ia_p2p_payload_desc* curren
 }
 
 void IntelPGParam::dumpFragmentDesc(int fragmentCount) {
-    if (!Log::isDebugLevelEnable(CAMERA_DEBUG_LOG_LEVEL2)) return;
+    if (!Log::isLogTagEnabled(GET_FILE_SHIFT(IntelPGParam))) return;
 
     LOG2("%s: pg %d get frag count %d (new api)", __func__, mPgId, fragmentCount);
     for (int kernel = 0; kernel < IA_P2P_MAX_KERNELS_PER_PG; kernel++) {

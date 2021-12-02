@@ -137,7 +137,6 @@ class AiqCore {
                             float* dstLscGridRGGB);
     int reFormatLensShadingMap(const LSCGrid& inputLscGrid, float* dstLscGridRGGB);
 
-    int calculateHyperfocalDistance(TuningMode mode);
     int calculateDepthOfField(const cca::cca_af_results& afResults, camera_range_t* focusRange);
     int initAiqPlusParams();
 

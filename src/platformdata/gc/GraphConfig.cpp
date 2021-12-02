@@ -21,31 +21,28 @@
 #include "PlatformData.h"
 #include "iutils/CameraLog.h"
 
-using std::vector;
 using std::map;
 using std::string;
+using std::vector;
 
 namespace icamera {
 
-GraphConfig::GraphConfig(int32_t camId, ConfigMode mode) :
-        mCameraId(camId) {
-    mGraphConfigImpl = std::unique_ptr<GraphConfigImpl>(new GraphConfigImpl(camId, mode,
-                                                        PlatformData::getGraphSettingsType(camId)));
+GraphConfig::GraphConfig(int32_t camId, ConfigMode mode) : mCameraId(camId) {
+    mGraphConfigImpl = std::unique_ptr<GraphConfigImpl>(
+        new GraphConfigImpl(camId, mode, PlatformData::getGraphSettingsType(camId)));
 }
 
-GraphConfig::GraphConfig() :
-        mCameraId(-1) {
+GraphConfig::GraphConfig() : mCameraId(-1) {
     mGraphConfigImpl = std::unique_ptr<GraphConfigImpl>(new GraphConfigImpl());
 }
 
-GraphConfig::~GraphConfig() {
-}
+GraphConfig::~GraphConfig() {}
 
 void GraphConfig::addCustomKeyMap() {
     mGraphConfigImpl->addCustomKeyMap();
 }
 
-status_t GraphConfig::parse(int cameraId, const char *settingsXmlFile) {
+status_t GraphConfig::parse(int cameraId, const char* settingsXmlFile) {
     string graphDescFile = PlatformData::getGraphDescFilePath();
     string settingsFile = PlatformData::getGraphSettingFilePath() + settingsXmlFile;
     return mGraphConfigImpl->parse(cameraId, graphDescFile.c_str(), settingsFile.c_str());
@@ -58,15 +55,13 @@ void GraphConfig::releaseGraphNodes() {
 /*
  * Query graph setting according to activeStreams
  */
-status_t GraphConfig::queryGraphSettings(const std::vector<HalStream*> &activeStreams) {
-    LOG2("@%s", __func__);
-
+status_t GraphConfig::queryGraphSettings(const std::vector<HalStream*>& activeStreams) {
     bool ret = mGraphConfigImpl->queryGraphSettings(activeStreams);
 
     return ret ? OK : NO_ENTRY;
 }
 
-status_t GraphConfig::configStreams(const vector<HalStream*> &activeStreams) {
+status_t GraphConfig::configStreams(const vector<HalStream*>& activeStreams) {
     LOG1("@%s", __func__);
 
     bool dummyStillSink = PlatformData::isDummyStillSink(mCameraId);
@@ -74,14 +69,14 @@ status_t GraphConfig::configStreams(const vector<HalStream*> &activeStreams) {
     CheckAndLogError(ret != OK, UNKNOWN_ERROR, "%s, Failed to config streams", __func__);
 
     ret = mGraphConfigImpl->getGraphConfigData(&mGraphData);
-    CheckAndLogError(ret != OK, UNKNOWN_ERROR, "%s, Failed to get the static graph config data", __func__);
+    CheckAndLogError(ret != OK, UNKNOWN_ERROR, "%s, Failed to get the static graph config data",
+                     __func__);
 
     return OK;
 }
 
-status_t GraphConfig::getGdcKernelSetting(uint32_t *kernelId,
-                                          ia_isp_bxt_resolution_info_t *resolution) {
-    LOG1("@%s", __func__);
+status_t GraphConfig::getGdcKernelSetting(uint32_t* kernelId,
+                                          ia_isp_bxt_resolution_info_t* resolution) {
     CheckAndLogError(!kernelId || !resolution, UNKNOWN_ERROR, "kernelId or resolution is nullptr");
 
     if ((mGraphData.gdcReso.input_width == 0) || (mGraphData.gdcReso.input_height == 0) ||
@@ -98,19 +93,18 @@ status_t GraphConfig::getGdcKernelSetting(uint32_t *kernelId,
     return OK;
 }
 
-status_t GraphConfig::graphGetStreamIds(vector<int32_t> &streamIds) {
-    LOG1("@%s", __func__);
-    CheckAndLogError(mGraphData.streamIds.empty(), UNKNOWN_ERROR, "%s, The streamIds vector is empty", __func__);
+status_t GraphConfig::graphGetStreamIds(vector<int32_t>& streamIds) {
+    CheckAndLogError(mGraphData.streamIds.empty(), UNKNOWN_ERROR,
+                     "%s, The streamIds vector is empty", __func__);
 
     streamIds = mGraphData.streamIds;
     return OK;
 }
 
 int GraphConfig::getStreamIdByPgName(string pgName) {
-    LOG1("@%s", __func__);
     CheckAndLogError(mGraphData.pgInfo.empty(), -1, "%s, The pgInfo vector is empty", __func__);
 
-    for (auto &info : mGraphData.pgInfo) {
+    for (auto& info : mGraphData.pgInfo) {
         if (info.pgName == pgName) {
             return info.streamId;
         }
@@ -121,10 +115,9 @@ int GraphConfig::getStreamIdByPgName(string pgName) {
 }
 
 int GraphConfig::getPgIdByPgName(string pgName) {
-    LOG1("@%s", __func__);
     CheckAndLogError(mGraphData.pgInfo.empty(), -1, "%s, The pgInfo vector is empty", __func__);
 
-    for (auto &info : mGraphData.pgInfo) {
+    for (auto& info : mGraphData.pgInfo) {
         if (info.pgName == pgName) {
             return info.pgId;
         }
@@ -135,10 +128,10 @@ int GraphConfig::getPgIdByPgName(string pgName) {
 }
 
 ia_isp_bxt_program_group* GraphConfig::getProgramGroup(int32_t streamId) {
-    LOG1("@%s", __func__);
-    CheckAndLogError(mGraphData.programGroup.empty(), nullptr, "%s, The programGroup vector is empty", __func__);
+    CheckAndLogError(mGraphData.programGroup.empty(), nullptr,
+                     "%s, The programGroup vector is empty", __func__);
 
-    for (auto &info : mGraphData.programGroup) {
+    for (auto& info : mGraphData.programGroup) {
         if (info.streamId == streamId && info.pgPtr != nullptr) {
             return info.pgPtr;
         }
@@ -148,9 +141,8 @@ ia_isp_bxt_program_group* GraphConfig::getProgramGroup(int32_t streamId) {
     return nullptr;
 }
 
-status_t GraphConfig::getMBRData(int32_t streamId, ia_isp_bxt_gdc_limits *data) {
-    LOG1("@%s", __func__);
-    for (auto &info : mGraphData.mbrInfo) {
+status_t GraphConfig::getMBRData(int32_t streamId, ia_isp_bxt_gdc_limits* data) {
+    for (auto& info : mGraphData.mbrInfo) {
         if (streamId == info.streamId) {
             data = &info.data;
             return OK;
@@ -161,18 +153,18 @@ status_t GraphConfig::getMBRData(int32_t streamId, ia_isp_bxt_gdc_limits *data) 
 }
 
 status_t GraphConfig::getPgNames(vector<string>* pgNames) {
-    LOG1("@%s", __func__);
-    CheckAndLogError(mGraphData.pgNames.empty(), UNKNOWN_ERROR, "%s, The pgNames vector is empty", __func__);
+    CheckAndLogError(mGraphData.pgNames.empty(), UNKNOWN_ERROR, "%s, The pgNames vector is empty",
+                     __func__);
 
     *pgNames = mGraphData.pgNames;
     return OK;
 }
 
-status_t GraphConfig::getPgRbmValue(string pgName, IGraphType::StageAttr *stageAttr) {
-    LOG1("@%s", __func__);
-    CheckAndLogError(mGraphData.pgInfo.empty(), UNKNOWN_ERROR, "%s, The pgInfo vector is empty", __func__);
+status_t GraphConfig::getPgRbmValue(string pgName, IGraphType::StageAttr* stageAttr) {
+    CheckAndLogError(mGraphData.pgInfo.empty(), UNKNOWN_ERROR, "%s, The pgInfo vector is empty",
+                     __func__);
 
-    for (auto &info : mGraphData.pgInfo) {
+    for (auto& info : mGraphData.pgInfo) {
         if (info.pgName == pgName && info.rbmValue.rbm_bytes > 0) {
             stageAttr->rbm_bytes = info.rbmValue.rbm_bytes;
             MEMCPY_S(stageAttr->rbm, MAX_RBM_STR_SIZE, info.rbmValue.rbm, stageAttr->rbm_bytes);
@@ -184,19 +176,19 @@ status_t GraphConfig::getPgRbmValue(string pgName, IGraphType::StageAttr *stageA
 }
 
 int GraphConfig::getProgramGroup(string pgName, ia_isp_bxt_program_group* programGroupForPG) {
-    LOG1("@%s", __func__);
     return mGraphConfigImpl->getProgramGroup(pgName, programGroupForPG);
 }
 
-status_t GraphConfig::pipelineGetConnections(const vector<string>& pgList,
-                                             vector<IGraphType::PipelineConnection> *confVector) {
-    LOG1("@%s", __func__);
+status_t GraphConfig::pipelineGetConnections(
+    const vector<string>& pgList,
+    vector<IGraphType::PipelineConnection>* confVector,
+    std::vector<IGraphType::PrivPortFormat>* tnrPortFormat) {
     CheckAndLogError(!confVector, UNKNOWN_ERROR, "%s, The confVector is nullptr", __func__);
 
     status_t ret;
     std::vector<IGraphType::ScalerInfo> scalerInfo;
 
-    ret = mGraphConfigImpl->pipelineGetConnections(pgList, &scalerInfo, confVector);
+    ret = mGraphConfigImpl->pipelineGetConnections(pgList, &scalerInfo, confVector, tnrPortFormat);
     CheckAndLogError(ret != OK, ret, "%s, Failed to pipelineGetConnections", __func__);
 
     CheckAndLogError(mCameraId == -1, UNKNOWN_ERROR, "%s: mCameraId is -1", __func__);
@@ -204,9 +196,9 @@ status_t GraphConfig::pipelineGetConnections(const vector<string>& pgList,
     return OK;
 }
 
-status_t GraphConfig::getPgIdForKernel(const uint32_t streamId, const int32_t kernelId, int32_t *pgId) {
-    LOG1("@%s", __func__);
+status_t GraphConfig::getPgIdForKernel(const uint32_t streamId, const int32_t kernelId,
+                                       int32_t* pgId) {
     CheckAndLogError(!pgId, UNKNOWN_ERROR, "%s, the pgId is nullptr", __func__);
     return mGraphConfigImpl->getPgIdForKernel(streamId, kernelId, pgId);
 }
-}  // icamera
+}  // namespace icamera

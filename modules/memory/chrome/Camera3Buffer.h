@@ -100,11 +100,6 @@ class Camera3Buffer {
     icamera::status_t getFence(camera3_stream_buffer* buf);
 
     /**
-     * Convert the GFX format to v4l2 format
-     */
-    int v4L2Fmt2GFXFmt(int v4l2Fmt);
-
-    /**
      * APIs for getting private member
      */
     int width() { return mHalBuffer.s.width; }

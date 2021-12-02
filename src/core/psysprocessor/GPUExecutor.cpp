@@ -169,7 +169,13 @@ int GPUExecutor::allocBuffers() {
     int srcFmt = mTerminalsDesc[term].frameDesc.mFormat;
     int srcWidth = mTerminalsDesc[term].frameDesc.mWidth;
     int srcHeight = mTerminalsDesc[term].frameDesc.mHeight;
-    int size = PGCommon::getFrameSize(srcFmt, srcWidth, srcHeight, true);
+    uint32_t size = 0;
+
+    if (mIntelTNR) {
+        int ret = mIntelTNR->getSurfaceInfo(srcWidth, srcHeight, &size);
+        if (ret) size = PGCommon::getFrameSize(srcFmt, srcWidth, srcHeight, true);
+    }
+    LOG1("@%s, Required GPU TNR buffer size %u", __func__, size);
 
     for (int i = 0; i < MAX_BUFFER_COUNT; i++) {
         shared_ptr<CameraBuffer> buf;
@@ -513,7 +519,20 @@ int GPUExecutor::runTnrFrame(const std::shared_ptr<CameraBuffer>& inBuf,
                              std::shared_ptr<CameraBuffer> outBuf) {
     PERF_CAMERA_ATRACE();
     CheckAndLogError(!inBuf->getBufferAddr(), UNKNOWN_ERROR, "Invalid input buffer");
+    int ret = OK;
+    uint32_t sequence = inBuf->getSequence();
+    bool paramSyncUpdate = (mStreamId == VIDEO_STREAM_ID) ? false : true;
 
+    if (!paramSyncUpdate) {
+        // request update tnr parameters before wait
+        float totalGain = 0.0f;
+        ret = getTotalGain(sequence, &totalGain);
+        CheckAndLogError(ret, UNKNOWN_ERROR, "Failed to get total gain");
+        // update tnr param when total gain changes
+        bool isTnrParamForceUpdate = icamera::PlatformData::isTnrParamForceUpdate();
+        // multiply totalGain by 100, to avoid lose accuracy
+        ret = mIntelTNR->asyncParamUpdate(static_cast<int>(totalGain * 100), isTnrParamForceUpdate);
+    }
     if (mPolicyManager) {
         // Check if need to wait other executors.
         mPolicyManager->wait(mName);
@@ -522,10 +541,19 @@ int GPUExecutor::runTnrFrame(const std::shared_ptr<CameraBuffer>& inBuf,
     TRACE_LOG_PROCESS(mName.c_str(), __func__, MAKE_COLOR(inBuf->getSequence()),
                       inBuf->getSequence());
 
-    uint32_t sequence = inBuf->getSequence();
-    int ret = OK;
+    struct timespec beginTime = {};
     if (mIntelTNR) {
+        if (Log::isLogTagEnabled(ST_GPU_TNR)) clock_gettime(CLOCK_MONOTONIC, &beginTime);
+
         ret = updateTnrISPConfig(mTnr7usParam, sequence);
+        if (Log::isLogTagEnabled(ST_GPU_TNR)) {
+            struct timespec endTime = {};
+            clock_gettime(CLOCK_MONOTONIC, &endTime);
+            uint64_t timeUsedUs = (endTime.tv_sec - beginTime.tv_sec) * 1000000 +
+                                  (endTime.tv_nsec - beginTime.tv_nsec) / 1000;
+            LOG2(ST_GPU_TNR, "%s executor name:%s, sequence: %u update param time %lu us", __func__,
+                 mName.c_str(), inBuf->getSequence(), timeUsedUs);
+        }
         CheckAndLogError(ret != OK, UNKNOWN_ERROR, "Failed to update TNR parameters");
     }
 
@@ -581,8 +609,10 @@ int GPUExecutor::runTnrFrame(const std::shared_ptr<CameraBuffer>& inBuf,
         // when use internal tnr buffer, we don't need to use fd map buffer
         dstFd = -1;
     }
+
+    if (Log::isLogTagEnabled(ST_GPU_TNR)) clock_gettime(CLOCK_MONOTONIC, &beginTime);
     ret = mIntelTNR->runTnrFrame(inBuf->getBufferAddr(), dstBuf, inBuf->getBufferSize(), dstSize,
-                                 mTnr7usParam, false, dstFd);
+                                 mTnr7usParam, paramSyncUpdate, dstFd);
     if (ret == OK) {
         if (useInternalBuffer) {
             MEMCPY_S(outPtr, bufferSize, tnrOutBuf->second, mOutBufferSize);
@@ -590,6 +620,14 @@ int GPUExecutor::runTnrFrame(const std::shared_ptr<CameraBuffer>& inBuf,
     } else {
         LOG2("Just copy source buffer if run TNR failed");
         MEMCPY_S(outPtr, bufferSize, inBuf->getBufferAddr(), inBuf->getBufferSize());
+    }
+    if (Log::isLogTagEnabled(ST_GPU_TNR)) {
+        struct timespec endTime;
+        clock_gettime(CLOCK_MONOTONIC, &endTime);
+        uint64_t timeUsedUs = (endTime.tv_sec - beginTime.tv_sec) * 1000000 +
+                              (endTime.tv_nsec - beginTime.tv_nsec) / 1000;
+        LOG2(ST_GPU_TNR, "%s executor name:%s, sequence: %u run tnr time %lu us", __func__,
+             mName.c_str(), inBuf->getSequence(), timeUsedUs);
     }
     if (icamera::PlatformData::isStillTnrPrior()) {
         mGPULock.unlock();
@@ -607,15 +645,6 @@ int GPUExecutor::runTnrFrame(const std::shared_ptr<CameraBuffer>& inBuf,
     }
     CheckAndLogError(ret != OK, UNKNOWN_ERROR, "tnr7us run frame failed");
     mLastSequence = sequence;
-
-    // update tnr parameters after GPU thread finished
-    float totalGain = 0.0f;
-    ret = getTotalGain(sequence, &totalGain);
-    CheckAndLogError(ret, UNKNOWN_ERROR, "Failed to get total gain");
-    // update tnr param when total gain changes
-    bool isTnrParamForceUpdate = icamera::PlatformData::isTnrParamForceUpdate();
-    // multiply totalGain by 100, to avoid lose accuracy
-    ret = mIntelTNR->asyncParamUpdate(static_cast<int>(totalGain * 100), isTnrParamForceUpdate);
 
     LOG2("Exit executor name:%s, sequence: %u", mName.c_str(), inBuf->getSequence());
     return ret;

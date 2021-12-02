@@ -272,6 +272,10 @@ void CameraParser::handleCommon(CameraParser* profiles, const char* name, const 
     } else if (strcmp(name, "videoStreamNum") == 0) {
         int val = atoi(atts[1]);
         cfg->videoStreamNum = val > 0 ? val : DEFAULT_VIDEO_STREAM_NUM;
+// ENABLE_EVCP_S
+    } else if (strcmp(name, "useGpuEvcp") == 0) {
+        cfg->isGpuEvcpEnabled = strcmp(atts[1], "true") == 0;
+// ENABLE_EVCP_E
     }
 }
 
@@ -385,10 +389,14 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
             LOGE("unknown Lens HW type %s, set to LENS_NONE_HW", atts[1]);
             pCurrentCam->mLensHwType = LENS_NONE_HW;
         }
+    } else if (strcmp(name, "enablePdaf") == 0) {
+        pCurrentCam->mEnablePdaf = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "sensorAwb") == 0) {
         pCurrentCam->mSensorAwb = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "sensorAe") == 0) {
         pCurrentCam->mSensorAe = strcmp(atts[1], "true") == 0;
+    } else if (strcmp(name, "runIspAlways") == 0) {
+        pCurrentCam->mRunIspAlways = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "autoSwitchType") == 0) {
         if (strcmp(atts[1], "full") == 0) {
             pCurrentCam->mAutoSwitchType = AUTO_SWITCH_FULL;
@@ -2065,7 +2073,7 @@ void CameraParser::getSensorDataFromXmlFile(void) {
 }
 
 void CameraParser::dumpSensorInfo(void) {
-    if (!Log::isDebugLevelEnable(CAMERA_DEBUG_LOG_LEVEL3)) return;
+    if (!Log::isLogTagEnabled(GET_FILE_SHIFT(CameraParser))) return;
 
     LOG3("@%s, sensor number: %d ==================", __func__, getSensorNum());
     for (unsigned i = 0; i < getSensorNum(); i++) {

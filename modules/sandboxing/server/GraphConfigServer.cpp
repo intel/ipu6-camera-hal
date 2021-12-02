@@ -167,11 +167,14 @@ status_t GraphConfigServer::pipelineGetConnections(void* pData, size_t dataSize)
 
     std::vector<IGraphType::PipelineConnection> confVector;
     std::vector<IGraphType::ScalerInfo> scalerInfo;
-    status_t rt = it->second->pipelineGetConnections(pgList, &scalerInfo, &confVector);
+    std::vector<IGraphType::PrivPortFormat> tnrPortFormat;
+    status_t rt = it->second->pipelineGetConnections(pgList, &scalerInfo,
+                                                     &confVector, &tnrPortFormat);
     CheckAndLogError(rt != OK, UNKNOWN_ERROR, "<id%d> @%s, Failed to getConnection",
                      info.cameraId, __func__);
 
-    ret = mIpc.serverFlattenGetConnection(pData, dataSize, scalerInfo, confVector);
+    ret = mIpc.serverFlattenGetConnection(pData, dataSize, scalerInfo,
+                                          confVector, tnrPortFormat);
     CheckAndLogError(ret == false, UNKNOWN_ERROR, "@%s, serverFlattenGetPgId fails", __func__);
 
     return OK;

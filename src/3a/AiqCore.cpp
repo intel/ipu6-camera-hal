@@ -111,7 +111,7 @@ int AiqCore::init() {
     initAiqPlusParams();
 
 #ifndef ENABLE_SANDBOXING
-    ia_env env = {&Log::ccaPrintDebug, &Log::ccaPrintError, &Log::ccaPrintInfo};
+    ia_env env = {&Log::ccaPrintInfo, &Log::ccaPrintError, &Log::ccaPrintInfo};
     ia_log_init(&env);
 #endif
 
@@ -159,41 +159,6 @@ int AiqCore::setSensorInfo(const ia_aiq_frame_params& frameParams,
 }
 
 /**
- *  Hyperfocal distance is the closest distance at which a lens can be focused
- *  while keeping objects at infinity acceptably sharp. When the lens is focused
- *  at this distance, all objects at distances from half of the hyperfocal
- *  distance out to infinity will be acceptably sharp.
- *
- *  The equation used for this is:
- *        f*f
- *  H = -------
- *        N*c
- *
- *  where:
- *   f is the focal length
- *   N is the f-number (f/D for aperture diameter D)
- *   c is the Circle Of Confusion (COC)
- *
- *   the COC is calculated as the pixel width of 2 pixels
- *
- *  The hyperfocal distance in mm. It is ensured it will never be 0 to
- *  avoid division by 0. If any of the required CMC items is missing
- *  it will return the default value 5m
- */
-int AiqCore::calculateHyperfocalDistance(TuningMode mode) {
-    IntelCca* intelCca = getIntelCca(mode);
-    CheckAndLogError(!intelCca, BAD_VALUE, "%s, cca is nullptr, mode:%d", __func__, mode);
-
-    cca::cca_cmc cmc;
-    ia_err ret = intelCca->getCMC(&cmc);
-    CheckAndLogError(ret != ia_err_none, BAD_VALUE, "@%s get cmc data failed", __func__);
-
-    mHyperFocalDistance = AiqUtils::calculateHyperfocalDistance(cmc);
-
-    return OK;
-}
-
-/**
  *
  * Calculate the Depth of field (DOF) for a given AF Result.
  *
@@ -228,16 +193,9 @@ int AiqCore::calculateDepthOfField(const cca::cca_af_results& afResults,
         return OK;
     }
 
-    IntelCca* intelCca = getIntelCca(mTuningMode);
-    CheckAndLogError(!intelCca, BAD_VALUE, "%s, cca is nullptr, mTuningMode:%d", __func__,
-                     mTuningMode);
-
-    cca::cca_cmc cmc;
-    int ret = intelCca->getCMC(&cmc);
-    CheckAndLogError(ret != OK, BAD_VALUE, "@%s get cmc data failed", __func__);
-
     // focal length is stored in CMC in hundreds of millimeters
-    float focalLengthMillis = static_cast<float>(cmc.optics.effect_focal_length) / 100;
+    float focalLengthMillis =
+        static_cast<float>(mIntel3AParameter->mCMC.optics.effect_focal_length) / 100;
 
     float num = mHyperFocalDistance * focusDistance;
     float denom = (mHyperFocalDistance + focusDistance - focalLengthMillis);
@@ -258,8 +216,10 @@ int AiqCore::calculateDepthOfField(const cca::cca_af_results& afResults,
 
 int AiqCore::updateParameter(const aiq_parameter_t& param) {
     if (mTuningMode != param.tuningMode) {
-        int ret = calculateHyperfocalDistance(param.tuningMode);
-        CheckAndLogError(ret != OK, ret, "%s calculateHyperfocalDistance fails", __func__);
+        int ret = mIntel3AParameter->getCMCInfo(param.tuningMode);
+        CheckAndLogError(ret != OK, ret, "failed to get CMC info");
+
+        mHyperFocalDistance = AiqUtils::calculateHyperfocalDistance(mIntel3AParameter->mCMC);
         mTuningMode = param.tuningMode;
     }
     mShadingMode = param.shadingMode;
@@ -303,7 +263,11 @@ int AiqCore::setStatsParams(const cca::cca_stats_params& statsParams, cca::cca_o
         uint32_t bitmap = 0;
         bool decodeRgbsStats = !mRgbStatsBypassed || outStats->get_rgbs_stats;
         if (decodeRgbsStats) bitmap |= cca::CCA_STATS_RGBS | cca::CCA_STATS_HIST;
-        if (!mAfBypassed) bitmap |= cca::CCA_STATS_AF;
+        if (!mAfBypassed) {
+            bitmap |= cca::CCA_STATS_AF;
+
+            if (PlatformData::isPdafEnabled(mCameraId)) bitmap |= cca::CCA_STATS_PDAF;
+        }
         LOG3("<seq%ld> bypass bitmap %x", aiqStats->mSequence, bitmap);
 
         if (decodeRgbsStats && !mAfBypassed) {

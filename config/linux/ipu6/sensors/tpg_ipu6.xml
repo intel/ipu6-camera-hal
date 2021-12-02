@@ -182,7 +182,7 @@
         <testPatternMap value="Off,0,ColorBars,2"/>
         <enableAiqd value = "true"/>
         <useCrlModule value = "false"/>
-	<pslOutputMapForRotation value="1280x720@1280x720,640x480@640x480,320x240@640x480"/>
+        <pslOutputMapForRotation value="1280x720@1280x720,640x480@640x480,320x240@640x480"/>
 
         <maxRequestsInflight value="5"/>
         <faceEngineRunningSync value="true"/>

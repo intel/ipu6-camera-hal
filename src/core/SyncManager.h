@@ -21,7 +21,7 @@
 namespace icamera {
 
 struct camera_buf_info {
-    long sequence;
+    int64_t sequence;
     struct timeval sof_ts;
 };
 
@@ -39,7 +39,7 @@ class SyncManager {
     static void releaseInstance();
     static SyncManager* getInstance();
 
-    bool isSynced(int cameraId, long sequence);
+    bool isSynced(int cameraId, int64_t sequence);
     void updateCameraBufInfo(int cameraId, camera_buf_info* info);
 
     void updateSyncCamNum();

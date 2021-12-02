@@ -21,7 +21,7 @@ namespace icamera {
  * This struct is used to envelop AIQ statistics.
  */
 struct AiqStatistics {
-    long mSequence;
+    int64_t mSequence;
     unsigned long long mTimestamp;
     TuningMode mTuningMode;
     bool mInUse;

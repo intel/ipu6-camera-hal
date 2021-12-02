@@ -311,8 +311,8 @@ int PSysProcessor::getParameters(Parameters& param) {
 /**
  * Get available setting sequence from outBuf
  */
-long PSysProcessor::getSettingSequence(const CameraBufferPortMap &outBuf) {
-    long settingSequence = -1;
+int64_t PSysProcessor::getSettingSequence(const CameraBufferPortMap &outBuf) {
+    int64_t settingSequence = -1;
     for (auto& output: outBuf) {
         if (output.second) {
             settingSequence = output.second->getSettingSequence();
@@ -328,7 +328,7 @@ long PSysProcessor::getSettingSequence(const CameraBufferPortMap &outBuf) {
  * If the corresponding mSkip of AiqResult gotten from sequence is true,
  * return true; otherwise return false.
  */
-bool PSysProcessor::needSkipOutputFrame(long sequence) {
+bool PSysProcessor::needSkipOutputFrame(int64_t sequence) {
     // Check if need to skip output frame
     const AiqResult* aiqResults = AiqResultStorage::getInstance(mCameraId)->getAiqResult(sequence);
     if (aiqResults != nullptr && aiqResults->mSkip) {
@@ -347,7 +347,7 @@ bool PSysProcessor::needSkipOutputFrame(long sequence) {
  * run as well, otherwise the pipe doesn't need to run and this input buffer needs to
  * be skipped.
  */
-bool PSysProcessor::needExecutePipe(long settingSequence, long inputSequence) {
+bool PSysProcessor::needExecutePipe(int64_t settingSequence, int64_t inputSequence) {
     if (settingSequence == -1 || inputSequence >= settingSequence) {
         return true;
     }
@@ -363,7 +363,7 @@ bool PSysProcessor::needExecutePipe(long settingSequence, long inputSequence) {
  * If 'inputSequence' larger than 'settingSequence', means the input buffer
  * may be required by following output buffer, so it may be reused later.
  */
-bool PSysProcessor::needHoldOnInputFrame(long settingSequence, long inputSequence) {
+bool PSysProcessor::needHoldOnInputFrame(int64_t settingSequence, int64_t inputSequence) {
     if (settingSequence == -1 || inputSequence <= settingSequence) {
         return false;
     }
@@ -374,7 +374,7 @@ bool PSysProcessor::needHoldOnInputFrame(long settingSequence, long inputSequenc
 /**
  * Check if pipe needs to be switched according to AIQ result.
  */
-bool PSysProcessor::needSwitchPipe(long sequence) {
+bool PSysProcessor::needSwitchPipe(int64_t sequence) {
     const AiqResult* aiqResults = AiqResultStorage::getInstance(mCameraId)->getAiqResult(sequence);
     if (aiqResults == nullptr) {
         LOG2("%s: not found sequence %ld in AiqResultStorage, no update for active modes",
@@ -512,7 +512,7 @@ void PSysProcessor::handleRawReprocessing(CameraBufferPortMap *srcBuffers,
                                           CameraBufferPortMap *dstBuffers, bool *allBufDone,
                                           bool *hasRawOutput, bool *hasRawInput) {
     std::shared_ptr<CameraBuffer> rawOutputBuffer = nullptr;
-    long settingSequence = -1;
+    int64_t settingSequence = -1;
     CameraBufferPortMap videoBuf, stillBuf;
 
     for (const auto& item : *dstBuffers) {
@@ -532,7 +532,7 @@ void PSysProcessor::handleRawReprocessing(CameraBufferPortMap *srcBuffers,
 
     Port defaultPort = srcBuffers->begin()->first;
     shared_ptr<CameraBuffer> mainBuf = (*srcBuffers)[defaultPort];
-    long inputSequence = mainBuf->getSequence();
+    int64_t inputSequence = mainBuf->getSequence();
     uint64_t timestamp = TIMEVAL2NSECS(mainBuf->getTimestamp());
 
     if (rawOutputBuffer) {
@@ -610,7 +610,7 @@ void PSysProcessor::handleRawReprocessing(CameraBufferPortMap *srcBuffers,
          *hasRawInput, *hasRawOutput, *allBufDone, settingSequence, inputSequence);
 }
 
-bool PSysProcessor::isBufferHoldForRawReprocess(long sequence) {
+bool PSysProcessor::isBufferHoldForRawReprocess(int64_t sequence) {
     if (!mHoldRawBuffers) return false;
 
     AutoMutex lock(mBufferMapLock);
@@ -628,7 +628,7 @@ void PSysProcessor::saveRawBuffer(CameraBufferPortMap *srcBuffers) {
 
     Port defaultPort = srcBuffers->begin()->first;
     shared_ptr<CameraBuffer> mainBuf = (*srcBuffers)[defaultPort];
-    long inputSequence = mainBuf->getSequence();
+    int64_t inputSequence = mainBuf->getSequence();
 
     LOG2("<id%d:seq%ld>@%s", mCameraId, inputSequence, __func__);
     {
@@ -696,7 +696,7 @@ status_t PSysProcessor::prepareTask(CameraBufferPortMap *srcBuffers,
 
     Port defaultPort = srcBuffers->begin()->first;
     shared_ptr<CameraBuffer> mainBuf = (*srcBuffers)[defaultPort];
-    long inputSequence = mainBuf->getSequence();
+    int64_t inputSequence = mainBuf->getSequence();
     TRACE_LOG_POINT("PSysProcessor", "input output buffer ready", MAKE_COLOR(inputSequence),
                     inputSequence);
     uint64_t timestamp = TIMEVAL2NSECS(mainBuf->getTimestamp());
@@ -720,7 +720,7 @@ status_t PSysProcessor::prepareTask(CameraBufferPortMap *srcBuffers,
         outputRawImage(mainBuf, dstBuf);
     }
 
-    long settingSequence = getSettingSequence(*dstBuffers);
+    int64_t settingSequence = getSettingSequence(*dstBuffers);
     bool needRunPipe = needExecutePipe(settingSequence, inputSequence);
     bool holdOnInput = needHoldOnInputFrame(settingSequence, inputSequence);
     LOG2("%s: dst sequence = %ld, src sequence = %ld, needRunPipe = %d, needReuseInput = %d",
@@ -752,9 +752,21 @@ status_t PSysProcessor::prepareTask(CameraBufferPortMap *srcBuffers,
         if (PlatformData::isGpuTnrEnabled()) {
             handleStillPipeForTnr(inputSequence, dstBuffers);
         }
-        dispatchTask(*srcBuffers, *dstBuffers);
-        // handle metadata event after running pal(update metadata from pal result)
-        sendPsysRequestEvent(dstBuffers, settingSequence, timestamp, EVENT_REQUEST_METADATA_READY);
+
+        bool callbackRgbs = false;
+        AiqResultStorage* storage = AiqResultStorage::getInstance(mCameraId);
+        AiqResult* aiqResult = const_cast<AiqResult*>(storage->getAiqResult(inputSequence));
+        if (aiqResult && aiqResult->mAiqParam.callbackRgbs) {
+            callbackRgbs = true;
+        }
+
+        dispatchTask(*srcBuffers, *dstBuffers, false, callbackRgbs);
+
+        if (!callbackRgbs) {
+            // handle metadata event after running pal(update metadata from pal result)
+            sendPsysRequestEvent(dstBuffers, settingSequence, timestamp,
+                                 EVENT_REQUEST_METADATA_READY);
+        }
     } else if (!holdOnInput && !isBufferHoldForRawReprocess(inputSequence)) {
         for (const auto& src : *srcBuffers) {
             mBufferProducer->qbuf(src.first, src.second);
@@ -764,7 +776,7 @@ status_t PSysProcessor::prepareTask(CameraBufferPortMap *srcBuffers,
     return OK;
 }
 
-void PSysProcessor::handleStillPipeForTnr(long sequence, CameraBufferPortMap *dstBuffers) {
+void PSysProcessor::handleStillPipeForTnr(int64_t sequence, CameraBufferPortMap *dstBuffers) {
     bool hasStill = false;
     for (const auto& item : *dstBuffers) {
         if (item.second && item.second->getStreamUsage() == CAMERA_STREAM_STILL_CAPTURE) {
@@ -797,7 +809,7 @@ void PSysProcessor::handleStillPipeForTnr(long sequence, CameraBufferPortMap *ds
             }
             }
             if (!srcBuf.empty()) {
-                dispatchTask(srcBuf, fakeTaskBuffers, true);
+                dispatchTask(srcBuf, fakeTaskBuffers, true, false);
             }
         }
     }
@@ -806,8 +818,8 @@ void PSysProcessor::handleStillPipeForTnr(long sequence, CameraBufferPortMap *ds
 }
 
 void PSysProcessor::dispatchTask(CameraBufferPortMap &inBuf, CameraBufferPortMap &outBuf,
-                                 bool fakeTask) {
-    long currentSequence = inBuf.begin()->second->getSequence();
+                                 bool fakeTask, bool callbackRgbs) {
+    int64_t currentSequence = inBuf.begin()->second->getSequence();
     TRACE_LOG_POINT("PSysProcessor", "start run PSYS", MAKE_COLOR(currentSequence),
                     currentSequence);
     {
@@ -851,8 +863,9 @@ void PSysProcessor::dispatchTask(CameraBufferPortMap &inBuf, CameraBufferPortMap
     taskParam.mInputBuffers = inBuf;
     taskParam.mOutputBuffers = outBuf;
     taskParam.mFakeTask = fakeTask;
+    taskParam.mCallbackRgbs = callbackRgbs;
 
-    long settingSequence = getSettingSequence(outBuf);
+    int64_t settingSequence = getSettingSequence(outBuf);
     // Handle per-frame settings if output buffer requires
     if (settingSequence > -1 && mParameterGenerator) {
         Parameters params;
@@ -958,7 +971,7 @@ void PSysProcessor::sendPsysRequestEvent(const CameraBufferPortMap* dstBuffers, 
 }
 
 void PSysProcessor::onFrameDone(const PSysTaskData& result) {
-    long sequence = result.mInputBuffers.begin()->second->getSequence();
+    int64_t sequence = result.mInputBuffers.begin()->second->getSequence();
     LOG2("<id%d:seq%ld>@%s", mCameraId, sequence, __func__);
     TRACE_LOG_POINT("PSysProcessor", __func__, MAKE_COLOR(sequence), sequence);
 
@@ -967,7 +980,7 @@ void PSysProcessor::onFrameDone(const PSysTaskData& result) {
             sendPsysFrameDoneEvent(&result.mOutputBuffers);
         }
 
-        long settingSequence = getSettingSequence(result.mOutputBuffers);
+        int64_t settingSequence = getSettingSequence(result.mOutputBuffers);
         bool holdOnInput = needHoldOnInputFrame(settingSequence, sequence);
         bool hasRawOutput = isBufferHoldForRawReprocess(sequence);
 
@@ -1000,6 +1013,13 @@ void PSysProcessor::onFrameDone(const PSysTaskData& result) {
     }
 
     returnRawBuffer();
+}
+
+void PSysProcessor::onStatsDone(int64_t sequence, const CameraBufferPortMap& outBuf) {
+    LOG2("<seq%ld> %s", sequence, __func__);
+
+    // handle metadata event after decoding stats
+    sendPsysRequestEvent(&outBuf, sequence, 0, EVENT_REQUEST_METADATA_READY);
 }
 
 void PSysProcessor::outputRawImage(shared_ptr<CameraBuffer> &srcBuf,

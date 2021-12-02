@@ -16,16 +16,17 @@
 
 #define LOG_TAG PlatformData
 
-#include <sys/sysinfo.h>
+#include "PlatformData.h"
+
 #include <math.h>
+#include <sys/sysinfo.h>
+
 #include <memory>
 
-#include "iutils/CameraLog.h"
-
-#include "PlatformData.h"
 #include "CameraParser.h"
-#include "PolicyParser.h"
+#include "iutils/CameraLog.h"
 #include "ParameterHelper.h"
+#include "PolicyParser.h"
 
 #include "gc/GraphConfigManager.h"
 
@@ -33,11 +34,10 @@ using std::string;
 using std::vector;
 
 namespace icamera {
-PlatformData *PlatformData::sInstance = nullptr;
-Mutex  PlatformData::sLock;
+PlatformData* PlatformData::sInstance = nullptr;
+Mutex PlatformData::sLock;
 
-PlatformData* PlatformData::getInstance()
-{
+PlatformData* PlatformData::getInstance() {
     AutoMutex lock(sLock);
     if (sInstance == nullptr) {
         sInstance = new PlatformData();
@@ -46,8 +46,7 @@ PlatformData* PlatformData::getInstance()
     return sInstance;
 }
 
-void PlatformData::releaseInstance()
-{
+void PlatformData::releaseInstance() {
     AutoMutex lock(sLock);
     LOG1("@%s", __func__);
 
@@ -57,10 +56,9 @@ void PlatformData::releaseInstance()
     }
 }
 
-PlatformData::PlatformData()
-{
+PlatformData::PlatformData() {
     LOG1("@%s", __func__);
-    MediaControl *mc = MediaControl::getInstance();
+    MediaControl* mc = MediaControl::getInstance();
     if (mc) {
         mc->initEntities();
     }
@@ -74,7 +72,7 @@ PlatformData::~PlatformData() {
 
     releaseGraphConfigNodes();
 
-    MediaControl *mc = MediaControl::getInstance();
+    MediaControl* mc = MediaControl::getInstance();
     if (mc) {
         mc->clearEntities();
         MediaControl::releaseInstance();
@@ -92,22 +90,20 @@ int PlatformData::init() {
 
     parseGraphFromXmlFile();
 
-    StaticCfg *staticCfg = &(getInstance()->mStaticCfg);
+    StaticCfg* staticCfg = &(getInstance()->mStaticCfg);
     for (size_t i = 0; i < staticCfg->mCameras.size(); i++) {
         std::string camModuleName;
-        AiqInitData* aiqInitData =
-            new AiqInitData(staticCfg->mCameras[i].sensorName,
-                            getCameraCfgPath(),
-                            staticCfg->mCameras[i].mSupportedTuningConfig,
-                            staticCfg->mCameras[i].mNvmDirectory,
-                            staticCfg->mCameras[i].mMaxNvmDataSize, &camModuleName);
+        AiqInitData* aiqInitData = new AiqInitData(
+            staticCfg->mCameras[i].sensorName, getCameraCfgPath(),
+            staticCfg->mCameras[i].mSupportedTuningConfig, staticCfg->mCameras[i].mNvmDirectory,
+            staticCfg->mCameras[i].mMaxNvmDataSize, &camModuleName);
         getInstance()->mAiqInitData.push_back(aiqInitData);
 
         if (!camModuleName.empty() &&
             staticCfg->mCameras[i].mCameraModuleInfoMap.find(camModuleName) !=
-            staticCfg->mCameras[i].mCameraModuleInfoMap.end()) {
+                staticCfg->mCameras[i].mCameraModuleInfoMap.end()) {
             ParameterHelper::merge(staticCfg->mCameras[i].mCameraModuleInfoMap[camModuleName],
-                                  &staticCfg->mCameras[i].mCapability);
+                                   &staticCfg->mCameras[i].mCapability);
         }
     }
 
@@ -127,20 +123,21 @@ void PlatformData::parseGraphFromXmlFile() {
     // of cameras is known.
     graphConfig->addCustomKeyMap();
     for (size_t i = 0; i < getInstance()->mStaticCfg.mCameras.size(); ++i) {
-        const string &fileName = getInstance()->mStaticCfg.mCameras[i].mGraphSettingsFile;
+        const string& fileName = getInstance()->mStaticCfg.mCameras[i].mGraphSettingsFile;
         if (fileName.empty()) {
             continue;
         }
 
-        LOGXML("Using graph setting file:%s for camera:%zu", fileName.c_str(), i);
-        int ret  = graphConfig->parse(i, fileName.c_str());
-        CheckAndLogError(ret != OK, VOID_VALUE, "Could not read graph config file for camera %zu", i);
+        LOG2("Using graph setting file:%s for camera:%zu", fileName.c_str(), i);
+        int ret = graphConfig->parse(i, fileName.c_str());
+        CheckAndLogError(ret != OK, VOID_VALUE, "Could not read graph config file for camera %zu",
+                         i);
     }
 }
 
-int PlatformData::queryGraphSettings(int cameraId, const stream_config_t *streamList) {
+int PlatformData::queryGraphSettings(int cameraId, const stream_config_t* streamList) {
     if (PlatformData::getGraphConfigNodes(cameraId)) {
-        IGraphConfigManager *gcInstance = IGraphConfigManager::getInstance(cameraId);
+        IGraphConfigManager* gcInstance = IGraphConfigManager::getInstance(cameraId);
         if (gcInstance != nullptr && OK != gcInstance->queryGraphSettings(streamList)) {
             LOG2("@%s Failed to queryGraphSettings cameraId: %d", __func__, cameraId);
             return NO_ENTRY;
@@ -149,8 +146,7 @@ int PlatformData::queryGraphSettings(int cameraId, const stream_config_t *stream
     return OK;
 }
 
-void PlatformData::releaseGraphConfigNodes()
-{
+void PlatformData::releaseGraphConfigNodes() {
     std::shared_ptr<GraphConfig> graphConfig = std::make_shared<GraphConfig>();
     graphConfig->releaseGraphNodes();
     for (size_t i = 0; i < mStaticCfg.mCameras.size(); ++i) {
@@ -158,79 +154,72 @@ void PlatformData::releaseGraphConfigNodes()
     }
 }
 
-const char* PlatformData::getSensorName(int cameraId)
-{
+const char* PlatformData::getSensorName(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].sensorName.c_str();
 }
 
-const char* PlatformData::getSensorDescription(int cameraId)
-{
+const char* PlatformData::getSensorDescription(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].sensorDescription.c_str();
 }
 
-const char* PlatformData::getLensName(int cameraId)
-{
+const char* PlatformData::getLensName(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mLensName.c_str();
 }
 
-int PlatformData::getLensHwType(int cameraId)
-{
+int PlatformData::getLensHwType(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mLensHwType;
 }
 
-bool PlatformData::getSensorAwbEnable(int cameraId)
-{
+bool PlatformData::isPdafEnabled(int cameraId) {
+    return getInstance()->mStaticCfg.mCameras[cameraId].mEnablePdaf;
+}
+
+bool PlatformData::getSensorAwbEnable(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mSensorAwb;
 }
 
-bool PlatformData::getSensorAeEnable(int cameraId)
-{
+bool PlatformData::getSensorAeEnable(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mSensorAe;
 }
 
-int PlatformData::getDVSType(int cameraId)
-{
+bool PlatformData::getRunIspAlways(int cameraId) {
+    return getInstance()->mStaticCfg.mCameras[cameraId].mRunIspAlways;
+}
+
+int PlatformData::getDVSType(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mDVSType;
 }
 
-bool PlatformData::getISYSCompression(int cameraId)
-{
+bool PlatformData::getISYSCompression(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mISYSCompression;
 }
 
-bool PlatformData::getPSACompression(int cameraId)
-{
+bool PlatformData::getPSACompression(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mPSACompression;
 }
 
-bool PlatformData::getOFSCompression(int cameraId)
-{
+bool PlatformData::getOFSCompression(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mOFSCompression;
 }
 
-int PlatformData::getCITMaxMargin(int cameraId)
-{
+int PlatformData::getCITMaxMargin(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mCITMaxMargin;
 }
 
-bool PlatformData::isEnableAIQ(int cameraId)
-{
+bool PlatformData::isEnableAIQ(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mEnableAIQ;
 }
 
-int PlatformData::getAiqRunningInterval(int cameraId)
-{
+int PlatformData::getAiqRunningInterval(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mAiqRunningInterval;
 }
 
-bool PlatformData::isEnableMkn(int cameraId)
-{
+bool PlatformData::isEnableMkn(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mEnableMkn;
 }
 
-float PlatformData::getAlgoRunningRate(int algo, int cameraId)
-{
-    PlatformData::StaticCfg::CameraInfo *pCam = &getInstance()->mStaticCfg.mCameras[cameraId];
+float PlatformData::getAlgoRunningRate(int algo, int cameraId) {
+    PlatformData::StaticCfg::CameraInfo* pCam = &getInstance()->mStaticCfg.mCameras[cameraId];
 
     if (pCam->mAlgoRunningRateMap.find(algo) != pCam->mAlgoRunningRateMap.end()) {
         return pCam->mAlgoRunningRateMap[algo];
@@ -239,53 +228,43 @@ float PlatformData::getAlgoRunningRate(int algo, int cameraId)
     return 0.0;
 }
 
-bool PlatformData::isStatsRunningRateSupport(int cameraId)
-{
+bool PlatformData::isStatsRunningRateSupport(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mStatsRunningRate;
 }
 
-bool PlatformData::isEnableLtmThread(int cameraId)
-{
+bool PlatformData::isEnableLtmThread(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mEnableLtmThread;
 }
 
-bool PlatformData::isFaceAeEnabled(int cameraId)
-{
+bool PlatformData::isFaceAeEnabled(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mFaceAeEnabled;
 }
 
-int PlatformData::faceEngineVendor(int cameraId)
-{
+int PlatformData::faceEngineVendor(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mFaceEngineVendor;
 }
 
-int PlatformData::faceEngineRunningInterval(int cameraId)
-{
+int PlatformData::faceEngineRunningInterval(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mFaceEngineRunningInterval;
 }
 
-int PlatformData::faceEngineRunningIntervalNoFace(int cameraId)
-{
+int PlatformData::faceEngineRunningIntervalNoFace(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mFaceEngineRunningIntervalNoFace;
 }
 
-bool PlatformData::isFaceEngineSyncRunning(int cameraId)
-{
+bool PlatformData::isFaceEngineSyncRunning(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mFaceEngineRunningSync;
 }
 
-bool PlatformData::isIPUSupportFD(int cameraId)
-{
+bool PlatformData::isIPUSupportFD(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mFaceEngineByIPU;
 }
 
-unsigned int PlatformData::getMaxFaceDetectionNumber(int cameraId)
-{
+unsigned int PlatformData::getMaxFaceDetectionNumber(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mMaxFaceDetectionNumber;
 }
 
-bool PlatformData::isDvsSupported(int cameraId)
-{
+bool PlatformData::isDvsSupported(int cameraId) {
     camera_video_stabilization_list_t videoStabilizationList;
     Parameters* param = &getInstance()->mStaticCfg.mCameras[cameraId].mCapability;
     param->getSupportedVideoStabilizationMode(videoStabilizationList);
@@ -301,53 +280,43 @@ bool PlatformData::isDvsSupported(int cameraId)
     return supported;
 }
 
-bool PlatformData::psysAlignWithSof(int cameraId)
-{
+bool PlatformData::psysAlignWithSof(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mPsysAlignWithSof;
 }
 
-bool PlatformData::psysBundleWithAic(int cameraId)
-{
+bool PlatformData::psysBundleWithAic(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mPsysBundleWithAic;
 }
 
-bool PlatformData::swProcessingAlignWithIsp(int cameraId)
-{
+bool PlatformData::swProcessingAlignWithIsp(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mSwProcessingAlignWithIsp;
 }
 
-bool PlatformData::isUsingSensorDigitalGain(int cameraId)
-{
+bool PlatformData::isUsingSensorDigitalGain(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mUseSensorDigitalGain;
 }
 
-bool PlatformData::isUsingIspDigitalGain(int cameraId)
-{
+bool PlatformData::isUsingIspDigitalGain(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mUseIspDigitalGain;
 }
 
-bool PlatformData::isNeedToPreRegisterBuffer(int cameraId)
-{
+bool PlatformData::isNeedToPreRegisterBuffer(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mNeedPreRegisterBuffers;
 }
 
-int PlatformData::getAutoSwitchType(int cameraId)
-{
+int PlatformData::getAutoSwitchType(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mAutoSwitchType;
 }
 
-bool PlatformData::isEnableFrameSyncCheck(int cameraId)
-{
+bool PlatformData::isEnableFrameSyncCheck(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mFrameSyncCheckEnabled;
 }
 
-bool PlatformData::isEnableDefog(int cameraId)
-{
+bool PlatformData::isEnableDefog(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mEnableLtmDefog;
 }
 
-int PlatformData::getExposureNum(int cameraId, bool multiExposure)
-{
+int PlatformData::getExposureNum(int cameraId, bool multiExposure) {
     if (multiExposure) {
         return getInstance()->mStaticCfg.mCameras[cameraId].mSensorExposureNum;
     }
@@ -357,91 +326,74 @@ int PlatformData::getExposureNum(int cameraId, bool multiExposure)
     return exposureNum;
 }
 
-bool PlatformData::isLtmEnabled(int cameraId)
-{
+bool PlatformData::isLtmEnabled(int cameraId) {
 
     return getInstance()->mStaticCfg.mCameras[cameraId].mLtmEnabled;
 }
 
-int PlatformData::getSensorExposureType(int cameraId)
-{
+int PlatformData::getSensorExposureType(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mSensorExposureType;
 }
 
-int PlatformData::getSensorGainType(int cameraId)
-{
+int PlatformData::getSensorGainType(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mSensorGainType;
 }
 
-bool PlatformData::isSkipFrameOnSTR2MMIOErr(int cameraId)
-{
+bool PlatformData::isSkipFrameOnSTR2MMIOErr(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mSkipFrameV4L2Error;
 }
 
-unsigned int PlatformData::getInitialSkipFrame(int cameraId)
-{
+unsigned int PlatformData::getInitialSkipFrame(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mInitialSkipFrame;
 }
 
-unsigned int PlatformData::getMaxRawDataNum(int cameraId)
-{
+unsigned int PlatformData::getMaxRawDataNum(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mMaxRawDataNum;
 }
 
-bool PlatformData::getTopBottomReverse(int cameraId)
-{
+bool PlatformData::getTopBottomReverse(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mTopBottomReverse;
 }
 
-bool PlatformData::isPsysContinueStats(int cameraId)
-{
+bool PlatformData::isPsysContinueStats(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mPsysContinueStats;
 }
 
-unsigned int PlatformData::getPreferredBufQSize(int cameraId)
-{
+unsigned int PlatformData::getPreferredBufQSize(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mPreferredBufQSize;
 }
 
-unsigned int PlatformData::getPipeSwitchDelayFrame(int cameraId)
-{
+unsigned int PlatformData::getPipeSwitchDelayFrame(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mPipeSwitchDelayFrame;
 }
 
-int PlatformData::getLtmGainLag(int cameraId)
-{
+int PlatformData::getLtmGainLag(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mLtmGainLag;
 }
 
-int PlatformData::getMaxSensorDigitalGain(int cameraId)
-{
+int PlatformData::getMaxSensorDigitalGain(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mMaxSensorDigitalGain;
 }
 
-SensorDgType PlatformData::sensorDigitalGainType(int cameraId)
-{
+SensorDgType PlatformData::sensorDigitalGainType(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mSensorDgType;
 }
 
-int PlatformData::getDigitalGainLag(int cameraId)
-{
+int PlatformData::getDigitalGainLag(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mDigitalGainLag;
 }
 
-int PlatformData::getExposureLag(int cameraId)
-{
+int PlatformData::getExposureLag(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mExposureLag;
 }
 
-int PlatformData::getAnalogGainLag(int cameraId)
-{
+int PlatformData::getAnalogGainLag(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mAnalogGainLag;
 }
 
-PolicyConfig* PlatformData::getExecutorPolicyConfig(int graphId)
-{
+PolicyConfig* PlatformData::getExecutorPolicyConfig(int graphId) {
     size_t i = 0;
-    PlatformData::StaticCfg *cfg = &getInstance()->mStaticCfg;
+    PlatformData::StaticCfg* cfg = &getInstance()->mStaticCfg;
 
     for (i = 0; i < cfg->mPolicyConfig.size(); i++) {
         if (graphId == cfg->mPolicyConfig[i].graphId) {
@@ -453,34 +405,29 @@ PolicyConfig* PlatformData::getExecutorPolicyConfig(int graphId)
     return nullptr;
 }
 
-int PlatformData::numberOfCameras()
-{
+int PlatformData::numberOfCameras() {
     return getInstance()->mStaticCfg.mCameras.size();
 }
 
-int PlatformData::getXmlCameraNumber()
-{
+int PlatformData::getXmlCameraNumber() {
     return getInstance()->mStaticCfg.mCommonConfig.cameraNumber;
 }
 
-MediaCtlConf *PlatformData::getMediaCtlConf(int cameraId)
-{
+MediaCtlConf* PlatformData::getMediaCtlConf(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mCurrentMcConf;
 }
 
-int PlatformData::getCameraInfo(int cameraId, camera_info_t& info)
-{
+int PlatformData::getCameraInfo(int cameraId, camera_info_t& info) {
     info.device_version = 1;
     info.facing = getInstance()->mStaticCfg.mCameras[cameraId].mFacing;
-    info.orientation= getInstance()->mStaticCfg.mCameras[cameraId].mOrientation;
+    info.orientation = getInstance()->mStaticCfg.mCameras[cameraId].mOrientation;
     info.name = getSensorName(cameraId);
     info.description = getSensorDescription(cameraId);
     info.capability = &getInstance()->mStaticCfg.mCameras[cameraId].mCapability;
     return OK;
 }
 
-bool PlatformData::isFeatureSupported(int cameraId, camera_features feature)
-{
+bool PlatformData::isFeatureSupported(int cameraId, camera_features feature) {
     camera_features_list_t features;
     getInstance()->mStaticCfg.mCameras[cameraId].mCapability.getSupportedFeatures(features);
 
@@ -495,19 +442,19 @@ bool PlatformData::isFeatureSupported(int cameraId, camera_features feature)
     return false;
 }
 
-bool PlatformData::isSupportedStream(int cameraId, const stream_t& conf)
-{
+bool PlatformData::isSupportedStream(int cameraId, const stream_t& conf) {
     int width = conf.width;
     int height = conf.height;
     int format = conf.format;
     int field = conf.field;
 
     stream_array_t availableConfigs;
-    getInstance()->mStaticCfg.mCameras[cameraId].mCapability.getSupportedStreamConfig(availableConfigs);
+    getInstance()->mStaticCfg.mCameras[cameraId].mCapability.getSupportedStreamConfig(
+        availableConfigs);
     bool sameConfigFound = false;
     for (auto const& config : availableConfigs) {
-        if (config.format == format && config.field == field
-                && config.width == width && config.height == height) {
+        if (config.format == format && config.field == field && config.width == width &&
+            config.height == height) {
             sameConfigFound = true;
             break;
         }
@@ -516,20 +463,17 @@ bool PlatformData::isSupportedStream(int cameraId, const stream_t& conf)
     return sameConfigFound;
 }
 
-void PlatformData::getSupportedISysSizes(int cameraId, vector <camera_resolution_t>& resolutions)
-{
+void PlatformData::getSupportedISysSizes(int cameraId, vector<camera_resolution_t>& resolutions) {
     resolutions = getInstance()->mStaticCfg.mCameras[cameraId].mSupportedISysSizes;
 }
 
-bool PlatformData::getSupportedISysFormats(int cameraId, vector <int>& formats)
-{
+bool PlatformData::getSupportedISysFormats(int cameraId, vector<int>& formats) {
     formats = getInstance()->mStaticCfg.mCameras[cameraId].mSupportedISysFormat;
 
     return true;
 }
 
-int PlatformData::getISysFormat(int cameraId)
-{
+int PlatformData::getISysFormat(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mISysFourcc;
 }
 
@@ -539,16 +483,15 @@ int PlatformData::getISysFormat(int cameraId)
  * 2. If the given format is supported by ISYS, then use it.
  * 3. Use the first supported format if still could not find an appropriate one.
  */
-void PlatformData::selectISysFormat(int cameraId, int format)
-{
-    MediaCtlConf *mc = getMediaCtlConf(cameraId);
+void PlatformData::selectISysFormat(int cameraId, int format) {
+    MediaCtlConf* mc = getMediaCtlConf(cameraId);
     if (mc != nullptr && mc->format != -1) {
         getInstance()->mStaticCfg.mCameras[cameraId].mISysFourcc = mc->format;
     } else if (isISysSupportedFormat(cameraId, format)) {
         getInstance()->mStaticCfg.mCameras[cameraId].mISysFourcc = format;
     } else {
         // Set the first one in support list to default Isys output.
-        vector <int> supportedFormat =
+        vector<int> supportedFormat =
             getInstance()->mStaticCfg.mCameras[cameraId].mSupportedISysFormat;
         getInstance()->mStaticCfg.mCameras[cameraId].mISysFourcc = supportedFormat[0];
     }
@@ -561,8 +504,7 @@ void PlatformData::selectISysFormat(int cameraId, int format)
  * 3. Use stream config to get a corresponding mc id, and then get the config by id.
  * 4. Return nullptr if still could not find an appropriate one.
  */
-void PlatformData::selectMcConf(int cameraId, stream_t stream, ConfigMode mode, int mcId)
-{
+void PlatformData::selectMcConf(int cameraId, stream_t stream, ConfigMode mode, int mcId) {
     if (!isIsysEnabled(cameraId)) return;
 
     const StaticCfg::CameraInfo& pCam = getInstance()->mStaticCfg.mCameras[cameraId];
@@ -586,8 +528,7 @@ void PlatformData::selectMcConf(int cameraId, stream_t stream, ConfigMode mode, 
 /*
  * Find the MediaCtlConf based on the given MC id.
  */
-MediaCtlConf* PlatformData::getMcConfByMcId(const StaticCfg::CameraInfo& cameraInfo, int mcId)
-{
+MediaCtlConf* PlatformData::getMcConfByMcId(const StaticCfg::CameraInfo& cameraInfo, int mcId) {
     if (mcId == -1) {
         return nullptr;
     }
@@ -605,13 +546,12 @@ MediaCtlConf* PlatformData::getMcConfByMcId(const StaticCfg::CameraInfo& cameraI
  * Find the MediaCtlConf based on MC id in mStreamToMcMap.
  */
 MediaCtlConf* PlatformData::getMcConfByStream(const StaticCfg::CameraInfo& cameraInfo,
-                                              const stream_t& stream)
-{
+                                              const stream_t& stream) {
     int mcId = -1;
     for (auto& table : cameraInfo.mStreamToMcMap) {
-        for(auto& config : table.second) {
-            if (config.format == stream.format && config.field == stream.field
-                    && config.width == stream.width && config.height == stream.height) {
+        for (auto& config : table.second) {
+            if (config.format == stream.format && config.field == stream.field &&
+                config.width == stream.width && config.height == stream.height) {
                 mcId = table.first;
                 break;
             }
@@ -628,8 +568,7 @@ MediaCtlConf* PlatformData::getMcConfByStream(const StaticCfg::CameraInfo& camer
  * Find the MediaCtlConf based on operation mode and stream info.
  */
 MediaCtlConf* PlatformData::getMcConfByConfigMode(const StaticCfg::CameraInfo& cameraInfo,
-                                                  const stream_t& stream, ConfigMode mode)
-{
+                                                  const stream_t& stream, ConfigMode mode) {
     for (auto& mc : cameraInfo.mMediaCtlConfs) {
         for (auto& cfgMode : mc.configMode) {
             if (mode != cfgMode) continue;
@@ -642,9 +581,8 @@ MediaCtlConf* PlatformData::getMcConfByConfigMode(const StaticCfg::CameraInfo& c
              * outputWidth and outputHeight is 0 means the ISYS output size
              * is dynamic, we don't need to check if it matches with stream config.
              */
-            if ((outputWidth == 0 && outputHeight == 0 ) ||
-                ((stream.width == outputWidth || sameStride)
-                && stream.height == outputHeight)) {
+            if ((outputWidth == 0 && outputHeight == 0) ||
+                ((stream.width == outputWidth || sameStride) && stream.height == outputHeight)) {
                 return (MediaCtlConf*)&mc;
             }
         }
@@ -657,10 +595,10 @@ MediaCtlConf* PlatformData::getMcConfByConfigMode(const StaticCfg::CameraInfo& c
  * Check if video node is enabled via camera Id and video node type.
  */
 bool PlatformData::isVideoNodeEnabled(int cameraId, VideoNodeType type) {
-    MediaCtlConf *mc = getMediaCtlConf(cameraId);
+    MediaCtlConf* mc = getMediaCtlConf(cameraId);
     if (!mc) return false;
 
-    for(auto const& nd : mc->videoNodes) {
+    for (auto const& nd : mc->videoNodes) {
         if (type == nd.videoNodeType) {
             return true;
         }
@@ -668,49 +606,43 @@ bool PlatformData::isVideoNodeEnabled(int cameraId, VideoNodeType type) {
     return false;
 }
 
-bool PlatformData::isISysSupportedFormat(int cameraId, int format)
-{
-    vector <int> supportedFormat;
+bool PlatformData::isISysSupportedFormat(int cameraId, int format) {
+    vector<int> supportedFormat;
     getSupportedISysFormats(cameraId, supportedFormat);
 
     for (auto const fmt : supportedFormat) {
-        if (format == fmt)
-            return true;
+        if (format == fmt) return true;
     }
     return false;
 }
 
-bool PlatformData::isISysSupportedResolution(int cameraId, camera_resolution_t resolution)
-{
-    vector <camera_resolution_t> res;
+bool PlatformData::isISysSupportedResolution(int cameraId, camera_resolution_t resolution) {
+    vector<camera_resolution_t> res;
     getSupportedISysSizes(cameraId, res);
 
     for (auto const& size : res) {
-        if (resolution.width == size.width && resolution.height== size.height)
-            return true;
+        if (resolution.width == size.width && resolution.height == size.height) return true;
     }
 
     return false;
 }
 
-int PlatformData::getISysRawFormat(int cameraId)
-{
+int PlatformData::getISysRawFormat(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mISysRawFormat;
 }
 
-stream_t PlatformData::getISysOutputByPort(int cameraId, Port port)
-{
+stream_t PlatformData::getISysOutputByPort(int cameraId, Port port) {
     stream_t config;
     CLEAR(config);
 
-    MediaCtlConf *mc = PlatformData::getMediaCtlConf(cameraId);
+    MediaCtlConf* mc = PlatformData::getMediaCtlConf(cameraId);
     CheckAndLogError(!mc, config, "Invalid media control config.");
 
     for (const auto& output : mc->outputs) {
         if (output.port == port) {
-            config.format  = output.v4l2Format;
-            config.width   = output.width;
-            config.height  = output.height;
+            config.format = output.v4l2Format;
+            config.width = output.width;
+            config.height = output.height;
             break;
         }
     }
@@ -718,17 +650,15 @@ stream_t PlatformData::getISysOutputByPort(int cameraId, Port port)
     return config;
 }
 
-bool PlatformData::isAiqdEnabled(int cameraId)
-{
+bool PlatformData::isAiqdEnabled(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mEnableAiqd;
 }
 
-int PlatformData::getFormatByDevName(int cameraId, const string& devName, McFormat& format)
-{
-    MediaCtlConf *mc = getMediaCtlConf(cameraId);
+int PlatformData::getFormatByDevName(int cameraId, const string& devName, McFormat& format) {
+    MediaCtlConf* mc = getMediaCtlConf(cameraId);
     CheckAndLogError(!mc, BAD_VALUE, "getMediaCtlConf returns nullptr, cameraId:%d", cameraId);
 
-    for (auto &fmt : mc->formats) {
+    for (auto& fmt : mc->formats) {
         if (fmt.formatType == FC_FORMAT && devName == fmt.entityName) {
             format = fmt;
             return OK;
@@ -739,12 +669,12 @@ int PlatformData::getFormatByDevName(int cameraId, const string& devName, McForm
     return BAD_VALUE;
 }
 
-int PlatformData::getVideoNodeNameByType(int cameraId, VideoNodeType videoNodeType, string& videoNodeName)
-{
-    MediaCtlConf *mc = getMediaCtlConf(cameraId);
+int PlatformData::getVideoNodeNameByType(int cameraId, VideoNodeType videoNodeType,
+                                         string& videoNodeName) {
+    MediaCtlConf* mc = getMediaCtlConf(cameraId);
     CheckAndLogError(!mc, BAD_VALUE, "getMediaCtlConf returns nullptr, cameraId:%d", cameraId);
 
-    for(auto const& nd : mc->videoNodes) {
+    for (auto const& nd : mc->videoNodes) {
         if (videoNodeType == nd.videoNodeType) {
             videoNodeName = nd.name;
             return OK;
@@ -755,45 +685,45 @@ int PlatformData::getVideoNodeNameByType(int cameraId, VideoNodeType videoNodeTy
     return BAD_VALUE;
 }
 
-int PlatformData::getDevNameByType(int cameraId, VideoNodeType videoNodeType, string& devName)
-{
+int PlatformData::getDevNameByType(int cameraId, VideoNodeType videoNodeType, string& devName) {
     if (!isIsysEnabled(cameraId)) return OK;
 
-    MediaCtlConf *mc = getMediaCtlConf(cameraId);
+    MediaCtlConf* mc = getMediaCtlConf(cameraId);
     bool isSubDev = false;
 
     switch (videoNodeType) {
         case VIDEO_PIXEL_ARRAY:
         case VIDEO_PIXEL_BINNER:
-        case VIDEO_PIXEL_SCALER:
-        {
+        case VIDEO_PIXEL_SCALER: {
             isSubDev = true;
             // For sensor subdevices are fixed and sensor HW may be initialized before configure,
             // the first MediaCtlConf is used to find sensor subdevice name.
-            PlatformData::StaticCfg::CameraInfo *pCam = &getInstance()->mStaticCfg.mCameras[cameraId];
+            PlatformData::StaticCfg::CameraInfo* pCam =
+                &getInstance()->mStaticCfg.mCameras[cameraId];
             mc = &pCam->mMediaCtlConfs[0];
             break;
         }
         case VIDEO_ISYS_RECEIVER_BACKEND:
         case VIDEO_ISYS_RECEIVER:
-        {
-            isSubDev = true;
-            break;
-        }
+            {
+                isSubDev = true;
+                break;
+            }
         default:
             break;
     }
 
-    CheckAndLogError(!mc, NAME_NOT_FOUND, "failed to get MediaCtlConf, videoNodeType %d", videoNodeType);
+    CheckAndLogError(!mc, NAME_NOT_FOUND, "failed to get MediaCtlConf, videoNodeType %d",
+                     videoNodeType);
 
-    for(auto& nd : mc->videoNodes) {
+    for (auto& nd : mc->videoNodes) {
         if (videoNodeType == nd.videoNodeType) {
             string tmpDevName;
             CameraUtils::getDeviceName(nd.name.c_str(), tmpDevName, isSubDev);
             if (!tmpDevName.empty()) {
                 devName = tmpDevName;
-                LOG2("@%s, Found DevName. cameraId: %d, get video node: %s, devname: %s",
-                      __func__, cameraId, nd.name.c_str(), devName.c_str());
+                LOG2("@%s, Found DevName. cameraId: %d, get video node: %s, devname: %s", __func__,
+                     cameraId, nd.name.c_str(), devName.c_str());
                 return OK;
             } else {
                 // Use default device name if cannot find it
@@ -802,7 +732,7 @@ int PlatformData::getDevNameByType(int cameraId, VideoNodeType videoNodeType, st
                 else
                     devName = "/dev/video5";
                 LOGE("Failed to find DevName for cameraId: %d, get video node: %s, devname: %s",
-                      cameraId, nd.name.c_str(), devName.c_str());
+                     cameraId, nd.name.c_str(), devName.c_str());
                 return NAME_NOT_FOUND;
             }
         }
@@ -819,9 +749,8 @@ int PlatformData::getDevNameByType(int cameraId, VideoNodeType videoNodeType, st
  * 3. Try to find the same ratio resolution.
  * 4. If still couldn't get one, then use the biggest one.
  */
-camera_resolution_t PlatformData::getISysBestResolution(int cameraId, int width,
-                                                        int height, int field)
-{
+camera_resolution_t PlatformData::getISysBestResolution(int cameraId, int width, int height,
+                                                        int field) {
     LOG1("@%s, width:%d, height:%d", __func__, width, height);
 
     // Skip for interlace, we only support by-pass in interlaced mode
@@ -829,17 +758,17 @@ camera_resolution_t PlatformData::getISysBestResolution(int cameraId, int width,
         return {width, height};
     }
 
-    MediaCtlConf *mc = getMediaCtlConf(cameraId);
+    MediaCtlConf* mc = getMediaCtlConf(cameraId);
     // The isys output size is fixed if outputWidth/outputHeight != 0
     // So we use it to as the ISYS resolution.
     if (mc != nullptr && mc->outputWidth != 0 && mc->outputHeight != 0) {
         return {mc->outputWidth, mc->outputHeight};
     }
 
-    const float RATIO_TOLERANCE = 0.05f; // Supported aspect ratios that are within RATIO_TOLERANCE
-    const float kTargetRatio = (float)width / height;
+    const float RATIO_TOLERANCE = 0.05f;  // Supported aspect ratios that are within RATIO_TOLERANCE
+    const float kTargetRatio = static_cast<float>(width) / height;
 
-    vector <camera_resolution_t> res;
+    vector<camera_resolution_t> res;
     // The supported resolutions are saved in res with ascending order(small -> bigger)
     getSupportedISysSizes(cameraId, res);
 
@@ -847,37 +776,36 @@ camera_resolution_t PlatformData::getISysBestResolution(int cameraId, int width,
     // if it couldn't find out the same one, then use the bigger one which is the same ratio
     for (auto const& size : res) {
         if (width <= size.width && height <= size.height &&
-            fabs((float)size.width/size.height - kTargetRatio) < RATIO_TOLERANCE) {
-            LOG1("@%s: Found the best ISYS resoltoution (%d)x(%d)", __func__,
-                 size.width, size.height);
+            fabs(static_cast<float>(size.width) / size.height - kTargetRatio) < RATIO_TOLERANCE) {
+            LOG1("@%s: Found the best ISYS resoltoution (%d)x(%d)", __func__, size.width,
+                 size.height);
             return {size.width, size.height};
         }
     }
 
     // If it still couldn't find one, then use the biggest one in the supported list.
-    LOG1("@%s: ISYS resolution not found, used the biggest one: (%d)x(%d)",
-         __func__, res.back().width, res.back().height);
+    LOG1("@%s: ISYS resolution not found, used the biggest one: (%d)x(%d)", __func__,
+         res.back().width, res.back().height);
     return {res.back().width, res.back().height};
 }
 
-bool PlatformData::isIsysEnabled(int cameraId)
-{
+bool PlatformData::isIsysEnabled(int cameraId) {
     if (getInstance()->mStaticCfg.mCameras[cameraId].mMediaCtlConfs.empty()) {
         return false;
     }
     return true;
 }
 
-int PlatformData::calculateFrameParams(int cameraId, SensorFrameParams& sensorFrameParams)
-{
+int PlatformData::calculateFrameParams(int cameraId, SensorFrameParams& sensorFrameParams) {
     if (!isIsysEnabled(cameraId)) {
         LOG2("%s, no mc, just use default from xml", __func__);
-        vector <camera_resolution_t> res;
+        vector<camera_resolution_t> res;
         getSupportedISysSizes(cameraId, res);
 
         CheckAndLogError(res.empty(), BAD_VALUE, "Supported ISYS resolutions are not configured.");
-        sensorFrameParams = {0, 0, static_cast<uint32_t>(res[0].width),
-                             static_cast<uint32_t>(res[0].height), 1, 1, 1, 1};
+        sensorFrameParams = {
+            0, 0, static_cast<uint32_t>(res[0].width), static_cast<uint32_t>(res[0].height), 1, 1,
+            1, 1};
 
         return OK;
     }
@@ -901,9 +829,9 @@ int PlatformData::calculateFrameParams(int cameraId, SensorFrameParams& sensorFr
      * in some UT cases, the mc is nullptr at this moment. So we need to
      * get one default mc to calculate frame params.
      */
-    MediaCtlConf *mc = PlatformData::getMediaCtlConf(cameraId);
+    MediaCtlConf* mc = PlatformData::getMediaCtlConf(cameraId);
     if (mc == nullptr) {
-        PlatformData::StaticCfg::CameraInfo *pCam = &getInstance()->mStaticCfg.mCameras[cameraId];
+        PlatformData::StaticCfg::CameraInfo* pCam = &getInstance()->mStaticCfg.mCameras[cameraId];
         mc = &pCam->mMediaCtlConfs[0];
     }
 
@@ -914,7 +842,7 @@ int PlatformData::calculateFrameParams(int cameraId, SensorFrameParams& sensorFr
             height = current.height;
             pixArraySizeFound = true;
             LOG2("%s: active pixel array H=%d, W=%d", __func__, height, width);
-            //Setup initial sensor frame params.
+            // Setup initial sensor frame params.
             sensorFrameParams.horizontal_crop_offset += horizontalOffset;
             sensorFrameParams.vertical_crop_offset += verticalOffset;
             sensorFrameParams.cropped_image_width = width;
@@ -930,30 +858,32 @@ int PlatformData::calculateFrameParams(int cameraId, SensorFrameParams& sensorFr
         }
 
         if (current.selCmd == V4L2_SEL_TGT_CROP) {
-
             width = current.width * horizontalBin;
             horizontalOffset = current.left * horizontalBin;
             height = current.height * verticalBin;
             verticalOffset = current.top * verticalBin;
 
-            LOG2("%s: crop (binning factor: hor/vert:%d,%d)"
-                  , __func__, horizontalBin, verticalBin);
+            LOG2("%s: crop (binning factor: hor/vert:%d,%d)", __func__, horizontalBin, verticalBin);
 
-            LOG2("%s: crop left = %d, top = %d, width = %d height = %d",
-                  __func__, horizontalOffset, verticalOffset, width, height);
+            LOG2("%s: crop left = %d, top = %d, width = %d height = %d", __func__, horizontalOffset,
+                 verticalOffset, width, height);
 
         } else if (current.selCmd == V4L2_SEL_TGT_COMPOSE) {
             if (width == 0 || height == 0) {
-                LOGE("Invalid XML configuration, no pixel array width/height when handling compose, skip.");
+                LOGE(
+                    "Invalid XML configuration, no pixel array width/height when handling compose, "
+                    "skip.");
                 return BAD_VALUE;
             }
             if (current.width == 0 || current.height == 0) {
-                LOGW("%s: Invalid XML configuration for TGT_COMPOSE,"
-                     "0 value detected in width or height", __func__);
+                LOGW(
+                    "%s: Invalid XML configuration for TGT_COMPOSE,"
+                    "0 value detected in width or height",
+                    __func__);
                 return BAD_VALUE;
             } else {
                 LOG2("%s: Compose width %d/%d, height %d/%d", __func__, width, current.width,
-                    height, current.height);
+                     height, current.height);
                 // the scale factor should be float, so multiple numerator and denominator
                 // with coefficient to indicate float factor
                 const int SCALE_FACTOR_COEF = 10;
@@ -965,10 +895,10 @@ int PlatformData::calculateFrameParams(int cameraId, SensorFrameParams& sensorFr
                 verticalBinDenom = SCALE_FACTOR_COEF;
             }
 
-            LOG2("%s: COMPOSE horizontal bin factor=%d, (%d/%d)",
-                  __func__, horizontalBin, horizontalBinNum, horizontalBinDenom);
-            LOG2("%s: COMPOSE vertical bin factor=%d, (%d/%d)",
-                  __func__, verticalBin, verticalBinNum, verticalBinDenom);
+            LOG2("%s: COMPOSE horizontal bin factor=%d, (%d/%d)", __func__, horizontalBin,
+                 horizontalBinNum, horizontalBinDenom);
+            LOG2("%s: COMPOSE vertical bin factor=%d, (%d/%d)", __func__, verticalBin,
+                 verticalBinNum, verticalBinDenom);
         } else {
             LOGW("%s: Target for selection is not CROP neither COMPOSE!", __func__);
             continue;
@@ -985,16 +915,13 @@ int PlatformData::calculateFrameParams(int cameraId, SensorFrameParams& sensorFr
     }
 
     return OK;
-
 }
 
-void PlatformData::getSupportedTuningConfig(int cameraId, vector <TuningConfig> &configs)
-{
+void PlatformData::getSupportedTuningConfig(int cameraId, vector<TuningConfig>& configs) {
     configs = getInstance()->mStaticCfg.mCameras[cameraId].mSupportedTuningConfig;
 }
 
-bool PlatformData::usePsys(int cameraId, int format)
-{
+bool PlatformData::usePsys(int cameraId, int format) {
     if (getInstance()->mStaticCfg.mCameras[cameraId].mSupportedTuningConfig.empty()) {
         LOG1("@%s, the tuning config in xml does not exist", __func__);
         return false;
@@ -1005,57 +932,58 @@ bool PlatformData::usePsys(int cameraId, int format)
         return false;
     }
 
-    for (auto &psys_fmt : getInstance()->mStaticCfg.mCameras[cameraId].mPSysFormat) {
-        if (format == psys_fmt)
-            return true;
+    for (auto& psys_fmt : getInstance()->mStaticCfg.mCameras[cameraId].mPSysFormat) {
+        if (format == psys_fmt) return true;
     }
 
     LOGW("%s, No matched format found, but expected format:%s", __func__,
-        CameraUtils::pixelCode2String(format));
+         CameraUtils::pixelCode2String(format));
 
     return false;
 }
 
-int PlatformData::getConfigModesByOperationMode(int cameraId, uint32_t operationMode, vector <ConfigMode> &configModes)
-{
+int PlatformData::getConfigModesByOperationMode(int cameraId, uint32_t operationMode,
+                                                vector<ConfigMode>& configModes) {
     if (operationMode == CAMERA_STREAM_CONFIGURATION_MODE_END) {
         LOG2("%s: operationMode was invalid operation mode", __func__);
         return INVALID_OPERATION;
     }
 
-    CheckAndLogError(getInstance()->mStaticCfg.mCameras[cameraId].mSupportedTuningConfig.empty(), INVALID_OPERATION,
-          "@%s, the tuning config in xml does not exist", __func__);
+    CheckAndLogError(getInstance()->mStaticCfg.mCameras[cameraId].mSupportedTuningConfig.empty(),
+                     INVALID_OPERATION, "@%s, the tuning config in xml does not exist", __func__);
 
     if (operationMode == CAMERA_STREAM_CONFIGURATION_MODE_AUTO) {
         if (getInstance()->mStaticCfg.mCameras[cameraId].mConfigModesForAuto.empty()) {
             // Use the first config mode as default for auto
-            configModes.push_back(getInstance()->mStaticCfg.mCameras[cameraId].mSupportedTuningConfig[0].configMode);
-            LOG2("%s: add config mode %d for operation mode %d", __func__, configModes[0], operationMode);
+            configModes.push_back(
+                getInstance()->mStaticCfg.mCameras[cameraId].mSupportedTuningConfig[0].configMode);
+            LOG2("%s: add config mode %d for operation mode %d", __func__, configModes[0],
+                 operationMode);
         } else {
             configModes = getInstance()->mStaticCfg.mCameras[cameraId].mConfigModesForAuto;
         }
     } else {
-        for (auto &cfg : getInstance()->mStaticCfg.mCameras[cameraId].mSupportedTuningConfig) {
+        for (auto& cfg : getInstance()->mStaticCfg.mCameras[cameraId].mSupportedTuningConfig) {
             if (operationMode == (uint32_t)cfg.configMode) {
                 configModes.push_back(cfg.configMode);
-                LOG2("%s: add config mode %d for operation mode %d", __func__, cfg.configMode, operationMode);
+                LOG2("%s: add config mode %d for operation mode %d", __func__, cfg.configMode,
+                     operationMode);
             }
         }
     }
 
     if (configModes.size() > 0) return OK;
-    LOGW("%s, configure number %zu, operationMode %x, cameraId %d", __func__,
-            configModes.size(), operationMode, cameraId);
+    LOGW("%s, configure number %zu, operationMode %x, cameraId %d", __func__, configModes.size(),
+         operationMode, cameraId);
     return INVALID_OPERATION;
 }
 
 int PlatformData::getTuningModeByConfigMode(int cameraId, ConfigMode configMode,
-                                            TuningMode& tuningMode)
-{
+                                            TuningMode& tuningMode) {
     CheckAndLogError(getInstance()->mStaticCfg.mCameras[cameraId].mSupportedTuningConfig.empty(),
-          INVALID_OPERATION, "the tuning config in xml does not exist");
+                     INVALID_OPERATION, "the tuning config in xml does not exist");
 
-    for (auto &cfg : getInstance()->mStaticCfg.mCameras[cameraId].mSupportedTuningConfig) {
+    for (auto& cfg : getInstance()->mStaticCfg.mCameras[cameraId].mSupportedTuningConfig) {
         LOG2("%s, tuningMode %d, configMode %x", __func__, cfg.tuningMode, cfg.configMode);
         if (cfg.configMode == configMode) {
             tuningMode = cfg.tuningMode;
@@ -1067,12 +995,11 @@ int PlatformData::getTuningModeByConfigMode(int cameraId, ConfigMode configMode,
     return INVALID_OPERATION;
 }
 
-int PlatformData::getTuningConfigByConfigMode(int cameraId, ConfigMode mode, TuningConfig &config)
-{
-    CheckAndLogError(getInstance()->mStaticCfg.mCameras[cameraId].mSupportedTuningConfig.empty(), INVALID_OPERATION,
-          "@%s, the tuning config in xml does not exist.", __func__);
+int PlatformData::getTuningConfigByConfigMode(int cameraId, ConfigMode mode, TuningConfig& config) {
+    CheckAndLogError(getInstance()->mStaticCfg.mCameras[cameraId].mSupportedTuningConfig.empty(),
+                     INVALID_OPERATION, "@%s, the tuning config in xml does not exist.", __func__);
 
-    for (auto &cfg : getInstance()->mStaticCfg.mCameras[cameraId].mSupportedTuningConfig) {
+    for (auto& cfg : getInstance()->mStaticCfg.mCameras[cameraId].mSupportedTuningConfig) {
         if (cfg.configMode == mode) {
             config = cfg;
             return OK;
@@ -1083,14 +1010,12 @@ int PlatformData::getTuningConfigByConfigMode(int cameraId, ConfigMode mode, Tun
     return INVALID_OPERATION;
 }
 
-int PlatformData::getStreamIdByConfigMode(int cameraId, ConfigMode configMode)
-{
+int PlatformData::getStreamIdByConfigMode(int cameraId, ConfigMode configMode) {
     std::map<int, int> modeMap = getInstance()->mStaticCfg.mCameras[cameraId].mConfigModeToStreamId;
     return modeMap.find(configMode) == modeMap.end() ? -1 : modeMap[configMode];
 }
 
-int PlatformData::getMaxRequestsInflight(int cameraId)
-{
+int PlatformData::getMaxRequestsInflight(int cameraId) {
     int inflight = getInstance()->mStaticCfg.mCameras[cameraId].mMaxRequestsInflight;
     if (inflight <= 0) {
         inflight = isEnableAIQ(cameraId) ? 4 : MAX_BUFFER_COUNT;
@@ -1099,60 +1024,53 @@ int PlatformData::getMaxRequestsInflight(int cameraId)
     return inflight;
 }
 
-bool PlatformData::getGraphConfigNodes(int cameraId)
-{
+bool PlatformData::getGraphConfigNodes(int cameraId) {
     return !(getInstance()->mStaticCfg.mCameras[cameraId].mGraphSettingsFile.empty());
 }
 
-GraphSettingType PlatformData::getGraphSettingsType(int cameraId)
-{
+GraphSettingType PlatformData::getGraphSettingsType(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mGraphSettingsType;
 }
 
-camera_yuv_color_range_mode_t PlatformData::getYuvColorRangeMode(int cameraId)
-{
+camera_yuv_color_range_mode_t PlatformData::getYuvColorRangeMode(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mYuvColorRangeMode;
 }
 
-ia_binary_data* PlatformData::getAiqd(int cameraId, TuningMode mode)
-{
+ia_binary_data* PlatformData::getAiqd(int cameraId, TuningMode mode) {
     CheckAndLogError(cameraId >= static_cast<int>(getInstance()->mAiqInitData.size()), nullptr,
-               "@%s, bad cameraId:%d", __func__, cameraId);
+                     "@%s, bad cameraId:%d", __func__, cameraId);
 
     AiqInitData* aiqInitData = getInstance()->mAiqInitData[cameraId];
     return aiqInitData->getAiqd(mode);
 }
 
-void PlatformData::saveAiqd(int cameraId, TuningMode tuningMode, const ia_binary_data& data)
-{
+void PlatformData::saveAiqd(int cameraId, TuningMode tuningMode, const ia_binary_data& data) {
     CheckAndLogError(cameraId >= static_cast<int>(getInstance()->mAiqInitData.size()), VOID_VALUE,
-               "@%s, bad cameraId:%d", __func__, cameraId);
+                     "@%s, bad cameraId:%d", __func__, cameraId);
 
     AiqInitData* aiqInitData = getInstance()->mAiqInitData[cameraId];
     aiqInitData->saveAiqd(tuningMode, data);
 }
 
-int PlatformData::getCpf(int cameraId, TuningMode mode, ia_binary_data* aiqbData)
-{
-    CheckAndLogError(cameraId >= MAX_CAMERA_NUMBER, BAD_VALUE,
-               "@%s, bad cameraId:%d", __func__, cameraId);
+int PlatformData::getCpf(int cameraId, TuningMode mode, ia_binary_data* aiqbData) {
+    CheckAndLogError(cameraId >= MAX_CAMERA_NUMBER, BAD_VALUE, "@%s, bad cameraId:%d", __func__,
+                     cameraId);
     CheckAndLogError(getInstance()->mStaticCfg.mCameras[cameraId].mSupportedTuningConfig.empty(),
-               INVALID_OPERATION, "@%s, the tuning config in xml does not exist", __func__);
+                     INVALID_OPERATION, "@%s, the tuning config in xml does not exist", __func__);
 
     AiqInitData* aiqInitData = getInstance()->mAiqInitData[cameraId];
     return aiqInitData->getCpf(mode, aiqbData);
 }
 
-bool PlatformData::isCSIBackEndCapture(int cameraId)
-{
+bool PlatformData::isCSIBackEndCapture(int cameraId) {
     bool isCsiBECapture = false;
-    MediaCtlConf *mc = getMediaCtlConf(cameraId);
+    MediaCtlConf* mc = getMediaCtlConf(cameraId);
     CheckAndLogError(!mc, false, "getMediaCtlConf returns nullptr, cameraId:%d", cameraId);
 
-    for(const auto& node : mc->videoNodes) {
+    for (const auto& node : mc->videoNodes) {
         if (node.videoNodeType == VIDEO_GENERIC &&
-                (node.name.find("BE capture") != string::npos ||
-                 node.name.find("BE SOC capture") != string::npos)) {
+            (node.name.find("BE capture") != string::npos ||
+             node.name.find("BE SOC capture") != string::npos)) {
             isCsiBECapture = true;
             break;
         }
@@ -1161,16 +1079,14 @@ bool PlatformData::isCSIBackEndCapture(int cameraId)
     return isCsiBECapture;
 }
 
-bool PlatformData::isCSIFrontEndCapture(int cameraId)
-{
+bool PlatformData::isCSIFrontEndCapture(int cameraId) {
     bool isCsiFeCapture = false;
-    MediaCtlConf *mc = getMediaCtlConf(cameraId);
+    MediaCtlConf* mc = getMediaCtlConf(cameraId);
     CheckAndLogError(!mc, false, "getMediaCtlConf returns nullptr, cameraId:%d", cameraId);
 
-    for(const auto& node : mc->videoNodes) {
+    for (const auto& node : mc->videoNodes) {
         if (node.videoNodeType == VIDEO_GENERIC &&
-                (node.name.find("CSI-2") != string::npos ||
-                 node.name.find("TPG") != string::npos)) {
+            (node.name.find("CSI-2") != string::npos || node.name.find("TPG") != string::npos)) {
             isCsiFeCapture = true;
             break;
         }
@@ -1178,15 +1094,13 @@ bool PlatformData::isCSIFrontEndCapture(int cameraId)
     return isCsiFeCapture;
 }
 
-bool PlatformData::isTPGReceiver(int cameraId)
-{
+bool PlatformData::isTPGReceiver(int cameraId) {
     bool isTPGCapture = false;
-    MediaCtlConf *mc = getMediaCtlConf(cameraId);
+    MediaCtlConf* mc = getMediaCtlConf(cameraId);
     CheckAndLogError(!mc, false, "getMediaCtlConf returns nullptr, cameraId:%d", cameraId);
 
-    for(const auto& node : mc->videoNodes) {
-        if (node.videoNodeType == VIDEO_ISYS_RECEIVER &&
-                (node.name.find("TPG") != string::npos)) {
+    for (const auto& node : mc->videoNodes) {
+        if (node.videoNodeType == VIDEO_ISYS_RECEIVER && (node.name.find("TPG") != string::npos)) {
             isTPGCapture = true;
             break;
         }
@@ -1195,18 +1109,15 @@ bool PlatformData::isTPGReceiver(int cameraId)
 }
 
 int PlatformData::getSupportAeExposureTimeRange(int cameraId, camera_scene_mode_t sceneMode,
-                                                camera_range_t& etRange)
-{
+                                                camera_range_t& etRange) {
     Parameters* param = &getInstance()->mStaticCfg.mCameras[cameraId].mCapability;
     int ret = param->getSupportedSensorExposureTimeRange(etRange);
-    if (ret == OK)
-        return OK;
+    if (ret == OK) return OK;
 
     vector<camera_ae_exposure_time_range_t> ranges;
     param->getSupportedAeExposureTimeRange(ranges);
 
-    if (ranges.empty())
-        return NAME_NOT_FOUND;
+    if (ranges.empty()) return NAME_NOT_FOUND;
 
     for (auto& item : ranges) {
         if (item.scene_mode == sceneMode) {
@@ -1218,12 +1129,11 @@ int PlatformData::getSupportAeExposureTimeRange(int cameraId, camera_scene_mode_
 }
 
 int PlatformData::getSupportAeGainRange(int cameraId, camera_scene_mode_t sceneMode,
-                                        camera_range_t& gainRange)
-{
+                                        camera_range_t& gainRange) {
     vector<camera_ae_gain_range_t> ranges;
     getInstance()->mStaticCfg.mCameras[cameraId].mCapability.getSupportedAeGainRange(ranges);
 
-    if(ranges.empty()) {
+    if (ranges.empty()) {
         return NAME_NOT_FOUND;
     }
 
@@ -1236,26 +1146,24 @@ int PlatformData::getSupportAeGainRange(int cameraId, camera_scene_mode_t sceneM
     return NAME_NOT_FOUND;
 }
 
-bool PlatformData::isUsingCrlModule(int cameraId)
-{
+bool PlatformData::isUsingCrlModule(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mUseCrlModule;
 }
 
-vector<MultiExpRange> PlatformData::getMultiExpRanges(int cameraId)
-{
+vector<MultiExpRange> PlatformData::getMultiExpRanges(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mMultiExpRanges;
 }
 
-camera_resolution_t *PlatformData::getPslOutputForRotation(int width, int height, int cameraId)
-{
+camera_resolution_t* PlatformData::getPslOutputForRotation(int width, int height, int cameraId) {
     CheckAndLogError(getInstance()->mStaticCfg.mCameras[cameraId].mOutputMap.empty(), nullptr,
-          "@%s, cameraId: %d, there isn't pslOutputMapForRotation field in xml.", __func__, cameraId);
+                     "<id%d>@%s, there isn't pslOutputMapForRotation field in xml.", cameraId,
+                     __func__);
 
-    vector<UserToPslOutputMap> &outputMap = getInstance()->mStaticCfg.mCameras[cameraId].mOutputMap;
-    for (auto & map : outputMap) {
+    vector<UserToPslOutputMap>& outputMap = getInstance()->mStaticCfg.mCameras[cameraId].mOutputMap;
+    for (auto& map : outputMap) {
         if (width == map.User.width && height == map.User.height) {
-            LOG2("cameraId: %d, find the psl output resoltion(%d, %d) for %dx%d",
-                  cameraId, map.Psl.width, map.Psl.height, map.User.width, map.User.height);
+            LOG2("<id%d> find the psl output resoltion(%d, %d) for %dx%d", cameraId,
+                 map.Psl.width, map.Psl.height, map.User.width, map.User.height);
             return &map.Psl;
         }
     }
@@ -1263,15 +1171,13 @@ camera_resolution_t *PlatformData::getPslOutputForRotation(int width, int height
     return nullptr;
 }
 
-bool PlatformData::isTestPatternSupported(int cameraId)
-{
+bool PlatformData::isTestPatternSupported(int cameraId) {
     return !getInstance()->mStaticCfg.mCameras[cameraId].mTestPatternMap.empty();
 }
 
-int32_t PlatformData::getSensorTestPattern(int cameraId, int32_t mode)
-{
+int32_t PlatformData::getSensorTestPattern(int cameraId, int32_t mode) {
     CheckAndLogError(getInstance()->mStaticCfg.mCameras[cameraId].mTestPatternMap.empty(), -1,
-          "@%s, cameraId: %d, mTestPatternMap is empty!", __func__, cameraId);
+                     "<id%d>@%s, mTestPatternMap is empty!", cameraId, __func__);
     auto testPatternMap = getInstance()->mStaticCfg.mCameras[cameraId].mTestPatternMap;
 
     if (testPatternMap.find(mode) == testPatternMap.end()) {
@@ -1281,46 +1187,40 @@ int32_t PlatformData::getSensorTestPattern(int cameraId, int32_t mode)
     return testPatternMap[mode];
 }
 
-ia_binary_data *PlatformData::getNvm(int cameraId)
-{
+ia_binary_data* PlatformData::getNvm(int cameraId) {
     CheckAndLogError(cameraId >= static_cast<int>(getInstance()->mAiqInitData.size()), nullptr,
-               "@%s, bad cameraId:%d", __func__, cameraId);
+                     "@%s, bad cameraId:%d", __func__, cameraId);
 
     return getInstance()->mAiqInitData[cameraId]->getNvm(cameraId);
 }
 
-camera_coordinate_system_t PlatformData::getActivePixelArray(int cameraId)
-{
+camera_coordinate_system_t PlatformData::getActivePixelArray(int cameraId) {
     camera_coordinate_system_t arraySize;
     CLEAR(arraySize);
 
     Parameters* param = &getInstance()->mStaticCfg.mCameras[cameraId].mCapability;
     if (param->getSensorActiveArraySize(arraySize) != OK) {
-        return { 0, 0, 0, 0 };
+        return {0, 0, 0, 0};
     }
 
     return {arraySize.left, arraySize.top, arraySize.right, arraySize.bottom};
 }
 
-string PlatformData::getCameraCfgPath()
-{
+string PlatformData::getCameraCfgPath() {
     char* p = getenv("CAMERA_CFG_PATH");
 
-    return p? string(p) : string(CAMERA_DEFAULT_CFG_PATH);
+    return p ? string(p) : string(CAMERA_DEFAULT_CFG_PATH);
 }
 
-string PlatformData::getGraphDescFilePath()
-{
+string PlatformData::getGraphDescFilePath() {
     return PlatformData::getCameraCfgPath() + string(CAMERA_GRAPH_DESCRIPTOR_FILE);
 }
 
-string PlatformData::getGraphSettingFilePath()
-{
+string PlatformData::getGraphSettingFilePath() {
     return PlatformData::getCameraCfgPath() + string(CAMERA_GRAPH_SETTINGS_DIR);
 }
 
-int PlatformData::getSensorDigitalGain(int cameraId, float realDigitalGain)
-{
+int PlatformData::getSensorDigitalGain(int cameraId, float realDigitalGain) {
     int sensorDg = 0;
     int maxSensorDg = PlatformData::getMaxSensorDigitalGain(cameraId);
 
@@ -1332,15 +1232,14 @@ int PlatformData::getSensorDigitalGain(int cameraId, float realDigitalGain)
         }
         sensorDg = CLIP(sensorDg, maxSensorDg, 0);
     } else {
-        LOGE("%s, don't support the sensor digital gain type: %d",
-                __func__, PlatformData::sensorDigitalGainType(cameraId));
+        LOGE("%s, don't support the sensor digital gain type: %d", __func__,
+             PlatformData::sensorDigitalGainType(cameraId));
     }
 
     return sensorDg;
 }
 
-float PlatformData::getIspDigitalGain(int cameraId, float realDigitalGain)
-{
+float PlatformData::getIspDigitalGain(int cameraId, float realDigitalGain) {
     float ispDg = 1.0f;
     int sensorDg = getSensorDigitalGain(cameraId, realDigitalGain);
 
@@ -1348,63 +1247,57 @@ float PlatformData::getIspDigitalGain(int cameraId, float realDigitalGain)
         ispDg = realDigitalGain / pow(2, sensorDg);
         ispDg = CLIP(ispDg, ispDg, 1.0);
     } else {
-        LOGE("%s, don't support the sensor digital gain type: %d",
-                __func__, PlatformData::sensorDigitalGainType(cameraId));
+        LOGE("%s, don't support the sensor digital gain type: %d", __func__,
+             PlatformData::sensorDigitalGainType(cameraId));
     }
 
     return ispDg;
 }
 
-int PlatformData::initMakernote(int cameraId, TuningMode tuningMode)
-{
+int PlatformData::initMakernote(int cameraId, TuningMode tuningMode) {
     CheckAndLogError(cameraId >= static_cast<int>(getInstance()->mAiqInitData.size()), BAD_VALUE,
-               "@%s, bad cameraId:%d", __func__, cameraId);
+                     "@%s, bad cameraId:%d", __func__, cameraId);
     return getInstance()->mAiqInitData[cameraId]->initMakernote(cameraId, tuningMode);
 }
 
-int PlatformData::deinitMakernote(int cameraId, TuningMode tuningMode)
-{
+int PlatformData::deinitMakernote(int cameraId, TuningMode tuningMode) {
     CheckAndLogError(cameraId >= static_cast<int>(getInstance()->mAiqInitData.size()), BAD_VALUE,
-               "@%s, bad cameraId:%d", __func__, cameraId);
+                     "@%s, bad cameraId:%d", __func__, cameraId);
     return getInstance()->mAiqInitData[cameraId]->deinitMakernote(cameraId, tuningMode);
 }
 
 int PlatformData::saveMakernoteData(int cameraId, camera_makernote_mode_t makernoteMode,
-                                    int64_t sequence, TuningMode tuningMode)
-{
+                                    int64_t sequence, TuningMode tuningMode) {
     CheckAndLogError(cameraId >= static_cast<int>(getInstance()->mAiqInitData.size()), BAD_VALUE,
-               "@%s, bad cameraId:%d", __func__, cameraId);
+                     "@%s, bad cameraId:%d", __func__, cameraId);
 
     return getInstance()->mAiqInitData[cameraId]->saveMakernoteData(cameraId, makernoteMode,
                                                                     sequence, tuningMode);
 }
 
-void PlatformData::updateMakernoteTimeStamp(int cameraId, int64_t sequence, uint64_t timestamp)
-{
+void PlatformData::updateMakernoteTimeStamp(int cameraId, int64_t sequence, uint64_t timestamp) {
     CheckAndLogError(cameraId >= static_cast<int>(getInstance()->mAiqInitData.size()), VOID_VALUE,
-               "@%s, bad cameraId:%d", __func__, cameraId);
+                     "@%s, bad cameraId:%d", __func__, cameraId);
 
     getInstance()->mAiqInitData[cameraId]->updateMakernoteTimeStamp(sequence, timestamp);
 }
 
-void PlatformData::acquireMakernoteData(int cameraId, uint64_t timestamp, Parameters *param)
-{
+void PlatformData::acquireMakernoteData(int cameraId, uint64_t timestamp, Parameters* param) {
     CheckAndLogError(cameraId >= static_cast<int>(getInstance()->mAiqInitData.size()), VOID_VALUE,
-               "@%s, bad cameraId:%d", __func__, cameraId);
+                     "@%s, bad cameraId:%d", __func__, cameraId);
 
     getInstance()->mAiqInitData[cameraId]->acquireMakernoteData(timestamp, param);
 }
 
-int PlatformData::getScalerInfo(int cameraId, int32_t streamId,
-                                float *scalerWidth, float *scalerHeight)
-{
+int PlatformData::getScalerInfo(int cameraId, int32_t streamId, float* scalerWidth,
+                                float* scalerHeight) {
     if (getInstance()->mStaticCfg.mCameras[cameraId].mScalerInfo.empty()) {
         *scalerWidth = 1.0;
         *scalerHeight = 1.0;
         return OK;
     }
 
-    for (auto &scalerInfo : getInstance()->mStaticCfg.mCameras[cameraId].mScalerInfo) {
+    for (auto& scalerInfo : getInstance()->mStaticCfg.mCameras[cameraId].mScalerInfo) {
         LOG2("%s, streamId %d, scalerWidth %f, scalerHeight %f", __func__, scalerInfo.streamId,
              scalerInfo.scalerWidth, scalerInfo.scalerHeight);
         if (scalerInfo.streamId == streamId) {
@@ -1417,11 +1310,10 @@ int PlatformData::getScalerInfo(int cameraId, int32_t streamId,
     return OK;
 }
 
-void  PlatformData::setScalerInfo(int cameraId, std::vector<IGraphType::ScalerInfo> scalerInfo)
-{
-    for (auto &scalerInfoInput : scalerInfo) {
+void PlatformData::setScalerInfo(int cameraId, std::vector<IGraphType::ScalerInfo> scalerInfo) {
+    for (auto& scalerInfoInput : scalerInfo) {
         bool flag = false;
-        for (auto &scalerInfoTmp : getInstance()->mStaticCfg.mCameras[cameraId].mScalerInfo) {
+        for (auto& scalerInfoTmp : getInstance()->mStaticCfg.mCameras[cameraId].mScalerInfo) {
             if (scalerInfoInput.streamId == scalerInfoTmp.streamId) {
                 scalerInfoTmp.scalerWidth = scalerInfoInput.scalerWidth;
                 scalerInfoTmp.scalerHeight = scalerInfoInput.scalerHeight;
@@ -1435,60 +1327,55 @@ void  PlatformData::setScalerInfo(int cameraId, std::vector<IGraphType::ScalerIn
     }
 }
 
-bool PlatformData::isGpuTnrEnabled()
-{
+bool PlatformData::isGpuTnrEnabled() {
     return getInstance()->mStaticCfg.mCommonConfig.isGpuTnrEnabled;
 }
 
-int PlatformData::getVideoStreamNum()
-{
+int PlatformData::getVideoStreamNum() {
     return getInstance()->mStaticCfg.mCommonConfig.videoStreamNum;
 }
 
-bool PlatformData::isUsingGpuAlgo()
-{
+bool PlatformData::isUsingGpuAlgo() {
     bool enabled = false;
     enabled |= isGpuTnrEnabled();
     return enabled;
 }
 
-bool PlatformData::isStillTnrPrior()
-{
+bool PlatformData::isStillTnrPrior() {
     return getInstance()->mStaticCfg.mCommonConfig.isStillTnrPrior;
 }
 
-bool PlatformData::isTnrParamForceUpdate()
-{
+bool PlatformData::isTnrParamForceUpdate() {
     return getInstance()->mStaticCfg.mCommonConfig.isTnrParamForceUpdate;
 }
 
-int PlatformData::getTnrExtraFrameCount(int cameraId)
-{
+int PlatformData::getTnrExtraFrameCount(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mTnrExtraFrameNum;
 }
 
-void PlatformData::setSensorOrientation(int cameraId, int orientation)
-{
+void PlatformData::setSensorOrientation(int cameraId, int orientation) {
     getInstance()->mStaticCfg.mCameras[cameraId].mSensorOrientation = orientation;
 }
 
-int PlatformData::getSensorOrientation(int cameraId)
-{
+int PlatformData::getSensorOrientation(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mSensorOrientation;
 }
 
-bool PlatformData::isDummyStillSink(int cameraId)
-{
+bool PlatformData::isDummyStillSink(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mDummyStillSink;
 }
 
-bool PlatformData::getForceFlushIpuBuffer(int cameraId)
-{
+bool PlatformData::getForceFlushIpuBuffer(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mForceFlushIpuBuffer;
 }
 
-bool PlatformData::getPLCEnable(int cameraId)
-{
+bool PlatformData::getPLCEnable(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mPLCEnable;
 }
-} // namespace icamera
+
+// ENABLE_EVCP_S
+bool PlatformData::isGpuEvcpEnabled() {
+    return getInstance()->mStaticCfg.mCommonConfig.isGpuEvcpEnabled;
+}
+// ENABLE_EVCP_E
+}  // namespace icamera

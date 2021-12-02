@@ -56,7 +56,7 @@ Camera3Buffer::Camera3Buffer()
           mGbmBufferManager(nullptr) {
     CLEAR(mHalBuffer);
     mHalBuffer.dmafd = -1;
-    LOG1("%s default constructor for buf %p", __func__, this);
+    LOG2("%s default constructor for buf %p", __func__, this);
 }
 
 /**
@@ -84,7 +84,7 @@ Camera3Buffer::Camera3Buffer(int w, int h, int stride, int v4l2fmt, void* usrPtr
           mCameraId(cameraId)
 
 {
-    LOG1("%s create malloc camera buffer %p", __func__, this);
+    LOG2("%s create malloc camera buffer %p", __func__, this);
 
     CLEAR(mHalBuffer);
     mHalBuffer.s.format = v4l2fmt;
@@ -107,7 +107,7 @@ Camera3Buffer::Camera3Buffer(int w, int h, int stride, int v4l2fmt, void* usrPtr
 }
 
 Camera3Buffer::~Camera3Buffer() {
-    HAL_TRACE_CALL(CAMERA_DEBUG_LOG_LEVEL1);
+    HAL_TRACE_CALL(CAMERA_DEBUG_LOG_LEVEL2);
 
     if (mInit) {
         switch (mType) {
@@ -134,7 +134,7 @@ Camera3Buffer::~Camera3Buffer() {
                 break;
         }
     }
-    LOG1("%s destroying buf %p", __func__, this);
+    LOG2("%s destroying buf %p", __func__, this);
 }
 
 /**
@@ -288,7 +288,7 @@ icamera::status_t Camera3Buffer::deregisterBuffer() {
  * \param aBuffer [IN] int flags
  */
 icamera::status_t Camera3Buffer::lock(int flags) {
-    HAL_TRACE_CALL(CAMERA_DEBUG_LOG_LEVEL1);
+    HAL_TRACE_CALL(CAMERA_DEBUG_LOG_LEVEL2);
     mHalBuffer.addr = nullptr;
     mHalBuffer.s.size = 0;
     int ret = 0;
@@ -329,7 +329,7 @@ icamera::status_t Camera3Buffer::lock(int flags) {
 }
 
 icamera::status_t Camera3Buffer::lock() {
-    HAL_TRACE_CALL(CAMERA_DEBUG_LOG_LEVEL1);
+    HAL_TRACE_CALL(CAMERA_DEBUG_LOG_LEVEL2);
     CheckAndLogError(!mInit, INVALID_OPERATION,
                      "@%s: Error: Cannot lock now this buffer, not initialized", __func__);
 
@@ -357,7 +357,7 @@ icamera::status_t Camera3Buffer::lock() {
 }
 
 icamera::status_t Camera3Buffer::unlock() {
-    HAL_TRACE_CALL(CAMERA_DEBUG_LOG_LEVEL1);
+    HAL_TRACE_CALL(CAMERA_DEBUG_LOG_LEVEL2);
     if (mLocked && mType != BUF_TYPE_HANDLE) {
         mLocked = false;
         return icamera::OK;
@@ -419,50 +419,6 @@ void Camera3Buffer::dumpImage(const void* data, int frameNumber, const int size,
         LOGW("Error or short count writing %d bytes to %s", size, fileName.data());
     fclose(fp);
 #endif
-}
-
-int Camera3Buffer::v4L2Fmt2GFXFmt(int v4l2Fmt) {
-    int gfxFmt = -1;
-
-    switch (v4l2Fmt) {
-        case V4L2_PIX_FMT_JPEG:
-            gfxFmt = HAL_PIXEL_FORMAT_BLOB;
-            break;
-        case V4L2_PIX_FMT_SBGGR8:
-        case V4L2_PIX_FMT_SRGGB8:
-        case V4L2_PIX_FMT_SGRBG8:
-        case V4L2_PIX_FMT_SRGGB10:
-        case V4L2_PIX_FMT_SGRBG10:
-        case V4L2_PIX_FMT_SGRBG12:
-        case V4L2_PIX_FMT_SBGGR10:
-        case V4L2_PIX_FMT_SBGGR10P:
-        case V4L2_PIX_FMT_SGBRG10P:
-        case V4L2_PIX_FMT_SGRBG10P:
-        case V4L2_PIX_FMT_SRGGB10P:
-        case V4L2_PIX_FMT_SBGGR12:
-        case V4L2_PIX_FMT_SGBRG12:
-        case V4L2_PIX_FMT_SRGGB12:
-            gfxFmt = HAL_PIXEL_FORMAT_RAW16;
-            break;
-        case V4L2_PIX_FMT_YVU420:
-            gfxFmt = HAL_PIXEL_FORMAT_YV12;
-            break;
-        case V4L2_PIX_FMT_NV21:
-            gfxFmt = HAL_PIXEL_FORMAT_YCrCb_420_SP;
-            break;
-        case V4L2_PIX_FMT_NV12:
-            LOGW("Current there is no gfx format for V4L2_PIX_FMT_NV12.");
-            break;
-        case V4L2_PIX_FMT_YUYV:
-            gfxFmt = HAL_PIXEL_FORMAT_YCbCr_422_I;
-            break;
-        default:
-            LOGE("%s: no gfx format for v4l2 0x%x, %s!", __func__, v4l2Fmt,
-                 CameraUtils::format2string(v4l2Fmt).c_str());
-            break;
-    }
-
-    return gfxFmt;
 }
 
 /**

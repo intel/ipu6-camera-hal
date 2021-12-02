@@ -65,7 +65,7 @@ AiqStatistics* AiqResultStorage::acquireAiqStatistics() {
     return &mAiqStatistics[index];
 }
 
-void AiqResultStorage::updateAiqStatistics(long sequence) {
+void AiqResultStorage::updateAiqStatistics(int64_t sequence) {
     AutoWMutex wlock(mDataLock);
 
     mCurrentAiqStatsIndex++;
@@ -104,7 +104,7 @@ AiqResult* AiqResultStorage::acquireAiqResult() {
     return mAiqResults[index];
 }
 
-void AiqResultStorage::updateAiqResult(long sequence) {
+void AiqResultStorage::updateAiqResult(int64_t sequence) {
     AutoWMutex wlock(mDataLock);
 
     mCurrentIndex++;
@@ -112,7 +112,7 @@ void AiqResultStorage::updateAiqResult(long sequence) {
     mAiqResults[mCurrentIndex]->mSequence = sequence;
 }
 
-const AiqResult* AiqResultStorage::getAiqResult(long sequence) {
+const AiqResult* AiqResultStorage::getAiqResult(int64_t sequence) {
     AutoRMutex rlock(mDataLock);
 
     // Sequence id is -1 means user wants get the latest result.

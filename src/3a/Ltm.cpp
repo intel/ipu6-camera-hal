@@ -141,8 +141,8 @@ void Ltm::handleEvent(EventData eventData) {
     handleSisLtm(eventData.buffer);
 }
 
-AiqResult* Ltm::getAiqResult(long sequence) {
-    long ltmSequence = sequence;
+AiqResult* Ltm::getAiqResult(int64_t sequence) {
+    int64_t ltmSequence = sequence;
     AiqResultStorage* resultStorage = AiqResultStorage::getInstance(mCameraId);
     if (ltmSequence > 0) {
         ltmSequence += PlatformData::getLtmGainLag(mCameraId);

@@ -27,8 +27,8 @@
 
 namespace icamera {
 
-int AiqUtils::dumpAeResults(const cca::cca_ae_results& aeResult) {
-    if (!Log::isDebugLevelEnable(CAMERA_DEBUG_LOG_LEVEL3)) return OK;
+void AiqUtils::dumpAeResults(const cca::cca_ae_results& aeResult) {
+    if (!Log::isLogTagEnabled(GET_FILE_SHIFT(AiqUtils))) return;
 
     LOG3("num_exposures :%d", aeResult.num_exposures);
     for (unsigned int i = 0; i < aeResult.num_exposures; i++) {
@@ -66,12 +66,10 @@ int AiqUtils::dumpAeResults(const cca::cca_ae_results& aeResult) {
     const ia_aiq_aperture_control& ac = aeResult.aperture_control;
     LOG3("AE aperture fn = %f, iris command = %d, code = %d",
          ac.aperture_fn, ac.dc_iris_command, ac.code);
-
-    return OK;
 }
 
-int AiqUtils::dumpAfResults(const cca::cca_af_results& afResult) {
-    if (!Log::isDebugLevelEnable(CAMERA_DEBUG_LOG_LEVEL3)) return OK;
+void AiqUtils::dumpAfResults(const cca::cca_af_results& afResult) {
+    if (!Log::isLogTagEnabled(GET_FILE_SHIFT(AiqUtils))) return;
 
     LOG3("AF results: current distance %d, next position %d, final_position_reached %s, status %d",
          afResult.current_focus_distance, afResult.next_lens_position,
@@ -94,27 +92,23 @@ int AiqUtils::dumpAfResults(const cca::cca_af_results& afResult) {
     default:
         LOG3("AF state idle");
     }
-
-    return OK;
 }
 
-int AiqUtils::dumpAwbResults(const cca::cca_awb_results& awbResult) {
-    if (!Log::isDebugLevelEnable(CAMERA_DEBUG_LOG_LEVEL3)) return OK;
+void AiqUtils::dumpAwbResults(const cca::cca_awb_results& awbResult) {
+    if (!Log::isLogTagEnabled(GET_FILE_SHIFT(AiqUtils))) return;
 
     LOG3("AWB result: accurate_r/g %f, accurate_b/g %f, distance_from_convergence %f",
          awbResult.accurate_r_per_g, awbResult.accurate_b_per_g,
          awbResult.distance_from_convergence);
-
-    return OK;
 }
 
-int AiqUtils::dumpGbceResults(const cca::cca_gbce_params& gbceResult) {
-    if (!Log::isDebugLevelEnable(CAMERA_DEBUG_LOG_LEVEL3)) return OK;
+void AiqUtils::dumpGbceResults(const cca::cca_gbce_params& gbceResult) {
+    if (!Log::isLogTagEnabled(GET_FILE_SHIFT(AiqUtils))) return;
 
     LOG3("gamma_lut_size: %u, tone_map_lut_size: %u",
          gbceResult.gamma_lut_size, gbceResult.tone_map_lut_size);
 
-    if (gbceResult.gamma_lut_size <= 0 || gbceResult.tone_map_lut_size <= 0) return OK;
+    if (gbceResult.gamma_lut_size <= 0 || gbceResult.tone_map_lut_size <= 0) return;
 
     LOG3("gamma table: R: 0(%f), %u(%f), %u(%f)", gbceResult.r_gamma_lut[0],
          (gbceResult.gamma_lut_size / 2), gbceResult.r_gamma_lut[gbceResult.gamma_lut_size / 2],
@@ -133,12 +127,10 @@ int AiqUtils::dumpGbceResults(const cca::cca_gbce_params& gbceResult) {
          gbceResult.tone_map_lut[gbceResult.tone_map_lut_size / 2],
          (gbceResult.tone_map_lut_size - 1),
          gbceResult.tone_map_lut[gbceResult.tone_map_lut_size - 1]);
-
-    return OK;
 }
 
-int AiqUtils::dumpPaResults(const cca::cca_pa_params& paResult) {
-    if (!Log::isDebugLevelEnable(CAMERA_DEBUG_LOG_LEVEL3)) return OK;
+void AiqUtils::dumpPaResults(const cca::cca_pa_params& paResult) {
+    if (!Log::isLogTagEnabled(GET_FILE_SHIFT(AiqUtils))) return;
 
     for (int i = 0; i < 3; i++) {
         LOG3("color_conversion_matrix  [%.3f %.3f %.3f] ",
@@ -150,17 +142,13 @@ int AiqUtils::dumpPaResults(const cca::cca_pa_params& paResult) {
     LOG3("color_gains, gr:%f, r:%f, b:%f, gb:%f",
          paResult.color_gains.gr, paResult.color_gains.r,
          paResult.color_gains.b, paResult.color_gains.gb);
-
-    return OK;
 }
 
-int AiqUtils::dumpSaResults(const cca::cca_sa_results& saResult) {
-    if (!Log::isDebugLevelEnable(CAMERA_DEBUG_LOG_LEVEL3)) return OK;
+void AiqUtils::dumpSaResults(const cca::cca_sa_results& saResult) {
+    if (!Log::isLogTagEnabled(GET_FILE_SHIFT(AiqUtils))) return;
 
     LOG3("SA results color_order %d size %dx%d",
          saResult.color_order, saResult.width,  saResult.height);
-
-    return OK;
 }
 
 int AiqUtils::convertError(ia_err iaErr) {
@@ -418,6 +406,28 @@ void AiqUtils::applyAwbGainForTonemapCurve(const camera_tonemap_curves_t& curves
     }
 }
 
+/**
+ *  Hyperfocal distance is the closest distance at which a lens can be focused
+ *  while keeping objects at infinity acceptably sharp. When the lens is focused
+ *  at this distance, all objects at distances from half of the hyperfocal
+ *  distance out to infinity will be acceptably sharp.
+ *
+ *  The equation used for this is:
+ *        f*f
+ *  H = -------
+ *        N*c
+ *
+ *  where:
+ *   f is the focal length
+ *   N is the f-number (f/D for aperture diameter D)
+ *   c is the Circle Of Confusion (COC)
+ *
+ *   the COC is calculated as the pixel width of 2 pixels
+ *
+ *  The hyperfocal distance in mm. It is ensured it will never be 0 to
+ *  avoid division by 0. If any of the required CMC items is missing
+ *  it will return the default value 5m
+ */
 float AiqUtils::calculateHyperfocalDistance(const cca::cca_cmc &cmc) {
     const float DEFAULT_HYPERFOCAL_DISTANCE = 5000.0f;
 
@@ -443,4 +453,5 @@ float AiqUtils::calculateHyperfocalDistance(const cca::cca_cmc &cmc) {
     return (hyperfocalDistanceMillis == 0.0f) ? DEFAULT_HYPERFOCAL_DISTANCE :
                                                 hyperfocalDistanceMillis;
 }
+
 } /* namespace icamera */

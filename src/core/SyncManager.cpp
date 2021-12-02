@@ -68,7 +68,7 @@ SyncManager::~SyncManager() {
     LOG1("@%s", __func__);
 }
 
-bool SyncManager::isSynced(int cameraId, long sequence) {
+bool SyncManager::isSynced(int cameraId, int64_t sequence) {
     LOG2("@%s", __func__);
     const int TIME_DIFF_MS = 2;
     bool sync = true;

@@ -132,10 +132,10 @@ int32_t ShareReferBufferPool::registerReferBuffers(int64_t id, CIPR::Buffer* buf
  *     front->back:       S7,   S8,   S9,   S10   (push_back S10, new output)
  */
 int32_t ShareReferBufferPool::acquireBuffer(int64_t id, CIPR::Buffer** referIn,
-                                            CIPR::Buffer** referOut, long outSequence) {
+                                            CIPR::Buffer** referOut, int64_t outSequence) {
     CheckAndLogError(!referIn || !referOut, BAD_VALUE, "nullptr input for refer buf pair");
 
-    long inSequence = outSequence - 1;
+    int64_t inSequence = outSequence - 1;
     UserPair* pair = nullptr;
     {
         AutoMutex l(mPairLock);
@@ -209,7 +209,7 @@ int32_t ShareReferBufferPool::acquireBuffer(int64_t id, CIPR::Buffer** referIn,
 }
 
 int32_t ShareReferBufferPool::releaseBuffer(int64_t id, CIPR::Buffer* referIn,
-                                            CIPR::Buffer* referOut, long outSequence) {
+                                            CIPR::Buffer* referOut, int64_t outSequence) {
     CheckAndLogError(!referIn || !referOut, BAD_VALUE, "nullptr for refer buf pair for release");
 
     AutoMutex l(mPairLock);
@@ -241,7 +241,7 @@ ShareReferBufferPool::UserPair* ShareReferBufferPool::findUserPair(int64_t id) {
     return nullptr;
 }
 
-int ShareReferBufferPool::findReferBuffer(std::vector<ReferBuffer>* bufV, long sequence,
+int ShareReferBufferPool::findReferBuffer(std::vector<ReferBuffer>* bufV, int64_t sequence,
                                           CIPR::Buffer** out) {
     CheckAndLogError(!bufV, BAD_VALUE, "nullptr buffers");
     CheckAndLogError(!out, BAD_VALUE, "nullptr out buffer");

@@ -29,9 +29,8 @@
 #include "iutils/CameraLog.h"
 #include "iutils/Utils.h"
 
-using icamera::CAMERA_DEBUG_LOG_DBG;
+using icamera::CAMERA_DEBUG_LOG_INFO;
 using icamera::CAMERA_DEBUG_LOG_ERR;
-using icamera::CAMERA_DEBUG_LOG_VERBOSE;
 using icamera::CAMERA_DEBUG_LOG_WARNING;
 
 #include "modules/ia_cipr/include/Context.h"

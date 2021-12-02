@@ -49,7 +49,7 @@ void IntelAlgoServer::deInit() {
 }
 
 IntelAlgoServer::IntelAlgoServer() : mCallback(nullptr) {
-    ia_env env = {&Log::ccaPrintDebug, &Log::ccaPrintError, &Log::ccaPrintInfo};
+    ia_env env = {&Log::ccaPrintInfo, &Log::ccaPrintError, &Log::ccaPrintInfo};
     ia_log_init(&env);
 
     for (int i = 0; i < kThreadNum; i++) {

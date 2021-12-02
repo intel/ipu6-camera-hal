@@ -86,9 +86,9 @@ public:
                         std::shared_ptr<CameraBuffer> statsBuffer,
                         std::shared_ptr<IGraphConfig> graphConfig = nullptr);
 
-    int runIspAdapt(const IspSettings* ispSettings, long requestId, long settingSequence = -1, int32_t streamId = -1);
+    int runIspAdapt(const IspSettings* ispSettings, long requestId, int64_t settingSequence = -1, int32_t streamId = -1);
     //Get ISP param from mult-stream ISP param adaptation
-    ia_binary_data* getIpuParameter(long sequence = -1, int streamId = -1);
+    ia_binary_data* getIpuParameter(int64_t sequence = -1, int streamId = -1);
     int getPalOutputDataSize(const ia_isp_bxt_program_group* programGroup);
 
 private:
@@ -116,7 +116,7 @@ private:
     void updateIspParameterMap(IspParameter* ispParam, int64_t dataSeq,
                                int64_t settingSeq, ia_binary_data curIpuParam);
     int runIspAdaptL(ia_isp_bxt_program_group *pgPtr, ia_isp_bxt_gdc_limits* mbrData,
-                     const IspSettings* ispSettings, long requestId, long settingSequence,
+                     const IspSettings* ispSettings, long requestId, int64_t settingSequence,
                      ia_binary_data *binaryData, int32_t streamId = -1);
 
     //Allocate memory for mIspParameters
@@ -125,7 +125,7 @@ private:
     void releaseIspParamBuffers();
 
     // Dumping methods for debugging purposes.
-    void dumpIspParameter(int streamId, long sequence, ia_binary_data binaryData);
+    void dumpIspParameter(int streamId, int64_t sequence, ia_binary_data binaryData);
 
     // Enable or disable kernels according to environment variables for debug purpose.
     void updateKernelToggles(cca::cca_program_group *programGroup);
@@ -134,7 +134,8 @@ private:
                           ia_media_format* mediaFormat, bool* useLinearGamma);
     void dumpCscMatrix(const ia_isp_bxt_csc* cscMatrix);
     void applyCscMatrix(ia_isp_bxt_csc* cscMatrix);
-    void updateResultFromAlgo(ia_binary_data* binaryData, long sequence);
+    void updateResultFromAlgo(ia_binary_data* binaryData, int64_t sequence);
+    uint32_t getRequestedStats();
 
  private:
     enum IspAdaptorState {

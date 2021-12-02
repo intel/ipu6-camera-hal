@@ -178,6 +178,7 @@ ia_err IntelCca::setStatsParams(const cca::cca_stats_params& params, cca::cca_ou
     CheckAndLogError(ret != ia_err_none, ia_err_general, "@%s, requestSyncCca fails", __func__);
 
     *outStats = statsParams->outStats;
+    outStats->rgbs_grid.blocks_ptr = outStats->rgbs_blocks;
 
     return ret;
 }

@@ -105,8 +105,8 @@ int AiqEngine::stopEngine() {
     return OK;
 }
 
-int AiqEngine::run3A(long requestId, long applyingSeq, long* effectSeq) {
-    LOG1("<id%d:req%ld>%s: applying seq %ld", mCameraId, requestId, __func__, applyingSeq);
+int AiqEngine::run3A(long requestId, int64_t applyingSeq, int64_t* effectSeq) {
+    LOG2("<id%d:req%ld>%s: applying seq %ld", mCameraId, requestId, __func__, applyingSeq);
 
     // Run 3A in call thread
     AutoMutex l(mEngineLock);
@@ -308,7 +308,7 @@ AiqEngine::AiqState AiqEngine::prepareInputParam(AiqStatistics* aiqStats, AiqRes
     return AIQ_STATE_RUN;
 }
 
-AiqEngine::AiqState AiqEngine::runAiq(long requestId, long applyingSeq, AiqResult* aiqResult,
+AiqEngine::AiqState AiqEngine::runAiq(long requestId, int64_t applyingSeq, AiqResult* aiqResult,
                                       bool* aiqRun) {
     if ((requestId % PlatformData::getAiqRunningInterval(mCameraId) == 0) || mFirstAiqRunning) {
         int ret = mAiqCore->runAe(requestId, aiqResult);
@@ -332,7 +332,7 @@ AiqEngine::AiqState AiqEngine::runAiq(long requestId, long applyingSeq, AiqResul
     return AIQ_STATE_RESULT_SET;
 }
 
-void AiqEngine::setSensorExposure(AiqResult* aiqResult, long applyingSeq) {
+void AiqEngine::setSensorExposure(AiqResult* aiqResult, int64_t applyingSeq) {
     SensorExpGroup sensorExposures;
     for (unsigned int i = 0; i < aiqResult->mAeResults.num_exposures; i++) {
         SensorExposure exposure;
@@ -366,17 +366,25 @@ AiqEngine::AiqState AiqEngine::handleAiqResult(AiqResult* aiqResult) {
 }
 
 int AiqEngine::applyManualTonemaps(AiqResult* aiqResult) {
-    /*
-     * Normal use-case is the automatic modes, and we need not do anything here
-     */
+    aiqResult->mGbceResults.have_manual_settings = true;
+
+    // Due to the tone map curve effect on image IQ, so need to apply
+    // manual/fixed tone map table in manual tonemap or manual ISO/ET mode
     if (mAiqParam.tonemapMode == TONEMAP_MODE_FAST ||
         mAiqParam.tonemapMode == TONEMAP_MODE_HIGH_QUALITY) {
         aiqResult->mGbceResults.have_manual_settings = false;
-        return OK;
+
+        if (mAiqParam.aeMode != AE_MODE_AUTO && mAiqParam.manualIso != 0
+            && mAiqParam.manualExpTimeUs != 0) {
+            aiqResult->mGbceResults.have_manual_settings = true;
+        }
     }
+    LOG2("%s, has manual setting: %d, aeMode: %d, tonemapMode: %d", __func__,
+         aiqResult->mGbceResults.have_manual_settings, mAiqParam.aeMode, mAiqParam.tonemapMode);
 
-    aiqResult->mGbceResults.have_manual_settings = true;
+    if (!aiqResult->mGbceResults.have_manual_settings) return OK;
 
+    // Apply user value or gamma curve for gamma table
     if (mAiqParam.tonemapMode == TONEMAP_MODE_GAMMA_VALUE) {
         AiqUtils::applyTonemapGamma(mAiqParam.tonemapGamma, &aiqResult->mGbceResults);
     } else if (mAiqParam.tonemapMode == TONEMAP_MODE_PRESET_CURVE) {
@@ -390,7 +398,7 @@ int AiqEngine::applyManualTonemaps(AiqResult* aiqResult) {
         AiqUtils::applyAwbGainForTonemapCurve(mAiqParam.tonemapCurves, &aiqResult->mAwbResults);
     }
 
-    // use unity value for tone map table
+    // Apply the fixed unity value for tone map table
     if (aiqResult->mGbceResults.tone_map_lut_size > 0) {
         for (unsigned int i = 0; i < aiqResult->mGbceResults.tone_map_lut_size; i++) {
             aiqResult->mGbceResults.tone_map_lut[i] = 1.0;

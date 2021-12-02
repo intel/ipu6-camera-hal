@@ -37,6 +37,7 @@ class IntelTNR7US {
     void* allocCamBuf(uint32_t bufSize, int id);
     void freeAllBufs();
     int asyncParamUpdate(int gain, bool forceUpdate);
+    int getSurfaceInfo(int width, int height, uint32_t* size);
 
  private:
     int mCameraId;

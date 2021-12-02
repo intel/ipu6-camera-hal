@@ -293,7 +293,7 @@ int camera_set_parameters(int camera_id, const Parameters& param) {
     return gCameraHal->setParameters(camera_id, param);
 }
 
-int camera_get_parameters(int camera_id, Parameters& param, long sequence) {
+int camera_get_parameters(int camera_id, Parameters& param, int64_t sequence) {
     HAL_TRACE_CALL(2);
     CheckCameraId(camera_id, BAD_VALUE);
     CheckAndLogError(!gCameraHal, INVALID_OPERATION,

@@ -325,7 +325,7 @@ int AiqUnit::stop() {
     return OK;
 }
 
-int AiqUnit::run3A(long requestId, long applyingSeq, long* effectSeq) {
+int AiqUnit::run3A(long requestId, int64_t applyingSeq, int64_t* effectSeq) {
     AutoMutex l(mAiqUnitLock);
     TRACE_LOG_PROCESS("AiqUnit", "run3A");
 
@@ -370,7 +370,7 @@ int AiqUnit::setParameters(const Parameters &params) {
 }
 
 void AiqUnit::dumpCcaInitParam(const cca::cca_init_params params) {
-    if (!Log::isDebugLevelEnable(CAMERA_DEBUG_LOG_LEVEL3)) return;
+    if (!Log::isLogTagEnabled(GET_FILE_SHIFT(AiqUnit))) return;
 
     LOG3("aiqStorageLen:%d", params.aiqStorageLen);
     LOG3("aecFrameDelay:%d", params.aecFrameDelay);

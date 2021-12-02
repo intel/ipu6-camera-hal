@@ -72,6 +72,13 @@ class PnpDebugControl {
     static bool isBypassPG();
 
     /**
+     * check if Face Dection Feature is skipped for PNP test
+     *
+     * \return true if feature is skipped, otherwise return false.
+     */
+    static bool isFaceDisabled();
+
+    /**
      * check if Face Dection Algo is skipped for PNP test
      *
      * \return true if feature is skipped, otherwise return false.
@@ -111,6 +118,7 @@ class PnpDebugControl {
                   isBypass3A(false),
                   isBypassPAL(false),
                   isBypassPG(false),
+                  isFaceDisabled(false),
                   isBypassFDAlgo(false),
                   isBypassISys(false),
                   useMockHal(false),
@@ -119,6 +127,7 @@ class PnpDebugControl {
         bool isBypass3A;
         bool isBypassPAL;
         bool isBypassPG;
+        bool isFaceDisabled;
         bool isBypassFDAlgo;
         bool isBypassISys;
         bool useMockHal;

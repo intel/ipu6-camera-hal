@@ -183,7 +183,7 @@ void IntelAlgoClient::releaseShmMem(const std::string& name, int size, int fd, v
 }
 
 int IntelAlgoClient::requestSync(IPC_CMD cmd, int32_t bufferHandle) {
-    LOG1("requestSync cmd:%d:%s, bufferHandle:%d, mInitialized:%d", cmd,
+    LOG2("requestSync cmd:%d:%s, bufferHandle:%d, mInitialized:%d", cmd,
          IntelAlgoIpcCmdToString(cmd), bufferHandle, mInitialized);
     CheckAndLogError(!mInitialized, UNKNOWN_ERROR, " mInitialized is false");
     CheckAndLogError(!isIPCFine(), UNKNOWN_ERROR, "IPC error happens");
@@ -198,7 +198,7 @@ int IntelAlgoClient::requestSync(IPC_CMD cmd) {
 }
 
 int32_t IntelAlgoClient::registerBuffer(int bufferFd, void* addr, ShmMemUsage usage) {
-    LOG1("%s bufferFd: %d, mInitialized: %d, addr: %p, usage: %d", __func__, bufferFd, mInitialized,
+    LOG2("%s bufferFd: %d, mInitialized: %d, addr: %p, usage: %d", __func__, bufferFd, mInitialized,
          addr, usage);
     CheckAndLogError(!mInitialized, -1, "mInitialized is false");
     CheckAndLogError(usage >= MAX_ALGO_SHM, -1, "usage: %d isn't supported", usage);
@@ -219,7 +219,7 @@ int32_t IntelAlgoClient::registerBuffer(int bufferFd, void* addr, ShmMemUsage us
 }
 
 void IntelAlgoClient::deregisterBuffer(int32_t bufferHandle, ShmMemUsage usage) {
-    LOG1("%s, bufferHandle: %d, mInitialized: %d, usage: %d", __func__, bufferHandle, mInitialized,
+    LOG2("%s, bufferHandle: %d, mInitialized: %d, usage: %d", __func__, bufferHandle, mInitialized,
          usage);
     CheckAndLogError(!mInitialized, VOID_VALUE, "mInitialized is false");
     CheckAndLogError(usage >= MAX_ALGO_SHM, VOID_VALUE, "usage: %d isn't supported", usage);
@@ -244,7 +244,7 @@ void IntelAlgoClient::deregisterBuffer(int32_t bufferHandle, ShmMemUsage usage) 
 }
 
 int32_t IntelAlgoClient::registerGbmBuffer(int bufferFd, ShmMemUsage usage) {
-    LOG1("%s bufferFd:%d, mInitialized:%d, usage:%d", __func__, bufferFd, mInitialized, usage);
+    LOG2("%s bufferFd:%d, mInitialized:%d, usage:%d", __func__, bufferFd, mInitialized, usage);
     CheckAndLogError(!mInitialized, -1, "mInitialized is false");
     CheckAndLogError(!isIPCFine(), -1, "IPC error happens");
     CheckAndLogError(usage >= MAX_ALGO_SHM, -1, "usage: %d isn't supported", usage);
@@ -277,7 +277,7 @@ int32_t IntelAlgoClient::getBufferHandle(void* addr, ShmMemUsage usage) {
     CheckAndLogError(usage >= MAX_ALGO_SHM, -1, "usage: %d isn't supported", usage);
     if (!addr) return -1;
 
-    LOG1("the buffer addr: %p, usage: %d", addr, usage);
+    LOG2("the buffer addr: %p, usage: %d", addr, usage);
     std::lock_guard<std::mutex> l(mShmMapMutex);
     CheckAndLogError(mShmMap[usage].find(addr) == mShmMap[usage].end(), -1,
                      "%s, Invalid client addr: %p, usage: %d", __func__, addr, usage);
@@ -438,7 +438,7 @@ int IntelAlgoClient::Runner::waitCallback() {
     mIsCallbacked = false;
     pthread_mutex_unlock(&mCbLock);
 
-    LOG1("%s, group:%d IPC call takes %" PRId64 " ms", __func__, mGroup,
+    LOG2("%s, group:%d IPC call takes %" PRId64 " ms", __func__, mGroup,
          (CameraUtils::systemTime() - startTime) / 1000000);
 
     return OK;

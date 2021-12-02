@@ -130,4 +130,17 @@ int IntelTNRServer::asyncParamUpdate(TnrRequestInfo* requestInfo) {
     return mIntelTNRMap[key]->asyncParamUpdate(requestInfo->gain, requestInfo->isForceUpdate);
 }
 
+int IntelTNRServer::getSurfaceInfo(TnrRequestInfo* requestInfo) {
+    CheckAndLogError(requestInfo == nullptr, UNKNOWN_ERROR, "@%s, requestInfo is nullptr",
+                     __func__);
+    int key = getIndex(requestInfo->cameraId, requestInfo->type);
+    CheckAndLogError((mIntelTNRMap.find(key) == mIntelTNRMap.end()), UNKNOWN_ERROR,
+                     "<id%d> @%s, IntelTNR type: %d is invalid", requestInfo->cameraId, __func__,
+                     requestInfo->type);
+    std::unique_lock<std::mutex> lock(*mLockMap[key]);
+
+    return mIntelTNRMap[key]->getSurfaceInfo(requestInfo->width, requestInfo->height,
+                                             &requestInfo->surfaceSize);
+}
+
 }  // namespace icamera

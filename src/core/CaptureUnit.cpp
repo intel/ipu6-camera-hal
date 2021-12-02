@@ -16,34 +16,33 @@
 
 #define LOG_TAG CaptureUnit
 
-#include <poll.h>
-#include <fcntl.h>
-
-#include "iutils/CameraLog.h"
-#include "iutils/CameraDump.h"
-#include "iutils/Utils.h"
-
-#include "PlatformData.h"
-#include "MediaControl.h"
 #include "CaptureUnit.h"
 
-using std::vector;
+#include <fcntl.h>
+#include <poll.h>
+
+#include "MediaControl.h"
+#include "PlatformData.h"
+#include "iutils/CameraDump.h"
+#include "iutils/CameraLog.h"
+#include "iutils/Utils.h"
+
 using std::map;
+using std::vector;
 
 namespace icamera {
 
-CaptureUnit::CaptureUnit(int cameraId, int memType) :
-    StreamSource(memType),
-    mCameraId(cameraId),
+CaptureUnit::CaptureUnit(int cameraId, int memType)
+        : StreamSource(memType),
+          mCameraId(cameraId),
 #ifndef HAS_MULTI_INPUT_DEVICE
-    mDevice(nullptr),
+          mDevice(nullptr),
 #endif
-    mMaxBufferNum(PlatformData::getMaxRawDataNum(cameraId)),
-    mState(CAPTURE_UNINIT),
-    mExitPending(false)
-{
+          mMaxBufferNum(PlatformData::getMaxRawDataNum(cameraId)),
+          mState(CAPTURE_UNINIT),
+          mExitPending(false) {
     PERF_CAMERA_ATRACE();
-    LOG1("%s, mCameraId:%d", __func__, mCameraId);
+    LOG1("<id%d>%s", mCameraId, __func__);
 
     mPollThread = new PollThread(this);
     mFlushFd[0] = -1;
@@ -67,10 +66,9 @@ CaptureUnit::CaptureUnit(int cameraId, int memType) :
     }
 }
 
-CaptureUnit::~CaptureUnit()
-{
+CaptureUnit::~CaptureUnit() {
     PERF_CAMERA_ATRACE();
-    LOG1("%s, mCameraId:%d", __func__, mCameraId);
+    LOG1("<id%d>%s", mCameraId, __func__);
 
     if (mFlushFd[0] != -1) close(mFlushFd[0]);
     if (mFlushFd[1] != -1) close(mFlushFd[1]);
@@ -78,19 +76,17 @@ CaptureUnit::~CaptureUnit()
     delete mPollThread;
 }
 
-int CaptureUnit::init()
-{
-    LOG1("%s, mCameraId:%d", __func__, mCameraId);
+int CaptureUnit::init() {
+    LOG1("<id%d>%s", mCameraId, __func__);
 
     mState = CAPTURE_INIT;
 
     return OK;
 }
 
-void CaptureUnit::deinit()
-{
+void CaptureUnit::deinit() {
     PERF_CAMERA_ATRACE();
-    LOG1("%s, mCameraId:%d", __func__, mCameraId);
+    LOG1("<id%d>%s", mCameraId, __func__);
 
     if (mState == CAPTURE_UNINIT) {
         LOG1("%s: deinit without init", __func__);
@@ -103,10 +99,9 @@ void CaptureUnit::deinit()
     mState = CAPTURE_UNINIT;
 }
 
-int CaptureUnit::createDevices()
-{
+int CaptureUnit::createDevices() {
     PERF_CAMERA_ATRACE();
-    LOG1("%s, mCameraId:%d", __func__, mCameraId);
+    LOG1("<id%d>%s", mCameraId, __func__);
 
     destroyDevices();
 
@@ -160,10 +155,9 @@ int CaptureUnit::createDevices()
     return OK;
 }
 
-void CaptureUnit::destroyDevices()
-{
+void CaptureUnit::destroyDevices() {
     PERF_CAMERA_ATRACE();
-    LOG1("%s, mCameraId:%d", __func__, mCameraId);
+    LOG1("<id%d>%s", mCameraId, __func__);
 
 #ifdef HAS_MULTI_INPUT_DEVICE
     for (auto device : mDevices) {
@@ -184,8 +178,7 @@ void CaptureUnit::destroyDevices()
 /**
  * Find the device that can handle the given port.
  */
-DeviceBase* CaptureUnit::findDeviceByPort(Port port)
-{
+DeviceBase* CaptureUnit::findDeviceByPort(Port port) {
 #ifdef HAS_MULTI_INPUT_DEVICE
     for (auto device : mDevices) {
         if (device->getPort() == port) {
@@ -201,10 +194,9 @@ DeviceBase* CaptureUnit::findDeviceByPort(Port port)
     return nullptr;
 }
 
-int CaptureUnit::streamOn()
-{
+int CaptureUnit::streamOn() {
     PERF_CAMERA_ATRACE();
-    LOG1("%s, mCameraId:%d", __func__, mCameraId);
+    LOG1("<id%d>%s", mCameraId, __func__);
 
 #ifdef HAS_MULTI_INPUT_DEVICE
     for (auto device : mDevices) {
@@ -223,10 +215,9 @@ int CaptureUnit::streamOn()
     return OK;
 }
 
-int CaptureUnit::start()
-{
+int CaptureUnit::start() {
     PERF_CAMERA_ATRACE();
-    LOG1("%s, mCameraId:%d", __func__, mCameraId);
+    LOG1("<id%d>%s", mCameraId, __func__);
 
     AutoMutex l(mLock);
     CheckWarning(mState == CAPTURE_START, OK, "@%s: device already started", __func__);
@@ -252,10 +243,9 @@ int CaptureUnit::start()
     return OK;
 }
 
-void CaptureUnit::streamOff()
-{
+void CaptureUnit::streamOff() {
     PERF_CAMERA_ATRACE();
-    LOG1("%s, mCameraId:%d", __func__, mCameraId);
+    LOG1("<id%d>%s", mCameraId, __func__);
 
 #ifdef HAS_MULTI_INPUT_DEVICE
     for (auto device : mDevices) {
@@ -268,19 +258,15 @@ void CaptureUnit::streamOff()
 #endif
 }
 
-int CaptureUnit::stop()
-{
+int CaptureUnit::stop() {
     PERF_CAMERA_ATRACE();
-    LOG1("%s, mCameraId:%d", __func__, mCameraId);
+    LOG1("<id%d>%s", mCameraId, __func__);
 
-    if (mState != CAPTURE_START) {
-        LOGW("@%s: device not started", __func__);
-        return OK;
-    }
+    CheckWarning(mState != CAPTURE_START, OK, "@%s: device not started", __func__);
 
     mExitPending = true;
     if (mFlushFd[1] != -1) {
-        char buf = 0xf;    // random value to write to flush fd.
+        char buf = 0xf;  // random value to write to flush fd.
         int size = write(mFlushFd[1], &buf, sizeof(char));
         LOG1("%s, write size %d", __func__, size);
     }
@@ -289,7 +275,7 @@ int CaptureUnit::stop()
     streamOff();
     mPollThread->requestExitAndWait();
 
-    AutoMutex   l(mLock);
+    AutoMutex l(mLock);
     mState = CAPTURE_STOP;
 
 #ifdef HAS_MULTI_INPUT_DEVICE
@@ -303,7 +289,7 @@ int CaptureUnit::stop()
 #endif
     LOG2("@%s: automation checkpoint: flag: poll_stopped", __func__);
 
-    mExitPending = false; // It's already stopped.
+    mExitPending = false;  // It's already stopped.
 
     return OK;
 }
@@ -312,8 +298,7 @@ int CaptureUnit::stop()
  * Check if the given outputFrames are different from the previous one.
  * Only return false when the config for each port is exactly same.
  */
-bool CaptureUnit::isNewConfiguration(const map<Port, stream_t>& outputFrames)
-{
+bool CaptureUnit::isNewConfiguration(const map<Port, stream_t>& outputFrames) {
     for (const auto& item : outputFrames) {
         if (mOutputFrameInfo.find(item.first) == mOutputFrameInfo.end()) {
             return true;
@@ -322,9 +307,10 @@ bool CaptureUnit::isNewConfiguration(const map<Port, stream_t>& outputFrames)
         const stream_t& oldStream = mOutputFrameInfo[item.first];
         const stream_t& newStream = item.second;
 
-        bool isNewConfig = (oldStream.width != newStream.width || oldStream.height != newStream.height
-               || oldStream.format != newStream.format || oldStream.field != newStream.field
-               || oldStream.memType != newStream.memType);
+        bool isNewConfig =
+            (oldStream.width != newStream.width || oldStream.height != newStream.height ||
+             oldStream.format != newStream.format || oldStream.field != newStream.field ||
+             oldStream.memType != newStream.memType);
         if (isNewConfig) {
             return true;
         }
@@ -334,40 +320,40 @@ bool CaptureUnit::isNewConfiguration(const map<Port, stream_t>& outputFrames)
 }
 
 int CaptureUnit::configure(const map<Port, stream_t>& outputFrames,
-                           const vector<ConfigMode>& configModes)
-{
+                           const vector<ConfigMode>& configModes) {
     PERF_CAMERA_ATRACE();
 
     CheckAndLogError(outputFrames.empty(), BAD_VALUE, "No frame info configured.");
-    CheckAndLogError(mState != CAPTURE_CONFIGURE && mState != CAPTURE_INIT && mState != CAPTURE_STOP,
-          INVALID_OPERATION, "@%s: Configure in wrong state %d", __func__, mState);
+    CheckAndLogError(
+        mState != CAPTURE_CONFIGURE && mState != CAPTURE_INIT && mState != CAPTURE_STOP,
+        INVALID_OPERATION, "@%s: Configure in wrong state %d", __func__, mState);
 
     Port port = findDefaultPort(outputFrames);
     const stream_t& mainStream = outputFrames.at(port);
 
 #ifdef HAS_MULTI_INPUT_DEVICE
     if (!isNewConfiguration(outputFrames)) {
-        LOGD("@%s: Configuration is not changed.", __func__);
+        LOG1("@%s: Configuration is not changed.", __func__);
         return OK;
     }
 #endif
 
     for (const auto& item : outputFrames) {
-        LOG1("%s, mCameraId:%d, port:%d, w:%d, h:%d, f:%s", __func__, mCameraId, item.first,
-              item.second.width, item.second.height,
-              CameraUtils::format2string(item.second.format).c_str());
+        LOG1("<id%d>%s, port:%d, w:%d, h:%d, f:%s", mCameraId, __func__, item.first,
+             item.second.width, item.second.height,
+             CameraUtils::format2string(item.second.format).c_str());
     }
 
     mConfigModes = configModes;
     mOutputFrameInfo = outputFrames;
 
     /* media ctl setup */
-    MediaCtlConf *mediaCtl = PlatformData::getMediaCtlConf(mCameraId);
+    MediaCtlConf* mediaCtl = PlatformData::getMediaCtlConf(mCameraId);
     CheckAndLogError(!mediaCtl, BAD_VALUE, "get format configuration failed for %s (%dx%d)",
-                     CameraUtils::format2string(mainStream.format).c_str(),
-                     mainStream.width, mainStream.height);
+                     CameraUtils::format2string(mainStream.format).c_str(), mainStream.width,
+                     mainStream.height);
 
-    MediaControl *mc = MediaControl::getInstance();
+    MediaControl* mc = MediaControl::getInstance();
     CheckAndLogError(!mc, UNKNOWN_ERROR, "%s, MediaControl init failed", __func__);
 
     int status = mc->mediaCtlSetup(mCameraId, mediaCtl, mainStream.width, mainStream.height,
@@ -386,8 +372,7 @@ int CaptureUnit::configure(const map<Port, stream_t>& outputFrames,
     return OK;
 }
 
-Port CaptureUnit::findDefaultPort(const map<Port, stream_t>& frames) const
-{
+Port CaptureUnit::findDefaultPort(const map<Port, stream_t>& frames) const {
     Port availablePorts[] = {MAIN_PORT, SECOND_PORT, THIRD_PORT, FORTH_PORT};
     for (unsigned int i = 0; i < ARRAY_SIZE(availablePorts); i++) {
         if (frames.find(availablePorts[i]) != frames.end()) {
@@ -397,8 +382,7 @@ Port CaptureUnit::findDefaultPort(const map<Port, stream_t>& frames) const
     return INVALID_PORT;
 }
 
-int CaptureUnit::allocateMemory(Port port, const std::shared_ptr<CameraBuffer> &camBuffer)
-{
+int CaptureUnit::allocateMemory(Port port, const std::shared_ptr<CameraBuffer>& camBuffer) {
     const struct v4l2_buffer* v = camBuffer->getV4L2Buffer().Get();
     CheckAndLogError(v->index >= mMaxBufferNum, -1, "index %d is larger than max count %d",
                      v->index, mMaxBufferNum);
@@ -414,8 +398,7 @@ int CaptureUnit::allocateMemory(Port port, const std::shared_ptr<CameraBuffer> &
     return OK;
 }
 
-int CaptureUnit::qbuf(Port port, const std::shared_ptr<CameraBuffer> &camBuffer)
-{
+int CaptureUnit::qbuf(Port port, const std::shared_ptr<CameraBuffer>& camBuffer) {
     CheckAndLogError(camBuffer == nullptr, BAD_VALUE, "Camera buffer is null");
     CheckAndLogError((mState == CAPTURE_INIT || mState == CAPTURE_UNINIT), INVALID_OPERATION,
                      "@%s: qbuf in wrong state %d", __func__, mState);
@@ -423,26 +406,26 @@ int CaptureUnit::qbuf(Port port, const std::shared_ptr<CameraBuffer> &camBuffer)
     DeviceBase* device = findDeviceByPort(port);
     CheckAndLogError(!device, BAD_VALUE, "No device available for port:%d", port);
 
-    LOG2("@%s, mCameraId:%d, queue CameraBuffer: %p to port:%d",
-         __func__, mCameraId, camBuffer.get(), port);
+    LOG2("<id%d>@%s, queue CameraBuffer: %p to port:%d", mCameraId, __func__, camBuffer.get(),
+         port);
 
     device->addPendingBuffer(camBuffer);
 
     return processPendingBuffers();
 }
 
-int CaptureUnit::queueAllBuffers()
-{
+int CaptureUnit::queueAllBuffers() {
     PERF_CAMERA_ATRACE();
 
     if (mExitPending) return OK;
 
 #ifdef HAS_MULTI_INPUT_DEVICE
-    long predictSequence = -1;
+    int64_t predictSequence = -1;
     for (auto device : mDevices) {
         int ret = device->queueBuffer(predictSequence);
         if (mExitPending) break;
-        CheckAndLogError(ret != OK, ret, "queueBuffer fails, dev:%s, ret:%d", device->getName(), ret);
+        CheckAndLogError(ret != OK, ret, "queueBuffer fails, dev:%s, ret:%d", device->getName(),
+                         ret);
         if (predictSequence == -1) {
             predictSequence = device->getPredictSequence();
         }
@@ -451,7 +434,8 @@ int CaptureUnit::queueAllBuffers()
     if (mDevice) {
         int ret = mDevice->queueBuffer(-1);
         if (mExitPending) return OK;
-        CheckAndLogError(ret != OK, ret, "queueBuffer fails, dev:%s, ret:%d", mDevice->getName(), ret);
+        CheckAndLogError(ret != OK, ret, "queueBuffer fails, dev:%s, ret:%d", mDevice->getName(),
+                         ret);
         mDevice->getPredictSequence();
     }
 #endif
@@ -459,13 +443,11 @@ int CaptureUnit::queueAllBuffers()
     return OK;
 }
 
-void CaptureUnit::onDequeueBuffer()
-{
+void CaptureUnit::onDequeueBuffer() {
     processPendingBuffers();
 }
 
-int CaptureUnit::processPendingBuffers()
-{
+int CaptureUnit::processPendingBuffers() {
 #ifdef HAS_MULTI_INPUT_DEVICE
     LOG2("%s: buffers in device:%d", __func__, mDevices.front()->getBufferNumInDevice());
 
@@ -503,14 +485,13 @@ int CaptureUnit::processPendingBuffers()
     return OK;
 }
 
-int CaptureUnit::poll()
-{
+int CaptureUnit::poll() {
     PERF_CAMERA_ATRACE();
     int ret = 0;
     const int poll_timeout_count = 10;
     const int poll_timeout = gSlowlyRunRatio ? (gSlowlyRunRatio * 1000000) : 1000;
 
-    LOG2("@%s, mCameraId:%d", __func__, mCameraId);
+    LOG2("<id%d>%s", mCameraId, __func__);
 
     CheckAndLogError((mState != CAPTURE_CONFIGURE && mState != CAPTURE_START), INVALID_OPERATION,
                      "@%s: poll buffer in wrong state %d", __func__, mState);
@@ -521,14 +502,14 @@ int CaptureUnit::poll()
 #ifdef HAS_MULTI_INPUT_DEVICE
     for (const auto& device : mDevices) {
         pollDevs.push_back(device->getV4l2Device());
-        LOG2("@%s: device:%s has %d buffers queued.", __func__,
-             device->getName(), device->getBufferNumInDevice());
+        LOG2("@%s: device:%s has %d buffers queued.", __func__, device->getName(),
+             device->getBufferNumInDevice());
     }
 #else
     if (mDevice) {
         pollDevs.push_back(mDevice->getV4l2Device());
-        LOG2("@%s: device:%s has %d buffers queued.", __func__,
-             mDevice->getName(), mDevice->getBufferNumInDevice());
+        LOG2("@%s: device:%s has %d buffers queued.", __func__, mDevice->getName(),
+             mDevice->getBufferNumInDevice());
     }
 #endif
 
@@ -536,27 +517,27 @@ int CaptureUnit::poll()
         // If stream off, no poll needed.
         if (mExitPending) {
             LOG2("%s: mExitPending is true, exit", __func__);
-            //Exiting, no error
+            // Exiting, no error
             return -1;
         }
 
-        V4L2DevicePoller poller {pollDevs, mFlushFd[0]};
+        V4L2DevicePoller poller{pollDevs, mFlushFd[0]};
         ret = poller.Poll(poll_timeout, POLLPRI | POLLIN | POLLOUT | POLLERR, &readyDevices);
 
         LOG2("@%s: automation checkpoint: flag: poll_buffer, ret:%d", __func__, ret);
     }
 
-    //In case poll error after stream off
+    // In case poll error after stream off
     if (mExitPending) {
         LOG2("%s: mExitPending is true, exit", __func__);
-        //Exiting, no error
+        // Exiting, no error
         return -1;
     }
 
     CheckAndLogError(ret < 0, UNKNOWN_ERROR, "%s: Poll error, ret:%d", __func__, ret);
 
     if (ret == 0) {
-        LOG1("%s, cameraId: %d: timeout happens, wait recovery", __func__, mCameraId);
+        LOG1("<id%d>%s, timeout happens, wait recovery", mCameraId, __func__);
         return OK;
     }
 
@@ -589,11 +570,8 @@ int CaptureUnit::poll()
     return OK;
 }
 
-void CaptureUnit::addFrameAvailableListener(BufferConsumer *listener)
-{
-    LOG1("%s camera id:%d", __func__, mCameraId);
-
-    AutoMutex   l(mLock);
+void CaptureUnit::addFrameAvailableListener(BufferConsumer* listener) {
+    AutoMutex l(mLock);
 #ifdef HAS_MULTI_INPUT_DEVICE
     for (auto device : mDevices) {
         device->addFrameListener(listener);
@@ -605,11 +583,8 @@ void CaptureUnit::addFrameAvailableListener(BufferConsumer *listener)
 #endif
 }
 
-void CaptureUnit::removeFrameAvailableListener(BufferConsumer *listener)
-{
-    LOG1("%s camera id:%d", __func__, mCameraId);
-
-    AutoMutex   l(mLock);
+void CaptureUnit::removeFrameAvailableListener(BufferConsumer* listener) {
+    AutoMutex l(mLock);
 #ifdef HAS_MULTI_INPUT_DEVICE
     for (auto device : mDevices) {
         device->removeFrameListener(listener);
@@ -621,11 +596,8 @@ void CaptureUnit::removeFrameAvailableListener(BufferConsumer *listener)
 #endif
 }
 
-void CaptureUnit::removeAllFrameAvailableListener()
-{
-    LOG1("%s camera id:%d", __func__, mCameraId);
-
-    AutoMutex   l(mLock);
+void CaptureUnit::removeAllFrameAvailableListener() {
+    AutoMutex l(mLock);
 #ifdef HAS_MULTI_INPUT_DEVICE
     for (auto device : mDevices) {
         device->removeAllFrameListeners();
@@ -637,8 +609,7 @@ void CaptureUnit::removeAllFrameAvailableListener()
 #endif
 }
 
-void CaptureUnit::registerListener(EventType eventType, EventListener* eventListener)
-{
+void CaptureUnit::registerListener(EventType eventType, EventListener* eventListener) {
 #ifdef HAS_MULTI_INPUT_DEVICE
     for (auto device : mDevices) {
         device->registerListener(eventType, eventListener);
@@ -650,8 +621,7 @@ void CaptureUnit::registerListener(EventType eventType, EventListener* eventList
 #endif
 }
 
-void CaptureUnit::removeListener(EventType eventType, EventListener* eventListener)
-{
+void CaptureUnit::removeListener(EventType eventType, EventListener* eventListener) {
 #ifdef HAS_MULTI_INPUT_DEVICE
     for (auto device : mDevices) {
         device->removeListener(eventType, eventListener);
@@ -662,5 +632,4 @@ void CaptureUnit::removeListener(EventType eventType, EventListener* eventListen
     }
 #endif
 }
-} // namespace icamera
-
+}  // namespace icamera

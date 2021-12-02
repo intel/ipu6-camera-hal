@@ -240,7 +240,7 @@ typedef struct {
     stream_t s;   /**< stream info */
     void *addr;   /**< buffer addr for userptr and mmap memory mode */
     int index;    /**< buffer index, filled by HAL. it is used for qbuf and dqbuf in order */
-    long sequence; /**< buffer sequence, filled by HAL, to record buffer dqueue sequence from device */
+    int64_t sequence; /**< buffer sequence, filled by HAL, to record buffer dqueue sequence from device */
     int dmafd;    /**< buffer dmafd for DMA import and export mode */
     int flags;    /**< buffer flags, its type is camera_buffer_flags_t, used to specify buffer properties */
     uint64_t timestamp; /**< buffer timestamp, it's a time reference measured in nanosecond */
@@ -739,7 +739,7 @@ typedef enum {
  * \struct Sensor RAW data info for ZSL.
  */
 typedef struct {
-    long sequence;
+    int64_t sequence;
     uint64_t timestamp;
 } sensor_raw_info_t;
 
@@ -756,7 +756,7 @@ typedef struct {
  */
 typedef struct {
     uint32_t frameNumber;
-    long sequence;
+    int64_t sequence;
 } metadata_ready_t;
 
 /**

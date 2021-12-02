@@ -328,7 +328,7 @@ void IntelCPUAlgoServer::handleRequest(const MsgReq& msg) {
             break;
     }
 
-    LOG1("@%s, req_id:%d:%s, status:%d", __func__, req_id,
+    LOG2("@%s, req_id:%d:%s, status:%d", __func__, req_id,
          IntelAlgoIpcCmdToString(static_cast<IPC_CMD>(req_id)), status);
     getIntelAlgoServer()->returnCallback(req_id, status, buffer_handle);
 }

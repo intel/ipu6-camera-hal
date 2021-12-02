@@ -105,7 +105,7 @@ class PGCommon {
      * set the input buffers info for terminals.
      * use ia_fourcc
      */
-    virtual void setInputInfo(const TerminalFrameInfoMap& inputInfos);
+    virtual void setInputInfo(const TerminalFrameInfoMap& inputInfos, FrameInfo tnrFormatInfo);
 
     /**
      * set the output buffers info for terminals.
@@ -166,13 +166,13 @@ class PGCommon {
     // For iteration
     virtual int prepareTerminalBuffers(const ia_binary_data* ipuParameters,
                                        const CameraBufferMap& inBufs,
-                                       const CameraBufferMap& outBufs, long sequence);
+                                       const CameraBufferMap& outBufs, int64_t sequence);
     int executePG();
     int startPPG();
     int stopPPG();
     int handleCmd(CIPR::Command** cmd, CIPR::PSysCommandConfig* cmdCfg);
 
-    void postTerminalBuffersDone(long sequence);
+    void postTerminalBuffersDone(int64_t sequence);
 
     // Memory helper
     CIPR::Buffer* createDMACiprBuffer(int size, int fd, bool flush = false);
@@ -182,7 +182,7 @@ class PGCommon {
     CIPR::Buffer* registerUserBuffer(int size, int fd, bool flush = false);
     int getCiprBufferSize(CIPR::Buffer* buffer);
 
-    void dumpTerminalPyldAndDesc(int pgId, long sequence, ia_css_process_group_t* pgGroup);
+    void dumpTerminalPyldAndDesc(int pgId, int64_t sequence, ia_css_process_group_t* pgGroup);
 
  protected:
     enum PPGCommandType { PPG_CMD_TYPE_START = 0, PPG_CMD_TYPE_STOP, PPG_CMD_TYPE_COUNT };

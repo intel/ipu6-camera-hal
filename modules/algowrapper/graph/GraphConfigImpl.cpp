@@ -524,6 +524,34 @@ status_t GraphConfigImpl::prepareGraphConfig() {
     return OK;
 }
 
+string GraphConfigImpl::format2GraphStr(int format) {
+    switch (format) {
+        case V4L2_PIX_FMT_NV12:
+        case V4L2_PIX_FMT_P010:
+            return "Linear";
+        case V4L2_PIX_FMT_YUYV:
+            return "YUY2";
+        default:
+            LOGE("%s, unsupport the output format for graph: %s", __func__,
+                 CameraUtils::format2string(format).c_str());
+            return "Linear";
+    }
+}
+
+string GraphConfigImpl::format2GraphBpp(int format) {
+    switch (format) {
+        case V4L2_PIX_FMT_NV12:
+        case V4L2_PIX_FMT_YUYV:
+            return "8";
+        case V4L2_PIX_FMT_P010:
+            return "10";
+        default:
+            LOGE("%s, unsupport the output format for graph: %s", __func__,
+                 CameraUtils::format2string(format).c_str());
+            return "8";
+    }
+}
+
 /*
  * Do the secondary filter: configMode and stream format.
  */
@@ -565,9 +593,16 @@ status_t GraphConfigImpl::selectSetting(
         for (auto const& item : streamToSinkIdMap) {
             HalStream* s = item.first;
             ItemUID formatKey = {(ia_uid)item.second, GCSS_KEY_FORMAT};
-            string fmt = CameraUtils::format2string(s->format());
-            LOG2("The stream: %dx%d, format: %s", s->width(), s->height(), fmt.c_str());
+            string fmt = format2GraphStr(s->format());
             queryItem[formatKey] = fmt;
+
+            ItemUID bppKey = {(ia_uid)item.second, GCSS_KEY_BPP};
+            string bpp = format2GraphBpp(s->format());
+            queryItem[bppKey] = bpp;
+
+            LOG2("The stream: %dx%d, format: %s, graphFmt: %s, bpp: %s",
+                 s->width(), s->height(), CameraUtils::format2string(s->format()).c_str(),
+                 fmt.c_str(), bpp.c_str());
         }
 
         LOG1("dumpQuery with format condition");
@@ -783,14 +818,15 @@ status_t GraphConfigImpl::getPgNames(std::vector<std::string>* pgNames) {
 
 status_t GraphConfigImpl::pipelineGetConnections(
     const std::vector<std::string>& pgList, std::vector<IGraphType::ScalerInfo>* scalerInfo,
-    std::vector<IGraphType::PipelineConnection>* confVector) {
+    std::vector<IGraphType::PipelineConnection>* confVector,
+    std::vector<IGraphType::PrivPortFormat>* tnrPortFormat) {
     CheckAndLogError(!confVector, UNKNOWN_ERROR, "%s, the confVector is nullptr", __func__);
     CheckAndLogError(mGraphConfigPipe.empty(), UNKNOWN_ERROR, "%s, the mGraphConfigPipe is empty",
                      __func__);
 
     if (mGraphConfigPipe.size() == 1) {
         return mGraphConfigPipe.begin()->second->pipelineGetConnections(pgList, scalerInfo,
-                                                                        confVector);
+                                                                        confVector, tnrPortFormat);
     }
 
     vector<IGraphType::PipelineConnection> stillConnVector, videoConnVector;
@@ -798,9 +834,12 @@ status_t GraphConfigImpl::pipelineGetConnections(
     shared_ptr<GraphConfigPipe>& stillGraphPipe = mGraphConfigPipe.at(USE_CASE_STILL_CAPTURE);
 
     std::vector<IGraphType::ScalerInfo> stillScalerInfo, videoScalerInfo;
-    int ret = videoGraphPipe->pipelineGetConnections(pgList, &videoScalerInfo, &videoConnVector);
+    std::vector<IGraphType::PrivPortFormat> stillTnrPortFmt, videoTnrPortFmt;
+    int ret = videoGraphPipe->pipelineGetConnections(pgList, &videoScalerInfo,
+                                                     &videoConnVector, &videoTnrPortFmt);
     CheckAndLogError(ret != OK, UNKNOWN_ERROR, "Failed to get the connetction from video pipe");
-    ret = stillGraphPipe->pipelineGetConnections(pgList, &stillScalerInfo, &stillConnVector);
+    ret = stillGraphPipe->pipelineGetConnections(pgList, &stillScalerInfo,
+                                                 &stillConnVector, &stillTnrPortFmt);
     CheckAndLogError(ret != OK, UNKNOWN_ERROR, "Failed to get the connetction from still pipe");
 
     LOG2("The connetction in video: %zu, in still: %zu; the scalera in video: %zu, in still: %zu",
@@ -813,6 +852,13 @@ status_t GraphConfigImpl::pipelineGetConnections(
         }
     }
     *scalerInfo = videoScalerInfo;
+
+    if (tnrPortFormat) {
+        for (auto& stillPort : stillTnrPortFmt) {
+            videoTnrPortFmt.push_back(stillPort);
+        }
+        *tnrPortFormat = videoTnrPortFmt;
+    }
 
     if (videoConnVector.empty()) {
         videoConnVector = stillConnVector;

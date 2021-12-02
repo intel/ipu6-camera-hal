@@ -191,6 +191,9 @@ struct CommonConfig {
     bool isTnrParamForceUpdate;
     int cameraNumber;
     int videoStreamNum;
+// ENABLE_EVCP_S
+    bool isGpuEvcpEnabled;
+// ENABLE_EVCP_E
 
     CommonConfig() {
         xmlVersion = 1.0;
@@ -199,6 +202,9 @@ struct CommonConfig {
         isTnrParamForceUpdate = false;
         cameraNumber = -1;
         videoStreamNum = DEFAULT_VIDEO_STREAM_NUM;
+// ENABLE_EVCP_S
+        isGpuEvcpEnabled = false;
+// ENABLE_EVCP_E
     }
 };
 

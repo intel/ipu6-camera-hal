@@ -174,6 +174,11 @@ struct ScalerInfo {
     float scalerWidth;
     float scalerHeight;
 };
+
+struct PrivPortFormat {
+    int32_t streamId;
+    PortFormatSettings formatSetting;
+};
 }  // namespace IGraphType
 
 class IGraphConfig {
@@ -198,6 +203,7 @@ public:
     virtual status_t getPgNames(std::vector<std::string>* pgNames) = 0;
     virtual status_t pipelineGetConnections(
                          const std::vector<std::string> &pgList,
-                         std::vector<IGraphType::PipelineConnection> *confVector) = 0;
+                         std::vector<IGraphType::PipelineConnection> *confVector,
+                         std::vector<IGraphType::PrivPortFormat> *tnrPortFormat = nullptr) = 0;
 };
 }

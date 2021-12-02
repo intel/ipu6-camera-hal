@@ -68,8 +68,12 @@ bool PnpDebugControl::isBypassPG() {
     return getInstance()->mStaticCfg.isBypassPG;
 }
 
+bool PnpDebugControl::isFaceDisabled() {
+    return getInstance()->mStaticCfg.isFaceDisabled;
+}
+
 bool PnpDebugControl::isBypassFDAlgo() {
-    return getInstance()->mStaticCfg.isBypassFDAlgo;
+    return !getInstance()->mStaticCfg.isFaceDisabled && getInstance()->mStaticCfg.isBypassFDAlgo;
 }
 
 bool PnpDebugControl::isBypassISys() {
@@ -139,6 +143,8 @@ void PnpDebugParser::handlePowerConfig(PnpDebugParser* profiles, const char* nam
         mStaticCfg->isBypassPAL = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "bypassPG") == 0) {
         mStaticCfg->isBypassPG = strcmp(atts[1], "true") == 0;
+    } else if (strcmp(name, "disableFace") == 0) {
+        mStaticCfg->isFaceDisabled = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "bypassFDAlgo") == 0) {
         mStaticCfg->isBypassFDAlgo = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "bypassISys") == 0) {

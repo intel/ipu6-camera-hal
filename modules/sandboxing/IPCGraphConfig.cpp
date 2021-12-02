@@ -408,7 +408,8 @@ bool IPCGraphConfig::serverUnFlattenGetConnection(void* pData, uint32_t size, Gr
 
 bool IPCGraphConfig::serverFlattenGetConnection(
     void* pData, uint32_t size, const std::vector<IGraphType::ScalerInfo>& scalerInfo,
-    const std::vector<IGraphType::PipelineConnection>& confVector) {
+    const std::vector<IGraphType::PipelineConnection>& confVector,
+    const std::vector<IGraphType::PrivPortFormat>& tnrPortFormat) {
     CheckAndLogError(!pData || size < sizeof(GraphGetConnectionParams), false,
                      "@%s, Wrong parameters, pData: %p, size: %u", __func__, pData, size);
 
@@ -427,12 +428,18 @@ bool IPCGraphConfig::serverFlattenGetConnection(
         params->scalerInfoArray[i] = scalerInfo[i];
     }
 
+    params->portFormatNum = tnrPortFormat.size();
+    for (size_t i = 0; i < tnrPortFormat.size(); ++i) {
+        params->portFormatArray[i] = tnrPortFormat[i];
+    }
+
     return true;
 }
 
 bool IPCGraphConfig::clientUnFlattenGetConnection(
     void* pData, uint32_t size, std::vector<IGraphType::ScalerInfo>* scalerInfo,
-    std::vector<IGraphType::PipelineConnection>* confVector) {
+    std::vector<IGraphType::PipelineConnection>* confVector,
+    std::vector<IGraphType::PrivPortFormat>* tnrPortFormat) {
     CheckAndLogError(!pData || !scalerInfo || !confVector ||
                       size < sizeof(GraphGetConnectionParams), false,
                       "@%s, Wrong parameters, pData: %p, scalerInfo: %p, confVector: %p, size: %u",
@@ -449,6 +456,12 @@ bool IPCGraphConfig::clientUnFlattenGetConnection(
 
     for (size_t i = 0; i < params->scalerInfoNum; ++i) {
         scalerInfo->push_back(params->scalerInfoArray[i]);
+    }
+
+    if (tnrPortFormat) {
+        for (size_t i = 0; i < params->portFormatNum; ++i) {
+            tnrPortFormat->push_back(params->portFormatArray[i]);
+        }
     }
 
     return true;

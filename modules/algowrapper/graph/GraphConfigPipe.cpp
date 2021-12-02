@@ -825,9 +825,56 @@ status_t GraphConfigPipe::getProgramGroupsByName(const std::vector<std::string>&
     return OK;
 }
 
+status_t GraphConfigPipe::getPrivatePortFormat(Node* port,
+                                               vector<IGraphType::PrivPortFormat>* tnrPortFormat) {
+    if (!tnrPortFormat) return OK;
+
+    string portName;
+    css_err_t ret = port->getValue(GCSS_KEY_NAME, portName);
+    LOG2("%s, port name: %s", __func__, portName.c_str());
+    // Currently, only get the output format for tnr_ref_out
+    if (ret != css_err_none || portName.compare("tnr_ref_out")) return OK;
+
+    IGraphType::PrivPortFormat format = {};
+    format.streamId = portGetStreamId(port);
+    ret = port->getValue(GCSS_KEY_ENABLED, format.formatSetting.enabled);
+    if (ret != css_err_none) {
+        // if not present by default is enabled
+        format.formatSetting.enabled = 1;
+    }
+
+    ia_uid stageId;
+    status_t status = GCSS::GraphCameraUtil::portGetFourCCInfo(port, stageId,
+                                                               format.formatSetting.terminalId);
+    CheckAndLogError(status != OK, INVALID_OPERATION, "Failed to get port uid", __func__);
+    ret = port->getValue(GCSS_KEY_WIDTH, format.formatSetting.width);
+    CheckAndLogError(ret != css_err_none, BAD_VALUE, "Failed to get port width", __func__);
+    ret = port->getValue(GCSS_KEY_HEIGHT, format.formatSetting.height);
+    CheckAndLogError(ret != css_err_none, BAD_VALUE, "Failed to get port height", __func__);
+
+    string fourccFormat;
+    ret = port->getValue(GCSS_KEY_FORMAT, fourccFormat);
+    CheckAndLogError(ret != css_err_none, BAD_VALUE, "Failed to find port fourcc", __func__);
+
+    format.formatSetting.fourcc = CameraUtils::string2IaFourccCode(fourccFormat.c_str());
+    format.formatSetting.bpl = CameraUtils::getBpl(format.formatSetting.fourcc,
+                                                   format.formatSetting.width);
+    format.formatSetting.bpp = CameraUtils::getBpp(format.formatSetting.fourcc);
+
+    LOG2("%s, Tnr ref out: streamId: %d, %dx%d, terminalId: %d, fmt: %s, bpp: %d, bpl: %d",
+         __func__, format.streamId, format.formatSetting.width, format.formatSetting.height,
+         format.formatSetting.terminalId, fourccFormat.c_str(), format.formatSetting.bpp,
+         format.formatSetting.bpl);
+
+    tnrPortFormat->push_back(format);
+
+    return OK;
+}
+
 status_t GraphConfigPipe::pipelineGetConnections(
     const std::vector<std::string>& pgList, std::vector<IGraphType::ScalerInfo>* scalerInfo,
-    std::vector<IGraphType::PipelineConnection>* confVector) {
+    std::vector<IGraphType::PipelineConnection>* confVector,
+    std::vector<IGraphType::PrivPortFormat>* tnrPortFormat) {
     CheckAndLogError(!confVector, UNKNOWN_ERROR, "%s, the confVector is nullptr", __func__);
 
     NodesPtrVector programGroups;
@@ -850,7 +897,12 @@ status_t GraphConfigPipe::pipelineGetConnections(
             // port for private terminal, no need to connect
             int priv = 0;
             ret = port->getValue(GCSS_KEY_PRIVATE, priv);
-            if (ret == css_err_none && priv) continue;
+            if (ret == css_err_none && priv) {
+                status = getPrivatePortFormat(port, tnrPortFormat);
+                CheckAndLogError(status != OK, status, "%s, failed to get private port format",
+                                 __func__);
+                continue;
+            }
 
             /*
              * Since we are iterating through the ports
@@ -871,10 +923,8 @@ status_t GraphConfigPipe::pipelineGetConnections(
             }
 
             status = portGetFormat(port, &(aConnection.portFormatSettings));
-            if (status != OK) {
-                LOGE("Failed to get port format info in port from PG[%zu]", i);
-                return BAD_VALUE;
-            }
+            CheckAndLogError(status != OK, BAD_VALUE, "Failed to get format info, PG[%zu]", i);
+
             if (aConnection.portFormatSettings.enabled == 0) {
                 LOG2("Port from PG[%zu] disabled", i);
                 status = portGetOwner(port, &(aConnection.connectionConfig));
@@ -1030,129 +1080,6 @@ status_t GraphConfigPipe::portGetOwner(Node* port, IGraphType::ConnectionConfig*
         CheckAndLogError((status != OK), BAD_VALUE, "Failed to create fourcc info for source port");
     }
     return status;
-}
-
-/**
- * Query the connection info structs for a given pipeline defined by
- * stream id.
- *
- * \param[in] sinkName to be used as key to get pipeline connections
- * \param[out] stream id connect with sink
- * \param[out] connections for pipeline configuation
- * \return OK in case of success.
- * \return UNKNOWN_ERROR or BAD_VALUE in case of fail.
- * \if sinkName is not supported, NAME_NOT_FOUND is returned.
- * \sink name support list as below defined in graph_descriptor.xml
- * \<sink name="video0"/>
- * \<sink name="video1"/>
- * \<sink name="video2"/>
- * \<sink name="still0"/>
- * \<sink name="still1"/>
- * \<sink name="still2"/>
- * \<sink name="raw"/>
- */
-status_t GraphConfigPipe::pipelineGetConnections(
-    const std::string& sinkName, int* streamId,
-    std::vector<IGraphType::PipelineConnection>* confVector) {
-    CheckAndLogError(!streamId, UNKNOWN_ERROR, "the streamId is nullptr");
-    HAL_TRACE_CALL(CAMERA_DEBUG_LOG_LEVEL2);
-
-    std::vector<GCSS::IGraphConfig*> sinks;
-    NodesPtrVector programGroups;
-    NodesPtrVector alreadyConnectedPorts;
-    Node* peerPort = nullptr;
-    Node* port = nullptr;
-    IGraphType::PipelineConnection aConnection;
-
-    alreadyConnectedPorts.clear();
-    status_t status = GCSS::GraphCameraUtil::graphGetSinksByName(sinkName, mSettings, sinks);
-    if (status != OK || sinks.empty()) {
-        LOG2("No %s sinks in graph", sinkName.c_str());
-        return NAME_NOT_FOUND;
-    }
-
-    status = sinks[0]->getValue(GCSS_KEY_STREAM_ID, *streamId);
-    CheckAndLogError(status != css_err_none, BAD_VALUE, "Sink node lacks stream id attribute");
-
-    status = streamGetProgramGroups(*streamId, &programGroups);
-    CheckAndLogError(status != OK || programGroups.empty(), BAD_VALUE,
-                     "No Program groups associated with stream id %d", *streamId);
-
-    for (size_t i = 0; i < programGroups.size(); i++) {
-        Node::const_iterator it = programGroups[i]->begin();
-
-        while (it != programGroups[i]->end()) {
-            css_err_t ret = programGroups[i]->getDescendant(GCSS_KEY_TYPE, "port", it, &port);
-            if (ret != css_err_none) continue;
-
-            // port for private terminal, no need to connect
-            int priv = 0;
-            ret = port->getValue(GCSS_KEY_PRIVATE, priv);
-            if (ret == css_err_none && priv) continue;
-
-            /*
-             * Since we are iterating through the ports
-             * check if this port is already connected to avoid setting
-             * the connection twice
-             */
-            if (std::find(alreadyConnectedPorts.begin(), alreadyConnectedPorts.end(), port) !=
-                alreadyConnectedPorts.end()) {
-                continue;
-            }
-            LOG2("Configuring Port from PG[%zu] in line:%d", i, __LINE__);
-
-            string contentType;
-            ret = port->getValue(GCSS_KEY_CONTENT_TYPE, contentType);
-            if (ret == css_err_none && contentType != "pixel_data") {
-                LOG2("%s skipped content type %s", NODE_NAME(port), contentType.c_str());
-                continue;
-            }
-
-            status = portGetFormat(port, &(aConnection.portFormatSettings));
-            CheckAndLogError(status != OK, BAD_VALUE,
-                             "Get port format info fails. PG[%zu], stream id: %d", i, *streamId);
-
-            if (aConnection.portFormatSettings.enabled == 0) {
-                LOG2("Port from PG[%zu] from stream id %d disabled", i, *streamId);
-                confVector->push_back(aConnection);
-                continue;
-            } else {
-                LOG2("Port: 0x%x format(%dx%d)fourcc: %s bpl: %d bpp: %d",
-                     aConnection.portFormatSettings.terminalId,
-                     aConnection.portFormatSettings.width, aConnection.portFormatSettings.height,
-                     CameraUtils::fourcc2String(aConnection.portFormatSettings.fourcc).c_str(),
-                     aConnection.portFormatSettings.bpl, aConnection.portFormatSettings.bpp);
-            }
-
-            /*
-             * for each port get the connection info and pass it
-             * to the pipeline object
-             */
-            status = portGetConnection(port, &(aConnection.connectionConfig), &peerPort);
-            CheckAndLogError(status != OK, BAD_VALUE,
-                             "Create connection failed. PG[%zu], stream id: %d", i, *streamId);
-
-            aConnection.hasEdgePort = false;
-            if (portIsEdgePort(port)) {
-                int32_t direction = portGetDirection(port);
-                if (direction == GraphConfigPipe::PORT_DIRECTION_INPUT) {
-                    aConnection.connectionConfig.mConnectionType = IGraphType::connection_type_push;
-                } else {
-                    HalStream* clientStream = nullptr;
-                    status = portGetClientStream(peerPort, &clientStream);
-                    CheckAndLogError(status != OK, UNKNOWN_ERROR,
-                                     "Failed to find client stream for v-sink");
-                    aConnection.stream = clientStream;
-                }
-                aConnection.hasEdgePort = true;
-            }
-            confVector->push_back(aConnection);
-            alreadyConnectedPorts.push_back(port);
-            alreadyConnectedPorts.push_back(peerPort);
-        }
-    }
-
-    return OK;
 }
 
 /**

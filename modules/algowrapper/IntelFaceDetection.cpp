@@ -103,7 +103,7 @@ FaceDetectionRunParams* IntelFaceDetection::prepareRunBuffer(unsigned int index)
     return &mMemRunBufs[index];
 }
 
-status_t IntelFaceDetection::run(pvl_image* pImage, FaceDetectionResult* fdResults) {
+status_t IntelFaceDetection::run(pvl_image* pImage, FaceDetectionPVLResult* fdResults) {
     CheckAndLogError(!pImage, UNKNOWN_ERROR, "pData is nullptr");
     CheckAndLogError(!mFDHandle, UNKNOWN_ERROR, "mFDHandle is nullptr");
 

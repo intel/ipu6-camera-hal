@@ -86,7 +86,7 @@ void SensorManager::handleSofEvent(EventData eventData) {
     }
 }
 
-uint64_t SensorManager::getSofTimestamp(long sequence) {
+uint64_t SensorManager::getSofTimestamp(int64_t sequence) {
     AutoMutex l(mLock);
 
     for (auto info : mSofEventInfo) {
@@ -123,10 +123,10 @@ int SensorManager::getCurrentExposureAppliedDelay() {
     return mExposureDataMap.size() + PlatformData::getExposureLag(mCameraId);
 }
 
-uint32_t SensorManager::updateSensorExposure(SensorExpGroup sensorExposures, long applyingSeq) {
+uint32_t SensorManager::updateSensorExposure(SensorExpGroup sensorExposures, int64_t applyingSeq) {
     AutoMutex l(mLock);
 
-    long effectSeq = mLastSofSequence < 0 ? 0 : \
+    int64_t effectSeq = mLastSofSequence < 0 ? 0 : \
                      mLastSofSequence + PlatformData::getExposureLag(mCameraId);
 
     if (sensorExposures.empty()) {

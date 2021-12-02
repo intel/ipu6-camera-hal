@@ -72,7 +72,7 @@ class AiqEngine : public EventListener {
      *
      * Return 0 if the operation succeeds.
      */
-    int run3A(long requestId, long applyingSeq, long* effectSeq);
+    int run3A(long requestId, int64_t applyingSeq, int64_t* effectSeq);
 
     /**
      * \brief Stop 3a thrad and LensManager.
@@ -93,7 +93,7 @@ class AiqEngine : public EventListener {
 
     // Handle AIQ results except Exposure results which are handled in setSensorExposure
     void setAiqResult(AiqResult* aiqResult, bool skip);
-    void setSensorExposure(AiqResult* aiqResult, long applyingSeq = -1);
+    void setSensorExposure(AiqResult* aiqResult, int64_t applyingSeq = -1);
 
     int getSkippingNum(AiqResult* aiqResult);
 
@@ -111,7 +111,7 @@ class AiqEngine : public EventListener {
     };
 
     AiqState prepareInputParam(AiqStatistics* aiqStats, AiqResult* aiqResult);
-    AiqState runAiq(long requestId, long applyingSeq, AiqResult* aiqResult, bool* aiqRun);
+    AiqState runAiq(long requestId, int64_t applyingSeq, AiqResult* aiqResult, bool* aiqRun);
     AiqState handleAiqResult(AiqResult* aiqResult);
     AiqState done(AiqResult* aiqResult);
 
@@ -144,7 +144,7 @@ class AiqEngine : public EventListener {
     struct AiqRunningHistory {
         AiqResult* aiqResult;
         long requestId;
-        long statsSequnce;
+        int64_t statsSequnce;
     };
     AiqRunningHistory mAiqRunningHistory;
 

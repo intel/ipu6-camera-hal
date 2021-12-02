@@ -47,7 +47,7 @@ public:
 public:
     int mCameraId;
     unsigned long long mTimestamp;
-    long mSequence;
+    int64_t mSequence;
     TuningMode mTuningMode;
     float mAfDistanceDiopters;
     bool mSkip;
