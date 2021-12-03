@@ -25,7 +25,6 @@ jobs:
           mkdir -p ./build/out/install/usr && cd ./build/
           cmake -DCMAKE_BUILD_TYPE=Release \
             -DIPU_VER=ipu6ep \
-            -DPRODUCTION_NAME=ccg_cce_tributo \
             -DENABLE_VIRTUAL_IPU_PIPE=OFF \
             -DUSE_PG_LITE_PIPE=ON \
             -DUSE_STATIC_GRAPH=OFF \
@@ -49,7 +48,6 @@ jobs:
           mkdir -p ./build/out/install/usr && cd ./build/
           cmake -DCMAKE_BUILD_TYPE=Release \
             -DIPU_VER=ipu6 \
-            -DPRODUCTION_NAME=Andrews \
             -DENABLE_VIRTUAL_IPU_PIPE=OFF \
             -DUSE_PG_LITE_PIPE=ON \
             -DUSE_STATIC_GRAPH=OFF \

@@ -20,13 +20,11 @@ Alder Lake platforms. There are 4 repositories that provide the complete setup:
     - For Tiger Lake, set:
         ```shell
         IPU6_VER=ipu6
-        PRODUCT_NAME=Andrews
         ```
 
     - For Alder Lake, set:
         ```shell
         IPU6_VER=ipu6ep
-        PRODUCT_NAME=ccg_cce_tributo
         ```
 
 2. Then continue:
@@ -36,7 +34,6 @@ Alder Lake platforms. There are 4 repositories that provide the complete setup:
 
     cmake -DCMAKE_BUILD_TYPE=Release \
     -DIPU_VER=${IPU6_VER} \
-    -DPRODUCTION_NAME=${PRODUCT_NAME} \
     -DENABLE_VIRTUAL_IPU_PIPE=OFF \
     -DUSE_PG_LITE_PIPE=ON \
     -DUSE_STATIC_GRAPH=OFF \
