@@ -294,8 +294,8 @@ exif_status ExifCreater::makeExif(void* exifOut, exif_attribute_t* exifInfo, siz
         pCur += OFFSET_SIZE;
     }
 
-    CheckAndLogError(LongerTagOffset >= EXIF_SIZE_LIMITATION,
-                     EXIF_FAIL, "%s, the size exceeds 64K, line:%d", __func__, __LINE__);
+    CheckAndLogError(LongerTagOffset >= EXIF_SIZE_LIMITATION, EXIF_FAIL,
+                     "%s, the size exceeds 64K, line:%d", __func__, __LINE__);
 
     // 2 1th IFD TIFF Tags
     if (exifInfo->enableThumb && (m_thumbBuf != nullptr) && (m_thumbSize > 0)) {
@@ -353,8 +353,6 @@ void ExifCreater::writeMarkerSizeToBuf(unsigned char* ptrTo, unsigned int size) 
  */
 exif_status ExifCreater::makeApp2(void* pStartApp2, size_t& size, exif_attribute_t* exifInfo,
                                   bool writeId) {
-    LOG1("@%s", __func__);
-
     // APP2 marker will be written starting from the pos pointed to by
     // pStartApp2
 
@@ -435,7 +433,7 @@ void ExifCreater::writeThumbData(unsigned char* pIfdStart, unsigned char* pNextI
     tmp += m_thumbSize;
 
     if (tmp > EXIF_SIZE_LIMITATION) {
-        LOGD("line:%d, in makeExif, exif total size(%d) > 64K, we'll disable thumbnail.", __LINE__,
+        LOG1("line:%d, in makeExif, exif total size(%d) > 64K, we'll disable thumbnail.", __LINE__,
              tmp);
         m_thumbSize = 0;
         m_thumbBuf = nullptr;

@@ -16,14 +16,6 @@
 
 #pragma once
 
-#ifdef FACE_DETECTION
-#include <pvl_config.h>
-#include <pvl_eye_detection.h>
-#include <pvl_face_detection.h>
-#include <pvl_mouth_detection.h>
-#include <pvl_types.h>
-#endif
-
 namespace icamera {
 
 #define RECT_SIZE 4
@@ -39,8 +31,8 @@ namespace icamera {
 
 typedef enum {
     FD_MODE_OFF,
-    FD_MODE_SIMPLE,  /**< Provide face area */
-    FD_MODE_FULL,    /**< Provide face area, eye and mouth coordinates */
+    FD_MODE_SIMPLE, /**< Provide face area */
+    FD_MODE_FULL,   /**< Provide face area, eye and mouth coordinates */
 } face_detection_mode;
 
 /* Face Detection results */
@@ -51,38 +43,5 @@ typedef struct CVFaceDetectionAbstractResult {
     int faceRect[RECT_SIZE * MAX_FACES_DETECTABLE];
     uint8_t faceScores[MAX_FACES_DETECTABLE];
 } CVFaceDetectionAbstractResult;
-
-struct FaceDetectionInitParams {
-    unsigned int max_face_num;
-    int cameraId;
-};
-
-struct FaceDetectionDeinitParams {
-    int cameraId;
-};
-
-#ifdef FACE_DETECTION
-struct FaceDetectionResult {
-    int faceNum;
-    bool faceUpdated;
-    pvl_face_detection_result faceResults[MAX_FACES_DETECTABLE];
-    pvl_eye_detection_result eyeResults[MAX_FACES_DETECTABLE];
-    pvl_mouth_detection_result mouthResults[MAX_FACES_DETECTABLE];
-};
-
-struct FaceDetectionRunParams {
-    uint8_t data[MAX_FACE_FRAME_SIZE_ASYNC];
-    int32_t bufferHandle;
-    uint32_t size;
-    int32_t width;
-    int32_t height;
-    pvl_image_format format;
-    int32_t stride;
-    int32_t rotation;
-    int cameraId;
-
-    FaceDetectionResult results;
-};
-#endif
 
 }  // namespace icamera

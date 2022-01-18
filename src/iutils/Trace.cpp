@@ -16,6 +16,8 @@
 
 #define LOG_TAG Trace
 
+#include "Trace.h"
+
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
@@ -25,18 +27,16 @@
 #include <string.h>
 #include <sys/types.h>
 
-#include "Trace.h"
 #include "iutils/CameraLog.h"
 
 namespace icamera {
 
-std::atomic<int>        atrace_is_ready(0);
-uint64_t                atrace_enabled_tags  = ATRACE_TAG_NOT_READY;
-int                     atrace_marker_fd     = -1;
-static pthread_once_t   atrace_once_control  = PTHREAD_ONCE_INIT;
+std::atomic<int> atrace_is_ready(0);
+uint64_t atrace_enabled_tags = ATRACE_TAG_NOT_READY;
+int atrace_marker_fd = -1;
+static pthread_once_t atrace_once_control = PTHREAD_ONCE_INIT;
 
-static void atrace_init_once()
-{
+static void atrace_init_once() {
     atrace_marker_fd = open("/sys/kernel/debug/tracing/trace_marker", O_WRONLY);
     if (atrace_marker_fd == -1) {
         ATRACE_LOGE("atrace %s open error: %s!\n", __func__, strerror(errno));
@@ -46,9 +46,8 @@ static void atrace_init_once()
     atrace_is_ready = 1;
 }
 
-void atrace_setup()
-{
+void atrace_setup() {
     pthread_once(&atrace_once_control, atrace_init_once);
 }
 
-} //namespace icamera
+}  // namespace icamera

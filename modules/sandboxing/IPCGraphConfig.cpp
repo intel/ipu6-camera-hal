@@ -27,27 +27,21 @@
 #include "iutils/Utils.h"
 
 namespace icamera {
-IPCGraphConfig::IPCGraphConfig() {
-    LOGIPC("@%s", __func__);
-}
-
-IPCGraphConfig::~IPCGraphConfig() {
-    LOGIPC("@%s", __func__);
-}
 
 status_t IPCGraphConfig::readDataFromXml(const char* fileName, char* dataPtr, size_t* dataSize,
                                          int maxSize) {
-    CheckAndLogError(!dataSize || !fileName || !dataPtr, UNKNOWN_ERROR, "%s, invalid argument",
-                     __func__);
+    CheckAndLogError(!dataSize || !fileName || !dataPtr, UNKNOWN_ERROR,
+                     "%s, Wrong parameters, dataSize: %p, fileName: %p, dataPtr: %p", __func__,
+                     dataSize, fileName, dataPtr);
 
     struct stat statBuf;
     int ret = stat(fileName, &statBuf);
     CheckAndLogError((ret != 0), UNKNOWN_ERROR, "Failed to query the size of file: %s!", fileName);
     CheckAndLogError(statBuf.st_size > maxSize, BAD_VALUE,
-                     "The memory size less than file size: %s", fileName);
+                     "The memory size: %d less than file size: %d", maxSize, statBuf.st_size);
 
     *dataSize = static_cast<size_t>(statBuf.st_size);
-    LOGIPC("%s, fileName: %s, size: %zu", __func__, fileName, *dataSize);
+    LOG1("%s, fileName: %s, size: %zu", __func__, fileName, *dataSize);
 
     FILE* file = fopen(fileName, "rb");
     CheckAndLogError(!file, NAME_NOT_FOUND, "%s, Failed to open file: %s", __func__, fileName);
@@ -63,11 +57,9 @@ status_t IPCGraphConfig::readDataFromXml(const char* fileName, char* dataPtr, si
 
 bool IPCGraphConfig::clientFlattenParse(void* pData, uint32_t size, int cameraId,
                                         const char* graphDescFile, const char* settingsFile) {
-    LOGIPC("@%s, pData:%p, size: %u, cameraId: %d", __func__, pData, size, cameraId);
-
-    CheckAndLogError(!pData || !graphDescFile || !settingsFile, false,
-                     "@%s, pData, graphDescFile or settingsFile is nullptr", __func__);
-    CheckAndLogError(size < sizeof(GraphParseParams), false, "@%s, buffer is small", __func__);
+    CheckAndLogError(!pData || !graphDescFile || !settingsFile || size < sizeof(GraphParseParams),
+                     false, "@%s, wrong parameters, pData: %p, GD: %p, settings: %p, size: %u",
+                     __func__, pData, graphDescFile, settingsFile, size);
 
     GraphParseParams* params = static_cast<GraphParseParams*>(pData);
     CLEAR(*params);
@@ -86,11 +78,9 @@ bool IPCGraphConfig::clientFlattenParse(void* pData, uint32_t size, int cameraId
 
 bool IPCGraphConfig::serverUnflattenParse(void* pData, uint32_t size,
                                           GraphParseParams** parseParam) {
-    LOGIPC("@%s, pData:%p, size: %u", __func__, pData, size);
-
-    CheckAndLogError(!pData, false, "@%s, pData is nullptr", __func__);
-    CheckAndLogError(size < sizeof(GraphParseParams), false, "@%s, buffer is small", __func__);
-    CheckAndLogError(!parseParam, false, "@%s, parseParam is nullptr", __func__);
+    CheckAndLogError(!pData || !parseParam || size < sizeof(GraphParseParams), false,
+                     "@%s, Wrong parameters, pData: %p, parseParam: %p, size: %u",
+                     __func__, pData, parseParam, size);
 
     GraphParseParams* params = static_cast<GraphParseParams*>(pData);
     *parseParam = params;
@@ -101,13 +91,12 @@ bool IPCGraphConfig::serverUnflattenParse(void* pData, uint32_t size,
 bool IPCGraphConfig::clientFlattenConfigStreams(void* pData, uint32_t size, GraphBaseInfo info,
                                                 GraphSettingType type, bool dummyStillSink,
                                                 const std::vector<HalStream*>& streams) {
-    LOGIPC("@%s, pData:%p, cameraId: %d, configMode: %d", __func__, pData, info.cameraId,
-           info.configMode);
+    LOG1("<id%d>@%s, pData: %p, configMode: %d, dummyStillSink: %d", info.cameraId, __func__, pData,
+         info.configMode, dummyStillSink);
 
-    CheckAndLogError(!pData, false, "@%s, pData is nullptr", __func__);
-    CheckAndLogError(size < sizeof(GraphConfigStreamParams), false, "@%s, buffer is small",
-                     __func__);
-    CheckAndLogError(streams.empty(), false, "@%s, stream vector is empty", __func__);
+    CheckAndLogError(!pData || size < sizeof(GraphConfigStreamParams) || streams.empty(), false,
+                     "@%s, Wrong parameters, pData: %p, size: %u, streams count: %d",
+                     __func__, pData, size, streams.size());
 
     GraphConfigStreamParams* params = static_cast<GraphConfigStreamParams*>(pData);
     CLEAR(*params);
@@ -126,13 +115,11 @@ bool IPCGraphConfig::clientFlattenConfigStreams(void* pData, uint32_t size, Grap
 bool IPCGraphConfig::serverUnflattenConfigStreams(void* pData, uint32_t size, GraphBaseInfo* info,
                                                   GraphSettingType* type, bool* dummyStillSink,
                                                   std::vector<HalStream*>* streams) {
-    LOGIPC("@%s, pData:%p, size: %u", __func__, pData, size);
-
-    CheckAndLogError(!pData, false, "@%s, pData is nullptr", __func__);
-    CheckAndLogError(size < sizeof(GraphConfigStreamParams), false, "@%s, buffer is small",
-                     __func__);
-    CheckAndLogError(!info || !type || !streams, false, "%s, the info, type or streams is nullptr",
-                     __func__);
+    CheckAndLogError(!pData || size < sizeof(GraphConfigStreamParams) || !info || !type ||
+                     !streams || !dummyStillSink, false,
+                     "@%s, Wrong parameters, pData: %p, size: %u, info: %p, type: %p, streams: %p, "
+                     "dummyStillSink: %p",
+                     __func__, pData, size, info, type, streams, dummyStillSink);
 
     GraphConfigStreamParams* params = static_cast<GraphConfigStreamParams*>(pData);
 
@@ -148,11 +135,8 @@ bool IPCGraphConfig::serverUnflattenConfigStreams(void* pData, uint32_t size, Gr
 }
 
 bool IPCGraphConfig::clientFlattenGetGraphData(void* pData, uint32_t size, GraphBaseInfo info) {
-    LOGIPC("@%s, pData:%p, cameraId: %d, configMode: %d", __func__, pData, info.cameraId,
-           info.configMode);
-
-    CheckAndLogError(!pData, false, "@%s, pData is nullptr", __func__);
-    CheckAndLogError(size < sizeof(GraphGetDataParams), false, "@%s, buffer is small", __func__);
+    CheckAndLogError(!pData || size < sizeof(GraphGetDataParams), false,
+                     "@%s, Wrong parameters, pData: %p, size: %u", __func__, pData, size);
 
     GraphGetDataParams* params = static_cast<GraphGetDataParams*>(pData);
     CLEAR(*params);
@@ -163,10 +147,9 @@ bool IPCGraphConfig::clientFlattenGetGraphData(void* pData, uint32_t size, Graph
 }
 
 bool IPCGraphConfig::serverUnflattenGetGraphData(void* pData, uint32_t size, GraphBaseInfo* info) {
-    LOGIPC("@%s, pData:%p, size: %u", __func__, pData, size);
-
-    CheckAndLogError(!pData || !info, false, "@%s, pData or info is nullptr", __func__);
-    CheckAndLogError(size < sizeof(GraphGetDataParams), false, "@%s, buffer is small", __func__);
+    CheckAndLogError(!pData || !info || size < sizeof(GraphGetDataParams), false,
+                     "@%s, Wrong parameters, pData: %p, info: %p, size: %u",
+                     __func__, pData, info, size);
 
     GraphGetDataParams* params = static_cast<GraphGetDataParams*>(pData);
     *info = params->baseInfo;
@@ -176,10 +159,8 @@ bool IPCGraphConfig::serverUnflattenGetGraphData(void* pData, uint32_t size, Gra
 
 bool IPCGraphConfig::serverFlattenGetGraphData(void* pData, uint32_t size,
                                                IGraphType::GraphConfigData graphData) {
-    LOGIPC("@%s, pData:%p, size: %u", __func__, pData, size);
-
-    CheckAndLogError(!pData, false, "@%s, pData is nullptr", __func__);
-    CheckAndLogError(size < sizeof(GraphGetDataParams), false, "@%s, buffer is small", __func__);
+    CheckAndLogError(!pData || size < sizeof(GraphGetDataParams), false,
+                     "@%s, Wrong parameters, pData: %p, size: %u", __func__, pData, size);
 
     GraphGetDataParams* params = static_cast<GraphGetDataParams*>(pData);
 
@@ -190,12 +171,17 @@ bool IPCGraphConfig::serverFlattenGetGraphData(void* pData, uint32_t size,
     params->csiReso = graphData.csiReso;
     params->gdcReso = graphData.gdcReso;
 
-    LOGIPC("%s, mcId: %d, graphId: %d, gdcKernelId: %d", __func__, params->mcId, params->graphId,
-           params->gdcKernelId);
+    LOG1("@%s, mcId: %d, graphId: %d, gdcKernelId: %d", __func__, params->mcId, params->graphId,
+         params->gdcKernelId);
 
     params->streamIdNum = graphData.streamIds.size();
     for (size_t i = 0; i < graphData.streamIds.size(); ++i) {
         params->streamIdData[i] = graphData.streamIds[i];
+    }
+
+    params->tuningModeNum = graphData.tuningModes.size();
+    for (size_t i = 0; i < graphData.tuningModes.size(); ++i) {
+        params->tuningModes[i] = graphData.tuningModes[i];
     }
 
     params->pgInfoNum = graphData.pgInfo.size();
@@ -263,10 +249,9 @@ bool IPCGraphConfig::serverFlattenGetGraphData(void* pData, uint32_t size,
 
 bool IPCGraphConfig::clientUnflattenGetGraphData(void* pData, uint32_t size,
                                                  IGraphType::GraphConfigData* graphData) {
-    LOGIPC("@%s, pData:%p, size: %u", __func__, pData, size);
-
-    CheckAndLogError(!pData || !graphData, false, "@%s, pData or graphData is nullptr", __func__);
-    CheckAndLogError(size < sizeof(GraphGetDataParams), false, "@%s, buffer is small", __func__);
+    CheckAndLogError(!pData || !graphData || size < sizeof(GraphGetDataParams), false,
+                     "@%s, Wrong parameters, pData: %p, graphData: %p, size: %u",
+                     __func__, pData, graphData, size);
 
     GraphGetDataParams* params = static_cast<GraphGetDataParams*>(pData);
 
@@ -277,11 +262,15 @@ bool IPCGraphConfig::clientUnflattenGetGraphData(void* pData, uint32_t size,
     graphData->csiReso = params->csiReso;
     graphData->gdcReso = params->gdcReso;
 
-    LOGIPC("%s, mcId: %d, graphId: %d, gdcKernelId: %d", __func__, params->mcId, params->graphId,
-           params->gdcKernelId);
+    LOG1("@%s, mcId: %d, graphId: %d, gdcKernelId: %d", __func__, params->mcId, params->graphId,
+         params->gdcKernelId);
 
     for (size_t i = 0; i < params->streamIdNum; ++i) {
         graphData->streamIds.push_back(params->streamIdData[i]);
+    }
+
+    for (size_t i = 0; i < params->tuningModeNum; ++i) {
+        graphData->tuningModes.push_back(params->tuningModes[i]);
     }
 
     for (size_t i = 0; i < params->pgInfoNum; ++i) {
@@ -344,11 +333,8 @@ bool IPCGraphConfig::clientUnflattenGetGraphData(void* pData, uint32_t size,
 
 bool IPCGraphConfig::clientFlattenGetPgId(void* pData, uint32_t size, GraphBaseInfo info,
                                           const int streamId, const int kernelId) {
-    LOGIPC("@%s, pData:%p, size:%u, cameraId :%d, config mode:%d, streamId: %d, kernelId: %d",
-           __func__, pData, size, info.cameraId, info.configMode, streamId, kernelId);
-
-    CheckAndLogError(!pData, false, "@%s, pData is nullptr", __func__);
-    CheckAndLogError(size < sizeof(GraphGetPgIdParams), false, "@%s, buffer is small", __func__);
+    CheckAndLogError(!pData || size < sizeof(GraphGetPgIdParams), false,
+                     "@%s, Wrong parameters, pData: %p, size: %u", __func__, pData, size);
 
     GraphGetPgIdParams* params = static_cast<GraphGetPgIdParams*>(pData);
     CLEAR(*params);
@@ -362,12 +348,9 @@ bool IPCGraphConfig::clientFlattenGetPgId(void* pData, uint32_t size, GraphBaseI
 
 bool IPCGraphConfig::serverUnFlattenGetPgId(void* pData, uint32_t size, GraphBaseInfo* info,
                                             uint32_t* streamId, int32_t* kernelId) {
-    LOGIPC("@%s, pData:%p, size:%u", __func__, pData, size);
-
-    CheckAndLogError(!pData, false, "@%s, pData is nullptr", __func__);
-    CheckAndLogError(size < sizeof(GraphGetPgIdParams), false, "@%s, buffer is small", __func__);
-    CheckAndLogError(!info || !streamId || !kernelId, false,
-                     "@%s, info, streamId or kernelId is nullptr", __func__);
+    CheckAndLogError(!pData || size < sizeof(GraphGetPgIdParams) || !info || !streamId || !kernelId,
+                     false,  "@%s, Wrong parameters, pData: %p, size: %u, info: %p, streamId: %p, "
+                     "kernelId: %p", __func__, pData, size, info, streamId, kernelId);
 
     GraphGetPgIdParams* params = static_cast<GraphGetPgIdParams*>(pData);
 
@@ -379,10 +362,8 @@ bool IPCGraphConfig::serverUnFlattenGetPgId(void* pData, uint32_t size, GraphBas
 }
 
 bool IPCGraphConfig::serverFlattenGetPgId(void* pData, uint32_t size, int32_t pgId) {
-    LOGIPC("@%s, pData:%p, size:%u, pgId: %d", __func__, pData, size, pgId);
-
-    CheckAndLogError(!pData, false, "@%s, pData is nullptr", __func__);
-    CheckAndLogError(size < sizeof(GraphGetPgIdParams), false, "@%s, buffer is small", __func__);
+    CheckAndLogError(!pData || size < sizeof(GraphGetPgIdParams), false,
+                     "@%s, Wrong parameters, pData: %p, size: %u", __func__, pData, size);
 
     GraphGetPgIdParams* params = static_cast<GraphGetPgIdParams*>(pData);
     params->pgId = pgId;
@@ -391,10 +372,9 @@ bool IPCGraphConfig::serverFlattenGetPgId(void* pData, uint32_t size, int32_t pg
 }
 
 bool IPCGraphConfig::clientUnFlattenGetPgId(void* pData, uint32_t size, int32_t* pgId) {
-    LOGIPC("@%s, pData:%p, size:%u", __func__, pData, size);
-
-    CheckAndLogError(!pData || !pgId, false, "@%s, pData or pgId is nullptr", __func__);
-    CheckAndLogError(size < sizeof(GraphGetPgIdParams), false, "@%s, buffer is small", __func__);
+    CheckAndLogError(!pData || !pgId || size < sizeof(GraphGetPgIdParams), false,
+                     "@%s, Wrong parameters, pData: %p, pgId: %p, size: %u",
+                     __func__, pData, pgId, size);
 
     GraphGetPgIdParams* params = static_cast<GraphGetPgIdParams*>(pData);
     *pgId = params->pgId;
@@ -404,13 +384,8 @@ bool IPCGraphConfig::clientUnFlattenGetPgId(void* pData, uint32_t size, int32_t*
 
 bool IPCGraphConfig::clientFlattenGetConnection(void* pData, uint32_t size, GraphBaseInfo info,
                                                 const std::vector<std::string>& pgList) {
-    LOGIPC("@%s, pData:%p, size:%u, cameraId :%d, config mode:%d, pgName size: %zu", __func__,
-           pData, size, info.cameraId, info.configMode, pgList.size());
-
-    CheckAndLogError(!pData, false, "@%s, pData is nullptr", __func__);
-    CheckAndLogError(size < sizeof(GraphGetConnectionParams), false, "@%s, buffer is small",
-                     __func__);
-
+    CheckAndLogError(!pData || size < sizeof(GraphGetConnectionParams), false,
+                     "@%s, Wrong parameters, pData: %p, size: %u", __func__, pData, size);
     GraphGetConnectionParams* params = static_cast<GraphGetConnectionParams*>(pData);
     CLEAR(*params);
 
@@ -426,12 +401,9 @@ bool IPCGraphConfig::clientFlattenGetConnection(void* pData, uint32_t size, Grap
 
 bool IPCGraphConfig::serverUnFlattenGetConnection(void* pData, uint32_t size, GraphBaseInfo* info,
                                                   std::vector<std::string>* pgList) {
-    LOGIPC("@%s, pData:%p, size:%u", __func__, pData, size);
-
-    CheckAndLogError(size < sizeof(GraphGetConnectionParams), false, "@%s, buffer is small",
-                     __func__);
-    CheckAndLogError(!pData || !info || !pgList, false, "@%s, pData, info or pgList is nullptr",
-                     __func__);
+    CheckAndLogError(!pData || size < sizeof(GraphGetConnectionParams) || !info || !pgList, false,
+                     "@%s, Wrong parameters, pData: %p, size: %u, info: %p, pgList: %p",
+                     __func__, pData, size, info, pgList);
 
     GraphGetConnectionParams* params = static_cast<GraphGetConnectionParams*>(pData);
 
@@ -445,12 +417,10 @@ bool IPCGraphConfig::serverUnFlattenGetConnection(void* pData, uint32_t size, Gr
 
 bool IPCGraphConfig::serverFlattenGetConnection(
     void* pData, uint32_t size, const std::vector<IGraphType::ScalerInfo>& scalerInfo,
-    const std::vector<IGraphType::PipelineConnection>& confVector) {
-    LOGIPC("@%s, pData:%p, size:%u", __func__, pData, size);
-
-    CheckAndLogError(!pData, false, "@%s, pData is nullptr", __func__);
-    CheckAndLogError(size < sizeof(GraphGetConnectionParams), false, "@%s, buffer is small",
-                     __func__);
+    const std::vector<IGraphType::PipelineConnection>& confVector,
+    const std::vector<IGraphType::PrivPortFormat>& tnrPortFormat) {
+    CheckAndLogError(!pData || size < sizeof(GraphGetConnectionParams), false,
+                     "@%s, Wrong parameters, pData: %p, size: %u", __func__, pData, size);
 
     GraphGetConnectionParams* params = static_cast<GraphGetConnectionParams*>(pData);
 
@@ -467,17 +437,22 @@ bool IPCGraphConfig::serverFlattenGetConnection(
         params->scalerInfoArray[i] = scalerInfo[i];
     }
 
+    params->portFormatNum = tnrPortFormat.size();
+    for (size_t i = 0; i < tnrPortFormat.size(); ++i) {
+        params->portFormatArray[i] = tnrPortFormat[i];
+    }
+
     return true;
 }
 
 bool IPCGraphConfig::clientUnFlattenGetConnection(
     void* pData, uint32_t size, std::vector<IGraphType::ScalerInfo>* scalerInfo,
-    std::vector<IGraphType::PipelineConnection>* confVector) {
-    LOGIPC("@%s, pData:%p, size:%u", __func__, pData, size);
-
-    CheckAndLogError(!pData || !confVector, false, "@%s, pData or confVector is nullptr", __func__);
-    CheckAndLogError(size < sizeof(GraphGetConnectionParams), false, "@%s, buffer is small",
-                     __func__);
+    std::vector<IGraphType::PipelineConnection>* confVector,
+    std::vector<IGraphType::PrivPortFormat>* tnrPortFormat) {
+    CheckAndLogError(!pData || !scalerInfo || !confVector ||
+                      size < sizeof(GraphGetConnectionParams), false,
+                      "@%s, Wrong parameters, pData: %p, scalerInfo: %p, confVector: %p, size: %u",
+                     __func__, pData, scalerInfo, confVector, size);
 
     GraphGetConnectionParams* params = static_cast<GraphGetConnectionParams*>(pData);
 
@@ -490,6 +465,12 @@ bool IPCGraphConfig::clientUnFlattenGetConnection(
 
     for (size_t i = 0; i < params->scalerInfoNum; ++i) {
         scalerInfo->push_back(params->scalerInfoArray[i]);
+    }
+
+    if (tnrPortFormat) {
+        for (size_t i = 0; i < params->portFormatNum; ++i) {
+            tnrPortFormat->push_back(params->portFormatArray[i]);
+        }
     }
 
     return true;

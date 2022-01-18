@@ -71,7 +71,7 @@ public:
     /**
      * \brief Update mCurrentIndex and set sequence id into internal storage.
      */
-    void updateAiqResult(long sequence);
+    void updateAiqResult(int64_t sequence);
 
     /**
      * \brief Get the pointer of aiq result to internal storage by given sequence id.
@@ -81,7 +81,7 @@ public:
      * the caller's responsibility to do a deep-copy, otherwise the data in returned AiqResult
      * may not be consistent.
      *
-     * param[in] long sequence: specify which aiq result is needed.
+     * param[in] int64_t sequence: specify which aiq result is needed.
      *
      * return 1. when sequence id is -1 or not provided, the lastest result will be returned.
      *        2. when sequence id is larger than -1, the result with gaven sequence id will be returned.
@@ -89,7 +89,7 @@ public:
      *           result was overrided, or the sequence id is too new, and its result has not been
      *           saved into storage yet. For both cases, nullptr will be returned.
      */
-    const AiqResult* getAiqResult(long sequence = -1);
+    const AiqResult* getAiqResult(int64_t sequence = -1);
 
     /**
      * \brief Acquire AIQ statistics.
@@ -104,7 +104,7 @@ public:
     /**
      * \brief Update mCurrentAiqStatsIndex and set sequence id in internal storage.
      */
-    void updateAiqStatistics(long sequence);
+    void updateAiqStatistics(int64_t sequence);
 
     /**
      * \brief Get the pointer of AIQ statistics to internal storage.

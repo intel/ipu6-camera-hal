@@ -35,7 +35,7 @@ namespace icamera {
 
 struct LtmInputParams {
     cca::cca_ltm_input_params ltmParams;
-    long sequence;
+    int64_t sequence;
 
     LtmInputParams() {
         CLEAR(ltmParams);
@@ -71,7 +71,7 @@ class Ltm : public EventListener {
     int runLtmAsync();
     int runLtm(const LtmInputParams& ltmInputParams);
 
-    AiqResult* getAiqResult(long sequence);
+    AiqResult* getAiqResult(int64_t sequence);
 
  private:
     /**
@@ -100,7 +100,6 @@ class Ltm : public EventListener {
     LtmThread* mLtmThread;
     bool mThreadRunning;
     Condition mParamAvailableSignal;
-    static const nsecs_t kWaitDuration = 2000000000;  // 2000ms
     static const int kMaxLtmParamsNum = 2;            // 2 ltm input params
 
     int mInputParamIndex;

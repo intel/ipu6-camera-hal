@@ -32,7 +32,7 @@ namespace icamera {
  * This struct is used to control wdr mode switching.
  */
 typedef struct {
-    long sequence;
+    int64_t sequence;
     TuningMode tuningMode;
 } WdrModeSetting;
 
@@ -42,7 +42,7 @@ typedef struct {
 } SensorExposure;
 
 typedef struct {
-    long sequence;
+    int64_t sequence;
     uint64_t timestamp;
 } SofEventInfo;
 
@@ -62,12 +62,12 @@ public:
 
     void handleSofEvent(EventData eventData);
     /* sensorExposures are exposure results, applyingSeq is the sequence to apply results */
-    uint32_t updateSensorExposure(SensorExpGroup sensorExposures, long applyingSeq);
+    uint32_t updateSensorExposure(SensorExpGroup sensorExposures, int64_t applyingSeq);
     int getSensorInfo(ia_aiq_frame_params &frameParams,
                       ia_aiq_exposure_sensor_descriptor &sensorDescriptor);
 
     int getCurrentExposureAppliedDelay();
-    uint64_t getSofTimestamp(long sequence);
+    uint64_t getSofTimestamp(int64_t sequence);
 private:
     DISALLOW_COPY_AND_ASSIGN(SensorManager);
 
@@ -81,10 +81,7 @@ private:
     int mCameraId;
     SensorHwCtrl *mSensorHwCtrl;
 
-    bool    mModeSwitched;         // Whether the TuningMode get updated
-    WdrModeSetting mWdrModeSetting;
-
-    long mLastSofSequence;
+    int64_t mLastSofSequence;
 
     // Guard for SensorManager public API.
     Mutex mLock;

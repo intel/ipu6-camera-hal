@@ -22,10 +22,10 @@
 #include <utility>
 #include <vector>
 
-#include "iutils/Errors.h"
-#include "iutils/Thread.h"
 #include "GraphConfig.h"
 #include "IGraphConfigManager.h"
+#include "iutils/Errors.h"
+#include "iutils/Thread.h"
 
 namespace icamera {
 
@@ -52,33 +52,36 @@ namespace icamera {
  * on request content. These objects are owned by GCM in a pool, and passed
  * around HAL via shared pointers.
  */
-class GraphConfigManager: public IGraphConfigManager
-{
-public:
+class GraphConfigManager : public IGraphConfigManager {
+ public:
     explicit GraphConfigManager(int32_t cameraId);
     virtual ~GraphConfigManager();
 
     // Public APIs in IGraphConfigManager
-    virtual status_t queryGraphSettings(const stream_config_t *streamList);
-    virtual status_t configStreams(const stream_config_t *streamList);
+    virtual status_t queryGraphSettings(const stream_config_t* streamList);
+    virtual status_t configStreams(const stream_config_t* streamList);
     virtual std::shared_ptr<IGraphConfig> getGraphConfig(ConfigMode configMode);
-    virtual int getSelectedMcId() { LOGG("%s: %d", __func__, mMcId); return mMcId; }
-    virtual bool isGcConfigured(void) { LOGG("%s: %d", __func__, mGcConfigured); return mGcConfigured; }
+    virtual int getSelectedMcId() {
+        return mMcId;
+    }
+    virtual bool isGcConfigured(void) {
+        return mGcConfigured;
+    }
 
-private:
+ private:
     // Disable copy constructor and assignment operator
     DISALLOW_COPY_AND_ASSIGN(GraphConfigManager);
 
-    int createHalStreamVector(ConfigMode configMode, const stream_config_t *streamList,
-                              std::vector<HalStream*> *halStreamVec);
+    int createHalStreamVector(ConfigMode configMode, const stream_config_t* streamList,
+                              std::vector<HalStream*>* halStreamVec);
 
-    StreamUseCase getUseCaseFromStream(ConfigMode configMode, const stream_t &stream);
-    void releaseHalStream(std::vector<HalStream*> *halStreamVec);
+    StreamUseCase getUseCaseFromStream(ConfigMode configMode, const stream_t& stream);
+    void releaseHalStream(std::vector<HalStream*>* halStreamVec);
 
     // Debuging helpers
     void dumpStreamConfig();
-private:
 
+ private:
     bool mGcConfigured;
     int32_t mCameraId;
     std::map<ConfigMode, std::shared_ptr<GraphConfig> > mGraphConfigMap;
@@ -86,4 +89,4 @@ private:
     int mMcId;
 };
 
-} // icamera
+}  // namespace icamera

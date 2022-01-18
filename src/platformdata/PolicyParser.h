@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Intel Corporation.
+ * Copyright (C) 2018-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,11 +26,10 @@
 
 #pragma once
 
-#include "iutils/Utils.h"
-
 #include "CameraTypes.h"
-#include "PlatformData.h"
 #include "ParserBase.h"
+#include "PlatformData.h"
+#include "iutils/Utils.h"
 
 namespace icamera {
 
@@ -42,33 +41,33 @@ namespace icamera {
  * This class will use the expat lib to do the xml parser.
  */
 class PolicyParser : public ParserBase {
-public:
-    PolicyParser(PlatformData::StaticCfg *cfg);
-    ~PolicyParser(){}
+ public:
+    PolicyParser(PlatformData::StaticCfg* cfg);
+    ~PolicyParser() {}
 
-    void startParseElement(void *userData, const char *name, const char **atts);
-    void endParseElement(void *userData, const char *name);
+    void startParseElement(void* userData, const char* name, const char** atts);
+    void endParseElement(void* userData, const char* name);
 
-private:
+ private:
     // prevent copy constructor and assignment operator
     DISALLOW_COPY_AND_ASSIGN(PolicyParser);
 
-private:
-    void checkField(PolicyParser *profiles, const char *name, const char **atts);
-    void handlePolicyConfig(PolicyParser *profiles, const char *name, const char **atts);
-    void handlePipeExecutor(PolicyParser *profiles, const char *name, const char **atts);
-    void handleExclusivePGs(PolicyParser *profiles, const char *name, const char **atts);
-    void handleBundles(PolicyParser *profiles, const char *name, const char **atts);
-    void handleShareReferPair(PolicyParser *profiles, const char *name, const char **atts);
+ private:
+    void checkField(PolicyParser* profiles, const char* name, const char** atts);
+    void handlePolicyConfig(PolicyParser* profiles, const char* name, const char** atts);
+    void handlePipeExecutor(PolicyParser* profiles, const char* name, const char** atts);
+    void handleExclusivePGs(PolicyParser* profiles, const char* name, const char** atts);
+    void handleBundles(PolicyParser* profiles, const char* name, const char** atts);
+    void handleShareReferPair(PolicyParser* profiles, const char* name, const char** atts);
 
-private:
-    PlatformData::StaticCfg *mStaticCfg;
+ private:
+    PlatformData::StaticCfg* mStaticCfg;
 
     enum DataField {
         FIELD_INVALID = 0,
         FIELD_GRAPH,
     } mCurrentDataField;
-    PolicyConfig *pCurrentConf;
+    PolicyConfig* pCurrentConf;
 };
 
-} // namespace icamera
+}  // namespace icamera

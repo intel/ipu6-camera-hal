@@ -16,24 +16,13 @@
 
 #define LOG_TAG CameraEvent
 
-#include "iutils/CameraLog.h"
-
 #include "CameraEvent.h"
+
+#include "iutils/CameraLog.h"
 
 namespace icamera {
 
-EventSource::EventSource()
-{
-    LOG1("@%s EventSource created", __func__);
-}
-
-EventSource::~EventSource()
-{
-    LOG1("@%s EventSource destructed", __func__);
-}
-
-void EventSource::registerListener(EventType eventType, EventListener* eventListener)
-{
+void EventSource::registerListener(EventType eventType, EventListener* eventListener) {
     LOG1("@%s eventType: %d, listener: %p", __func__, eventType, eventListener);
 
     CheckAndLogError(eventListener == nullptr, VOID_VALUE,
@@ -50,8 +39,7 @@ void EventSource::registerListener(EventType eventType, EventListener* eventList
     mListeners[eventType] = listenersOfType;
 }
 
-void EventSource::removeListener(EventType eventType, EventListener* eventListener)
-{
+void EventSource::removeListener(EventType eventType, EventListener* eventListener) {
     LOG1("@%s eventType: %d, listener: %p", __func__, eventType, eventListener);
     AutoMutex l(mListenersLock);
 
@@ -65,20 +53,20 @@ void EventSource::removeListener(EventType eventType, EventListener* eventListen
     mListeners[eventType] = listenersOfType;
 }
 
-void EventSource::notifyListeners(EventData eventData)
-{
+void EventSource::notifyListeners(EventData eventData) {
     LOG2("@%s eventType: %d", __func__, eventData.type);
     AutoMutex l(mListenersLock);
 
-    if (mListeners.find(eventData.type) == mListeners.end()){
+    if (mListeners.find(eventData.type) == mListeners.end()) {
         LOG2("%s: no listener found for event type %d", __func__, eventData.type);
         return;
     }
 
     for (auto listener : mListeners[eventData.type]) {
-        LOG2("%s: send event data to listener %p for event type %d", __func__, listener, eventData.type);
+        LOG2("%s: send event data to listener %p for event type %d", __func__, listener,
+             eventData.type);
         listener->handleEvent(eventData);
     }
 }
 
-}
+}  // namespace icamera

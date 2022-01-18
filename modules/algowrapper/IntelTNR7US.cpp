@@ -27,6 +27,7 @@
 #include "iutils/Utils.h"
 
 #define CM_SURFACE_ALIGN_SIZE 0x1000
+#define CM_SURFACE_ALIGN_HEIGHT(val) ALIGN(val, 64)
 
 namespace icamera {
 
@@ -35,60 +36,20 @@ IntelTNR7US::IntelTNR7US(int cameraId)
           mWidth(0),
           mHeight(0),
           mTnrType(TNR_INSTANCE_MAX),
-          mTnrParam(nullptr),
-          mParamUpdating(false) {
-    LOG1("%s mCameraId %d", __func__, mCameraId);
-}
+          mTnrParam(nullptr) {}
 
 IntelTNR7US::~IntelTNR7US() {
-    LOG1("%s mCameraId %d type %d", __func__, mCameraId, mTnrType);
     for (auto surface : mCMSurfaceMap) {
         destroyCMSurface(surface.second);
     }
     mCMSurfaceMap.clear();
-
-    int ret = pthread_cond_destroy(&mUpdateDoneCondition);
-    if (ret != 0) {
-        LOGE("@%s, call pthread_cond_destroy fails, ret:%d", __func__, ret);
-    }
-
-    ret = pthread_mutex_destroy(&mLock);
-    CheckAndLogError(ret != 0, VOID_VALUE, "@%s, call pthread_mutex_destroy fails, ret:%d",
-                     __func__, ret);
 }
 
 int IntelTNR7US::init(int width, int height, TnrType type) {
-    LOG1("%s size %dx%d, mCameraId %d type %d", __func__, width, height, mCameraId, type);
+    LOG1("<id:%d>@%s size %dx%d, type %d", mCameraId, __func__, width, height, type);
     mWidth = width;
     mHeight = height;
     mTnrType = type;
-
-    pthread_condattr_t attr;
-    int ret = pthread_condattr_init(&attr);
-    if (ret != 0) {
-        LOGE("@%s, call pthread_condattr_init fails, ret:%d", __func__, ret);
-        return UNKNOWN_ERROR;
-    }
-
-    ret = pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
-    if (ret != 0) {
-        LOGE("@%s, call pthread_condattr_setclock fails, ret:%d", __func__, ret);
-        pthread_condattr_destroy(&attr);
-        return UNKNOWN_ERROR;
-    }
-
-    ret = pthread_cond_init(&mUpdateDoneCondition, &attr);
-    if (ret != 0) {
-        LOGE("@%s, call pthread_cond_init fails, ret:%d", __func__, ret);
-        pthread_condattr_destroy(&attr);
-        return UNKNOWN_ERROR;
-    }
-
-    pthread_condattr_destroy(&attr);
-
-    ret = pthread_mutex_init(&mLock, NULL);
-    CheckAndLogError(ret != 0, UNKNOWN_ERROR, "@%s, call pthread_mutex_init fails, ret:%d",
-                     __func__, ret);
 
     std::string threadName = "IntelTNR7US" + std::to_string(type + (mCameraId << 1));
     mThread = std::unique_ptr<base::Thread>(new base::Thread(threadName));
@@ -97,13 +58,13 @@ int IntelTNR7US::init(int width, int height, TnrType type) {
 }
 
 Tnr7Param* IntelTNR7US::allocTnr7ParamBuf() {
-    LOG1("%s mCameraId %d, type %d", __func__, mCameraId, mTnrType);
+    LOG1("<%d>@%s, type %d", mCameraId, __func__, mTnrType);
     mTnrParam = new Tnr7Param;
     return mTnrParam;
 }
 
 void* IntelTNR7US::allocCamBuf(uint32_t bufSize, int id) {
-    LOG1("%s mCameraId %d type %d, id: %d", __func__, mCameraId, mTnrType, id);
+    LOG1("<%d>@%s, type %d, id: %d", mCameraId, __func__, mTnrType, id);
     void* buffer = nullptr;
     int ret = posix_memalign(&buffer, getpagesize(), bufSize);
     CheckAndLogError(ret != 0, nullptr, "%s, posix_memalign fails, ret:%d", __func__, ret);
@@ -118,7 +79,7 @@ void* IntelTNR7US::allocCamBuf(uint32_t bufSize, int id) {
 }
 
 void IntelTNR7US::freeAllBufs() {
-    LOG1("%s mCameraId %d, type %d", __func__, mCameraId, mTnrType);
+    LOG1("<%d>@%s, type %d", mCameraId, __func__, mTnrType);
     for (auto surface : mCMSurfaceMap) {
         ::free(surface.first);
     }
@@ -141,7 +102,7 @@ int IntelTNR7US::runTnrFrame(const void* inBufAddr, void* outBufAddr, uint32_t i
                              uint32_t outBufSize, Tnr7Param* tnrParam, bool syncUpdate, int fd) {
     PERF_CAMERA_ATRACE();
     TRACE_LOG_PROCESS("IntelTNR7US", "runTnrFrame");
-    LOG1("%s mCameraId %d, type %d", __func__, mCameraId, mTnrType);
+    LOG2("<%d>@%s type %d", mCameraId, __func__, mTnrType);
     CheckAndLogError(inBufAddr == nullptr || outBufAddr == nullptr || tnrParam == nullptr,
                      UNKNOWN_ERROR, "@%s, buffer is nullptr", __func__);
 
@@ -156,47 +117,27 @@ int IntelTNR7US::runTnrFrame(const void* inBufAddr, void* outBufAddr, uint32_t i
     }
     CheckAndLogError(outSurface == nullptr, UNKNOWN_ERROR,
                      "Failed to get CMSurface for output buffer");
-
-    /* the frame N gpu tnr run should wait for parameters of frame N-1 update completed */
-    nsecs_t startTime = CameraUtils::systemTime();
-    pthread_mutex_lock(&mLock);
-    if (mParamUpdating) {
-        int ret = 0;
-        struct timespec ts = {0, 0};
-        clock_gettime(CLOCK_MONOTONIC, &ts);
-        ts.tv_sec += kMaxDuration;
-        while (mParamUpdating && !ret) {
-            ret = pthread_cond_timedwait(&mUpdateDoneCondition, &mLock, &ts);
-        }
-
-        if (ret != 0) {
-            LOGE("@%s, call pthread_cond_timedwait fail, ret:%d, it takes %" PRId64 "ms", __func__,
-                 ret, (CameraUtils::systemTime() - startTime) / 1000000);
-            pthread_mutex_unlock(&mLock);
-            return UNKNOWN_ERROR;
-        }
-    }
-    pthread_mutex_unlock(&mLock);
-
+    struct timespec beginTime = {};
+    if (Log::isLogTagEnabled(ST_GPU_TNR)) clock_gettime(CLOCK_MONOTONIC, &beginTime);
     /* call Tnr api to run tnr for the inSurface and store the result in outSurface */
-    int ret =
-        run_tnr7us_frame(mWidth, mHeight, mWidth, inSurface, outSurface, &tnrParam->scale,
-                         &tnrParam->ims, &tnrParam->bc, &tnrParam->blend, syncUpdate, mTnrType);
+    int ret = run_tnr7us_frame(mWidth, CM_SURFACE_ALIGN_HEIGHT(mHeight), mWidth, inSurface,
+                               outSurface, &tnrParam->scale, &tnrParam->ims, &tnrParam->bc,
+                               &tnrParam->blend, syncUpdate, mTnrType);
     if (fd >= 0) {
         destroyCMSurface(outSurface);
     }
     CheckAndLogError(ret != OK, UNKNOWN_ERROR, "tnr7us process failed");
-
+    if (Log::isLogTagEnabled(ST_GPU_TNR)) {
+        struct timespec endTime = {};
+        clock_gettime(CLOCK_MONOTONIC, &endTime);
+        uint64_t timeUsedUs = (endTime.tv_sec - beginTime.tv_sec) * 1000000 +
+                              (endTime.tv_nsec - beginTime.tv_nsec) / 1000;
+        LOG2(ST_GPU_TNR, "%s time:%lu us", __func__, timeUsedUs);
+    }
     return OK;
 }
 
 int IntelTNR7US::asyncParamUpdate(int gain, bool forceUpdate) {
-    LOG1("%s gain: %d", __func__, gain);
-
-    pthread_mutex_lock(&mLock);
-    mParamUpdating = true;
-    pthread_mutex_unlock(&mLock);
-
     if (mThread->task_runner()) {
         mThread->task_runner()->PostTask(
             FROM_HERE,
@@ -205,18 +146,32 @@ int IntelTNR7US::asyncParamUpdate(int gain, bool forceUpdate) {
     return OK;
 }
 
+int32_t IntelTNR7US::getSurfaceInfo(int width, int height, uint32_t* size) {
+    uint32_t pitch = 0;
+    uint32_t physicalSize = 0;
+    int ret = getSurface2DInfo(uint32_t(width), uint32_t(CM_SURFACE_ALIGN_HEIGHT(height)),
+                               CM_SURFACE_FORMAT_NV12, pitch, physicalSize);
+    CheckAndLogError(ret != 0, ret, "Failed to get surface info");
+    if (size) *size = physicalSize;
+    LOG1("@%s surface size: %u", __func__, physicalSize);
+    return OK;
+}
+
 void IntelTNR7US::handleParamUpdate(int gain, bool forceUpdate) {
-    LOG1("%s gain: %d", __func__, gain);
+    PERF_CAMERA_ATRACE();
+    LOG2("@%s gain: %d", __func__, gain);
     // gain value is from AE expore analog_gain * digital_gain
+    struct timespec beginTime = {};
+    if (Log::isLogTagEnabled(ST_GPU_TNR)) clock_gettime(CLOCK_MONOTONIC, &beginTime);
 
     tnr7usParamUpdate(gain, forceUpdate, mTnrType);
-    pthread_mutex_lock(&mLock);
-    mParamUpdating = false;
-    int ret = pthread_cond_signal(&mUpdateDoneCondition);
-    pthread_mutex_unlock(&mLock);
-
-    CheckAndLogError(ret != 0, VOID_VALUE, "@%s, call pthread_cond_signal fails, ret:%d", __func__,
-                     ret);
+    if (Log::isLogTagEnabled(ST_GPU_TNR)) {
+        struct timespec endTime = {};
+        clock_gettime(CLOCK_MONOTONIC, &endTime);
+        uint64_t timeUsedUs = (endTime.tv_sec - beginTime.tv_sec) * 1000000 +
+                              (endTime.tv_nsec - beginTime.tv_nsec) / 1000;
+        LOG2(ST_GPU_TNR, "%s time:%lu us", __func__, timeUsedUs);
+    }
 }
 
 CmSurface2DUP* IntelTNR7US::getBufferCMSurface(void* bufAddr) {
@@ -228,15 +183,16 @@ CmSurface2DUP* IntelTNR7US::getBufferCMSurface(void* bufAddr) {
 }
 
 CmSurface2DUP* IntelTNR7US::createCMSurface(void* bufAddr) {
-    LOG1("%s ", __func__);
+    PERF_CAMERA_ATRACE();
     CmSurface2DUP* cmSurface = nullptr;
-    int32_t ret = createCmSurface2DUP(mWidth, mHeight, CM_SURFACE_FORMAT_NV12, bufAddr, cmSurface);
+    int32_t ret = createCmSurface2DUP(mWidth, CM_SURFACE_ALIGN_HEIGHT(mHeight),
+                                      CM_SURFACE_FORMAT_NV12, bufAddr, cmSurface);
     CheckAndLogError(ret != 0, nullptr, "failed to create CmSurface2DUP object");
     return cmSurface;
 }
 
 int32_t IntelTNR7US::destroyCMSurface(CmSurface2DUP* surface) {
-    LOG1("%s ", __func__);
     return destroyCMSurface2DUP(surface);
 }
+
 }  // namespace icamera

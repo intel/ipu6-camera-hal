@@ -16,10 +16,9 @@
 
 #pragma once
 
-#include "ia_aiq.h"
-
 #include "AiqSetting.h"
 #include "AiqUtils.h"
+#include "ia_aiq.h"
 
 namespace icamera {
 
@@ -29,21 +28,21 @@ namespace icamera {
  * 3A running.
  */
 class Intel3AParameter {
-
-public:
-    Intel3AParameter(int cameraId);
+ public:
+    explicit Intel3AParameter(int cameraId);
     ~Intel3AParameter();
 
     int init();
+    int getCMCInfo(TuningMode tuningMode);
     int setSensorInfo(ia_aiq_exposure_sensor_descriptor descriptor);
     int updateParameter(aiq_parameter_t param);
     void updateAeResult(cca::cca_ae_results* aeResult);
     void updateAwbResult(cca::cca_awb_results* awbResult);
     void updatePaResult(cca::cca_pa_params* paResult);
 
-    void fillAfTriggerResult(cca::cca_af_results *afResults);
+    void fillAfTriggerResult(cca::cca_af_results* afResults);
 
-private:
+ private:
     void initAeParameter();
     void initAfParameter();
     void initAwbParameter();
@@ -59,8 +58,12 @@ private:
     void setManualGain(const aiq_parameter_t& param);
     void setManualIso(const aiq_parameter_t& param);
     void setAeManualLimits(const aiq_parameter_t& param);
-public:
+
+ public:
     int mCameraId;
+
+    cca::cca_cmc mCMC;
+
     // aiq 3a parameters
     cca::cca_ae_input_params mAeParams;
     cca::cca_af_input_params mAfParams;
@@ -79,15 +82,20 @@ public:
     int mAePerTicks;
     int mAwbPerTicks;
 
-    bool mAfForceLock; // Lock AF to respond autofocus action triggered by user.
+    bool mAfForceLock;  // Lock AF to respond autofocus action triggered by user.
     float mManualFocusDistance;
     camera_ae_mode_t mAeMode;
-private:
-    static const int MAX_FOCUS_DISTANCE = 5000; // unit is mm
+
+ private:
+    void dumpParameter();
+
+    static const int MAX_FOCUS_DISTANCE = 5000;  // unit is mm
 
     camera_af_mode_t mAfMode;
     camera_af_trigger_t mAfTrigger;
     bool mDuringAfTriggerScan;
+
+    camera_range_t mSensitivityRange;
 };
 
 } /* namespace icamera */

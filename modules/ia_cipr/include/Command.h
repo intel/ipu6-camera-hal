@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Intel Corporation.
+ * Copyright (C) 2020-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ class Command {
  public:
     explicit Command(const PSysCommandConfig& cfg);
     ~Command();
+    bool isInitialized() { return mInitialized; }
 
     Result getConfig(PSysCommandConfig* cfg);
     Result setConfig(const PSysCommandConfig& cfg);
@@ -46,5 +47,6 @@ class Command {
 
     DISALLOW_COPY_AND_ASSIGN(Command);
 };
+
 }  // namespace CIPR
 }  // namespace icamera

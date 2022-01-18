@@ -27,15 +27,14 @@ AiqResult::AiqResult(int cameraId) :
     mCameraId(cameraId),
     mTimestamp(0),
     mSequence(-1),
+    mFrameId(-1),
     mTuningMode(TUNING_MODE_VIDEO),
     mAfDistanceDiopters(0.0f),
     mSkip(false),
     mLensPosition(0),
+    mSceneMode(SCENE_MODE_AUTO),
     mFrameDuration(0),
-    mRollingShutter(0)
-{
-    LOG3A("@%s", __func__);
-
+    mRollingShutter(0) {
     CLEAR(mCustomControls);
     CLEAR(mCustomControlsParams);
     CLEAR(mAwbResults);
@@ -48,21 +47,17 @@ AiqResult::AiqResult(int cameraId) :
     CLEAR(mLensShadingMap);
 }
 
-AiqResult::~AiqResult()
-{
-    LOG3A("@%s", __func__);
+AiqResult::~AiqResult() {
     deinit();
 }
 
-int AiqResult::init()
-{
-    LOG3A("@%s", __func__);
-
+int AiqResult::init() {
     CLEAR(mAeResults);
     CLEAR(mAfResults);
     CLEAR(mAwbResults);
     CLEAR(mPaResults);
     CLEAR(mOutStats);
+    mOutStats.rgbs_grid.blocks_ptr = mOutStats.rgbs_blocks;
 
     mAiqParam.reset();
 
@@ -75,22 +70,20 @@ int AiqResult::init()
     return OK;
 }
 
-int AiqResult::deinit()
-{
-    LOG3A("@%s", __func__);
-
+int AiqResult::deinit() {
     return OK;
 }
 
-AiqResult &AiqResult::operator=(const AiqResult &other)
-{
+AiqResult &AiqResult::operator=(const AiqResult &other) {
     mCameraId = other.mCameraId;
     mSequence = other.mSequence;
+    mFrameId = other.mFrameId;
     mTimestamp = other.mTimestamp;
     mTuningMode = other.mTuningMode;
     mAfDistanceDiopters = other.mAfDistanceDiopters;
     mSkip = other.mSkip;
     mLensPosition = other.mLensPosition;
+    mSceneMode = other.mSceneMode;
     mFocusRange = other.mFocusRange;
 
     mAeResults = other.mAeResults;
@@ -99,6 +92,7 @@ AiqResult &AiqResult::operator=(const AiqResult &other)
     mGbceResults = other.mGbceResults;
     mPaResults = other.mPaResults;
     mOutStats = other.mOutStats;
+    mOutStats.rgbs_grid.blocks_ptr = mOutStats.rgbs_blocks;
 
     mCustomControls.count = other.mCustomControls.count;
     for (int i = 0; i < mCustomControls.count; i++) {

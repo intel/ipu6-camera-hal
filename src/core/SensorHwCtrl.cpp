@@ -17,41 +17,32 @@
 #define LOG_TAG SensorHwCtrl
 
 #include <limits.h>
-
 #include <linux/types.h>
 #include <linux/v4l2-controls.h>
 
-#include "iutils/CameraLog.h"
-
+#include "PlatformData.h"
 #include "SensorHwCtrl.h"
 #include "V4l2DeviceFactory.h"
-#include "PlatformData.h"
+#include "iutils/CameraLog.h"
 
 using std::vector;
 
 namespace icamera {
 
-SensorHwCtrl::SensorHwCtrl(int cameraId, V4L2Subdevice* pixelArraySubdev, V4L2Subdevice* sensorOutputSubdev):
-        mPixelArraySubdev(pixelArraySubdev),
-        mCameraId(cameraId),
-        mHorzBlank(0),
-        mVertBlank(0),
-        mCropWidth(0),
-        mCropHeight(0),
-        mCurFll(0),
-        mCalculatingFrameDuration(true)
-{
-    HAL_TRACE_CALL(CAMERA_DEBUG_LOG_LEVEL1);
-    LOG2("@%s, mCameraId:%d", __func__, mCameraId);
+SensorHwCtrl::SensorHwCtrl(int cameraId, V4L2Subdevice* pixelArraySubdev,
+                           V4L2Subdevice* sensorOutputSubdev)
+        : mPixelArraySubdev(pixelArraySubdev),
+          mCameraId(cameraId),
+          mHorzBlank(0),
+          mVertBlank(0),
+          mCropWidth(0),
+          mCropHeight(0),
+          mCurFll(0),
+          mCalculatingFrameDuration(true) {
+    LOG1("<id%d> @%s", mCameraId, __func__);
 }
 
-SensorHwCtrl::~SensorHwCtrl()
-{
-    HAL_TRACE_CALL(CAMERA_DEBUG_LOG_LEVEL1);
-}
-
-SensorHwCtrl* SensorHwCtrl::createSensorCtrl(int cameraId)
-{
+SensorHwCtrl* SensorHwCtrl::createSensorCtrl(int cameraId) {
     if (!PlatformData::isIsysEnabled(cameraId)) {
         return new DummySensor(cameraId);
     }
@@ -69,13 +60,15 @@ SensorHwCtrl* SensorHwCtrl::createSensorCtrl(int cameraId)
             subDevName.clear();
             ret = PlatformData::getDevNameByType(cameraId, VIDEO_PIXEL_SCALER, subDevName);
             if (ret == OK) {
-                LOG1("%s ScalerSubdev camera id:%d dev name:%s", __func__, cameraId, subDevName.c_str());
+                LOG1("%s ScalerSubdev camera id:%d dev name:%s", __func__, cameraId,
+                     subDevName.c_str());
                 pixelOutputSubdev = V4l2DeviceFactory::getSubDev(cameraId, subDevName);
             } else {
                 subDevName.clear();
                 ret = PlatformData::getDevNameByType(cameraId, VIDEO_PIXEL_BINNER, subDevName);
                 if (ret == OK) {
-                    LOG1("%s BinnerSubdev camera id:%d dev name:%s", __func__, cameraId, subDevName.c_str());
+                    LOG1("%s BinnerSubdev camera id:%d dev name:%s", __func__, cameraId,
+                         subDevName.c_str());
                     pixelOutputSubdev = V4l2DeviceFactory::getSubDev(cameraId, subDevName);
                 }
             }
@@ -89,8 +82,7 @@ SensorHwCtrl* SensorHwCtrl::createSensorCtrl(int cameraId)
     return sensorCtrl;
 }
 
-int SensorHwCtrl::getActivePixelArraySize(int &width, int &height, int &pixelCode)
-{
+int SensorHwCtrl::getActivePixelArraySize(int& width, int& height, int& pixelCode) {
     HAL_TRACE_CALL(CAMERA_DEBUG_LOG_LEVEL2);
     CheckAndLogError(!mPixelArraySubdev, NO_INIT, "pixel array sub device is not set");
 
@@ -102,8 +94,7 @@ int SensorHwCtrl::getActivePixelArraySize(int &width, int &height, int &pixelCod
     return status;
 }
 
-int SensorHwCtrl::getPixelRate(int &pixelRate)
-{
+int SensorHwCtrl::getPixelRate(int& pixelRate) {
     HAL_TRACE_CALL(CAMERA_DEBUG_LOG_LEVEL2);
     CheckAndLogError(!mPixelArraySubdev, NO_INIT, "pixel array sub device is not set");
 
@@ -114,8 +105,7 @@ int SensorHwCtrl::getPixelRate(int &pixelRate)
     return ret;
 }
 
-int SensorHwCtrl::setTestPatternMode(int32_t testPatternMode)
-{
+int SensorHwCtrl::setTestPatternMode(int32_t testPatternMode) {
     HAL_TRACE_CALL(CAMERA_DEBUG_LOG_LEVEL2);
     CheckAndLogError(!mPixelArraySubdev, NO_INIT, "pixel array sub device is not set");
 
@@ -123,8 +113,8 @@ int SensorHwCtrl::setTestPatternMode(int32_t testPatternMode)
     return mPixelArraySubdev->SetControl(V4L2_CID_TEST_PATTERN, testPatternMode);
 }
 
-int SensorHwCtrl::setExposure(const vector<int>& coarseExposures, const vector<int>& fineExposures)
-{
+int SensorHwCtrl::setExposure(const vector<int>& coarseExposures,
+                              const vector<int>& fineExposures) {
     HAL_TRACE_CALL(CAMERA_DEBUG_LOG_LEVEL2);
     CheckAndLogError(!mPixelArraySubdev, NO_INIT, "pixel array sub device is not set");
     CheckAndLogError((coarseExposures.empty() || fineExposures.empty()), BAD_VALUE,
@@ -135,8 +125,7 @@ int SensorHwCtrl::setExposure(const vector<int>& coarseExposures, const vector<i
     return mPixelArraySubdev->SetControl(V4L2_CID_EXPOSURE, coarseExposures[0]);
 }
 
-int SensorHwCtrl::setAnalogGains(const vector<int>& analogGains)
-{
+int SensorHwCtrl::setAnalogGains(const vector<int>& analogGains) {
     HAL_TRACE_CALL(CAMERA_DEBUG_LOG_LEVEL2);
     CheckAndLogError(!mPixelArraySubdev, NO_INIT, "pixel array sub device is not set");
     CheckAndLogError(analogGains.empty(), BAD_VALUE, "No analog gain data!");
@@ -145,8 +134,7 @@ int SensorHwCtrl::setAnalogGains(const vector<int>& analogGains)
     return mPixelArraySubdev->SetControl(V4L2_CID_ANALOGUE_GAIN, analogGains[0]);
 }
 
-int SensorHwCtrl::setDigitalGains(const vector<int>& digitalGains)
-{
+int SensorHwCtrl::setDigitalGains(const vector<int>& digitalGains) {
     HAL_TRACE_CALL(CAMERA_DEBUG_LOG_LEVEL2);
     CheckAndLogError(!mPixelArraySubdev, NO_INIT, "pixel array sub device is not set");
     CheckAndLogError(digitalGains.empty(), BAD_VALUE, "No digital gain data!");
@@ -155,8 +143,7 @@ int SensorHwCtrl::setDigitalGains(const vector<int>& digitalGains)
     return mPixelArraySubdev->SetControl(V4L2_CID_DIGITAL_GAIN, digitalGains[0]);
 }
 
-int SensorHwCtrl::setLineLengthPixels(int llp)
-{
+int SensorHwCtrl::setLineLengthPixels(int llp) {
     int status = OK;
     LOG2("@%s, llp:%d", __func__, llp);
 
@@ -173,8 +160,7 @@ int SensorHwCtrl::setLineLengthPixels(int llp)
     return status;
 }
 
-int SensorHwCtrl::setFrameLengthLines(int fll)
-{
+int SensorHwCtrl::setFrameLengthLines(int fll) {
     int status = OK;
     LOG2("@%s, fll:%d", __func__, fll);
 
@@ -193,8 +179,7 @@ int SensorHwCtrl::setFrameLengthLines(int fll)
     return status;
 }
 
-int SensorHwCtrl::setFrameDuration(int llp, int fll)
-{
+int SensorHwCtrl::setFrameDuration(int llp, int fll) {
     HAL_TRACE_CALL(CAMERA_DEBUG_LOG_LEVEL2);
     CheckAndLogError(!mPixelArraySubdev, NO_INIT, "pixel array sub device is not set");
 
@@ -213,8 +198,7 @@ int SensorHwCtrl::setFrameDuration(int llp, int fll)
     return status;
 }
 
-int SensorHwCtrl::getLineLengthPixels(int &llp)
-{
+int SensorHwCtrl::getLineLengthPixels(int& llp) {
     int status = OK;
 
     if (mCalculatingFrameDuration) {
@@ -232,8 +216,7 @@ int SensorHwCtrl::getLineLengthPixels(int &llp)
     return status;
 }
 
-int SensorHwCtrl::getFrameLengthLines(int &fll)
-{
+int SensorHwCtrl::getFrameLengthLines(int& fll) {
     int status = OK;
 
     if (mCalculatingFrameDuration) {
@@ -251,8 +234,7 @@ int SensorHwCtrl::getFrameLengthLines(int &fll)
     return status;
 }
 
-int SensorHwCtrl::getFrameDuration(int &llp, int &fll)
-{
+int SensorHwCtrl::getFrameDuration(int& llp, int& fll) {
     HAL_TRACE_CALL(CAMERA_DEBUG_LOG_LEVEL2);
     CheckAndLogError(!mPixelArraySubdev, NO_INIT, "pixel array sub device is not set");
 
@@ -264,8 +246,7 @@ int SensorHwCtrl::getFrameDuration(int &llp, int &fll)
     return status;
 }
 
-int SensorHwCtrl::getVBlank(int &vblank)
-{
+int SensorHwCtrl::getVBlank(int& vblank) {
     HAL_TRACE_CALL(CAMERA_DEBUG_LOG_LEVEL2);
     vblank = mVertBlank;
     LOG2("@%s, vblank:%d", __func__, vblank);
@@ -283,8 +264,7 @@ int SensorHwCtrl::getVBlank(int &vblank)
  *
  * \return OK if successfully.
  */
-int SensorHwCtrl::getExposureRange(int &exposureMin, int &exposureMax, int &exposureStep)
-{
+int SensorHwCtrl::getExposureRange(int& exposureMin, int& exposureMax, int& exposureStep) {
     HAL_TRACE_CALL(CAMERA_DEBUG_LOG_LEVEL2);
     CheckAndLogError(!mPixelArraySubdev, NO_INIT, "pixel array sub device is not set");
 
@@ -296,10 +276,10 @@ int SensorHwCtrl::getExposureRange(int &exposureMin, int &exposureMax, int &expo
     exposureMin = exposure.minimum;
     exposureMax = exposure.maximum;
     exposureStep = exposure.step;
-    LOG2("@%s, exposureMin:%d, exposureMax:%d, exposureStep:%d",
-        __func__, exposureMin, exposureMax, exposureStep);
+    LOG2("@%s, exposureMin:%d, exposureMax:%d, exposureStep:%d", __func__, exposureMin, exposureMax,
+         exposureStep);
 
     return status;
 }
 
-} // namespace icamera
+}  // namespace icamera

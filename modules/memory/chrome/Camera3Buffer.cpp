@@ -27,6 +27,7 @@
 #include "iutils/CameraDump.h"
 #include "iutils/Errors.h"
 #include "iutils/Utils.h"
+#include "HALv3Utils.h"
 
 using namespace icamera;
 
@@ -56,7 +57,7 @@ Camera3Buffer::Camera3Buffer()
           mGbmBufferManager(nullptr) {
     CLEAR(mHalBuffer);
     mHalBuffer.dmafd = -1;
-    LOG1("%s default constructor for buf %p", __func__, this);
+    LOG2("%s default constructor for buf %p", __func__, this);
 }
 
 /**
@@ -84,7 +85,7 @@ Camera3Buffer::Camera3Buffer(int w, int h, int stride, int v4l2fmt, void* usrPtr
           mCameraId(cameraId)
 
 {
-    LOG1("%s create malloc camera buffer %p", __func__, this);
+    LOG2("%s create malloc camera buffer %p", __func__, this);
 
     CLEAR(mHalBuffer);
     mHalBuffer.s.format = v4l2fmt;
@@ -107,7 +108,7 @@ Camera3Buffer::Camera3Buffer(int w, int h, int stride, int v4l2fmt, void* usrPtr
 }
 
 Camera3Buffer::~Camera3Buffer() {
-    HAL_TRACE_CALL(CAMERA_DEBUG_LOG_LEVEL1);
+    HAL_TRACE_CALL(CAMERA_DEBUG_LOG_LEVEL2);
 
     if (mInit) {
         switch (mType) {
@@ -134,7 +135,7 @@ Camera3Buffer::~Camera3Buffer() {
                 break;
         }
     }
-    LOG1("%s destroying buf %p", __func__, this);
+    LOG2("%s destroying buf %p", __func__, this);
 }
 
 /**
@@ -161,8 +162,8 @@ icamera::status_t Camera3Buffer::init(const camera3_stream_buffer* aBuffer, int 
                                                   mHalBuffer.s.height, false, false, false);
     mLocked = false;
     mUsage = aBuffer->stream->usage;
-    mHalBuffer.flags = IS_HW_USAGE(mUsage) ? 0 : camera_buffer_flags_t::BUFFER_FLAG_SW_WRITE
-                                                 | camera_buffer_flags_t::BUFFER_FLAG_SW_READ;
+    mHalBuffer.flags = IS_NO_FLUSH_USAGE(mUsage) ? 0 : camera_buffer_flags_t::BUFFER_FLAG_SW_WRITE
+                                                     | camera_buffer_flags_t::BUFFER_FLAG_SW_READ;
     mInit = true;
     mHalBuffer.addr = nullptr;
     mUserBuffer = *aBuffer;
@@ -194,6 +195,7 @@ icamera::status_t Camera3Buffer::init(const camera3_stream_t* stream, buffer_han
     mType = BUF_TYPE_HANDLE;
     mGbmBufferManager = cros::CameraBufferManager::GetInstance();
     mHandle = handle;
+    mHandlePtr = &mHandle;
     mHalBuffer.s.width = stream->width;
     mHalBuffer.s.height = stream->height;
     mFormat = stream->format;
@@ -287,7 +289,7 @@ icamera::status_t Camera3Buffer::deregisterBuffer() {
  * \param aBuffer [IN] int flags
  */
 icamera::status_t Camera3Buffer::lock(int flags) {
-    HAL_TRACE_CALL(CAMERA_DEBUG_LOG_LEVEL1);
+    HAL_TRACE_CALL(CAMERA_DEBUG_LOG_LEVEL2);
     mHalBuffer.addr = nullptr;
     mHalBuffer.s.size = 0;
     int ret = 0;
@@ -328,7 +330,7 @@ icamera::status_t Camera3Buffer::lock(int flags) {
 }
 
 icamera::status_t Camera3Buffer::lock() {
-    HAL_TRACE_CALL(CAMERA_DEBUG_LOG_LEVEL1);
+    HAL_TRACE_CALL(CAMERA_DEBUG_LOG_LEVEL2);
     CheckAndLogError(!mInit, INVALID_OPERATION,
                      "@%s: Error: Cannot lock now this buffer, not initialized", __func__);
 
@@ -356,7 +358,7 @@ icamera::status_t Camera3Buffer::lock() {
 }
 
 icamera::status_t Camera3Buffer::unlock() {
-    HAL_TRACE_CALL(CAMERA_DEBUG_LOG_LEVEL1);
+    HAL_TRACE_CALL(CAMERA_DEBUG_LOG_LEVEL2);
     if (mLocked && mType != BUF_TYPE_HANDLE) {
         mLocked = false;
         return icamera::OK;
@@ -420,50 +422,6 @@ void Camera3Buffer::dumpImage(const void* data, int frameNumber, const int size,
 #endif
 }
 
-int Camera3Buffer::v4L2Fmt2GFXFmt(int v4l2Fmt) {
-    int gfxFmt = -1;
-
-    switch (v4l2Fmt) {
-        case V4L2_PIX_FMT_JPEG:
-            gfxFmt = HAL_PIXEL_FORMAT_BLOB;
-            break;
-        case V4L2_PIX_FMT_SBGGR8:
-        case V4L2_PIX_FMT_SRGGB8:
-        case V4L2_PIX_FMT_SGRBG8:
-        case V4L2_PIX_FMT_SRGGB10:
-        case V4L2_PIX_FMT_SGRBG10:
-        case V4L2_PIX_FMT_SGRBG12:
-        case V4L2_PIX_FMT_SBGGR10:
-        case V4L2_PIX_FMT_SBGGR10P:
-        case V4L2_PIX_FMT_SGBRG10P:
-        case V4L2_PIX_FMT_SGRBG10P:
-        case V4L2_PIX_FMT_SRGGB10P:
-        case V4L2_PIX_FMT_SBGGR12:
-        case V4L2_PIX_FMT_SGBRG12:
-        case V4L2_PIX_FMT_SRGGB12:
-            gfxFmt = HAL_PIXEL_FORMAT_RAW16;
-            break;
-        case V4L2_PIX_FMT_YVU420:
-            gfxFmt = HAL_PIXEL_FORMAT_YV12;
-            break;
-        case V4L2_PIX_FMT_NV21:
-            gfxFmt = HAL_PIXEL_FORMAT_YCrCb_420_SP;
-            break;
-        case V4L2_PIX_FMT_NV12:
-            LOGW("Current there is no gfx format for V4L2_PIX_FMT_NV12.");
-            break;
-        case V4L2_PIX_FMT_YUYV:
-            gfxFmt = HAL_PIXEL_FORMAT_YCbCr_422_I;
-            break;
-        default:
-            LOGE("%s: no gfx format for v4l2 0x%x, %s!", __func__, v4l2Fmt,
-                 CameraUtils::format2string(v4l2Fmt).c_str());
-            break;
-    }
-
-    return gfxFmt;
-}
-
 /**
  * Utility methods to allocate Camera3Buffer from HEAP or Gfx memory
  */
@@ -502,8 +460,16 @@ std::shared_ptr<Camera3Buffer> allocateHandleBuffer(int w, int h, int gfxFmt, in
     buffer_handle_t handle;
     uint32_t stride = 0;
 
-    LOG1("%s, [wxh] = [%dx%d], format 0x%x, usage 0x%x", __func__, w, h, gfxFmt, usage);
-    int ret = bufManager->Allocate(w, h, gfxFmt, usage, &handle, &stride);
+    int width = w;
+    int height = h;
+    if (gfxFmt == HAL_PIXEL_FORMAT_BLOB) {
+        width = CameraUtils::getFrameSize(
+            HalV3Utils::HALFormatToV4l2Format(cameraId, gfxFmt, usage), w, h, false, false, false);
+        height = 1;
+    }
+
+    LOG1("%s, [wxh] = [%dx%d], format 0x%x, usage 0x%x", __func__, width, height, gfxFmt, usage);
+    int ret = bufManager->Allocate(width, height, gfxFmt, usage, &handle, &stride);
     CheckAndLogError(ret != 0, nullptr, "Allocate handle failed! ret:%d", ret);
 
     std::shared_ptr<Camera3Buffer> buffer(new Camera3Buffer());

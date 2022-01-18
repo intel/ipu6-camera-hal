@@ -18,7 +18,7 @@
 
 #include <vector>
 
-#include "FaceBase.h"
+#include "FaceType.h"
 #include "IntelAlgoCommonClient.h"
 #include "iutils/Errors.h"
 #include "iutils/Utils.h"

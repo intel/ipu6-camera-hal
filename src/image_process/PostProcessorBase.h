@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Intel Corporation.
+ * Copyright (C) 2019-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,93 +17,100 @@
 #pragma once
 
 #include <memory>
-#include "iutils/Errors.h"
-#include "iutils/Utils.h"
-#include "Parameters.h"
+
 #include "Camera3Buffer.h"
-#include "IImageProcessor.h"
 #include "EXIFMetaData.h"
+#include "IImageProcessor.h"
 #include "IJpegEncoder.h"
 #include "JpegMaker.h"
+#include "Parameters.h"
+#include "iutils/Errors.h"
+#include "iutils/Utils.h"
 
 namespace icamera {
 
 class PostProcessorBase {
-public:
+ public:
     PostProcessorBase(std::string processName);
-    virtual ~PostProcessorBase();
+    virtual ~PostProcessorBase() {}
 
     std::string getName() { return mName; }
-    virtual status_t doPostProcessing(const std::shared_ptr<camera3::Camera3Buffer> &inBuf,
-                                      std::shared_ptr<camera3::Camera3Buffer> &outBuf) { return OK; }
+    virtual status_t doPostProcessing(const std::shared_ptr<camera3::Camera3Buffer>& inBuf,
+                                      std::shared_ptr<camera3::Camera3Buffer>& outBuf) {
+        return OK;
+    }
 
-    virtual status_t doPostProcessing(const std::shared_ptr<camera3::Camera3Buffer> &inBuf,
-                                      const Parameters &parameter,
-                                      std::shared_ptr<camera3::Camera3Buffer> &outBuf) { return OK; }
-private:
+    virtual status_t doPostProcessing(const std::shared_ptr<camera3::Camera3Buffer>& inBuf,
+                                      const Parameters& parameter,
+                                      std::shared_ptr<camera3::Camera3Buffer>& outBuf) {
+        return OK;
+    }
+
+ private:
     DISALLOW_COPY_AND_ASSIGN(PostProcessorBase);
 
-protected:
+ protected:
     std::string mName;
     std::unique_ptr<IImageProcessor> mProcessor;
 };
 
 class ScaleProcess : public PostProcessorBase {
-public:
+ public:
     ScaleProcess();
-    ~ScaleProcess() {};
+    ~ScaleProcess(){};
 
-    virtual status_t doPostProcessing(const std::shared_ptr<camera3::Camera3Buffer> &inBuf,
-                                      std::shared_ptr<camera3::Camera3Buffer> &outBuf);
+    virtual status_t doPostProcessing(const std::shared_ptr<camera3::Camera3Buffer>& inBuf,
+                                      std::shared_ptr<camera3::Camera3Buffer>& outBuf);
 };
 
 class RotateProcess : public PostProcessorBase {
-public:
+ public:
     RotateProcess(int angle);
-    ~RotateProcess() {};
+    ~RotateProcess(){};
 
-    virtual status_t doPostProcessing(const std::shared_ptr<camera3::Camera3Buffer> &inBuf,
-                                      std::shared_ptr<camera3::Camera3Buffer> &outBuf);
-private:
+    virtual status_t doPostProcessing(const std::shared_ptr<camera3::Camera3Buffer>& inBuf,
+                                      std::shared_ptr<camera3::Camera3Buffer>& outBuf);
+
+ private:
     int mAngle;
 };
 
 class CropProcess : public PostProcessorBase {
-public:
+ public:
     CropProcess();
-    ~CropProcess() {};
+    ~CropProcess(){};
 
-    virtual status_t doPostProcessing(const std::shared_ptr<camera3::Camera3Buffer> &inBuf,
-                                      std::shared_ptr<camera3::Camera3Buffer> &outBuf);
+    virtual status_t doPostProcessing(const std::shared_ptr<camera3::Camera3Buffer>& inBuf,
+                                      std::shared_ptr<camera3::Camera3Buffer>& outBuf);
 };
 
 class ConvertProcess : public PostProcessorBase {
-public:
+ public:
     ConvertProcess();
-    ~ConvertProcess() {};
+    ~ConvertProcess(){};
 
-    virtual status_t doPostProcessing(const std::shared_ptr<camera3::Camera3Buffer> &inBuf,
-                                      std::shared_ptr<camera3::Camera3Buffer> &outBuf);
+    virtual status_t doPostProcessing(const std::shared_ptr<camera3::Camera3Buffer>& inBuf,
+                                      std::shared_ptr<camera3::Camera3Buffer>& outBuf);
 };
 
 class JpegProcess : public PostProcessorBase {
-public:
+ public:
     JpegProcess(int cameraId);
-    ~JpegProcess();
+    ~JpegProcess(){};
 
-    virtual status_t doPostProcessing(const std::shared_ptr<camera3::Camera3Buffer> &inBuf,
-                                      const Parameters &parameter,
-                                      std::shared_ptr<camera3::Camera3Buffer> &outBuf);
-private:
-    void attachJpegBlob(const EncodePackage &package);
-    std::shared_ptr<camera3::Camera3Buffer>
-    cropAndDownscaleThumbnail(int thumbWidth, int thumbHeight,
-                              const std::shared_ptr<camera3::Camera3Buffer> &inBuf);
-    void fillEncodeInfo(const std::shared_ptr<camera3::Camera3Buffer> &inBuf,
-                        const std::shared_ptr<camera3::Camera3Buffer> &outBuf,
-                        EncodePackage &package);
+    virtual status_t doPostProcessing(const std::shared_ptr<camera3::Camera3Buffer>& inBuf,
+                                      const Parameters& parameter,
+                                      std::shared_ptr<camera3::Camera3Buffer>& outBuf);
 
-private:
+ private:
+    void attachJpegBlob(const EncodePackage& package);
+    std::shared_ptr<camera3::Camera3Buffer> cropAndDownscaleThumbnail(
+        int thumbWidth, int thumbHeight, const std::shared_ptr<camera3::Camera3Buffer>& inBuf);
+    void fillEncodeInfo(const std::shared_ptr<camera3::Camera3Buffer>& inBuf,
+                        const std::shared_ptr<camera3::Camera3Buffer>& outBuf,
+                        EncodePackage& package);
+
+ private:
     int mCameraId;
 
     std::shared_ptr<camera3::Camera3Buffer> mCropBuffer;
@@ -115,4 +122,4 @@ private:
     std::unique_ptr<unsigned char[]> mExifData;
 };
 
-} // namespace icamera
+}  // namespace icamera

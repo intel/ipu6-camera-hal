@@ -32,7 +32,6 @@ extern "C" {
 #include "3a/AiqResultStorage.h"
 #include "AiqInitData.h"
 #include "PSysDAG.h"
-#include "SyncManager.h"
 #include "ia_pal_output_data.h"
 #include "iutils/CameraDump.h"
 
@@ -59,18 +58,17 @@ GPUExecutor::GPUExecutor(int cameraId, const ExecutorPolicy& policy, vector<stri
           mUseInternalTnrBuffer(useTnrOutBuffer),
           mOutBufferSize(0) {
     CLEAR(mStillTnrTriggerInfo);
-    LOG1("@%s %s", __func__, mName.c_str());
+    LOG1("Construct %s", mName.c_str());
 }
 
 GPUExecutor::~GPUExecutor() {
-    LOG1("@%s %s", __func__, mName.c_str());
+    LOG1("Destroy %s", mName.c_str());
     mPGExecutors.clear();
 }
 
 int GPUExecutor::initPipe() {
-    LOG1("@%s:%s", __func__, getName());
-    CheckAndLogError(mGraphConfig == nullptr, BAD_VALUE, "%s, the graph config is NULL, BUG!",
-                     __func__);
+    LOG1("Init pipe %s", getName());
+    CheckAndLogError(mGraphConfig == nullptr, BAD_VALUE, "The graph config is NULL");
 
     vector<IGraphType::PipelineConnection> connVector;
 
@@ -91,7 +89,7 @@ int GPUExecutor::initPipe() {
 
 // GPU executor doesn't have HW pg, create pg according to graph settings
 int GPUExecutor::createPGs() {
-    LOG1("@%s:%s", __func__, getName());
+    LOG1("Create PG %s", getName());
 
     for (auto const& pgName : mPGNames) {
         int pgId = mGraphConfig->getPgIdByPgName(pgName);
@@ -107,10 +105,10 @@ int GPUExecutor::createPGs() {
 }
 
 int GPUExecutor::start() {
-    LOG1("%s executor:%s", __func__, mName.c_str());
+    LOG1("Start executor:%s", mName.c_str());
     if (mStreamId == STILL_TNR_STREAM_ID &&
         getStillTnrTriggerInfo(mPSysDag->getTuningMode(-1)) != OK) {
-        LOGW("%s can't get threshold gain from aiqb, use default", __func__);
+        LOGW("Can't get threshold gain from aiqb, use default");
     }
 
     mProcessThread = new ProcessThread(this);
@@ -130,12 +128,12 @@ int GPUExecutor::start() {
         if (ret) {
             mIntelTNR = nullptr;
             // when failed to init tnr, executor will run without tnr effect
-            LOGW("%s executor:%s init tnr failed", __func__, mName.c_str());
+            LOGW("Executor:%s init tnr failed", mName.c_str());
         }
     }
     AutoMutex l(mBufferQueueLock);
     ret = allocBuffers();
-    CheckAndLogError(ret, UNKNOWN_ERROR, "@%s: allocBuffers failed", __func__);
+    CheckAndLogError(ret, UNKNOWN_ERROR, "AllocBuffers for PG failed");
     dumpPGs();
 
     mThreadRunning = true;
@@ -145,7 +143,7 @@ int GPUExecutor::start() {
 }
 
 void GPUExecutor::stop() {
-    LOG1("%s executor:%s", __func__, mName.c_str());
+    LOG1("Stop executor:%s", mName.c_str());
 
     mProcessThread->requestExitAndWait();
 
@@ -158,7 +156,7 @@ void GPUExecutor::stop() {
 }
 
 int GPUExecutor::allocBuffers() {
-    LOG1("%s executor:%s", __func__, mName.c_str());
+    LOG1("executor: %s", mName.c_str());
 
     releaseBuffers();
 
@@ -170,16 +168,22 @@ int GPUExecutor::allocBuffers() {
     int srcFmt = mTerminalsDesc[term].frameDesc.mFormat;
     int srcWidth = mTerminalsDesc[term].frameDesc.mWidth;
     int srcHeight = mTerminalsDesc[term].frameDesc.mHeight;
-    int size = PGCommon::getFrameSize(srcFmt, srcWidth, srcHeight, true);
+    uint32_t size = 0;
+
+    if (mIntelTNR) {
+        int ret = mIntelTNR->getSurfaceInfo(srcWidth, srcHeight, &size);
+        if (ret) size = PGCommon::getFrameSize(srcFmt, srcWidth, srcHeight, true);
+    }
+    LOG1("@%s, Required GPU TNR buffer size %u", __func__, size);
 
     for (int i = 0; i < MAX_BUFFER_COUNT; i++) {
         shared_ptr<CameraBuffer> buf;
         if (mIntelTNR) {
             buf = std::make_shared<CameraBuffer>(mCameraId, BUFFER_USAGE_PSYS_INPUT,
                                                  V4L2_MEMORY_USERPTR, size, i, srcFmt);
-            CheckAndLogError(!buf, NO_MEMORY, "@%s: fail to alloc CameraBuffer", __func__);
+            CheckAndLogError(!buf, NO_MEMORY, "Fail to alloc CameraBuffer");
             void* buffer = mIntelTNR->allocCamBuf(size, i);
-            CheckAndLogError(!buffer, NO_MEMORY, "@%s: fail to alloc shared memory", __func__);
+            CheckAndLogError(!buffer, NO_MEMORY, "Fail to alloc shared memory");
             buf->setUserBufferInfo(srcFmt, srcWidth, srcHeight, buffer);
         } else {
             buf = CameraBuffer::create(mCameraId, BUFFER_USAGE_PSYS_INPUT, V4L2_MEMORY_USERPTR,
@@ -192,10 +196,10 @@ int GPUExecutor::allocBuffers() {
 
     if (mIntelTNR) {
         int ret = allocTnrOutBufs(size);
-        CheckAndLogError(ret, UNKNOWN_ERROR, "@%s: alloc tnr reference buffer failed", __func__);
+        CheckAndLogError(ret, UNKNOWN_ERROR, "Alloc tnr reference buffer failed");
 
         mTnr7usParam = mIntelTNR->allocTnr7ParamBuf();
-        CheckAndLogError(!mTnr7usParam, NO_MEMORY, "@%s: Allocate Param buffer failed", __func__);
+        CheckAndLogError(!mTnr7usParam, NO_MEMORY, "Allocate Param buffer failed");
         CLEAR(*mTnr7usParam);
     }
 
@@ -207,7 +211,7 @@ int GPUExecutor::allocBuffers() {
         int size = CameraUtils::getFrameSize(fmt, width, height, true);
         shared_ptr<CameraBuffer> buf = CameraBuffer::create(
             mCameraId, BUFFER_USAGE_PSYS_INPUT, V4L2_MEMORY_USERPTR, size, 0, fmt, width, height);
-        CheckAndLogError(!buf, NO_MEMORY, "@%s: Allocate internal output buffer failed", __func__);
+        CheckAndLogError(!buf, NO_MEMORY, "Allocate internal output buffer failed");
         mInternalOutputBuffers[item.first] = buf;
     }
 
@@ -222,8 +226,8 @@ bool GPUExecutor::fetchTnrOutBuffer(int64_t seq, std::shared_ptr<CameraBuffer> b
         void* pSrcBuf = (buf->getMemory() == V4L2_MEMORY_DMABUF)
                             ? CameraBuffer::mapDmaBufferAddr(buf->getFd(), buf->getBufferSize())
                             : buf->getBufferAddr();
-        CheckAndLogError(!pSrcBuf, false, "%s, pSrcBuf is nullptr", __func__);
-        LOG2("%s, sequence %ld is used for output", __func__, seq);
+        CheckAndLogError(!pSrcBuf, false, "pSrcBuf is nullptr");
+        LOG2("Sequence %ld is used for output", seq);
         MEMCPY_S(pSrcBuf, buf->getBufferSize(), mTnrOutBufMap[seq], mOutBufferSize);
         if (buf->getMemory() == V4L2_MEMORY_DMABUF) {
             CameraBuffer::unmapDmaBufferAddr(pSrcBuf, buf->getBufferSize());
@@ -237,12 +241,12 @@ bool GPUExecutor::fetchTnrOutBuffer(int64_t seq, std::shared_ptr<CameraBuffer> b
 
 int GPUExecutor::getStillTnrTriggerInfo(TuningMode mode) {
     IntelCca* intelCca = IntelCca::getInstance(mCameraId, mode);
-    CheckAndLogError(!intelCca, UNKNOWN_ERROR, "%s, cca is nullptr, mode:%d", __func__, mode);
+    CheckAndLogError(!intelCca, UNKNOWN_ERROR, "cca is nullptr, mode:%d", mode);
     cca::cca_cmc cmc;
     ia_err ret = intelCca->getCMC(&cmc);
-    CheckAndLogError(ret != OK, BAD_VALUE, "@%s get cmc data failed", __func__);
+    CheckAndLogError(ret != OK, BAD_VALUE, "Get cmc data failed");
     mStillTnrTriggerInfo = cmc.tnr7us_trigger_info;
-    LOG2("%s still tnr trigger gain num: %d threshold: %f", mName.c_str(),
+    LOG1("%s still tnr trigger gain num: %d threshold: %f", mName.c_str(),
          mStillTnrTriggerInfo.num_gains, mStillTnrTriggerInfo.tnr7us_threshold_gain);
     return OK;
 }
@@ -252,7 +256,7 @@ int GPUExecutor::getTotalGain(int64_t seq, float* totalGain) {
     AiqResult* aiqResults =
         const_cast<AiqResult*>(AiqResultStorage::getInstance(mCameraId)->getAiqResult(seq));
     if (aiqResults == nullptr) {
-        LOGW("%s: no result for sequence %ld! use the latest instead", __func__, seq);
+        LOGW("No result for sequence %ld! use the latest instead", seq);
         aiqResults =
             const_cast<AiqResult*>(AiqResultStorage::getInstance(mCameraId)->getAiqResult());
         CheckAndLogError((aiqResults == nullptr), INVALID_OPERATION,
@@ -269,7 +273,7 @@ bool GPUExecutor::isBypassStillTnr(int64_t seq) {
 
     float totalGain = 0.0f;
     int ret = getTotalGain(seq, &totalGain);
-    CheckAndLogError(ret, true, "@%s, Failed to get total gain", __func__);
+    CheckAndLogError(ret, true, "Failed to get total gain");
     if (totalGain <= mStillTnrTriggerInfo.tnr7us_threshold_gain) return true;
     return false;
 }
@@ -278,7 +282,7 @@ int GPUExecutor::getTnrExtraFrameCount(int64_t seq) {
     if (mStreamId != STILL_TNR_STREAM_ID) return 0;
     float totalGain = 0.0f;
     int ret = getTotalGain(seq, &totalGain);
-    CheckAndLogError(ret, 0, "@%s, Failed to get total gain", __func__);
+    CheckAndLogError(ret, 0, "Failed to get total gain");
 
     if (!mStillTnrTriggerInfo.num_gains) return PlatformData::getTnrExtraFrameCount(mCameraId);
 
@@ -305,7 +309,7 @@ int GPUExecutor::allocTnrOutBufs(uint32_t bufSize) {
     for (int i = 0; i < maxTnrOutBufCount; i++) {
         void* buffer = mIntelTNR->allocCamBuf(bufSize, MAX_BUFFER_COUNT + i);
         // will release all buffer in freeAllBufs
-        CheckAndLogError(!buffer, UNKNOWN_ERROR, "@%s, alloc reference buffer fails", __func__);
+        CheckAndLogError(!buffer, UNKNOWN_ERROR, "Alloc reference buffer fails");
         int index = i * (-1) - 1;  // initialize index as -1, -2, ...
         mTnrOutBufMap[index] = buffer;
     }
@@ -360,7 +364,7 @@ int GPUExecutor::processNewFrame() {
 
     // Should find first not none input buffer instead of always use the first one.
     shared_ptr<CameraBuffer> inBuf = inBuffers.begin()->second;
-    CheckAndLogError(!inBuf, UNKNOWN_ERROR, "@%s: no valid input buffer", __func__);
+    CheckAndLogError(!inBuf, UNKNOWN_ERROR, "No valid input buffer");
     v4l2_buffer_t inV4l2Buf = *inBuf->getV4L2Buffer().Get();
 
     // Fill real buffer to run pipe
@@ -371,10 +375,10 @@ int GPUExecutor::processNewFrame() {
     }
 
     std::shared_ptr<CameraBuffer> outBuf = outBuffers.begin()->second;
-    CheckAndLogError(!outBuf, UNKNOWN_ERROR, "@%s: no valid output buffer", __func__);
+    CheckAndLogError(!outBuf, UNKNOWN_ERROR, "No valid output buffer");
 
     ret = runTnrFrame(inBuf, outBuf);
-    CheckAndLogError(ret != OK, ret, "@%s: run tnr failed", __func__);
+    CheckAndLogError(ret != OK, ret, "Run tnr failed");
 
     if (CameraDump::isDumpTypeEnable(DUMP_GPU_TNR) && mStreamId == STILL_TNR_STREAM_ID) {
         CameraDump::dumpImage(mCameraId, inBuf, M_GPUTNR, inBuffers.begin()->first);
@@ -412,7 +416,7 @@ int GPUExecutor::updateTnrISPConfig(Tnr7Param* pbuffer, uint32_t sequence) {
         CheckAndLogError(pg == nullptr, UNKNOWN_ERROR, "Can't get IPU program group");
 
         // Get ISP parameters
-        LOG1(" %s update tnr parameters for sequence %d", __func__, sequence);
+        LOG2("Update tnr parameters for sequence %d", sequence);
 
         ia_binary_data* ipuParameters = mAdaptor->getIpuParameter(sequence, mStreamId);
         CheckAndLogError(ipuParameters == nullptr, UNKNOWN_ERROR, "Failed to find ISP parameter");
@@ -467,9 +471,13 @@ int GPUExecutor::updateTnrISPConfig(Tnr7Param* pbuffer, uint32_t sequence) {
             tnr7_bc->coeffs[i] = pBc->coeffs[i];
         }
 
-        tnr7_bc->global_protection = pBc->global_protection;
-        tnr7_bc->global_protection_inv_num_pixels = pBc->global_protection_inv_num_pixels;
-        tnr7_bc->global_protection_motion_level = pBc->global_protection_motion_level;
+        if (!icamera::PlatformData::useTnrGlobalProtection()) {
+            tnr7_bc->global_protection = 0;
+        } else {
+            tnr7_bc->global_protection = pBc->global_protection;
+            tnr7_bc->global_protection_inv_num_pixels = pBc->global_protection_inv_num_pixels;
+            tnr7_bc->global_protection_motion_level = pBc->global_protection_motion_level;
+        }
         for (int i = 0; i < sizeof(pBc->global_protection_sensitivity_lut_values) / sizeof(int32_t);
              i++) {
             tnr7_bc->global_protection_sensitivity_lut_values[i] =
@@ -513,21 +521,46 @@ int GPUExecutor::updateTnrISPConfig(Tnr7Param* pbuffer, uint32_t sequence) {
 int GPUExecutor::runTnrFrame(const std::shared_ptr<CameraBuffer>& inBuf,
                              std::shared_ptr<CameraBuffer> outBuf) {
     PERF_CAMERA_ATRACE();
-    CheckAndLogError(!inBuf->getBufferAddr(), UNKNOWN_ERROR, "%s invalid input buffer", __func__);
-
-    if (mPolicyManager) {
-        // Check if need to wait other executors.
-        mPolicyManager->wait(mName);
-    }
-    LOG2("Enter %s executor name:%s, sequence: %u", __func__, mName.c_str(), inBuf->getSequence());
+    CheckAndLogError(!inBuf->getBufferAddr(), UNKNOWN_ERROR, "Invalid input buffer");
+    int ret = OK;
+    uint32_t sequence = inBuf->getSequence();
+    LOG2("Enter executor name:%s, sequence: %u", mName.c_str(), inBuf->getSequence());
     TRACE_LOG_PROCESS(mName.c_str(), __func__, MAKE_COLOR(inBuf->getSequence()),
                       inBuf->getSequence());
 
-    uint32_t sequence = inBuf->getSequence();
-    int ret = OK;
+    struct timespec beginTime = {};
     if (mIntelTNR) {
+        if (Log::isLogTagEnabled(ST_GPU_TNR)) clock_gettime(CLOCK_MONOTONIC, &beginTime);
+
         ret = updateTnrISPConfig(mTnr7usParam, sequence);
-        CheckAndLogError(ret != OK, UNKNOWN_ERROR, " %s Failed to update TNR parameters", __func__);
+        if (Log::isLogTagEnabled(ST_GPU_TNR)) {
+            struct timespec endTime = {};
+            clock_gettime(CLOCK_MONOTONIC, &endTime);
+            uint64_t timeUsedUs = (endTime.tv_sec - beginTime.tv_sec) * 1000000 +
+                                  (endTime.tv_nsec - beginTime.tv_nsec) / 1000;
+            LOG2(ST_GPU_TNR, "%s executor name:%s, sequence: %u update param time %lu us", __func__,
+                 mName.c_str(), inBuf->getSequence(), timeUsedUs);
+        }
+        CheckAndLogError(ret != OK, UNKNOWN_ERROR, "Failed to update TNR parameters");
+    }
+
+    // wait other executors after parameters update finished, sync the main computing stage only
+    if (mPolicyManager && sequence > 0) {
+        // Check if need to wait other executors.
+        mPolicyManager->wait(mName);
+    }
+
+    bool paramSyncUpdate = (mStreamId == VIDEO_STREAM_ID) ? false : true;
+
+    if (!paramSyncUpdate && mIntelTNR) {
+        // request update tnr parameters before wait
+        float totalGain = 0.0f;
+        ret = getTotalGain(sequence, &totalGain);
+        CheckAndLogError(ret, UNKNOWN_ERROR, "Failed to get total gain");
+        // update tnr param when total gain changes
+        bool isTnrParamForceUpdate = icamera::PlatformData::isTnrParamForceUpdate();
+        // multiply totalGain by 100, to avoid lose accuracy
+        ret = mIntelTNR->asyncParamUpdate(static_cast<int>(totalGain * 100), isTnrParamForceUpdate);
     }
 
     int fd = outBuf->getFd();
@@ -555,8 +588,7 @@ int GPUExecutor::runTnrFrame(const std::shared_ptr<CameraBuffer>& inBuf,
                 CameraBuffer::unmapDmaBufferAddr(outPtr, bufferSize);
             }
             mLastSequence = UINT32_MAX;
-            LOG2("%s executor name:%s, skip frame sequence: %ld", __func__, mName.c_str(),
-                 inBuf->getSequence());
+            LOG2("Executor name:%s, skip frame sequence: %ld", mName.c_str(), inBuf->getSequence());
             return OK;
         } else if (mStreamId == STILL_TNR_STREAM_ID) {
             mGPULock.lock();
@@ -583,15 +615,25 @@ int GPUExecutor::runTnrFrame(const std::shared_ptr<CameraBuffer>& inBuf,
         // when use internal tnr buffer, we don't need to use fd map buffer
         dstFd = -1;
     }
+
+    if (Log::isLogTagEnabled(ST_GPU_TNR)) clock_gettime(CLOCK_MONOTONIC, &beginTime);
     ret = mIntelTNR->runTnrFrame(inBuf->getBufferAddr(), dstBuf, inBuf->getBufferSize(), dstSize,
-                                 mTnr7usParam, false, dstFd);
+                                 mTnr7usParam, paramSyncUpdate, dstFd);
     if (ret == OK) {
         if (useInternalBuffer) {
             MEMCPY_S(outPtr, bufferSize, tnrOutBuf->second, mOutBufferSize);
         }
     } else {
-        LOG2("%s, Just copy source buffer if run TNR failed", __func__);
+        LOG2("Just copy source buffer if run TNR failed");
         MEMCPY_S(outPtr, bufferSize, inBuf->getBufferAddr(), inBuf->getBufferSize());
+    }
+    if (Log::isLogTagEnabled(ST_GPU_TNR)) {
+        struct timespec endTime;
+        clock_gettime(CLOCK_MONOTONIC, &endTime);
+        uint64_t timeUsedUs = (endTime.tv_sec - beginTime.tv_sec) * 1000000 +
+                              (endTime.tv_nsec - beginTime.tv_nsec) / 1000;
+        LOG2(ST_GPU_TNR, "%s executor name:%s, sequence: %u run tnr time %lu us", __func__,
+             mName.c_str(), inBuf->getSequence(), timeUsedUs);
     }
     if (icamera::PlatformData::isStillTnrPrior()) {
         mGPULock.unlock();
@@ -601,26 +643,16 @@ int GPUExecutor::runTnrFrame(const std::shared_ptr<CameraBuffer>& inBuf,
         std::unique_lock<std::mutex> lock(mTnrOutBufMapLock);
         mTnrOutBufMap.erase(tnrOutBuf->first);
         mTnrOutBufMap[sequence] = tnrOutBuf->second;
-        LOG2("%s, outBuf->first %ld, outBuf->second %p", __func__, tnrOutBuf->first,
-             tnrOutBuf->second);
+        LOG2("outBuf->first %ld, outBuf->second %p", tnrOutBuf->first, tnrOutBuf->second);
     }
 
     if (memoryType == V4L2_MEMORY_DMABUF) {
         CameraBuffer::unmapDmaBufferAddr(outPtr, bufferSize);
     }
-    CheckAndLogError(ret != OK, UNKNOWN_ERROR, " %s tnr7us run frame failed", __func__);
+    CheckAndLogError(ret != OK, UNKNOWN_ERROR, "tnr7us run frame failed");
     mLastSequence = sequence;
 
-    // update tnr parameters after GPU thread finished
-    float totalGain = 0.0f;
-    ret = getTotalGain(sequence, &totalGain);
-    CheckAndLogError(ret, UNKNOWN_ERROR, "@%s, Failed to get total gain", __func__);
-    // update tnr param when total gain changes
-    bool isTnrParamForceUpdate = icamera::PlatformData::isTnrParamForceUpdate();
-    // multiply totalGain by 100, to avoid lose accuracy
-    ret = mIntelTNR->asyncParamUpdate(static_cast<int>(totalGain * 100), isTnrParamForceUpdate);
-
-    LOG2("Exit %s executor name:%s, sequence: %u", __func__, mName.c_str(), inBuf->getSequence());
+    LOG2("Exit executor name:%s, sequence: %u", mName.c_str(), inBuf->getSequence());
     return ret;
 }
 
@@ -629,7 +661,7 @@ int GPUExecutor::dumpTnrParameters(uint32_t sequence) {
     std::string dumpFileName =
         std::string("/home/tnr7-") + std::to_string(sequence) + std::string(".txt");
 
-    LOG1("%s save tnr7 parameters to file %s", __func__, dumpFileName.c_str());
+    LOG1("Save tnr7 parameters to file %s", dumpFileName.c_str());
     tnr7_bc_1_0_t* tnr7_bc = &(mTnr7usParam->bc);
     tnr7_blend_1_0_t* tnr7_blend = &(mTnr7usParam->blend);
     tnr7_ims_1_0_t* tnr7_ims = &(mTnr7usParam->ims);

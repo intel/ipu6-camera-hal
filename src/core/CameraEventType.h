@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Intel Corporation.
+ * Copyright (C) 2015-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,88 +18,73 @@
 
 #include <memory>
 
-#include "iutils/Utils.h"
 #include "Parameters.h"
+#include "iutils/Utils.h"
 
 namespace icamera {
 
 class CameraBuffer;
 
-enum EventType
-{
+enum EventType {
     EVENT_ISYS_SOF = 0,
     EVENT_PSYS_STATS_BUF_READY,
     EVENT_PSYS_STATS_SIS_BUF_READY,
     EVENT_ISYS_FRAME,
     EVENT_PSYS_FRAME,
     EVENT_PROCESS_REQUEST,
-    EVENT_DEVICE_RECONFIGURE,
     EVENT_FRAME_AVAILABLE,
     EVENT_PSYS_REQUEST_BUF_READY,
+    EVENT_REQUEST_METADATA_READY,
 };
 
-struct EventDataStatsReady
-{
+struct EventDataStatsReady {
     timeval timestamp;
-    long sequence;
+    int64_t sequence;
 };
 
-struct EventDataSync
-{
+struct EventDataSync {
     timeval timestamp;
-    long sequence;
+    int64_t sequence;
 };
 
-struct EventDataFrame
-{
+struct EventDataFrame {
     timeval timestamp;
-    long sequence;
+    int64_t sequence;
 };
 
-struct EventDataMeta
-{
+struct EventDataMeta {
     timeval timestamp;
-    long sequence;
+    int64_t sequence;
 };
 
-struct EventRequestData
-{
+struct EventRequestData {
     int bufferNum;
     camera_buffer_t** buffer;
     Parameters* param;
 
-    long settingSeq;
+    int64_t settingSeq;
 };
 
-struct EventConfigData
-{
-    stream_config_t *streamList;
+struct EventConfigData {
+    stream_config_t* streamList;
 };
 
-struct EventFrameAvailable
-{
+struct EventFrameAvailable {
     int streamId;
 };
 
-struct EventRequestBufferReady
-{
+struct EventRequestReady {
     int64_t timestamp;
-    long sequence;
+    int64_t sequence;
 };
 
-struct EventData
-{
-    EventData() :
-        type(EVENT_ISYS_SOF),
-        pipeType(-1) {
-        CLEAR(data);
-    }
+struct EventData {
+    EventData() : type(EVENT_ISYS_SOF), pipeType(-1) { CLEAR(data); }
 
     EventType type;
-    int pipeType; // if you don't care it, you can ignore it.
+    int pipeType;  // if you don't care it, you can ignore it.
     std::shared_ptr<CameraBuffer> buffer;
-    union
-    {
+    union {
         EventDataStatsReady statsReady;
         EventDataSync sync;
         EventDataFrame frame;
@@ -107,8 +92,8 @@ struct EventData
         EventRequestData request;
         EventConfigData config;
         EventFrameAvailable frameDone;
-        EventRequestBufferReady requestReady;
+        EventRequestReady requestReady;  // use for returning metadata and shutter event
     } data;
 };
 
-}
+}  // namespace icamera

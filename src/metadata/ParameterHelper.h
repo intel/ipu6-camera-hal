@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018 Intel Corporation.
+ * Copyright (C) 2017-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,6 +53,16 @@ public:
     static void merge(const CameraMetadata& metadata, Parameters* dst);
 
     /**
+     * \brief Merge and update dst parameter buffer by entry.
+     *
+     * \param[in] const icamera_metadata_ro_entry& entry: the source entry.
+     * \param[out] Parameters dst: the parameter to be updated.
+     *
+     * \return void
+     */
+    static void mergeTag(const icamera_metadata_ro_entry& entry, Parameters* dst);
+
+    /**
      * \brief Copy metadata from parameter buffer.
      *
      * Some HAL V3 style parameters are not returned in the getParameter()
@@ -66,6 +76,22 @@ public:
      * \return void
      */
     static void copyMetadata(const Parameters& source, CameraMetadata* metadata);
+
+    /**
+     * \brief Copy metadata from parameter buffer.
+     *
+     * Some HAL V3 style parameters are not returned in the getParameter()
+     * because it is not used inside the HAL.
+     * Provide this function to assist upperlayer to return metadata
+     * to applications.
+     *
+     * Note: no lock to protect returned metadata, please make sure source isn't changed.
+     *
+     * \param[in] Parameters source: the parameter to provide metadata.
+     *
+     * \return const CameraMetadata& metadata
+     */
+    static const CameraMetadata& getMetadata(const Parameters& source);
 
 private:
     // The definitions and interfaces in this private section are only for Parameters internal

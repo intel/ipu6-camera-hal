@@ -59,28 +59,13 @@ public:
     int wait1stRequestDone();
 
     /**
-     * \brief configure the streams, devices and post processor.
+     * \brief configure and create buffer for fake request.
      *
      * \param streamList: all the streams info
      *
      * \return OK if succeed and BAD_VALUE if failed
      */
     int configure(const stream_config_t *streamList);
-
-    /**
-     * \brief get stream config in request thread.
-     */
-    stream_config_t getStreamConfig() { return mStreamConfig; };
-
-    /**
-     * \brief set request configure mode by parameters.
-     */
-    void setConfigureModeByParam(const Parameters& param);
-
-    /**
-     * \brief post config for fake request
-     */
-    void postConfigure(const stream_config_t *streamList);
 
 private:
     int mCameraId;
@@ -107,12 +92,9 @@ private:
      * \Fetch one request from pending request Q for processing.
      */
     bool fetchNextRequest(CameraRequest& request);
-    bool isReadyForReconfigure();
-    bool isReconfigurationNeeded();
     std::shared_ptr<Parameters> acquireParam();
 
-    void handleReconfig();
-    void handleRequest(CameraRequest& request, long applyingSeq);
+    void handleRequest(CameraRequest& request, int64_t applyingSeq);
     bool blockRequest();
 
     static const int kMaxRequests = MAX_BUFFER_COUNT;
@@ -132,16 +114,6 @@ private:
     Condition mFirstRequestSignal;
     bool mFirstRequest;
 
-    // Internal used for restart function
-    ConfigMode mRequestConfigMode; // the ConfigMode is gotten from parameters set from user or AE result
-    ConfigMode mUserConfigMode; // user specified ConfigMode during initial configure
-    // Whether pipe need to reconfigure
-    bool mNeedReconfigPipe;
-    // Score indicate the num of consecutive configure mode settings, to make switch stable.
-    unsigned int  mReconfigPipeScore;
-    stream_config_t mStreamConfig;
-    stream_t mConfiguredStreams[MAX_STREAM_NUMBER];
-
     struct FrameQueue {
         Mutex mFrameMutex;
         Condition mFrameAvailableSignal;
@@ -160,9 +132,9 @@ private:
     int mRequestTriggerEvent;
 
     long mLastRequestId;
-    long mLastEffectSeq;  // Last sequence is which last results had been taken effect on
-    long mLastAppliedSeq; // Last sequence id which last results had been set on
-    long mLastSofSeq;
+    int64_t mLastEffectSeq;  // Last sequence is which last results had been taken effect on
+    int64_t mLastAppliedSeq; // Last sequence id which last results had been set on
+    int64_t mLastSofSeq;
     bool mBlockRequest;  // Process the 2nd or 3th request after the 1st 3A event
                          // to avoid unstable AWB at the beginning of stream on
     bool mSofEnabled;

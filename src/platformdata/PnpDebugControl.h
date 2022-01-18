@@ -44,11 +44,11 @@ namespace icamera {
 class PnpDebugControl {
  public:
     /**
-     * check if AAL layer is skipped for PNP test
+     * check if using mock AAL layer for PNP test
      *
-     * \return true if feature is skipped, otherwise return false.
+     * \return true if feature is enabled, otherwise return false.
      */
-    static bool isBypassAAL();
+    static bool useMockAAL();
 
     /**
      * check if 3A algo is skipped for PNP test
@@ -72,6 +72,20 @@ class PnpDebugControl {
     static bool isBypassPG();
 
     /**
+     * check if Face Dection Feature is skipped for PNP test
+     *
+     * \return true if feature is skipped, otherwise return false.
+     */
+    static bool isFaceDisabled();
+
+    /**
+     * check if Face AE Feature is skipped for PNP test
+     *
+     * \return true if feature is skipped, otherwise return false.
+     */
+    static bool isFaceAeDisabled();
+
+    /**
      * check if Face Dection Algo is skipped for PNP test
      *
      * \return true if feature is skipped, otherwise return false.
@@ -86,11 +100,20 @@ class PnpDebugControl {
     static bool isBypassISys();
 
     /**
-     * check if camhal is skipped for PNP test
+     * check if using mock camhal for PNP test
+     *
+     * \return true if feature is enabled, otherwise return false.
+     */
+    static bool useMockHal();
+
+    /**
+     * check if video P2p is skipped for PNP test
      *
      * \return true if feature is skipped, otherwise return false.
      */
-    static bool isBypassHal();
+    static bool isBypassP2p();
+
+    static void updateConfig();
 
     static void releaseInstance();
 
@@ -98,20 +121,26 @@ class PnpDebugControl {
     struct StaticCfg {
      public:
         StaticCfg()
-                : isBypassAAL(false),
+                : useMockAAL(false),
                   isBypass3A(false),
                   isBypassPAL(false),
                   isBypassPG(false),
+                  isFaceDisabled(false),
+                  isFaceAeDisabled(false),
                   isBypassFDAlgo(false),
                   isBypassISys(false),
-                  isBypassHal(false) {}
-        bool isBypassAAL;
+                  useMockHal(false),
+                  isBypassP2p(false) {}
+        bool useMockAAL;
         bool isBypass3A;
         bool isBypassPAL;
         bool isBypassPG;
+        bool isFaceDisabled;
+        bool isFaceAeDisabled;
         bool isBypassFDAlgo;
         bool isBypassISys;
-        bool isBypassHal;
+        bool useMockHal;
+        bool isBypassP2p;
     };
 
  private:

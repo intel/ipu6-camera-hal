@@ -38,24 +38,18 @@ namespace icamera {
 IntelAlgoServer* IntelAlgoServer::mInstance = nullptr;
 
 void IntelAlgoServer::init() {
-    LOGIPC("@%s", __func__);
-
     if (mInstance == nullptr) {
         mInstance = new IntelAlgoServer;
     }
 }
 
 void IntelAlgoServer::deInit() {
-    LOGIPC("@%s", __func__);
-
     delete mInstance;
     mInstance = nullptr;
 }
 
 IntelAlgoServer::IntelAlgoServer() : mCallback(nullptr) {
-    LOGIPC("@%s", __func__);
-
-    ia_env env = {&Log::ccaPrintDebug, &Log::ccaPrintError, &Log::ccaPrintInfo};
+    ia_env env = {&Log::ccaPrintInfo, &Log::ccaPrintError, &Log::ccaPrintInfo};
     ia_log_init(&env);
 
     for (int i = 0; i < kThreadNum; i++) {
@@ -72,17 +66,18 @@ IntelAlgoServer::IntelAlgoServer() : mCallback(nullptr) {
     for (int32_t i = 1; i <= HANDLE_INDEX_MAX_VALUE; i++) {
         mHandlesQueue.push(i);
     }
+
+    LOG1("@%s Construct done, %d threads started", __func__, kThreadNum);
 }
 
 IntelAlgoServer::~IntelAlgoServer() {
-    LOGIPC("@%s", __func__);
+    LOG1("@%s Destroy", __func__);
     ia_log_deinit();
 }
 
 int32_t IntelAlgoServer::initialize(const camera_algorithm_callback_ops_t* callback_ops) {
-    LOGIPC("@%s, callback_ops:%p", __func__, callback_ops);
-
     CheckAndLogError((!callback_ops), -EINVAL, "@%s, the callback_ops is nullptr", __func__);
+    LOG1("@%s, callback_ops:%p", __func__, callback_ops);
 
     mCallback = callback_ops;
 
@@ -90,8 +85,6 @@ int32_t IntelAlgoServer::initialize(const camera_algorithm_callback_ops_t* callb
 }
 
 int32_t IntelAlgoServer::registerBuffer(int buffer_fd) {
-    LOGIPC("@%s, buffer_fd:%d", __func__, buffer_fd);
-
     std::lock_guard<std::mutex> l(mRegisterBufMutex);
     CheckAndLogError((mHandles.find(buffer_fd) != mHandles.end()), -EINVAL,
                      "@%s, Buffer already registered", __func__);
@@ -117,8 +110,6 @@ int32_t IntelAlgoServer::registerBuffer(int buffer_fd) {
 }
 
 int IntelAlgoServer::parseReqHeader(const uint8_t req_header[], uint32_t size) {
-    LOGIPC("@%s, size:%d", __func__, size);
-
     CheckAndLogError(size < IPC_REQUEST_HEADER_USED_NUM || req_header[0] != IPC_MATCHING_KEY, -1,
                      "@%s, fails, req_header[0]:%d, size:%d", __func__, req_header[0], size);
 
@@ -126,8 +117,6 @@ int IntelAlgoServer::parseReqHeader(const uint8_t req_header[], uint32_t size) {
 }
 
 void IntelAlgoServer::returnCallback(uint32_t req_id, status_t status, int32_t buffer_handle) {
-    LOGIPC("@%s, req_id:%d:%s, status:%d", __func__, req_id,
-           IntelAlgoIpcCmdToString(static_cast<IPC_CMD>(req_id)), status);
     (*mCallback->return_callback)(mCallback, req_id, status, buffer_handle);
 }
 
@@ -139,25 +128,17 @@ status_t IntelAlgoServer::getShmInfo(const int32_t buffer_handle, ShmInfo* memIn
                      "%s, Invalid buffer handle", __func__);
     *memInfo = mShmInfoMap[buffer_handle];
 
-    LOGIPC("@%s, fd:%d, size:%zu, addr: %p", __func__, memInfo->fd, memInfo->size, memInfo->addr);
-
     return OK;
 }
 
 void IntelAlgoServer::handleRequest(const MsgReq& msg) {
-    LOGIPC("@%s", __func__);
     CheckAndLogError(!mRequestHandler, VOID_VALUE, "@%s, handler is null", __func__);
     mRequestHandler->handleRequest(msg);
 }
 
 void IntelAlgoServer::request(uint32_t req_id, const uint8_t req_header[], uint32_t size,
                               int32_t buffer_handle) {
-    LOGIPC("@%s, size:%d, buffer_handle:%d", __func__, size, buffer_handle);
-    LOGIPC("@%s, req_id:%d:%s", __func__, req_id,
-           IntelAlgoIpcCmdToString(static_cast<IPC_CMD>(req_id)));
-
     IPC_GROUP group = IntelAlgoIpcCmdToGroup(static_cast<IPC_CMD>(req_id));
-    LOGIPC("@%s, group:%d", __func__, group);
 
     int ret = parseReqHeader(req_header, size);
     if (ret != 0) {
@@ -182,8 +163,6 @@ void IntelAlgoServer::request(uint32_t req_id, const uint8_t req_header[], uint3
 }
 
 void IntelAlgoServer::deregisterBuffers(const int32_t buffer_handles[], uint32_t size) {
-    LOGIPC("@%s, size:%d", __func__, size);
-
     std::lock_guard<std::mutex> l(mRegisterBufMutex);
     for (uint32_t i = 0; i < size; i++) {
         int32_t handle = buffer_handles[i];
@@ -201,23 +180,19 @@ void IntelAlgoServer::deregisterBuffers(const int32_t buffer_handles[], uint32_t
 }
 
 static int32_t initialize(const camera_algorithm_callback_ops_t* callback_ops) {
-    LOGIPC("@%s, callback_ops:%p", __func__, callback_ops);
     return IntelAlgoServer::getInstance()->initialize(callback_ops);
 }
 
 static int32_t registerBuffer(int32_t buffer_fd) {
-    LOGIPC("@%s, buffer_fd:%d", __func__, buffer_fd);
     return IntelAlgoServer::getInstance()->registerBuffer(buffer_fd);
 }
 
 static void request(uint32_t req_id, const uint8_t req_header[], uint32_t size,
                     int32_t buffer_handle) {
-    LOGIPC("@%s, size:%d, buffer_handle:%d", __func__, size, buffer_handle);
     IntelAlgoServer::getInstance()->request(req_id, req_header, size, buffer_handle);
 }
 
 static void deregisterBuffers(const int32_t buffer_handles[], uint32_t size) {
-    LOGIPC("@%s, size:%d", __func__, size);
     return IntelAlgoServer::getInstance()->deregisterBuffers(buffer_handles, size);
 }
 

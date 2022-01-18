@@ -22,28 +22,27 @@
 #include <v4l2_device.h>
 #endif
 
-#include <set>
-#include <list>
 #include <atomic>
+#include <list>
+#include <set>
 
-#include "iutils/Thread.h"
-#include "v4l2/NodeInfo.h"
 #include "BufferQueue.h"
 #include "CameraBuffer.h"
-#include "IspParamAdaptor.h"
+#include "iutils/Thread.h"
+#include "v4l2/NodeInfo.h"
 
 namespace icamera {
 
 enum VideoNodeDirection {
-    INPUT_VIDEO_NODE,   /*!< input video devices like cameras or capture cards */
-    OUTPUT_VIDEO_NODE  /*!< output video devices like displays */
+    INPUT_VIDEO_NODE, /*!< input video devices like cameras or capture cards */
+    OUTPUT_VIDEO_NODE /*!< output video devices like displays */
 };
 
 class DeviceCallback {
-public:
-    DeviceCallback() {};
-    virtual ~DeviceCallback() {};
-    virtual void onDequeueBuffer() {};
+ public:
+    DeviceCallback() {}
+    virtual ~DeviceCallback() {}
+    virtual void onDequeueBuffer() {}
 };
 
 /**
@@ -54,9 +53,9 @@ public:
  * base on what its implementation is to override one or several of them.
  */
 class DeviceBase : public EventSource {
-public:
-    DeviceBase(int cameraId, VideoNodeType nodeType,
-               VideoNodeDirection nodeDirection, DeviceCallback* deviceCB = nullptr);
+ public:
+    DeviceBase(int cameraId, VideoNodeType nodeType, VideoNodeDirection nodeDirection,
+               DeviceCallback* deviceCB = nullptr);
     virtual ~DeviceBase();
 
     int configure(Port port, const stream_t& config, uint32_t bufferNum);
@@ -67,25 +66,25 @@ public:
     int streamOn();
     int streamOff();
 
-    int queueBuffer(long sequence);
+    int queueBuffer(int64_t sequence);
     int dequeueBuffer();
 
-    void addFrameListener(BufferConsumer *listener) { mConsumers.insert(listener); }
-    void removeFrameListener(BufferConsumer *listener) { mConsumers.erase(listener); }
+    void addFrameListener(BufferConsumer* listener) { mConsumers.insert(listener); }
+    void removeFrameListener(BufferConsumer* listener) { mConsumers.erase(listener); }
     void removeAllFrameListeners() { mConsumers.clear(); }
 
     bool hasPendingBuffer();
     void addPendingBuffer(const std::shared_ptr<CameraBuffer>& buffer);
-    long getPredictSequence();
+    int64_t getPredictSequence();
     int getBufferNumInDevice();
     void resetBuffers();
-    bool skipFrameAfterSyncCheck(long sequence);
+    bool skipFrameAfterSyncCheck(int64_t sequence);
 
     V4L2VideoNode* getV4l2Device() { return mDevice; }
     const char* getName() { return mName; }
     Port getPort() { return mPort; }
 
-protected:
+ protected:
     /**
      * Configure the device and request or create(if needed) the buffer pool.
      */
@@ -94,7 +93,8 @@ protected:
     /**
      * Pre-process the buffer which to be queued to the device.
      */
-    virtual int onQueueBuffer(long sequence, std::shared_ptr<CameraBuffer>& buffer) { return OK; }
+    virtual int onQueueBuffer(int64_t sequence,
+                              std::shared_ptr<CameraBuffer>& buffer) { return OK; }
 
     /**
      * Post-process the buffer after it's dequeued from the device.
@@ -107,9 +107,6 @@ protected:
     virtual bool needQueueBack(std::shared_ptr<CameraBuffer> buffer) { return false; }
 
     void dumpFrame(const std::shared_ptr<CameraBuffer>& buffer);
-
-private:
-    DISALLOW_COPY_AND_ASSIGN(DeviceBase);
 
     /**
      * Get one available buffer from mBuffersInDevice
@@ -124,16 +121,16 @@ private:
      */
     void popBufferFromDevice();
 
-protected:
+ protected:
     int mCameraId;
     Port mPort;
     VideoNodeType mNodeType;
     VideoNodeDirection mNodeDirection;
     const char* mName;
-    V4L2VideoNode* mDevice; // The device used to queue/dequeue buffers.
-    long mLatestSequence; // Track the latest bufffer sequence from driver.
-    bool mNeedSkipFrame; // True if the frame/buffer needs to be skipped.
-    int mFrameSkipNum; // How many frames need to be skipped after stream on.
+    V4L2VideoNode* mDevice;  // The device used to queue/dequeue buffers.
+    int64_t mLatestSequence;    // Track the latest bufffer sequence from driver.
+    bool mNeedSkipFrame;     // True if the frame/buffer needs to be skipped.
+    int mFrameSkipNum;       // How many frames need to be skipped after stream on.
     DeviceCallback* mDeviceCB;
     std::set<BufferConsumer*> mConsumers;
 
@@ -148,13 +145,16 @@ protected:
      *    We must make the data consistent.
      */
     std::vector<std::shared_ptr<CameraBuffer>> mAllocatedBuffers;
-            // Save all buffers allocated internally.
+    // Save all buffers allocated internally.
     std::list<std::shared_ptr<CameraBuffer>> mPendingBuffers;
-            // The buffers that are going to be queued.
-    std::list<std::shared_ptr<CameraBuffer>> mBuffersInDevice; // The buffers that have been queued
-    Mutex mBufferLock; // The lock for protecting the internal buffers.
+    // The buffers that are going to be queued.
+    std::list<std::shared_ptr<CameraBuffer>> mBuffersInDevice;  // The buffers that have been queued
+    Mutex mBufferLock;  // The lock for protecting the internal buffers.
 
     uint32_t mMaxBufferNumber;
+
+ private:
+    DISALLOW_COPY_AND_ASSIGN(DeviceBase);
 };
 
 /**
@@ -162,14 +162,14 @@ protected:
  * It's usually for producing video frames.
  */
 class MainDevice : public DeviceBase {
-public:
+ public:
     MainDevice(int cameraId, VideoNodeType nodeType, DeviceCallback* deviceCB);
     ~MainDevice();
 
-private:
+ private:
     int createBufferPool(const stream_t& config);
     int onDequeueBuffer(std::shared_ptr<CameraBuffer> buffer);
     bool needQueueBack(std::shared_ptr<CameraBuffer> buffer);
 };
 
-} // namespace icamera
+}  // namespace icamera

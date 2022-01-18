@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2018 Intel Corporation.
+ * Copyright (C) 2015-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,32 +19,31 @@
 #include <map>
 #include <set>
 
-#include "iutils/Thread.h"
 #include "CameraEventType.h"
+#include "iutils/Thread.h"
 
 namespace icamera {
 
-class EventListener
-{
-public:
-    EventListener() {};
-    virtual ~EventListener() {};
-    virtual void handleEvent(EventData eventData) {};
+class EventListener {
+ public:
+    EventListener() {}
+    virtual ~EventListener() {}
+    virtual void handleEvent(EventData eventData) {}
 };
 
-class EventSource
-{
-private:
+class EventSource {
+ private:
     std::map<EventType, std::set<EventListener*>> mListeners;
 
     // Guard for EventSource public API to protect mListeners.
     Mutex mListenersLock;
-public:
-    EventSource();
-    virtual ~EventSource();
+
+ public:
+    EventSource() {}
+    virtual ~EventSource() {}
     virtual void registerListener(EventType eventType, EventListener* eventListener);
     virtual void removeListener(EventType eventType, EventListener* eventListener);
     virtual void notifyListeners(EventData eventData);
 };
 
-}
+}  // namespace icamera

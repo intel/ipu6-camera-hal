@@ -15389,7 +15389,6 @@
         <graph id="100200" name="Bayer sensor full pipe v8s8" pdaf_type="0,1,2" sensor="BAYER" flow="sdv" processing="bayer" stills_bpp="8" video_bpp="8">
             <connection source="sensor:port_0" sink="csi_be:input"/>
             <!-- bpp overrides for preview/video branch -->
-            <apply target="isa_lb_video_bayer:main:format" value="YUV420_8_PL"/>
             <apply target="isa_lb_video_bayer:espa_psa_h:input:bpp" value="13"/>
             <apply target="isa_lb_video_bayer:espa_psa_h:output:bpp" value="8"/>
             <apply target="post_gdc_video_bayer:gdc5:input:bpp" value="8"/>
@@ -15412,7 +15411,6 @@
             <connection source="post_gdc_video_bayer:postproc" sink="video2"/>
             <!-- still branch -->
             <!-- bpp overrides for still branch -->
-            <apply target="isa_lb_stills:main:format" value="YUV420_8_PL"/>
             <apply target="isa_lb_stills:espa_psa_h:input:bpp" value="13"/>
             <apply target="isa_lb_stills:espa_psa_h:output:bpp" value="8"/>
             <apply target="post_gdc_stills:gdc5:input:bpp" value="8"/>
@@ -15486,7 +15484,6 @@
             <connection source="csi_be:paf" sink="isa_lb_rgbir_video_bayer:ext_pdaf_stats"/>
             <connection source="csi_be:output" sink="isa_lb_rgbir_video_bayer:input"/>
             <!-- bpp overrides for preview/video branch -->
-            <apply target="isa_lb_rgbir_video_bayer:main:format" value="YUV420_8_PL"/>
             <apply target="isa_lb_rgbir_video_bayer:espa_psa_h:input:bpp" value="13"/>
             <apply target="isa_lb_rgbir_video_bayer:espa_psa_h:output:bpp" value="8"/>
             <apply target="post_gdc_video_bayer:gdc5:input:bpp" value="8"/>
@@ -15507,7 +15504,6 @@
             <connection source="post_gdc_video_bayer:postproc" sink="video2"/>
             <!-- still branch -->
             <!-- bpp overrides for still branch -->
-            <apply target="isa_lb_ir_stills:main:format" value="YUV420_8_PL"/>
             <apply target="isa_lb_ir_stills:espa_psa_h:input:bpp" value="13"/>
             <apply target="isa_lb_ir_stills:espa_psa_h:output:bpp" value="8"/>
             <apply target="post_gdc_stills:gdc5:input:bpp" value="8"/>
@@ -15525,7 +15521,6 @@
             <connection source="post_gdc_stills:main" sink="still0"/>
             <connection source="post_gdc_stills:display" sink="still1"/>
             <connection source="post_gdc_stills:postproc" sink="still2"/>
-            <apply target="isa_lb_video_bayer:main:format" value="YUV420_8_PL"/>
             <apply target="isa_lb_video_bayer:espa_psa_h:input:bpp" value="13"/>
             <apply target="isa_lb_video_bayer:espa_psa_h:output:bpp" value="8"/>
             <apply target="post_gdc_ir_video:gdc5:input:bpp" value="8"/>

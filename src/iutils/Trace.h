@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2018 Intel Corporation
+ * Copyright (C) 2014-2021 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,17 @@
 
 #pragma once
 
-#include <atomic>
-
+#include <errno.h>
 #include <inttypes.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 #include <sys/cdefs.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <errno.h>
-#include <string.h>
+
+#include <atomic>
 
 namespace icamera {
 
@@ -53,12 +53,12 @@ namespace icamera {
  * ATRACE_TAG to be ATRACE_TAG_NEVER or leaving ATRACE_TAG undefined will result
  * in the tracing always being disabled.
  */
-#define ATRACE_TAG_NEVER            0       // This tag is never enabled.
-#define ATRACE_TAG_ALWAYS           (1<<0)  // This tag is always enabled.
-#define ATRACE_TAG_LAST             ATRACE_TAG_ALWAYS
+#define ATRACE_TAG_NEVER 0          // This tag is never enabled.
+#define ATRACE_TAG_ALWAYS (1 << 0)  // This tag is always enabled.
+#define ATRACE_TAG_LAST ATRACE_TAG_ALWAYS
 
 // Reserved for initialization.
-#define ATRACE_TAG_NOT_READY        (1LL<<63)
+#define ATRACE_TAG_NOT_READY (1LL << 63)
 
 #define ATRACE_TAG_VALID_MASK ((ATRACE_TAG_LAST - 1) | ATRACE_TAG_LAST)
 
@@ -99,8 +99,7 @@ extern int atrace_marker_fd;
  * This can be explicitly run to avoid setup delay on first trace function.
  */
 #define ATRACE_INIT() atrace_init()
-static inline void atrace_init()
-{
+static inline void atrace_init() {
     if (!atrace_is_ready.load()) {
         atrace_setup();
     }
@@ -112,8 +111,7 @@ static inline void atrace_init()
  * Every trace function calls this, which ensures atrace_init is run.
  */
 #define ATRACE_GET_ENABLED_TAGS() atrace_get_enabled_tags()
-static inline uint64_t atrace_get_enabled_tags()
-{
+static inline uint64_t atrace_get_enabled_tags() {
     atrace_init();
     return atrace_enabled_tags;
 }
@@ -124,8 +122,7 @@ static inline uint64_t atrace_get_enabled_tags()
  * It can be used as a guard condition around more expensive trace calculations.
  */
 #define ATRACE_ENABLED() atrace_is_tag_enabled(ATRACE_TAG)
-static inline uint64_t atrace_is_tag_enabled(uint64_t tag)
-{
+static inline uint64_t atrace_is_tag_enabled(uint64_t tag) {
     return atrace_get_enabled_tags() & tag;
 }
 
@@ -134,8 +131,7 @@ static inline uint64_t atrace_is_tag_enabled(uint64_t tag)
  * This is often used to time function execution.
  */
 #define ATRACE_BEGIN(name) atrace_begin(ATRACE_TAG, name)
-static inline void atrace_begin(uint64_t tag, const char* name)
-{
+static inline void atrace_begin(uint64_t tag, const char* name) {
     if (atrace_is_tag_enabled(tag)) {
         char buf[ATRACE_MESSAGE_LENGTH];
         ssize_t len;
@@ -151,11 +147,10 @@ static inline void atrace_begin(uint64_t tag, const char* name)
  * This should match up (and occur after) a corresponding ATRACE_BEGIN.
  */
 #define ATRACE_END() atrace_end(ATRACE_TAG)
-static inline void atrace_end(uint64_t tag)
-{
+static inline void atrace_end(uint64_t tag) {
     if (atrace_is_tag_enabled(tag)) {
         char c = 'E';
-        if (write(atrace_marker_fd, &c, 1) !=1)
+        if (write(atrace_marker_fd, &c, 1) != 1)
             ATRACE_LOGE("atrace %s write error: %s!\n", __func__, strerror(errno));
     }
 }
@@ -167,11 +162,8 @@ static inline void atrace_end(uint64_t tag)
  * simultaneous events. The name and cookie used to begin an event must be
  * used to end it.
  */
-#define ATRACE_ASYNC_BEGIN(name, cookie) \
-    atrace_async_begin(ATRACE_TAG, name, cookie)
-static inline void atrace_async_begin(uint64_t tag, const char* name,
-        int32_t cookie)
-{
+#define ATRACE_ASYNC_BEGIN(name, cookie) atrace_async_begin(ATRACE_TAG, name, cookie)
+static inline void atrace_async_begin(uint64_t tag, const char* name, int32_t cookie) {
     if (atrace_is_tag_enabled(tag)) {
         char buf[ATRACE_MESSAGE_LENGTH];
         ssize_t len;
@@ -188,9 +180,7 @@ static inline void atrace_async_begin(uint64_t tag, const char* name,
  * This should have a corresponding ATRACE_ASYNC_BEGIN.
  */
 #define ATRACE_ASYNC_END(name, cookie) atrace_async_end(ATRACE_TAG, name, cookie)
-static inline void atrace_async_end(uint64_t tag, const char* name,
-        int32_t cookie)
-{
+static inline void atrace_async_end(uint64_t tag, const char* name, int32_t cookie) {
     if (atrace_is_tag_enabled(tag)) {
         char buf[ATRACE_MESSAGE_LENGTH];
         ssize_t len;
@@ -207,8 +197,7 @@ static inline void atrace_async_end(uint64_t tag, const char* name,
  * This can be used to track how a value changes over time.
  */
 #define ATRACE_INT(name, value) atrace_int(ATRACE_TAG, name, value)
-static inline void atrace_int(uint64_t tag, const char* name, int32_t value)
-{
+static inline void atrace_int(uint64_t tag, const char* name, int32_t value) {
     if (atrace_is_tag_enabled(tag)) {
         char buf[ATRACE_MESSAGE_LENGTH];
         ssize_t len;
@@ -225,8 +214,7 @@ static inline void atrace_int(uint64_t tag, const char* name, int32_t value)
  * counter. This can be used to track how a value changes over time.
  */
 #define ATRACE_INT64(name, value) atrace_int64(ATRACE_TAG, name, value)
-static inline void atrace_int64(uint64_t tag, const char* name, int64_t value)
-{
+static inline void atrace_int64(uint64_t tag, const char* name, int64_t value) {
     if (atrace_is_tag_enabled(tag)) {
         char buf[ATRACE_MESSAGE_LENGTH];
         ssize_t len;
@@ -238,4 +226,4 @@ static inline void atrace_int64(uint64_t tag, const char* name, int64_t value)
     }
 }
 
-} //namespace icamera
+}  // namespace icamera

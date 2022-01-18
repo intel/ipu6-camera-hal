@@ -23,17 +23,9 @@
 #include "iutils/Utils.h"
 
 namespace icamera {
-IPCIntelFD::IPCIntelFD() {
-    LOG1("@%s", __func__);
-}
-
-IPCIntelFD::~IPCIntelFD() {
-    LOG1("@%s", __func__);
-}
 
 bool IPCIntelFD::clientFlattenInit(unsigned int max_face_num, int cameraId,
                                    FaceDetectionInitParams* params) {
-    LOG1("@%s, params:%p", __func__, params);
     CheckAndLogError(params == nullptr, false, "@%s, params is nullptr", __func__);
 
     params->max_face_num = max_face_num;
@@ -44,7 +36,6 @@ bool IPCIntelFD::clientFlattenInit(unsigned int max_face_num, int cameraId,
 
 bool IPCIntelFD::serverUnflattenRun(const FaceDetectionRunParams& inParams, void* imageData,
                                     pvl_image* image, int* cameraId) {
-    LOG1("@%s, image:%p", __func__, image);
     CheckAndLogError(image == nullptr || cameraId == nullptr, false,
                      "@%s, image or cameraId is nullptr", __func__);
 

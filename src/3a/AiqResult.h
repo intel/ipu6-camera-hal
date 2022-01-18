@@ -47,12 +47,14 @@ public:
 public:
     int mCameraId;
     unsigned long long mTimestamp;
-    long mSequence;
+    int64_t mSequence;
+    int64_t mFrameId;  // CCA frame id
     TuningMode mTuningMode;
     float mAfDistanceDiopters;
     bool mSkip;
     camera_range_t mFocusRange;
     uint32_t mLensPosition;
+    camera_scene_mode_t mSceneMode;
 
     cca::cca_ae_results mAeResults;
     cca::cca_awb_results mAwbResults;

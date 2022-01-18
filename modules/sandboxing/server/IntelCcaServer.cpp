@@ -27,11 +27,11 @@
 #include "modules/sandboxing/IPCGraphConfig.h"
 
 namespace icamera {
-IntelCcaServer::IntelCcaServer(int cameraId, TuningMode mode) :
-    mCameraId(cameraId),
-    mTuningMode(mode),
-    mCca(nullptr) {
-    LOGIPC("@%s, cameraId:%d, mode:%d", __func__, cameraId, mode);
+IntelCcaServer::IntelCcaServer(int cameraId, TuningMode mode)
+        : mCameraId(cameraId),
+          mTuningMode(mode),
+          mCca(nullptr) {
+    LOG1("<id%d>@%s, mode:%d", cameraId, __func__, mode);
 
     mCca = IntelCca::getInstance(cameraId, mode);
     CheckAndLogError(!mCca, VOID_VALUE, "%s, IntelCca::getInstance fails, cameraId(%d), mode(%d)",
@@ -39,112 +39,107 @@ IntelCcaServer::IntelCcaServer(int cameraId, TuningMode mode) :
 }
 
 IntelCcaServer::~IntelCcaServer() {
-    LOGIPC("@%s", __func__);
+    LOG1("@%s", __func__);
 
     IntelCca::releaseInstance(mCameraId, mTuningMode);
 }
 
 status_t IntelCcaServer::init(void* pData, int dataSize) {
-    LOGIPC("@%s, pData:%p, dataSize:%d", __func__, pData, dataSize);
     CheckAndLogError(pData == nullptr, UNKNOWN_ERROR, "@%s, pData is nullptr", __func__);
     CheckAndLogError(mCca == nullptr, UNKNOWN_ERROR, "@%s, mCca is nullptr", __func__);
 
     intel_cca_init_data* params = static_cast<intel_cca_init_data*>(pData);
-    LOG2("@%s, params->bitmap:%d", __func__, params->inParams.bitmap);
+    LOG1("@%s, params->bitmap:0x%x", __func__, params->inParams.bitmap);
 
     ia_err ret = mCca->init(params->inParams);
-    CheckAndLogError(ret != ia_err_none, UNKNOWN_ERROR, "@%s, init fails", __func__);
-    LOG2("@%s, ret:%d", __func__, ret);
+    CheckAndLogError(ret != ia_err_none, UNKNOWN_ERROR, "@%s, fails: %d", __func__, ret);
 
     return OK;
 }
 
 status_t IntelCcaServer::setStats(void* pData, int dataSize) {
-    LOGIPC("@%s, pData:%p, dataSize:%d", __func__, pData, dataSize);
     CheckAndLogError(pData == nullptr, UNKNOWN_ERROR, "@%s, pData is nullptr", __func__);
     CheckAndLogError(mCca == nullptr, UNKNOWN_ERROR, "@%s, mCca is nullptr", __func__);
 
     intel_cca_set_stats_data* params = static_cast<intel_cca_set_stats_data*>(pData);
 
-    ia_err ret = mCca->setStatsParams(params->inParams, &params->outStats);
-    CheckAndLogError(ret != ia_err_none, UNKNOWN_ERROR, "@%s, setStatsParams fails", __func__);
-    LOG2("@%s, ret:%d", __func__, ret);
+    ia_err ret = mCca->setStatsParams(params->inParams);
+    CheckAndLogError(ret != ia_err_none, UNKNOWN_ERROR, "@%s, fails: %d", __func__, ret);
 
     return OK;
 }
 
 status_t IntelCcaServer::runAEC(void* pData, int dataSize) {
-    LOGIPC("@%s, pData:%p, dataSize:%d", __func__, pData, dataSize);
+    PERF_CAMERA_ATRACE();
     CheckAndLogError(pData == nullptr, UNKNOWN_ERROR, "@%s, pData is nullptr", __func__);
     CheckAndLogError(mCca == nullptr, UNKNOWN_ERROR, "@%s, mCca is nullptr", __func__);
 
     intel_cca_run_aec_data* params = static_cast<intel_cca_run_aec_data*>(pData);
 
     ia_err ret = mCca->runAEC(params->frameId, params->inParams, &params->results);
-    CheckAndLogError(ret != ia_err_none, UNKNOWN_ERROR, "@%s, runAEC fails", __func__);
-    LOG2("@%s, ret:%d", __func__, ret);
+    CheckAndLogError(ret != ia_err_none, UNKNOWN_ERROR, "@%s, fails: %d", __func__, ret);
 
     return OK;
 }
 
 status_t IntelCcaServer::runAIQ(void* pData, int dataSize) {
-    LOGIPC("@%s, pData:%p, dataSize:%d", __func__, pData, dataSize);
+    PERF_CAMERA_ATRACE();
     CheckAndLogError(pData == nullptr, UNKNOWN_ERROR, "@%s, pData is nullptr", __func__);
     CheckAndLogError(mCca == nullptr, UNKNOWN_ERROR, "@%s, mCca is nullptr", __func__);
 
     intel_cca_run_aiq_data* params = static_cast<intel_cca_run_aiq_data*>(pData);
 
     ia_err ret = mCca->runAIQ(params->frameId, params->inParams, &params->results);
-    CheckAndLogError(ret != ia_err_none, UNKNOWN_ERROR, "@%s, runAIQ fails", __func__);
-    LOG2("@%s, ret:%d", __func__, ret);
+    CheckAndLogError(ret != ia_err_none, UNKNOWN_ERROR, "@%s, fails: %d", __func__, ret);
 
     return OK;
 }
 
 status_t IntelCcaServer::runLTM(void* pData, int dataSize) {
-    LOGIPC("@%s, pData:%p, dataSize:%d", __func__, pData, dataSize);
+    PERF_CAMERA_ATRACE();
+
     CheckAndLogError(pData == nullptr, UNKNOWN_ERROR, "@%s, pData is nullptr", __func__);
     CheckAndLogError(mCca == nullptr, UNKNOWN_ERROR, "@%s, mCca is nullptr", __func__);
 
     intel_cca_run_ltm_data* params = static_cast<intel_cca_run_ltm_data*>(pData);
 
     ia_err ret = mCca->runLTM(params->frameId, params->inParams);
-    CheckAndLogError(ret != ia_err_none, UNKNOWN_ERROR, "@%s, runLTM fails", __func__);
-    LOG2("@%s, ret:%d", __func__, ret);
+    CheckAndLogError(ret != ia_err_none, UNKNOWN_ERROR, "@%s, fails: %d", __func__, ret);
 
     return OK;
 }
 
 status_t IntelCcaServer::updateZoom(void* pData, int dataSize) {
-    LOGIPC("@%s, pData:%p, dataSize:%d", __func__, pData, dataSize);
+    PERF_CAMERA_ATRACE();
+
     CheckAndLogError(pData == nullptr, UNKNOWN_ERROR, "@%s, pData is nullptr", __func__);
     CheckAndLogError(mCca == nullptr, UNKNOWN_ERROR, "@%s, mCca is nullptr", __func__);
 
     intel_cca_update_zoom_data* params = static_cast<intel_cca_update_zoom_data*>(pData);
 
     ia_err ret = mCca->updateZoom(params->inParams);
-    CheckAndLogError(ret != ia_err_none, UNKNOWN_ERROR, "@%s, updateZoom fails", __func__);
-    LOG2("@%s, ret:%d", __func__, ret);
+    CheckAndLogError(ret != ia_err_none, UNKNOWN_ERROR, "@%s, fails: %d", __func__, ret);
 
     return OK;
 }
 
 status_t IntelCcaServer::runDVS(void* pData, int dataSize) {
-    LOGIPC("@%s, pData:%p, dataSize:%d", __func__, pData, dataSize);
+    PERF_CAMERA_ATRACE();
+
     CheckAndLogError(pData == nullptr, UNKNOWN_ERROR, "@%s, pData is nullptr", __func__);
     CheckAndLogError(mCca == nullptr, UNKNOWN_ERROR, "@%s, mCca is nullptr", __func__);
 
     intel_cca_run_dvs_data* params = static_cast<intel_cca_run_dvs_data*>(pData);
 
     ia_err ret = mCca->runDVS(params->frameId);
-    CheckAndLogError(ret != ia_err_none, UNKNOWN_ERROR, "@%s, runDVS fails", __func__);
-    LOG2("@%s, ret:%d", __func__, ret);
+    CheckAndLogError(ret != ia_err_none, UNKNOWN_ERROR, "@%s, fails: %d", __func__, ret);
 
     return OK;
 }
 
 status_t IntelCcaServer::runAIC(void* pData, int dataSize) {
-    LOGIPC("@%s, pData:%p, dataSize:%d", __func__, pData, dataSize);
+    PERF_CAMERA_ATRACE();
+
     CheckAndLogError(pData == nullptr, UNKNOWN_ERROR, "@%s, pData is nullptr", __func__);
     CheckAndLogError(mCca == nullptr, UNKNOWN_ERROR, "@%s, mCca is nullptr", __func__);
 
@@ -154,80 +149,73 @@ status_t IntelCcaServer::runAIC(void* pData, int dataSize) {
     CheckAndLogError(retVal != true, UNKNOWN_ERROR, "@%s, unflattenProgramGroup fails", __func__);
 
     ia_err ret = mCca->runAIC(params->frameId, params->inParams, &params->palOutData);
-    CheckAndLogError(ret != ia_err_none && ret != ia_err_not_run, ret, "@%s, runAIC fails",
-                     __func__);
-    LOG2("@%s, ret:%d", __func__, ret);
+    CheckAndLogError(ret != ia_err_none && ret != ia_err_not_run, ret, "@%s, fails: %d", __func__,
+                     ret);
 
     return ret;
 }
 
 status_t IntelCcaServer::getCMC(void* pData, int dataSize) {
-    LOGIPC("@%s, pData:%p, dataSize:%d", __func__, pData, dataSize);
     CheckAndLogError(pData == nullptr, UNKNOWN_ERROR, "@%s, pData is nullptr", __func__);
     CheckAndLogError(mCca == nullptr, UNKNOWN_ERROR, "@%s, mCca is nullptr", __func__);
 
     intel_cca_get_cmc_data* params = static_cast<intel_cca_get_cmc_data*>(pData);
 
     ia_err ret = mCca->getCMC(&params->results);
-    CheckAndLogError(ret != ia_err_none, UNKNOWN_ERROR, "@%s, getCMC fails", __func__);
-    LOG2("@%s, ret:%d", __func__, ret);
+    CheckAndLogError(ret != ia_err_none, UNKNOWN_ERROR, "@%s, fails: %d", __func__, ret);
 
     return OK;
 }
 
 status_t IntelCcaServer::getMKN(void* pData, int dataSize) {
-    LOGIPC("@%s, pData:%p, dataSize:%d", __func__, pData, dataSize);
     CheckAndLogError(pData == nullptr, UNKNOWN_ERROR, "@%s, pData is nullptr", __func__);
     CheckAndLogError(mCca == nullptr, UNKNOWN_ERROR, "@%s, mCca is nullptr", __func__);
 
     intel_cca_mkn_data* params = static_cast<intel_cca_mkn_data*>(pData);
 
     ia_err ret = mCca->getMKN(params->type, params->results);
-    CheckAndLogError(ret != ia_err_none, UNKNOWN_ERROR, "@%s, getMKN fails", __func__);
-    LOG2("@%s, ret:%d", __func__, ret);
+    CheckAndLogError(ret != ia_err_none, UNKNOWN_ERROR, "@%s, fails: %d", __func__, ret);
 
     return OK;
 }
 
 status_t IntelCcaServer::getAiqd(void* pData, int dataSize) {
-    LOGIPC("@%s, pData:%p, dataSize:%d", __func__, pData, dataSize);
+    PERF_CAMERA_ATRACE();
     CheckAndLogError(pData == nullptr, UNKNOWN_ERROR, "@%s, pData is nullptr", __func__);
     CheckAndLogError(mCca == nullptr, UNKNOWN_ERROR, "@%s, mCca is nullptr", __func__);
 
     intel_cca_get_aiqd_data* params = static_cast<intel_cca_get_aiqd_data*>(pData);
 
     ia_err ret = mCca->getAiqd(&params->results);
-    CheckAndLogError(ret != ia_err_none, UNKNOWN_ERROR, "@%s, getAiqd fails", __func__);
-    LOG2("@%s, ret:%d", __func__, ret);
+    CheckAndLogError(ret != ia_err_none, UNKNOWN_ERROR, "@%s, fails: %d", __func__, ret);
 
     return OK;
 }
 
 status_t IntelCcaServer::updateTuning(void* pData, int dataSize) {
-    LOGIPC("@%s, pData:%p, dataSize:%d", __func__, pData, dataSize);
+    PERF_CAMERA_ATRACE();
     CheckAndLogError(pData == nullptr, UNKNOWN_ERROR, "@%s, pData is nullptr", __func__);
     CheckAndLogError(mCca == nullptr, UNKNOWN_ERROR, "@%s, mCca is nullptr", __func__);
 
     intel_cca_update_tuning_data* params = static_cast<intel_cca_update_tuning_data*>(pData);
 
     ia_err ret = mCca->updateTuning(params->lardTags, params->lardParams, params->nvmParams);
-    CheckAndLogError(ret != ia_err_none, UNKNOWN_ERROR, "@%s, updateTuning fails", __func__);
-    LOG2("@%s, ret:%d", __func__, ret);
+    CheckAndLogError(ret != ia_err_none, UNKNOWN_ERROR, "@%s, fails: %d", __func__, ret);
 
     return OK;
 }
 
 status_t IntelCcaServer::deinit(void* pData, int dataSize) {
-    LOGIPC("@%s, pData:%p, dataSize:%d", __func__, pData, dataSize);
     CheckAndLogError(mCca == nullptr, UNKNOWN_ERROR, "@%s, mCca is nullptr", __func__);
 
     mCca->deinit();
+    LOG1("@%s", __func__);
 
     return OK;
 }
 
 status_t IntelCcaServer::decodeStats(void* pData, int dataSize, void* statsAddr) {
-    LOGIPC("@%s, pData:%p, dataSize:%d", __func__, pData, dataSize);
+    PERF_CAMERA_ATRACE();
     CheckAndLogError(pData == nullptr, UNKNOWN_ERROR, "@%s, pData is nullptr", __func__);
     CheckAndLogError(statsAddr == nullptr, UNKNOWN_ERROR, "@%s, statsAddr is nullptr", __func__);
     CheckAndLogError(mCca == nullptr, UNKNOWN_ERROR, "@%s, mCca is nullptr", __func__);
@@ -239,9 +227,9 @@ status_t IntelCcaServer::decodeStats(void* pData, int dataSize, void* statsAddr)
     }
 
     ia_err ret = mCca->decodeStats(reinterpret_cast<uint64_t>(params->statsBuffer.data),
-                                   params->statsBuffer.size, params->bitmap, &params->results);
-    CheckAndLogError(ret != ia_err_none, UNKNOWN_ERROR, "@%s, decodeStats fails", __func__);
-    LOG2("@%s, ret:%d", __func__, ret);
+                                   params->statsBuffer.size, params->bitmap, &params->results,
+                                   &params->outStats);
+    CheckAndLogError(ret != ia_err_none, UNKNOWN_ERROR, "@%s, fails: %d", __func__, ret);
 
     return OK;
 }
@@ -269,7 +257,6 @@ bool IntelCcaServer::unflattenProgramGroup(cca::cca_program_group* result) {
 }
 
 status_t IntelCcaServer::getPalDataSize(void* pData, int dataSize) {
-    LOGIPC("@%s, pData:%p, dataSize:%d", __func__, pData, dataSize);
     CheckAndLogError(pData == nullptr, UNKNOWN_ERROR, "@%s, pData is nullptr", __func__);
     CheckAndLogError(mCca == nullptr, UNKNOWN_ERROR, "@%s, mCca is nullptr", __func__);
 
@@ -278,10 +265,9 @@ status_t IntelCcaServer::getPalDataSize(void* pData, int dataSize) {
     CheckAndLogError(ret != true, UNKNOWN_ERROR, "@%s, unflattenProgramGroup fails", __func__);
 
     uint32_t size = mCca->getPalDataSize(params->pg);
-    CheckAndLogError(size == 0, UNKNOWN_ERROR, "@%s, getPalDataSize fails", __func__);
+    CheckAndLogError(size == 0, UNKNOWN_ERROR, "@%s, fails: %d", __func__, ret);
 
     params->returnSize = size;
-    LOG2("@%s, size:%d", __func__, size);
 
     return OK;
 }

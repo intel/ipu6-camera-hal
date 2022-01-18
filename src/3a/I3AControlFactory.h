@@ -39,8 +39,7 @@ public:
      *
      * \return the AIQ unit base class
      */
-    static AiqUnitBase *createI3AControl(int cameraId, SensorHwCtrl *sensorHw, LensHw *lensHw,
-                                         ParameterGenerator* paramGen);
+    static AiqUnitBase *createI3AControl(int cameraId, SensorHwCtrl *sensorHw, LensHw *lensHw);
 };
 
 } /* namespace icamera */

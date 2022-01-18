@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2019 Intel Corporation
+ * Copyright (C) 2018-2021 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@
 
 namespace icamera {
 namespace GraphUtils {
-    void dumpConnections(const std::vector<IGraphType::PipelineConnection>& connections);
-    void dumpKernelInfo(const ia_isp_bxt_program_group& programGroup);
-};
-}
+void dumpConnections(const std::vector<IGraphType::PipelineConnection>& connections);
+void dumpKernelInfo(const ia_isp_bxt_program_group& programGroup);
+};  // namespace GraphUtils
+}  // namespace icamera

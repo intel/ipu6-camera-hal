@@ -100,11 +100,6 @@ class Camera3Buffer {
     icamera::status_t getFence(camera3_stream_buffer* buf);
 
     /**
-     * Convert the GFX format to v4l2 format
-     */
-    int v4L2Fmt2GFXFmt(int v4l2Fmt);
-
-    /**
      * APIs for getting private member
      */
     int width() { return mHalBuffer.s.width; }
@@ -116,6 +111,7 @@ class Camera3Buffer {
     uint64_t getTimeStamp() { return mHalBuffer.timestamp; }
     void setTimeStamp(uint64_t timestamp) { mHalBuffer.timestamp = timestamp; }
     int format() { return mFormat; }
+    int usage() { return mUsage; }
     buffer_handle_t* getBufferHandle() { return mHandlePtr; }
     bool isLocked() const { return mLocked; }
     int dmaBufFd() { return mType == BUF_TYPE_HANDLE ? mHandle->data[0] : mHalBuffer.dmafd; }

@@ -31,21 +31,15 @@
 namespace icamera {
 
 // Common check before the function call
-#define FUNCTION_PREPARED_RETURN \
-    uint16_t key = getKey(p->cameraId, p->tuningMode); \
-    if (mCcas.find(key) == mCcas.end()) { \
+#define FUNCTION_PREPARED_RETURN                                           \
+    uint16_t key = getKey(p->cameraId, p->tuningMode);                     \
+    if (mCcas.find(key) == mCcas.end()) {                                  \
         LOGE("@%s, req_id:%d, it doesn't find the cca", __func__, req_id); \
-        status = UNKNOWN_ERROR; \
-        break; \
+        status = UNKNOWN_ERROR;                                            \
+        break;                                                             \
     }
 
-IntelCPUAlgoServer::IntelCPUAlgoServer(IntelAlgoServer* server) : RequestHandler(server) {
-    LOGIPC("@%s", __func__);
-}
-
 IntelCPUAlgoServer::~IntelCPUAlgoServer() {
-    LOGIPC("@%s", __func__);
-
     for (auto& it : mCcas) {
         delete it.second;
     }
@@ -65,8 +59,6 @@ void IntelCPUAlgoServer::handleRequest(const MsgReq& msg) {
 
     size_t requestSize = info.size;
     void* addr = info.addr;
-    LOGIPC("@%s, req_id:%d:%s, requestSize:%zu, addr:%p, buffer_handle:%d", __func__, req_id,
-           IntelAlgoIpcCmdToString(static_cast<IPC_CMD>(req_id)), requestSize, addr, buffer_handle);
 
     switch (req_id) {
         case IPC_FD_INIT:
@@ -336,8 +328,8 @@ void IntelCPUAlgoServer::handleRequest(const MsgReq& msg) {
             break;
     }
 
-    LOGIPC("@%s, req_id:%d:%s, status:%d", __func__, req_id,
-           IntelAlgoIpcCmdToString(static_cast<IPC_CMD>(req_id)), status);
+    LOG2("@%s, req_id:%d:%s, status:%d", __func__, req_id,
+         IntelAlgoIpcCmdToString(static_cast<IPC_CMD>(req_id)), status);
     getIntelAlgoServer()->returnCallback(req_id, status, buffer_handle);
 }
 

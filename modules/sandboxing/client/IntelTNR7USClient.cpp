@@ -29,11 +29,10 @@ IntelTNR7US::IntelTNR7US(int cameraId)
         : mCameraId(cameraId),
           mTnrType(TNR_INSTANCE_MAX),
           mTnrRequestInfo(nullptr) {
-    LOG1("%s ", __func__);
+    LOG1("<id%d> %s, Construct", cameraId, __func__);
 }
 
 IntelTNR7US::~IntelTNR7US() {
-    LOG1("%s ", __func__);
     // the instance not initialized, don't need to free
     if (mTnrType != TNR_INSTANCE_MAX) {
         mTnrRequestInfo->type = mTnrType;
@@ -45,6 +44,7 @@ IntelTNR7US::~IntelTNR7US() {
         CheckAndLogError(!ret, VOID_VALUE, "@%s, requestSync fails", __func__);
         mCommon.freeShmMem(mTnrRequestInfoMem, GPU_ALGO_SHM);
     }
+    LOG1("<id%d> %s, Destroy", mCameraId, __func__);
 }
 
 int IntelTNR7US::init(int width, int height, TnrType type) {
@@ -78,14 +78,14 @@ int IntelTNR7US::init(int width, int height, TnrType type) {
     }
     mCommon.freeShmMem(initInfoMems, GPU_ALGO_SHM);
     mTnrType = type;
-    LOG1("%s size %dx%d, type %d", __func__, width, height, mTnrType);
+    LOG1("%s, GPU TNR instance size %dx%d, type %d", __func__, width, height, mTnrType);
 
     return ret ? OK : UNKNOWN_ERROR;
 }
 
 int IntelTNR7US::runTnrFrame(const void* inBufAddr, void* outBufAddr, uint32_t inBufSize,
                              uint32_t outBufSize, Tnr7Param* tnrParam, bool syncUpdate, int fd) {
-    LOG1("%s type:%d", __func__, mTnrType);
+    LOG2("%s, type: %d, syncUpdate: %d, fd: %d", __func__, mTnrType, syncUpdate, fd);
     CheckAndLogError(!inBufAddr || !outBufAddr || !tnrParam, UNKNOWN_ERROR,
                      "@%s, invalid data buffer or parameter buffer", __func__);
     int32_t inHandle = mCommon.getShmMemHandle(const_cast<void*>(inBufAddr), GPU_ALGO_SHM);
@@ -94,7 +94,6 @@ int IntelTNR7US::runTnrFrame(const void* inBufAddr, void* outBufAddr, uint32_t i
                      __func__);
 
     if (fd >= 0) {
-        LOG1("%s type:%d using usr buffer fd: %d", __func__, mTnrType, fd);
         mTnrRequestInfo->outHandle = mCommon.registerGbmBuffer(fd, GPU_ALGO_SHM);
     } else {
         mTnrRequestInfo->outHandle =
@@ -126,8 +125,6 @@ int IntelTNR7US::runTnrFrame(const void* inBufAddr, void* outBufAddr, uint32_t i
 }
 
 void* IntelTNR7US::allocCamBuf(uint32_t bufSize, int id) {
-    LOG1("Enter %s type:%d, size %d", __func__, mTnrType, bufSize);
-
     uintptr_t personal = reinterpret_cast<uintptr_t>(this);
     std::string initName = "/TnrCam" + std::to_string(personal) + std::to_string(id) + "Shm";
     ShmMemInfo shm;
@@ -147,13 +144,11 @@ void* IntelTNR7US::allocCamBuf(uint32_t bufSize, int id) {
         return nullptr;
     }
     mCamBufMems.push_back(shm);
-    LOG1("Exit %s Fd: %d", __func__, shm.mFd);
 
     return shm.mAddr;
 }
 
 void IntelTNR7US::freeAllBufs() {
-    LOG1("%s type:%d", __func__, mTnrType);
     if (mParamMems.mAddr) {
         mCommon.freeShmMem(mParamMems, GPU_ALGO_SHM);
     }
@@ -165,7 +160,6 @@ void IntelTNR7US::freeAllBufs() {
 }
 
 Tnr7Param* IntelTNR7US::allocTnr7ParamBuf() {
-    LOG1("%s type:%d", __func__, mTnrType);
     uintptr_t personal = reinterpret_cast<uintptr_t>(this);
     std::string initName = "/TnrParam" + std::to_string(personal) + "Shm";
 
@@ -178,7 +172,7 @@ Tnr7Param* IntelTNR7US::allocTnr7ParamBuf() {
 }
 
 int IntelTNR7US::asyncParamUpdate(int gain, bool forceUpdate) {
-    LOG1("%s type:%d", __func__, mTnrType);
+    LOG2("%s, type: %d, gain: %d, forceUpdate: %d", __func__, mTnrType, gain, forceUpdate);
     mTnrRequestInfo->gain = gain;
     mTnrRequestInfo->type = mTnrType;
     mTnrRequestInfo->cameraId = mCameraId;
@@ -195,4 +189,19 @@ int IntelTNR7US::asyncParamUpdate(int gain, bool forceUpdate) {
     return OK;
 }
 
+int IntelTNR7US::getSurfaceInfo(int width, int height, uint32_t* size) {
+    mTnrRequestInfo->width = width;
+    mTnrRequestInfo->height = height;
+    mTnrRequestInfo->type = mTnrType;
+    mTnrRequestInfo->cameraId = mCameraId;
+
+    int32_t requestHandle =
+        mCommon.getShmMemHandle(static_cast<void*>(mTnrRequestInfo), GPU_ALGO_SHM);
+
+    bool ret = mCommon.requestSync(IPC_GPU_TNR_GET_SURFACE_INFO, requestHandle);
+    CheckAndLogError(!ret, UNKNOWN_ERROR, "@%s, IPC_GPU_TNR_GET_SURFACE_INFO requestSync fails",
+                     __func__);
+    if (size) *size = mTnrRequestInfo->surfaceSize;
+    return OK;
+}
 }  // namespace icamera

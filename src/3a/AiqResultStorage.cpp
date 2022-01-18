@@ -24,14 +24,12 @@ namespace icamera {
 std::map<int, AiqResultStorage*> AiqResultStorage::sInstances;
 Mutex AiqResultStorage::sLock;
 
-AiqResultStorage* AiqResultStorage::getInstance(int cameraId)
-{
+AiqResultStorage* AiqResultStorage::getInstance(int cameraId) {
     AutoMutex lock(sLock);
     return getInstanceLocked(cameraId);
 }
 
-void AiqResultStorage::releaseAiqResultStorage(int cameraId)
-{
+void AiqResultStorage::releaseAiqResultStorage(int cameraId) {
     AutoMutex lock(sLock);
     AiqResultStorage* storage = getInstanceLocked(cameraId);
     sInstances.erase(cameraId);
@@ -39,27 +37,20 @@ void AiqResultStorage::releaseAiqResultStorage(int cameraId)
 }
 
 AiqResultStorage::AiqResultStorage(int cameraId) :
-    mCameraId(cameraId)
-{
-    LOG1("AiqResultStorage created for id:%d", mCameraId);
-
+    mCameraId(cameraId) {
     for (int i = 0; i < kStorageSize; i++) {
         mAiqResults[i] = new AiqResult(mCameraId);
         mAiqResults[i]->init();
     }
 }
 
-AiqResultStorage::~AiqResultStorage()
-{
-    LOG1("AiqResultStorage released for id:%d", mCameraId);
-
+AiqResultStorage::~AiqResultStorage() {
     for (int i = 0; i < kStorageSize; i++) {
         delete mAiqResults[i];
     }
 }
 
-AiqStatistics* AiqResultStorage::acquireAiqStatistics()
-{
+AiqStatistics* AiqResultStorage::acquireAiqStatistics() {
     AutoWMutex rlock(mDataLock);
 
     int index = (mCurrentAiqStatsIndex + 1) % kAiqStatsStorageSize;
@@ -74,8 +65,7 @@ AiqStatistics* AiqResultStorage::acquireAiqStatistics()
     return &mAiqStatistics[index];
 }
 
-void AiqResultStorage::updateAiqStatistics(long sequence)
-{
+void AiqResultStorage::updateAiqStatistics(int64_t sequence) {
     AutoWMutex wlock(mDataLock);
 
     mCurrentAiqStatsIndex++;
@@ -84,8 +74,7 @@ void AiqResultStorage::updateAiqStatistics(long sequence)
     mAiqStatistics[mCurrentAiqStatsIndex].mSequence = sequence;
 }
 
-const AiqStatistics* AiqResultStorage::getAndLockAiqStatistics()
-{
+const AiqStatistics* AiqResultStorage::getAndLockAiqStatistics() {
     AutoRMutex rlock(mDataLock);
 
     if (mCurrentAiqStatsIndex == -1)
@@ -98,16 +87,14 @@ const AiqStatistics* AiqResultStorage::getAndLockAiqStatistics()
     return &mAiqStatistics[mCurrentAiqStatsIndex];
 }
 
-void AiqResultStorage::unLockAiqStatistics()
-{
+void AiqResultStorage::unLockAiqStatistics() {
     AutoRMutex rlock(mDataLock);
     for (int i = 0; i < kAiqStatsStorageSize; i++) {
         mAiqStatistics[i].mInUse = false;
     }
 }
 
-AiqResult* AiqResultStorage::acquireAiqResult()
-{
+AiqResult* AiqResultStorage::acquireAiqResult() {
     AutoWMutex rlock(mDataLock);
 
     int index = mCurrentIndex + 1;
@@ -117,8 +104,7 @@ AiqResult* AiqResultStorage::acquireAiqResult()
     return mAiqResults[index];
 }
 
-void AiqResultStorage::updateAiqResult(long sequence)
-{
+void AiqResultStorage::updateAiqResult(int64_t sequence) {
     AutoWMutex wlock(mDataLock);
 
     mCurrentIndex++;
@@ -126,8 +112,7 @@ void AiqResultStorage::updateAiqResult(long sequence)
     mAiqResults[mCurrentIndex]->mSequence = sequence;
 }
 
-const AiqResult* AiqResultStorage::getAiqResult(long sequence)
-{
+const AiqResult* AiqResultStorage::getAiqResult(int64_t sequence) {
     AutoRMutex rlock(mDataLock);
 
     // Sequence id is -1 means user wants get the latest result.
@@ -151,8 +136,7 @@ const AiqResult* AiqResultStorage::getAiqResult(long sequence)
 /**
  * Private function with no lock in it, must be called with lock protection
  */
-AiqResultStorage* AiqResultStorage::getInstanceLocked(int cameraId)
-{
+AiqResultStorage* AiqResultStorage::getInstanceLocked(int cameraId) {
     if (sInstances.find(cameraId) != sInstances.end()) {
         return sInstances[cameraId];
     }

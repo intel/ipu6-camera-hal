@@ -30,10 +30,6 @@
 
 namespace icamera {
 
-IntelGPUAlgoServer::IntelGPUAlgoServer(IntelAlgoServer* server) : RequestHandler(server) {
-    LOGIPC("@%s", __func__);
-}
-
 void IntelGPUAlgoServer::handleRequest(const MsgReq& msg) {
     uint32_t req_id = msg.req_id;
     int32_t buffer_handle = msg.buffer_handle;
@@ -48,13 +44,17 @@ void IntelGPUAlgoServer::handleRequest(const MsgReq& msg) {
 
     size_t requestSize = info.size;
     void* addr = info.addr;
-    LOGIPC("@%s, req_id:%d:%s, requestSize:%zu, buffer_handle:%d addr:%p", __func__, req_id,
-           IntelAlgoIpcCmdToString(static_cast<IPC_CMD>(req_id)), requestSize, buffer_handle, addr);
+
     switch (req_id) {
 #ifdef TNR7_CM
         case IPC_GPU_TNR_INIT:
             status = mTNR.init(addr, requestSize);
             break;
+        case IPC_GPU_TNR_GET_SURFACE_INFO: {
+            TnrRequestInfo* requestInfo = static_cast<TnrRequestInfo*>(addr);
+            status = mTNR.getSurfaceInfo(requestInfo);
+            break;
+        }
         case IPC_GPU_TNR_PREPARE_SURFACE: {
             TnrRequestInfo* requestInfo = static_cast<TnrRequestInfo*>(addr);
             ShmInfo surfaceBuffer = {};
@@ -85,14 +85,14 @@ void IntelGPUAlgoServer::handleRequest(const MsgReq& msg) {
             if (requestInfo->outHandle >= 0) {
                 status = getIntelAlgoServer()->getShmInfo(requestInfo->outHandle, &outBuffer);
                 if (status != OK) {
-                    LOGE("%s, the buffer handle for inBuffer data is invalid", __func__);
+                    LOGE("%s, the buffer handle for outBuffer data is invalid", __func__);
                     break;
                 }
             }
             if (requestInfo->paramHandle >= 0) {
                 status = getIntelAlgoServer()->getShmInfo(requestInfo->paramHandle, &paramBuffer);
                 if (status != OK) {
-                    LOGE("%s, the buffer handle for inBuffer data is invalid", __func__);
+                    LOGE("%s, the buffer handle for parameter is invalid", __func__);
                     break;
                 }
             }
@@ -113,11 +113,43 @@ void IntelGPUAlgoServer::handleRequest(const MsgReq& msg) {
             break;
         }
 #endif
+// ENABLE_EVCP_S
+        case IPC_EVCP_INIT:
+            status = mEvcp.init(addr, requestSize);
+            break;
+        case IPC_EVCP_UPDCONF:
+            status = mEvcp.updateEvcpParam(reinterpret_cast<EvcpParam*>(addr));
+            break;
+        case IPC_EVCP_GETCONF:
+            mEvcp.getEvcpParam(reinterpret_cast<EvcpParam*>(addr));
+            status = OK;
+            break;
+        case IPC_EVCP_RUN_FRAME: {
+            status = UNKNOWN_ERROR;
+            EvcpRunInfo* runInfo = static_cast<EvcpRunInfo*>(addr);
+            ShmInfo inBuffer = {};
+            if (runInfo->inHandle < 0) break;
+
+            status = getIntelAlgoServer()->getShmInfo(runInfo->inHandle, &inBuffer);
+            if (status != OK) {
+                LOGE("%s, the buffer handle for EVCP inBuffer data is invalid", __func__);
+                break;
+            }
+
+            status = mEvcp.runEvcpFrame(inBuffer.addr, inBuffer.size);
+            break;
+        }
+        case IPC_EVCP_DEINIT:
+            status = mEvcp.deInit();
+            break;
+// ENABLE_EVCP_E
         default:
             LOGE("@%s, req_id:%d is not defined", __func__, req_id);
             status = UNKNOWN_ERROR;
             break;
     }
+    LOG1("@%s, req_id:%d:%s, status", __func__, req_id,
+         IntelAlgoIpcCmdToString(static_cast<IPC_CMD>(req_id)), status);
 
     getIntelAlgoServer()->returnCallback(req_id, status, buffer_handle);
 }

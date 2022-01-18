@@ -35,6 +35,7 @@ class IntelTNRServer {
     int runTnrFrame(const void* inBufAddr, void* outBufAddr, uint32_t inBufSize,
                     uint32_t outBufSize, void* tnrParam, TnrRequestInfo* requestInfo);
     int asyncParamUpdate(TnrRequestInfo* requestInfo);
+    int getSurfaceInfo(TnrRequestInfo* requestInfo);
 
  private:
     // the tnr instance of the id

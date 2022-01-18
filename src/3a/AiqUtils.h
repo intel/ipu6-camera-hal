@@ -69,12 +69,12 @@ static const float AWB_GAIN_RANGE_USER = AWB_GAIN_MAX - AWB_GAIN_MIN;
 static const int MAX_CUSTOM_CONTROLS_PARAM_SIZE = 1024;
 
 namespace AiqUtils {
-int dumpAeResults(const cca::cca_ae_results& aeResult);
-int dumpAfResults(const cca::cca_af_results& afResult);
-int dumpAwbResults(const cca::cca_awb_results& awbResult);
-int dumpGbceResults(const cca::cca_gbce_params& gbceResult);
-int dumpPaResults(const cca::cca_pa_params& paResult);
-int dumpSaResults(const cca::cca_sa_results& saResult);
+void dumpAeResults(const cca::cca_ae_results& aeResult);
+void dumpAfResults(const cca::cca_af_results& afResult);
+void dumpAwbResults(const cca::cca_awb_results& awbResult);
+void dumpGbceResults(const cca::cca_gbce_params& gbceResult);
+void dumpPaResults(const cca::cca_pa_params& paResult);
+void dumpSaResults(const cca::cca_sa_results& saResult);
 
 int convertError(ia_err iaErr);
 void convertToAiqFrameParam(const SensorFrameParams& sensor, ia_aiq_frame_params& aiq);

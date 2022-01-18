@@ -19,84 +19,79 @@
 
 #define LOG_TAG DeviceBase
 
-#include "iutils/CameraLog.h"
+#include "DeviceBase.h"
+
+#include "CameraEventType.h"
+#include "PlatformData.h"
+// FRAME_SYNC_S
+#include "SyncManager.h"
+// FRAME_SYNC_E
+#include "V4l2DeviceFactory.h"
 #include "iutils/CameraDump.h"
+#include "iutils/CameraLog.h"
 #include "iutils/Utils.h"
 #include "linux/ipu-isys.h"
-
-#include "SyncManager.h"
-#include "PlatformData.h"
-#include "DeviceBase.h"
-#include "CameraEventType.h"
-#include "V4l2DeviceFactory.h"
 
 using std::shared_ptr;
 
 namespace icamera {
 
 DeviceBase::DeviceBase(int cameraId, VideoNodeType nodeType, VideoNodeDirection nodeDirection,
-                       DeviceCallback* deviceCB) :
-        mCameraId(cameraId),
-        mPort(INVALID_PORT),
-        mNodeType(nodeType),
-        mNodeDirection(nodeDirection),
-        mName(GetNodeName(nodeType)),
-        mDevice(nullptr),
-        mLatestSequence(-1),
-        mNeedSkipFrame(false),
-        mDeviceCB(deviceCB),
-        mMaxBufferNumber(MAX_BUFFER_COUNT)
-{
-    LOG1("%s, camera id:%d device:%s", __func__, mCameraId, mName);
+                       DeviceCallback* deviceCB)
+        : mCameraId(cameraId),
+          mPort(INVALID_PORT),
+          mNodeType(nodeType),
+          mNodeDirection(nodeDirection),
+          mName(GetNodeName(nodeType)),
+          mDevice(nullptr),
+          mLatestSequence(-1),
+          mNeedSkipFrame(false),
+          mDeviceCB(deviceCB),
+          mMaxBufferNumber(MAX_BUFFER_COUNT) {
+    LOG1("<id%d>%s, device:%s", mCameraId, __func__, mName);
 
     mFrameSkipNum = PlatformData::getInitialSkipFrame(mCameraId);
-
     std::string devName;
     int ret = PlatformData::getDevNameByType(cameraId, nodeType, devName);
     CheckAndLogError(ret != OK, VOID_VALUE,
-                     "Failed to get video device name for cameraId: %d, node type: %d",
-                     cameraId, nodeType);
+                     "Failed to get video device name for cameraId: %d, node type: %d", cameraId,
+                     nodeType);
 
     mDevice = new V4L2VideoNode(devName);
 }
 
-DeviceBase::~DeviceBase()
-{
-    LOG1("%s, camera id:%d device:%s", __func__, mCameraId, mName);
-
+DeviceBase::~DeviceBase() {
+    LOG1("<id%d>%s, device:%s", mCameraId, __func__, mName);
     delete mDevice;
 }
 
-int DeviceBase::openDevice()
-{
-    LOG1("%s, camera id:%d device:%s", __func__, mCameraId, mName);
+int DeviceBase::openDevice() {
+    LOG1("<id%d>%s, device:%s", mCameraId, __func__, mName);
 
+    // FRAME_SYNC_S
     if (PlatformData::isEnableFrameSyncCheck(mCameraId))
         SyncManager::getInstance()->updateSyncCamNum();
+    // FRAME_SYNC_E
 
     return mDevice->Open(O_RDWR);
 }
 
-void DeviceBase::closeDevice()
-{
-    LOG1("%s, camera id:%d device:%s", __func__, mCameraId, mName);
+void DeviceBase::closeDevice() {
+    LOG1("<id%d>%s, device:%s", mCameraId, __func__, mName);
+
+    // Release V4L2 buffers
+    mDevice->Stop(true);
     {
         AutoMutex l(mBufferLock);
-
-        // Release V4L2 buffers
-        mDevice->Stop(true);
-
         mPendingBuffers.clear();
         mBuffersInDevice.clear();
         mAllocatedBuffers.clear();
     }
-
     mDevice->Close();
 }
 
-int DeviceBase::configure(Port port, const stream_t& config, uint32_t bufferNum)
-{
-    LOG1("%s, camera id:%d device:%s, port:%d", __func__, mCameraId, mName, port);
+int DeviceBase::configure(Port port, const stream_t& config, uint32_t bufferNum) {
+    LOG1("<id%d>%s, device:%s, port:%d", mCameraId, __func__, mName, port);
 
     mPort = port;
     mMaxBufferNumber = bufferNum;
@@ -109,42 +104,43 @@ int DeviceBase::configure(Port port, const stream_t& config, uint32_t bufferNum)
     return OK;
 }
 
-int DeviceBase::streamOn()
-{
-    LOG1("%s, camera id:%d device:%s", __func__, mCameraId, mName);
+int DeviceBase::streamOn() {
+    LOG1("<id%d>%s, device:%s", mCameraId, __func__, mName);
 
     mFrameSkipNum = PlatformData::getInitialSkipFrame(mCameraId);
 
     return mDevice->Start();
 }
 
-int DeviceBase::streamOff()
-{
-    LOG1("%s, camera id:%d device:%s", __func__, mCameraId, mName);
+int DeviceBase::streamOff() {
+    LOG1("<id%d>%s, device:%s", mCameraId, __func__, mName);
 
     mDevice->Stop(false);
 
     return OK;
 }
 
-int DeviceBase::queueBuffer(long sequence)
-{
-    LOG2("%s, camera id:%d device:%s", __func__, mCameraId, mName);
+int DeviceBase::queueBuffer(int64_t sequence) {
+    LOG2("<id%d>%s, device:%s", mCameraId, __func__, mName);
 
     shared_ptr<CameraBuffer> buffer;
-    AutoMutex l(mBufferLock);
-    if (mPendingBuffers.empty()) {
-        LOG2("Device:%s has no pending buffer to be queued.", mName);
-        return OK;
+    {
+        AutoMutex l(mBufferLock);
+        if (mPendingBuffers.empty()) {
+            LOG2("Device:%s has no pending buffer to be queued.", mName);
+            return OK;
+        }
+        buffer = mPendingBuffers.front();
     }
-    buffer = mPendingBuffers.front();
 
     int ret = onQueueBuffer(sequence, buffer);
-    CheckAndLogError(ret != OK, ret, "Device:%s failed to preprocess the buffer with ret=%d", mName, ret);
+    CheckAndLogError(ret != OK, ret, "Device:%s failed to preprocess the buffer with ret=%d", mName,
+                     ret);
 
     ret = mDevice->PutFrame(&buffer->getV4L2Buffer());
 
     if (ret >= 0) {
+        AutoMutex l(mBufferLock);
         mPendingBuffers.pop_front();
         mBuffersInDevice.push_back(buffer);
     }
@@ -152,9 +148,8 @@ int DeviceBase::queueBuffer(long sequence)
     return ret;
 }
 
-int DeviceBase::dequeueBuffer()
-{
-    LOG2("%s, camera id:%d device:%s", __func__, mCameraId, mName);
+int DeviceBase::dequeueBuffer() {
+    LOG2("<id%d>%s, device:%s", mCameraId, __func__, mName);
 
     shared_ptr<CameraBuffer> camBuffer = getFirstDeviceBuffer();
     CheckAndLogError(!camBuffer, UNKNOWN_ERROR, "No buffer in device:%s.", mName);
@@ -162,7 +157,7 @@ int DeviceBase::dequeueBuffer()
     int ret = OK;
     int targetIndex = camBuffer->getIndex();
 
-    V4L2Buffer &vbuf = camBuffer->getV4L2Buffer();
+    V4L2Buffer& vbuf = camBuffer->getV4L2Buffer();
     int actualIndex = mDevice->GrabFrame(&vbuf);
 
     CheckAndLogError(actualIndex < 0, BAD_VALUE, "Device grabFrame failed:%d", actualIndex);
@@ -174,9 +169,9 @@ int DeviceBase::dequeueBuffer()
     mNeedSkipFrame = needQueueBack(camBuffer);
     popBufferFromDevice();
 
-    PERF_CAMERA_ATRACE_PARAM3("grabFrame SeqID", camBuffer->getSequence(),
-                              "csi2_port",       camBuffer->getCsi2Port(),
-                              "virtual_channel", camBuffer->getVirtualChannel());
+    PERF_CAMERA_ATRACE_PARAM3("grabFrame SeqID", camBuffer->getSequence(), "csi2_port",
+                              camBuffer->getCsi2Port(), "virtual_channel",
+                              camBuffer->getVirtualChannel());
 
     ret |= onDequeueBuffer(camBuffer);
 
@@ -187,59 +182,52 @@ int DeviceBase::dequeueBuffer()
     return ret;
 }
 
-int DeviceBase::getBufferNumInDevice()
-{
+int DeviceBase::getBufferNumInDevice() {
     AutoMutex l(mBufferLock);
 
     return mBuffersInDevice.size();
 }
 
-void DeviceBase::resetBuffers()
-{
+void DeviceBase::resetBuffers() {
     AutoMutex l(mBufferLock);
 
     mBuffersInDevice.clear();
     mPendingBuffers.clear();
-
     for (const auto& buffer : mAllocatedBuffers) {
         mPendingBuffers.push_back(buffer);
     }
 }
 
-bool DeviceBase::hasPendingBuffer()
-{
+bool DeviceBase::hasPendingBuffer() {
     AutoMutex l(mBufferLock);
 
     return !mPendingBuffers.empty();
 }
 
-void DeviceBase::addPendingBuffer(const shared_ptr<CameraBuffer>& buffer)
-{
+void DeviceBase::addPendingBuffer(const shared_ptr<CameraBuffer>& buffer) {
     AutoMutex l(mBufferLock);
 
     mPendingBuffers.push_back(buffer);
 }
 
-long DeviceBase::getPredictSequence()
-{
+int64_t DeviceBase::getPredictSequence() {
     AutoMutex l(mBufferLock);
 
     return mLatestSequence + mFrameSkipNum + mBuffersInDevice.size();
 }
 
-shared_ptr<CameraBuffer> DeviceBase::getFirstDeviceBuffer()
-{
+shared_ptr<CameraBuffer> DeviceBase::getFirstDeviceBuffer() {
     AutoMutex l(mBufferLock);
 
     return mBuffersInDevice.empty() ? nullptr : mBuffersInDevice.front();
 }
 
-bool DeviceBase::skipFrameAfterSyncCheck(long sequence)
-{
-    //For multi-camera sensor, to check whether the frame synced or not
+// FRAME_SYNC_S
+bool DeviceBase::skipFrameAfterSyncCheck(int64_t sequence) {
+    // For multi-camera sensor, to check whether the frame synced or not
     int count = 0;
     const int timeoutDuration = gSlowlyRunRatio ? (gSlowlyRunRatio * 1000000) : 1000;
-    const int maxCheckTimes = 10;  //10 times
+    const int maxCheckTimes = 10;  // 10 times
     while (!SyncManager::getInstance()->isSynced(mCameraId, sequence)) {
         usleep(timeoutDuration);
         count++;
@@ -249,9 +237,9 @@ bool DeviceBase::skipFrameAfterSyncCheck(long sequence)
     }
     return false;
 }
+// FRAME_SYNC_E
 
-void DeviceBase::popBufferFromDevice()
-{
+void DeviceBase::popBufferFromDevice() {
     AutoMutex l(mBufferLock);
     if (mBuffersInDevice.empty()) {
         return;
@@ -266,31 +254,25 @@ void DeviceBase::popBufferFromDevice()
     }
 }
 
-void DeviceBase::dumpFrame(const shared_ptr<CameraBuffer>& buffer)
-{
+void DeviceBase::dumpFrame(const shared_ptr<CameraBuffer>& buffer) {
     if (!CameraDump::isDumpTypeEnable(DUMP_ISYS_BUFFER)) return;
 
-    LOGD("@%s, ISYS: fmt:%s(%dx%d), stride:%d, len:%d", __func__,
-         CameraUtils::format2string(buffer->getFormat()).c_str(),
-         buffer->getWidth(), buffer->getHeight(), buffer->getStride(), buffer->getBufferSize());
+    LOG2("@%s, ISYS: fmt:%s(%dx%d), stride:%d, len:%d", __func__,
+         CameraUtils::format2string(buffer->getFormat()).c_str(), buffer->getWidth(),
+         buffer->getHeight(), buffer->getStride(), buffer->getBufferSize());
 
     CameraDump::dumpImage(mCameraId, buffer, M_ISYS, mPort);
 }
 
-MainDevice::MainDevice(int cameraId, VideoNodeType nodeType, DeviceCallback* deviceCB) :
-        DeviceBase(cameraId, nodeType, INPUT_VIDEO_NODE, deviceCB)
-{
-    LOG1("%s, camera id:%d device:%s", __func__, mCameraId, mName);
+MainDevice::MainDevice(int cameraId, VideoNodeType nodeType, DeviceCallback* deviceCB)
+        : DeviceBase(cameraId, nodeType, INPUT_VIDEO_NODE, deviceCB) {
+    LOG1("<id%d>%s, device:%s", mCameraId, __func__, mName);
 }
 
-MainDevice::~MainDevice()
-{
-    LOG1("%s, camera id:%d device:%s", __func__, mCameraId, mName);
-}
+MainDevice::~MainDevice() {}
 
-int MainDevice::createBufferPool(const stream_t& config)
-{
-    LOG1("%s, camera id:%d, fmt:%s(%dx%d) field:%d", __func__, mCameraId,
+int MainDevice::createBufferPool(const stream_t& config) {
+    LOG1("<id%d>%s, fmt:%s(%dx%d) field:%d", mCameraId, __func__,
          CameraUtils::pixelCode2String(config.format), config.width, config.height, config.field);
 
     // Pass down ISYS compression flag to driver, which is CSI-BE output compression
@@ -303,8 +285,8 @@ int MainDevice::createBufferPool(const stream_t& config)
 
         V4L2Subdevice* csiBESubDev = V4l2DeviceFactory::getSubDev(mCameraId, csiBEDeviceNodeName);
         ret = csiBESubDev->SetControl(V4L2_CID_IPU_ISYS_COMPRESSION, isISYSCompression);
-        LOG2("@%s, set control compression for BE capture, node name: %s, ret:%d",
-                __func__, csiBEDeviceNodeName.c_str(), ret);
+        LOG2("@%s, set control compression for BE capture, node name: %s, ret:%d", __func__,
+             csiBEDeviceNodeName.c_str(), ret);
     }
 
     bool setWithHeaderCtl = true;
@@ -339,8 +321,8 @@ int MainDevice::createBufferPool(const stream_t& config)
         // The frame data is without header(MIPI STORE MODE) when
         // format is YUV/RGB and frame output from CSI-Front-End entity.
         if (!CameraUtils::isRaw(config.format)) {
-            LOG2("@%s, set frame without header for format: %s",
-                    __func__, CameraUtils::pixelCode2String(config.format));
+            LOG2("@%s, set frame without header for format: %s", __func__,
+                 CameraUtils::pixelCode2String(config.format));
             withHeader = 0;
         }
     } else {
@@ -358,7 +340,7 @@ int MainDevice::createBufferPool(const stream_t& config)
     }
 
     v4l2fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    V4L2Format tmpbuf {v4l2fmt};
+    V4L2Format tmpbuf{v4l2fmt};
     int ret = mDevice->SetFormat(tmpbuf);
     CheckAndLogError(ret != OK, ret, "set v4l2 format failed ret=%d", ret);
     v4l2fmt = *tmpbuf.Get();
@@ -366,35 +348,34 @@ int MainDevice::createBufferPool(const stream_t& config)
     int realBufferSize = v4l2fmt.fmt.pix.sizeimage;
     int calcBufferSize = 0;
     if (isISYSCompression) {
-        calcBufferSize = CameraUtils::getFrameSize(config.format, config.width, config.height, false, true, true);
+        calcBufferSize = CameraUtils::getFrameSize(config.format, config.width, config.height,
+                                                   false, true, true);
     } else {
         calcBufferSize = CameraUtils::getFrameSize(config.format, config.width, config.height);
     }
-
     CheckAndLogError(calcBufferSize < realBufferSize, BAD_VALUE,
-        "realBufferSize %d is larger than calcBufferSize %d.", realBufferSize, calcBufferSize);
+                     "realBufferSize %d is larger than calcBufferSize %d.", realBufferSize,
+                     calcBufferSize);
 
-    LOG2("@%s: compression:%d, realBufSize:%d, calcBufSize:%d",
-                __func__, isISYSCompression, realBufferSize, calcBufferSize);
+    LOG2("@%s: compression:%d, realBufSize:%d, calcBufSize:%d", __func__, isISYSCompression,
+         realBufferSize, calcBufferSize);
 
     std::vector<V4L2Buffer> bufs;
     int bufNum = mDevice->SetupBuffers(mMaxBufferNumber, true,
                                        static_cast<enum v4l2_memory>(config.memType), &bufs);
-
     CheckAndLogError(bufNum < 0, BAD_VALUE, "request buffers failed return=%d", bufNum);
 
     return OK;
 }
 
-int MainDevice::onDequeueBuffer(shared_ptr<CameraBuffer> buffer)
-{
+int MainDevice::onDequeueBuffer(shared_ptr<CameraBuffer> buffer) {
     mDeviceCB->onDequeueBuffer();
 
     if (mNeedSkipFrame) return OK;
 
-    LOG2("@%s, sequence:%u, field:%d, timestamp: sec=%ld, usec=%ld",
-          __func__, buffer->getSequence(), buffer->getField(),
-          buffer->getTimestamp().tv_sec, buffer->getTimestamp().tv_usec);
+    LOG2("<seq%ld>@%s, field:%d, timestamp: sec=%ld, usec=%ld", buffer->getSequence(),
+         __func__, buffer->getField(), buffer->getTimestamp().tv_sec,
+         buffer->getTimestamp().tv_usec);
 
     for (auto& consumer : mConsumers) {
         consumer->onFrameAvailable(mPort, buffer);
@@ -413,30 +394,31 @@ int MainDevice::onDequeueBuffer(shared_ptr<CameraBuffer> buffer)
     return OK;
 }
 
-bool MainDevice::needQueueBack(shared_ptr<CameraBuffer> buffer)
-{
+bool MainDevice::needQueueBack(shared_ptr<CameraBuffer> buffer) {
     bool needSkipFrame = (mFrameSkipNum > 0);
 
     const V4L2Buffer& vbuf = buffer->getV4L2Buffer();
     // Check for STR2MMIO Error from kernel space
-    if((vbuf.Flags() & V4L2_BUF_FLAG_ERROR) && PlatformData::isSkipFrameOnSTR2MMIOErr(mCameraId)) {
+    if ((vbuf.Flags() & V4L2_BUF_FLAG_ERROR) && PlatformData::isSkipFrameOnSTR2MMIOErr(mCameraId)) {
         // On STR2MMIO error, enqueue this buffer back to V4L2 before notifying the
         // listener/consumer and return
         needSkipFrame = true;
-        LOGW("%s: buffer error, sequence %u", __func__, buffer->getSequence());
+        LOGW("<seq%ld>%s: buffer error", buffer->getSequence(), __func__);
     }
+    // FRAME_SYNC_S
     if (PlatformData::isEnableFrameSyncCheck(mCameraId)) {
         struct camera_buf_info sharedCamBufInfo;
         sharedCamBufInfo.sequence = buffer->getSequence();
         sharedCamBufInfo.sof_ts = buffer->getTimestamp();
         SyncManager::getInstance()->updateCameraBufInfo(mCameraId, &sharedCamBufInfo);
         if (skipFrameAfterSyncCheck(buffer->getSequence())) {
-            LOG1("@%s: CameraID:%d sequence %u been dropped due to frame not sync",
-                  __func__, mCameraId, buffer->getSequence());
+            LOG1("<id%d:seq%ld>@%s: dropped due to frame not sync", mCameraId,
+                 buffer->getSequence(), __func__);
             needSkipFrame = true;
         }
     }
+    // FRAME_SYNC_E
     return needSkipFrame;
 }
 
-} // namespace icamera
+}  // namespace icamera

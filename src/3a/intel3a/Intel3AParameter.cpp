@@ -16,15 +16,16 @@
 
 #define LOG_TAG Intel3AParameter
 
-#include <cmath>
-#include <climits>
-
-#include "iutils/Utils.h"
-#include "iutils/Errors.h"
-#include "iutils/CameraLog.h"
-
 #include "Intel3AParameter.h"
+
+#include <algorithm>
+#include <climits>
+#include <cmath>
+
 #include "AiqUtils.h"
+#include "iutils/CameraLog.h"
+#include "iutils/Errors.h"
+#include "iutils/Utils.h"
 
 #ifdef ENABLE_SANDBOXING
 #include "modules/sandboxing/client/IntelCcaClient.h"
@@ -34,24 +35,22 @@
 
 namespace icamera {
 
-#define VALID_COLOR_GAINS(colorGains) (colorGains[0] > 0 && colorGains[1] > 0 && \
-                                       colorGains[2] > 0 && colorGains[3] > 0)
+#define VALID_COLOR_GAINS(colorGains) \
+    (colorGains[0] > 0 && colorGains[1] > 0 && colorGains[2] > 0 && colorGains[3] > 0)
 
-Intel3AParameter::Intel3AParameter(int cameraId) :
-    mCameraId(cameraId),
-    mTestPatternMode(TEST_PATTERN_OFF),
-    mUseManualAwbGain(false),
-    mUseManualColorMatrix(false),
-    mWeightGridMode(WEIGHT_GRID_AUTO),
-    mAePerTicks(1),
-    mAwbPerTicks(1),
-    mAfForceLock(false),
-    mManualFocusDistance(0.0),
-    mAeMode(AE_MODE_AUTO),
-    mDuringAfTriggerScan(false)
-{
-    LOG3A("%s", __func__);
-
+Intel3AParameter::Intel3AParameter(int cameraId)
+        : mCameraId(cameraId),
+          mTestPatternMode(TEST_PATTERN_OFF),
+          mUseManualAwbGain(false),
+          mUseManualColorMatrix(false),
+          mWeightGridMode(WEIGHT_GRID_AUTO),
+          mAePerTicks(1),
+          mAwbPerTicks(1),
+          mAfForceLock(false),
+          mManualFocusDistance(0.0),
+          mAeMode(AE_MODE_AUTO),
+          mDuringAfTriggerScan(false) {
+    CLEAR(mCMC);
     CLEAR(mAeParams);
     CLEAR(mAfParams);
     CLEAR(mAwbParams);
@@ -63,17 +62,16 @@ Intel3AParameter::Intel3AParameter(int cameraId) :
 
     mAfTrigger = AF_TRIGGER_IDLE;
     mAfMode = AF_MODE_OFF;
+
+    CLEAR(mSensitivityRange);
+    camera_info_t info = {};
+    PlatformData::getCameraInfo(mCameraId, info);
+    info.capability->getSupportedSensorSensitivityRange(mSensitivityRange);
 }
 
-Intel3AParameter::~Intel3AParameter()
-{
-    LOG3A("%s", __func__);
-}
+Intel3AParameter::~Intel3AParameter() {}
 
-int Intel3AParameter::init()
-{
-    LOG3A("%s", __func__);
-
+int Intel3AParameter::init() {
     // set default params
     initAeParameter();
     initAfParameter();
@@ -97,8 +95,17 @@ int Intel3AParameter::init()
     return OK;
 }
 
-void Intel3AParameter::initAeParameter()
-{
+int Intel3AParameter::getCMCInfo(TuningMode tuningMode) {
+    IntelCca* intelCca = IntelCca::getInstance(mCameraId, tuningMode);
+    CheckAndLogError(!intelCca, BAD_VALUE, "cca is nullptr, mode:%d", tuningMode);
+
+    int ret = intelCca->getCMC(&mCMC);
+    CheckAndLogError(ret != OK, ret, "failed to load CMC info");
+
+    return OK;
+}
+
+void Intel3AParameter::initAeParameter() {
     mAeParams.is_bypass = false;
     mAeParams.num_exposures = 1;
     mAeParams.frame_use = ia_aiq_frame_use_video;
@@ -118,8 +125,7 @@ void Intel3AParameter::initAeParameter()
     mAeParams.exposure_distribution_priority = ia_aiq_ae_exposure_distribution_auto;
 }
 
-void Intel3AParameter::initAfParameter()
-{
+void Intel3AParameter::initAfParameter() {
     mAfParams.frame_use = ia_aiq_frame_use_video;
     mAfParams.lens_position = 0;
     mAfParams.lens_movement_start_timestamp = 0;
@@ -135,8 +141,7 @@ void Intel3AParameter::initAfParameter()
     mAfParams.trigger_new_search = false;
 }
 
-void Intel3AParameter::initAwbParameter()
-{
+void Intel3AParameter::initAwbParameter() {
     mAwbParams.is_bypass = false;
     mAwbParams.scene_mode = ia_aiq_awb_operation_mode_auto;
     mAwbParams.manual_convergence_time = -1;
@@ -146,10 +151,7 @@ void Intel3AParameter::initAwbParameter()
     CLEAR(mAwbGainShift);
 }
 
-int Intel3AParameter::setSensorInfo(ia_aiq_exposure_sensor_descriptor descriptor)
-{
-    LOG3A("%s", __func__);
-
+int Intel3AParameter::setSensorInfo(ia_aiq_exposure_sensor_descriptor descriptor) {
     ia_aiq_exposure_sensor_descriptor* desc = &mAeParams.sensor_descriptor[0];
     desc->pixel_clock_freq_mhz = descriptor.pixel_clock_freq_mhz;
     desc->pixel_periods_per_line = descriptor.pixel_periods_per_line;
@@ -163,14 +165,13 @@ int Intel3AParameter::setSensorInfo(ia_aiq_exposure_sensor_descriptor descriptor
     return OK;
 }
 
-int Intel3AParameter::updateParameter(aiq_parameter_t param)
-{
-    LOG3A("%s", __func__);
-
+int Intel3AParameter::updateParameter(aiq_parameter_t param) {
     updateAeParameter(param);
     updateAwbParameter(param);
     updateAfParameter(param);
     mTestPatternMode = param.testPatternMode;
+
+    dumpParameter();
 
     return OK;
 }
@@ -178,22 +179,19 @@ int Intel3AParameter::updateParameter(aiq_parameter_t param)
 /**
  * Override ae result by those settings provided by application
  */
-void Intel3AParameter::updateAeResult(cca::cca_ae_results* aeResult)
-{
+void Intel3AParameter::updateAeResult(cca::cca_ae_results* aeResult) {
     CheckAndLogError(!aeResult, VOID_VALUE, "Invalid aeResult");
 
 }
 
-float Intel3AParameter::convertdBGainToISO(float sensitivityGain, int baseIso)
-{
+float Intel3AParameter::convertdBGainToISO(float sensitivityGain, int baseIso) {
     // Convert db Gain to ISO
     float manualGain = pow(10, (sensitivityGain / 20));
     manualGain *= baseIso;
     return manualGain;
 }
 
-void Intel3AParameter::setAeManualLimits(const aiq_parameter_t& param)
-{
+void Intel3AParameter::setAeManualLimits(const aiq_parameter_t& param) {
 
     ia_aiq_ae_manual_limits* limit = &mAeParams.manual_limits[0];
 
@@ -239,29 +237,16 @@ void Intel3AParameter::setAeManualLimits(const aiq_parameter_t& param)
     }
 
     if (gainRange.min >= 0 && gainRange.max >= gainRange.min) {
-        IntelCca* intelCca = IntelCca::getInstance(mCameraId, param.tuningMode);
-        CheckAndLogError(!intelCca, VOID_VALUE, "%s, cca is nullptr, mode:%d", __func__, param.tuningMode);
-
-        cca::cca_cmc cmc;
-        int ret = intelCca->getCMC(&cmc);
-        if (ret == OK) {
-            float isoMin = convertdBGainToISO(gainRange.min, cmc.base_iso);
-            float isoMax = convertdBGainToISO(gainRange.max, cmc.base_iso);
-            if (isoMin <= INT_MAX && isoMax <= INT_MAX) {
-                limit->manual_iso_min = static_cast<int>(isoMin);
-                limit->manual_iso_max = static_cast<int>(isoMax);
-            }
+        float isoMin = convertdBGainToISO(gainRange.min, mCMC.base_iso);
+        float isoMax = convertdBGainToISO(gainRange.max, mCMC.base_iso);
+        if (isoMin <= INT_MAX && isoMax <= INT_MAX) {
+            limit->manual_iso_min = static_cast<int>(isoMin);
+            limit->manual_iso_max = static_cast<int>(isoMax);
         }
     }
-
-    LOG3A("%s, manual limited ISO-[%d--%d], expo-[%d--%d], frame time-[%d--%d]", __func__,
-          limit->manual_iso_min, limit->manual_iso_max,
-          limit->manual_exposure_time_min, limit->manual_exposure_time_max,
-          limit->manual_frame_time_us_min, limit->manual_frame_time_us_max);
 }
 
-void Intel3AParameter::setManualExposure(const aiq_parameter_t& param)
-{
+void Intel3AParameter::setManualExposure(const aiq_parameter_t& param) {
     int64_t manualExpTimeUs = param.manualExpTimeUs;
     if (manualExpTimeUs <= 0 || param.aeDistributionPriority == DISTRIBUTION_ISO) {
         return;
@@ -269,18 +254,16 @@ void Intel3AParameter::setManualExposure(const aiq_parameter_t& param)
 
     camera_range_t range = {};
     if (PlatformData::getSupportAeExposureTimeRange(mCameraId, param.sceneMode, range) == OK) {
-         manualExpTimeUs = CLIP(manualExpTimeUs, range.max, range.min);
+        manualExpTimeUs = CLIP(manualExpTimeUs, range.max, range.min);
     }
 
     for (unsigned int i = 0; i < mAeParams.num_exposures - 1; i++) {
         mAeParams.manual_exposure_time_us[i] = -1;
     }
     mAeParams.manual_exposure_time_us[mAeParams.num_exposures - 1] = manualExpTimeUs;
-    LOG3A("%s, manual exposure %ld", __func__, manualExpTimeUs);
 }
 
-void Intel3AParameter::setManualGain(const aiq_parameter_t& param)
-{
+void Intel3AParameter::setManualGain(const aiq_parameter_t& param) {
     float manualGain = param.manualGain;
     if (manualGain < 0 || param.aeDistributionPriority == DISTRIBUTION_SHUTTER) {
         return;
@@ -295,12 +278,9 @@ void Intel3AParameter::setManualGain(const aiq_parameter_t& param)
     for (unsigned int i = 0; i < mAeParams.num_exposures; i++) {
         mAeParams.manual_analog_gain[i] = pow(10, (manualGain / 20));
     }
-
-    LOG3A("%s, manual gain %f, AG %f", __func__, manualGain, mAeParams.manual_analog_gain[0]);
 }
 
-void Intel3AParameter::setManualIso(const aiq_parameter_t& param)
-{
+void Intel3AParameter::setManualIso(const aiq_parameter_t& param) {
     int32_t manualIso = param.manualIso;
     if (manualIso <= 0 || param.aeDistributionPriority == DISTRIBUTION_SHUTTER) {
         return;
@@ -310,20 +290,17 @@ void Intel3AParameter::setManualIso(const aiq_parameter_t& param)
     for (unsigned int i = 0; i < mAeParams.num_exposures; i++) {
         mAeParams.manual_iso[i] = manualIso;
     }
-
-    LOG3A("%s, manual iso  %d", __func__, manualIso);
 }
 
-void Intel3AParameter::updateAeParameter(const aiq_parameter_t& param)
-{
+void Intel3AParameter::updateAeParameter(const aiq_parameter_t& param) {
     mAeMode = param.aeMode;
     mAeParams.frame_use = AiqUtils::convertFrameUsageToIaFrameUsage(param.frameUsage);
-    mAeParams.num_exposures = PlatformData::getExposureNum(mCameraId,
-                                  CameraUtils::isMultiExposureCase(mCameraId, param.tuningMode));
+    mAeParams.num_exposures = PlatformData::getExposureNum(
+        mCameraId, CameraUtils::isMultiExposureCase(mCameraId, param.tuningMode));
 
     setAeManualLimits(param);
 
-    switch(param.antibandingMode) {
+    switch (param.antibandingMode) {
         case ANTIBANDING_MODE_AUTO:
             mAeParams.flicker_reduction_mode = ia_aiq_ae_flicker_reduction_auto;
             break;
@@ -404,18 +381,30 @@ void Intel3AParameter::updateAeParameter(const aiq_parameter_t& param)
                 camera_coordinate_t coordinate = {};
                 coordinate.x = window.left + (window.right - window.left) / 2;
                 coordinate.y = window.top + (window.bottom - window.top) / 2;
-                camera_coordinate_system_t frameCoord = { 0, 0, param.resolution.width,
-                                                         param.resolution.height };
-                LOG3A("%s: frame resolution %dx%d", __func__, param.resolution.width,
-                      param.resolution.height);
+                camera_coordinate_system_t frameCoord = {0, 0, param.resolution.width,
+                                                         param.resolution.height};
 
                 coordinate = AiqUtils::convertToIaCoordinate(frameCoord, coordinate);
                 mAeParams.exposure_coordinate.x = coordinate.x;
                 mAeParams.exposure_coordinate.y = coordinate.y;
             }
-            LOG3A("%s, exposure coordinate = [%d,%d], region = [%d,%d,%d,%d]", __func__,
-                  mAeParams.exposure_coordinate.x, mAeParams.exposure_coordinate.y,
-                  window.left, window.top, window.right, window.bottom);
+        }
+    }
+
+    CLEAR(mAeParams.manual_total_target_exposure);
+    // Ignore TET in manual exposure case
+    if (param.totalExposureTarget > 0 && param.manualExpTimeUs <= 0 && param.manualIso <= 0) {
+        camera_range_t range = { -1, -1 };
+        int ret = PlatformData::getSupportAeExposureTimeRange(mCameraId, param.sceneMode, range);
+        int64_t tet = param.totalExposureTarget;
+        if (ret == OK && mCMC.base_iso > 0) {
+            int64_t max = static_cast<int64_t>(range.max * mSensitivityRange.max / mCMC.base_iso);
+            int64_t min = static_cast<int64_t>(range.min * mSensitivityRange.min / mCMC.base_iso);
+            tet = CLIP(tet, max, min);
+        }
+        // Will overwrite total exposure
+        for (unsigned int i = 0; i < mAeParams.num_exposures; i++) {
+            mAeParams.manual_total_target_exposure[i] = tet;
         }
     }
 }
@@ -444,8 +433,7 @@ void Intel3AParameter::updatePaResult(cca::cca_pa_params* paResult) {
 /**
  * Override awb result by AWB gains or gain shift provided by application
  */
-void Intel3AParameter::updateAwbResult(cca::cca_awb_results* awbResult)
-{
+void Intel3AParameter::updateAwbResult(cca::cca_awb_results* awbResult) {
     CheckAndLogError((awbResult == nullptr), VOID_VALUE, "No Awb result provided.");
 
     camera_awb_gains_t gains = {};
@@ -475,20 +463,19 @@ void Intel3AParameter::updateAwbResult(cca::cca_awb_results* awbResult)
         }
     }
 
-    //Only override final results when manual gain or gain shift applied.
-    if (mUseManualColorMatrix || mUseManualAwbGain || gains.r_gain != 0
-        || gains.g_gain != 0 || gains.b_gain != 0) {
-        LOG3A("%s: override final awb results", __func__);
+    // Only override final results when manual gain or gain shift applied.
+    if (mUseManualColorMatrix || mUseManualAwbGain || gains.r_gain != 0 || gains.g_gain != 0 ||
+        gains.b_gain != 0) {
+        LOG1("%s: override final awb results", __func__);
     }
 
-    LOG3A("%s (r,g,b): (%d,%d,%d) -> (b/g, r/g): (%f,%f)",
-          mUseManualColorMatrix ? "Color gain" : (mUseManualAwbGain ? "Manual gain" : "Gain shift"),
-          gains.r_gain, gains.g_gain, gains.b_gain,
-          awbResult->accurate_b_per_g, awbResult->accurate_r_per_g);
+    LOG3("%s (r,g,b): (%d,%d,%d) -> (b/g, r/g): (%f,%f)",
+         mUseManualColorMatrix ? "Color gain" : (mUseManualAwbGain ? "Manual gain" : "Gain shift"),
+         gains.r_gain, gains.g_gain, gains.b_gain, awbResult->accurate_b_per_g,
+         awbResult->accurate_r_per_g);
 }
 
-void Intel3AParameter::updateAwbParameter(const aiq_parameter_t& param)
-{
+void Intel3AParameter::updateAwbParameter(const aiq_parameter_t& param) {
     mUseManualAwbGain = false;
     mUseManualColorMatrix = false;
 
@@ -527,12 +514,12 @@ void Intel3AParameter::updateAwbParameter(const aiq_parameter_t& param)
             mAwbParams.manual_cct_range.max_cct = std::max(param.cctRange.min, param.cctRange.max);
             break;
 
-        case AWB_MODE_MANUAL_WHITE_POINT:
-        {
+        case AWB_MODE_MANUAL_WHITE_POINT: {
             mAwbParams.scene_mode = ia_aiq_awb_operation_mode_manual_white;
-            camera_coordinate_system_t frameCoord = {0, 0, param.resolution.width, param.resolution.height};
-            LOG3A("%s: frame resolution %dx%d", __func__, param.resolution.width, param.resolution.height);
-            camera_coordinate_t iaCoord = AiqUtils::convertToIaCoordinate(frameCoord, param.whitePoint);
+            camera_coordinate_system_t frameCoord = {0, 0, param.resolution.width,
+                                                     param.resolution.height};
+            camera_coordinate_t iaCoord =
+                AiqUtils::convertToIaCoordinate(frameCoord, param.whitePoint);
 
             mAwbParams.manual_white_coordinate.x = iaCoord.x;
             mAwbParams.manual_white_coordinate.y = iaCoord.y;
@@ -558,7 +545,8 @@ void Intel3AParameter::updateAwbParameter(const aiq_parameter_t& param)
     if (param.awbConvergeSpeedMode == CONVERGE_SPEED_MODE_AIQ) {
         mAwbPerTicks = 1;
 
-        mAwbParams.manual_convergence_time = AiqUtils::convertSpeedModeToTime(param.awbConvergeSpeed);
+        mAwbParams.manual_convergence_time =
+            AiqUtils::convertSpeedModeToTime(param.awbConvergeSpeed);
     } else {
         mAwbParams.manual_convergence_time = -1;
 
@@ -579,22 +567,16 @@ void Intel3AParameter::updateAwbParameter(const aiq_parameter_t& param)
                 break;
         }
     }
-    LOG3A("%s, scene mode: %d, cctRange[%u:%u], white coordinate[%u:%u], time: %f", __func__,
-          mAwbParams.scene_mode, mAwbParams.manual_cct_range.min_cct,
-          mAwbParams.manual_cct_range.max_cct, mAwbParams.manual_white_coordinate.x,
-          mAwbParams.manual_white_coordinate.y, mAwbParams.manual_convergence_time);
 }
 
-void Intel3AParameter::updateAfParameter(const aiq_parameter_t& param)
-{
+void Intel3AParameter::updateAfParameter(const aiq_parameter_t& param) {
     // Mode
     if (mAfMode != param.afMode) {
         // Reset af parameter
         initAfParameter();
 
         mAfMode = param.afMode;
-        if (mAfMode == AF_MODE_CONTINUOUS_PICTURE
-            || mAfMode == AF_MODE_CONTINUOUS_VIDEO) {
+        if (mAfMode == AF_MODE_CONTINUOUS_PICTURE || mAfMode == AF_MODE_CONTINUOUS_VIDEO) {
             mAfParams.focus_mode = ia_aiq_af_operation_mode_auto;
         }
         mAfTrigger = AF_TRIGGER_IDLE;
@@ -609,10 +591,10 @@ void Intel3AParameter::updateAfParameter(const aiq_parameter_t& param)
     // Trigger
     mAfParams.trigger_new_search = false;
     if (mAfTrigger != AF_TRIGGER_START && param.afTrigger == AF_TRIGGER_START) {
-        LOG3A("%s: Trigger AF scan, mode %d", __func__, mAfMode);
+        LOG3("%s: Trigger AF scan, mode %d", __func__, mAfMode);
         updateAfParameterForAfTriggerStart();
     } else if (mAfTrigger != AF_TRIGGER_CANCEL && param.afTrigger == AF_TRIGGER_CANCEL) {
-        LOG3A("%s: Cancel AF scan, mode %d", __func__, mAfMode);
+        LOG3("%s: Cancel AF scan, mode %d", __func__, mAfMode);
         updateAfParameterForAfTriggerCancel();
     }
     mAfTrigger = param.afTrigger;
@@ -623,13 +605,10 @@ void Intel3AParameter::updateAfParameter(const aiq_parameter_t& param)
         // Current only one AF metering window is supported, so use the latest one
         camera_window_t window = param.afRegions.back();
         if (window.right > window.left && window.bottom > window.top) {
-            camera_coordinate_system_t frameCoord = {0, 0, param.resolution.width, param.resolution.height};
+            camera_coordinate_system_t frameCoord = {0, 0, param.resolution.width,
+                                                     param.resolution.height};
             window = AiqUtils::convertToIaWindow(frameCoord, window);
             mAfParams.focus_rect = {window.left, window.top, window.right, window.bottom};
-            LOG3A("%s, af region = [%d,%d, %d, %d], window = [%d,%d,%d,%d]", __func__,
-                  mAfParams.focus_rect.left, mAfParams.focus_rect.top,
-                  mAfParams.focus_rect.right, mAfParams.focus_rect.bottom,
-                  window.left, window.top, window.right, window.bottom);
         }
     }
 
@@ -661,22 +640,12 @@ void Intel3AParameter::updateAfParameter(const aiq_parameter_t& param)
         }
 
         mAfParams.manual_focus_parameters.manual_focus_distance = focusInMm;
-        LOG3A("%s, manual_focus_action: %d, manual_focus_distance: %d, manual_lens_position: %d,",
-              __func__, mAfParams.manual_focus_parameters.manual_focus_action,
-              mAfParams.manual_focus_parameters.manual_focus_distance,
-              mAfParams.manual_focus_parameters.manual_lens_position);
     } else {
         mAfParams.manual_focus_parameters = {};
     }
-
-    LOG3A("%s, afForceLock %d, duringAfTriggerScan %d", __func__, mAfForceLock, mDuringAfTriggerScan);
-    LOG3A("%s, frame_use: %d, lens position %d, timestamp %lu, focus_mode %d, afMode: %d",
-          __func__, mAfParams.frame_use, mAfParams.lens_position,
-          mAfParams.lens_movement_start_timestamp, mAfParams.focus_mode, mAfMode);
 }
 
-void Intel3AParameter::updateAfParameterForAfTriggerStart()
-{
+void Intel3AParameter::updateAfParameterForAfTriggerStart() {
     mDuringAfTriggerScan = true;
     mAfForceLock = false;
 
@@ -699,8 +668,7 @@ void Intel3AParameter::updateAfParameterForAfTriggerStart()
     }
 }
 
-void Intel3AParameter::updateAfParameterForAfTriggerCancel()
-{
+void Intel3AParameter::updateAfParameterForAfTriggerCancel() {
     mDuringAfTriggerScan = false;
     mAfForceLock = false;
 
@@ -715,8 +683,7 @@ void Intel3AParameter::updateAfParameterForAfTriggerCancel()
     }
 }
 
-void Intel3AParameter::fillAfTriggerResult(cca::cca_af_results *afResults)
-{
+void Intel3AParameter::fillAfTriggerResult(cca::cca_af_results* afResults) {
     if (!afResults || !mAfForceLock) {
         return;
     }
@@ -727,14 +694,59 @@ void Intel3AParameter::fillAfTriggerResult(cca::cca_af_results *afResults)
         case AF_MODE_AUTO:
         case AF_MODE_MACRO:
             // Lock AF after current scan
-            mAfForceLock = (afResults->status != ia_aiq_af_status_local_search
-                          && afResults->status != ia_aiq_af_status_extended_search);
+            mAfForceLock = (afResults->status != ia_aiq_af_status_local_search &&
+                            afResults->status != ia_aiq_af_status_extended_search);
             break;
         default:
             break;
     }
+}
 
-    LOG3A("%s, %d update afForceLock %d", __func__, afResults->status, mAfForceLock);
+void Intel3AParameter::dumpParameter() {
+    if (!Log::isLogTagEnabled(GET_FILE_SHIFT(Intel3AParameter))) return;
+
+    LOG3("AE parameters: mode %d, bypass %d, frame_use %d, PerTicks %d", mAeMode,
+         mAeParams.is_bypass, mAeParams.frame_use, mAePerTicks);
+    LOG3("  flash_mode %d, metering_mode %d, priority_mode %d, flicker_reduction_mode %d",
+         mAeParams.flash_mode, mAeParams.metering_mode, mAeParams.priority_mode,
+         mAeParams.flicker_reduction_mode);
+    LOG3("  ev_shift %f, exposure window (%d %d %d %d), coordinate (%d, %d)", mAeParams.ev_shift,
+         mAeParams.exposure_window.left, mAeParams.exposure_window.top,
+         mAeParams.exposure_window.right, mAeParams.exposure_window.bottom,
+         mAeParams.exposure_coordinate.x, mAeParams.exposure_coordinate.y);
+    LOG3("  manual et %u, ag %f, iso %d",
+         mAeParams.manual_exposure_time_us[mAeParams.num_exposures - 1],
+         mAeParams.manual_analog_gain[0], mAeParams.manual_iso[0]);
+    LOG3("  manual total et %u", mAeParams.manual_total_target_exposure[0]);
+    ia_aiq_ae_manual_limits* limit = &mAeParams.manual_limits[0];
+    LOG3("  manual limited ISO-[%d--%d], expo-[%d--%d], frame time-[%d--%d]", limit->manual_iso_min,
+         limit->manual_iso_max, limit->manual_exposure_time_min, limit->manual_exposure_time_max,
+         limit->manual_frame_time_us_min, limit->manual_frame_time_us_max);
+    LOG3("  exposure_distribution_priority %d", mAeParams.exposure_distribution_priority);
+    LOG3("  manual_convergence_time %f", mAeParams.manual_convergence_time);
+
+    LOG3("AWB parameters: bypass %d, scene_mode %d, PerTick %d", mAwbParams.is_bypass,
+         mAwbParams.scene_mode, mAwbPerTicks);
+    LOG3("  manual cct_range (%u-%u), white_coordinate (%d, %d), convergence_time %f",
+         mAwbParams.manual_cct_range.min_cct, mAwbParams.manual_cct_range.max_cct,
+         mAwbParams.manual_white_coordinate.x, mAwbParams.manual_white_coordinate.y,
+         mAwbParams.manual_convergence_time);
+
+    LOG3("AF parameters: mode %d, frame_use %d, ForceLock %d, trigger %d", mAfMode,
+         mAfParams.frame_use, mAfForceLock, mAfTrigger);
+    LOG3("  focus_mode %d, flash_mode %d, trigger_new_search %d", mAfParams.focus_mode,
+         mAfParams.flash_mode, mAfParams.trigger_new_search);
+    LOG3("  lens pos %u, move start time %lu", mAfParams.lens_position,
+         mAfParams.lens_movement_start_timestamp);
+    LOG3("  focus_rect (%d %d %d %d)", mAfParams.focus_rect.left, mAfParams.focus_rect.top,
+         mAfParams.focus_rect.right, mAfParams.focus_rect.bottom);
+    LOG3("  manual focus_distance %u, lens_position %d, focal_distance %u, action %d",
+         mAfParams.manual_focus_parameters.manual_focus_distance,
+         mAfParams.manual_focus_parameters.manual_lens_position,
+         mAfParams.manual_focus_parameters.manual_focal_distance,
+         mAfParams.manual_focus_parameters.manual_focus_action);
+
+    LOG3("test pattern %d", mTestPatternMode);
 }
 
 } /* namespace icamera */

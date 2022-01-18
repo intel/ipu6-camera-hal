@@ -31,9 +31,8 @@
 #include "iutils/CameraLog.h"
 #include "iutils/Utils.h"
 
-using icamera::CAMERA_DEBUG_LOG_DBG;
+using icamera::CAMERA_DEBUG_LOG_INFO;
 using icamera::CAMERA_DEBUG_LOG_ERR;
-using icamera::CAMERA_DEBUG_LOG_VERBOSE;
 using icamera::CAMERA_DEBUG_LOG_WARNING;
 
 #include "modules/ia_cipr/include/Context.h"
@@ -46,11 +45,7 @@ Event::Event(const PSysEventConfig& eventConfig) {
     mInitialized = false;
     mEvent = reinterpret_cast<PSysEvent*>(CIPR::callocMemory(1, sizeof(*mEvent)));
 
-    CheckAndLogError(!mEvent, VOID_VALUE, "%s: could not allocate mEvent", __func__);
-
-    if (eventConfig.id != 0) {
-        LOG2("ID-field of CIPR mEvent deprecated!");
-    }
+    CheckAndLogError(!mEvent, VOID_VALUE, "Failed to allocate memory for mEvent");
 
     mEvent->event.type = eventConfig.type;
     mEvent->event.user_token = eventConfig.commandToken;
@@ -63,17 +58,13 @@ Event::Event(const PSysEventConfig& eventConfig) {
 }
 
 Event::~Event() {
-    if (!mInitialized) {
-        return;
-    }
+    if (!mInitialized) return;
 
-    mInitialized = false;
     CIPR::freeMemory(mEvent);
 }
 
 Result Event::getConfig(PSysEventConfig* eventConfig) {
-    CheckAndLogError(!mInitialized, Result::InternalError, "@%s, mInitialized is false", __func__);
-    CheckAndLogError(!eventConfig, Result::InvaildArg, "@%s, eventConfig is nullptr", __func__);
+    CheckAndLogError(!eventConfig, Result::InvaildArg, "eventConfig is nullptr");
 
     eventConfig->type = mEvent->event.type;
     eventConfig->commandToken = mEvent->event.user_token;
@@ -87,8 +78,6 @@ Result Event::getConfig(PSysEventConfig* eventConfig) {
 }
 
 Result Event::setConfig(const PSysEventConfig& eventConfig) {
-    CheckAndLogError(!mInitialized, Result::InternalError, "@%s, mInitialized is false", __func__);
-
     mEvent->event.type = eventConfig.type;
     mEvent->event.user_token = eventConfig.commandToken;
     mEvent->event.issue_id = eventConfig.commandIssueID;
@@ -100,8 +89,7 @@ Result Event::setConfig(const PSysEventConfig& eventConfig) {
 }
 
 Result Event::wait(Context* ctx) {
-    CheckAndLogError(!mInitialized, Result::InternalError, "@%s, mInitialized is false", __func__);
-    CheckAndLogError(!ctx, Result::InvaildArg, "@%s, ctx is nullptr", __func__);
+    CheckAndLogError(!ctx, Result::InvaildArg, "ctx is nullptr");
 
     auto poller = ctx->getPoller(POLLIN | POLLHUP | POLLERR, mEvent->timeout);
     int res = poller.poll();
@@ -114,5 +102,6 @@ Result Event::wait(Context* ctx) {
     LOG2("%s: poll returned error: %s", __func__, strerror(res));
     return Result::GeneralError;
 }
+
 }  // namespace CIPR
 }  // namespace icamera

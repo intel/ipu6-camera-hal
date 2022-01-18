@@ -27,13 +27,9 @@
 
 namespace icamera {
 
-JpegEncoderCore::JpegEncoderCore() : mJpegCompressor(cros::JpegCompressor::GetInstance()) {
-    LOG1("@%s", __func__);
-}
+JpegEncoderCore::JpegEncoderCore() : mJpegCompressor(cros::JpegCompressor::GetInstance()) {}
 
-JpegEncoderCore::~JpegEncoderCore() {
-    LOG1("@%s", __func__);
-}
+JpegEncoderCore::~JpegEncoderCore() {}
 
 std::unique_ptr<IJpegEncoder> IJpegEncoder::createJpegEncoder() {
     return std::unique_ptr<JpegEncoderCore>(new JpegEncoderCore());

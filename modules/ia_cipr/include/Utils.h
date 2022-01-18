@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Intel Corporation.
+ * Copyright (C) 2020-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ void* mallocMemory(size_t sz);
 void* callocMemory(size_t cnt, size_t sz);
 void* mallocAlignedMemory(size_t sz, size_t fact);
 void freeMemory(void* ptr);
-void memoryCopy(void* dst, size_t dsz, const void* src, size_t sz);
 size_t getPageSize();
 }  // namespace CIPR
 }  // namespace icamera

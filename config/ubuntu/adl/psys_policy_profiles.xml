@@ -20,4 +20,13 @@ limitations under the License.
         <pipe_executor name="still_pipe"  pgs="isa_lb_stills,post_gdc_stills"/>
         <pipe_executor name="video_pipe"  pgs="isa_lb_video,post_gdc_video"/>
     </graph>
+    <graph id="100200">
+        <!-- op_modes: 0-disabled, 2-coupled. see ia_cipf_css.h in libiacss -->
+        <pipe_executor name="ipu6_lb_video_bayer"  pgs="isa_lb_video_bayer"/>
+        <pipe_executor name="ipu6_bb_video_bayer"  pgs="post_gdc_video_bayer"/>
+        <bundle executors="ipu6_lb_video_bayer:0,ipu6_bb_video_bayer:1"/>
+        <enableBundleInSdv name="false"/>
+
+        <pipe_executor name="ipu6_full_still"  pgs="isa_lb_stills,post_gdc_stills"/>
+    </graph>
 </PsysPolicyConfig>

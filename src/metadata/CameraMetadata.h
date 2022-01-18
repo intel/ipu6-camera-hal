@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2012 The Android Open Source Project
- * Copyright (C) 2015-2020 Intel Corporation
+ * Copyright (C) 2015-2021 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ namespace icamera {
  * A convenience wrapper around the C-based icamera_metadata_t library.
  */
 class CameraMetadata {
-  public:
+ public:
     /** Creates an empty object; best used when expecting to acquire contents
      * from elsewhere */
     CameraMetadata();
@@ -39,15 +39,15 @@ class CameraMetadata {
     ~CameraMetadata();
 
     /** Takes ownership of passed-in buffer */
-    CameraMetadata(icamera_metadata_t *buffer);
+    CameraMetadata(icamera_metadata_t* buffer);
     /** Clones the metadata */
-    CameraMetadata(const CameraMetadata &other);
+    CameraMetadata(const CameraMetadata& other);
 
     /**
      * Assignment clones metadata buffer.
      */
-    CameraMetadata &operator=(const CameraMetadata &other);
-    CameraMetadata &operator=(const icamera_metadata_t *buffer);
+    CameraMetadata& operator=(const CameraMetadata& other);
+    CameraMetadata& operator=(const icamera_metadata_t* buffer);
 
     /**
      * Get reference to the underlying metadata buffer. Ownership remains with
@@ -64,7 +64,7 @@ class CameraMetadata {
      * from getAndLock must be provided to guarantee that the right object is
      * being unlocked.
      */
-    status_t unlock(const icamera_metadata_t *buffer);
+    status_t unlock(const icamera_metadata_t* buffer);
 
     /**
      * Release a raw metadata buffer to the caller. After this call,
@@ -91,12 +91,12 @@ class CameraMetadata {
      * Acquires raw buffer from other CameraMetadata object. After the call, the argument
      * object no longer has any metadata.
      */
-    void acquire(CameraMetadata &other);
+    void acquire(CameraMetadata& other);
 
     /**
      * Append metadata from another CameraMetadata object.
      */
-    status_t append(const CameraMetadata &other);
+    status_t append(const CameraMetadata& other);
 
     /**
      * Append metadata from a raw camera_metadata buffer
@@ -123,20 +123,13 @@ class CameraMetadata {
      * will reallocate the buffer if insufficient space exists. Overloaded for
      * the various types of valid data.
      */
-    status_t update(uint32_t tag,
-            const uint8_t *data, size_t data_count);
-    status_t update(uint32_t tag,
-            const int32_t *data, size_t data_count);
-    status_t update(uint32_t tag,
-            const float *data, size_t data_count);
-    status_t update(uint32_t tag,
-            const int64_t *data, size_t data_count);
-    status_t update(uint32_t tag,
-            const double *data, size_t data_count);
-    status_t update(uint32_t tag,
-            const icamera_metadata_rational_t *data, size_t data_count);
-    status_t update(uint32_t tag,
-            const std::string &string);
+    status_t update(uint32_t tag, const uint8_t* data, size_t data_count);
+    status_t update(uint32_t tag, const int32_t* data, size_t data_count);
+    status_t update(uint32_t tag, const float* data, size_t data_count);
+    status_t update(uint32_t tag, const int64_t* data, size_t data_count);
+    status_t update(uint32_t tag, const double* data, size_t data_count);
+    status_t update(uint32_t tag, const icamera_metadata_rational_t* data, size_t data_count);
+    status_t update(uint32_t tag, const std::string& string);
 
     /**
      * Check if a metadata entry exists for a given tag id
@@ -163,7 +156,7 @@ class CameraMetadata {
      * Swap the underlying camera metadata between this and the other
      * metadata object.
      */
-    void swap(CameraMetadata &other);
+    void swap(CameraMetadata& other);
 
     /**
      * Dump contents into FD for debugging. The verbosity levels are
@@ -176,9 +169,9 @@ class CameraMetadata {
      */
     void dump(int fd, int verbosity = 1, int indentation = 0) const;
 
-  private:
-    icamera_metadata_t *mBuffer;
-    bool               mLocked;
+ private:
+    icamera_metadata_t* mBuffer;
+    bool mLocked;
 
     /**
      * Check if tag has a given type
@@ -188,13 +181,12 @@ class CameraMetadata {
     /**
      * Base update entry method
      */
-    status_t updateImpl(uint32_t tag, const void *data, size_t data_count);
+    status_t updateImpl(uint32_t tag, const void* data, size_t data_count);
 
     /**
      * Resize metadata buffer if needed by reallocating it and copying it over.
      */
     status_t resizeIfNeeded(size_t extraEntries, size_t extraData);
-
 };
 
-} // namespace android
+}  // namespace icamera

@@ -47,7 +47,6 @@ public:
     int setFocusPosition(int position);
     int setFocusStep(int steps);
     int getFocusPosition(int &position);
-    int getFocusStatus(int &status);
     int startAutoFocus(void);
     int stopAutoFocus(void);
     int getAutoFocusStatus(int &status);

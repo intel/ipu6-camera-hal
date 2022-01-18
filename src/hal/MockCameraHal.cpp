@@ -84,11 +84,11 @@ int MockCameraHal::deinit() {
 
 int MockCameraHal::deviceOpen(int cameraId)
 {
-    LOG2("@%s, camera id:%d", __func__, cameraId);
+    LOG1("<id%d>@%s", cameraId, __func__);
 
     CheckAndLogError(mState == HAL_UNINIT, NO_INIT, "HAL is not initialized");
     if (mCameraDevices[cameraId]) {
-        LOG2("@%s: open multi times", __func__);
+        LOG1("@%s: open multi times", __func__);
         return INVALID_OPERATION;
     }
 
@@ -106,31 +106,48 @@ int MockCameraHal::deviceOpen(int cameraId)
 }
 
 void MockCameraHal::deviceClose(int cameraId) {
-    LOG2("@%s, camera id:%d", __func__, cameraId);
     std::unique_lock<std::mutex> lock(mLock);
 
     if (mCameraDevices[cameraId]) {
         mCameraDevices[cameraId] = 0;
         mCameraOpenNum--;
     }
+    LOG1("<id%d>@%s", cameraId, __func__);
 }
 
 void MockCameraHal::deviceCallbackRegister(int cameraId, const camera_callback_ops_t* callback) {
-    LOG2("@%s, camera id:%d", __func__, cameraId);
+    LOG1("<id%d>@%s, callback:%p", cameraId, __func__, callback);
     std::unique_lock<std::mutex> lock(mLock);
 
+    // report unfinished frame shutterDone and metadataDone when user request stop camera
+    if (callback == nullptr) {
+        uint64_t timeStamp = mTimestamp;
+        for (auto request = mCaptureRequest[cameraId].begin();
+             request != mCaptureRequest[cameraId].end(); request++) {
+            LOG2("<req%d> @%s, ISP ready", (*request)->sequence, __func__);
+            camera_msg_data_t shutter;
+            shutter.type = CAMERA_ISP_BUF_READY;
+            shutter.data.buffer_ready.timestamp = timeStamp;
+            shutter.data.buffer_ready.frameNumber = static_cast<uint32_t>((*request)->sequence);
+            mCallback[cameraId]->notify(mCallback[cameraId], shutter);
+            camera_msg_data_t metadata;
+            metadata.type = CAMERA_METADATA_READY;
+            metadata.data.metadata_ready.sequence = (*request)->sequence;
+            metadata.data.metadata_ready.frameNumber = static_cast<uint32_t>((*request)->sequence);
+            mCallback[cameraId]->notify(mCallback[cameraId], metadata);
+            timeStamp += 33000000;
+        }
+    }
     mCallback[cameraId] = const_cast<camera_callback_ops_t*>(callback);
     return;
 }
 
 int MockCameraHal::deviceConfigInput(int cameraId, const stream_t* inputConfig) {
-    LOG2("@%s, camera id:%d", __func__, cameraId);
-
     return OK;
 }
 
 int MockCameraHal::deviceConfigStreams(int cameraId, stream_config_t* streamList) {
-    LOG2("@%s, camera id:%d", __func__, cameraId);
+    LOG1("<id%d>@%s", cameraId, __func__);
 
     for (int i = 0; i < streamList->num_streams; i++) {
         streamList->streams[i].max_buffers = 6;
@@ -142,8 +159,9 @@ int MockCameraHal::deviceConfigStreams(int cameraId, stream_config_t* streamList
 
 int MockCameraHal::deviceStart(int cameraId) {
     std::unique_lock<std::mutex> lock(mLock);
+
     if (mCameraDevices[cameraId] && !Thread::isRunning()) {
-        LOG2("@%s, cameraId is %d", __func__, cameraId);
+        LOG1("<id%d>@%s", cameraId, __func__);
         std::string threadName = "MockStream";
         threadName += std::to_string(cameraId);
 
@@ -157,23 +175,19 @@ int MockCameraHal::deviceStart(int cameraId) {
 }
 
 int MockCameraHal::deviceStop(int cameraId) {
-    LOG2("@%s, cameraId is %d", __func__, cameraId);
-
     Thread::requestExitAndWait();
-    std::unique_lock<std::mutex> lock(mLock);
     while (!mCaptureRequest[cameraId].empty()) generateFrames(cameraId);
+    LOG1("<id%d>@%s", cameraId, __func__);
     return OK;
 }
 
 int MockCameraHal::deviceAllocateMemory(int cameraId, camera_buffer_t* ubuffer) {
-    LOG2("@%s, cameraId is %d", __func__, cameraId);
-
     return OK;
 }
 
 int MockCameraHal::streamQbuf(int cameraId, camera_buffer_t** ubuffer, int bufferNum,
                               const Parameters* settings) {
-    LOG2("@%s, cameraId is %d buffer Num %d", __func__, cameraId, bufferNum);
+    LOG2("<id%d:req%d>@%s, buffer Num %d", cameraId, mFrameSequence[cameraId], __func__, bufferNum);
 
     std::unique_lock<std::mutex> lock(mLock);
 
@@ -182,7 +196,6 @@ int MockCameraHal::streamQbuf(int cameraId, camera_buffer_t** ubuffer, int buffe
     req->sequence = mFrameSequence[cameraId];
     for (int i = 0; i < bufferNum; i++) {
         req->ubuffer[i] = ubuffer[i];
-        LOG2("@%s, stream id %d req buffer %p", __func__, ubuffer[i]->s.id, ubuffer[i]->addr);
     }
     mCaptureRequest[cameraId].push_back(req);
     mFrameSequence[cameraId]++;
@@ -191,84 +204,86 @@ int MockCameraHal::streamQbuf(int cameraId, camera_buffer_t** ubuffer, int buffe
 
 int MockCameraHal::streamDqbuf(int cameraId, int streamId, camera_buffer_t** ubuffer,
                                Parameters* settings) {
-    LOG2("@%s, cameraId is %d streamId %d", __func__, cameraId, streamId);
-
     std::unique_lock<std::mutex> lock(mLock);
     while (mCaptureResult[cameraId][streamId].empty()) {
-        LOG2("@%s, camera %d stream %d no buffer ready, wait", __func__, cameraId, streamId);
-        mBufferReadyCondition[cameraId].wait_for(
-            lock, std::chrono::nanoseconds(kMaxDuration * SLOWLY_MULTIPLIER));
+        mBufferReadyCondition[cameraId][streamId].wait_for(lock,
+                                                           std::chrono::nanoseconds(kMaxDuration));
+
+        if (mCaptureResult[cameraId][streamId].empty())
+            LOGW("<id%d>@%s, wait buffer %d ready timeout", cameraId, __func__, streamId);
     }
 
     *ubuffer = mCaptureResult[cameraId][streamId].at(0);
+    LOG2("<id%d>@%s, stream %d", cameraId, __func__, streamId);
     mCaptureResult[cameraId][streamId].pop_front();
-    *settings = mParameter[cameraId];
-    LOG2("@%s, cameraId return buffer %p", __func__, ubuffer[0]->addr);
+    if (settings) *settings = mParameter[cameraId];
 
     return OK;
 }
 
-int MockCameraHal::getParameters(int cameraId, Parameters& param, long sequence) {
-    LOG2("@%s, cameraId is %d", __func__, cameraId);
+int MockCameraHal::getParameters(int cameraId, Parameters& param, int64_t sequence) {
     param = mParameter[cameraId];
     return OK;
 }
 
 int MockCameraHal::setParameters(int cameraId, const Parameters& param) {
-    LOG2("@%s, cameraId is %d", __func__, cameraId);
     return OK;
 }
 
 void MockCameraHal::generateFrames(int cameraId) {
-    if (mCaptureRequest[cameraId].empty()) return;
-
     std::shared_ptr<CaptureRequest> req = nullptr;
-    req = mCaptureRequest[cameraId].at(0);
-
+    {
+        std::unique_lock<std::mutex> lock(mLock);
+        if (mCaptureRequest[cameraId].empty()) return;
+        req = mCaptureRequest[cameraId].at(0);
+    }
     if (req) {
         if (mCallback[cameraId]) {
-            camera_msg_data_t data;
-            data.type = CAMERA_ISP_BUF_READY;
-            data.data.buffer_ready.sequence = req->sequence;
-            data.data.buffer_ready.timestamp = mTimestamp;
-            data.data.buffer_ready.frameNumber = static_cast<uint32_t>(req->sequence);
-            mCallback[cameraId]->notify(mCallback[cameraId], data);
+            camera_msg_data_t shutter;
+            shutter.type = CAMERA_ISP_BUF_READY;
+            shutter.data.buffer_ready.timestamp = mTimestamp;
+            shutter.data.buffer_ready.frameNumber = static_cast<uint32_t>(req->sequence);
+            mCallback[cameraId]->notify(mCallback[cameraId], shutter);
+
+            camera_msg_data_t metadata;
+            metadata.type = CAMERA_METADATA_READY;
+            metadata.data.metadata_ready.sequence = req->sequence;
+            metadata.data.metadata_ready.frameNumber = static_cast<uint32_t>(req->sequence);
+            mCallback[cameraId]->notify(mCallback[cameraId], metadata);
+            LOG2("<req%d> @%s, ISP ready", req->sequence, __func__);
         }
 
         for (int i = 0; i < req->streamNum; i++) {
             int streamId = req->ubuffer[i]->s.id;
-            LOG2("@%s, generate result seq %d id %d buffers %p", __func__, req->sequence, streamId,
-                 req->ubuffer[i]->addr);
+            LOG2("<req%d> @%s, id %d", req->sequence, __func__, streamId);
             req->ubuffer[i]->timestamp = mTimestamp;
+            std::unique_lock<std::mutex> lock(mLock);
             mCaptureResult[cameraId][streamId].push_back(req->ubuffer[i]);
+            mBufferReadyCondition[cameraId][streamId].notify_one();
         }
-
-        mCaptureRequest[cameraId].pop_front();
-        mBufferReadyCondition[cameraId].notify_all();
+        {
+            std::unique_lock<std::mutex> lock(mLock);
+            mCaptureRequest[cameraId].pop_front();
+        }
     }
 }
 
 bool MockCameraHal::threadLoop() {
-    LOG2("@%s, ", __func__);
+    if (Thread::isExiting()) return true;
+
+    for (int cameraId = 0; cameraId < MAX_CAMERA_NUMBER; cameraId++) generateFrames(cameraId);
 
     struct timespec currentTime;
     clock_gettime(CLOCK_MONOTONIC, &currentTime);
     uint64_t currentTimestamp = currentTime.tv_sec * 1000000000 + currentTime.tv_nsec;
-    if (!Thread::isExiting()) usleep(33000);
+    int waitTimeNs = mTimestamp + 33000000 - currentTimestamp;
 
-    // assume frame is generated 10ms earlier
-    mTimestamp = currentTimestamp - 100000000;
-    for (int cameraId = 0; cameraId < MAX_CAMERA_NUMBER; cameraId++) {
-        std::unique_lock<std::mutex> lock(mLock);
-        if (mCaptureRequest[cameraId].empty()) continue;
-        generateFrames(cameraId);
-    }
+    if (waitTimeNs > 1000) usleep(waitTimeNs / 1000);
+    mTimestamp = currentTimestamp + waitTimeNs;
     return true;
 }
 
 int MockCameraHal::initDefaultParameters(int cameraId) {
-    LOG1("@%s cameraId:%d", __func__, cameraId);
-
     camera_info_t info;
     CLEAR(info);
     PlatformData::getCameraInfo(cameraId, info);

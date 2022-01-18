@@ -29,7 +29,6 @@ IntelPGParam::IntelPGParam(int pgId)
         : mPgId(pgId),
           mTerminalCount(0),
           mFragmentCount(0),
-          mFragmentDesc(nullptr),
           mFragmentConfig(nullptr),
           mP2pHandle(nullptr),
           mPgManifest(nullptr),
@@ -40,9 +39,6 @@ IntelPGParam::IntelPGParam(int pgId)
 }
 
 IntelPGParam::~IntelPGParam() {
-    if (mFragmentDesc) {
-        delete[] mFragmentDesc;
-    }
     if (mFragmentConfig) {
         delete mFragmentConfig;
     }
@@ -80,25 +76,9 @@ int IntelPGParam::init(ia_p2p_platform_t platform, const PgConfiguration& pgConf
 int IntelPGParam::calcFragmentDescriptors(int fragmentCount, const PgFrameDesc& inputMainFrame,
                                           const PgFrameDesc& outputMainFrame,
                                           const ia_css_rbm_t* rbm) {
-    if (mFragmentDesc) {
-        delete[] mFragmentDesc;
-        mFragmentDesc = nullptr;
-    }
-
-    delete mFragmentConfig;
-    mFragmentConfig = nullptr;
-
-    mFragmentDesc = new ia_p2p_fragment_desc[FRAG_TERM_TYPE_COUNT * fragmentCount];
-    memset(mFragmentDesc, 0x0, sizeof(ia_p2p_fragment_desc) * FRAG_TERM_TYPE_COUNT * fragmentCount);
-    if (fragmentCount <= 1) {
-        ia_p2p_fragment_desc desc;
-        desc.fragment_width = inputMainFrame.width;
-        desc.fragment_height = inputMainFrame.height;
-        desc.fragment_start_x = 0;
-        desc.fragment_start_y = 0;
-        for (int i = 0; i < FRAG_TERM_TYPE_COUNT; i++) {
-            mFragmentDesc[i] = desc;
-        }
+    if (mFragmentConfig) {
+        delete mFragmentConfig;
+        mFragmentConfig = nullptr;
     }
 
     mFragmentConfig = new ia_p2p_fragment_configuration_t;
@@ -129,10 +109,8 @@ int IntelPGParam::getFragmentDescriptors(int descCount, ia_p2p_fragment_desc* de
         CheckAndLogError(!terminal, BAD_VALUE, "terminal is nullptr");
 
         int termIdx = terminal->tm_index;
-        if ((mPgReqs.terminals[termIdx].type != IA_CSS_TERMINAL_TYPE_DATA_OUT) &&
-            (mPgReqs.terminals[termIdx].type != IA_CSS_TERMINAL_TYPE_DATA_IN)) {
+          if (!IS_DATA_TERMINAL(mPgReqs.terminals[termIdx].type))
             continue;
-        }
 
         if (mFragmentConfig) {
             int kernelId = kernel_id_ffs(mPgReqs.terminals[termIdx].kernelBitmap);
@@ -170,7 +148,6 @@ int IntelPGParam::prepare(const ia_binary_data* ipuParameters, const ia_css_rbm_
     int ret = calcFragmentDescriptors(mFragmentCount, mInputMainFrame, mOutputMainFrame, rbm);
     CheckAndLogError(ret != OK, ret, "Failed to calc fragment desc.");
 
-    int outputDataTerminalCount = FRAG_TERM_TYPE_OUTPUT_START;
     for (termIndex = 0; termIndex < mTerminalCount; termIndex++) {
         ia_css_terminal_manifest_t* terminalManifest =
             ia_css_program_group_manifest_get_term_mnfst(mPgManifest, (unsigned int)termIndex);
@@ -219,10 +196,6 @@ int IntelPGParam::prepare(const ia_binary_data* ipuParameters, const ia_css_rbm_
                  */
                 mPgReqs.terminals[termIndex].kernelBitmap =
                     ia_css_data_terminal_manifest_get_kernel_bitmap(dataMani);
-                if (!mFragmentConfig) {
-                    mPgReqs.terminals[termIndex].fragment_descs =
-                        &mFragmentDesc[FRAG_TERM_TYPE_INPUT * mFragmentCount];
-                }
                 break;
             }
             case IA_CSS_TERMINAL_TYPE_DATA_OUT: {
@@ -234,11 +207,6 @@ int IntelPGParam::prepare(const ia_binary_data* ipuParameters, const ia_css_rbm_
                  */
                 mPgReqs.terminals[termIndex].kernelBitmap =
                     ia_css_data_terminal_manifest_get_kernel_bitmap(dataMani);
-                if (!mFragmentConfig) {
-                    mPgReqs.terminals[termIndex].fragment_descs =
-                        &mFragmentDesc[outputDataTerminalCount * mFragmentCount];
-                    outputDataTerminalCount++;
-                }
                 break;
             }
             case IA_CSS_TERMINAL_TYPE_PARAM_SPATIAL_IN:
@@ -287,8 +255,7 @@ int IntelPGParam::prepare(const ia_binary_data* ipuParameters, const ia_css_rbm_
 #else
             mFragmentCount,
 #endif
-            (mFragmentConfig ? mFragmentConfig->pixel_fragment_descs[kernelId]
-                             : &mFragmentDesc[FRAG_TERM_TYPE_INPUT * mFragmentCount]),
+            mFragmentConfig->pixel_fragment_descs[kernelId],
             &mKernel.mPayloads[kernelId]);
         CheckAndLogError(ret != ia_err_none, ret,
                          "%s: failed to get payload for pg %d kernel %d, ret %d", __func__, mPgId,
@@ -466,15 +433,9 @@ int IntelPGParam::setPGAndPrepareProgram(ia_css_process_group_t* pg) {
         }
 
         if (mPgReqs.terminals[termIdx].type == IA_CSS_TERMINAL_TYPE_PROGRAM) {
-            if (mFragmentConfig) {
-                ret = ia_p2p_program_terminal_init_v2(
-                    mP2pHandle, mPgId, mFragmentConfig,
-                    reinterpret_cast<ia_css_program_terminal_t*>(terminal));
-            } else {
-                ret = ia_p2p_program_terminal_init(
-                    mP2pHandle, mPgId, mFragmentCount, mFragmentDesc,
-                    reinterpret_cast<ia_css_program_terminal_t*>(terminal));
-            }
+            ret = ia_p2p_program_terminal_init_v2(
+                mP2pHandle, mPgId, mFragmentConfig,
+                reinterpret_cast<ia_css_program_terminal_t*>(terminal));
             CheckAndLogError(ret != ia_err_none, ret, "Failed to init program terminal.");
         }
     }
@@ -568,19 +529,11 @@ int IntelPGParam::encodeTerminal(ia_css_terminal_t* terminal, ia_binary_data pay
                 std::unique_ptr<uint8_t[]>(new uint8_t[kupSize]);
         }
 
-        if (mFragmentConfig) {
-            ret = ia_p2p_get_kernel_user_parameters_v2(
-                mP2pHandle, mPgId, mFragmentCount, mFragmentConfig,
-                mPgReqs.terminals[terminalIndex].userParamAddress.get());
-            CheckAndLogError(ret != ia_err_none, ret,
-                       "Failed to call ia_p2p_get_kernel_user_parameters_v2.");
-        } else {
-            ret = ia_p2p_get_kernel_user_parameters(
-                mP2pHandle, mPgId, mFragmentCount, mFragmentDesc,
-                mPgReqs.terminals[terminalIndex].userParamAddress.get());
-            CheckAndLogError(ret != ia_err_none, ret,
-                             "Failed to call ia_p2p_get_kernel_user_parameters.");
-        }
+        ret = ia_p2p_get_kernel_user_parameters_v2(
+            mP2pHandle, mPgId, mFragmentCount, mFragmentConfig,
+            mPgReqs.terminals[terminalIndex].userParamAddress.get());
+        CheckAndLogError(ret != ia_err_none, ret,
+                   "Failed to call ia_p2p_get_kernel_user_parameters_v2.");
 
         ia_css_kernel_user_param_t* userParam = reinterpret_cast<ia_css_kernel_user_param_t*>(
             mPgReqs.terminals[terminalIndex].userParamAddress.get());
@@ -638,8 +591,7 @@ int IntelPGParam::encodeTerminal(ia_css_terminal_t* terminal, ia_binary_data pay
             case IA_CSS_TERMINAL_TYPE_PARAM_CACHED_OUT:
                 ret = ia_p2p_param_out_terminal_prepare(
                     mP2pHandle, mPgId, kernelId, mFragmentCount,
-                    (mFragmentConfig ? mFragmentConfig->pixel_fragment_descs[kernelId]
-                                     : mFragmentDesc),
+                    mFragmentConfig->pixel_fragment_descs[kernelId],
                     reinterpret_cast<ia_css_param_terminal_t*>(terminal), curSection,
                     mPgReqs.terminals[terminalIndex].sectionCount, payload.size, curOffset);
                 CheckAndLogError(ret != ia_err_none, ret, "Failed to prepare param out terminal.");
@@ -655,8 +607,7 @@ int IntelPGParam::encodeTerminal(ia_css_terminal_t* terminal, ia_binary_data pay
 #endif
                 ret = ia_p2p_program_terminal_encode(
                     mP2pHandle, mPgId, kernelId, mFragmentCount,
-                    (mFragmentConfig ? mFragmentConfig->pixel_fragment_descs[kernelId]
-                                     : mFragmentDesc),
+                    mFragmentConfig->pixel_fragment_descs[kernelId],
                     reinterpret_cast<ia_css_program_terminal_t*>(terminal), curSection,
                     mPgReqs.terminals[terminalIndex].sectionCount,
                     reinterpret_cast<uint8_t*>(payload.data), payload.size, curOffset);
@@ -667,11 +618,9 @@ int IntelPGParam::encodeTerminal(ia_css_terminal_t* terminal, ia_binary_data pay
                 break;
 
             case IA_CSS_TERMINAL_TYPE_PARAM_SPATIAL_IN:
-                /* TODO: ensure program terminal gets encoded first */
                 ret = ia_p2p_spatial_param_in_terminal_encode(
                     mP2pHandle, mPgId, kernelId, mFragmentCount,
-                    (mFragmentConfig ? mFragmentConfig->pixel_fragment_descs[kernelId]
-                                     : mFragmentDesc),
+                    mFragmentConfig->pixel_fragment_descs[kernelId],
                     reinterpret_cast<ia_css_spatial_param_terminal_t*>(terminal), curSection,
                     reinterpret_cast<uint8_t*>(payload.data), payload.size, curOffset);
                 CheckAndLogError(ret != ia_err_none, ret, "Failed to encode spatial in terminal.");
@@ -683,8 +632,7 @@ int IntelPGParam::encodeTerminal(ia_css_terminal_t* terminal, ia_binary_data pay
             case IA_CSS_TERMINAL_TYPE_PARAM_SPATIAL_OUT:
                 ret = ia_p2p_spatial_param_out_terminal_prepare(
                     mP2pHandle, mPgId, kernelId, mFragmentCount,
-                    (mFragmentConfig ? mFragmentConfig->pixel_fragment_descs[kernelId]
-                                     : mFragmentDesc),
+                    mFragmentConfig->pixel_fragment_descs[kernelId],
                     reinterpret_cast<ia_css_spatial_param_terminal_t*>(terminal), curSection,
                     payload.size, curOffset);
                 CheckAndLogError(ret != ia_err_none, ret,
@@ -768,8 +716,7 @@ int IntelPGParam::decodeTerminal(ia_css_terminal_t* terminal, ia_binary_data pay
             case IA_CSS_TERMINAL_TYPE_PARAM_SPATIAL_OUT:
                 ret = ia_p2p_spatial_param_out_terminal_decode_v2(
                     mP2pHandle, mPgId, kernelId, mFragmentCount,
-                    (mFragmentConfig ? mFragmentConfig->pixel_fragment_descs[kernelId]
-                                     : mFragmentDesc),
+                    mFragmentConfig->pixel_fragment_descs[kernelId],
                     reinterpret_cast<ia_css_spatial_param_terminal_t*>(terminal), currentSection,
                     (unsigned char*)payload.data, payload.size, mP2pCacheBuffer.data);
                 currentSection += mKernel.mSections[kernelId].spatial_param_out_section_count;
@@ -1101,7 +1048,7 @@ css_err_t IntelPGParam::payloadSectionSizeSanityTest(ia_p2p_payload_desc* curren
 #else
         mFragmentCount,
 #endif
-        (mFragmentConfig ? mFragmentConfig->pixel_fragment_descs[kernelId] : mFragmentDesc),
+        mFragmentConfig->pixel_fragment_descs[kernelId],
         current);
     CheckAndLogError(ia_ret != ia_err_none, css_err_internal,
                      "Failed to get payload description during sanity check (kernel %d)", kernelId);
@@ -1186,7 +1133,7 @@ css_err_t IntelPGParam::payloadSectionSizeSanityTest(ia_p2p_payload_desc* curren
 }
 
 void IntelPGParam::dumpFragmentDesc(int fragmentCount) {
-    if (!Log::isDebugLevelEnable(CAMERA_DEBUG_LOG_LEVEL2)) return;
+    if (!Log::isLogTagEnabled(GET_FILE_SHIFT(IntelPGParam))) return;
 
     LOG2("%s: pg %d get frag count %d (new api)", __func__, mPgId, fragmentCount);
     for (int kernel = 0; kernel < IA_P2P_MAX_KERNELS_PER_PG; kernel++) {

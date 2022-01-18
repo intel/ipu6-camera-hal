@@ -98,6 +98,9 @@ struct GraphGetDataParams {
     uint32_t streamIdNum;
     int32_t streamIdData[MAX_STREAM];
 
+    uint32_t tuningModeNum;
+    IGraphType::TuningModeInfo tuningModes[MAX_STREAM];
+
     uint32_t pgInfoNum;
     GraphPgInfo pgInfoData[MAX_PG_NUMBER];
 
@@ -131,18 +134,20 @@ struct GraphGetConnectionParams {
     GraphConnection connectionArray[MAX_CONNECTION_COUNT];
     uint32_t scalerInfoNum;
     IGraphType::ScalerInfo scalerInfoArray[MAX_STREAM];
+    uint32_t portFormatNum;
+    IGraphType::PrivPortFormat portFormatArray[MAX_STREAM];
 };
 
 class IPCGraphConfig {
  public:
-    IPCGraphConfig();
-    virtual ~IPCGraphConfig();
+    IPCGraphConfig() {}
+    virtual ~IPCGraphConfig() {}
 
     bool clientFlattenParse(void* pData, uint32_t size, int cameraId, const char* graphDescFile,
                             const char* settingsFile);
     bool serverUnflattenParse(void* pData, uint32_t size, GraphParseParams** parseParam);
     bool clientFlattenConfigStreams(void* pData, uint32_t size, GraphBaseInfo info,
-                                    GraphSettingType type,  bool dummyStillSink,
+                                    GraphSettingType type, bool dummyStillSink,
                                     const std::vector<HalStream*>& streams);
     bool serverUnflattenConfigStreams(void* pData, uint32_t size, GraphBaseInfo* info,
                                       GraphSettingType* type, bool* dummyStillSink,
@@ -165,10 +170,12 @@ class IPCGraphConfig {
                                       std::vector<std::string>* pgList);
     bool serverFlattenGetConnection(void* pData, uint32_t size,
                                     const std::vector<IGraphType::ScalerInfo>& scalerInfo,
-                                    const std::vector<IGraphType::PipelineConnection>& confVector);
+                                    const std::vector<IGraphType::PipelineConnection>& confVector,
+                                    const std::vector<IGraphType::PrivPortFormat>& tnrPortFormat);
     bool clientUnFlattenGetConnection(void* pData, uint32_t size,
                                       std::vector<IGraphType::ScalerInfo>* scalerInfo,
-                                      std::vector<IGraphType::PipelineConnection>* confVector);
+                                      std::vector<IGraphType::PipelineConnection>* confVector,
+                                      std::vector<IGraphType::PrivPortFormat>* tnrPortFormat);
 
  private:
     status_t readDataFromXml(const char* fileName, char* dataPtr, size_t* dataSize, int maxSize);

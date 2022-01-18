@@ -16,14 +16,51 @@
 
 #pragma once
 
-#include "FaceBase.h"
+#include <pvl_config.h>
+#include <pvl_eye_detection.h>
+#include <pvl_face_detection.h>
+#include <pvl_mouth_detection.h>
+#include <pvl_types.h>
+
+#include "FaceType.h"
 #include "modules/sandboxing/IPCCommon.h"
 
 namespace icamera {
+struct FaceDetectionInitParams {
+    unsigned int max_face_num;
+    int cameraId;
+};
+
+struct FaceDetectionDeinitParams {
+    int cameraId;
+};
+
+struct FaceDetectionPVLResult {
+    bool faceUpdated;
+    int faceNum;
+    pvl_face_detection_result faceResults[MAX_FACES_DETECTABLE];
+    pvl_eye_detection_result eyeResults[MAX_FACES_DETECTABLE];
+    pvl_mouth_detection_result mouthResults[MAX_FACES_DETECTABLE];
+};
+
+struct FaceDetectionRunParams {
+    uint8_t data[MAX_FACE_FRAME_SIZE_ASYNC];
+    int32_t bufferHandle;
+    uint32_t size;
+    int32_t width;
+    int32_t height;
+    pvl_image_format format;
+    int32_t stride;
+    int32_t rotation;
+    int cameraId;
+
+    FaceDetectionPVLResult results;
+};
+
 class IPCIntelFD {
  public:
-    IPCIntelFD();
-    virtual ~IPCIntelFD();
+    IPCIntelFD() {}
+    virtual ~IPCIntelFD() {}
 
     bool clientFlattenInit(unsigned int max_face_num, int cameraId,
                            FaceDetectionInitParams* params);

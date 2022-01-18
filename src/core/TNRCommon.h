@@ -42,6 +42,9 @@ typedef struct TnrInitInfo {
 } TnrInitInfo;
 
 typedef struct TnrRequestInfo {
+    int width;
+    int height;
+    uint32_t surfaceSize;
     int32_t inHandle;
     int32_t outHandle;
     int32_t paramHandle;

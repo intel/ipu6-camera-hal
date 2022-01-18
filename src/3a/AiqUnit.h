@@ -54,7 +54,7 @@ public:
     virtual int configure(const stream_config_t * /*streamList*/) { return OK; }
     virtual int start() { return OK; }
     virtual int stop() { return OK; }
-    virtual int run3A(long request, long applyingSeq, long * /*effectSeq*/)  { return OK; }
+    virtual int run3A(long request, int64_t applyingSeq, int64_t * /*effectSeq*/)  { return OK; }
 
     virtual std::vector<EventListener*> getSofEventListener()
     {
@@ -77,8 +77,7 @@ private:
 class AiqUnit : public AiqUnitBase {
 
 public:
-    AiqUnit(int cameraId, SensorHwCtrl *sensorHw, LensHw *lensHw,
-            ParameterGenerator* paramGen);
+    AiqUnit(int cameraId, SensorHwCtrl *sensorHw, LensHw *lensHw);
     ~AiqUnit();
 
     /**
@@ -117,7 +116,7 @@ public:
      *
      * Return 0 if the operation succeeds.
      */
-    int run3A(long requestId, long applyingSeq, long* effectSeq);
+    int run3A(long requestId, int64_t applyingSeq, int64_t* effectSeq);
 
     /**
      * \brief Get software EventListener

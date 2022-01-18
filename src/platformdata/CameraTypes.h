@@ -53,11 +53,6 @@ enum {
 };
 
 enum {
-    AUTO_SWITCH_FULL = 0,
-    AUTO_SWITCH_PSYS
-};
-
-enum {
     SENSOR_EXPOSURE_SINGLE = 0,        /* sensor is single exposure */
     SENSOR_FIX_EXPOSURE_RATIO,         /* Fix exposure ratio between long and short exposure */
     SENSOR_RELATIVE_MULTI_EXPOSURES,   /* AE output exposures are converted to Shutter and
@@ -180,6 +175,8 @@ struct PolicyConfig {
     PolicyConfig() { graphId = -1; enableBundleInSdv = true; }
 };
 
+#define DEFAULT_VIDEO_STREAM_NUM 2
+
 struct CommonConfig {
     float xmlVersion;
     std::string ipuName;
@@ -187,14 +184,26 @@ struct CommonConfig {
     bool isGpuTnrEnabled;
     bool isStillTnrPrior;
     bool isTnrParamForceUpdate;
+    bool useTnrGlobalProtection;
     int cameraNumber;
+    int videoStreamNum;
+    bool supportIspTuningUpdate;
+// ENABLE_EVCP_S
+    bool isGpuEvcpEnabled;
+// ENABLE_EVCP_E
 
     CommonConfig() {
         xmlVersion = 1.0;
         isGpuTnrEnabled = false;
         isStillTnrPrior = true;
         isTnrParamForceUpdate = false;
+        useTnrGlobalProtection = false;
         cameraNumber = -1;
+        videoStreamNum = DEFAULT_VIDEO_STREAM_NUM;
+        supportIspTuningUpdate = false;
+// ENABLE_EVCP_S
+        isGpuEvcpEnabled = false;
+// ENABLE_EVCP_E
     }
 };
 

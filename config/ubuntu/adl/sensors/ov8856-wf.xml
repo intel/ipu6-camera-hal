@@ -15,19 +15,19 @@
 -->
 
 <CameraSettings>
-    <Sensor name="ov8856-uf" description="ov8856 as sensor.">
+    <Sensor name="ov8856-wf" description="ov8856 as sensor.">
         <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="3296" outputHeight="2464" format="V4L2_PIX_FMT_SGRBG10"> <!-- RAW10 BE capture -->
             <format name="ov8856 $I2CBUS" pad="0" width="3280" height="2464" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
             <format name="Intel IPU6 CSI-2 $CSI_PORT" pad="0" width="3280" height="2464" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
-            <format name="Intel IPU6 CSI2 BE SOC 1" pad="0" width="3280" height="2464" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
-            <format name="Intel IPU6 CSI2 BE SOC 1" pad="1" width="3296" height="2464" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
-            <selection name="Intel IPU6 CSI2 BE SOC 1" pad="1" target="V4L2_SEL_TGT_CROP" left="0" top="0" width="3296" height="2464"/>
+            <format name="Intel IPU6 CSI2 BE SOC 0" pad="0" width="3280" height="2464" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
+            <format name="Intel IPU6 CSI2 BE SOC 0" pad="1" width="3296" height="2464" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
+            <selection name="Intel IPU6 CSI2 BE SOC 0" pad="1" target="V4L2_SEL_TGT_CROP" left="0" top="0" width="3296" height="2464"/>
 
             <link srcName="ov8856 $I2CBUS" srcPad="0" sinkName="Intel IPU6 CSI-2 $CSI_PORT" sinkPad="0" enable="true"/>
-            <link srcName="Intel IPU6 CSI-2 $CSI_PORT" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 1" sinkPad="0" enable="true"/>
-            <link srcName="Intel IPU6 CSI2 BE SOC 1" srcPad="1" sinkName="Intel IPU6 BE SOC capture 1" sinkPad="0" enable="true"/>
+            <link srcName="Intel IPU6 CSI-2 $CSI_PORT" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 0" sinkPad="0" enable="true"/>
+            <link srcName="Intel IPU6 CSI2 BE SOC 0" srcPad="1" sinkName="Intel IPU6 BE SOC capture 0" sinkPad="0" enable="true"/>
 
-            <videonode name="Intel IPU6 BE SOC capture 1" videoNodeType="VIDEO_GENERIC"/>
+            <videonode name="Intel IPU6 BE SOC capture 0" videoNodeType="VIDEO_GENERIC"/>
             <videonode name="Intel IPU6 CSI-2 $CSI_PORT" videoNodeType="VIDEO_ISYS_RECEIVER"/>
             <videonode name="ov8856 $I2CBUS" videoNodeType="VIDEO_PIXEL_ARRAY"/>
         </MediaCtlConfig>
@@ -84,7 +84,7 @@
             <shading.availableModes value="0,1,2"/>
 
             <!-- Lens -->
-            <lens.facing value="0"/>
+            <lens.facing value="1"/>
             <!-- Lens info -->
             <lens.info.availableApertures value="2.0"/>
             <lens.info.availableFilterDensities value="0.0"/>
@@ -221,8 +221,6 @@
         <maxRequestsInflight value="6"/>
         <faceEngineRunningInterval value="10"/>
         <faceEngineRunningIntervalNoFace value="10"/>
-        <!-- if faceAeEnabled is not equal to true, availableSceneModes and availableFaceDetectModes must be 0 -->
-        <faceAeEnabled value="true"/>
         <psysAlignWithSof value="true"/>
         <psysBundleWithAic value="true"/>
         <!-- video HAL stream count -->

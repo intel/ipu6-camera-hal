@@ -16,13 +16,15 @@
 
 #define LOG_TAG PipeLiteExecutor
 
+#include "PipeLiteExecutor.h"
+
 #include <algorithm>
 
-#include "PipeLiteExecutor.h"
 #include "PSysDAG.h"
-
-#include "iutils/CameraDump.h"
+// FRAME_SYNC_S
 #include "SyncManager.h"
+// FRAME_SYNC_E
+#include "iutils/CameraDump.h"
 
 // CIPF backends
 extern "C" {
@@ -30,47 +32,40 @@ extern "C" {
 #include <ia_pal_types_isp_ids_autogen.h>
 }
 
-using std::vector;
-using std::string;
 using std::map;
 using std::shared_ptr;
+using std::string;
+using std::vector;
 
 namespace icamera {
 
-static const int32_t sStatKernels[] = {
-    ia_pal_uuid_isp_bxt_awbstatistics,
-    ia_pal_uuid_isp_awbstatistics_2_0,
-    ia_pal_uuid_isp_bxt_dvsstatistics
-};
+static const int32_t sStatKernels[] = {ia_pal_uuid_isp_bxt_awbstatistics,
+                                       ia_pal_uuid_isp_awbstatistics_2_0,
+                                       ia_pal_uuid_isp_bxt_dvsstatistics};
 
-static const int32_t sSisKernels[] = {
-    ia_pal_uuid_isp_sis_1_0_a
-};
+static const int32_t sSisKernels[] = {ia_pal_uuid_isp_sis_1_0_a};
 
-PipeLiteExecutor::PipeLiteExecutor(int cameraId, const ExecutorPolicy &policy,
-                                   vector<string> exclusivePGs, PSysDAG *psysDag,
+PipeLiteExecutor::PipeLiteExecutor(int cameraId, const ExecutorPolicy& policy,
+                                   vector<string> exclusivePGs, PSysDAG* psysDag,
                                    shared_ptr<IGraphConfig> gc)
-      : mCameraId(cameraId),
-        mStreamId(-1),
-        mName(policy.exeName),
-        mPGNames(policy.pgList),
-        mOpModes(policy.opModeList),
-        mGraphConfig(gc),
-        mIsInputEdge(false),
-        mIsOutputEdge(false),
-        mNotifyPolicy(POLICY_FRAME_FIRST),
-        mAdaptor(nullptr),
-        mPolicyManager(nullptr),
-        mShareReferPool(nullptr),
-        mLastStatsSequence(-1),
-        mExclusivePGs(exclusivePGs),
-        mPSysDag(psysDag),
-        mkernelsCountWithStats(0)
-{
-}
+        : mCameraId(cameraId),
+          mStreamId(-1),
+          mName(policy.exeName),
+          mPGNames(policy.pgList),
+          mOpModes(policy.opModeList),
+          mGraphConfig(gc),
+          mIsInputEdge(false),
+          mIsOutputEdge(false),
+          mNotifyPolicy(POLICY_FRAME_FIRST),
+          mAdaptor(nullptr),
+          mPolicyManager(nullptr),
+          mShareReferPool(nullptr),
+          mLastStatsSequence(-1),
+          mExclusivePGs(exclusivePGs),
+          mPSysDag(psysDag),
+          mkernelsCountWithStats(0) {}
 
-PipeLiteExecutor::~PipeLiteExecutor()
-{
+PipeLiteExecutor::~PipeLiteExecutor() {
     while (!mPGExecutors.empty()) {
         ExecutorUnit& unit = mPGExecutors.back();
         if (unit.pg.get()) {
@@ -82,16 +77,16 @@ PipeLiteExecutor::~PipeLiteExecutor()
     releaseBuffers();
 }
 
-int PipeLiteExecutor::initPipe()
-{
+int PipeLiteExecutor::initPipe() {
     LOG1("@%s:%s", __func__, getName());
     CheckAndLogError(mGraphConfig == nullptr, BAD_VALUE, "%s, the graph config is NULL, BUG!",
                      __func__);
 
     NodesPtrVector programGroups;
     vector<IGraphType::PipelineConnection> connVector;
+    vector<IGraphType::PrivPortFormat> tnrPortFormat;
 
-    int ret = mGraphConfig->pipelineGetConnections(mPGNames, &connVector);
+    int ret = mGraphConfig->pipelineGetConnections(mPGNames, &connVector, &tnrPortFormat);
     CheckAndLogError(connVector.empty(), ret, "Failed to get connections for executor:%s",
                      mName.c_str());
 
@@ -102,16 +97,16 @@ int PipeLiteExecutor::initPipe()
     CheckAndLogError(ret != OK, ret, "Failed to analyze connections for executor: %s, ret = %d",
                      mName.c_str(), ret);
 
-    ret = configurePGs();
+    ret = configurePGs(tnrPortFormat);
     CheckAndLogError(ret != OK, ret, "Failed to configure connections for executor: %s, ret = %d",
                      mName.c_str(), ret);
 
     assignDefaultPortsForTerminals();
+
     return OK;
 }
 
-int PipeLiteExecutor::analyzeConnections(const vector<IGraphType::PipelineConnection>& connVector)
-{
+int PipeLiteExecutor::analyzeConnections(const vector<IGraphType::PipelineConnection>& connVector) {
     ia_uid firstStageId = mPGExecutors.front().stageId;
     ia_uid lastStageId = mPGExecutors.back().stageId;
 
@@ -126,7 +121,8 @@ int PipeLiteExecutor::analyzeConnections(const vector<IGraphType::PipelineConnec
              connection.connectionConfig.mSourceIteration, connection.hasEdgePort);
         LOG2("%s:     connection sink %d, %d, %d, type %d", getName(),
              connection.connectionConfig.mSinkStage, connection.connectionConfig.mSinkTerminal,
-             connection.connectionConfig.mSinkIteration, connection.connectionConfig.mConnectionType);
+             connection.connectionConfig.mSinkIteration,
+             connection.connectionConfig.mConnectionType);
 
         storeTerminalInfo(connection);
 
@@ -143,10 +139,11 @@ int PipeLiteExecutor::analyzeConnections(const vector<IGraphType::PipelineConnec
 
         // If the connection's source stage is same as the last stage/pg id in this executor,
         // then it means the connection belongs to output terminal pairs.
-        // SIS is output terminal but it doesn't belong to any stream, so it is not real edge output.
-        if (connection.connectionConfig.mSourceStage == lastStageId
-            && connection.hasEdgePort
-            && connection.connectionConfig.mSourceTerminal != connection.connectionConfig.mSinkTerminal) {
+        // SIS is output terminal but it doesn't belong to any stream, so it is not real edge
+        // output.
+        if (connection.connectionConfig.mSourceStage == lastStageId && connection.hasEdgePort &&
+            connection.connectionConfig.mSourceTerminal !=
+                connection.connectionConfig.mSinkTerminal) {
             mIsOutputEdge = true;
         }
     }
@@ -154,34 +151,33 @@ int PipeLiteExecutor::analyzeConnections(const vector<IGraphType::PipelineConnec
     return OK;
 }
 
-int PipeLiteExecutor::storeTerminalInfo(const IGraphType::PipelineConnection& connection)
-{
+int PipeLiteExecutor::storeTerminalInfo(const IGraphType::PipelineConnection& connection) {
     FrameInfo info;
     info.mWidth = connection.portFormatSettings.width;
     info.mHeight = connection.portFormatSettings.height;
     info.mFormat = connection.portFormatSettings.fourcc;
 
-    ia_uid curTerminal    = connection.portFormatSettings.terminalId;
-    ia_uid sinkTerminal   = connection.connectionConfig.mSinkTerminal;
+    ia_uid curTerminal = connection.portFormatSettings.terminalId;
+    ia_uid sinkTerminal = connection.connectionConfig.mSinkTerminal;
     ia_uid sourceTerminal = connection.connectionConfig.mSourceTerminal;
-    ia_uid sinkStage      = connection.connectionConfig.mSinkStage;
-    ia_uid sourceStage    = connection.connectionConfig.mSourceStage;
+    ia_uid sinkStage = connection.connectionConfig.mSinkStage;
+    ia_uid sourceStage = connection.connectionConfig.mSourceStage;
 
     TerminalDescriptor desc;
-    desc.terminal       = 0;
-    desc.stageId        = 0;
-    desc.sinkTerminal   = sinkTerminal;
+    desc.terminal = 0;
+    desc.stageId = 0;
+    desc.sinkTerminal = sinkTerminal;
     desc.sourceTerminal = sourceTerminal;
-    desc.sinkStage      = sinkStage;
-    desc.sourceStage    = sourceStage;
-    desc.frameDesc      = info;
-    desc.enabled        = true;
-    desc.hasConnection  = true;
-    desc.assignedPort   = INVALID_PORT;
-    desc.usrStreamId   = connection.stream ? connection.stream->streamId() : -1;
+    desc.sinkStage = sinkStage;
+    desc.sourceStage = sourceStage;
+    desc.frameDesc = info;
+    desc.enabled = true;
+    desc.hasConnection = true;
+    desc.assignedPort = INVALID_PORT;
+    desc.usrStreamId = connection.stream ? connection.stream->streamId() : -1;
 
     if (connection.portFormatSettings.enabled) {
-        mConnectionMap[sinkTerminal]= sourceTerminal;
+        mConnectionMap[sinkTerminal] = sourceTerminal;
     }
 
     // Check if there is new input terminal
@@ -213,8 +209,7 @@ int PipeLiteExecutor::storeTerminalInfo(const IGraphType::PipelineConnection& co
     return OK;
 }
 
-int PipeLiteExecutor::createPGs()
-{
+int PipeLiteExecutor::createPGs() {
     TuningMode tuningMode = mPSysDag->getTuningMode(-1);
     for (auto const& pgName : mPGNames) {
         int pgId = mGraphConfig->getPgIdByPgName(pgName);
@@ -223,8 +218,8 @@ int PipeLiteExecutor::createPGs()
         ExecutorUnit pgUnit;
         pgUnit.pgId = pgId;
         pgUnit.stageId = psys_2600_pg_uid(pgId);
-        pgUnit.pg = std::shared_ptr<PGCommon>(new PGCommon(mCameraId, pgId, pgName, tuningMode,
-                                                           pgUnit.stageId + 1));
+        pgUnit.pg = std::shared_ptr<PGCommon>(
+            new PGCommon(mCameraId, pgId, pgName, tuningMode, pgUnit.stageId + 1));
         // Please refer to ia_cipf_css.h for terminalBaseUid
         pgUnit.pg->setShareReferPool(mShareReferPool);
         mPGExecutors.push_back(pgUnit);
@@ -234,10 +229,19 @@ int PipeLiteExecutor::createPGs()
     return OK;
 }
 
-int PipeLiteExecutor::configurePGs()
-{
+int PipeLiteExecutor::configurePGs(const vector<IGraphType::PrivPortFormat>& tnrPortFormat) {
+    FrameInfo tnrFormatInfo = {};
+    for (auto &tnrFormat : tnrPortFormat) {
+        if (tnrFormat.streamId == mStreamId) {
+            tnrFormatInfo.mWidth = tnrFormat.formatSetting.width;
+            tnrFormatInfo.mHeight = tnrFormat.formatSetting.height;
+            tnrFormatInfo.mFormat = CameraUtils::getV4L2Format(tnrFormat.formatSetting.fourcc);
+            break;
+        }
+    }
+
     mkernelsCountWithStats = 0;
-    for (auto &unit : mPGExecutors) {
+    for (auto& unit : mPGExecutors) {
         map<ia_uid, FrameInfo> inputInfos;
         map<ia_uid, FrameInfo> outputInfos;
         vector<ia_uid> disabledTerminals;
@@ -246,14 +250,14 @@ int PipeLiteExecutor::configurePGs()
         getTerminalFrameInfos(unit.outputTerminals, outputInfos);
         getDisabledTerminalsForPG(unit.stageId, disabledTerminals);
 
-        unit.pg->setInputInfo(inputInfos);
+        unit.pg->setInputInfo(inputInfos, tnrFormatInfo);
         unit.pg->setOutputInfo(outputInfos);
         unit.pg->setDisabledTerminals(disabledTerminals);
 
         IGraphType::StageAttr stageAttr = {};
         if (mGraphConfig->getPgRbmValue(unit.pg->getName(), &stageAttr) == OK) {
-            LOG1("%s: Set rbm for pgId %d, pgName: %s bytes %d",
-                 __func__, unit.pgId, unit.pg->getName(), stageAttr.rbm_bytes);
+            LOG1("%s: Set rbm for pgId %d, pgName: %s bytes %d", __func__, unit.pgId,
+                 unit.pg->getName(), stageAttr.rbm_bytes);
             unit.pg->setRoutingBitmap(stageAttr.rbm, stageAttr.rbm_bytes);
         }
 
@@ -273,10 +277,9 @@ int PipeLiteExecutor::configurePGs()
  * Assign ports for terminals as internal default value
  * Input ports may be overwritten with output ports of producer in setInputTerminals()
  */
-int PipeLiteExecutor::assignDefaultPortsForTerminals()
-{
+int PipeLiteExecutor::assignDefaultPortsForTerminals() {
     Port portTable[] = {MAIN_PORT, SECOND_PORT, THIRD_PORT, FORTH_PORT, INVALID_PORT};
-    for (auto &unit : mPGExecutors) {
+    for (auto& unit : mPGExecutors) {
         int outPortIndex = 0;
         for (auto terminal : unit.outputTerminals) {
             TerminalDescriptor& termDesc = mTerminalsDesc[terminal];
@@ -303,18 +306,15 @@ int PipeLiteExecutor::assignDefaultPortsForTerminals()
     return OK;
 }
 
-void PipeLiteExecutor::getOutputTerminalPorts(std::map<ia_uid, Port>& terminals) const
-{
+void PipeLiteExecutor::getOutputTerminalPorts(std::map<ia_uid, Port>& terminals) const {
     getTerminalPorts(mPGExecutors.back().outputTerminals, terminals);
 }
 
-void PipeLiteExecutor::getInputTerminalPorts(std::map<ia_uid, Port>& terminals) const
-{
+void PipeLiteExecutor::getInputTerminalPorts(std::map<ia_uid, Port>& terminals) const {
     getTerminalPorts(mPGExecutors.front().inputTerminals, terminals);
 }
 
-int PipeLiteExecutor::setInputTerminals(const std::map<ia_uid, Port>& sourceTerminals)
-{
+int PipeLiteExecutor::setInputTerminals(const std::map<ia_uid, Port>& sourceTerminals) {
     // In edge PGs accepts input ports arrangement from external
     ExecutorUnit& inUnit = mPGExecutors.front();
     for (auto sinkTerminal : inUnit.inputTerminals) {
@@ -325,8 +325,8 @@ int PipeLiteExecutor::setInputTerminals(const std::map<ia_uid, Port>& sourceTerm
         ia_uid sourceTerminal = mConnectionMap[sinkTerminal];
         if (sourceTerminals.find(sourceTerminal) != sourceTerminals.end()) {
             mTerminalsDesc[sinkTerminal].assignedPort = sourceTerminals.at(sourceTerminal);
-            LOG2("pg %s get external %d -> input %d, port %d", getName(),
-                 sourceTerminal, sinkTerminal, mTerminalsDesc[sinkTerminal].assignedPort);
+            LOG2("pg %s get external %d -> input %d, port %d", getName(), sourceTerminal,
+                 sinkTerminal, mTerminalsDesc[sinkTerminal].assignedPort);
         }
     }
 
@@ -339,7 +339,8 @@ int PipeLiteExecutor::setInputTerminals(const std::map<ia_uid, Port>& sourceTerm
             }
             if (mConnectionMap.find(sinkTerminal) != mConnectionMap.end()) {
                 ia_uid sourceTerminal = mConnectionMap[sinkTerminal];
-                mTerminalsDesc[sinkTerminal].assignedPort = mTerminalsDesc[sourceTerminal].assignedPort;
+                mTerminalsDesc[sinkTerminal].assignedPort =
+                    mTerminalsDesc[sourceTerminal].assignedPort;
             }
         }
     }
@@ -379,11 +380,10 @@ int PipeLiteExecutor::setInputTerminals(const std::map<ia_uid, Port>& sourceTerm
     return OK;
 }
 
-int PipeLiteExecutor::start()
-{
+int PipeLiteExecutor::start() {
     LOG1("%s executor:%s", __func__, mName.c_str());
     mProcessThread = new ProcessThread(this);
-    AutoMutex   l(mBufferQueueLock);
+    AutoMutex l(mBufferQueueLock);
 
     allocBuffers();
     dumpPGs();
@@ -396,8 +396,7 @@ int PipeLiteExecutor::start()
     return OK;
 }
 
-void PipeLiteExecutor::stop()
-{
+void PipeLiteExecutor::stop() {
     LOG1("%s executor:%s", __func__, mName.c_str());
 
     mProcessThread->requestExitAndWait();
@@ -413,8 +412,7 @@ void PipeLiteExecutor::stop()
     }
 }
 
-void PipeLiteExecutor::notifyStop()
-{
+void PipeLiteExecutor::notifyStop() {
     LOG1("%s executor:%s", __func__, mName.c_str());
 
     mProcessThread->requestExit();
@@ -427,9 +425,8 @@ void PipeLiteExecutor::notifyStop()
     }
 }
 
-int PipeLiteExecutor::releaseStatsBuffer(const shared_ptr<CameraBuffer> &statsBuf)
-{
-    LOG3A("%s executor:%s", __func__, mName.c_str());
+int PipeLiteExecutor::releaseStatsBuffer(const shared_ptr<CameraBuffer>& statsBuf) {
+    LOG2("%s executor:%s", __func__, mName.c_str());
     AutoMutex lock(mStatsBuffersLock);
 
     mStatsBuffers.push(statsBuf);
@@ -437,8 +434,7 @@ int PipeLiteExecutor::releaseStatsBuffer(const shared_ptr<CameraBuffer> &statsBu
     return OK;
 }
 
-bool PipeLiteExecutor::hasOutputTerminal(ia_uid sinkTerminal)
-{
+bool PipeLiteExecutor::hasOutputTerminal(ia_uid sinkTerminal) {
     if (mConnectionMap.find(sinkTerminal) == mConnectionMap.end()) {
         return false;
     }
@@ -452,14 +448,13 @@ bool PipeLiteExecutor::hasOutputTerminal(ia_uid sinkTerminal)
     return false;
 }
 
-int PipeLiteExecutor::getStatKernels(int pgId, vector<ia_uid>& kernels)
-{
+int PipeLiteExecutor::getStatKernels(int pgId, vector<ia_uid>& kernels) {
     kernels.clear();
     for (unsigned int i = 0; i < ARRAY_SIZE(sStatKernels); i++) {
         int pgIdOfKernel = -1;
         int status = mGraphConfig->getPgIdForKernel(mStreamId, sStatKernels[i], &pgIdOfKernel);
         if (status == OK && pgIdOfKernel == pgId) {
-             kernels.push_back(sStatKernels[i]);
+            kernels.push_back(sStatKernels[i]);
         }
     }
 
@@ -467,14 +462,13 @@ int PipeLiteExecutor::getStatKernels(int pgId, vector<ia_uid>& kernels)
     return kernels.size();
 }
 
-int PipeLiteExecutor::getSisKernels(int pgId, vector<ia_uid>& kernels)
-{
+int PipeLiteExecutor::getSisKernels(int pgId, vector<ia_uid>& kernels) {
     kernels.clear();
     for (unsigned int i = 0; i < ARRAY_SIZE(sSisKernels); i++) {
         int pgIdOfKernel = -1;
         int status = mGraphConfig->getPgIdForKernel(mStreamId, sSisKernels[i], &pgIdOfKernel);
         if (status == OK && pgIdOfKernel == pgId) {
-             kernels.push_back(sSisKernels[i]);
+            kernels.push_back(sSisKernels[i]);
         }
     }
 
@@ -483,19 +477,17 @@ int PipeLiteExecutor::getSisKernels(int pgId, vector<ia_uid>& kernels)
 }
 
 bool PipeLiteExecutor::isSameStreamConfig(const stream_t& internal, const stream_t& external,
-                                          ConfigMode configMode, bool checkStreamId) const
-{
+                                          ConfigMode configMode, bool checkStreamId) const {
     // The internal format is ia_fourcc based format, so need to convert it to V4L2 format.
     int internalFormat = CameraUtils::getV4L2Format(internal.format);
     int internalStride = CameraUtils::getStride(internalFormat, internal.width);
     int externalStride = CameraUtils::getStride(external.format, external.width);
 
     LOG1("%s: %s, id:%d, internal: %s(%dx%d: %d)(id %d), external: %s(%dx%d: %d) (id %d) usage:%d",
-          __func__, mName.c_str(), mStreamId,
-          CameraUtils::format2string(internalFormat).c_str(),
-          internal.width, internal.height, internalStride, internal.id,
-          CameraUtils::format2string(external.format).c_str(),
-          external.width, external.height, externalStride, external.id, external.usage);
+         __func__, mName.c_str(), mStreamId, CameraUtils::format2string(internalFormat).c_str(),
+         internal.width, internal.height, internalStride, internal.id,
+         CameraUtils::format2string(external.format).c_str(), external.width, external.height,
+         externalStride, external.id, external.usage);
 
     if (checkStreamId && internal.id >= 0) {
         return internal.id == external.id;
@@ -505,13 +497,13 @@ bool PipeLiteExecutor::isSameStreamConfig(const stream_t& internal, const stream
      * WA: PG accept GRBG format but actual input data is of RGGB format,
      *     PG use its kernel to crop to GRBG
      */
-    if ((internalFormat == V4L2_PIX_FMT_SGRBG10 || internalFormat == V4L2_PIX_FMT_SGRBG12)
-         && (external.format == V4L2_PIX_FMT_SRGGB10 || external.format == V4L2_PIX_FMT_SRGGB12)) {
-         return true;
+    if ((internalFormat == V4L2_PIX_FMT_SGRBG10 || internalFormat == V4L2_PIX_FMT_SGRBG12) &&
+        (external.format == V4L2_PIX_FMT_SRGGB10 || external.format == V4L2_PIX_FMT_SRGGB12)) {
+        return true;
     }
 
-    bool sameHeight = internal.height == external.height ||
-                      internal.height == ALIGN_32(external.height);
+    bool sameHeight =
+        internal.height == external.height || internal.height == ALIGN_32(external.height);
     if (internalFormat == external.format && sameHeight &&
         (internal.width == external.width || internalStride == externalStride)) {
         return true;
@@ -525,8 +517,7 @@ bool PipeLiteExecutor::isSameStreamConfig(const stream_t& internal, const stream
  *
  * return true if there is at least one not null buffer.
  */
-bool PipeLiteExecutor::hasValidBuffers(const CameraBufferPortMap& buffers)
-{
+bool PipeLiteExecutor::hasValidBuffers(const CameraBufferPortMap& buffers) {
     for (const auto& item : buffers) {
         if (item.second) return true;
     }
@@ -534,8 +525,7 @@ bool PipeLiteExecutor::hasValidBuffers(const CameraBufferPortMap& buffers)
     return false;
 }
 
-int PipeLiteExecutor::processNewFrame()
-{
+int PipeLiteExecutor::processNewFrame() {
     PERF_CAMERA_ATRACE();
 
     int ret = OK;
@@ -547,16 +537,16 @@ int PipeLiteExecutor::processNewFrame()
         // Already stopped
         if (!mThreadRunning) return -1;
 
-        if (ret != OK) return OK; // Wait frame buffer error should not involve thread exit.
+        if (ret != OK) return OK;  // Wait frame buffer error should not involve thread exit.
 
-        CheckAndLogError(inBuffers.empty() || outBuffers.empty(),
-                         UNKNOWN_ERROR, "Failed to get input or output buffers.");
+        CheckAndLogError(inBuffers.empty() || outBuffers.empty(), UNKNOWN_ERROR,
+                         "Failed to get input or output buffers.");
 
-        for (auto& output: mOutputQueue) {
+        for (auto& output : mOutputQueue) {
             output.second.pop();
         }
 
-        for (auto& input: mInputQueue) {
+        for (auto& input : mInputQueue) {
             input.second.pop();
         }
     }
@@ -574,7 +564,7 @@ int PipeLiteExecutor::processNewFrame()
     }
 
     // Fill real buffer to run pipe
-    for (auto &item : outBuffers) {
+    for (auto& item : outBuffers) {
         if (item.second.get() == nullptr) {
             item.second = mInternalOutputBuffers[item.first];
         }
@@ -585,47 +575,46 @@ int PipeLiteExecutor::processNewFrame()
     // Should find first not none input buffer instead of always use the first one.
     shared_ptr<CameraBuffer> inBuf = inBuffers.begin()->second;
     CheckAndLogError(!inBuf, UNKNOWN_ERROR, "@%s: no valid input buffer", __func__);
-    long inBufSequence = inBuf->getSequence();
+    int64_t inBufSequence = inBuf->getSequence();
     v4l2_buffer_t inV4l2Buf = *inBuf->getV4L2Buffer().Get();
     TuningMode tuningMode = mPSysDag->getTuningMode(inBufSequence);
 
     LOG2("%s:Id:%d run pipe start for buffer:%ld", mName.c_str(), mCameraId, inBufSequence);
 
+    // FRAME_SYNC_S
     if (PlatformData::isEnableFrameSyncCheck(mCameraId)) {
         shared_ptr<CameraBuffer> cInBuffer = inBuffers[MAIN_PORT];
         int vc = cInBuffer->getVirtualChannel();
 
-        while ((!SyncManager::getInstance()->vcSynced(vc)) && mThreadRunning)
-            usleep(1);
+        while ((!SyncManager::getInstance()->vcSynced(vc)) && mThreadRunning) usleep(1);
 
-        if (gLogLevel & CAMERA_DEBUG_LOG_VC_SYNC) {
-            int seq = cInBuffer->getSequence();
-            SyncManager::getInstance()->printVcSyncCount();
-            LOGVCSYNC("[start runPipe], CPU-timestamp:%lu, sequence:%d, vc:%d, kernel-timestamp:%.3lfms, endl",
-                      CameraUtils::systemTime(),
-                      seq,
-                      cInBuffer->getVirtualChannel(),
-                      cInBuffer->getTimestamp().tv_sec*1000.0 + cInBuffer->getTimestamp().tv_usec/1000.0);
-        }
+        int seq = cInBuffer->getSequence();
+        SyncManager::getInstance()->printVcSyncCount();
+        LOG2("<seq%d> [start runPipe], CPU-timestamp:%lu, vc:%d, kernel-timestamp:%.3l", seq,
+             CameraUtils::systemTime(), cInBuffer->getVirtualChannel(),
+             cInBuffer->getTimestamp().tv_sec * 1000.0 +
+             cInBuffer->getTimestamp().tv_usec / 1000.0);
 
         SyncManager::getInstance()->updateVcSyncCount(vc);
 
         // Run pipe with buffers
         ret = runPipe(inBuffers, outBuffers, outStatsBuffers, eventType);
-        LOGVCSYNC("[done runPipe], CPU-timestamp:%lu, sequence:%u, vc:%d, kernel-timestamp:%.3lfms, endl",
-                  CameraUtils::systemTime(),
-                  cInBuffer->getSequence(),
-                  cInBuffer->getVirtualChannel(),
-                  cInBuffer->getTimestamp().tv_sec*1000.0 + cInBuffer->getTimestamp().tv_usec/1000.0);
+        LOG2("<seq%u> [done runPipe], CPU-timestamp:%lu, vc:%d, kernel-timestamp:%.3lf",
+             cInBuffer->getSequence(), CameraUtils::systemTime(), cInBuffer->getVirtualChannel(),
+             cInBuffer->getTimestamp().tv_sec * 1000.0 +
+             cInBuffer->getTimestamp().tv_usec / 1000.0);
     } else {
+    // FRAME_SYNC_E
         // Run pipe with buffers
         ret = runPipe(inBuffers, outBuffers, outStatsBuffers, eventType);
+    // FRAME_SYNC_S
     }
+    // FRAME_SYNC_E
     CheckAndLogError((ret != OK), UNKNOWN_ERROR, "@%s: failed to run pipe", __func__);
     LOG2("%s:Id:%d run pipe end for buffer:%ld", mName.c_str(), mCameraId, inBufSequence);
 
     // Remove internal output buffers
-    for (auto &item : outBuffers) {
+    for (auto& item : outBuffers) {
         if (item.second.get() == mInternalOutputBuffers[item.first].get()) {
             item.second = nullptr;
         }
@@ -640,11 +629,6 @@ int PipeLiteExecutor::processNewFrame()
         // Notify stats first and then handle frame buffers to make sure the next executor
         // can get this executor's IQ result.
         notifyStatsDone(tuningMode, inV4l2Buf, outStatsBuffers, eventType);
-
-        // After the stats notified, we need to update the IPU parameters as well to get the
-        // latest AIQ result.
-        mPSysDag->prepareIpuParams(inBufSequence, true);
-
         notifyFrameDone(inV4l2Buf, outBuffers);
     } else {
         LOGW("Invalid notify policy:%d, should never happen.", mNotifyPolicy);
@@ -661,28 +645,26 @@ int PipeLiteExecutor::processNewFrame()
     return OK;
 }
 
-int PipeLiteExecutor::registerInBuffers(Port port, const shared_ptr<CameraBuffer> &inBuf)
-{
+int PipeLiteExecutor::registerInBuffers(Port port, const shared_ptr<CameraBuffer>& inBuf) {
     return OK;
 }
 
-int PipeLiteExecutor::registerOutBuffers(Port port, const shared_ptr<CameraBuffer> &camBuffer)
-{
+int PipeLiteExecutor::registerOutBuffers(Port port, const shared_ptr<CameraBuffer>& camBuffer) {
     return OK;
 }
 
-int PipeLiteExecutor::runPipe(map<Port, shared_ptr<CameraBuffer> > &inBuffers,
-                              map<Port, shared_ptr<CameraBuffer> > &outBuffers,
-                              vector<shared_ptr<CameraBuffer> > &outStatsBuffers,
-                              vector<EventType> &eventType)
-{
+int PipeLiteExecutor::runPipe(map<Port, shared_ptr<CameraBuffer>>& inBuffers,
+                              map<Port, shared_ptr<CameraBuffer>>& outBuffers,
+                              vector<shared_ptr<CameraBuffer>>& outStatsBuffers,
+                              vector<EventType>& eventType) {
     PERF_CAMERA_ATRACE();
 
     CheckAndLogError((inBuffers.empty() || outBuffers.empty()), BAD_VALUE,
                      "Error in pipe iteration input/output bufs");
 
     int ret = OK;
-    if (mPolicyManager) {
+    int64_t sequence = inBuffers.begin()->second ? inBuffers.begin()->second->getSequence() : -1;
+    if (mPolicyManager && sequence > 0) {
         // Check if need to wait other executors.
         ret = mPolicyManager->wait(mName);
     }
@@ -694,20 +676,19 @@ int PipeLiteExecutor::runPipe(map<Port, shared_ptr<CameraBuffer> > &inBuffers,
                                    mPGExecutors.back().outputBuffers);
 
     // Get ISP parameters
-    const ia_binary_data *ipuParameters = nullptr;
-    long sequence = inBuffers.begin()->second ? inBuffers.begin()->second->getSequence() : -1;
+    const ia_binary_data* ipuParameters = nullptr;
     TRACE_LOG_PROCESS(mName.c_str(), "runPipe", MAKE_COLOR(sequence), sequence);
     if (mAdaptor) {
         ipuParameters = mAdaptor->getIpuParameter(sequence, mStreamId);
         if (!ipuParameters) {
-            LOG1("%s: executor %s doesn't run for sequence %ld due to no pal",
-                 __func__, mName.c_str(), sequence);
+            LOG2("%s: <seq%ld> executor %s doesn't run due to no pal", __func__, sequence,
+                 mName.c_str());
             return OK;
         }
     }
 
-    LOG2("%s: Executor %s run with input: %zu, output: %zu, sequence: %ld",
-         __func__, mName.c_str(), inBuffers.size(), outBuffers.size(), sequence);
+    LOG2("%s: <seq%ld> Executor %s run with input: %zu, output: %zu, ", __func__, sequence,
+         mName.c_str(), inBuffers.size(), outBuffers.size());
 
     outStatsBuffers.clear();
     eventType.clear();
@@ -728,7 +709,7 @@ int PipeLiteExecutor::runPipe(map<Port, shared_ptr<CameraBuffer> > &inBuffers,
             eventType.push_back(EVENT_PSYS_STATS_BUF_READY);
             ia_binary_data* buffer = (ia_binary_data*)mStatsBuffers.front()->getBufferAddr();
             CheckAndLogError(buffer == nullptr, BAD_VALUE, "buffer is null pointer.");
-            buffer->size = 0; // Clear it, then the stats memory is from p2p
+            buffer->size = 0;  // Clear it, then the stats memory is from p2p
             buffer->data = nullptr;
             pgStatsDatas.push_back(buffer);
             mStatsBuffers.pop();
@@ -749,14 +730,13 @@ int PipeLiteExecutor::runPipe(map<Port, shared_ptr<CameraBuffer> > &inBuffers,
         // Run PGs
         // Update sequence only for the 1st input buffer currently
         unit.inputBuffers.begin()->second->setSequence(sequence);
-        ret = unit.pg->iterate(unit.inputBuffers,
-                               unit.outputBuffers,
-                               (statsCount > 0) ? pgStatsDatas[0] : nullptr, // Currently PG handles one stats buffer only
-                               ipuParameters);
-        CheckAndLogError((ret != OK), ret, "%s: error in pipe iteration with %d", mName.c_str(), ret);
+        // Currently PG handles one stats buffer only
+        ret = unit.pg->iterate(unit.inputBuffers, unit.outputBuffers,
+                               (statsCount > 0) ? pgStatsDatas[0] : nullptr, ipuParameters);
+        CheckAndLogError((ret != OK), ret, "%s: pipe iteration error %d", mName.c_str(), ret);
 
         if (CameraDump::isDumpTypeEnable(DUMP_PSYS_INTERM_BUFFER)) {
-            for (auto &item : unit.outputBuffers) {
+            for (auto& item : unit.outputBuffers) {
                 char desc[MAX_NAME_LEN] = {'\0'};
                 snprintf(desc, (MAX_NAME_LEN - 1), "-%s-%d-%ld", unit.pg->getName(),
                          item.first - unit.stageId - 1, sequence);
@@ -765,7 +745,8 @@ int PipeLiteExecutor::runPipe(map<Port, shared_ptr<CameraBuffer> > &inBuffers,
         }
         statTotalNum += statsCount;
         if (sisCount > 0) {
-            handleSisStats(unit.outputBuffers, outStatsBuffers[statTotalNum]); // Currently handle one sis output only
+            // Currently handle one sis output only
+            handleSisStats(unit.outputBuffers, outStatsBuffers[statTotalNum]);
         }
         statTotalNum += sisCount;
     }
@@ -773,8 +754,8 @@ int PipeLiteExecutor::runPipe(map<Port, shared_ptr<CameraBuffer> > &inBuffers,
     return OK;
 }
 
-int PipeLiteExecutor::handleSisStats(map<ia_uid, shared_ptr<CameraBuffer>>& frameBuffers, const shared_ptr<CameraBuffer> &outStatsBuffers)
-{
+int PipeLiteExecutor::handleSisStats(map<ia_uid, shared_ptr<CameraBuffer>>& frameBuffers,
+                                     const shared_ptr<CameraBuffer>& outStatsBuffers) {
     LOG2("%s:", __func__);
     ia_binary_data* statBuf = (ia_binary_data*)outStatsBuffers->getBufferAddr();
     CheckAndLogError((statBuf == nullptr), BAD_VALUE, "Error getting buffer for sis a stats");
@@ -786,7 +767,8 @@ int PipeLiteExecutor::handleSisStats(map<ia_uid, shared_ptr<CameraBuffer>>& fram
         if (uid == psys_ipu6_isa_lb_output_sis_a_uid) {
             statBuf->data = iterm.second->getBufferAddr();
             statBuf->size = iterm.second->getBufferSize();
-            outStatsBuffers->setUserBufferInfo(-1, iterm.second->getWidth(), iterm.second->getHeight());
+            outStatsBuffers->setUserBufferInfo(-1, iterm.second->getWidth(),
+                                               iterm.second->getHeight());
             return OK;
         }
     }
@@ -794,8 +776,8 @@ int PipeLiteExecutor::handleSisStats(map<ia_uid, shared_ptr<CameraBuffer>>& fram
     return UNKNOWN_ERROR;
 }
 
-int PipeLiteExecutor::notifyFrameDone(const v4l2_buffer_t& inV4l2Buf, const CameraBufferPortMap& outBuf)
-{
+int PipeLiteExecutor::notifyFrameDone(const v4l2_buffer_t& inV4l2Buf,
+                                      const CameraBufferPortMap& outBuf) {
     PERF_CAMERA_ATRACE();
     for (auto const& portBufferPair : outBuf) {
         shared_ptr<CameraBuffer> outBuf = portBufferPair.second;
@@ -811,7 +793,7 @@ int PipeLiteExecutor::notifyFrameDone(const v4l2_buffer_t& inV4l2Buf, const Came
         if (mIsOutputEdge) {
             mPSysDag->onFrameDone(port, outBuf);
         } else {
-            for (auto &it : mBufferConsumerList) {
+            for (auto& it : mBufferConsumerList) {
                 it->onFrameAvailable(port, outBuf);
             }
         }
@@ -820,15 +802,19 @@ int PipeLiteExecutor::notifyFrameDone(const v4l2_buffer_t& inV4l2Buf, const Came
     return OK;
 }
 
-int PipeLiteExecutor::notifyStatsDone(TuningMode tuningMode,
-                                      const v4l2_buffer_t& inV4l2Buf,
-                                      const vector<shared_ptr<CameraBuffer>> &outStatsBuffers,
-                                      const vector<EventType> &eventType)
-{
+int PipeLiteExecutor::notifyStatsDone(TuningMode tuningMode, const v4l2_buffer_t& inV4l2Buf,
+                                      const vector<shared_ptr<CameraBuffer>>& outStatsBuffers,
+                                      const vector<EventType>& eventType) {
     PERF_CAMERA_ATRACE();
 
-    // The executor does not produce stats, so no need to notify.
-    if (outStatsBuffers.empty()) return OK;
+    if (outStatsBuffers.empty()) {
+        // notify event even though no stats is output
+        if (mkernelsCountWithStats > 0) {
+            LOG2("%s, notify stats done Stats %d", __func__, mkernelsCountWithStats);
+            mPSysDag->onStatsDone(inV4l2Buf.sequence);
+        }
+        return OK;
+    }
 
     /**
      * Notice for EVENT_PSYS_STATS_BUF_READY:
@@ -850,19 +836,21 @@ int PipeLiteExecutor::notifyStatsDone(TuningMode tuningMode,
         if (!statsBuf) continue;
 
         if (mStreamId != VIDEO_STREAM_ID) {
-            LOG2("%s: No statistics data for still pipe in buffer", __func__);
-            releaseStatsBuffer(statsBuf);
-            continue;
+            if (!PlatformData::isStillOnlyPipeEnabled(mCameraId)) {
+                LOG2("%s: Drop still pipe statistics data", __func__);
+                releaseStatsBuffer(statsBuf);
+                continue;
+            }
         } else if (inV4l2Buf.sequence <= mLastStatsSequence) {
             // Ignore old statistics for Raw reprocessing
-            LOG2("%s: new sequence %d is less than last sequence %ld", __func__,
-                 inV4l2Buf.sequence, mLastStatsSequence);
+            LOG2("%s: <seq%d> is less than last sequence %ld", __func__, inV4l2Buf.sequence,
+                 mLastStatsSequence);
             releaseStatsBuffer(statsBuf);
             continue;
         }
 
-        ia_binary_data *hwStatsData = (ia_binary_data *)(statsBuf->getBufferAddr());
-        if (hwStatsData->data == nullptr || hwStatsData->size == 0) {
+        ia_binary_data* hwStatsData = (ia_binary_data*)(statsBuf->getBufferAddr());
+        if (hwStatsData == nullptr || hwStatsData->data == nullptr || hwStatsData->size == 0) {
             LOGW("%s: No statistics data in buffer", __func__);
             releaseStatsBuffer(statsBuf);
             continue;
@@ -878,8 +866,7 @@ int PipeLiteExecutor::notifyStatsDone(TuningMode tuningMode,
 
         // Notify listeners after all buffers done for type STATS_BUF_READY
         // Notify immediately for other types
-        if (eventType[statsIndex] != EVENT_PSYS_STATS_BUF_READY
-            || !psysStatBufferCount) {
+        if (eventType[statsIndex] != EVENT_PSYS_STATS_BUF_READY || !psysStatBufferCount) {
             EventDataStatsReady statsReadyData;
             statsReadyData.sequence = statsBuf->getSequence();
             statsReadyData.timestamp.tv_sec = statsBuf->getTimestamp().tv_sec;
@@ -899,12 +886,13 @@ int PipeLiteExecutor::notifyStatsDone(TuningMode tuningMode,
     if (mStreamId == VIDEO_STREAM_ID && inV4l2Buf.sequence > mLastStatsSequence) {
         mLastStatsSequence = inV4l2Buf.sequence;
     }
+    LOG2("%s, notify stats done", __func__);
+    mPSysDag->onStatsDone(inV4l2Buf.sequence);
 
     return OK;
 }
 
-int PipeLiteExecutor::allocBuffers()
-{
+int PipeLiteExecutor::allocBuffers() {
     LOG1("%s executor:%s", __func__, mName.c_str());
 
     releaseBuffers();
@@ -916,8 +904,8 @@ int PipeLiteExecutor::allocBuffers()
             continue;
         }
 
-        if (termDesc.assignedPort != INVALID_PORT
-            && !(findPGExecutor(termDesc.sinkStage) && findPGExecutor(termDesc.sourceStage))) {
+        if (termDesc.assignedPort != INVALID_PORT &&
+            !(findPGExecutor(termDesc.sinkStage) && findPGExecutor(termDesc.sourceStage))) {
             // Don't allocate buffer here for external connection (has valid port)
             continue;
         }
@@ -937,21 +925,22 @@ int PipeLiteExecutor::allocBuffers()
                        ? PGCommon::getFrameSize(srcFmt, srcWidth, srcHeight, false, true, true)
                        : PGCommon::getFrameSize(srcFmt, srcWidth, srcHeight, true);
 
-        shared_ptr<CameraBuffer> buf = CameraBuffer::create(mCameraId,
-                     BUFFER_USAGE_PSYS_INPUT, V4L2_MEMORY_USERPTR, size, 0, srcFmt, srcWidth, srcHeight);
+        shared_ptr<CameraBuffer> buf =
+            CameraBuffer::create(mCameraId, BUFFER_USAGE_PSYS_INPUT, V4L2_MEMORY_USERPTR, size, 0,
+                                 srcFmt, srcWidth, srcHeight);
         CheckAndLogError(!buf, NO_MEMORY, "@%s: Allocate producer buffer failed", __func__);
         mPGBuffers[termDesc.sinkTerminal] = buf;
         mPGBuffers[termDesc.sourceTerminal] = buf;
     }
 
-    for (auto &unit : mPGExecutors) {
+    for (auto& unit : mPGExecutors) {
         // Assign internal buffers for terminals of PGs according to connection
-        for (auto &terminal : unit.inputTerminals) {
+        for (auto& terminal : unit.inputTerminals) {
             if (mPGBuffers.find(terminal) != mPGBuffers.end()) {
                 unit.inputBuffers[terminal] = mPGBuffers[terminal];
             }
         }
-        for (auto &terminal : unit.outputTerminals) {
+        for (auto& terminal : unit.outputTerminals) {
             if (mPGBuffers.find(terminal) != mPGBuffers.end()) {
                 unit.outputBuffers[terminal] = mPGBuffers[terminal];
             }
@@ -963,9 +952,10 @@ int PipeLiteExecutor::allocBuffers()
             continue;
         }
         for (unsigned int i = 0; i < MAX_BUFFER_COUNT * statsBufferCount; i++) {
-            shared_ptr<CameraBuffer> statsBuf = CameraBuffer::create(mCameraId,
-                         BUFFER_USAGE_PSYS_STATS, V4L2_MEMORY_USERPTR, sizeof(ia_binary_data), i);
-            CheckAndLogError(!statsBuf, NO_MEMORY, "Executor %s: Allocate stats buffer failed", mName.c_str());
+            shared_ptr<CameraBuffer> statsBuf = CameraBuffer::create(
+                mCameraId, BUFFER_USAGE_PSYS_STATS, V4L2_MEMORY_USERPTR, sizeof(ia_binary_data), i);
+            CheckAndLogError(!statsBuf, NO_MEMORY, "Executor %s: Allocate stats buffer failed",
+                             mName.c_str());
             ia_binary_data* buffer = (ia_binary_data*)statsBuf->getBufferAddr();
             CheckAndLogError(buffer == nullptr, BAD_VALUE, "buffer is null pointer.");
             buffer->size = 0;
@@ -990,13 +980,14 @@ int PipeLiteExecutor::allocBuffers()
                                  PGUtils::isCompressionTerminal(terminal);
 
             int size = isCompression
-                         ? PGCommon::getFrameSize(srcFmt, srcWidth, srcHeight, false, true, true)
-                         : PGCommon::getFrameSize(srcFmt, srcWidth, srcHeight, true);
+                           ? PGCommon::getFrameSize(srcFmt, srcWidth, srcHeight, false, true, true)
+                           : PGCommon::getFrameSize(srcFmt, srcWidth, srcHeight, true);
 
             for (int i = 0; i < MAX_BUFFER_COUNT; i++) {
                 // Prepare internal frame buffer for its producer.
-                shared_ptr<CameraBuffer> buf = CameraBuffer::create(mCameraId,
-                             BUFFER_USAGE_PSYS_INPUT, V4L2_MEMORY_USERPTR, size, i, srcFmt, srcWidth, srcHeight);
+                shared_ptr<CameraBuffer> buf =
+                    CameraBuffer::create(mCameraId, BUFFER_USAGE_PSYS_INPUT, V4L2_MEMORY_USERPTR,
+                                         size, i, srcFmt, srcWidth, srcHeight);
                 CheckAndLogError(!buf, NO_MEMORY, "@%s: Allocate producer buffer failed", __func__);
                 mInternalBuffers[inputPort].push_back(buf);
 
@@ -1006,22 +997,21 @@ int PipeLiteExecutor::allocBuffers()
     }
 
     // Allocate internal output buffers to support pipe execution without user output buffer
-    for (auto const &item : mOutputFrameInfo) {
+    for (auto const& item : mOutputFrameInfo) {
         int fmt = item.second.format;
         int width = item.second.width;
         int height = item.second.height;
         int size = CameraUtils::getFrameSize(fmt, width, height, true);
-        shared_ptr<CameraBuffer> buf = CameraBuffer::create(mCameraId,
-                     BUFFER_USAGE_PSYS_INPUT, V4L2_MEMORY_USERPTR, size, 0, fmt, width, height);
+        shared_ptr<CameraBuffer> buf = CameraBuffer::create(
+            mCameraId, BUFFER_USAGE_PSYS_INPUT, V4L2_MEMORY_USERPTR, size, 0, fmt, width, height);
         CheckAndLogError(!buf, NO_MEMORY, "@%s: Allocate internal output buffer failed", __func__);
-        mInternalOutputBuffers[item.first]= buf;
+        mInternalOutputBuffers[item.first] = buf;
     }
 
     return OK;
 }
 
-void PipeLiteExecutor::releaseBuffers()
-{
+void PipeLiteExecutor::releaseBuffers() {
     LOG1("%s executor:%s", __func__, mName.c_str());
 
     // Release internel frame buffers
@@ -1036,8 +1026,7 @@ void PipeLiteExecutor::releaseBuffers()
     }
 }
 
-PipeLiteExecutor::ExecutorUnit* PipeLiteExecutor::findPGExecutor(ia_uid stageId)
-{
+PipeLiteExecutor::ExecutorUnit* PipeLiteExecutor::findPGExecutor(ia_uid stageId) {
     for (unsigned int i = 0; i < mPGExecutors.size(); i++) {
         if (mPGExecutors[i].stageId == stageId) {
             return &mPGExecutors[i];
@@ -1047,8 +1036,7 @@ PipeLiteExecutor::ExecutorUnit* PipeLiteExecutor::findPGExecutor(ia_uid stageId)
 }
 
 void PipeLiteExecutor::getTerminalPorts(const vector<ia_uid>& terminals,
-                                        map<ia_uid, Port>& terminalPortMap) const
-{
+                                        map<ia_uid, Port>& terminalPortMap) const {
     terminalPortMap.clear();
     for (auto terminal : terminals) {
         const TerminalDescriptor& termDesc = mTerminalsDesc.at(terminal);
@@ -1059,8 +1047,7 @@ void PipeLiteExecutor::getTerminalPorts(const vector<ia_uid>& terminals,
 }
 
 void PipeLiteExecutor::getTerminalFrameInfos(const vector<ia_uid>& terminals,
-                                             map<ia_uid, FrameInfo>& infoMap) const
-{
+                                             map<ia_uid, FrameInfo>& infoMap) const {
     infoMap.clear();
     for (auto terminal : terminals) {
         const TerminalDescriptor& termDesc = mTerminalsDesc.at(terminal);
@@ -1070,8 +1057,7 @@ void PipeLiteExecutor::getTerminalFrameInfos(const vector<ia_uid>& terminals,
     }
 }
 
-void PipeLiteExecutor::getDisabledTerminalsForPG(ia_uid stageId, vector<ia_uid>& terminals) const
-{
+void PipeLiteExecutor::getDisabledTerminalsForPG(ia_uid stageId, vector<ia_uid>& terminals) const {
     terminals.clear();
     for (auto const item : mTerminalsDesc) {
         const TerminalDescriptor& termDesc = item.second;
@@ -1082,11 +1068,9 @@ void PipeLiteExecutor::getDisabledTerminalsForPG(ia_uid stageId, vector<ia_uid>&
 }
 
 void PipeLiteExecutor::getTerminalBuffersFromExternal(
-        const vector<ia_uid>& terminals,
-        const map<Port, shared_ptr<CameraBuffer> >& externals,
-        map<ia_uid, shared_ptr<CameraBuffer> >& internals) const
-{
-    for (auto &terminal : terminals) {
+    const vector<ia_uid>& terminals, const map<Port, shared_ptr<CameraBuffer>>& externals,
+    map<ia_uid, shared_ptr<CameraBuffer>>& internals) const {
+    for (auto& terminal : terminals) {
         Port port = mTerminalsDesc.at(terminal).assignedPort;
         if (externals.find(port) != externals.end()) {
             internals[terminal] = externals.at(port);
@@ -1094,68 +1078,62 @@ void PipeLiteExecutor::getTerminalBuffersFromExternal(
     }
 }
 
-void PipeLiteExecutor::dumpPGs() const
-{
-    if (!Log::isDebugLevelEnable(CAMERA_DEBUG_LOG_LEVEL2)) return;
+void PipeLiteExecutor::dumpPGs() const {
+    if (!Log::isLogTagEnabled(GET_FILE_SHIFT(PipeLiteExecutor))) return;
 
-    LOG2("============= dump PGs for executor %s =================", getName());
+    LOG3("============= dump PGs for executor %s =================", getName());
     if (mIsInputEdge) {
-        LOG2("This is input edge");
+        LOG3("This is input edge");
     }
     if (mIsOutputEdge) {
-        LOG2("This is output edge");
+        LOG3("This is output edge");
     }
-    for (auto const &unit : mPGExecutors) {
+    for (auto const& unit : mPGExecutors) {
         ia_uid stageId = unit.stageId;
-        LOG2("    PG: %d: %s, stageId %d",
-             unit.pgId, unit.pg ? unit.pg->getName() : "GPU-TNR", stageId);
+        LOG3("    PG: %d: %s, stageId %d", unit.pgId, unit.pg ? unit.pg->getName() : "GPU-TNR",
+             stageId);
 
-        LOG2("        InTerms: %zu", unit.inputTerminals.size());
-        for (auto const &term : unit.inputTerminals) {
-            shared_ptr<CameraBuffer> buffer= nullptr;
+        LOG3("        InTerms: %zu", unit.inputTerminals.size());
+        for (auto const& term : unit.inputTerminals) {
+            shared_ptr<CameraBuffer> buffer = nullptr;
             if (mPGBuffers.find(term) != mPGBuffers.end()) {
                 buffer = mPGBuffers.at(term);
             }
 
             const TerminalDescriptor& termDesc = mTerminalsDesc.at(term);
             if (termDesc.enabled) {
-                LOG2("            %d: %dx%d, 0x%x, port %d, buf %p",
-                     termDesc.terminal - termDesc.stageId - 1,
-                     termDesc.frameDesc.mWidth, termDesc.frameDesc.mHeight,
-                     termDesc.frameDesc.mFormat,
-                     termDesc.assignedPort, buffer.get());
+                LOG3("            %d: %dx%d, 0x%x, port %d, buf %p",
+                     termDesc.terminal - termDesc.stageId - 1, termDesc.frameDesc.mWidth,
+                     termDesc.frameDesc.mHeight, termDesc.frameDesc.mFormat, termDesc.assignedPort,
+                     buffer.get());
             } else {
-                LOG2("            %d: %dx%d, 0x%x, disabled",
-                     termDesc.terminal - termDesc.stageId - 1,
-                     termDesc.frameDesc.mWidth, termDesc.frameDesc.mHeight,
-                     termDesc.frameDesc.mFormat);
+                LOG3("            %d: %dx%d, 0x%x, disabled",
+                     termDesc.terminal - termDesc.stageId - 1, termDesc.frameDesc.mWidth,
+                     termDesc.frameDesc.mHeight, termDesc.frameDesc.mFormat);
             }
         }
 
-        LOG2("        OutTerms: %zu", unit.outputTerminals.size());
-        for (auto const &term : unit.outputTerminals) {
-            shared_ptr<CameraBuffer> buffer= nullptr;
+        LOG3("        OutTerms: %zu", unit.outputTerminals.size());
+        for (auto const& term : unit.outputTerminals) {
+            shared_ptr<CameraBuffer> buffer = nullptr;
             if (mPGBuffers.find(term) != mPGBuffers.end()) {
                 buffer = mPGBuffers.at(term);
             }
 
             const TerminalDescriptor& termDesc = mTerminalsDesc.at(term);
             if (termDesc.enabled) {
-                LOG2("            %d: %dx%d, 0x%x, port %d, buf %p",
-                     termDesc.terminal - termDesc.stageId - 1,
-                     termDesc.frameDesc.mWidth, termDesc.frameDesc.mHeight,
-                     termDesc.frameDesc.mFormat,
-                     termDesc.assignedPort, buffer.get());
+                LOG3("            %d: %dx%d, 0x%x, port %d, buf %p",
+                     termDesc.terminal - termDesc.stageId - 1, termDesc.frameDesc.mWidth,
+                     termDesc.frameDesc.mHeight, termDesc.frameDesc.mFormat, termDesc.assignedPort,
+                     buffer.get());
             } else {
-                LOG2("            %d: %dx%d, 0x%x, disabled",
-                     termDesc.terminal - termDesc.stageId - 1,
-                     termDesc.frameDesc.mWidth, termDesc.frameDesc.mHeight,
-                     termDesc.frameDesc.mFormat);
+                LOG3("            %d: %dx%d, 0x%x, disabled",
+                     termDesc.terminal - termDesc.stageId - 1, termDesc.frameDesc.mWidth,
+                     termDesc.frameDesc.mHeight, termDesc.frameDesc.mFormat);
             }
         }
     }
-    LOG2("============= dump done for %s =================", getName());
+    LOG3("============= dump done for %s =================", getName());
 }
 
-}
-
+}  // namespace icamera

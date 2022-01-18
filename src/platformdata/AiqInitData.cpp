@@ -16,18 +16,18 @@
 
 #define LOG_TAG AiqInitData
 
-#include <unordered_map>
-#include <dirent.h>
-
 #include "AiqInitData.h"
 
+#include <dirent.h>
 #include <sys/stat.h>
+
+#include <unordered_map>
 
 #include "AiqUtils.h"
 #include "PlatformData.h"
 #include "ia_types.h"
-#include "iutils/CameraLog.h"
 #include "iutils/CameraDump.h"
+#include "iutils/CameraLog.h"
 
 using std::string;
 
@@ -81,8 +81,8 @@ void AiqData::loadFile(const std::string& fileName, ia_binary_data* data, int ma
 
     // Open file
     FILE* fp = fopen(fileName.c_str(), "rb");
-    CheckWarning(fp == nullptr, VOID_VALUE, "Failed to open file %s, error %s",
-                 fileName.c_str(), strerror(errno));
+    CheckWarning(fp == nullptr, VOID_VALUE, "Failed to open file %s, error %s", fileName.c_str(),
+                 strerror(errno));
 
     std::unique_ptr<char[]> dataPtr(new char[usedFileSize]);
 
@@ -105,8 +105,8 @@ void AiqData::saveDataToFile(const std::string& fileName, const ia_binary_data* 
 
     // Open file
     FILE* fp = fopen(fileName.c_str(), "wb");
-    CheckWarning(fp == nullptr, VOID_VALUE, "Failed to open file %s, error %s",
-                 fileName.c_str(), strerror(errno));
+    CheckWarning(fp == nullptr, VOID_VALUE, "Failed to open file %s, error %s", fileName.c_str(),
+                 strerror(errno));
 
     // Write data to file
     size_t writeSize = fwrite(data->data, 1, data->size, fp);
@@ -136,8 +136,7 @@ AiqInitData::AiqInitData(const std::string& sensorName, const std::string& camCf
         mNvmPath.append(NVM_DATA_PATH);
 
         mNvmPath.append(nvmDir);
-        if (mNvmPath.back() != '/')
-            mNvmPath.append("/");
+        if (mNvmPath.back() != '/') mNvmPath.append("/");
 
         mNvmPath.append("eeprom");
         LOG2("NVM data is located in %s", mNvmPath.c_str());
@@ -171,15 +170,14 @@ AiqInitData::AiqInitData(const std::string& sensorName, const std::string& camCf
         if (!aiqbNameFromModuleInfo.empty()) {
             aiqbName.assign(aiqbNameFromModuleInfo);
         }
-        LOG1("aiqb file name %s", aiqbName.c_str());
+        LOGI("aiqb file name %s", aiqbName.c_str());
 
         if (findConfigFile(camCfgDir, &aiqbName) != OK) {
             LOGE("there is no aiqb file:%s", cfg.aiqbName.c_str());
             return;
         }
 
-        if (mCpf.find(cfg.tuningMode) == mCpf.end())
-            mCpf[cfg.tuningMode] = new AiqData(aiqbName);
+        if (mCpf.find(cfg.tuningMode) == mCpf.end()) mCpf[cfg.tuningMode] = new AiqData(aiqbName);
     }
 
     mMkn = std::unique_ptr<MakerNote>(new MakerNote);
@@ -199,8 +197,7 @@ AiqInitData::~AiqInitData() {
     delete mNvm;
 }
 
-int AiqInitData::getCameraModuleFromEEPROM(const std::string& nvmPath, std::string* cameraModule)
-{
+int AiqInitData::getCameraModuleFromEEPROM(const std::string& nvmPath, std::string* cameraModule) {
     LOG1("@%s, nvmPath %s", __func__, nvmPath.c_str());
 
     CheckAndLogError(nvmPath.empty(), NAME_NOT_FOUND, "nvmPath is empty");
@@ -248,8 +245,8 @@ int AiqInitData::getCameraModuleFromEEPROM(const std::string& nvmPath, std::stri
  * Search the path where CPF files are stored
  */
 int AiqInitData::findConfigFile(const std::string& camCfgDir, std::string* cpfPathName) {
-    LOG1("@%s, cpfPathName:%p", __func__, cpfPathName);
     CheckAndLogError(!cpfPathName, BAD_VALUE, "@%s, cpfPathName is nullptr", __func__);
+    LOG1("@%s, cpfPathName:%s", __func__, cpfPathName->c_str());
 
     std::vector<string> configFilePath;
     configFilePath.push_back("./");
@@ -293,13 +290,19 @@ int AiqInitData::getCpf(TuningMode mode, ia_binary_data* cpfData) {
     return OK;
 }
 
-ia_binary_data* AiqInitData::getNvm(int cameraId) {
-    if (mNvmPath.length() == 0) return nullptr;
+ia_binary_data* AiqInitData::getNvm(int cameraId, const char* overwrittenFile, int fileSize) {
+    const char* nvmFile = mNvmPath.c_str();
+    int size = mMaxNvmSize;
+    if (overwrittenFile && fileSize) {
+        nvmFile = overwrittenFile;
+        size = fileSize;
+    }
+    if (!nvmFile || !size) return nullptr;
 
     if (!mNvm) {
-        LOG2("NVM data for %s is located in %s", mSensorName.c_str(), mNvmPath.c_str());
+        LOG2("NVM data for %s is located in %s, size %d", mSensorName.c_str(), nvmFile, size);
 
-        mNvm = new AiqData(mNvmPath, mMaxNvmSize);
+        mNvm = new AiqData(nvmFile, size);
 
         if (CameraDump::isDumpTypeEnable(DUMP_NVM_DATA)) {
             ia_binary_data* nvmData = mNvm->getData();

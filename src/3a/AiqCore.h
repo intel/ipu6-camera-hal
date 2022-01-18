@@ -20,16 +20,15 @@
 #include <unordered_map>
 
 #include "ia_aiq.h"
-#include "ia_ltm.h"
 #include "ia_cmc_types.h"
+#include "ia_ltm.h"
 #ifndef ENABLE_SANDBOXING
 #include "ia_log.h"
 #endif
 
-#include "AiqSetting.h"
 #include "AiqResult.h"
+#include "AiqSetting.h"
 #include "AiqStatistics.h"
-
 #include "Intel3AParameter.h"
 
 #ifdef ENABLE_SANDBOXING
@@ -46,9 +45,8 @@ namespace icamera {
  * Af, Awb, Gbce, Pa, Sa.
  */
 class AiqCore {
-
-public:
-    AiqCore(int cameraId);
+ public:
+    explicit AiqCore(int cameraId);
     ~AiqCore();
 
     /**
@@ -76,21 +74,20 @@ public:
      * \param frameParams: the frame info parameter
      * \param descriptor: the sensor info parameter
      */
-    int setSensorInfo(const ia_aiq_frame_params &frameParams,
-                      const ia_aiq_exposure_sensor_descriptor &descriptor);
+    int setSensorInfo(const ia_aiq_frame_params& frameParams,
+                      const ia_aiq_exposure_sensor_descriptor& descriptor);
 
     /**
      * \brief update param and set converge speed
      *
      * \param param: the parameter update to AiqCore
      */
-    int updateParameter(const aiq_parameter_t &param);
+    int updateParameter(const aiq_parameter_t& param);
 
     /**
      * \brief Set ispStatistics to AiqCore
      */
-    int setStatsParams(const cca::cca_stats_params &statsParams, cca::cca_out_stats *outStats,
-                       AiqStatistics* aiqStats);
+    int setStatsParams(const cca::cca_stats_params& statsParams, AiqStatistics* aiqStats);
 
     /**
      * \brief run AE
@@ -104,10 +101,7 @@ public:
      *
      * \return OK if succeed, other value indicates failed
      */
-    int runAiq(long requestId, AiqResult *aiqResult);
-
-private:
-    DISALLOW_COPY_AND_ASSIGN(AiqCore);
+    int runAiq(long requestId, AiqResult* aiqResult);
 
     // LSC data
     typedef struct ColorOrder {
@@ -121,50 +115,50 @@ private:
      public: /* this was a struct: class just to satisfy a static code scanner */
         uint16_t width;
         uint16_t height;
-        uint16_t *gridR;
-        uint16_t *gridGr;
-        uint16_t *gridGb;
-        uint16_t *gridB;
+        uint16_t* gridR;
+        uint16_t* gridGr;
+        uint16_t* gridGb;
+        uint16_t* gridB;
 
         bool isBad() const {
-            return (gridB == NULL || gridGb == NULL || gridR == NULL ||
-                    gridGr == NULL || width == 0 || height == 0);
+            return (gridB == NULL || gridGb == NULL || gridR == NULL || gridGr == NULL ||
+                    width == 0 || height == 0);
         }
-        LSCGrid(): width(0), height(0), gridR(NULL), gridGr(NULL),
-            gridGb(NULL), gridB(NULL) {}
+        LSCGrid() : width(0), height(0), gridR(NULL), gridGr(NULL), gridGb(NULL), gridB(NULL) {}
     };
 
     int runAEC(long requestId, cca::cca_ae_results* aeResults);
-    void focusDistanceResult(const cca::cca_af_results *afResults,
-                             float *afDistanceDiopters,
-                             camera_range_t *focusRange);
-    int processSAResults(cca::cca_sa_results *saResults, float *lensShadingMap);
-    int checkColorOrder(cmc_bayer_order bayerOrder, ColorOrder *colorOrder);
-    int storeLensShadingMap(const LSCGrid &inputLscGrid,
-                            const LSCGrid &resizeLscGrid, float *dstLscGridRGGB);
-    int reFormatLensShadingMap(const LSCGrid &inputLscGrid, float *dstLscGridRGGB);
+    void focusDistanceResult(const cca::cca_af_results* afResults, float* afDistanceDiopters,
+                             camera_range_t* focusRange);
+    int processSAResults(cca::cca_sa_results* saResults, float* lensShadingMap);
+    int checkColorOrder(cmc_bayer_order bayerOrder, ColorOrder* colorOrder);
+    int storeLensShadingMap(const LSCGrid& inputLscGrid, const LSCGrid& resizeLscGrid,
+                            float* dstLscGridRGGB);
+    int reFormatLensShadingMap(const LSCGrid& inputLscGrid, float* dstLscGridRGGB);
 
-    int calculateHyperfocalDistance(TuningMode mode);
-    int calculateDepthOfField(const cca::cca_af_results &afResults, camera_range_t *focusRange);
+    int calculateDepthOfField(const cca::cca_af_results& afResults, camera_range_t* focusRange);
     int initAiqPlusParams();
 
     struct RunRateInfo {
-        int runCcaTime;     // cca (like runAEC, runAIQ) running time after converged
-        int runAlgoTime;    // algo (like AE, AF ...) running time after converged
+        int runCcaTime;   // cca (like runAEC, runAIQ) running time after converged
+        int runAlgoTime;  // algo (like AE, AF ...) running time after converged
         RunRateInfo() { reset(); }
-        void reset() { runCcaTime = 0; runAlgoTime = 0; }
+        void reset() {
+            runCcaTime = 0;
+            runAlgoTime = 0;
+        }
     };
-    bool bypassAe(const aiq_parameter_t &param);
-    bool bypassAf(const aiq_parameter_t &param);
-    bool bypassAwb(const aiq_parameter_t &param);
+    bool bypassAe(const aiq_parameter_t& param);
+    bool bypassAf(const aiq_parameter_t& param);
+    bool bypassAwb(const aiq_parameter_t& param);
     // return ture if skip algo running
-    bool skipAlgoRunning(RunRateInfo *info, int algo, bool converged);
+    bool skipAlgoRunning(RunRateInfo* info, int algo, bool converged);
     // return true if run rate is larger than config run rate
-    bool checkRunRate(float configRunningRate, const RunRateInfo *info);
+    bool checkRunRate(float configRunningRate, const RunRateInfo* info);
 
     IntelCca* getIntelCca(TuningMode tuningMode);
 
-private:
+ private:
     int mCameraId;
     unsigned long long mTimestamp;  // Latest statistics timestamp
     float mSensorPixelClock;
@@ -181,12 +175,7 @@ private:
 
     std::unordered_map<TuningMode, IntelCca*> mIntelCcaHandles;
 
-    enum AiqState {
-        AIQ_NOT_INIT = 0,
-        AIQ_INIT,
-        AIQ_CONFIGURED,
-        AIQ_MAX
-    } mAiqState;
+    enum AiqState { AIQ_NOT_INIT = 0, AIQ_INIT, AIQ_CONFIGURED, AIQ_MAX } mAiqState;
 
     ia_aiq_frame_params mFrameParams;
 
@@ -210,8 +199,6 @@ private:
     size_t mLscGridRGGBLen;
     float mLastEvShift;
 
-    camera_tonemap_mode_t mTonemapMode;
-
     cca::cca_ae_results mLastAeResult;
 
     std::unique_ptr<cca::cca_aiq_params> mAiqParams;
@@ -229,6 +216,9 @@ private:
 
     uint32_t mLockedExposureTimeUs;
     uint16_t mLockedIso;
+
+ private:
+    DISALLOW_COPY_AND_ASSIGN(AiqCore);
 };
 
 } /* namespace icamera */

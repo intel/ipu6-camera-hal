@@ -16,54 +16,44 @@
 
 #define LOG_TAG CameraStream
 
+#include "CameraStream.h"
+
+#include "PlatformData.h"
 #include "iutils/CameraLog.h"
 #include "iutils/Errors.h"
 #include "iutils/Utils.h"
-
-#include "CameraStream.h"
-#include "PlatformData.h"
 
 using std::shared_ptr;
 
 namespace icamera {
 
 CameraStream::CameraStream(int cameraId, int streamId, const stream_t& stream)
-      : mCameraId(cameraId),
-        mStreamId(streamId),
-        mPort(MAIN_PORT),
-        mBufferProducer(nullptr),
-        mNumHoldingUserBuffers(0),
-        mIsWaitingBufferReturn(false)
-{
-    LOG1("@%s: mCameraId:%d, width:%d, height:%d, format:%s", __func__,
-          mCameraId, stream.width, CameraUtils::getInterlaceHeight(stream.field, stream.height),
-          CameraUtils::pixelCode2String(stream.format));
-    LOG2("@%s: automation checkpoint: WHF: %d,%d,%s", __func__,
-          stream.width, CameraUtils::getInterlaceHeight(stream.field, stream.height),
-          CameraUtils::pixelCode2String(stream.format));
+        : mCameraId(cameraId),
+          mStreamId(streamId),
+          mPort(MAIN_PORT),
+          mBufferProducer(nullptr),
+          mNumHoldingUserBuffers(0),
+          mIsWaitingBufferReturn(false) {
+    LOG2("<id%d>@%s: automation checkpoint: WHF: %d,%d,%s", mCameraId, __func__, stream.width,
+         CameraUtils::getInterlaceHeight(stream.field, stream.height),
+         CameraUtils::pixelCode2String(stream.format));
 }
 
-CameraStream::~CameraStream()
-{
-    LOG1("@%s, mCameraId:%d", __func__, mCameraId);
-}
+CameraStream::~CameraStream() {}
 
-int CameraStream::start()
-{
-    LOG1("@%s, mCameraId:%d", __func__, mCameraId);
+int CameraStream::start() {
+    LOG1("<id%d>@%s", mCameraId, __func__);
 
     return OK;
 }
 
-int CameraStream::stop()
-{
-    LOG1("@%s, mCameraId:%d", __func__, mCameraId);
+int CameraStream::stop() {
+    LOG1("<id%d>@%s", mCameraId, __func__);
 
     mIsWaitingBufferReturn = false;
     mNumHoldingUserBuffers = 0;
 
-    if (mBufferProducer != nullptr)
-        mBufferProducer->removeFrameAvailableListener(this);
+    if (mBufferProducer != nullptr) mBufferProducer->removeFrameAvailableListener(this);
 
     AutoMutex poolLock(mBufferPoolLock);
     mUserBuffersPool.clear();
@@ -75,23 +65,20 @@ int CameraStream::stop()
  * Allocate memory to the stream processor which should be
  * set by the CameraDevice
  */
-int CameraStream::allocateMemory(camera_buffer_t *ubuffer)
-{
-    LOG1("@%s, mCameraId:%d, ubuffer %p", __func__, mCameraId, ubuffer);
+int CameraStream::allocateMemory(camera_buffer_t* ubuffer) {
+    LOG1("<id%d>@%s, ubuffer %p", mCameraId, __func__, ubuffer);
 
     int ret = BAD_VALUE;
     shared_ptr<CameraBuffer> camBuffer = userBufferToCameraBuffer(ubuffer);
     CheckAndLogError(!camBuffer, ret, "@%s: fail to alloc CameraBuffer", __func__);
 
     // mBufferProducer will not change after start
-    if (mBufferProducer)
-        ret = mBufferProducer->allocateMemory(mPort, camBuffer);
+    if (mBufferProducer) ret = mBufferProducer->allocateMemory(mPort, camBuffer);
 
     return ret;
 }
 
-shared_ptr<CameraBuffer> CameraStream::userBufferToCameraBuffer(camera_buffer_t *ubuffer)
-{
+shared_ptr<CameraBuffer> CameraStream::userBufferToCameraBuffer(camera_buffer_t* ubuffer) {
     if (ubuffer == nullptr) return nullptr;
 
     shared_ptr<CameraBuffer> camBuffer = nullptr;
@@ -104,7 +91,7 @@ shared_ptr<CameraBuffer> CameraStream::userBufferToCameraBuffer(camera_buffer_t 
             /* when memType matches, the dmafd or the addr should match */
             if (((*buffer)->getMemory() == static_cast<uint32_t>(ubuffer->s.memType)) &&
                 ((ubuffer->addr != nullptr && (*buffer)->getUserBuffer()->addr == ubuffer->addr) ||
-                (ubuffer->dmafd >= 0 && (*buffer)->getUserBuffer()->dmafd == ubuffer->dmafd))) {
+                 (ubuffer->dmafd >= 0 && (*buffer)->getUserBuffer()->dmafd == ubuffer->dmafd))) {
                 camBuffer = *buffer;
             } else {
                 mUserBuffersPool.erase(buffer);
@@ -113,10 +100,11 @@ shared_ptr<CameraBuffer> CameraStream::userBufferToCameraBuffer(camera_buffer_t 
         }
     }
 
-    if (!camBuffer) { // Not found in the pool, so create a new CameraBuffer for it.
+    if (!camBuffer) {  // Not found in the pool, so create a new CameraBuffer for it.
         ubuffer->index = mUserBuffersPool.size();
-        camBuffer = std::make_shared<CameraBuffer>(mCameraId, BUFFER_USAGE_GENERAL,
-                ubuffer->s.memType, ubuffer->s.size, ubuffer->index, ubuffer->s.format);
+        camBuffer =
+            std::make_shared<CameraBuffer>(mCameraId, BUFFER_USAGE_GENERAL, ubuffer->s.memType,
+                                           ubuffer->s.size, ubuffer->index, ubuffer->s.format);
         CheckAndLogError(!camBuffer, nullptr, "@%s: fail to alloc CameraBuffer", __func__);
         mUserBuffersPool.push_back(camBuffer);
     }
@@ -128,23 +116,17 @@ shared_ptr<CameraBuffer> CameraStream::userBufferToCameraBuffer(camera_buffer_t 
     return camBuffer;
 }
 
-void CameraStream::waitToReturnAllUserBufffers()
-{
-    LOG1("%s: wait for all user buffers to be returned to user", __func__);
-
+void CameraStream::waitToReturnAllUserBufffers() {
     ConditionLock lock(mBufferPoolLock);
 
-    if (mNumHoldingUserBuffers > 0){
+    if (mNumHoldingUserBuffers > 0) {
         // mIsWaitingBufferReturn flag is used to prevent situation that signal goes before wait
         mIsWaitingBufferReturn = true;
-        int ret = mAllBuffersReturnedSignal.waitRelative(lock,
-                                                         kWaitDuration * SLOWLY_MULTIPLIER);
+        int ret = mAllBuffersReturnedSignal.waitRelative(lock, kWaitDuration * SLOWLY_MULTIPLIER);
 
-        if (ret == TIMED_OUT) {
-            LOGW("@%s, mCameraId:%d, time out happens when waiting return user buffers",
-                 __func__, mCameraId);
-            return;
-        }
+        CheckWarning(ret == TIMED_OUT, VOID_VALUE,
+                     "<id%d>@%s, time out happens when waiting return user buffers", mCameraId,
+                     __func__);
         mIsWaitingBufferReturn = false;
     }
 
@@ -154,13 +136,12 @@ void CameraStream::waitToReturnAllUserBufffers()
 }
 
 // Q buffers to the stream processor which should be set by the CameraDevice
-int CameraStream::qbuf(camera_buffer_t *ubuffer, long sequence)
-{
+int CameraStream::qbuf(camera_buffer_t* ubuffer, int64_t sequence) {
     shared_ptr<CameraBuffer> camBuffer = userBufferToCameraBuffer(ubuffer);
     if (camBuffer) {
         camBuffer->setSettingSequence(sequence);
-        LOG2("@%s, mCameraId:%d, mStreamId:%d, CameraBuffer:%p for port:%d, ubuffer:%p, addr:%p",
-             __func__, mCameraId, mStreamId, camBuffer.get(), mPort, ubuffer, ubuffer->addr);
+        LOG2("<id%d>@%s, mStreamId:%d, CameraBuffer:%p for port:%d, ubuffer:%p, addr:%p", mCameraId,
+             __func__, mStreamId, camBuffer.get(), mPort, ubuffer, ubuffer->addr);
     }
 
     int ret = BAD_VALUE;
@@ -174,25 +155,20 @@ int CameraStream::qbuf(camera_buffer_t *ubuffer, long sequence)
     return ret;
 }
 
-//This function is called in stop status, no lock
-void CameraStream::setBufferProducer(BufferProducer *producer)
-{
-    LOG1("@%s, mCameraId:%d, producer %p", __func__, mCameraId, producer);
-
+// This function is called in stop status, no lock
+void CameraStream::setBufferProducer(BufferProducer* producer) {
     mBufferProducer = producer;
 
-    if (producer != nullptr)
-        producer->addFrameAvailableListener(this);
+    if (producer != nullptr) producer->addFrameAvailableListener(this);
 }
 
-int CameraStream::onFrameAvailable(Port port, const shared_ptr<CameraBuffer> &camBuffer)
-{
+int CameraStream::onFrameAvailable(Port port, const shared_ptr<CameraBuffer>& camBuffer) {
     // Ignore if the buffer is not for this stream.
     if (mPort != port) return OK;
     if (camBuffer->getStreamId() != mStreamId) return OK;
 
-    LOG2("@%s: mCameraId:%d, mStreamId:%d, CameraBuffer:%p for port:%d",
-         __func__, mCameraId, mStreamId, camBuffer.get(), port);
+    LOG2("<id%d>@%s: mStreamId:%d, CameraBuffer:%p for port:%d", mCameraId, __func__, mStreamId,
+         camBuffer.get(), port);
 
     // Update the user buffer info before return back
     camBuffer->updateUserBuffer();
@@ -206,18 +182,12 @@ int CameraStream::onFrameAvailable(Port port, const shared_ptr<CameraBuffer> &ca
     notifyListeners(eventData);
 
     camera_buffer_t* ubuffer = camBuffer->getUserBuffer();
-    LOG2("ubuffer:%p, addr:%p, timestamp:%lu, sequence:%ld",
-         ubuffer, ubuffer->addr, ubuffer->timestamp, ubuffer->sequence);
+    LOG2("ubuffer:%p, addr:%p, timestamp:%lu, sequence:%ld", ubuffer, ubuffer->addr,
+         ubuffer->timestamp, ubuffer->sequence);
 
-    LOGVCSYNC("[onFrameDone], CPU-timestamp:%lu, sequence:%ld, vc:%d, kernel-timestamp:%luus, endl",
-        CameraUtils::systemTime(),
-        ubuffer->sequence,
-        camBuffer->getVirtualChannel(),
-        ubuffer->timestamp);
-
-    PERF_CAMERA_ATRACE_PARAM3("sequence", camBuffer->getSequence(),
-                              "csi2_port", camBuffer->getCsi2Port(),
-                              "virtual_channel", camBuffer->getVirtualChannel());
+    PERF_CAMERA_ATRACE_PARAM3("sequence", camBuffer->getSequence(), "csi2_port",
+                              camBuffer->getCsi2Port(), "virtual_channel",
+                              camBuffer->getVirtualChannel());
 
     AutoMutex l(mBufferPoolLock);
 
@@ -236,4 +206,4 @@ int CameraStream::onFrameAvailable(Port port, const shared_ptr<CameraBuffer> &ca
     return OK;
 }
 
-} //namespace icamera
+}  // namespace icamera

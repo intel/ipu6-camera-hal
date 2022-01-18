@@ -16,11 +16,11 @@
 
 #pragma once
 
+#include <linux/videodev2.h>
+
 #include <memory>
 #include <queue>
 #include <vector>
-
-#include <linux/videodev2.h>
 
 #ifdef CAL_BUILD
 #include <cros-camera/v4l2_device.h>
@@ -47,18 +47,18 @@ enum BufferUsage {
 };
 
 class CameraBuffer {
-public:
-    //assist function to create frame buffers
-    static std::shared_ptr<CameraBuffer>
-    create(int cameraId, int usage, int memory, unsigned int size, int index,
-           int srcFmt = -1, int srcWidth=-1, int srcHeight=-1);
+ public:
+    // assist function to create frame buffers
+    static std::shared_ptr<CameraBuffer> create(int cameraId, int usage, int memory,
+                                                unsigned int size, int index, int srcFmt = -1,
+                                                int srcWidth = -1, int srcHeight = -1);
 
-public:
+ public:
     CameraBuffer(int cameraId, int usage, int memory, uint32_t size, int index, int format = -1);
     virtual ~CameraBuffer();
 
-public:
-    //user buffer information
+ public:
+    // user buffer information
     int getWidth() const { return mU->s.width; }
     int getHeight() const { return mU->s.height; }
     int getStride() const { return mU->s.stride; }
@@ -68,7 +68,7 @@ public:
     int getStreamId() const { return mU->s.id; }
     int getFlags() const { return mU->flags; }
 
-    //v4l2 buffer information
+    // v4l2 buffer information
     uint32_t getIndex(void) const { return mV.Index(); }
 
     uint32_t getSequence(void) const { return mV.Sequence(); }
@@ -77,7 +77,9 @@ public:
     uint32_t getField() const { return mV.Field(); }
     void setField(uint32_t field) { mV.SetField(field); }
 
-    struct timeval getTimestamp(void) const  { return mV.Timestamp(); }
+    struct timeval getTimestamp(void) const {
+        return mV.Timestamp();
+    }
     void setTimestamp(struct timeval timestamp) { mV.SetTimestamp(timestamp); }
 
     int getFd(int planeIndex = 0);
@@ -86,7 +88,7 @@ public:
 
     int numPlanes() { return mNumPlanes; }
 
-     //For debug only v4l2 buffer information
+    // For debug only v4l2 buffer information
     int getCsi2Port(void) const { return (mV.RequestFd() >> 4) & 0xf; }
     int getVirtualChannel(void) const { return mV.RequestFd() & 0xf; }
 
@@ -97,28 +99,30 @@ public:
      * together, so that we can get each pointer by other.
      * Notes: Please don't abuse this. It is only used in CameraDevice for user buffer
      */
-    camera_buffer_t *getUserBuffer() { return mU; }
-    //update the user  buffer with latest v4l2 buffer info from driver
-    void    updateUserBuffer(void);
-    //Update the v4l2 flags according to user buffer flag
-    void    UpdateFlags(void);
-    void    updateFlags(void);
+    camera_buffer_t* getUserBuffer() { return mU; }
+    // update the user  buffer with latest v4l2 buffer info from driver
+    void updateUserBuffer(void);
+    // Update the v4l2 flags according to user buffer flag
+    void UpdateFlags(void);
+    void updateFlags(void);
 
-    //Check if the specific flag in "mU->flags" is set or not
+    // Check if the specific flag in "mU->flags" is set or not
     bool isFlagsSet(int flag);
-    //The ubuffer is from application
-    void setUserBufferInfo(camera_buffer_t *ubuffer);
+    // The ubuffer is from application
+    void setUserBufferInfo(camera_buffer_t* ubuffer);
     void setUserBufferInfo(int format, int width, int height);
-    void setUserBufferInfo(int format, int width, int height, void *usrPtr);
+    void setUserBufferInfo(int format, int width, int height, void* usrPtr);
 
     uint32_t getBufferSize(int planeIndex = 0) { return mV.Length(planeIndex); }
     void setBufferSize(unsigned int size, int planeIndex = 0) { mV.SetLength(size, planeIndex); }
 
     unsigned int getBytesused(int planeIndex = 0) { return mV.BytesUsed(planeIndex); }
-    void setBytesused(unsigned int bytes, int planeIndex = 0) { mV.SetBytesUsed(bytes, planeIndex); }
+    void setBytesused(unsigned int bytes, int planeIndex = 0) {
+        mV.SetBytesUsed(bytes, planeIndex);
+    }
 
     void* getBufferAddr(int planeIndex = 0) { return getAddr(planeIndex); }
-    void  setBufferAddr(void *addr, int planeIndex = 0) { return setAddr(addr, planeIndex); }
+    void setBufferAddr(void* addr, int planeIndex = 0) { return setAddr(addr, planeIndex); }
 
     void updateV4l2Buffer(const v4l2_buffer_t& v4l2buf);
 
@@ -126,45 +130,45 @@ public:
 
     int getUsage() const { return mBufferUsage; }
 
-    void setSettingSequence(long sequence) { mSettingSequence = sequence; }
-    long getSettingSequence() const { return mSettingSequence; }
+    void setSettingSequence(int64_t sequence) { mSettingSequence = sequence; }
+    int64_t getSettingSequence() const { return mSettingSequence; }
 
-    //Buffers are allocated the buffers by Camera
-    int allocateMemory(V4L2VideoNode *vDevice = nullptr);
+    // Buffers are allocated the buffers by Camera
+    int allocateMemory(V4L2VideoNode* vDevice = nullptr);
 
-public:
+ public:
     static void* mapDmaBufferAddr(int fd, unsigned int bufferSize);
     static void unmapDmaBufferAddr(void* addr, unsigned int bufferSize);
 
-private:
+ private:
     CameraBuffer(const CameraBuffer&);
     CameraBuffer& operator=(const CameraBuffer&);
 
     void freeMemory();
-    int exportMmapDmabuf(V4L2VideoNode *vDevice);
+    int exportMmapDmabuf(V4L2VideoNode* vDevice);
 
     int allocateMmap(V4L2VideoNode* dev);
     int allocateUserPtr();
     void freeUserPtr();
     void freeMmap();
     void* getAddr(int plane = 0);
-    void setAddr(void *userAddr, int plane = 0);
+    void setAddr(void* userAddr, int plane = 0);
     void initBuffer(int memType, v4l2_buf_type bufType, uint32_t size, int idx, int num_plane);
 
     void setFd(int val, int plane);
 
-protected:
+ protected:
     V4L2Buffer mV;
     int mNumPlanes;
 
-private:
-    //To tag whether the memory is allocated by CameraBuffer class. We need to free them
+ private:
+    // To tag whether the memory is allocated by CameraBuffer class. We need to free them
     bool mAllocatedMemory;
 
     int mBufferflag;
-    camera_buffer_t *mU;
+    camera_buffer_t* mU;
     int mBufferUsage;
-    long mSettingSequence;
+    int64_t mSettingSequence;
 
     void* mMmapAddrs[VIDEO_MAX_PLANES];
     int mDmaFd[VIDEO_MAX_PLANES];
@@ -173,4 +177,4 @@ private:
 typedef std::vector<std::shared_ptr<CameraBuffer> > CameraBufVector;
 typedef std::queue<std::shared_ptr<CameraBuffer> > CameraBufQ;
 
-}
+}  // namespace icamera

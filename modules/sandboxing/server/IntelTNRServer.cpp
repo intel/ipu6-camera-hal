@@ -26,23 +26,22 @@
 namespace icamera {
 
 IntelTNRServer::IntelTNRServer() {
-    LOG1("@%s", __func__);
+    LOG1("@%s Construct", __func__);
 }
 
 IntelTNRServer::~IntelTNRServer() {
     mIntelTNRMap.clear();
     mLockMap.clear();
-    LOG1("@%s", __func__);
+    LOG1("@%s Destroy", __func__);
 }
 
 int IntelTNRServer::init(void* pData, int dataSize) {
-    LOG1("@%s, pData:%p, dataSize:%d", __func__, pData, dataSize);
     CheckAndLogError(pData == nullptr, UNKNOWN_ERROR, "@%s, pData is nullptr", __func__);
     CheckAndLogError(dataSize < static_cast<int>(sizeof(TnrInitInfo)), UNKNOWN_ERROR,
-                     "buffer is small");
+                     "@%s, buffer size %d is small", __func__, dataSize);
     TnrInitInfo* initInfo = static_cast<TnrInitInfo*>(pData);
     CheckAndLogError(initInfo->type >= TNR_INSTANCE_MAX || initInfo->type < 0, UNKNOWN_ERROR,
-                     "@%s, invalid tnr type %d", __func__, static_cast<int>(initInfo->type));
+                     "@%s, invalid tnr type: %d", __func__, static_cast<int>(initInfo->type));
 
     CheckAndLogError(mIntelTNRMap.size() == TNR_INSTANCE_MAX, UNKNOWN_ERROR,
                      "@%s, tnr resource is busy", __func__);
@@ -78,11 +77,10 @@ int IntelTNRServer::init(void* pData, int dataSize) {
 int IntelTNRServer::deInit(TnrRequestInfo* requestInfo) {
     CheckAndLogError(requestInfo == nullptr, UNKNOWN_ERROR, "@%s, requestInfo is nullptr",
                      __func__);
-
     int key = getIndex(requestInfo->cameraId, requestInfo->type);
-
     CheckAndLogError((mIntelTNRMap.find(key) == mIntelTNRMap.end()), UNKNOWN_ERROR,
-                     "%s, IntelTNR type:%d is nullptr", __func__, requestInfo->type);
+                     "<id%d> @%s, IntelTNR type: %d is invalid", requestInfo->cameraId, __func__,
+                     requestInfo->type);
     {
         std::unique_lock<std::mutex> lock(*mLockMap[key]);
         mIntelTNRMap.erase(key);
@@ -94,10 +92,12 @@ int IntelTNRServer::deInit(TnrRequestInfo* requestInfo) {
 
 int IntelTNRServer::prepareSurface(void* pData, int dataSize, TnrRequestInfo* requestInfo) {
     CheckAndLogError(pData == nullptr || requestInfo == nullptr, UNKNOWN_ERROR,
-                     "@%s, param is nullptr", __func__);
+                     "@%s, invalid params, pData: %p, requestInfo: %p", __func__, pData,
+                     requestInfo);
     int key = getIndex(requestInfo->cameraId, requestInfo->type);
     CheckAndLogError((mIntelTNRMap.find(key) == mIntelTNRMap.end()), UNKNOWN_ERROR,
-                     "%s, IntelTNR type:%d is nullptr", __func__, requestInfo->type);
+                     "<id%d> @%s, IntelTNR type: %d is invalid", requestInfo->cameraId, __func__,
+                     requestInfo->type);
     std::unique_lock<std::mutex> lock(*mLockMap[key]);
 
     return mIntelTNRMap[key]->prepareSurface(pData, dataSize);
@@ -105,10 +105,12 @@ int IntelTNRServer::prepareSurface(void* pData, int dataSize, TnrRequestInfo* re
 
 int IntelTNRServer::runTnrFrame(const void* inBufAddr, void* outBufAddr, uint32_t inBufSize,
                                 uint32_t outBufSize, void* tnrParam, TnrRequestInfo* requestInfo) {
-    CheckAndLogError(requestInfo == nullptr, UNKNOWN_ERROR, "@%s, param is nullptr", __func__);
+    CheckAndLogError(requestInfo == nullptr, UNKNOWN_ERROR, "@%s, requestInfo is nullptr",
+                     __func__);
     int key = getIndex(requestInfo->cameraId, requestInfo->type);
     CheckAndLogError((mIntelTNRMap.find(key) == mIntelTNRMap.end()), UNKNOWN_ERROR,
-                     "%s, IntelTNR type:%d is nullptr", __func__, requestInfo->type);
+                     "<id%d> @%s, IntelTNR type: %d is invalid", requestInfo->cameraId, __func__,
+                     requestInfo->type);
     std::unique_lock<std::mutex> lock(*mLockMap[key]);
 
     return mIntelTNRMap[key]->runTnrFrame(inBufAddr, outBufAddr, inBufSize, outBufSize,
@@ -121,10 +123,24 @@ int IntelTNRServer::asyncParamUpdate(TnrRequestInfo* requestInfo) {
                      __func__);
     int key = getIndex(requestInfo->cameraId, requestInfo->type);
     CheckAndLogError((mIntelTNRMap.find(key) == mIntelTNRMap.end()), UNKNOWN_ERROR,
-                     "%s, IntelTNR type:%d is nullptr", __func__, requestInfo->type);
+                     "<id%d> @%s, IntelTNR type: %d is invalid", requestInfo->cameraId, __func__,
+                     requestInfo->type);
     std::unique_lock<std::mutex> lock(*mLockMap[key]);
 
     return mIntelTNRMap[key]->asyncParamUpdate(requestInfo->gain, requestInfo->isForceUpdate);
+}
+
+int IntelTNRServer::getSurfaceInfo(TnrRequestInfo* requestInfo) {
+    CheckAndLogError(requestInfo == nullptr, UNKNOWN_ERROR, "@%s, requestInfo is nullptr",
+                     __func__);
+    int key = getIndex(requestInfo->cameraId, requestInfo->type);
+    CheckAndLogError((mIntelTNRMap.find(key) == mIntelTNRMap.end()), UNKNOWN_ERROR,
+                     "<id%d> @%s, IntelTNR type: %d is invalid", requestInfo->cameraId, __func__,
+                     requestInfo->type);
+    std::unique_lock<std::mutex> lock(*mLockMap[key]);
+
+    return mIntelTNRMap[key]->getSurfaceInfo(requestInfo->width, requestInfo->height,
+                                             &requestInfo->surfaceSize);
 }
 
 }  // namespace icamera

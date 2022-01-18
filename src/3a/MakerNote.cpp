@@ -20,7 +20,8 @@
 
 #include <memory>
 
-#include "CameraDevice.h"
+#include "AiqUtils.h"
+#include "iutils/CameraDump.h"
 #include "iutils/CameraLog.h"
 #include "iutils/Errors.h"
 
@@ -28,15 +29,13 @@ namespace icamera {
 
 MakerNote::MakerNote() :
     mMknState(UNINIT) {
-    LOG1("@%s", __func__);
 }
 
 MakerNote::~MakerNote() {
-    LOG1("@%s", __func__);
 }
 
 int MakerNote::init(int cameraId, TuningMode tuningMode) {
-    LOG1("@%s, cameraId:%d, tuningMode:%d", __func__, cameraId, tuningMode);
+    LOG1("<id%d>@%s, tuningMode:%d", cameraId, __func__, tuningMode);
 
     AutoMutex lock(mMknLock);
     CheckAndLogError(mMknState == INIT, INVALID_OPERATION, "@%s, mkn has initialized", __func__);
@@ -61,7 +60,7 @@ int MakerNote::init(int cameraId, TuningMode tuningMode) {
 }
 
 int MakerNote::deinit(int cameraId, TuningMode tuningMode) {
-    LOG1("@%s, cameraId:%d, tuningMode:%d", __func__, cameraId, tuningMode);
+    LOG1("<id%d>@%s, tuningMode:%d", cameraId, __func__, tuningMode);
 
     AutoMutex lock(mMknLock);
     CheckAndLogError(mMknState != INIT, NO_INIT, "@%s, mkn isn't initialized", __func__);
@@ -83,7 +82,7 @@ int MakerNote::deinit(int cameraId, TuningMode tuningMode) {
 
 int MakerNote::saveMakernoteData(int cameraId, camera_makernote_mode_t makernoteMode,
                                  int64_t sequence, TuningMode tuningMode) {
-    LOG1("@%s", __func__);
+    LOG2("@%s", __func__);
     bool dump = CameraDump::isDumpTypeEnable(DUMP_MAKER_NOTE);
     if ((makernoteMode == MAKERNOTE_MODE_OFF) && !dump) return OK;
 
@@ -114,7 +113,7 @@ int MakerNote::saveMakernoteData(int cameraId, camera_makernote_mode_t makernote
         mMakernoteDataList.pop_front();
         data.sequence = sequence;
         data.timestamp = 0;
-        LOG2("@%s, saved makernote %d for sequence %ld", __func__, makernoteMode, sequence);
+        LOG2("<seq%ld>@%s, saved makernote %d", sequence, __func__, makernoteMode);
 
         mMakernoteDataList.push_back(data);
     }
@@ -122,14 +121,13 @@ int MakerNote::saveMakernoteData(int cameraId, camera_makernote_mode_t makernote
 }
 
 void MakerNote::updateTimestamp(int64_t sequence, uint64_t timestamp) {
-    LOG1("@%s, mMknState:%d", __func__, mMknState);
+    LOG2("@%s, mMknState:%d", __func__, mMknState);
     AutoMutex lock(mMknLock);
     CheckAndLogError(mMknState != INIT, VOID_VALUE, "@%s, mkn isn't initialized", __func__);
 
     for (auto rit = mMakernoteDataList.rbegin(); rit != mMakernoteDataList.rend(); ++rit) {
         if ((*rit).sequence == sequence) {
-            LOG2("@%s, found sequence %ld for request sequence %ld, timestamp %ld", __func__,
-                 (*rit).sequence, sequence, timestamp);
+            LOG2("<seq%ld>@%s, update timestamp %ld", sequence, __func__, timestamp);
             (*rit).timestamp = timestamp;
             break;
         }
@@ -137,7 +135,6 @@ void MakerNote::updateTimestamp(int64_t sequence, uint64_t timestamp) {
 }
 
 void MakerNote::acquireMakernoteData(uint64_t timestamp, Parameters* param) {
-    LOG1("@%s", __func__);
     AutoMutex lock(mMknLock);
     CheckAndLogError(mMknState != INIT, VOID_VALUE, "@%s, mkn isn't initialized", __func__);
 

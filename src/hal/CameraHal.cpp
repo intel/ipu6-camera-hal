@@ -16,54 +16,49 @@
 
 #define LOG_TAG CameraHal
 
+#include "CameraHal.h"
+
 #include <vector>
 
-#include "iutils/CameraLog.h"
-
 #include "ICamera.h"
-#include "PlatformData.h"
-#include "SyncManager.h"
-#include "CameraHal.h"
 #include "Parameters.h"
+#include "PlatformData.h"
+// FRAME_SYNC_S
+#include "SyncManager.h"
+// FRAME_SYNC_E
+#include "iutils/CameraLog.h"
 
 namespace icamera {
 
 #define checkCameraDevice(device, err_code) \
-    do { \
-        if (mState == HAL_UNINIT) { \
-            LOGE("HAL is not init."); \
-            return err_code; \
-        } \
-        if (!(device)) { \
-            LOGE("device is not open."); \
-            return err_code; \
-        } \
+    do {                                    \
+        if (mState == HAL_UNINIT) {         \
+            LOGE("HAL is not init.");       \
+            return err_code;                \
+        }                                   \
+        if (!(device)) {                    \
+            LOGE("device is not open.");    \
+            return err_code;                \
+        }                                   \
     } while (0)
 
-CameraHal::CameraHal() :
-    mInitTimes(0),
-    mState(HAL_UNINIT),
-    mCameraOpenNum(0)
-{
-    PERF_CAMERA_ATRACE();
+CameraHal::CameraHal() : mInitTimes(0), mState(HAL_UNINIT), mCameraOpenNum(0) {
     LOG1("@%s", __func__);
 
     CLEAR(mCameraDevices);
 }
 
-CameraHal::~CameraHal()
-{
-    PERF_CAMERA_ATRACE();
+CameraHal::~CameraHal() {
     LOG1("@%s", __func__);
 }
 
-int CameraHal::init()
-{
+int CameraHal::init() {
     LOG1("@%s", __func__);
+    PERF_CAMERA_ATRACE();
     AutoMutex lock(mLock);
 
     if (mInitTimes++ > 0) {
-        LOGD("@%s, mInitTimes:%d, return without running", __func__, mInitTimes);
+        LOGI("already initialized, mInitTimes:%d", mInitTimes);
         return OK;
     }
 
@@ -75,19 +70,21 @@ int CameraHal::init()
     return OK;
 }
 
-int CameraHal::deinit()
-{
+int CameraHal::deinit() {
     LOG1("@%s", __func__);
+    PERF_CAMERA_ATRACE();
     AutoMutex l(mLock);
 
     if (--mInitTimes > 0) {
-        LOGD("@%s, mInitTimes:%d, return without set state", __func__, mInitTimes);
+        LOGI("CameraHal still running, mInitTimes:%d", mInitTimes);
         return OK;
     }
 
+    // FRAME_SYNC_S
     // SyncManager is used to do synchronization with multi-devices.
     // Release it when the last device exit
     SyncManager::releaseInstance();
+    // FRAME_SYNC_E
     // Release the PlatformData instance here due to it was
     // created in init() period
     PlatformData::releaseInstance();
@@ -101,17 +98,14 @@ int CameraHal::deinit()
     return OK;
 }
 
-int CameraHal::deviceOpen(int cameraId)
-{
-    LOG1("@%s, camera id:%d", __func__, cameraId);
-    PERF_CAMERA_ATRACE();
-
+int CameraHal::deviceOpen(int cameraId) {
+    LOG1("<id%d> @%s", cameraId, __func__);
     AutoMutex l(mLock);
-    CheckAndLogError(mState == HAL_UNINIT, NO_INIT,"HAL is not initialized");
+    CheckAndLogError(mState == HAL_UNINIT, NO_INIT, "HAL is not initialized");
 
-    //Create the camera device that will be freed in close
+    // Create the camera device that will be freed in close
     if (mCameraDevices[cameraId]) {
-        LOGD("@%s: open multi times", __func__);
+        LOGI("<id%d> has already opened", cameraId);
         return INVALID_OPERATION;
     }
 
@@ -120,18 +114,16 @@ int CameraHal::deviceOpen(int cameraId)
     mCameraOpenNum++;
 
     if (mCameraOpenNum == 1) {
-        MediaControl *mc = MediaControl::getInstance();
-        CheckAndLogError(!mc, UNKNOWN_ERROR, "%s, MediaControl init failed", __func__);
+        MediaControl* mc = MediaControl::getInstance();
+        CheckAndLogError(!mc, UNKNOWN_ERROR, "MediaControl init failed");
         mc->resetAllLinks();
     }
 
     return mCameraDevices[cameraId]->init();
 }
 
-void CameraHal::deviceClose(int cameraId)
-{
-    PERF_CAMERA_ATRACE();
-    LOG1("@%s, camera id:%d", __func__, cameraId);
+void CameraHal::deviceClose(int cameraId) {
+    LOG1("<id%d> @%s", cameraId, __func__);
     AutoMutex l(mLock);
 
     if (mCameraDevices[cameraId]) {
@@ -143,12 +135,11 @@ void CameraHal::deviceClose(int cameraId)
     }
 }
 
-void CameraHal::deviceCallbackRegister(int cameraId, const camera_callback_ops_t* callback)
-{
-    LOG1("@%s", __func__);
+void CameraHal::deviceCallbackRegister(int cameraId, const camera_callback_ops_t* callback) {
+    LOG1("<id%d> @%s", cameraId, __func__);
     AutoMutex l(mLock);
 
-    CameraDevice *device = mCameraDevices[cameraId];
+    CameraDevice* device = mCameraDevices[cameraId];
     checkCameraDevice(device, VOID_VALUE);
 #ifdef ENABLE_SANDBOXING
     IntelAlgoClient::getInstance()->registerErrorCallback(callback);
@@ -157,13 +148,11 @@ void CameraHal::deviceCallbackRegister(int cameraId, const camera_callback_ops_t
 }
 
 // Assume the inputConfig is already checked in upper layer
-int CameraHal::deviceConfigInput(int cameraId, const stream_t *inputConfig)
-{
-    PERF_CAMERA_ATRACE();
-    LOG1("@%s, camera id:%d", __func__, cameraId);
+int CameraHal::deviceConfigInput(int cameraId, const stream_t* inputConfig) {
+    LOG1("<id%d> @%s", cameraId, __func__);
     AutoMutex lock(mLock);
 
-    CameraDevice *device = mCameraDevices[cameraId];
+    CameraDevice* device = mCameraDevices[cameraId];
     checkCameraDevice(device, BAD_VALUE);
 
     device->configureInput(inputConfig);
@@ -172,13 +161,11 @@ int CameraHal::deviceConfigInput(int cameraId, const stream_t *inputConfig)
 }
 
 // Assume the streamList is already checked in upper layer
-int CameraHal::deviceConfigStreams(int cameraId, stream_config_t *streamList)
-{
-    PERF_CAMERA_ATRACE();
-    LOG1("@%s, camera id:%d", __func__, cameraId);
+int CameraHal::deviceConfigStreams(int cameraId, stream_config_t* streamList) {
+    LOG1("<id%d> @%s", cameraId, __func__);
     AutoMutex lock(mLock);
 
-    CameraDevice *device = mCameraDevices[cameraId];
+    CameraDevice* device = mCameraDevices[cameraId];
     checkCameraDevice(device, BAD_VALUE);
 
     int ret = device->configure(streamList);
@@ -190,87 +177,68 @@ int CameraHal::deviceConfigStreams(int cameraId, stream_config_t *streamList)
     return ret;
 }
 
-int CameraHal::deviceStart(int cameraId)
-{
-    PERF_CAMERA_ATRACE();
-    LOG1("@%s, cameraId is %d", __func__, cameraId);
-
+int CameraHal::deviceStart(int cameraId) {
+    LOG1("<id%d> @%s", cameraId, __func__);
     ConditionLock lock(mLock);
 
-    CameraDevice *device = mCameraDevices[cameraId];
+    CameraDevice* device = mCameraDevices[cameraId];
     checkCameraDevice(device, BAD_VALUE);
 
     return device->start();
 }
 
-int CameraHal::deviceStop(int cameraId)
-{
-    PERF_CAMERA_ATRACE();
-    LOG1("@%s, cameraId is %d", __func__, cameraId);
-
+int CameraHal::deviceStop(int cameraId) {
+    LOG1("<id%d> @%s", cameraId, __func__);
     AutoMutex lock(mLock);
 
-    CameraDevice *device = mCameraDevices[cameraId];
+    CameraDevice* device = mCameraDevices[cameraId];
     checkCameraDevice(device, BAD_VALUE);
 
     return device->stop();
 }
 
-int CameraHal::deviceAllocateMemory(int cameraId, camera_buffer_t *ubuffer)
-{
-    PERF_CAMERA_ATRACE();
-    LOG1("@%s, cameraId is %d", __func__, cameraId);
-
-    CameraDevice *device = mCameraDevices[cameraId];
+int CameraHal::deviceAllocateMemory(int cameraId, camera_buffer_t* ubuffer) {
+    LOG1("<id%d> @%s", cameraId, __func__);
+    CameraDevice* device = mCameraDevices[cameraId];
 
     checkCameraDevice(device, BAD_VALUE);
 
     return device->allocateMemory(ubuffer);
 }
 
-int CameraHal::streamQbuf(int cameraId, camera_buffer_t **ubuffer,
-                          int bufferNum, const Parameters* settings)
-{
-    PERF_CAMERA_ATRACE();
-    LOG2("@%s, cameraId is %d, fd:%d", __func__, cameraId, (*ubuffer)->dmafd);
-
-    CameraDevice *device = mCameraDevices[cameraId];
+int CameraHal::streamQbuf(int cameraId, camera_buffer_t** ubuffer, int bufferNum,
+                          const Parameters* settings) {
+    LOG2("<id%d> @%s, fd:%d", cameraId, __func__, (*ubuffer)->dmafd);
+    CameraDevice* device = mCameraDevices[cameraId];
 
     checkCameraDevice(device, BAD_VALUE);
 
     return device->qbuf(ubuffer, bufferNum, settings);
 }
 
-int CameraHal::streamDqbuf(int cameraId, int streamId, camera_buffer_t **ubuffer,
-                           Parameters* settings)
-{
-    PERF_CAMERA_ATRACE();
-    LOG2("@%s, cameraId is %d, streamId is %d", __func__, cameraId, streamId);
-
-    CameraDevice *device = mCameraDevices[cameraId];
+int CameraHal::streamDqbuf(int cameraId, int streamId, camera_buffer_t** ubuffer,
+                           Parameters* settings) {
+    LOG2("<id%d> @%s, streamId is %d", cameraId, __func__, streamId);
+    CameraDevice* device = mCameraDevices[cameraId];
     checkCameraDevice(device, BAD_VALUE);
 
     return device->dqbuf(streamId, ubuffer, settings);
 }
 
-int CameraHal::getParameters(int cameraId, Parameters& param, long sequence)
-{
-    LOG1("@%s, cameraId is %d", __func__, cameraId);
-
-    CameraDevice *device = mCameraDevices[cameraId];
+int CameraHal::getParameters(int cameraId, Parameters& param, int64_t sequence) {
+    LOG2("<id%d> @%s", cameraId, __func__);
+    CameraDevice* device = mCameraDevices[cameraId];
     checkCameraDevice(device, BAD_VALUE);
 
     return device->getParameters(param, sequence);
 }
 
-int CameraHal::setParameters(int cameraId, const Parameters& param)
-{
-    LOG1("@%s, cameraId is %d", __func__, cameraId);
-
-    CameraDevice *device = mCameraDevices[cameraId];
+int CameraHal::setParameters(int cameraId, const Parameters& param) {
+    LOG2("<id%d> @%s", cameraId, __func__);
+    CameraDevice* device = mCameraDevices[cameraId];
     checkCameraDevice(device, BAD_VALUE);
 
     return device->setParameters(param);
 }
 
-} // namespace icamera
+}  // namespace icamera

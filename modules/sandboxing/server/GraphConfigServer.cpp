@@ -26,11 +26,11 @@
 
 namespace icamera {
 GraphConfigServer::GraphConfigServer() {
-    LOGIPC("@%s", __func__);
+    LOG1("@%s", __func__);
 }
 
 GraphConfigServer::~GraphConfigServer() {
-    LOGIPC("@%s", __func__);
+    LOG1("@%s", __func__);
 }
 
 void GraphConfigServer::addCustomKeyMap() {
@@ -39,7 +39,6 @@ void GraphConfigServer::addCustomKeyMap() {
 }
 
 status_t GraphConfigServer::parse(void* pData, size_t dataSize) {
-    LOGIPC("@%s, pData:%p, dataSize:%zu", __func__, pData, dataSize);
     CheckAndLogError(pData == nullptr, UNKNOWN_ERROR, "@%s, pData is nullptr", __func__);
 
     GraphParseParams* parseParam = nullptr;
@@ -60,7 +59,6 @@ void GraphConfigServer::releaseGraphNodes() {
 }
 
 status_t GraphConfigServer::queryGraphSettings(void* pData, size_t dataSize) {
-    LOGIPC("@%s, pData:%p, dataSize:%zu", __func__, pData, dataSize);
     CheckAndLogError(pData == nullptr, UNKNOWN_ERROR, "@%s, pData is nullptr", __func__);
 
     GraphBaseInfo info;
@@ -81,7 +79,6 @@ status_t GraphConfigServer::queryGraphSettings(void* pData, size_t dataSize) {
 }
 
 status_t GraphConfigServer::configStreams(void* pData, size_t dataSize) {
-    LOGIPC("@%s, pData:%p, dataSize:%zu", __func__, pData, dataSize);
     CheckAndLogError(pData == nullptr, UNKNOWN_ERROR, "@%s, pData is nullptr", __func__);
 
     GraphBaseInfo info;
@@ -98,11 +95,13 @@ status_t GraphConfigServer::configStreams(void* pData, size_t dataSize) {
     if (it != mGraphConfigMap.end()) {
         mGraphConfigMap.erase(it);
     }
+    LOG1("<id%d> @%s configMode: %d, settingType: %d, dummyStillSink: %d",
+         info.cameraId, __func__, info.configMode, type, dummyStillSink);
     std::shared_ptr<GraphConfigImpl> graphConfigImpl =
         std::make_shared<GraphConfigImpl>(info.cameraId, info.configMode, type);
     status_t rt = graphConfigImpl->configStreams(streams, dummyStillSink);
-    CheckAndLogError(rt != OK, ret, "@%s, Failed to configStreams, cameraId: %d, configMode: %d",
-                     __func__, info.cameraId, info.configMode);
+    CheckAndLogError(rt != OK, ret, "<id%d> @%s, Failed to configStreams, configMode: %d",
+                     info.cameraId, __func__, info.configMode);
 
     mGraphConfigMap[info] = graphConfigImpl;
 
@@ -110,7 +109,6 @@ status_t GraphConfigServer::configStreams(void* pData, size_t dataSize) {
 }
 
 status_t GraphConfigServer::getGraphConfigData(void* pData, size_t dataSize) {
-    LOGIPC("@%s, pData:%p, dataSize:%zu", __func__, pData, dataSize);
     CheckAndLogError(pData == nullptr, UNKNOWN_ERROR, "@%s, pData is nullptr", __func__);
 
     GraphBaseInfo info;
@@ -118,17 +116,14 @@ status_t GraphConfigServer::getGraphConfigData(void* pData, size_t dataSize) {
     CheckAndLogError(ret == false, UNKNOWN_ERROR, "@%s, serverUnflattenGetGraphData fails",
                      __func__);
 
-    LOGIPC("%s, cameraId: %d, configMode: %d", __func__, info.cameraId, info.configMode);
-
     auto it = mGraphConfigMap.find(info);
     CheckAndLogError(it == mGraphConfigMap.end(), UNKNOWN_ERROR,
-                     "%s, Failed to find the graph config. cameraId: %d", __func__, info.cameraId);
+                     "<id%d> @%s, Failed to find the graph config", info.cameraId, __func__);
 
     IGraphType::GraphConfigData graphData;
     status_t rt = it->second->getGraphConfigData(&graphData);
-    CheckAndLogError(rt != OK, UNKNOWN_ERROR, "%s, Failed to getGraphConfigData: cameraId: %d",
-                     __func__,
-                     info.cameraId);
+    CheckAndLogError(rt != OK, UNKNOWN_ERROR, "<id%d> @%s, Failed to getGraphConfigData",
+                     info.cameraId, __func__);
 
     ret = mIpc.serverFlattenGetGraphData(pData, dataSize, graphData);
     CheckAndLogError(ret == false, UNKNOWN_ERROR, "@%s, serverFlattenGetGraphData fails", __func__);
@@ -137,7 +132,6 @@ status_t GraphConfigServer::getGraphConfigData(void* pData, size_t dataSize) {
 }
 
 status_t GraphConfigServer::getPgIdForKernel(void* pData, size_t dataSize) {
-    LOGIPC("@%s, pData:%p, dataSize:%zu", __func__, pData, dataSize);
     CheckAndLogError(pData == nullptr, UNKNOWN_ERROR, "@%s, pData is nullptr", __func__);
 
     uint32_t streamId = -1;
@@ -146,11 +140,9 @@ status_t GraphConfigServer::getPgIdForKernel(void* pData, size_t dataSize) {
     bool ret = mIpc.serverUnFlattenGetPgId(pData, dataSize, &info, &streamId, &kernelId);
     CheckAndLogError(ret == false, UNKNOWN_ERROR, "@%s, serverUnFlattenGetPgId fails", __func__);
 
-    LOGIPC("%s, cameraId: %d, configMode: %d", __func__, info.cameraId, info.configMode);
-
     auto it = mGraphConfigMap.find(info);
     CheckAndLogError(it == mGraphConfigMap.end(), UNKNOWN_ERROR,
-                     "%s, Failed to find the graph config. cameraId: %d", __func__, info.cameraId);
+                     "<id%d> @%s, Failed to find the graph config", info.cameraId, __func__);
 
     int32_t pgId = -1;
     it->second->getPgIdForKernel(streamId, kernelId, &pgId);
@@ -162,7 +154,6 @@ status_t GraphConfigServer::getPgIdForKernel(void* pData, size_t dataSize) {
 }
 
 status_t GraphConfigServer::pipelineGetConnections(void* pData, size_t dataSize) {
-    LOGIPC("@%s, pData:%p, dataSize:%zu", __func__, pData, dataSize);
     CheckAndLogError(pData == nullptr, UNKNOWN_ERROR, "@%s, pData is nullptr", __func__);
 
     GraphBaseInfo info;
@@ -170,19 +161,20 @@ status_t GraphConfigServer::pipelineGetConnections(void* pData, size_t dataSize)
     bool ret = mIpc.serverUnFlattenGetConnection(pData, dataSize, &info, &pgList);
     CheckAndLogError(ret == false, UNKNOWN_ERROR, "@%s, serverUnFlattenGetPgId fails", __func__);
 
-    LOGIPC("%s, cameraId: %d, configMode: %d", __func__, info.cameraId, info.configMode);
-
     auto it = mGraphConfigMap.find(info);
     CheckAndLogError(it == mGraphConfigMap.end(), UNKNOWN_ERROR,
-                     "%s, Failed to find the graph config. cameraId: %d", __func__, info.cameraId);
+                     "<id%d> @%s, Failed to find the graph config", info.cameraId, __func__);
 
     std::vector<IGraphType::PipelineConnection> confVector;
     std::vector<IGraphType::ScalerInfo> scalerInfo;
-    status_t rt = it->second->pipelineGetConnections(pgList, &scalerInfo, &confVector);
-    CheckAndLogError(rt != OK, UNKNOWN_ERROR, "%s, Failed to getConnection: cameraId: %d", __func__,
-                     info.cameraId);
+    std::vector<IGraphType::PrivPortFormat> tnrPortFormat;
+    status_t rt = it->second->pipelineGetConnections(pgList, &scalerInfo,
+                                                     &confVector, &tnrPortFormat);
+    CheckAndLogError(rt != OK, UNKNOWN_ERROR, "<id%d> @%s, Failed to getConnection",
+                     info.cameraId, __func__);
 
-    ret = mIpc.serverFlattenGetConnection(pData, dataSize, scalerInfo, confVector);
+    ret = mIpc.serverFlattenGetConnection(pData, dataSize, scalerInfo,
+                                          confVector, tnrPortFormat);
     CheckAndLogError(ret == false, UNKNOWN_ERROR, "@%s, serverFlattenGetPgId fails", __func__);
 
     return OK;

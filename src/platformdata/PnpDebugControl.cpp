@@ -44,12 +44,16 @@ void PnpDebugControl::releaseInstance() {
     }
 }
 
+void PnpDebugControl::updateConfig() {
+    PnpDebugParser PnpDebugParser(&(getInstance()->mStaticCfg));
+}
+
 PnpDebugControl::PnpDebugControl() {
     PnpDebugParser PnpDebugParser(&mStaticCfg);
 }
 
-bool PnpDebugControl::isBypassAAL() {
-    return getInstance()->mStaticCfg.isBypassAAL;
+bool PnpDebugControl::useMockAAL() {
+    return getInstance()->mStaticCfg.useMockAAL;
 }
 
 bool PnpDebugControl::isBypass3A() {
@@ -64,16 +68,29 @@ bool PnpDebugControl::isBypassPG() {
     return getInstance()->mStaticCfg.isBypassPG;
 }
 
+bool PnpDebugControl::isFaceDisabled() {
+    return getInstance()->mStaticCfg.isFaceDisabled;
+}
+
+bool PnpDebugControl::isFaceAeDisabled() {
+    return getInstance()->mStaticCfg.isFaceDisabled ? true
+                                                    : getInstance()->mStaticCfg.isFaceAeDisabled;
+}
+
 bool PnpDebugControl::isBypassFDAlgo() {
-    return getInstance()->mStaticCfg.isBypassFDAlgo;
+    return !getInstance()->mStaticCfg.isFaceDisabled && getInstance()->mStaticCfg.isBypassFDAlgo;
 }
 
 bool PnpDebugControl::isBypassISys() {
     return getInstance()->mStaticCfg.isBypassISys;
 }
 
-bool PnpDebugControl::isBypassHal() {
-    return getInstance()->mStaticCfg.isBypassHal;
+bool PnpDebugControl::useMockHal() {
+    return getInstance()->mStaticCfg.useMockHal;
+}
+
+bool PnpDebugControl::isBypassP2p() {
+    return getInstance()->mStaticCfg.isBypassP2p;
 }
 
 #define PNP_DEBUG_FILE_NAME "pnp_profiles.xml"
@@ -123,20 +140,26 @@ void PnpDebugParser::checkField(PnpDebugParser* profiles, const char* name, cons
 void PnpDebugParser::handlePowerConfig(PnpDebugParser* profiles, const char* name,
                                        const char** atts) {
     LOG2("@%s, name:%s, atts[0]:%s, atts[1]: %s", __func__, name, atts[0], atts[1]);
-    if (strcmp(name, "bypassAAL") == 0) {
-        mStaticCfg->isBypassAAL = strcmp(atts[1], "true") == 0;
+    if (strcmp(name, "useMockAAL") == 0) {
+        mStaticCfg->useMockAAL = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "bypass3A") == 0) {
         mStaticCfg->isBypass3A = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "bypassPAL") == 0) {
         mStaticCfg->isBypassPAL = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "bypassPG") == 0) {
         mStaticCfg->isBypassPG = strcmp(atts[1], "true") == 0;
+    } else if (strcmp(name, "disableFace") == 0) {
+        mStaticCfg->isFaceDisabled = strcmp(atts[1], "true") == 0;
+    } else if (strcmp(name, "disableFaceAe") == 0) {
+        mStaticCfg->isFaceAeDisabled = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "bypassFDAlgo") == 0) {
         mStaticCfg->isBypassFDAlgo = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "bypassISys") == 0) {
         mStaticCfg->isBypassISys = strcmp(atts[1], "true") == 0;
-    } else if (strcmp(name, "bypassHal") == 0) {
-        mStaticCfg->isBypassHal = strcmp(atts[1], "true") == 0;
+    } else if (strcmp(name, "useMockHal") == 0) {
+        mStaticCfg->useMockHal = strcmp(atts[1], "true") == 0;
+    } else if (strcmp(name, "bypassP2p") == 0) {
+        mStaticCfg->isBypassP2p = strcmp(atts[1], "true") == 0;
     }
 }
 

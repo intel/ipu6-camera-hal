@@ -17,9 +17,10 @@
 #pragma once
 #include <memory>
 
-#include "FaceBase.h"
+#include "FaceType.h"
 #include "iutils/Errors.h"
 #include "iutils/Utils.h"
+#include "modules/sandboxing/IPCIntelFD.h"
 
 namespace icamera {
 class IntelFaceDetection {
@@ -29,7 +30,7 @@ class IntelFaceDetection {
 
     status_t init(FaceDetectionInitParams* pData, int dataSize);
     status_t deinit(FaceDetectionDeinitParams* pData, int dataSize);
-    status_t run(pvl_image* pImage, FaceDetectionResult* fdResults);
+    status_t run(pvl_image* pImage, FaceDetectionPVLResult* fdResults);
     status_t run(FaceDetectionRunParams* fdRunParams, int dataSize, void* addr = nullptr);
     FaceDetectionRunParams* prepareRunBuffer(unsigned int index);
 

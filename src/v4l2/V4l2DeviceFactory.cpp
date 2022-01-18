@@ -16,33 +16,30 @@
 
 #define LOG_TAG V4l2DeviceFactory
 
+#include "V4l2DeviceFactory.h"
+
 #include <fcntl.h>
 
 #include "iutils/CameraLog.h"
-
-#include "V4l2DeviceFactory.h"
 
 namespace icamera {
 
 std::map<int, V4l2DeviceFactory*> V4l2DeviceFactory::sInstances;
 Mutex V4l2DeviceFactory::sLock;
 
-V4l2DeviceFactory::V4l2DeviceFactory(int cameraId) : mCameraId(cameraId)
-{
-    LOG1("V4l2DeviceFactory created for id:%d", mCameraId);
+V4l2DeviceFactory::V4l2DeviceFactory(int cameraId) : mCameraId(cameraId) {
+    LOG1("<id%d> @%s", mCameraId, __func__);
 }
 
-V4l2DeviceFactory::~V4l2DeviceFactory()
-{
-    LOG1("V4l2DeviceFactory released for id:%d", mCameraId);
+V4l2DeviceFactory::~V4l2DeviceFactory() {
+    LOG1("<id%d> @%s", mCameraId, __func__);
 }
 
 /**
  * Create a static instance of V4l2DeviceFactory for cameraId.
  * It should be called before any device is used.
  */
-void V4l2DeviceFactory::createDeviceFactory(int cameraId)
-{
+void V4l2DeviceFactory::createDeviceFactory(int cameraId) {
     AutoMutex lock(sLock);
     getInstance(cameraId);
 }
@@ -52,8 +49,7 @@ void V4l2DeviceFactory::createDeviceFactory(int cameraId)
  * All device related to the instance of of V4l2DeviceFactory will be release here as well
  * After calling this function, all device could not be used anymore.
  */
-void V4l2DeviceFactory::releaseDeviceFactory(int cameraId)
-{
+void V4l2DeviceFactory::releaseDeviceFactory(int cameraId) {
     AutoMutex lock(sLock);
     V4l2DeviceFactory* factory = getInstance(cameraId);
     sInstances.erase(cameraId);
@@ -70,8 +66,7 @@ void V4l2DeviceFactory::releaseDeviceFactory(int cameraId)
  *
  * Return a not nullptr sub device pointer
  */
-V4L2Subdevice* V4l2DeviceFactory::getSubDev(int cameraId, const std::string& devName)
-{
+V4L2Subdevice* V4l2DeviceFactory::getSubDev(int cameraId, const std::string& devName) {
     AutoMutex lock(sLock);
     V4l2DeviceFactory* factory = getInstance(cameraId);
     // If an existing sub device found, then just return it.
@@ -96,8 +91,7 @@ V4L2Subdevice* V4l2DeviceFactory::getSubDev(int cameraId, const std::string& dev
  *
  * It MUST be called after all sub devices are not used anymore
  */
-void V4l2DeviceFactory::releaseSubDevices(int  /*cameraId*/)
-{
+void V4l2DeviceFactory::releaseSubDevices(int /*cameraId*/) {
     for (auto it = mDevices.begin(); it != mDevices.end(); it++) {
         V4L2Subdevice* subdev = it->second;
         if (subdev) {
@@ -111,8 +105,7 @@ void V4l2DeviceFactory::releaseSubDevices(int  /*cameraId*/)
 /**
  * Private function with no lock in it, must be called with lock protection
  */
-V4l2DeviceFactory* V4l2DeviceFactory::getInstance(int cameraId)
-{
+V4l2DeviceFactory* V4l2DeviceFactory::getInstance(int cameraId) {
     if (sInstances.find(cameraId) != sInstances.end()) {
         return sInstances[cameraId];
     }
@@ -121,4 +114,4 @@ V4l2DeviceFactory* V4l2DeviceFactory::getInstance(int cameraId)
     return sInstances[cameraId];
 }
 
-} //namespace icamera
+}  // namespace icamera

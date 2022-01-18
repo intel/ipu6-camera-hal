@@ -16,9 +16,10 @@
 
 #define LOG_TAG Thread
 
-#include "Errors.h"
 #include "Thread.h"
+
 #include "CameraLog.h"
+#include "Errors.h"
 
 namespace icamera {
 
@@ -27,24 +28,15 @@ int Condition::waitRelative(ConditionLock& lock, int64_t reltime) {
     return ret == std::cv_status::timeout ? TIMED_OUT : OK;
 }
 
-Thread::Thread() : mState(NOT_STARTED), mThread(nullptr), mPriority(PRIORITY_DEFAULT)
-{
-    LOG1("%s", __func__);
-}
+Thread::Thread() : mState(NOT_STARTED), mThread(nullptr), mPriority(PRIORITY_DEFAULT) {}
 
-Thread::~Thread()
-{
-    LOG1("%s", __func__);
-
+Thread::~Thread() {
     requestExitAndWait();
 
     delete mThread;
 }
 
-int Thread::run(std::string name, int priority)
-{
-    LOG1("%s", __func__);
-
+int Thread::run(std::string name, int priority) {
     AutoMutex lock(mLock);
 
     if (mState != NOT_STARTED && mState != EXITED) {
@@ -68,9 +60,8 @@ int Thread::run(std::string name, int priority)
     return OK;
 }
 
-void Thread::requestExit()
-{
-    LOG1("%s", __func__);
+void Thread::requestExit() {
+    LOG1("%s, thread name:%s", __func__, mName.empty() ? "NO_NAME" : mName.c_str());
 
     AutoMutex lock(mLock);
 
@@ -79,9 +70,8 @@ void Thread::requestExit()
     }
 }
 
-int Thread::requestExitAndWait()
-{
-    LOG1("%s", __func__);
+int Thread::requestExitAndWait() {
+    LOG1("%s, thread name:%s", __func__, mName.empty() ? "NO_NAME" : mName.c_str());
 
     ConditionLock lock(mLock);
 
@@ -104,10 +94,7 @@ int Thread::requestExitAndWait()
     return OK;
 }
 
-int Thread::join()
-{
-    LOG1("%s", __func__);
-
+int Thread::join() {
     ConditionLock lock(mLock);
 
     // No need join if it's not started.
@@ -128,27 +115,23 @@ int Thread::join()
     return OK;
 }
 
-bool Thread::isRunning() const
-{
+bool Thread::isRunning() const {
     AutoMutex lock(mLock);
     // A thread in EXITING also means it's still running, but it's going to exit.
     return mState == RUNNING || mState == EXITING;
 }
 
-bool Thread::isExiting() const
-{
+bool Thread::isExiting() const {
     AutoMutex lock(mLock);
     return mState == EXITING;
 }
 
-bool Thread::isExited() const
-{
+bool Thread::isExited() const {
     AutoMutex lock(mLock);
     return mState == EXITED;
 }
 
-void Thread::_threadLoop(Thread* self)
-{
+void Thread::_threadLoop(Thread* self) {
     {
         // Wait for function "run" to finish.
         // If the thread is going to exit, then no need to wait anymore.
@@ -183,8 +166,7 @@ void Thread::_threadLoop(Thread* self)
 #include <pthread.h>
 #include <sys/resource.h>
 
-void Thread::setProperty()
-{
+void Thread::setProperty() {
     LOG1("%s, name:%s, priority:%d", __func__, mName.c_str(), mPriority);
 
 #if __GLIBC__ >= 2 && __GLIBC_MINOR__ >= 12
@@ -218,5 +200,4 @@ void Thread::setProperty()
 #warning "Setting thread's property is not implemented yet on this platform."
 #endif
 
-} // namespace icamera
-
+}  // namespace icamera

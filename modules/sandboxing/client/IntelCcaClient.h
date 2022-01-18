@@ -18,11 +18,11 @@
 
 #include <IntelCCA.h>
 
+#include <map>
 #include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include <map>
 
 #include "CameraTypes.h"
 #include "IntelAlgoCommonClient.h"
@@ -32,16 +32,13 @@
 namespace icamera {
 class IntelCca {
  public:
-    IntelCca(int cameraId, TuningMode mode);
-    virtual ~IntelCca();
-
     static IntelCca* getInstance(int cameraId, TuningMode mode);
     static void releaseInstance(int cameraId, TuningMode mode);
     static void releaseAllInstances();
 
     ia_err init(const cca::cca_init_params& initParams);
 
-    ia_err setStatsParams(const cca::cca_stats_params& params, cca::cca_out_stats* outStats);
+    ia_err setStatsParams(const cca::cca_stats_params& params);
 
     ia_err runAEC(uint64_t frameId, const cca::cca_ae_input_params& params,
                   cca::cca_ae_results* results);
@@ -70,13 +67,16 @@ class IntelCca {
     void deinit();
 
     ia_err decodeStats(uint64_t statsPointer, uint32_t statsSize, uint32_t bitmap,
-                       ia_isp_bxt_statistics_query_results_t* results);
+                       ia_isp_bxt_statistics_query_results_t* results,
+                       cca::cca_out_stats* outStats = nullptr);
 
     uint32_t getPalDataSize(const cca::cca_program_group& programGroup);
     void* allocMem(int streamId, const std::string& name, int index, int size);
     void freeMem(void* addr);
 
  private:
+    IntelCca(int cameraId, TuningMode mode);
+    virtual ~IntelCca();
     void freeStatsDataMem();
 
  private:
@@ -84,8 +84,6 @@ class IntelCca {
     TuningMode mTuningMode;
 
     IntelAlgoCommon mCommon;
-
-    bool mInitialized;
 
     ShmMemInfo mMemStruct;
     ShmMemInfo mMemInit;
