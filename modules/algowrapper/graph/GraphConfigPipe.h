@@ -110,6 +110,8 @@ class GraphConfigPipe {
      * Port Interrogation methods
      */
     status_t portGetFullName(Node* port, std::string* fullName);
+
+    int32_t getTuningMode(const int32_t streamId);
     status_t portGetPeer(Node* port, Node** peer);
     status_t portGetFormat(Node* port, IGraphType::PortFormatSettings* format);
     status_t portGetConnection(Node* port, IGraphType::ConnectionConfig* connectionInfo,

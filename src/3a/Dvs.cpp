@@ -42,6 +42,8 @@ const int DVS_MIN_ENVELOPE = 12;
 Dvs::Dvs(int cameraId)
         : mCameraId(cameraId),
           mTuningMode(TUNING_MODE_VIDEO) {
+    CLEAR(mPtzRegion);
+    CLEAR(mGDCRegion);
 }
 
 Dvs::~Dvs() {
@@ -138,8 +140,19 @@ int Dvs::configCcaDvsData(const ConfigMode configMode, cca::cca_init_params *par
         params->dvsOutputType = cca::CCA_DVS_MORPH_TABLE;
     }
 
+    gdcConfig->gdc_resolution_history = gdcConfig->gdc_resolution_info;
+
+    mGDCRegion.left = 0;
+    mGDCRegion.top = 0;
+    mGDCRegion.right = resolution.input_width / 2;;
+    mGDCRegion.bottom = resolution.input_height / 2;
+
     dumpDvsConfiguration(*params);
     return OK;
+}
+
+void Dvs::setParameter(const Parameters& p) {
+    p.getZoomRegion(&mPtzRegion);
 }
 
 void Dvs::handleEvent(EventData eventData) {
@@ -151,7 +164,19 @@ void Dvs::handleEvent(EventData eventData) {
     CheckAndLogError(!intelCcaHandle, VOID_VALUE, "@%s, Failed to get IntelCca instance", __func__);
 
     // Run DVS
-    LOG2("%s: handle EVENT_PSYS_STATS_BUF_READY", __func__);
+    LOG2("%s: Ready to run DVS", __func__);
+
+    cca::cca_dvs_zoom zp;
+    memset(&zp, 0, sizeof(zp));
+    zp.digital_zoom_ratio = 1.0f;
+    zp.digital_zoom_factor = 1.0f;
+    zp.zoom_mode = ia_dvs_zoom_mode_region;
+    if (!mPtzRegion.left && !mPtzRegion.top && !mPtzRegion.right && !mPtzRegion.bottom)
+        zp.zoom_region = {mGDCRegion.left, mGDCRegion.top, mGDCRegion.right, mGDCRegion.bottom};
+    else
+        zp.zoom_region = { mPtzRegion.left, mPtzRegion.top, mPtzRegion.right, mPtzRegion.bottom };
+    intelCcaHandle->updateZoom(zp);
+
     ia_err iaErr = intelCcaHandle->runDVS(eventData.data.statsReady.sequence);
     int ret = AiqUtils::convertError(iaErr);
     CheckAndLogError(ret != OK, VOID_VALUE, "Error running DVS: %d", ret);
@@ -159,7 +184,7 @@ void Dvs::handleEvent(EventData eventData) {
 }
 
 void Dvs::dumpDvsConfiguration(const cca::cca_init_params &config) {
-    if (!Log::isLogTagEnabled(GET_FILE_SHIFT(Dvs))) return;
+    if (!Log::isLogTagEnabled(GET_FILE_SHIFT(Dvs), CAMERA_DEBUG_LOG_LEVEL3)) return;
 
     LOG3("config.dvsOutputType %d", config.dvsOutputType);
     LOG3("config.enableVideoStablization %d", config.enableVideoStablization);

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2021 Intel Corporation
+ * Copyright (C) 2019-2022 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -87,8 +87,7 @@ FaceDetection::FaceDetection(int cameraId, unsigned int maxFaceNum, int32_t halS
           mRunCount(0) {
     LOG1("<id%d> default interval:%d, interval no face:%d, run interval:%d", cameraId,
          mFDRunDefaultInterval, mFDRunIntervalNoFace, mFDRunInterval);
-    initFovInfoFor3A(&mFovInfo);
-    initRatioInfoForApp(&mRatioInfo);
+    initRatioInfo(&mRatioInfo);
 }
 
 FaceDetection::~FaceDetection() {
@@ -166,38 +165,7 @@ void FaceDetection::runFaceDetection(const std::shared_ptr<camera3::Camera3Buffe
     }
 }
 
-void FaceDetection::initFovInfoFor3A(struct FovInfoFor3A* fovInfo) {
-    /*
-     * face rectangle from face lib: (Ln, Tn, Rn, Bn)
-     * 3A statistics Surface: ((IA_COORDINATE_RIGHT - IA_COORDINATE_LEFT) *
-     *                         (IA_COORDINATE_BOTTOM - IA_COORDINATE_TOP))
-     * target coordinate of face rectangle to the 3A lib: (LL, TT, RR, BB)
-     * FOV ratio (which is <= 1): (fovRatioW * fovRatioH)
-     *
-     * formular:
-     * LL = Ln * fovRatioW + (1 - fovRatioW) / 2 * (IA_COORDINATE_RIGHT - IA_COORDINATE_LEFT)
-     * TT = Tn * fovRatioH + (1 - fovRatioH) / 2 * (IA_COORDINATE_BOTTOM - IA_COORDINATE_TOP)
-     * RR and BB are the similar.
-     */
-    CLEAR(*fovInfo);
-    float scalerWidth = 1;
-    float scalerHeight = 1;
-    int ret = PlatformData::getScalerInfo(mCameraId, mHalStreamId, &scalerWidth, &scalerHeight);
-    LOG2("getScalerInfo ret:%d, scalerWidth:%f, scalerHeight:%f", ret, scalerWidth, scalerHeight);
-
-    camera_coordinate_system_t activePixelArray = PlatformData::getActivePixelArray(mCameraId);
-    float fovRatioW = scalerWidth * mWidth / (activePixelArray.right - activePixelArray.left);
-    float fovRatioH = scalerHeight * mHeight / (activePixelArray.bottom - activePixelArray.top);
-    float offsetW = (1.0 - fovRatioW) / 2.0 * (IA_COORDINATE_RIGHT - IA_COORDINATE_LEFT);
-    float offsetH = (1.0 - fovRatioH) / 2.0 * (IA_COORDINATE_BOTTOM - IA_COORDINATE_TOP);
-
-    LOG2("mHeight:%d, mWidth:%d, fovRatioW:%f, fovRatioH:%f, offsetW:%f, offsetH:%f", mHeight,
-         mWidth, fovRatioW, fovRatioH, offsetW, offsetH);
-
-    *fovInfo = {fovRatioW, fovRatioH, offsetW, offsetH};
-}
-
-void FaceDetection::initRatioInfoForApp(struct RatioInfoForApp* ratioInfo) {
+void FaceDetection::initRatioInfo(struct RatioInfo* ratioInfo) {
     CLEAR(*ratioInfo);
     // construct android coordinate based on active pixel array
     camera_coordinate_system_t activePixelArray = PlatformData::getActivePixelArray(mCameraId);
@@ -228,8 +196,42 @@ void FaceDetection::initRatioInfoForApp(struct RatioInfoForApp* ratioInfo) {
         __func__, imageRotationChanged, mHeight, mWidth, activeWidth, activeHeight, verticalCrop,
         horizontalCrop);
 
-    *ratioInfo = {{0, 0, activeWidth, activeHeight}, verticalCrop, horizontalCrop,
-                  imageRotationChanged};
+    *ratioInfo = {
+        {0, 0, activeWidth, activeHeight}, verticalCrop, horizontalCrop, imageRotationChanged};
+}
+
+void FaceDetection::convertFaceCoordinate(camera_coordinate_system_t& sysCoord, int* left, int* top,
+                                    int* right, int* bottom) {
+    int verticalCrop = mRatioInfo.verticalCrop;
+    int horizontalCrop = mRatioInfo.horizontalCrop;
+    bool imageRotationChanged = mRatioInfo.imageRotationChanged;
+    camera_coordinate_t srcCoord = {0, 0};
+    camera_coordinate_t destCoord = {0, 0};
+    const camera_coordinate_system_t fillFrameCoord = {0, 0, mWidth + horizontalCrop,
+                                                       mHeight + verticalCrop};
+
+    if (imageRotationChanged) {
+        camera_coordinate_t pointCoord = {0, 0};
+        pointCoord.x = *left + (horizontalCrop / 2);
+        pointCoord.y = *top + (verticalCrop / 2);
+        destCoord = AiqUtils::convertCoordinateSystem(fillFrameCoord, sysCoord, pointCoord);
+        *left = destCoord.x;  // rect.left
+        *top = destCoord.y;   // rect.top
+        pointCoord.x = *right + (horizontalCrop / 2);
+        pointCoord.y = *bottom + (verticalCrop / 2);
+        destCoord = AiqUtils::convertCoordinateSystem(fillFrameCoord, sysCoord, pointCoord);
+        *right = destCoord.x;   // rect.right
+        *bottom = destCoord.y;  // rect.bottom
+    } else {
+        srcCoord = {*left, *top};
+        destCoord = AiqUtils::convertCoordinateSystem(fillFrameCoord, sysCoord, srcCoord);
+        *left = destCoord.x;  // rect.left
+        *top = destCoord.y;   // rect.top
+        srcCoord = {*right, *bottom};
+        destCoord = AiqUtils::convertCoordinateSystem(fillFrameCoord, sysCoord, srcCoord);
+        *right = destCoord.x;   // rect.right
+        *bottom = destCoord.y;  // rect.bottom
+    }
 }
 
 int FaceDetection::getResult(int cameraId, cca::cca_face_state* faceState) {

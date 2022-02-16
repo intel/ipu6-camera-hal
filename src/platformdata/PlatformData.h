@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Intel Corporation.
+ * Copyright (C) 2015-2022 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -93,6 +93,8 @@ namespace icamera {
 #define CAMERA_GRAPH_SETTINGS_DIR "gcss/"
 #endif
 
+#define NVM_DATA_PATH "/sys/bus/i2c/devices/"
+
 #define TNR7US_RESTART_THRESHOLD 5
 
 class GraphConfigNodes;
@@ -167,7 +169,7 @@ class PlatformData {
                       mISYSCompression(false),
                       mPSACompression(false),
                       mOFSCompression(false),
-                      mFaceAeEnabled(false),
+                      mFaceAeEnabled(true),
                       mFaceEngineVendor(FACE_ENGINE_INTEL_PVL),
                       mFaceEngineRunningInterval(FACE_ENGINE_DEFAULT_RUNNING_INTERVAL),
                       mFaceEngineRunningIntervalNoFace(FACE_ENGINE_DEFAULT_RUNNING_INTERVAL),
@@ -181,7 +183,7 @@ class PlatformData {
                       mNvmOverwrittenFileSize(0),
                       mTnrExtraFrameNum(DEFAULT_TNR_EXTRA_FRAME_NUM),
                       mDummyStillSink(false),
-                      mForceFlushIpuBuffer(false),
+                      mRemoveCacheFlushOutputBuffer(false),
                       mPLCEnable(false),
                       mStillOnlyPipe(false) {
             }
@@ -286,7 +288,7 @@ class PlatformData {
             std::vector<IGraphType::ScalerInfo> mScalerInfo;
             int mTnrExtraFrameNum;
             bool mDummyStillSink;
-            bool mForceFlushIpuBuffer;
+            bool mRemoveCacheFlushOutputBuffer;
             bool mPLCEnable;
             bool mStillOnlyPipe;
         };
@@ -653,10 +655,18 @@ class PlatformData {
     static bool isEnableLtmThread(int cameraId);
 
     /**
-     * Check face detection is enabled or not
+     * Check face engine is enabled or not
      *
      * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
-     * \return if face detection is enabled or not.
+     * \return if face engine is enabled or not.
+     */
+    static bool isFaceDetectionSupported(int cameraId);
+
+    /**
+     * Check face AE is enabled or not, only for debug
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return if face ae is enabled or not.
      */
     static bool isFaceAeEnabled(int cameraId);
 
@@ -1316,6 +1326,11 @@ class PlatformData {
     static int getVideoStreamNum();
 
     /**
+     * Check if support to update tuning data or not
+     */
+    static bool supportUpdateTuning();
+
+    /**
      * Check should connect gpu algo or not
      * should connect gpu algo service if any gpu algorithm is used
      * \return true if should connect gpu algo.
@@ -1367,12 +1382,12 @@ class PlatformData {
     static bool isDummyStillSink(int cameraId);
 
     /*
-     * check if forcing flushing IPU buffer is enabled
+     * check if removing cache flush output buffer
      *
      * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
-     * \return true if forcing flush IPU buffer.
+     * \return true if removing cache flush output buffer.
      */
-    static bool getForceFlushIpuBuffer(int cameraId);
+    static bool removeCacheFlushOutputBuffer(int cameraId);
 
     /*
      * Get PLC Enable status

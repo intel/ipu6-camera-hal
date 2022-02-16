@@ -258,9 +258,10 @@ bool isDebugLevelEnable(int level) {
     return gLogLevel & level;
 }
 
-bool isLogTagEnabled(int tag) {
+bool isLogTagEnabled(int tag, int level) {
     if (tag < 0 || tag >= TAGS_MAX_NUM) return false;
-    return globalGroupsDescp[tag].level > 0;
+    return level ? (globalGroupsDescp[tag].level & level)
+                 : (globalGroupsDescp[tag].level > 0);
 }
 
 // DUMP_ENTITY_TOPOLOGY_S

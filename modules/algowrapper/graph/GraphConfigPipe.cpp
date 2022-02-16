@@ -1097,6 +1097,35 @@ status_t GraphConfigPipe::graphGetStreamIds(StreamsVector* streamIds) {
     return OK;
 }
 
+int32_t GraphConfigPipe::getTuningMode(const int32_t streamId) {
+    GraphConfigNode* result = nullptr;
+    int32_t tuningMode = -1, graphStreamId = -1;
+    GraphConfigNode::const_iterator it = mSettings->begin();
+
+    while (it != mSettings->end()) {
+        // Get the tuning mode by psys streamId
+        css_err_t ret = mSettings->getDescendant(GCSS_KEY_TYPE, "program_group", it, &result);
+        if (ret != css_err_none) continue;
+
+        ret = result->getValue(GCSS_KEY_STREAM_ID, graphStreamId);
+        if (ret == css_err_none && graphStreamId == streamId && graphStreamId != -1) {
+            GraphConfigNode *tuningModeNode = nullptr;
+            ret = result->getDescendant(GCSS_KEY_TUNING_MODE, &tuningModeNode);
+            if (ret == css_err_none && tuningModeNode) {
+                string tuningModeStr;
+                ret = tuningModeNode->getValue(GCSS_KEY_VALUE, tuningModeStr);
+                if (ret == css_err_none && !tuningModeStr.empty()) {
+                    tuningMode = atoi(tuningModeStr.c_str());
+                    LOG2("%s, streamId: %d, tuningMode: %d", __func__, streamId, tuningMode);
+                    break;
+                }
+            }
+        }
+    }
+
+    return tuningMode;
+}
+
 int32_t GraphConfigPipe::portGetStreamId(Node* port) {
     CheckAndLogError(!port, -1, "Invalid Node, cannot get the port stream id");
 

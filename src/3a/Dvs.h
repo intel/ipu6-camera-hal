@@ -33,6 +33,7 @@
 #include "CameraEvent.h"
 #include "iutils/Errors.h"
 #include "iutils/Thread.h"
+#include "Parameters.h"
 
 namespace icamera {
 class Dvs : public EventListener {
@@ -42,6 +43,7 @@ class Dvs : public EventListener {
 
     int configure(const ConfigMode configMode, cca::cca_init_params *params);
     void handleEvent(EventData eventData);
+    void setParameter(const Parameters& p);
 
  private:
     int configCcaDvsData(const ConfigMode configMode, cca::cca_init_params *params);
@@ -50,6 +52,8 @@ class Dvs : public EventListener {
  private:
     int mCameraId;
     TuningMode mTuningMode;
+    camera_zoom_region_t mPtzRegion;
+    camera_zoom_region_t mGDCRegion;
 
     // prevent copy constructor and assignment operator
     DISALLOW_COPY_AND_ASSIGN(Dvs);

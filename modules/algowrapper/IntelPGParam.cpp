@@ -1133,12 +1133,12 @@ css_err_t IntelPGParam::payloadSectionSizeSanityTest(ia_p2p_payload_desc* curren
 }
 
 void IntelPGParam::dumpFragmentDesc(int fragmentCount) {
-    if (!Log::isLogTagEnabled(GET_FILE_SHIFT(IntelPGParam))) return;
+    if (!Log::isLogTagEnabled(GET_FILE_SHIFT(IntelPGParam), CAMERA_DEBUG_LOG_LEVEL3)) return;
 
-    LOG2("%s: pg %d get frag count %d (new api)", __func__, mPgId, fragmentCount);
+    LOG3("%s: pg %d get frag count %d (new api)", __func__, mPgId, fragmentCount);
     for (int kernel = 0; kernel < IA_P2P_MAX_KERNELS_PER_PG; kernel++) {
         for (int frag = 0; frag < fragmentCount; frag++) {
-            LOG2("   kernel %d, frag %d: [%d %d %d %d]", kernel, frag,
+            LOG3("   kernel %d, frag %d: [%d %d %d %d]", kernel, frag,
                  mFragmentConfig->pixel_fragment_descs[kernel][frag].fragment_width,
                  mFragmentConfig->pixel_fragment_descs[kernel][frag].fragment_height,
                  mFragmentConfig->pixel_fragment_descs[kernel][frag].fragment_start_x,

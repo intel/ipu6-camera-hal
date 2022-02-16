@@ -124,6 +124,7 @@ struct intel_cca_update_tuning_data {
     uint8_t lardTags;
     ia_lard_input_params lardParams;
     cca::cca_nvm nvmParams;
+    int32_t streamId;
 };
 
 struct intel_cca_deinit_data {

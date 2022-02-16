@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2021 Intel Corporation
+ * Copyright (C) 2019-2022 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,24 +77,6 @@ status_t IntelFaceDetection::deinit(FaceDetectionDeinitParams* pData, int dataSi
     return OK;
 }
 
-void IntelFaceDetection::convertCoordinate(int faceId, int width, int height, const pvl_rect& src,
-                                           pvl_rect* dst) {
-    CheckAndLogError(!dst, VOID_VALUE, "dst is nullptr");
-
-    const camera_coordinate_system_t iaCoordinate = {IA_COORDINATE_LEFT, IA_COORDINATE_TOP,
-                                                     IA_COORDINATE_RIGHT, IA_COORDINATE_BOTTOM};
-    const camera_coordinate_system_t faceCoordinate = {0, 0, width, height};
-
-    camera_coordinate_t topLeft =
-        AiqUtils::convertCoordinateSystem(faceCoordinate, iaCoordinate, {src.left, src.top});
-    camera_coordinate_t bottomRight =
-        AiqUtils::convertCoordinateSystem(faceCoordinate, iaCoordinate, {src.right, src.bottom});
-
-    *dst = {topLeft.x, topLeft.y, bottomRight.x, bottomRight.y};
-    LOG2("@%s, face:%d, dst left:%d, top:%d, right:%d, bottom:%d", __func__, faceId, dst->left,
-         dst->top, dst->right, dst->bottom);
-}
-
 FaceDetectionRunParams* IntelFaceDetection::prepareRunBuffer(unsigned int index) {
     CheckAndLogError(index >= MAX_STORE_FACE_DATA_BUF_NUM, nullptr, "@%s, index is error %d",
                      __func__, index);
@@ -120,12 +102,6 @@ status_t IntelFaceDetection::run(pvl_image* pImage, FaceDetectionPVLResult* fdRe
              fdResults->faceResults[i].confidence, fdResults->faceResults[i].rip_angle,
              fdResults->faceResults[i].rop_angle, fdResults->faceResults[i].tracking_id);
     }
-
-    for (int i = 0; i < fdResults->faceNum; i++) {
-        convertCoordinate(i, pImage->width, pImage->height, fdResults->faceResults[i].rect,
-                          &fdResults->faceResults[i].rect);
-    }
-
     return OK;
 }
 

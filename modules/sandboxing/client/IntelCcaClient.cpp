@@ -337,7 +337,7 @@ ia_err IntelCca::getAiqd(cca::cca_aiqd* aiqd) {
 }
 
 ia_err IntelCca::updateTuning(uint8_t lardTags, const ia_lard_input_params& lardParams,
-                              const cca::cca_nvm& nvm) {
+                              const cca::cca_nvm& nvm, int32_t streamId) {
     LOG2("<id%d> @%s, tuningMode:%d", mCameraId, __func__, mTuningMode);
 
     intel_cca_update_tuning_data* params =
@@ -347,6 +347,7 @@ ia_err IntelCca::updateTuning(uint8_t lardTags, const ia_lard_input_params& lard
     params->lardTags = lardTags;
     params->lardParams = lardParams;
     params->nvmParams = nvm;
+    params->streamId = streamId;
 
     ia_err ret = mCommon.requestSyncCca(IPC_CCA_UPDATE_TUNING, mMemTuning.mHandle);
     CheckAndLogError(ret != ia_err_none, ia_err_general, "@%s, requestSyncCca fails", __func__);

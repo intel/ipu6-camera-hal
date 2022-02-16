@@ -52,8 +52,6 @@ struct CameraModuleInfo {
 #define CAMERA_MODULE_INFO_OFFSET 32
 #define CAMERA_MODULE_INFO_SIZE 32
 
-#define NVM_DATA_PATH "/sys/bus/i2c/devices/"
-
 class AiqData {
  public:
     explicit AiqData(const std::string& fileName, int maxSize = -1);

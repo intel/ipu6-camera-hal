@@ -111,6 +111,7 @@ class Camera3Buffer {
     uint64_t getTimeStamp() { return mHalBuffer.timestamp; }
     void setTimeStamp(uint64_t timestamp) { mHalBuffer.timestamp = timestamp; }
     int format() { return mFormat; }
+    int usage() { return mUsage; }
     buffer_handle_t* getBufferHandle() { return mHandlePtr; }
     bool isLocked() const { return mLocked; }
     int dmaBufFd() { return mType == BUF_TYPE_HANDLE ? mHandle->data[0] : mHalBuffer.dmafd; }

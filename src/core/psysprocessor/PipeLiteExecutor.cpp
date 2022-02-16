@@ -807,8 +807,14 @@ int PipeLiteExecutor::notifyStatsDone(TuningMode tuningMode, const v4l2_buffer_t
                                       const vector<EventType>& eventType) {
     PERF_CAMERA_ATRACE();
 
-    // The executor does not produce stats, so no need to notify.
-    if (outStatsBuffers.empty()) return OK;
+    if (outStatsBuffers.empty()) {
+        // notify event even though no stats is output
+        if (mkernelsCountWithStats > 0) {
+            LOG2("%s, notify stats done Stats %d", __func__, mkernelsCountWithStats);
+            mPSysDag->onStatsDone(inV4l2Buf.sequence);
+        }
+        return OK;
+    }
 
     /**
      * Notice for EVENT_PSYS_STATS_BUF_READY:
@@ -880,6 +886,7 @@ int PipeLiteExecutor::notifyStatsDone(TuningMode tuningMode, const v4l2_buffer_t
     if (mStreamId == VIDEO_STREAM_ID && inV4l2Buf.sequence > mLastStatsSequence) {
         mLastStatsSequence = inV4l2Buf.sequence;
     }
+    LOG2("%s, notify stats done", __func__);
     mPSysDag->onStatsDone(inV4l2Buf.sequence);
 
     return OK;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Intel Corporation.
+ * Copyright (C) 2015-2022 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -236,8 +236,20 @@ bool PlatformData::isEnableLtmThread(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mEnableLtmThread;
 }
 
+bool PlatformData::isFaceDetectionSupported(int cameraId) {
+    Parameters *source = &(getInstance()->mStaticCfg.mCameras[cameraId].mCapability);
+    const icamera::CameraMetadata& meta = icamera::ParameterHelper::getMetadata(*source);
+    auto entry = meta.find(CAMERA_STATISTICS_INFO_AVAILABLE_FACE_DETECT_MODES);
+    for (size_t i = 0; i < entry.count; i++) {
+        if (entry.data.u8[i] != CAMERA_STATISTICS_FACE_DETECT_MODE_OFF) return true;
+    }
+
+    return false;
+}
+
 bool PlatformData::isFaceAeEnabled(int cameraId) {
-    return getInstance()->mStaticCfg.mCameras[cameraId].mFaceAeEnabled;
+    return (isFaceDetectionSupported(cameraId) &&
+            getInstance()->mStaticCfg.mCameras[cameraId].mFaceAeEnabled);
 }
 
 int PlatformData::faceEngineVendor(int cameraId) {
@@ -1331,6 +1343,10 @@ int PlatformData::getVideoStreamNum() {
     return getInstance()->mStaticCfg.mCommonConfig.videoStreamNum;
 }
 
+bool PlatformData::supportUpdateTuning() {
+    return getInstance()->mStaticCfg.mCommonConfig.supportIspTuningUpdate;
+}
+
 bool PlatformData::isUsingGpuAlgo() {
     bool enabled = false;
     enabled |= isGpuTnrEnabled();
@@ -1368,8 +1384,8 @@ bool PlatformData::isDummyStillSink(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mDummyStillSink;
 }
 
-bool PlatformData::getForceFlushIpuBuffer(int cameraId) {
-    return getInstance()->mStaticCfg.mCameras[cameraId].mForceFlushIpuBuffer;
+bool PlatformData::removeCacheFlushOutputBuffer(int cameraId) {
+    return getInstance()->mStaticCfg.mCameras[cameraId].mRemoveCacheFlushOutputBuffer;
 }
 
 bool PlatformData::getPLCEnable(int cameraId) {

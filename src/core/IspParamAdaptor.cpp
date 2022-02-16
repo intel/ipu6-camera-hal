@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Intel Corporation.
+ * Copyright (C) 2015-2022 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -242,6 +242,26 @@ int IspParamAdaptor::configure(const stream_t &stream, ConfigMode configMode,
         CheckAndLogError(ret != OK, ret, "%s, Failed to allocate isp parameter buffers", __func__);
     }
 
+    if (PlatformData::supportUpdateTuning()) {
+        for (auto& ispParamIt : mStreamIdToIspParameterMap) {
+            int ispTuningIndex = mGraphConfig->getTuningModeByStreamId(ispParamIt.first);
+            // Use the tuning mode in graph to update the isp tuning data
+            if (ispTuningIndex != -1) {
+                uint8_t lardTag = cca::CCA_LARD_ISP;
+                ia_lard_input_params lardParam = {};
+                lardParam.isp_mode_index = ispTuningIndex;
+                cca::cca_nvm tmpNvm = {};
+
+                ia_err iaErr = mIntelCca->updateTuning(lardTag, lardParam, tmpNvm,
+                                                       ispParamIt.first);
+                CheckAndLogError(iaErr != ia_err_none, UNKNOWN_ERROR,
+                                 "%s, Failed to update isp tuning data. tuning_mode %d",
+                                 __func__, ispTuningIndex);
+                LOG2("%s, Update isp tuning data. tuning_mode:%d, streamId: %d,",
+                     __func__, ispTuningIndex, ispParamIt.first);
+            }
+        }
+    }
     /*
      *  IA_ISP_BXT can run without 3A results to produce the defaults for a
      *  given sensor configuration.
@@ -925,7 +945,7 @@ void IspParamAdaptor::dumpIspParameter(int streamId, int64_t sequence, ia_binary
 }
 
 void IspParamAdaptor::dumpProgramGroup(ia_isp_bxt_program_group *pgPtr) {
-    if (!Log::isLogTagEnabled(GET_FILE_SHIFT(IspParamAdaptor))) return;
+    if (!Log::isLogTagEnabled(GET_FILE_SHIFT(IspParamAdaptor), CAMERA_DEBUG_LOG_LEVEL3)) return;
 
     LOG3("the kernel count: %d, run_kernels: %p", pgPtr->kernel_count, pgPtr->run_kernels);
     for (unsigned int i = 0; i < pgPtr->kernel_count; i++) {

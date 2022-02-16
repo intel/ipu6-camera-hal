@@ -37,40 +37,31 @@ extern char gDumpPath[50];
 
 // Dump bit mask definition
 enum {
-    // ISYS Buffer dump (bit[0-3])
+    // IPU Buffer dump (bit[0-3]), export cameraDump=0xf
     DUMP_ISYS_BUFFER =          1 << 0,
-    // Reserve bit[1-3] for detailed buffer dump control
+    DUMP_PSYS_OUTPUT_BUFFER =   1 << 1,
+    DUMP_PSYS_INTERM_BUFFER =   1 << 2, // dump Psys intermediate buffers like PreGDC output
+    DUMP_EXECUTOR_OUTPUT =      1 << 3,
 
-    DUMP_JPEG_BUFFER =          1 << 3, // JPEG buffer
-    // PSYS dump (bit[4-7])
-    DUMP_PSYS_OUTPUT_BUFFER =   1 << 4,
-    DUMP_PSYS_INTERM_BUFFER =   1 << 5, // dump Psys intermediate buffers like PreGDC output
-    DUMP_AIQ_DVS_RESULT =       1 << 6, // dump dvs result
+    // Other buffer dump (bit[4-7]), export cameraDump=0xf0
+    DUMP_JPEG_BUFFER =          1 << 4,
+    DUMP_UT_BUFFER =            1 << 5,
+    DUMP_SW_IMG_PROC_OUTPUT =   1 << 6,
+    DUMP_GPU_TNR =              1 << 7,
 
-    // PSYS PG/PAL/Stats dump (bit[8-11])
+    // PG/PAL/Stats dump (bit[8-11]), export cameraDump=0xf00
     DUMP_PSYS_PAL =             1 << 8,  // ISP param binary
     DUMP_PSYS_PG =              1 << 9,  // PSYS whole PG dump assisted by libiacss
-    DUMP_PSYS_AIQ_STAT =        1 << 10, // rgbs_grid format stats for AIQ use
-    DUMP_PSYS_DECODED_STAT =    1 << 11, // p2p decoded statistics
+    DUMP_PSYS_DECODED_STAT =    1 << 10, // p2p decoded statistics
 
-    // Other dump
-    DUMP_MIPI_BUFFER =          1 << 12, // e.g. export cameraDump=0x1000
-    DUMP_UT_BUFFER =            1 << 13, // e.g. export cameraDump=0x2000
-    DUMP_EMBEDDED_METADATA =    1 << 14, // e.g. export cameraDump=0x4000
-    DUMP_DEINTERLACED_BUFFER =  1 << 15, // 0x8000  Decimal val 32768
-    DUMP_SW_IMG_PROC_OUTPUT =   1 << 16, // 0x10000 Decimal val 65536
+    // AAL dump (bit[12-15]), export cameraDump=0xf000
+    DUMP_AAL_OUTPUT =           1 << 12,
+    DUMP_AAL_INPUT =            1 << 13,
 
-    // Pipe executors' dump
-    DUMP_EXECUTOR_OUTPUT =   1 << 17, // 0x20000 Decimal val 131072
-
-    // LTM output's dump
-    DUMP_LTM_OUTPUT = 1 << 18, // 0x40000 Decimal val 262144
-
-    DUMP_AAL_OUTPUT = 1 << 19, // 0x80000 Decimal val 524288
-    DUMP_AAL_INPUT = 1 << 20,  // 0x100000 Decimal val 1048576
-    DUMP_GPU_TNR = 1 << 21,    // 0x200000 Decimal val 2097152
-    DUMP_NVM_DATA = 1 << 22,   // 0x400000 Decimal val 4194304
-    DUMP_MAKER_NOTE = 1 << 23, // 0x800000 Decimal val 8388608
+    // Other dump (bit[16-19]), export cameraDump=0xf0000
+    DUMP_NVM_DATA =             1 << 16,
+    DUMP_MAKER_NOTE =           1 << 17,
+    DUMP_EMBEDDED_METADATA =    1 << 18,
 };
 
 enum {

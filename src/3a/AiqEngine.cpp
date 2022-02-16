@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Intel Corporation.
+ * Copyright (C) 2015-2022 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,15 @@
 
 #include "AiqEngine.h"
 
+#include <memory>
+
 #include "FaceDetection.h"
 #include "PlatformData.h"
 #include "iutils/CameraLog.h"
 #include "iutils/Errors.h"
 #include "iutils/Utils.h"
+
+#include "gc/IGraphConfigManager.h"
 
 namespace icamera {
 
@@ -193,6 +197,25 @@ int AiqEngine::prepareStatsParams(cca::cca_stats_params* statsParams,
         }
 
         const AiqResult* aiqResult = mAiqResultStorage->getAiqResult(aiqStatistics->mSequence);
+
+        if (PlatformData::isDvsSupported(mCameraId) &&
+            PlatformData::getGraphConfigNodes(mCameraId)) {
+            std::shared_ptr<IGraphConfig> gc = nullptr;
+            IGraphConfigManager *GCM = IGraphConfigManager::getInstance(mCameraId);
+            if (GCM) {
+                gc = GCM->getGraphConfig(CAMERA_STREAM_CONFIGURATION_MODE_NORMAL);
+            }
+
+            CheckAndLogError(!gc, UNKNOWN_ERROR, "%s, Failed to get graph config", __func__);
+            ia_isp_bxt_resolution_info_t resolution;
+            uint32_t gdcKernelId;
+            int status = gc->getGdcKernelSetting(&gdcKernelId, &resolution);
+            CheckWarning(status != OK, UNKNOWN_ERROR, "Failed to get GDC kernel setting");
+
+            statsParams->dvs_stats_height = resolution.output_height;
+            statsParams->dvs_stats_width = resolution.output_width;
+        }
+
         statsParams->frame_id = aiqResult ? aiqResult->mFrameId : -1;
         statsParams->frame_timestamp = timestamp;
         statsParams->camera_orientation = ia_aiq_camera_orientation_unknown;

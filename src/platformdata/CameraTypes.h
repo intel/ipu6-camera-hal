@@ -187,6 +187,7 @@ struct CommonConfig {
     bool useTnrGlobalProtection;
     int cameraNumber;
     int videoStreamNum;
+    bool supportIspTuningUpdate;
 // ENABLE_EVCP_S
     bool isGpuEvcpEnabled;
 // ENABLE_EVCP_E
@@ -199,6 +200,7 @@ struct CommonConfig {
         useTnrGlobalProtection = false;
         cameraNumber = -1;
         videoStreamNum = DEFAULT_VIDEO_STREAM_NUM;
+        supportIspTuningUpdate = false;
 // ENABLE_EVCP_S
         isGpuEvcpEnabled = false;
 // ENABLE_EVCP_E

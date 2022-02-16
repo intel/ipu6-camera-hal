@@ -28,7 +28,7 @@
 namespace icamera {
 
 void AiqUtils::dumpAeResults(const cca::cca_ae_results& aeResult) {
-    if (!Log::isLogTagEnabled(GET_FILE_SHIFT(AiqUtils))) return;
+    if (!Log::isLogTagEnabled(GET_FILE_SHIFT(AiqUtils), CAMERA_DEBUG_LOG_LEVEL3)) return;
 
     LOG3("num_exposures :%d", aeResult.num_exposures);
     for (unsigned int i = 0; i < aeResult.num_exposures; i++) {
@@ -72,7 +72,7 @@ void AiqUtils::dumpAeResults(const cca::cca_ae_results& aeResult) {
 }
 
 void AiqUtils::dumpAfResults(const cca::cca_af_results& afResult) {
-    if (!Log::isLogTagEnabled(GET_FILE_SHIFT(AiqUtils))) return;
+    if (!Log::isLogTagEnabled(GET_FILE_SHIFT(AiqUtils), CAMERA_DEBUG_LOG_LEVEL3)) return;
 
     LOG3("AF results: current/next dis %d/%d, next pos %d, final_position_reached %s, status %d",
          afResult.current_focus_distance, afResult.next_focus_distance, afResult.next_lens_position,
@@ -98,7 +98,7 @@ void AiqUtils::dumpAfResults(const cca::cca_af_results& afResult) {
 }
 
 void AiqUtils::dumpAwbResults(const cca::cca_awb_results& awbResult) {
-    if (!Log::isLogTagEnabled(GET_FILE_SHIFT(AiqUtils))) return;
+    if (!Log::isLogTagEnabled(GET_FILE_SHIFT(AiqUtils), CAMERA_DEBUG_LOG_LEVEL3)) return;
 
     LOG3("AWB result: accurate_r/g %f, accurate_b/g %f, distance_from_convergence %f",
          awbResult.accurate_r_per_g, awbResult.accurate_b_per_g,
@@ -106,7 +106,7 @@ void AiqUtils::dumpAwbResults(const cca::cca_awb_results& awbResult) {
 }
 
 void AiqUtils::dumpGbceResults(const cca::cca_gbce_params& gbceResult) {
-    if (!Log::isLogTagEnabled(GET_FILE_SHIFT(AiqUtils))) return;
+    if (!Log::isLogTagEnabled(GET_FILE_SHIFT(AiqUtils), CAMERA_DEBUG_LOG_LEVEL3)) return;
 
     LOG3("gamma_lut_size: %u, tone_map_lut_size: %u",
          gbceResult.gamma_lut_size, gbceResult.tone_map_lut_size);
@@ -133,10 +133,10 @@ void AiqUtils::dumpGbceResults(const cca::cca_gbce_params& gbceResult) {
 }
 
 void AiqUtils::dumpPaResults(const cca::cca_pa_params& paResult) {
-    if (!Log::isLogTagEnabled(GET_FILE_SHIFT(AiqUtils))) return;
+    if (!Log::isLogTagEnabled(GET_FILE_SHIFT(AiqUtils), CAMERA_DEBUG_LOG_LEVEL3)) return;
 
     for (int i = 0; i < 3; i++) {
-        LOG3("color_conversion_matrix  [%.3f %.3f %.3f] ",
+        LOG3("color_conversion_matrix  [%.4f %.4f %.4f] ",
              paResult.color_conversion_matrix[i][0],
              paResult.color_conversion_matrix[i][1],
              paResult.color_conversion_matrix[i][2]);
@@ -148,7 +148,7 @@ void AiqUtils::dumpPaResults(const cca::cca_pa_params& paResult) {
 }
 
 void AiqUtils::dumpSaResults(const cca::cca_sa_results& saResult) {
-    if (!Log::isLogTagEnabled(GET_FILE_SHIFT(AiqUtils))) return;
+    if (!Log::isLogTagEnabled(GET_FILE_SHIFT(AiqUtils), CAMERA_DEBUG_LOG_LEVEL3)) return;
 
     LOG3("SA results color_order %d size %dx%d",
          saResult.color_order, saResult.width,  saResult.height);

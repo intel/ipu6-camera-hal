@@ -167,6 +167,9 @@ void ParameterGenerator::updateParameters(int64_t sequence, const Parameters* pa
         requestParam->param.setNrMode(nrMode);
     }
 
+    // disable stats callback for reprocessing request
+    requestParam->param.setCallbackRgbs(false);
+
     mRequestParamMap[sequence] = requestParam;
 }
 
@@ -391,7 +394,10 @@ int ParameterGenerator::updateCommonMetadata(Parameters* params, const AiqResult
     entry.data.i64 = &frameDuration;
     ParameterHelper::mergeTag(entry, params);
 
-    if (aiqResult->mAiqParam.callbackRgbs) {
+    bool callbackRgbs = false;
+    params->getCallbackRgbs(&callbackRgbs);
+
+    if (callbackRgbs) {
         int32_t width = aiqResult->mOutStats.rgbs_grid.grid_width;
         int32_t height = aiqResult->mOutStats.rgbs_grid.grid_height;
         int32_t gridSize[] = {width, height};
@@ -431,16 +437,22 @@ int ParameterGenerator::updateCommonMetadata(Parameters* params, const AiqResult
         ParameterHelper::mergeTag(entry, params);
     }
 
-    int64_t range[] = { aiqResult->mAeResults.exposures[0].exposure[0].low_limit_total_exposure,
-                        aiqResult->mAeResults.exposures[0].exposure[0].up_limit_total_exposure };
-    LOG2("total et limits [%ldx%ld]", range[0], range[1]);
-    entry.tag = INTEL_VENDOR_CAMERA_TOTAL_EXPOSURE_TARGET_RANGE;
-    entry.type = ICAMERA_TYPE_INT64;
-    entry.count = 2;
-    entry.data.i64 = range;
-    ParameterHelper::mergeTag(entry, params);
+    if (aiqResult->mAiqParam.manualExpTimeUs <= 0 && aiqResult->mAiqParam.manualIso <= 0) {
+        int64_t range[] =
+            { aiqResult->mAeResults.exposures[0].exposure[0].low_limit_total_exposure,
+              aiqResult->mAeResults.exposures[0].exposure[0].up_limit_total_exposure };
+        LOG2("total et limits [%ldx%ld]", range[0], range[1]);
+        entry.tag = INTEL_VENDOR_CAMERA_TOTAL_EXPOSURE_TARGET_RANGE;
+        entry.type = ICAMERA_TYPE_INT64;
+        entry.count = 2;
+        entry.data.i64 = range;
+        ParameterHelper::mergeTag(entry, params);
+    }
 
-    if (aiqResult->mAiqParam.callbackTmCurve) {
+    bool callbackTmCurve = false;
+    params->getCallbackTmCurve(&callbackTmCurve);
+
+    if (callbackTmCurve) {
         const cca::cca_gbce_params& gbceResults = aiqResult->mGbceResults;
         int multiplier = gbceResults.tone_map_lut_size / mTonemapMaxCurvePoints;
 

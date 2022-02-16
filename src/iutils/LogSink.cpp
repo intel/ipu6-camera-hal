@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Intel Corporation.
+ * Copyright (C) 2021-2022 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -129,6 +129,7 @@ void FileLogSink::sendOffLog(LogItem logItem) {
     setLogTime(timeInfo);
     fprintf(mFp, "[%s] CamHAL[%s] %s:%s\n", timeInfo,
             icamera::cameraDebugLogToString(logItem.level), logItem.logTags, logItem.logEntry);
+    fflush(mFp);
 }
 
 };  // namespace icamera

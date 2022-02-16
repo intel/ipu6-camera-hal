@@ -124,6 +124,7 @@ class GraphConfigImpl {
     int getStreamIdByPgName(std::string pgName);
     int getPgIdByPgName(std::string pgName);
     ia_isp_bxt_program_group* getProgramGroup(int32_t streamId);
+    int32_t getTuningMode(const int32_t streamId);
     status_t getPgRbmValue(std::string pgName, IGraphType::StageAttr* stageAttr);
     status_t getMBRData(int32_t streamId, ia_isp_bxt_gdc_limits* data);
     status_t getPgNames(std::vector<std::string>* pgNames);

@@ -166,6 +166,7 @@
         <graphSettingsType value="dispersed"/>
         <enablePSysProcessor value="true"/>
         <dvsType value="IMG_TRANS"/>
+        <nvmDeviceInfo value="NVM,590"/>
         <lensName value="dw9714"/>
         <lensHwType value="LENS_VCM_HW"/>
         <testPatternMap value="Off,0,ColorBars,2"/>
@@ -176,8 +177,6 @@
         <maxRequestsInflight value="6"/>
         <faceEngineRunningInterval value="10"/>
         <faceEngineRunningIntervalNoFace value="10"/>
-        <!-- if faceAeEnabled is not equal to true, availableSceneModes and availableFaceDetectModes must be 0 -->
-        <faceAeEnabled value="true"/>
         <psysAlignWithSof value="true"/>
         <psysBundleWithAic value="true"/>
         <!-- video HAL stream count -->

@@ -243,7 +243,10 @@ int AiqCore::updateParameter(const aiq_parameter_t& param) {
     mAwbBypassed = bypassAwb(param);
     LOG2("Ae Bypass: %d, Af Bypass: %d, Awb Bypass: %d", mAeBypassed, mAfBypassed, mAwbBypassed);
 
-    mRgbStatsBypassed = mAeBypassed && mAwbBypassed;
+    mRgbStatsBypassed = false;
+    if (param.powerMode == CAMERA_LOW_POWER && mAeBypassed && mAwbBypassed && mAfBypassed) {
+        mRgbStatsBypassed = true;
+    }
 
     return OK;
 }

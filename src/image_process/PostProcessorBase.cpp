@@ -21,6 +21,7 @@
 
 #include <vector>
 
+#include "HALv3Utils.h"
 #include "iutils/CameraLog.h"
 #include "stdlib.h"
 
@@ -144,6 +145,10 @@ std::shared_ptr<camera3::Camera3Buffer> JpegProcess::cropAndDownscaleThumbnail(
     int ret = OK;
     shared_ptr<camera3::Camera3Buffer> tempBuffer = inBuf;
 
+    int format = camera3::HalV3Utils::V4l2FormatToHALFormat(inBuf->v4l2Fmt());
+    int usage = inBuf->usage();
+    LOG2("%s, inputbuffer format:%d, usage:%d", __func__, format, usage);
+
     // Do crop first if needed
     if (IImageProcessor::isProcessingTypeSupported(POST_PROCESS_CROP) &&
         inBuf->width() * thumbHeight != inBuf->height() * thumbWidth) {
@@ -159,12 +164,13 @@ std::shared_ptr<camera3::Camera3Buffer> JpegProcess::cropAndDownscaleThumbnail(
         if (mCropBuffer && (mCropBuffer->width() != width || mCropBuffer->height() != height))
             mCropBuffer.reset();
         if (!mCropBuffer) {
-            int size =
-                CameraUtils::getFrameSize(inBuf->v4l2Fmt(), width, height, false, false, false);
-            mCropBuffer = camera3::MemoryUtils::allocateHeapBuffer(
-                width, height, width, inBuf->v4l2Fmt(), mCameraId, size);
-            CheckAndLogError(!mCropBuffer, nullptr,
-                             "%s, Failed to allocate the internal crop buffer", __func__);
+            mCropBuffer =
+                camera3::MemoryUtils::allocateHandleBuffer(width, height, format, usage, mCameraId);
+            if (!mCropBuffer || mCropBuffer->lock() != icamera::OK) {
+                mCropBuffer = nullptr;
+                LOGE("%s, Failed to allocate the internal crop buffer", __func__);
+                return nullptr;
+            }
         }
 
         LOG2("@%s, Crop the main buffer from %dx%d to %dx%d", __func__, inBuf->width(),
@@ -179,12 +185,13 @@ std::shared_ptr<camera3::Camera3Buffer> JpegProcess::cropAndDownscaleThumbnail(
             (mScaleBuffer->width() != thumbWidth || mScaleBuffer->height() != thumbHeight))
             mScaleBuffer.reset();
         if (!mScaleBuffer) {
-            int size = CameraUtils::getFrameSize(inBuf->v4l2Fmt(), thumbWidth, thumbHeight, false,
-                                                 false, false);
-            mScaleBuffer = camera3::MemoryUtils::allocateHeapBuffer(
-                thumbWidth, thumbHeight, thumbWidth, inBuf->v4l2Fmt(), mCameraId, size);
-            CheckAndLogError(!mScaleBuffer, nullptr,
-                             "%s, Failed to allocate the internal scale buffer", __func__);
+            mScaleBuffer = camera3::MemoryUtils::allocateHandleBuffer(thumbWidth, thumbHeight,
+                                                                      format, usage, mCameraId);
+            if (!mScaleBuffer || mScaleBuffer->lock() != icamera::OK) {
+                mScaleBuffer = nullptr;
+                LOGE("%s, Failed to allocate the internal scale buffer", __func__);
+                return nullptr;
+            }
         }
 
         LOG2("@%s, Scale the buffer from %dx%d to %dx%d", __func__, inBuf->width(), inBuf->height(),
@@ -215,10 +222,9 @@ void JpegProcess::fillEncodeInfo(const shared_ptr<camera3::Camera3Buffer>& inBuf
         outBuf->getBufferType() == camera3::BUF_TYPE_HANDLE) {
         package.inputBufferHandle = static_cast<void*>(inBuf->getBufferHandle());
         package.outputBufferHandle = static_cast<void*>(outBuf->getBufferHandle());
-    } else {
-        package.inputData = inBuf->data();
-        package.outputData = outBuf->data();
     }
+    package.inputData = inBuf->data();
+    package.outputData = outBuf->data();
 
     package.outputWidth = outBuf->width();
     package.outputHeight = outBuf->height();
@@ -247,13 +253,14 @@ status_t JpegProcess::doPostProcessing(const shared_ptr<camera3::Camera3Buffer>&
             mThumbOutput->width() != exifMetadata.mJpegSetting.thumbWidth ||
             mThumbOutput->height() != exifMetadata.mJpegSetting.thumbHeight ||
             mThumbOutput->v4l2Fmt() != outBuf->v4l2Fmt()) {
-            mThumbOutput = camera3::MemoryUtils::allocateHeapBuffer(
+            mThumbOutput = camera3::MemoryUtils::allocateHandleBuffer(
                 exifMetadata.mJpegSetting.thumbWidth, exifMetadata.mJpegSetting.thumbHeight,
-                exifMetadata.mJpegSetting.thumbWidth, outBuf->v4l2Fmt(), mCameraId,
-                exifMetadata.mJpegSetting.thumbWidth * exifMetadata.mJpegSetting.thumbHeight * 3 /
-                    2);
-            CheckAndLogError(!mThumbOutput, NO_MEMORY, "%s, Failed to allocate the mThumbOutput",
-                             __func__);
+                outBuf->format(), outBuf->usage(), mCameraId);
+            if (!mThumbOutput || mThumbOutput->lock() != icamera::OK) {
+                mThumbOutput = nullptr;
+                LOGE("%s, Failed to allocate the mThumbOutput", __func__);
+                return NO_MEMORY;
+            }
         }
 
         // encode thumbnail image
