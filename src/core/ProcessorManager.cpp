@@ -35,10 +35,9 @@ ProcessorManager::~ProcessorManager() {
 }
 
 std::vector<BufferQueue*>
-ProcessorManager::createProcessors(int inputFmt,
-                                   const std::map<Port, stream_t>& producerConfigs,
+ProcessorManager::createProcessors(const std::map<Port, stream_t>& producerConfigs,
                                    const std::map<int, Port>& streamIdToPortMap,
-                                   stream_config_t *streamList, const Parameters& param,
+                                   stream_config_t *streamList,
                                    ParameterGenerator* paramGenerator) {
     LOG1("<id%d>@%s", mCameraId, __func__);
 

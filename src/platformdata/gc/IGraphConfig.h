@@ -150,6 +150,11 @@ struct ProgramGroupInfo {
     ia_isp_bxt_program_group *pgPtr;
 };
 
+struct TuningModeInfo {
+    int32_t streamId;
+    int32_t tuningMode;
+};
+
 struct GraphConfigData {
     int mcId;
     int graphId;
@@ -161,6 +166,7 @@ struct GraphConfigData {
     std::vector<MbrInfo> mbrInfo;
     std::vector<std::string> pgNames;
     std::vector<ProgramGroupInfo> programGroup;
+    std::vector<TuningModeInfo> tuningModes;
     GraphConfigData() : mcId(-1),
                         graphId(-1),
                         gdcKernelId(-1) {
@@ -191,10 +197,9 @@ public:
     virtual status_t graphGetStreamIds(std::vector<int32_t> &streamIds) = 0;
     virtual int getGraphId(void) = 0;
     virtual int getStreamIdByPgName(std::string pgName) = 0;
+    virtual int getTuningModeByStreamId(const int32_t streamId) = 0;
     virtual int getPgIdByPgName(std::string pgName) = 0;
     virtual ia_isp_bxt_program_group *getProgramGroup(int32_t streamId) = 0;
-    virtual int getProgramGroup(std::string pgName,
-                                ia_isp_bxt_program_group* programGroupForPG) {return OK;}
     virtual status_t getMBRData(int32_t streamId, ia_isp_bxt_gdc_limits *data) = 0;
     virtual status_t getPgRbmValue(std::string pgName,
                                    IGraphType::StageAttr *stageAttr) {return OK;}

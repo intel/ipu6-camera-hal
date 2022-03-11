@@ -114,6 +114,18 @@ int GraphConfig::getStreamIdByPgName(string pgName) {
     return -1;
 }
 
+int GraphConfig::getTuningModeByStreamId(const int32_t streamId) {
+    CheckAndLogError(mGraphData.tuningModes.empty(), -1, "%s, The tuningModes vector is empty",
+                     __func__);
+
+    for (auto &mode : mGraphData.tuningModes) {
+        if (mode.streamId == streamId) return mode.tuningMode;
+    }
+
+    LOG2("%s, There is not tuningMode for streamId: %d", __func__, streamId);
+    return -1;
+}
+
 int GraphConfig::getPgIdByPgName(string pgName) {
     CheckAndLogError(mGraphData.pgInfo.empty(), -1, "%s, The pgInfo vector is empty", __func__);
 
@@ -173,10 +185,6 @@ status_t GraphConfig::getPgRbmValue(string pgName, IGraphType::StageAttr* stageA
     }
 
     return BAD_VALUE;
-}
-
-int GraphConfig::getProgramGroup(string pgName, ia_isp_bxt_program_group* programGroupForPG) {
-    return mGraphConfigImpl->getProgramGroup(pgName, programGroupForPG);
 }
 
 status_t GraphConfig::pipelineGetConnections(

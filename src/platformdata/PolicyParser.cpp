@@ -120,30 +120,50 @@ void PolicyParser::handleExclusivePGs(PolicyParser* profiles, const char* name, 
     }
 }
 
-void PolicyParser::handleBundles(PolicyParser* profiles, const char* name, const char** atts) {
+int PolicyParser::parseExecutorDepth(const char** atts, struct ExecutorDepth* executorsDepth) {
     int idx = 0;
-    LOG2("%s: name: %s, value: %s", __func__, atts[idx], atts[idx + 1]);
-    const char* key = atts[idx];
 
-    CheckAndLogError(strcmp(key, "executors") != 0, VOID_VALUE,
-                     "Invalid policy attribute %s in bundle label.", key);
+    LOG2("%s: name: %s, value: %s", __func__, atts[idx], atts[idx + 1]);
 
     // The structure of a bundle looks like: "proc:0,post:1" which uses ',' to split
     // different executors' names, and uses ':' to specify the executor's depth.
-    std::vector<std::string> bundledExecutors;
-    std::vector<int> depths;
     std::vector<std::string> executors = CameraUtils::splitString(atts[idx + 1], ',');
 
     for (const auto& item : executors) {
         std::vector<std::string> executorDepth = CameraUtils::splitString(item.c_str(), ':');
-        CheckAndLogError(executorDepth.size() != 2, VOID_VALUE, "Invalid executor-depth mapping.");
+        CheckAndLogError(executorDepth.size() != 2, UNKNOWN_ERROR,
+                         "Invalid executor-depth mapping.");
 
-        bundledExecutors.push_back(executorDepth[0]);
-        depths.push_back(std::stoi(executorDepth[1]));
+        executorsDepth->bundledExecutors.push_back(executorDepth[0]);
+        executorsDepth->depths.push_back(std::stoi(executorDepth[1]));
     }
 
-    ExecutorDepth executorDepth = {bundledExecutors, depths};
-    profiles->pCurrentConf->bundledExecutorDepths.push_back(executorDepth);
+    return OK;
+}
+
+void PolicyParser::handleBundles(PolicyParser* profiles, const char* name, const char** atts) {
+    int idx = 0;
+    int64_t sequence = 0;
+    ExecutorDepth bundle = {};
+
+    /* bundle config format should be: executors="executor_a:0,executor_b:1" sequence="number"
+     * sequence is the start sequence when the executors will start to sync, default is 0
+     */
+    while (atts[idx]) {
+        const char* key = atts[idx];
+        LOG1("%s: name: %s, value: %s", __func__, atts[idx], atts[idx + 1]);
+        if (strcmp(key, "sequence") == 0) {
+            sequence = atol(atts[idx + 1]);
+        } else if (strcmp(key, "executors") == 0) {
+            int ret = parseExecutorDepth(&atts[idx], &bundle);
+            CheckAndLogError(ret != 0, VOID_VALUE, "Invalid policy attribute %s in bundle label.",
+                             key);
+        }
+        idx += 2;
+    }
+
+    bundle.startSequence = sequence;
+    profiles->pCurrentConf->bundledExecutorDepths.push_back(bundle);
 }
 
 void PolicyParser::handleShareReferPair(PolicyParser* profiles, const char* name,

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Intel Corporation
+ * Copyright (C) 2021-2022 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,8 +35,6 @@ FaceSSD::FaceSSD(int cameraId, unsigned int maxFaceNum, int32_t halStreamId, int
     CLEAR(mResult);
     int ret = initFaceDetection(width, height, gfxFmt, usage);
     CheckAndLogError(ret != OK, VOID_VALUE, "failed to init face detection, ret %d", ret);
-
-    mInitialized = true;
 }
 
 FaceSSD::~FaceSSD() {
@@ -68,6 +66,7 @@ int FaceSSD::initFaceDetection(int width, int height, int gfxFmt, int usage) {
         CheckAndLogError(ret != OK, NO_INIT, "Camera thread failed to start, ret %d", ret);
     }
 
+    mInitialized = true;
     return OK;
 }
 
@@ -85,10 +84,10 @@ void FaceSSD::returnRunBuf(std::shared_ptr<camera3::Camera3Buffer> gbmRunBuf) {
 void FaceSSD::runFaceDetectionBySync(const std::shared_ptr<camera3::Camera3Buffer>& ccBuf) {
     LOG2("@%s", __func__);
     CheckAndLogError(mInitialized == false, VOID_VALUE, "@%s, mInitialized is false", __func__);
+    CheckAndLogError(!ccBuf, VOID_VALUE, "@%s, ccBuf buffer is nullptr", __func__);
 
     nsecs_t startTime = CameraUtils::systemTime();
     std::vector<human_sensing::CrosFace> faces;
-
     cros::FaceDetectResult ret = mFaceDetector->Detect(*(ccBuf->getBufferHandle()), &faces);
     printfFDRunRate();
     LOG2("@%s: ret:%d, it takes need %ums", __func__, ret,
@@ -143,56 +142,11 @@ bool FaceSSD::threadLoop() {
         faceParams = mRunGoogleBufQueue.front();
         mRunGoogleBufQueue.pop();
     }
-
-    nsecs_t startTime = CameraUtils::systemTime();
-    std::vector<human_sensing::CrosFace> faces;
     CheckAndLogError(!faceParams, false, "@%s, faceParams buffer is nullptr", __func__);
-    cros::FaceDetectResult ret = mFaceDetector->Detect(*(faceParams->getBufferHandle()), &faces);
-    printfFDRunRate();
-    LOG2("@%s: ret:%d, it takes need %ums", __func__, ret,
-         (unsigned)((CameraUtils::systemTime() - startTime) / 1000000));
 
-    {
-        AutoMutex l(mFaceResultLock);
-        CLEAR(mResult);
-        if (ret == cros::FaceDetectResult::kDetectOk) {
-            int faceCount = 0;
-            for (auto& face : faces) {
-                if (faceCount >= mMaxFaceNum) break;
-                mResult.faceSsdResults[faceCount] = face;
-                faceCount++;
-            }
-            mResult.faceNum = faceCount;
-            mResult.faceUpdated = true;
-            LOG2("@%s, faceNum:%d", __func__, mResult.faceNum);
-        } else {
-            LOGE("@%s, Faile to detect face", __func__);
-        }
-    }
-
+    runFaceDetectionBySync(faceParams);
     returnRunBuf(faceParams);
     return true;
-}
-
-void FaceSSD::convertCoordinate(int width, int height, const human_sensing::CrosFace& src,
-                                human_sensing::CrosFace* dst) {
-    CheckAndLogError(!dst, VOID_VALUE, "dst is nullptr");
-
-    const camera_coordinate_system_t iaCoordinate = {IA_COORDINATE_LEFT, IA_COORDINATE_TOP,
-                                                     IA_COORDINATE_RIGHT, IA_COORDINATE_BOTTOM};
-    const camera_coordinate_system_t faceCoordinate = {0, 0, width, height};
-
-    camera_coordinate_t topLeft = AiqUtils::convertCoordinateSystem(
-        faceCoordinate, iaCoordinate,
-        {static_cast<int>(src.bounding_box.x1), static_cast<int>(src.bounding_box.y1)});
-    camera_coordinate_t bottomRight = AiqUtils::convertCoordinateSystem(
-        faceCoordinate, iaCoordinate,
-        {static_cast<int>(src.bounding_box.x2), static_cast<int>(src.bounding_box.y2)});
-
-    dst->bounding_box.x1 = static_cast<float>(topLeft.x);     /* left */
-    dst->bounding_box.y1 = static_cast<float>(topLeft.y);     /* top */
-    dst->bounding_box.x2 = static_cast<float>(bottomRight.x); /* right */
-    dst->bounding_box.y2 = static_cast<float>(bottomRight.y); /* bottom */
 }
 
 int FaceSSD::getFaceNum() {
@@ -203,11 +157,8 @@ int FaceSSD::getFaceNum() {
 void FaceSSD::getResultFor3A(cca::cca_face_state* faceState) {
     LOG2("@%s", __func__);
 
-    float fovRatioW = mFovInfo.fovRatioW;
-    float fovRatioH = mFovInfo.fovRatioH;
-    float offsetW = mFovInfo.offsetW;
-    float offsetH = mFovInfo.offsetH;
-
+    camera_coordinate_system_t sysCoord = {IA_COORDINATE_LEFT, IA_COORDINATE_TOP,
+                                           IA_COORDINATE_RIGHT, IA_COORDINATE_BOTTOM};
     AutoMutex l(mFaceResultLock);
     FaceSSDResult* faceSsdResult = &mResult;
     faceState->is_video_conf = true;
@@ -217,16 +168,17 @@ void FaceSSD::getResultFor3A(cca::cca_face_state* faceState) {
 
     for (int i = 0; i < faceSsdResult->faceNum; i++) {
         CLEAR(faceState->faces[i]);
-        human_sensing::CrosFace googleFaceResult = {};
-        convertCoordinate(mWidth, mHeight, faceSsdResult->faceSsdResults[i], &googleFaceResult);
-        faceState->faces[i].face_area.left = static_cast<int>(
-            static_cast<int>(googleFaceResult.bounding_box.x1) * fovRatioW + offsetW);
-        faceState->faces[i].face_area.top = static_cast<int>(
-            static_cast<int>(googleFaceResult.bounding_box.y1) * fovRatioH + offsetH);
-        faceState->faces[i].face_area.bottom = static_cast<int>(
-            static_cast<int>(googleFaceResult.bounding_box.y2) * fovRatioH + offsetH);
-        faceState->faces[i].face_area.right = static_cast<int>(
-            static_cast<int>(googleFaceResult.bounding_box.x2) * fovRatioW + offsetW);
+        faceState->faces[i].face_area.left =
+            static_cast<int>(faceSsdResult->faceSsdResults[i].bounding_box.x1);  // rect.left
+        faceState->faces[i].face_area.top =
+            static_cast<int>(faceSsdResult->faceSsdResults[i].bounding_box.y1);  // rect.top
+        faceState->faces[i].face_area.right =
+            static_cast<int>(faceSsdResult->faceSsdResults[i].bounding_box.x2);  // rect.right
+        faceState->faces[i].face_area.bottom =
+            static_cast<int>(faceSsdResult->faceSsdResults[i].bounding_box.y2);  // rect.bottom
+        convertFaceCoordinate(
+            sysCoord, &faceState->faces[i].face_area.left, &faceState->faces[i].face_area.top,
+            &faceState->faces[i].face_area.right, &faceState->faces[i].face_area.bottom);
         faceState->faces[i].rip_angle = 0;
         faceState->faces[i].rop_angle = 0;
         faceState->faces[i].tracking_id = i;
@@ -242,19 +194,14 @@ void FaceSSD::getResultFor3A(cca::cca_face_state* faceState) {
         faceState->faces[i].mouth.y = 0;
 
         faceState->faces[i].eye_validity = 0;
+        LOG2("@%s, face info, id:%d, left:%d, top:%d, right:%d, bottom:%d", __func__, i,
+             faceState->faces[i].face_area.left, faceState->faces[i].face_area.top,
+             faceState->faces[i].face_area.right, faceState->faces[i].face_area.bottom);
     }
 }
 
 void FaceSSD::getResultForApp(CVFaceDetectionAbstractResult* result) {
     LOG2("@%s", __func__);
-
-    camera_coordinate_system_t sysCoord = mRatioInfo.sysCoord;
-    int verticalCrop = mRatioInfo.verticalCrop;
-    int horizontalCrop = mRatioInfo.horizontalCrop;
-    bool imageRotationChanged = mRatioInfo.imageRotationChanged;
-    camera_coordinate_t destCoord = {0, 0};
-    const camera_coordinate_system_t fillFrameCoord = {0, 0, mWidth + horizontalCrop,
-                                                       mHeight + verticalCrop};
 
     CLEAR(*result);
     AutoMutex l(mFaceResultLock);
@@ -271,19 +218,12 @@ void FaceSSD::getResultForApp(CVFaceDetectionAbstractResult* result) {
             static_cast<int>(faceSsdResult->faceSsdResults[i].bounding_box.x2);  // rect.right
         result->faceRect[i * 4 + 3] =
             static_cast<int>(faceSsdResult->faceSsdResults[i].bounding_box.y2);  // rect.bottom
-        if (imageRotationChanged) {
-            camera_coordinate_t pointCoord = {0, 0};
-            pointCoord.x = result->faceRect[i * 4] + (horizontalCrop / 2);
-            pointCoord.y = result->faceRect[i * 4 + 1] + (verticalCrop / 2);
-            destCoord = AiqUtils::convertCoordinateSystem(fillFrameCoord, sysCoord, pointCoord);
-            result->faceRect[i * 4] = destCoord.x;      // rect.left
-            result->faceRect[i * 4 + 1] = destCoord.y;  // rect.top
-            pointCoord.x = result->faceRect[i * 4 + 2] + (horizontalCrop / 2);
-            pointCoord.y = result->faceRect[i * 4 + 3] + (verticalCrop / 2);
-            destCoord = AiqUtils::convertCoordinateSystem(fillFrameCoord, sysCoord, pointCoord);
-            result->faceRect[i * 4 + 2] = destCoord.x;  // rect.right
-            result->faceRect[i * 4 + 3] = destCoord.y;  // rect.bottom
-        }
+        convertFaceCoordinate(mRatioInfo.sysCoord, &result->faceRect[i * 4],
+                              &result->faceRect[i * 4 + 1], &result->faceRect[i * 4 + 2],
+                              &result->faceRect[i * 4 + 3]);
+        LOG2("@%s, face info, id:%d, left:%d, top:%d, right:%d, bottom:%d", __func__, i,
+             result->faceRect[i * 4], result->faceRect[i * 4 + 1], result->faceRect[i * 4 + 2],
+             result->faceRect[i * 4 + 3]);
     }
 
     result->faceNum = faceSsdResult->faceNum;

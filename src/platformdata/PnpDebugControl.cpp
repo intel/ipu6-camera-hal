@@ -56,6 +56,10 @@ bool PnpDebugControl::useMockAAL() {
     return getInstance()->mStaticCfg.useMockAAL;
 }
 
+int PnpDebugControl::mockAALFps() {
+    return getInstance()->mStaticCfg.mockAALFps;
+}
+
 bool PnpDebugControl::isBypass3A() {
     return getInstance()->mStaticCfg.isBypass3A;
 }
@@ -70,6 +74,11 @@ bool PnpDebugControl::isBypassPG() {
 
 bool PnpDebugControl::isFaceDisabled() {
     return getInstance()->mStaticCfg.isFaceDisabled;
+}
+
+bool PnpDebugControl::isFaceAeDisabled() {
+    return getInstance()->mStaticCfg.isFaceDisabled ? true
+                                                    : getInstance()->mStaticCfg.isFaceAeDisabled;
 }
 
 bool PnpDebugControl::isBypassFDAlgo() {
@@ -137,6 +146,8 @@ void PnpDebugParser::handlePowerConfig(PnpDebugParser* profiles, const char* nam
     LOG2("@%s, name:%s, atts[0]:%s, atts[1]: %s", __func__, name, atts[0], atts[1]);
     if (strcmp(name, "useMockAAL") == 0) {
         mStaticCfg->useMockAAL = strcmp(atts[1], "true") == 0;
+    } else if (strcmp(name, "mockAALFps") == 0) {
+        mStaticCfg->mockAALFps = atoi(atts[1]);
     } else if (strcmp(name, "bypass3A") == 0) {
         mStaticCfg->isBypass3A = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "bypassPAL") == 0) {
@@ -145,6 +156,8 @@ void PnpDebugParser::handlePowerConfig(PnpDebugParser* profiles, const char* nam
         mStaticCfg->isBypassPG = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "disableFace") == 0) {
         mStaticCfg->isFaceDisabled = strcmp(atts[1], "true") == 0;
+    } else if (strcmp(name, "disableFaceAe") == 0) {
+        mStaticCfg->isFaceAeDisabled = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "bypassFDAlgo") == 0) {
         mStaticCfg->isBypassFDAlgo = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "bypassISys") == 0) {

@@ -102,9 +102,7 @@ class GraphConfigImpl {
     status_t configStreams(const std::vector<HalStream*>& activeStreams, bool dummyStillSink);
     status_t getGraphConfigData(IGraphType::GraphConfigData* data);
 
-    int getProgramGroup(std::string pgName, ia_isp_bxt_program_group* programGroupForPG);
     status_t getPgIdForKernel(const uint32_t streamId, const int32_t kernelId, int32_t* pgId);
-
     status_t pipelineGetConnections(const std::vector<std::string>& pgList,
                                     std::vector<IGraphType::ScalerInfo>* scalerInfo,
                                     std::vector<IGraphType::PipelineConnection>* confVector,
@@ -126,6 +124,7 @@ class GraphConfigImpl {
     int getStreamIdByPgName(std::string pgName);
     int getPgIdByPgName(std::string pgName);
     ia_isp_bxt_program_group* getProgramGroup(int32_t streamId);
+    int32_t getTuningMode(const int32_t streamId);
     status_t getPgRbmValue(std::string pgName, IGraphType::StageAttr* stageAttr);
     status_t getMBRData(int32_t streamId, ia_isp_bxt_gdc_limits* data);
     status_t getPgNames(std::vector<std::string>* pgNames);

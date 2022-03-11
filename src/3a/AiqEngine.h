@@ -37,8 +37,7 @@ namespace icamera {
  */
 class AiqEngine : public EventListener {
  public:
-    AiqEngine(int cameraId, SensorHwCtrl* sensorHw, LensHw* lensHw, AiqSetting* setting,
-              ParameterGenerator* paramGen);
+    AiqEngine(int cameraId, SensorHwCtrl* sensorHw, LensHw* lensHw, AiqSetting* setting);
     ~AiqEngine();
 
     /**
@@ -121,15 +120,12 @@ class AiqEngine : public EventListener {
     int applyManualTonemaps(AiqResult* aiqResult);
 
  private:
-    static const nsecs_t kWaitDuration = 1000000000;  // 1000ms
-    static const int kMaxStatisticsDataSize = 3;
     static const int kMaxExposureAppliedDelay = 5;
 
  private:
     int mCameraId;
     AiqResultStorage* mAiqResultStorage;
     AiqSetting* mAiqSetting;
-    ParameterGenerator* mParamGen;
     AiqCore* mAiqCore;
     SensorManager* mSensorManager;
     LensManager* mLensManager;

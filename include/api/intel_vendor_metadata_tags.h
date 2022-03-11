@@ -74,6 +74,7 @@ typedef enum vendor_metadata_tag {
     INTEL_VENDOR_CAMERA_IC_FF_MODE,                   // enum         | public
 // ENABLE_EVCP_E
     INTEL_VENDOR_CAMERA_TOTAL_EXPOSURE_TARGET,        // int64        | public
+    INTEL_VENDOR_CAMERA_TOTAL_EXPOSURE_TARGET_RANGE,  // int64[]      | public
     INTEL_VENDOR_CAMERA_END,
 } vendor_metadata_tag_t;
 

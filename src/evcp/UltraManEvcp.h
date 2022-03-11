@@ -57,6 +57,8 @@ struct EVCP_API_HANDLE {
 #undef _DEF_FUNC
 };
 
+namespace icamera {
+
 class UltraManEvcp {
  public:
     UltraManEvcp(int width, int height);
@@ -123,3 +125,4 @@ class UltraManEvcp {
 
     DISALLOW_COPY_AND_ASSIGN(UltraManEvcp);
 };
+}  // namespace icamera

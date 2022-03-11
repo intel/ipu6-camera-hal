@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2021 Intel Corporation
+ * Copyright (C) 2019-2022 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ struct FovInfoFor3A {
     float offsetH;
 };
 
-struct RatioInfoForApp {
+struct RatioInfo {
     camera_coordinate_system_t sysCoord;
     int verticalCrop;
     int horizontalCrop;
@@ -73,6 +73,8 @@ class FaceDetection : public Thread {
     virtual int getFaceNum() { return 0; }
     virtual void getResultFor3A(cca::cca_face_state* faceState) = 0;
     virtual void getResultForApp(CVFaceDetectionAbstractResult* result) = 0;
+    void convertFaceCoordinate(camera_coordinate_system_t& sysCoord, int* left, int* top,
+                               int* right, int* bottom);
 
     int mCameraId;
     bool mInitialized;
@@ -88,17 +90,14 @@ class FaceDetection : public Thread {
 
     // Guard for face detection result
     std::mutex mFaceResultLock;
-    struct FovInfoFor3A mFovInfo;
-    struct RatioInfoForApp mRatioInfo;
+    struct RatioInfo mRatioInfo;
 
  private:
     bool isInitialized() { return mInitialized; }
-
     bool faceRunningByCondition();
     void getCurrentFrameWidthAndHight(int* frameWidth, int* frameHigth);
     void getHalStreamId(int32_t* halStreamId);
-    void initFovInfoFor3A(struct FovInfoFor3A* fovInfo);
-    void initRatioInfoForApp(struct RatioInfoForApp* ratioInfo);
+    void initRatioInfo(struct RatioInfo* ratioInfo);
 
     // Guard for face engine instance
     static Mutex sLock;

@@ -100,7 +100,6 @@ class Ltm : public EventListener {
     LtmThread* mLtmThread;
     bool mThreadRunning;
     Condition mParamAvailableSignal;
-    static const nsecs_t kWaitDuration = 2000000000;  // 2000ms
     static const int kMaxLtmParamsNum = 2;            // 2 ltm input params
 
     int mInputParamIndex;

@@ -142,7 +142,6 @@ public:
 
 private:
     std::vector<TuningMode> mTuningModes;
-    unsigned int mPipeSwitchFrameCount;
     aiq_parameter_t mAiqParam;
 
     RWLock mParamLock;

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<!-- Copyright (C) 2020-2021 Intel Corporation.
+<!-- Copyright (C) 2022 Intel Corporation.
 
      Licensed under the Apache License, Version 2.0 (the "License");
      you may not use this file except in compliance with the License.
@@ -15,30 +15,27 @@
 -->
 
 <CameraSettings>
-    <Sensor name="ov01a1s-uf" description="OV01A1S sensor.">
-        <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1296" outputHeight="798" format="V4L2_PIX_FMT_SGRBG10"><!-- RAW10 BE capture -->
-            <format name="ov01a1s $I2CBUS" pad="0" width="1296" height="798" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
-            <format name="Intel IPU6 CSI-2 $CSI_PORT" pad="0" width="1296" height="798" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
+    <Sensor name="ov02c10-uf" description="OV02C10 sensor.">
+        <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1932" outputHeight="1092" format="V4L2_PIX_FMT_SGRBG10"><!-- RAW10 BE capture -->
+            <format name="ov02c10 $I2CBUS" pad="0" width="1932" height="1092" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
+            <format name="Intel IPU6 CSI-2 $CSI_PORT" pad="0" width="1932" height="1092" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
+            <format name="Intel IPU6 CSI2 BE SOC 0" pad="0" width="1932" height="1092" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
 
-            <link srcName="ov01a1s $I2CBUS" srcPad="0" sinkName="Intel IPU6 CSI-2 $CSI_PORT" sinkPad="0" enable="true"/>
-
-            <format name="Intel IPU6 CSI2 BE SOC 0" pad="0" width="1296" height="798" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
-            <format name="Intel IPU6 CSI2 BE SOC 0" pad="1" width="1296" height="798" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
-            <selection name="Intel IPU6 CSI2 BE SOC 0" pad="1" target="V4L2_SEL_TGT_CROP" left="0" top="0" width="1296" height="798"/>
-
+            <link srcName="ov02c10 $I2CBUS" srcPad="0" sinkName="Intel IPU6 CSI-2 $CSI_PORT" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI-2 $CSI_PORT" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 0" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC 0" srcPad="1" sinkName="Intel IPU6 BE SOC capture 0" sinkPad="0" enable="true"/>
 
-            <videonode name="Intel IPU6 BE SOC capture 0" videoNodeType="VIDEO_GENERIC"/>
+            <videonode name="ov02c10 $I2CBUS" videoNodeType="VIDEO_PIXEL_ARRAY"/>
             <videonode name="Intel IPU6 CSI-2 $CSI_PORT" videoNodeType="VIDEO_ISYS_RECEIVER"/>
-            <videonode name="ov01a1s $I2CBUS" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+            <videonode name="Intel IPU6 BE SOC capture 0" videoNodeType="VIDEO_GENERIC"/>
         </MediaCtlConfig>
 
         <StaticMetadata>
             <!-- format,widthxheight,field(none:0,alternate:7),mcId -->
-            <supportedStreamConfig value="V4L2_PIX_FMT_YUYV,1280x720,0,0,
-                                          V4L2_PIX_FMT_YUYV,640x480,0,0,
-                                          V4L2_PIX_FMT_YUYV,640x360,0,0"/>
+            <supportedStreamConfig value="V4L2_PIX_FMT_NV12,1920x1080,0,0,
+                                          V4L2_PIX_FMT_NV12,1280x720,0,0,
+                                          V4L2_PIX_FMT_NV12,640x480,0,0,
+                                          V4L2_PIX_FMT_NV12,640x360,0,0"/>
 
             <supportedFeatures value="MANUAL_EXPOSURE,
                                       MANUAL_WHITE_BALANCE,
@@ -71,19 +68,19 @@
             <statistics.info.maxFaceCount value="10"/>
 
             <sensor.orientation value="0"/>
-            <sensor.info.sensitivityRange value="100,800"/>
+            <sensor.info.sensitivityRange value="50,800"/>
             <!-- microsecond -->
             <sensor.info.exposureTimeRange value="100,100000"/>  <!-- align with supportedAeExposureTimeRange -->
 
             <!-- Blow static metadata are for camera HAL V3 -->
-            <sensor.info.activeArraySize value="0,0,1296,800"/> <!-- 1296,800 -->
-            <sensor.info.pixelArraySize value="1296x800"/>
-            <!-- 4096x1.12um 3072x1.12um -->
-            <sensor.info.physicalSize value="3.69,2.77"/>
+            <sensor.info.activeArraySize value="0,0,1932,1092"/>
+            <sensor.info.pixelArraySize value="1932x1092"/>
+            <!-- 1936x1.116um 1096x1.116um -->
+            <sensor.info.physicalSize value="2.16,1.22"/>
             <!-- 0: off, 1: solid color, 2: color bars  -->
             <sensor.availableTestPatternModes value="0,2"/>
             <!-- 0:RGGB, 1:GRBG, 2:GBRG, 3:BGGR, 4:RGB -->
-            <sensor.info.colorFilterArrangement value="2"/>
+            <sensor.info.colorFilterArrangement value="1"/>
 
             <!-- shading 0:OFF,1:FAST,2:HIGH_QUALITY-->
             <shading.availableModes value="0,1,2"/>
@@ -91,9 +88,9 @@
             <!-- Lens -->
             <lens.facing value="0"/>
             <!-- Lens info -->
-            <lens.info.availableApertures value="2.5"/>
+            <lens.info.availableApertures value="2"/>
             <lens.info.availableFilterDensities value="0.0"/>
-            <lens.info.availableFocalLengths value="4.28"/>
+            <lens.info.availableFocalLengths value="1.37"/>
             <lens.info.availableOpticalStabilization value="0"/>
             <lens.info.hyperfocalDistance value="0.0"/>
             <lens.info.minimumFocusDistance value="0.1"/>
@@ -112,24 +109,27 @@
             <!-- input fmt, output fmt number, output fmts; fmt: YCbCr_420_888:0x23 (35), IMPLEMENTATION_DEFINED:0x22 (34), Blob:0x21 (33) -->
             <scaler.availableInputOutputFormatsMap value="35,2,33,35,34,2,33,35"/>
             <!-- [width, height, raw-out-size] -->
-            <sensor.opaqueRawSize value="1296,800,100"/>
+            <sensor.opaqueRawSize value="1932,1092,100"/>
             <!-- available stream configurations: format: IMPLEMENTATION_DEFINED(34)|YCbCr_420_888:0x23(35)|BLOB(33), widthxheight, type: output(0)|input(1) -->
             <scaler.availableStreamConfigurations value="
+                33,1920x1080,0,
                 33,1280x720,0,
                 33,640x480,0,
                 33,640x360,0" />
             <!-- minimum frame duration: format: IMPLEMENTATION_DEFINED(34)|YCbCr_420_888:0x23(35)|BLOB(33), widthxheight, duration:(ns) -->
             <scaler.availableMinFrameDurations value="
+                33,1920x1080,33333333,
                 33,1280x720,33333333,
                 33,640x480,33333333,
                 33,640x360,33333333" />
             <!-- maximum stall duration: format: IMPLEMENTATION_DEFINED(34)|YCbCr_420_888:0x23(35)|BLOB(33), widthxheight, duration:(ns) -->
             <scaler.availableStallDurations value="
+                33,1920x1080,33333333,
                 33,1280x720,33333333,
                 33,640x480,33333333,
                 33,640x360,33333333" />
 
-            <jpeg.maxSize value="1382400"/>  <!-- 1280*720*1.5 -->
+            <jpeg.maxSize value="3110400"/>  <!-- 1920*1080*1.5 -->
             <jpeg.availableThumbnailSizes value="0,0,320,180,320,240"/> <!-- INCREASING ORDER -->
 
             <!-- 0:off, 1:fast, 2:high_quality, 3:zero_shutter_lag -->
@@ -150,34 +150,35 @@
             <sync.maxLatency value="0"/>
         </StaticMetadata>
 
-        <supportedTuningConfig value="NORMAL,VIDEO,ov01a1s,STILL_CAPTURE,VIDEO,ov01a1s" />
+        <supportedTuningConfig value="NORMAL,VIDEO,OV02C10_1BG203N3_ADL,STILL_CAPTURE,VIDEO,OV02C10_1BG203N3_ADL" />
 
         <!-- The lard tags configuration. Every tag should be 4-characters. -->
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
         <lardTags value="VIDEO,DFLT,DFLT,DFLT,DFLT"/>
 
-        <supportedISysSizes value="1296x798"/> <!-- ascending order request -->
+        <supportedISysSizes value="1932x1092"/> <!-- ascending order request -->
         <supportedISysFormat value="V4L2_PIX_FMT_SGRBG10"/>
         <enableAIQ value="true"/>
         <iSysRawFormat value="V4L2_PIX_FMT_SGRBG10"/>
         <maxRawDataNum value="32"/>
-        <pSysFormat value="V4L2_PIX_FMT_YUYV"/>
+        <pSysFormat value="V4L2_PIX_FMT_NV12"/>
         <initialSkipFrame value="0"/>
         <exposureLag value="2"/>
         <gainLag value="2"/>
         <ltmGainLag value="1"/>
         <yuvColorRangeMode value="full"/> <!-- there are 2 yuv color range mode, like full, reduced. -->
         <pipeSwitchDelayFrame value="60"/>
-        <graphSettingsFile value="graph_settings_ov01a1s.xml"/>
+        <graphSettingsFile value="graph_settings_OV02C10_1BG203N3_ADL.xml"/>
         <graphSettingsType value="dispersed"/>
         <enablePSysProcessor value="true"/>
         <dvsType value="IMG_TRANS"/>
         <testPatternMap value="Off,0,ColorBars,2"/>
         <enableAiqd value = "true"/>
         <useCrlModule value = "false"/>
-        <pslOutputMapForRotation value="1280x720@1280x720,640x480@640x480,320x240@640x480"/>
+        <pslOutputMapForRotation value="1920x1080@1920x1080,1280x720@1280x720,640x480@640x480,640x360@640x360"/>
 
         <maxRequestsInflight value="5"/>
+        <supportPrivacy value="true"/>
     </Sensor>
 </CameraSettings>
 

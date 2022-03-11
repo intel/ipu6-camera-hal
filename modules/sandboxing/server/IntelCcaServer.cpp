@@ -63,7 +63,7 @@ status_t IntelCcaServer::setStats(void* pData, int dataSize) {
 
     intel_cca_set_stats_data* params = static_cast<intel_cca_set_stats_data*>(pData);
 
-    ia_err ret = mCca->setStatsParams(params->inParams, &params->outStats);
+    ia_err ret = mCca->setStatsParams(params->inParams);
     CheckAndLogError(ret != ia_err_none, UNKNOWN_ERROR, "@%s, fails: %d", __func__, ret);
 
     return OK;
@@ -199,7 +199,8 @@ status_t IntelCcaServer::updateTuning(void* pData, int dataSize) {
 
     intel_cca_update_tuning_data* params = static_cast<intel_cca_update_tuning_data*>(pData);
 
-    ia_err ret = mCca->updateTuning(params->lardTags, params->lardParams, params->nvmParams);
+    ia_err ret = mCca->updateTuning(params->lardTags, params->lardParams,
+                                    params->nvmParams, params->streamId);
     CheckAndLogError(ret != ia_err_none, UNKNOWN_ERROR, "@%s, fails: %d", __func__, ret);
 
     return OK;
@@ -227,7 +228,8 @@ status_t IntelCcaServer::decodeStats(void* pData, int dataSize, void* statsAddr)
     }
 
     ia_err ret = mCca->decodeStats(reinterpret_cast<uint64_t>(params->statsBuffer.data),
-                                   params->statsBuffer.size, params->bitmap, &params->results);
+                                   params->statsBuffer.size, params->bitmap, &params->results,
+                                   &params->outStats);
     CheckAndLogError(ret != ia_err_none, UNKNOWN_ERROR, "@%s, fails: %d", __func__, ret);
 
     return OK;

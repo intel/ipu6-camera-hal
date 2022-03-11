@@ -106,11 +106,8 @@ ia_err IntelCca::init(const cca::cca_init_params& initParams) {
     return ret;
 }
 
-ia_err IntelCca::setStatsParams(const cca::cca_stats_params& params,
-                                cca::cca_out_stats* outStats) {
-    CheckAndLogError(!outStats, ia_err_argument, "@%s, outStats is nullptr", __func__);
-
-    ia_err ret = getIntelCCA()->setStatsParams(params, outStats);
+ia_err IntelCca::setStatsParams(const cca::cca_stats_params& params) {
+    ia_err ret = getIntelCCA()->setStatsParams(params);
     LOG2("@%s, ret:%d", __func__, ret);
 
     return ret;
@@ -200,8 +197,8 @@ ia_err IntelCca::getAiqd(cca::cca_aiqd* aiqd) {
 }
 
 ia_err IntelCca::updateTuning(uint8_t lardTags, const ia_lard_input_params& lardParams,
-                              const cca::cca_nvm& nvm) {
-    ia_err ret = getIntelCCA()->updateTuning(lardTags, lardParams, nvm);
+                              const cca::cca_nvm& nvm, int32_t streamId) {
+    ia_err ret = getIntelCCA()->updateTuning(lardTags, lardParams, nvm, streamId);
     LOG2("@%s, ret:%d", __func__, ret);
 
     return ret;
@@ -286,10 +283,11 @@ void IntelCca::deinit() {
 }
 
 ia_err IntelCca::decodeStats(uint64_t statsPointer, uint32_t statsSize, uint32_t bitmap,
-                             ia_isp_bxt_statistics_query_results_t* results) {
+                             ia_isp_bxt_statistics_query_results_t* results,
+                             cca::cca_out_stats* outStats) {
     CheckAndLogError(!results, ia_err_argument, "@%s, results is nullptr", __func__);
 
-    ia_err ret = getIntelCCA()->decodeStats(statsPointer, statsSize, bitmap, results);
+    ia_err ret = getIntelCCA()->decodeStats(statsPointer, statsSize, bitmap, results, outStats);
     LOG2("@%s, statsPointer: 0x%lu, statsSize:%d, bitmap:%x, ret: %d", __func__, statsPointer,
          statsSize, bitmap, ret);
 

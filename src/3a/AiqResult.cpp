@@ -27,6 +27,7 @@ AiqResult::AiqResult(int cameraId) :
     mCameraId(cameraId),
     mTimestamp(0),
     mSequence(-1),
+    mFrameId(-1),
     mTuningMode(TUNING_MODE_VIDEO),
     mAfDistanceDiopters(0.0f),
     mSkip(false),
@@ -76,6 +77,7 @@ int AiqResult::deinit() {
 AiqResult &AiqResult::operator=(const AiqResult &other) {
     mCameraId = other.mCameraId;
     mSequence = other.mSequence;
+    mFrameId = other.mFrameId;
     mTimestamp = other.mTimestamp;
     mTuningMode = other.mTuningMode;
     mAfDistanceDiopters = other.mAfDistanceDiopters;

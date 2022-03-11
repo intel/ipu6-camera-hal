@@ -170,7 +170,7 @@ AiqInitData::AiqInitData(const std::string& sensorName, const std::string& camCf
         if (!aiqbNameFromModuleInfo.empty()) {
             aiqbName.assign(aiqbNameFromModuleInfo);
         }
-        LOG1("aiqb file name %s", aiqbName.c_str());
+        LOGI("aiqb file name %s", aiqbName.c_str());
 
         if (findConfigFile(camCfgDir, &aiqbName) != OK) {
             LOGE("there is no aiqb file:%s", cfg.aiqbName.c_str());
@@ -245,8 +245,8 @@ int AiqInitData::getCameraModuleFromEEPROM(const std::string& nvmPath, std::stri
  * Search the path where CPF files are stored
  */
 int AiqInitData::findConfigFile(const std::string& camCfgDir, std::string* cpfPathName) {
-    LOG1("@%s, cpfPathName:%p", __func__, cpfPathName);
     CheckAndLogError(!cpfPathName, BAD_VALUE, "@%s, cpfPathName is nullptr", __func__);
+    LOG1("@%s, cpfPathName:%s", __func__, cpfPathName->c_str());
 
     std::vector<string> configFilePath;
     configFilePath.push_back("./");
@@ -290,13 +290,19 @@ int AiqInitData::getCpf(TuningMode mode, ia_binary_data* cpfData) {
     return OK;
 }
 
-ia_binary_data* AiqInitData::getNvm(int cameraId) {
-    if (mNvmPath.length() == 0) return nullptr;
+ia_binary_data* AiqInitData::getNvm(int cameraId, const char* overwrittenFile, int fileSize) {
+    const char* nvmFile = mNvmPath.c_str();
+    int size = mMaxNvmSize;
+    if (overwrittenFile && fileSize) {
+        nvmFile = overwrittenFile;
+        size = fileSize;
+    }
+    if (!nvmFile || !size) return nullptr;
 
     if (!mNvm) {
-        LOG2("NVM data for %s is located in %s", mSensorName.c_str(), mNvmPath.c_str());
+        LOG2("NVM data for %s is located in %s, size %d", mSensorName.c_str(), nvmFile, size);
 
-        mNvm = new AiqData(mNvmPath, mMaxNvmSize);
+        mNvm = new AiqData(nvmFile, size);
 
         if (CameraDump::isDumpTypeEnable(DUMP_NVM_DATA)) {
             ia_binary_data* nvmData = mNvm->getData();

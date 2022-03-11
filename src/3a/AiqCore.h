@@ -87,8 +87,7 @@ class AiqCore {
     /**
      * \brief Set ispStatistics to AiqCore
      */
-    int setStatsParams(const cca::cca_stats_params& statsParams, cca::cca_out_stats* outStats,
-                       AiqStatistics* aiqStats);
+    int setStatsParams(const cca::cca_stats_params& statsParams, AiqStatistics* aiqStats);
 
     /**
      * \brief run AE

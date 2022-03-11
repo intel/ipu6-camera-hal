@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Intel Corporation.
+ * Copyright (C) 2015-2022 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,7 +74,7 @@ int ParameterGenerator::reset() {
     LOG1("<id%d>%s", mCameraId, __func__);
     AutoMutex l(mParamsLock);
     mRequestParamMap.clear();
-    mRequestIdMap.clear();
+    CLEAR(mPaCcm);
 
     return OK;
 }
@@ -168,6 +168,9 @@ void ParameterGenerator::updateParameters(int64_t sequence, const Parameters* pa
         requestParam->param.setNrMode(nrMode);
     }
 
+    // disable stats callback for reprocessing request
+    requestParam->param.setCallbackRgbs(false);
+
     mRequestParamMap[sequence] = requestParam;
 }
 
@@ -209,44 +212,15 @@ int ParameterGenerator::getUserRequestId(int64_t sequence, int32_t& userRequestI
         return mRequestParamMap[sequence]->param.getUserRequestId(userRequestId);
     }
 
-    LOGE("<seq%ld>Can't find user requestId", sequence);
     return UNKNOWN_ERROR;
-}
-
-void ParameterGenerator::setRequestIdMap(long currentRequestId, long requestIdWithAiq) {
-    AutoMutex l(mParamsLock);
-    if (mRequestIdMap.size() >= kStorageSize) {
-        mRequestIdMap.erase(mRequestIdMap.begin());
-    }
-    mRequestIdMap[currentRequestId] = requestIdWithAiq;
 }
 
 int ParameterGenerator::getRequestId(int64_t sequence, long& requestId) {
     CHECK_SEQUENCE(sequence);
-    requestId = -1;
 
     AutoMutex l(mParamsLock);
     if (mRequestParamMap.find(sequence) != mRequestParamMap.end()) {
-        requestId = mRequestParamMap[sequence]->requestId;
-    }
-
-    if (requestId == -1) {
-        // Find nearest request id
-        for (auto it = mRequestParamMap.crbegin(); it != mRequestParamMap.crend(); ++it) {
-            if (it->first <= sequence) {
-                requestId = mRequestParamMap[it->first]->requestId;
-            }
-        }
-    }
-
-    if (mRequestIdMap.find(requestId) != mRequestIdMap.end()) {
-        // find the real request id of running AIQ
-        requestId = mRequestIdMap[requestId];
-    }
-
-    if (requestId != -1) {
-        LOG2("<req%ld:seq%ld>%s", requestId, sequence, __func__);
-        return OK;
+        return mRequestParamMap[sequence]->requestId;
     }
 
     LOGE("<seq%ld>Can't find requestId", sequence);
@@ -283,11 +257,7 @@ int ParameterGenerator::updateWithAiqResultsL(int64_t sequence, Parameters* para
 
     // Update AWB related parameters
     updateAwbGainsL(params, aiqResult->mAwbResults);
-    camera_color_transform_t ccm;
-    MEMCPY_S(ccm.color_transform, sizeof(ccm.color_transform),
-             aiqResult->mPaResults.color_conversion_matrix,
-             sizeof(aiqResult->mPaResults.color_conversion_matrix));
-    params->setColorTransform(ccm);
+    updateCcmL(params, aiqResult);
 
     camera_color_gains_t colorGains;
     colorGains.color_gains_rggb[0] = aiqResult->mPaResults.color_gains.r;
@@ -378,6 +348,34 @@ int ParameterGenerator::updateAwbGainsL(Parameters* params, const cca::cca_awb_r
     return OK;
 }
 
+int ParameterGenerator::updateCcmL(Parameters* params, const AiqResult* aiqResult) {
+    // CCM has tiny changes (delta ~0.0002) during AWB lock.
+    // Report previous values if delta can be ignored to meet CTS requirement.
+    bool valueConsistent = false;
+    if (aiqResult->mAiqParam.awbForceLock) {
+        valueConsistent = true;
+        for (int i = 0; i < 3 && valueConsistent; i++) {
+            for (int j = 0; j < 3; j++) {
+                float delta = mPaCcm.color_transform[i][j] -
+                              aiqResult->mPaResults.color_conversion_matrix[i][j];
+                if (fabs(delta) > 0.001) {
+                    valueConsistent = false;
+                    LOG2("<seq%ld>ccm changed during awb force lock", aiqResult->mSequence);
+                    break;
+                }
+            }
+        }
+    }
+
+    if (!valueConsistent) {
+        MEMCPY_S(mPaCcm.color_transform, sizeof(mPaCcm.color_transform),
+                 aiqResult->mPaResults.color_conversion_matrix,
+                 sizeof(aiqResult->mPaResults.color_conversion_matrix));
+    }
+    params->setColorTransform(mPaCcm);
+    return OK;
+}
+
 int ParameterGenerator::updateTonemapCurve(int64_t sequence, Parameters* params) {
     if (!mTonemapMaxCurvePoints) return OK;
 
@@ -405,20 +403,41 @@ int ParameterGenerator::updateTonemapCurve(int64_t sequence, Parameters* params)
 }
 
 int ParameterGenerator::updateCommonMetadata(Parameters* params, const AiqResult* aiqResult) {
-    CameraMetadata metadata;
+    icamera_metadata_ro_entry entry;
+    CLEAR(entry);
 
-    metadata.update(CAMERA_SENSOR_ROLLING_SHUTTER_SKEW, &aiqResult->mRollingShutter, 1);
+    entry.tag = CAMERA_SENSOR_ROLLING_SHUTTER_SKEW;
+    entry.type = ICAMERA_TYPE_INT64;
+    entry.count = 1;
+    entry.data.i64 = &aiqResult->mRollingShutter;
+    ParameterHelper::mergeTag(entry, params);
+
     int64_t frameDuration = aiqResult->mFrameDuration * 1000;  // us -> ns
-    metadata.update(CAMERA_SENSOR_FRAME_DURATION, &frameDuration, 1);
+    entry.tag = CAMERA_SENSOR_FRAME_DURATION;
+    entry.type = ICAMERA_TYPE_INT64;
+    entry.count = 1;
+    entry.data.i64 = &frameDuration;
+    ParameterHelper::mergeTag(entry, params);
 
-    if (aiqResult->mAiqParam.callbackRgbs) {
+    bool callbackRgbs = false;
+    params->getCallbackRgbs(&callbackRgbs);
+
+    if (callbackRgbs) {
         int32_t width = aiqResult->mOutStats.rgbs_grid.grid_width;
         int32_t height = aiqResult->mOutStats.rgbs_grid.grid_height;
         int32_t gridSize[] = {width, height};
-        metadata.update(INTEL_VENDOR_CAMERA_RGBS_GRID_SIZE, gridSize, ARRAY_SIZE(gridSize));
+        entry.tag = INTEL_VENDOR_CAMERA_RGBS_GRID_SIZE;
+        entry.type = ICAMERA_TYPE_INT32;
+        entry.count = ARRAY_SIZE(gridSize);
+        entry.data.i32 = gridSize;
+        ParameterHelper::mergeTag(entry, params);
 
         uint8_t lscFlags = aiqResult->mOutStats.rgbs_grid.shading_correction;
-        metadata.update(INTEL_VENDOR_CAMERA_SHADING_CORRECTION, &lscFlags, 1);
+        entry.tag = INTEL_VENDOR_CAMERA_SHADING_CORRECTION;
+        entry.type = ICAMERA_TYPE_BYTE;
+        entry.count = 1;
+        entry.data.u8 = &lscFlags;
+        ParameterHelper::mergeTag(entry, params);
 
         if (Log::isLogTagEnabled(ST_STATS)) {
             const cca::cca_out_stats *outStats = &aiqResult->mOutStats;
@@ -432,16 +451,33 @@ int ParameterGenerator::updateCommonMetadata(Parameters* params, const AiqResult
             }
 
             LOG2(ST_STATS, "RGB stat %dx%d, sequence %lld, y_mean %d",
-                 outStats->rgbs_grid.grid_width,
-                 outStats->rgbs_grid.grid_height, aiqResult->mSequence, sumLuma/size);
+                 outStats->rgbs_grid.grid_width, outStats->rgbs_grid.grid_height,
+                 aiqResult->mSequence, size > 0 ? sumLuma/size : 0);
         }
 
-        metadata.update(INTEL_VENDOR_CAMERA_RGBS_STATS_BLOCKS,
-                        reinterpret_cast<const uint8_t*>(aiqResult->mOutStats.rgbs_blocks),
-                        (width * height * 5));
+        entry.tag = INTEL_VENDOR_CAMERA_RGBS_STATS_BLOCKS;
+        entry.type = ICAMERA_TYPE_BYTE;
+        entry.count = width * height * 5;
+        entry.data.u8 = reinterpret_cast<const uint8_t*>(aiqResult->mOutStats.rgbs_blocks);
+        ParameterHelper::mergeTag(entry, params);
     }
 
-    if (aiqResult->mAiqParam.callbackTmCurve) {
+    if (aiqResult->mAiqParam.manualExpTimeUs <= 0 && aiqResult->mAiqParam.manualIso <= 0) {
+        int64_t range[] =
+            { aiqResult->mAeResults.exposures[0].exposure[0].low_limit_total_exposure,
+              aiqResult->mAeResults.exposures[0].exposure[0].up_limit_total_exposure };
+        LOG2("total et limits [%ldx%ld]", range[0], range[1]);
+        entry.tag = INTEL_VENDOR_CAMERA_TOTAL_EXPOSURE_TARGET_RANGE;
+        entry.type = ICAMERA_TYPE_INT64;
+        entry.count = 2;
+        entry.data.i64 = range;
+        ParameterHelper::mergeTag(entry, params);
+    }
+
+    bool callbackTmCurve = false;
+    params->getCallbackTmCurve(&callbackTmCurve);
+
+    if (callbackTmCurve) {
         const cca::cca_gbce_params& gbceResults = aiqResult->mGbceResults;
         int multiplier = gbceResults.tone_map_lut_size / mTonemapMaxCurvePoints;
 
@@ -450,10 +486,13 @@ int ParameterGenerator::updateCommonMetadata(Parameters* params, const AiqResult
             tmCurve[i * 2] = static_cast<float>(i) / (mTonemapMaxCurvePoints - 1);
             tmCurve[i * 2 + 1] = gbceResults.tone_map_lut[i * multiplier];
         }
-        metadata.update(INTEL_VENDOR_CAMERA_TONE_MAP_CURVE, tmCurve.data(), tmCurve.size());
+        entry.tag = INTEL_VENDOR_CAMERA_TONE_MAP_CURVE;
+        entry.type = ICAMERA_TYPE_FLOAT;
+        entry.count = tmCurve.size();
+        entry.data.f = tmCurve.data();
+        ParameterHelper::mergeTag(entry, params);
     }
 
-    ParameterHelper::merge(metadata, params);
     return OK;
 }
 

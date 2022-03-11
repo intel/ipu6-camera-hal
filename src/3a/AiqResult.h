@@ -48,6 +48,7 @@ public:
     int mCameraId;
     unsigned long long mTimestamp;
     int64_t mSequence;
+    int64_t mFrameId;  // CCA frame id
     TuningMode mTuningMode;
     float mAfDistanceDiopters;
     bool mSkip;

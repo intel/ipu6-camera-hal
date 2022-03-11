@@ -188,8 +188,6 @@
         <faceEngineRunningSync value="true"/>
         <faceEngineRunningInterval value="3"/>
         <faceEngineRunningIntervalNoFace value="10"/>
-        <!-- if faceAeEnabled is not equal to true, availableSceneModes and availableFaceDetectModes must be 0 -->
-        <faceAeEnabled value="true"/>
     </Sensor>
 </CameraSettings>
 

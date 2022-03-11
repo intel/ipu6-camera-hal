@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 Intel Corporation.
+ * Copyright (C) 2016-2022 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@
 #include "SensorHwCtrl.h"
 #include "SofSource.h"
 #include "StreamSource.h"
+#include "CvfPrivacyChecker.h"
 
 #include "ProcessorManager.h"
 #include "gc/IGraphConfigManager.h"
@@ -187,15 +188,6 @@ class CameraDevice : public EventListener {
 
     void callbackRegister(const camera_callback_ops_t* callback);
 
-    /**
-     * \brief Reconfigure the streams, devices and post processor.
-     *
-     * \param streamList: all the streams info
-     *
-     * \return OK if succeed and BAD_VALUE if failed
-     */
-    int reconfigure(stream_config_t* streamList);
-
     int startLocked();
     int stopLocked();
     int initDefaultParameters();
@@ -222,10 +214,7 @@ class CameraDevice : public EventListener {
     // The second phase of qbuf(), done in RequestThread
     int handleQueueBuffer(int bufferNum, camera_buffer_t** ubuffer, int64_t sequence);
 
-    // No lock protect for internal usage, should be protected by mDeviceLock from outside
-    int configureL(stream_config_t* streamList, bool clean = true);
     int setParametersL(const Parameters& param);
-
     int registerBuffer(camera_buffer_t** ubuffer, int bufferNum);
 
  private:
@@ -262,7 +251,6 @@ class CameraDevice : public EventListener {
     int mStreamNum;
     Parameters mParameter;
     bool mPerframeControlSupport;
-    camera_scene_mode_t mLastSceneMode;
 
     RequestThread* mRequestThread;
     IGraphConfigManager* mGCM;
@@ -270,6 +258,7 @@ class CameraDevice : public EventListener {
     camera_callback_ops_t* mCallback;
 
  private:
+    CvfPrivacyChecker* mCvfPrivacyChecker;
     DISALLOW_COPY_AND_ASSIGN(CameraDevice);
 };
 

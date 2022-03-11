@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Intel Corporation.
+ * Copyright (C) 2015-2022 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,8 +32,7 @@ CameraStream::CameraStream(int cameraId, int streamId, const stream_t& stream)
           mStreamId(streamId),
           mPort(MAIN_PORT),
           mBufferProducer(nullptr),
-          mNumHoldingUserBuffers(0),
-          mIsWaitingBufferReturn(false) {
+          mBufferInProcessing(0) {
     LOG2("<id%d>@%s: automation checkpoint: WHF: %d,%d,%s", mCameraId, __func__, stream.width,
          CameraUtils::getInterlaceHeight(stream.field, stream.height),
          CameraUtils::pixelCode2String(stream.format));
@@ -42,17 +41,15 @@ CameraStream::CameraStream(int cameraId, int streamId, const stream_t& stream)
 CameraStream::~CameraStream() {}
 
 int CameraStream::start() {
-    LOG1("<id%d>@%s", mCameraId, __func__);
+    LOG1("<id%d>@%s, %p", mCameraId, __func__, this);
 
     return OK;
 }
 
 int CameraStream::stop() {
-    LOG1("<id%d>@%s", mCameraId, __func__);
+    LOG1("<id%d>@%s, %p", mCameraId, __func__, this);
 
-    mIsWaitingBufferReturn = false;
-    mNumHoldingUserBuffers = 0;
-
+    mBufferInProcessing = 0;
     if (mBufferProducer != nullptr) mBufferProducer->removeFrameAvailableListener(this);
 
     AutoMutex poolLock(mBufferPoolLock);
@@ -116,32 +113,13 @@ shared_ptr<CameraBuffer> CameraStream::userBufferToCameraBuffer(camera_buffer_t*
     return camBuffer;
 }
 
-void CameraStream::waitToReturnAllUserBufffers() {
-    ConditionLock lock(mBufferPoolLock);
-
-    if (mNumHoldingUserBuffers > 0) {
-        // mIsWaitingBufferReturn flag is used to prevent situation that signal goes before wait
-        mIsWaitingBufferReturn = true;
-        int ret = mAllBuffersReturnedSignal.waitRelative(lock, kWaitDuration * SLOWLY_MULTIPLIER);
-
-        CheckWarning(ret == TIMED_OUT, VOID_VALUE,
-                     "<id%d>@%s, time out happens when waiting return user buffers", mCameraId,
-                     __func__);
-        mIsWaitingBufferReturn = false;
-    }
-
-    LOG1("%s: all buffers have been returned to user", __func__);
-
-    return;
-}
-
 // Q buffers to the stream processor which should be set by the CameraDevice
 int CameraStream::qbuf(camera_buffer_t* ubuffer, int64_t sequence) {
     shared_ptr<CameraBuffer> camBuffer = userBufferToCameraBuffer(ubuffer);
     if (camBuffer) {
         camBuffer->setSettingSequence(sequence);
-        LOG2("<id%d>@%s, mStreamId:%d, CameraBuffer:%p for port:%d, ubuffer:%p, addr:%p", mCameraId,
-             __func__, mStreamId, camBuffer.get(), mPort, ubuffer, ubuffer->addr);
+        LOG2("<id%d>@%s, mStreamId:%d, CameraBuffer:%p for port:%d, ubuffer:%p, addr:%p",
+             mCameraId, __func__, mStreamId, camBuffer.get(), mPort, ubuffer, ubuffer->addr);
     }
 
     int ret = BAD_VALUE;
@@ -149,7 +127,7 @@ int CameraStream::qbuf(camera_buffer_t* ubuffer, int64_t sequence) {
     if (mBufferProducer != nullptr) {
         ret = mBufferProducer->qbuf(mPort, camBuffer);
         if (ret == OK) {
-            mNumHoldingUserBuffers++;
+            mBufferInProcessing++;
         }
     }
     return ret;
@@ -162,7 +140,33 @@ void CameraStream::setBufferProducer(BufferProducer* producer) {
     if (producer != nullptr) producer->addFrameAvailableListener(this);
 }
 
+shared_ptr<CameraBuffer> CameraStream::getPrivacyBuffer() {
+    AutoMutex l(mBufferPoolLock);
+    shared_ptr<CameraBuffer> buf = nullptr;
+    if (!mPrivacyBuffer.empty()) {
+        buf = mPrivacyBuffer.front();
+        mPrivacyBuffer.pop();
+    }
+    return buf;
+}
+
 int CameraStream::onFrameAvailable(Port port, const shared_ptr<CameraBuffer>& camBuffer) {
+    if (mPort != port) return OK;
+    if (camBuffer->getStreamId() != mStreamId) return OK;
+    std::shared_ptr<CameraBuffer> buf;
+    {
+        AutoMutex l(mBufferPoolLock);
+        mPrivacyBuffer.push(camBuffer);
+        if (mPrivacyBuffer.size() <= 1) {
+            return OK;
+        }
+        buf = mPrivacyBuffer.front();
+        mPrivacyBuffer.pop();
+    }
+    return doFrameAvailable(port, buf);
+}
+
+int CameraStream::doFrameAvailable(Port port, const shared_ptr<CameraBuffer>& camBuffer) {
     // Ignore if the buffer is not for this stream.
     if (mPort != port) return OK;
     if (camBuffer->getStreamId() != mStreamId) return OK;
@@ -190,18 +194,10 @@ int CameraStream::onFrameAvailable(Port port, const shared_ptr<CameraBuffer>& ca
                               camBuffer->getVirtualChannel());
 
     AutoMutex l(mBufferPoolLock);
-
-    if (mNumHoldingUserBuffers > 0) {
-        mNumHoldingUserBuffers--;
+    if (mBufferInProcessing > 0) {
+        mBufferInProcessing--;
     }
-
-    LOG2("mNumHoldingUserBuffers has already been counted down to %d", mNumHoldingUserBuffers);
-
-    // mIsWaitingBufferReturn is used to prevent signal before wait
-    if (mIsWaitingBufferReturn && mNumHoldingUserBuffers == 0) {
-        LOG2("%s: all user buffer returned, trigger signal", __func__);
-        mAllBuffersReturnedSignal.signal();
-    }
+    LOG2("%s, buffer in processing: %d for stream: %p", __func__, mBufferInProcessing, this);
 
     return OK;
 }

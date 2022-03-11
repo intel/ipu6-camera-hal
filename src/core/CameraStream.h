@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Intel Corporation.
+ * Copyright (C) 2015-2022 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,11 +75,6 @@ class CameraStream : public BufferConsumer, public EventSource {
     std::shared_ptr<CameraBuffer> userBufferToCameraBuffer(camera_buffer_t* ubuffer);
 
     /**
-     * \brief Wait all user buffers to be returned to user
-     */
-    void waitToReturnAllUserBufffers();
-
-    /**
      * \brief Register the mBufferProducer
      */
     virtual void setBufferProducer(BufferProducer* producer);
@@ -89,29 +84,29 @@ class CameraStream : public BufferConsumer, public EventSource {
      */
     virtual int onFrameAvailable(Port port, const std::shared_ptr<CameraBuffer>& camBuffer);
 
- private:
-    static const nsecs_t kWaitDuration = 10000000000;  // 10000ms
+    /**
+     * \brief Return a privacy buffer
+     */
+    virtual std::shared_ptr<CameraBuffer> getPrivacyBuffer();
 
+    /**
+     * \brief Special function to send last frame after privacy on
+     */
+    virtual int doFrameAvailable(Port port, const std::shared_ptr<CameraBuffer>& camBuffer);
+
+ private:
     int mCameraId;
     int mStreamId;
     Port mPort;
-
     BufferProducer* mBufferProducer;
 
-    CameraBufVector mUserBuffersPool;
-
-    // Guard for member mUserBuffersPool, used in the qbuf which is critical for FPS
-    // Prevent qbuf and dqbuf to share the same lock
+    // Guard for member mUserBuffersPool and mBufferInProcessing
     Mutex mBufferPoolLock;
-
-    // Siginal for the situation that all buffers returned to user
-    Condition mAllBuffersReturnedSignal;
-
+    CameraBufVector mUserBuffersPool;
     // How many user buffers are currently processing underhood.
-    int mNumHoldingUserBuffers;
-
-    // Flag to indicate that currently waiting for all user buffers to be returned
-    bool mIsWaitingBufferReturn;
+    int mBufferInProcessing;
+    // An extra queue at the end of pipeline, to store 1 buffer at least when privacy on.
+    CameraBufQ mPrivacyBuffer;
 };
 
 }  // namespace icamera

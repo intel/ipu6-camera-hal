@@ -23,7 +23,9 @@
 
 #include "CameraEventType.h"
 #include "PlatformData.h"
+// FRAME_SYNC_S
 #include "SyncManager.h"
+// FRAME_SYNC_E
 #include "V4l2DeviceFactory.h"
 #include "iutils/CameraDump.h"
 #include "iutils/CameraLog.h"
@@ -49,7 +51,6 @@ DeviceBase::DeviceBase(int cameraId, VideoNodeType nodeType, VideoNodeDirection 
     LOG1("<id%d>%s, device:%s", mCameraId, __func__, mName);
 
     mFrameSkipNum = PlatformData::getInitialSkipFrame(mCameraId);
-
     std::string devName;
     int ret = PlatformData::getDevNameByType(cameraId, nodeType, devName);
     CheckAndLogError(ret != OK, VOID_VALUE,
@@ -61,32 +62,31 @@ DeviceBase::DeviceBase(int cameraId, VideoNodeType nodeType, VideoNodeDirection 
 
 DeviceBase::~DeviceBase() {
     LOG1("<id%d>%s, device:%s", mCameraId, __func__, mName);
-
     delete mDevice;
 }
 
 int DeviceBase::openDevice() {
     LOG1("<id%d>%s, device:%s", mCameraId, __func__, mName);
 
+    // FRAME_SYNC_S
     if (PlatformData::isEnableFrameSyncCheck(mCameraId))
         SyncManager::getInstance()->updateSyncCamNum();
+    // FRAME_SYNC_E
 
     return mDevice->Open(O_RDWR);
 }
 
 void DeviceBase::closeDevice() {
     LOG1("<id%d>%s, device:%s", mCameraId, __func__, mName);
+
+    // Release V4L2 buffers
+    mDevice->Stop(true);
     {
         AutoMutex l(mBufferLock);
-
-        // Release V4L2 buffers
-        mDevice->Stop(true);
-
         mPendingBuffers.clear();
         mBuffersInDevice.clear();
         mAllocatedBuffers.clear();
     }
-
     mDevice->Close();
 }
 
@@ -124,12 +124,14 @@ int DeviceBase::queueBuffer(int64_t sequence) {
     LOG2("<id%d>%s, device:%s", mCameraId, __func__, mName);
 
     shared_ptr<CameraBuffer> buffer;
-    AutoMutex l(mBufferLock);
-    if (mPendingBuffers.empty()) {
-        LOG2("Device:%s has no pending buffer to be queued.", mName);
-        return OK;
+    {
+        AutoMutex l(mBufferLock);
+        if (mPendingBuffers.empty()) {
+            LOG2("Device:%s has no pending buffer to be queued.", mName);
+            return OK;
+        }
+        buffer = mPendingBuffers.front();
     }
-    buffer = mPendingBuffers.front();
 
     int ret = onQueueBuffer(sequence, buffer);
     CheckAndLogError(ret != OK, ret, "Device:%s failed to preprocess the buffer with ret=%d", mName,
@@ -138,6 +140,7 @@ int DeviceBase::queueBuffer(int64_t sequence) {
     ret = mDevice->PutFrame(&buffer->getV4L2Buffer());
 
     if (ret >= 0) {
+        AutoMutex l(mBufferLock);
         mPendingBuffers.pop_front();
         mBuffersInDevice.push_back(buffer);
     }
@@ -190,7 +193,6 @@ void DeviceBase::resetBuffers() {
 
     mBuffersInDevice.clear();
     mPendingBuffers.clear();
-
     for (const auto& buffer : mAllocatedBuffers) {
         mPendingBuffers.push_back(buffer);
     }
@@ -220,6 +222,7 @@ shared_ptr<CameraBuffer> DeviceBase::getFirstDeviceBuffer() {
     return mBuffersInDevice.empty() ? nullptr : mBuffersInDevice.front();
 }
 
+// FRAME_SYNC_S
 bool DeviceBase::skipFrameAfterSyncCheck(int64_t sequence) {
     // For multi-camera sensor, to check whether the frame synced or not
     int count = 0;
@@ -234,6 +237,7 @@ bool DeviceBase::skipFrameAfterSyncCheck(int64_t sequence) {
     }
     return false;
 }
+// FRAME_SYNC_E
 
 void DeviceBase::popBufferFromDevice() {
     AutoMutex l(mBufferLock);
@@ -349,7 +353,6 @@ int MainDevice::createBufferPool(const stream_t& config) {
     } else {
         calcBufferSize = CameraUtils::getFrameSize(config.format, config.width, config.height);
     }
-
     CheckAndLogError(calcBufferSize < realBufferSize, BAD_VALUE,
                      "realBufferSize %d is larger than calcBufferSize %d.", realBufferSize,
                      calcBufferSize);
@@ -360,7 +363,6 @@ int MainDevice::createBufferPool(const stream_t& config) {
     std::vector<V4L2Buffer> bufs;
     int bufNum = mDevice->SetupBuffers(mMaxBufferNumber, true,
                                        static_cast<enum v4l2_memory>(config.memType), &bufs);
-
     CheckAndLogError(bufNum < 0, BAD_VALUE, "request buffers failed return=%d", bufNum);
 
     return OK;
@@ -403,6 +405,7 @@ bool MainDevice::needQueueBack(shared_ptr<CameraBuffer> buffer) {
         needSkipFrame = true;
         LOGW("<seq%ld>%s: buffer error", buffer->getSequence(), __func__);
     }
+    // FRAME_SYNC_S
     if (PlatformData::isEnableFrameSyncCheck(mCameraId)) {
         struct camera_buf_info sharedCamBufInfo;
         sharedCamBufInfo.sequence = buffer->getSequence();
@@ -414,6 +417,7 @@ bool MainDevice::needQueueBack(shared_ptr<CameraBuffer> buffer) {
             needSkipFrame = true;
         }
     }
+    // FRAME_SYNC_E
     return needSkipFrame;
 }
 

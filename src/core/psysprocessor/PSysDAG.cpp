@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2021 Intel Corporation.
+ * Copyright (C) 2017-2022 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ PSysDAG::PSysDAG(int cameraId, PSysDagCallback* psysDagCB)
     LOG1("<id%d>@%s", mCameraId, __func__);
 
     mPolicyManager = new PolicyManager(mCameraId);
-    mIspParamAdaptor = new IspParamAdaptor(mCameraId, PG_PARAM_PSYS_ISA);
+    mIspParamAdaptor = new IspParamAdaptor(mCameraId);
 }
 
 PSysDAG::~PSysDAG() {
@@ -190,7 +190,8 @@ int PSysDAG::createPipeExecutors(bool useTnrOutBuffer) {
         }
 
         if (foundExecutor)
-            mPolicyManager->addExecutorBundle(bundle.bundledExecutors, bundle.depths);
+            mPolicyManager->addExecutorBundle(bundle.bundledExecutors, bundle.depths,
+                                              bundle.startSequence);
     }
 
     return OK;
@@ -593,7 +594,7 @@ void PSysDAG::addTask(PSysTaskData taskParam) {
 
     queueBuffers(taskParam);
 
-    if (runIspAdaptor && mRunAicAfterQbuf) {
+    if (runIspAdaptor && mRunAicAfterQbuf && taskParam.mNextSeqUsed) {
         LOG2("%s, <seq%ld> run AIC bundle with execute psys", __func__, sequence + 1);
         // if running psys bundle with aic, current aic result is for next sequence
         prepareIpuParams((sequence + 1), false, &task);
@@ -759,8 +760,7 @@ int PSysDAG::prepareIpuParams(int64_t sequence, bool forceUpdate, TaskInfo* task
             }
         }
 
-        ret = mIspParamAdaptor->runIspAdapt(&task->mTaskData.mIspSettings,
-                                            task->mTaskData.mRequestId, sequence, id);
+        ret = mIspParamAdaptor->runIspAdapt(&task->mTaskData.mIspSettings, sequence, id);
         CheckAndLogError(ret != OK, UNKNOWN_ERROR, "%s, <seq%ld> Failed to run AIC: streamId: %d",
                          __func__, sequence, id);
 
@@ -801,7 +801,7 @@ void PSysDAG::tuningReconfig(TuningMode newTuningMode) {
     if (mIspParamAdaptor) {
         mIspParamAdaptor->deinit();
     } else {
-        mIspParamAdaptor = new IspParamAdaptor(mCameraId, PG_PARAM_PSYS_ISA);
+        mIspParamAdaptor = new IspParamAdaptor(mCameraId);
     }
 
     int ret = mIspParamAdaptor->init();

@@ -45,8 +45,6 @@ class GraphConfigImpl {
     bool queryGraphSettings(const std::vector<HalStream*>& activeStreams);
     status_t configStreams(const std::vector<HalStream*>& activeStreams, bool dummyStillSink);
     status_t getGraphConfigData(IGraphType::GraphConfigData* data);
-
-    int getProgramGroup(std::string pgName, ia_isp_bxt_program_group* programGroupForPG);
     status_t getPgIdForKernel(const uint32_t streamId, const int32_t kernelId, int32_t* pgId);
 
     status_t pipelineGetConnections(const std::vector<std::string>& pgList,

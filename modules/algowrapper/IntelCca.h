@@ -39,7 +39,7 @@ class IntelCca {
 
     ia_err init(const cca::cca_init_params& initParams);
 
-    ia_err setStatsParams(const cca::cca_stats_params& params, cca::cca_out_stats* outStats);
+    ia_err setStatsParams(const cca::cca_stats_params& params);
 
     ia_err runAEC(uint64_t frameId, const cca::cca_ae_input_params& params,
                   cca::cca_ae_results* results);
@@ -58,7 +58,7 @@ class IntelCca {
     ia_err getMKN(ia_mkn_trg type, cca::cca_mkn* mkn);
     ia_err getAiqd(cca::cca_aiqd* aiqd);
     ia_err updateTuning(uint8_t lardTags, const ia_lard_input_params& lardParams,
-                        const cca::cca_nvm& nvm);
+                        const cca::cca_nvm& nvm, int32_t streamId);
 
     bool allocStatsDataMem(unsigned int size);
     void* getStatsDataBuffer();
@@ -68,7 +68,8 @@ class IntelCca {
     void deinit();
 
     ia_err decodeStats(uint64_t statsPointer, uint32_t statsSize, uint32_t bitmap,
-                       ia_isp_bxt_statistics_query_results_t* results);
+                       ia_isp_bxt_statistics_query_results_t* results,
+                       cca::cca_out_stats* outStats = nullptr);
 
     uint32_t getPalDataSize(const cca::cca_program_group& programGroup);
     void* allocMem(int streamId, const std::string& name, int index, int size);

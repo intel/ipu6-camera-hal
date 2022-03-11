@@ -51,6 +51,13 @@ class PnpDebugControl {
     static bool useMockAAL();
 
     /**
+     * the fake fps of mock AAL layer
+     *
+     * \return fps if set, otherwise return 30.
+     */
+
+    static int mockAALFps();
+    /**
      * check if 3A algo is skipped for PNP test
      *
      * \return true if feature is skipped, otherwise return false.
@@ -77,6 +84,13 @@ class PnpDebugControl {
      * \return true if feature is skipped, otherwise return false.
      */
     static bool isFaceDisabled();
+
+    /**
+     * check if Face AE Feature is skipped for PNP test
+     *
+     * \return true if feature is skipped, otherwise return false.
+     */
+    static bool isFaceAeDisabled();
 
     /**
      * check if Face Dection Algo is skipped for PNP test
@@ -115,19 +129,23 @@ class PnpDebugControl {
      public:
         StaticCfg()
                 : useMockAAL(false),
+                  mockAALFps(30),
                   isBypass3A(false),
                   isBypassPAL(false),
                   isBypassPG(false),
                   isFaceDisabled(false),
+                  isFaceAeDisabled(false),
                   isBypassFDAlgo(false),
                   isBypassISys(false),
                   useMockHal(false),
                   isBypassP2p(false) {}
         bool useMockAAL;
+        int mockAALFps;
         bool isBypass3A;
         bool isBypassPAL;
         bool isBypassPG;
         bool isFaceDisabled;
+        bool isFaceAeDisabled;
         bool isBypassFDAlgo;
         bool isBypassISys;
         bool useMockHal;

@@ -179,6 +179,11 @@ bool IPCGraphConfig::serverFlattenGetGraphData(void* pData, uint32_t size,
         params->streamIdData[i] = graphData.streamIds[i];
     }
 
+    params->tuningModeNum = graphData.tuningModes.size();
+    for (size_t i = 0; i < graphData.tuningModes.size(); ++i) {
+        params->tuningModes[i] = graphData.tuningModes[i];
+    }
+
     params->pgInfoNum = graphData.pgInfo.size();
     for (size_t i = 0; i < graphData.pgInfo.size(); ++i) {
         size_t len = graphData.pgInfo[i].pgName.copy(params->pgInfoData[i].pgName, MAX_NAME_LENGTH);
@@ -262,6 +267,10 @@ bool IPCGraphConfig::clientUnflattenGetGraphData(void* pData, uint32_t size,
 
     for (size_t i = 0; i < params->streamIdNum; ++i) {
         graphData->streamIds.push_back(params->streamIdData[i]);
+    }
+
+    for (size_t i = 0; i < params->tuningModeNum; ++i) {
+        graphData->tuningModes.push_back(params->tuningModes[i]);
     }
 
     for (size_t i = 0; i < params->pgInfoNum; ++i) {

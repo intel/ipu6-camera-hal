@@ -197,9 +197,4 @@ status_t GraphConfigImpl::getPgIdForKernel(const uint32_t streamId, const int32_
 
     return OK;
 }
-
-status_t GraphConfigImpl::getProgramGroup(std::string pgName,
-                                          ia_isp_bxt_program_group* programGroup) {
-    return OK;
-}
 }  // namespace icamera

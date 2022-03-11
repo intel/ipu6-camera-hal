@@ -67,7 +67,7 @@ PGCommon::PGCommon(int cameraId, int pgId, const std::string& pgName, TuningMode
           mTerminalBaseUid(terminalBaseUid),
           mStreamId(-1),
           mPGCount(0),
-          mPlatform(IA_P2P_PLATFORM_BXT_B0),
+          mPlatform(IA_P2P_PLATFORM_IPU6),
           mProgramCount(0),
           mTerminalCount(0),
           mManifestSize(0),
@@ -77,7 +77,6 @@ PGCommon::PGCommon(int cameraId, int pgId, const std::string& pgName, TuningMode
           mPGBuffer(nullptr),
           mProcessGroup(nullptr),
           mCmdExtBuffer(nullptr),
-          mPPG(false),
           mPPGStarted(false),
           mPPGBuffer(nullptr),
           mPPGProcessGroup(nullptr),
@@ -352,9 +351,7 @@ ia_css_process_group_t* PGCommon::createPG(CIPR::Buffer** pgBuffer) {
         (ia_css_program_group_param_t*)getCiprBufferPtr(mPGParamsBuffer));
     CheckAndLogError(!pg, nullptr, "Create process group failed.");
 
-    if (mPPG) {
-        ia_css_process_group_set_num_queues(pg, 1);
-    }
+    ia_css_process_group_set_num_queues(pg, 1);
 
     if (mRoutingBitmap.get()) {
         ia_css_process_group_set_routing_bitmap(pg, *mRoutingBitmap.get());
@@ -366,14 +363,12 @@ int PGCommon::createCommands() {
     int bufCount = ia_css_process_group_get_terminal_count(mProcessGroup);
     int ret = createCommand(mPGBuffer, &mCmd, &mCmdExtBuffer, bufCount);
     CheckAndLogError(ret, NO_MEMORY, "create cmd fail!");
-    if (mPPG) {
-        ret = createCommand(mPPGBuffer, &mPPGCmd[PPG_CMD_TYPE_START],
-                            &mPPGCmdExtBuffer[PPG_CMD_TYPE_START], bufCount);
-        CheckAndLogError(ret, NO_MEMORY, "create ppg start buffer fail");
-        ret = createCommand(mPPGBuffer, &mPPGCmd[PPG_CMD_TYPE_STOP],
-                            &mPPGCmdExtBuffer[PPG_CMD_TYPE_STOP], 0);
-        CheckAndLogError(ret, NO_MEMORY, "create ppg stop fail");
-    }
+    ret = createCommand(mPPGBuffer, &mPPGCmd[PPG_CMD_TYPE_START],
+                        &mPPGCmdExtBuffer[PPG_CMD_TYPE_START], bufCount);
+    CheckAndLogError(ret, NO_MEMORY, "create ppg start buffer fail");
+    ret = createCommand(mPPGBuffer, &mPPGCmd[PPG_CMD_TYPE_STOP],
+                        &mPPGCmdExtBuffer[PPG_CMD_TYPE_STOP], 0);
+    CheckAndLogError(ret, NO_MEMORY, "create ppg stop fail");
 
     CIPR::PSysEventConfig eventCfg = {};
     eventCfg.timeout = kEventTimeout * SLOWLY_MULTIPLIER;
@@ -425,7 +420,7 @@ int PGCommon::createCommand(CIPR::Buffer* pg, CIPR::Command** cmd, CIPR::Buffer*
     // Update setting and set back to command
     cmdCfg.id = mPGId;
     cmdCfg.priority = 1;
-    cmdCfg.pgParamsBuf = mPPG ? nullptr : mPGParamsBuffer;
+    cmdCfg.pgParamsBuf = nullptr;
     cmdCfg.pgManifestBuf = mManifestBuffer;
     cmdCfg.pg = pg;
     cmdCfg.extBuf = *extBuffer;
@@ -511,10 +506,7 @@ int PGCommon::calcFragmentCount(int overlap) {
             ia_css_program_group_manifest_get_term_mnfst(manifest, termIdx);
         ia_css_terminal_type_t terminal_type = ia_css_terminal_manifest_get_type(terminal_manifest);
 
-        if (!((terminal_type == IA_CSS_TERMINAL_TYPE_DATA_OUT) ||
-              (terminal_type == IA_CSS_TERMINAL_TYPE_DATA_IN))) {
-            continue;
-        }
+        if (!IS_DATA_TERMINAL(terminal_type)) continue;
 
         data_terminal_manifest =
             ia_css_program_group_manifest_get_data_terminal_manifest(manifest, termIdx);
@@ -575,12 +567,10 @@ int PGCommon::handlePGParams(const ia_css_frame_format_type* frameFormatTypes) {
                                               mFragmentCount, frameFormatTypes);
     CheckAndLogError((ret != OK), ret, "%s, call ia_css_program_group_param_init fail", __func__);
 
-    if (mPPG) {
-        ret = ia_css_program_group_param_set_protocol_version(pgParamsBuf,
-                                                              IA_CSS_PROCESS_GROUP_PROTOCOL_PPG);
-        CheckAndLogError((ret != OK), ret,
-                         "%s, call ia_css_program_group_param_set_protocol_version fail", __func__);
-    }
+    ret = ia_css_program_group_param_set_protocol_version(pgParamsBuf,
+                                                          IA_CSS_PROCESS_GROUP_PROTOCOL_PPG);
+    CheckAndLogError((ret != OK), ret,
+                     "%s, call ia_css_program_group_param_set_protocol_version fail", __func__);
     return ret;
 }
 
@@ -611,10 +601,7 @@ int PGCommon::setTerminalParams(const ia_css_frame_format_type* frameFormatTypes
         ia_css_terminal_manifest_t* terminal_manifest =
             ia_css_program_group_manifest_get_term_mnfst(pg_manifest, i);
         ia_css_terminal_type_t terminal_type = ia_css_terminal_manifest_get_type(terminal_manifest);
-        if (!((terminal_type == IA_CSS_TERMINAL_TYPE_DATA_OUT) ||
-              (terminal_type == IA_CSS_TERMINAL_TYPE_DATA_IN))) {
-            continue;
-        }
+        if (!IS_DATA_TERMINAL(terminal_type)) continue;
 
         FrameInfo config = mTerminalFrameInfos[i];
         terminalParam->frame_format_type = frameFormatTypes[i];
@@ -660,10 +647,7 @@ int PGCommon::configureFragmentDesc() {
         ia_css_terminal_t* terminal =
             ia_css_process_group_get_terminal(mProcessGroup, mPgTerminals[termIdx]);
         ia_css_terminal_type_t terminalType = ia_css_terminal_get_type(terminal);
-        if (!((terminalType == IA_CSS_TERMINAL_TYPE_DATA_OUT) ||
-              (terminalType == IA_CSS_TERMINAL_TYPE_DATA_IN))) {
-            continue;
-        }
+        if (!IS_DATA_TERMINAL(terminalType)) continue;
         configureTerminalFragmentDesc(termIdx, &srcFragDesc[termIdx]);
     }
     return OK;
@@ -674,10 +658,7 @@ int PGCommon::configureTerminalFragmentDesc(int termIdx, const ia_p2p_fragment_d
     ia_css_terminal_t* terminal =
         ia_css_process_group_get_terminal(mProcessGroup, mPgTerminals[termIdx]);
     ia_css_terminal_type_t terminalType = ia_css_terminal_get_type(terminal);
-    if (!((terminalType == IA_CSS_TERMINAL_TYPE_DATA_OUT) ||
-          (terminalType == IA_CSS_TERMINAL_TYPE_DATA_IN))) {
-        return OK;
-    }
+    if (!IS_DATA_TERMINAL(terminalType)) return OK;
 
     bool vectorized = false;
     int packed_multiplier = 1;
@@ -772,9 +753,7 @@ int PGCommon::configureFrameDesc() {
         ia_css_terminal_t* terminal =
             ia_css_process_group_get_terminal(mProcessGroup, mPgTerminals[termIdx]);
         ia_css_terminal_type_t terminalType = ia_css_terminal_get_type(terminal);
-        if (terminalType != IA_CSS_TERMINAL_TYPE_DATA_OUT &&
-            terminalType != IA_CSS_TERMINAL_TYPE_DATA_IN)
-            continue;
+        if (!IS_DATA_TERMINAL(terminalType)) continue;
 
         ia_css_frame_descriptor_t* dstFrameDesc = ia_css_data_terminal_get_frame_descriptor(
             reinterpret_cast<ia_css_data_terminal_t*>(terminal));
@@ -911,7 +890,7 @@ int PGCommon::iterate(CameraBufferMap& inBufs, CameraBufferMap& outBufs, ia_bina
     CheckAndLogError((ret != OK), ret, "%s, prepareTerminalBuffers fail with %d", getName(), ret);
 
     // Create PPG & PPG start/stop commands at the beginning
-    if (mPPG && !mPPGBuffer) {
+    if (!mPPGBuffer) {
         ia_css_program_group_param_t* pgParamsBuf =
             (ia_css_program_group_param_t*)getCiprBufferPtr(mPGParamsBuffer);
         ia_css_program_group_manifest_t* manifestBuf =
@@ -930,7 +909,7 @@ int PGCommon::iterate(CameraBufferMap& inBufs, CameraBufferMap& outBufs, ia_bina
         CheckAndLogError((ret != OK), ret, "%s, call createCommands fail", __func__);
     }
 
-    if (mPPG && !mPPGStarted) {
+    if (!mPPGStarted) {
         ret = startPPG();
         CheckAndLogError((ret != OK), ret, "%s, startPPG fail", getName());
         mPPGStarted = true;
@@ -1112,13 +1091,11 @@ int PGCommon::prepareTerminalBuffers(const ia_binary_data* ipuParameters,
 
         if (buffer) {
             bool flush = buffer->getUsage() == BUFFER_USAGE_GENERAL ? true : false;
-#ifdef IPU_SYSVER_ipu6v5
-            if (!PlatformData::getForceFlushIpuBuffer(mCameraId) &&
+            if (PlatformData::removeCacheFlushOutputBuffer(mCameraId) &&
                 buffer->getMemory() == V4L2_MEMORY_DMABUF &&
                 !buffer->isFlagsSet(BUFFER_FLAG_SW_READ)) {
                 flush = false;
             }
-#endif
             ciprBuf =
                 (buffer->getMemory() == V4L2_MEMORY_DMABUF)
                     ? registerUserBuffer(buffer->getBufferSize(), buffer->getFd(), flush)
@@ -1186,7 +1163,7 @@ int PGCommon::executePG() {
     int bufferCount = ia_css_process_group_get_terminal_count(mProcessGroup);
     mCmdCfg.id = mPGId;
     mCmdCfg.priority = 1;
-    mCmdCfg.pgParamsBuf = mPPG ? nullptr : mPGParamsBuffer;
+    mCmdCfg.pgParamsBuf = nullptr;
     mCmdCfg.pgManifestBuf = mManifestBuffer;
     mCmdCfg.pg = mPGBuffer;
     mCmdCfg.extBuf = mCmdExtBuffer;
@@ -1197,9 +1174,7 @@ int PGCommon::executePG() {
         CheckAndLogError(!terminal, UNKNOWN_ERROR, "failed to get terminal");
         mCmdCfg.buffers[i] = mTerminalBuffers[terminal->tm_index];
     }
-    if (mPPG) {
-        ia_css_process_group_set_token(mProcessGroup, mToken);
-    }
+    ia_css_process_group_set_token(mProcessGroup, mToken);
 
     for (int fragIdx = 0; fragIdx < mFragmentCount; fragIdx++) {
         int ret = ia_css_process_group_set_fragment_state(mProcessGroup, (uint16_t)fragIdx);
@@ -1223,7 +1198,7 @@ int PGCommon::startPPG() {
     // Update config
     cmdCfg.id = mPGId;
     cmdCfg.priority = 1;
-    cmdCfg.pgParamsBuf = mPPG ? nullptr : mPGParamsBuffer;
+    cmdCfg.pgParamsBuf = nullptr;
     cmdCfg.pgManifestBuf = mManifestBuffer;
     cmdCfg.pg = mPPGBuffer;
     cmdCfg.extBuf = mPPGCmdExtBuffer[PPG_CMD_TYPE_START];
@@ -1303,22 +1278,8 @@ int PGCommon::getCapability() {
     LOG1("%s: capability.programGroupCount:%d", __func__, cap.programGroupCount);
     mPGCount = cap.programGroupCount;
 
-    if (strncmp(reinterpret_cast<char*>(cap.devModel), "ipu4p", 5) == 0) {
-        mPlatform = IA_P2P_PLATFORM_CNL_B0;
-        LOG1("%s: cnl/icl/ksl shared the same p2p platform id", __func__);
-    } else if (strncmp(reinterpret_cast<char*>(cap.devModel), "ipu4", 4) == 0) {
-        switch (cap.devModel[13]) {
-            case 'B':
-                mPlatform = IA_P2P_PLATFORM_BXT_B0;
-                break;
-            default:
-                LOGE("%s: unsupported psys device model :%s", __func__, cap.devModel);
-                ret = BAD_VALUE;
-                break;
-        }
-    } else if (strncmp(reinterpret_cast<char*>(cap.devModel), "ipu6", 4) == 0) {
+    if (strncmp(reinterpret_cast<char*>(cap.devModel), "ipu6", 4) == 0) {
         mPlatform = IA_P2P_PLATFORM_IPU6;
-        mPPG = true;
     } else {
         LOGE("%s: unsupported psys device model : %s", __func__, cap.devModel);
         ret = BAD_VALUE;
@@ -1544,10 +1505,7 @@ void PGCommon::dumpTerminalPyldAndDesc(int pgId, int64_t sequence,
             fclose(fp);
             return;
         }
-        if (terminal->terminal_type == IA_CSS_TERMINAL_TYPE_DATA_IN ||
-            terminal->terminal_type == IA_CSS_TERMINAL_TYPE_DATA_OUT) {
-            continue;
-        }
+        if (IS_DATA_TERMINAL(terminal->terminal_type)) continue;
 
         void* ptr = getCiprBufferPtr(mTerminalBuffers[terminal->tm_index]);
         int size = getCiprBufferSize(mTerminalBuffers[terminal->tm_index]);

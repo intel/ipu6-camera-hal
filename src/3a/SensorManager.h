@@ -81,9 +81,6 @@ private:
     int mCameraId;
     SensorHwCtrl *mSensorHwCtrl;
 
-    bool    mModeSwitched;         // Whether the TuningMode get updated
-    WdrModeSetting mWdrModeSetting;
-
     int64_t mLastSofSequence;
 
     // Guard for SensorManager public API.

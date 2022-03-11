@@ -162,23 +162,17 @@ ia_err IntelCca::init(const cca::cca_init_params& initParams) {
     return ret;
 }
 
-ia_err IntelCca::setStatsParams(const cca::cca_stats_params& params, cca::cca_out_stats* outStats) {
+ia_err IntelCca::setStatsParams(const cca::cca_stats_params& params) {
     LOG2("<id%d> @%s, tuningMode:%d, in params size:%zu", mCameraId, __func__, mTuningMode,
          sizeof(cca::cca_stats_params));
-
-    CheckAndLogError(!outStats, ia_err_general, "@%s, outStats is nullptr", __func__);
 
     intel_cca_set_stats_data* statsParams = static_cast<intel_cca_set_stats_data*>(mMemStats.mAddr);
     statsParams->cameraId = mCameraId;
     statsParams->tuningMode = mTuningMode;
     statsParams->inParams = params;
-    statsParams->outStats.get_rgbs_stats = outStats->get_rgbs_stats;
 
     ia_err ret = mCommon.requestSyncCca(IPC_CCA_SET_STATS, mMemStats.mHandle);
     CheckAndLogError(ret != ia_err_none, ia_err_general, "@%s, requestSyncCca fails", __func__);
-
-    *outStats = statsParams->outStats;
-    outStats->rgbs_grid.blocks_ptr = outStats->rgbs_blocks;
 
     return ret;
 }
@@ -343,7 +337,7 @@ ia_err IntelCca::getAiqd(cca::cca_aiqd* aiqd) {
 }
 
 ia_err IntelCca::updateTuning(uint8_t lardTags, const ia_lard_input_params& lardParams,
-                              const cca::cca_nvm& nvm) {
+                              const cca::cca_nvm& nvm, int32_t streamId) {
     LOG2("<id%d> @%s, tuningMode:%d", mCameraId, __func__, mTuningMode);
 
     intel_cca_update_tuning_data* params =
@@ -353,6 +347,7 @@ ia_err IntelCca::updateTuning(uint8_t lardTags, const ia_lard_input_params& lard
     params->lardTags = lardTags;
     params->lardParams = lardParams;
     params->nvmParams = nvm;
+    params->streamId = streamId;
 
     ia_err ret = mCommon.requestSyncCca(IPC_CCA_UPDATE_TUNING, mMemTuning.mHandle);
     CheckAndLogError(ret != ia_err_none, ia_err_general, "@%s, requestSyncCca fails", __func__);
@@ -452,7 +447,8 @@ void IntelCca::deinit() {
 }
 
 ia_err IntelCca::decodeStats(uint64_t statsPointer, uint32_t statsSize, uint32_t bitmap,
-                             ia_isp_bxt_statistics_query_results_t* results) {
+                             ia_isp_bxt_statistics_query_results_t* results,
+                             cca::cca_out_stats* outStats) {
     LOG2("<id%d> @%s, tuningMode:%d, statsPointer:0x%lx, statsSize:%d, bitmap:0x%x", mCameraId,
          __func__, mTuningMode, statsPointer, statsSize, bitmap);
     CheckAndLogError(!results, ia_err_argument, "@%s, results is nullptr", __func__);
@@ -466,11 +462,19 @@ ia_err IntelCca::decodeStats(uint64_t statsPointer, uint32_t statsSize, uint32_t
     params->statsBuffer.data = nullptr;
     params->statsBuffer.size = statsSize;
     params->bitmap = bitmap;
+    params->outStats.get_rgbs_stats = false;
+    if (outStats) {
+        params->outStats.get_rgbs_stats = outStats->get_rgbs_stats;
+    }
 
     ia_err ret = mCommon.requestSyncCca(IPC_CCA_DECODE_STATS, mMemDecodeStats.mHandle);
     CheckAndLogError(ret != ia_err_none, ia_err_general, "@%s, requestSyncCca fails", __func__);
 
     *results = params->results;
+    if (outStats && params->outStats.get_rgbs_stats) {
+        *outStats = params->outStats;
+        outStats->rgbs_grid.blocks_ptr = outStats->rgbs_blocks;
+    }
 
     return ret;
 }

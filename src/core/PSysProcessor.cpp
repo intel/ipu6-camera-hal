@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2021 Intel Corporation.
+ * Copyright (C) 2017-2022 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -854,8 +854,11 @@ void PSysProcessor::dispatchTask(CameraBufferPortMap &inBuf, CameraBufferPortMap
         }
         mSequencesInflight.insert(currentSequence);
     }  // End of lock mBufferQueueLock
-    LOG2("<id%d:seq:%ld>@%s, fake task %d, pending task: %zu", mCameraId, currentSequence,
-         __func__, fakeTask, mSequencesInflight.size());
+
+    int32_t userRequestId = -1;
+    mParameterGenerator->getUserRequestId(currentSequence, userRequestId);
+    LOG2("<id%d:seq:%ld:req:%d>@%s, fake task %d, pending task: %zu", mCameraId, currentSequence,
+         userRequestId, __func__, fakeTask, mSequencesInflight.size());
 
     // Prepare the task input paramerters including input and output buffers, settings etc.
     PSysTaskData taskParam;
@@ -864,6 +867,7 @@ void PSysProcessor::dispatchTask(CameraBufferPortMap &inBuf, CameraBufferPortMap
     taskParam.mOutputBuffers = outBuf;
     taskParam.mFakeTask = fakeTask;
     taskParam.mCallbackRgbs = callbackRgbs;
+    taskParam.mNextSeqUsed = false;
 
     int64_t settingSequence = getSettingSequence(outBuf);
     // Handle per-frame settings if output buffer requires
@@ -880,12 +884,16 @@ void PSysProcessor::dispatchTask(CameraBufferPortMap &inBuf, CameraBufferPortMap
                 CameraDump::dumpImage(mCameraId, inBuf[MAIN_PORT], M_PSYS, MAIN_PORT);
             }
         }
+
+        // Check if next sequence is used or not
+        if (mParameterGenerator->getUserRequestId(currentSequence + 1, userRequestId) == OK) {
+            taskParam.mNextSeqUsed = true;
+        }
     }
     {
         AutoRMutex rl(mIspSettingsLock);
         mIspSettings.palOverride = nullptr;
         taskParam.mIspSettings = mIspSettings;
-        mParameterGenerator->getRequestId(settingSequence, taskParam.mRequestId);
     }
 
     if (!mThreadRunning) return;
@@ -923,7 +931,16 @@ void PSysProcessor::onBufferDone(int64_t sequence, Port port,
     LOG2("<id%d:seq%ld>@%s, port %d", mCameraId, sequence, __func__, port);
 
     if (CameraDump::isDumpTypeEnable(DUMP_PSYS_OUTPUT_BUFFER)) {
-        CameraDump::dumpImage(mCameraId, camBuffer, M_PSYS, port);
+        int32_t userRequestId = -1;
+        if (mParameterGenerator->getUserRequestId(sequence, userRequestId) == OK &&
+            userRequestId >= 0) {
+            char desc[MAX_NAME_LEN];
+            int len = snprintf(desc, (MAX_NAME_LEN - 1), "_req#%d", userRequestId);
+            desc[len] = '\0';
+            CameraDump::dumpImage(mCameraId, camBuffer, M_PSYS, port, desc);
+        } else {
+            CameraDump::dumpImage(mCameraId, camBuffer, M_PSYS, port);
+        }
     }
 
     if (!needSkipOutputFrame(sequence)) {

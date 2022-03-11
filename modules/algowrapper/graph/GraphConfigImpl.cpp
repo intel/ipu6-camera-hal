@@ -657,6 +657,11 @@ status_t GraphConfigImpl::getGraphConfigData(IGraphType::GraphConfigData* data) 
         info.streamId = streamId;
         info.pgPtr = getProgramGroup(streamId);
         data->programGroup.push_back(info);
+
+        IGraphType::TuningModeInfo mode;
+        mode.streamId = streamId;
+        mode.tuningMode = getTuningMode(streamId);
+        data->tuningModes.push_back(mode);
     }
 
     return OK;
@@ -754,20 +759,6 @@ ia_isp_bxt_program_group* GraphConfigImpl::getProgramGroup(int32_t streamId) {
 
     shared_ptr<GraphConfigPipe>& stillGraphPipe = mGraphConfigPipe.at(USE_CASE_STILL_CAPTURE);
     return stillGraphPipe->getProgramGroup(streamId);
-}
-
-int GraphConfigImpl::getProgramGroup(std::string pgName,
-                                     ia_isp_bxt_program_group* programGroupForPG) {
-    for (auto& graph : mGraphConfigPipe) {
-        vector<string> pgNames;
-        graph.second->getPgNames(&pgNames);
-        if (std::find(pgNames.begin(), pgNames.end(), pgName) != pgNames.end()) {
-            return graph.second->getProgramGroup(pgName, programGroupForPG);
-        }
-    }
-
-    LOGE("There isn't this pg: %s in all graph config pipes", pgName.c_str());
-    return UNKNOWN_ERROR;
 }
 
 status_t GraphConfigImpl::getMBRData(int32_t streamId, ia_isp_bxt_gdc_limits* data) {
@@ -921,6 +912,22 @@ status_t GraphConfigImpl::getPgRbmValue(string pgName, IGraphType::StageAttr* st
 
     LOGE("There isn't this pg: %s in all graph config pipes", pgName.c_str());
     return UNKNOWN_ERROR;
+}
+
+int32_t GraphConfigImpl::getTuningMode(const int32_t streamId) {
+    CheckAndLogError(mGraphConfigPipe.empty(), -1, "%s, the mGraphConfigPipe is empty", __func__);
+
+    if (mGraphConfigPipe.size() == 1) {
+        return mGraphConfigPipe.begin()->second->getTuningMode(streamId);
+    }
+
+    // Find the stream id from video graph pipe firstly
+    int32_t tuningMode = mGraphConfigPipe.at(USE_CASE_VIDEO)->getTuningMode(streamId);
+    if (tuningMode == -1) {
+        tuningMode = mGraphConfigPipe.at(USE_CASE_STILL_CAPTURE)->getTuningMode(streamId);
+    }
+
+    return tuningMode;
 }
 
 /******************************************************************************

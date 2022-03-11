@@ -80,7 +80,7 @@ int LensManager::setLensResult(const cca::cca_af_results &afResults,
                                int64_t sequence, const aiq_parameter_t &aiqParam) {
     AutoMutex l(mLock);
 
-    if (!mLensHw->isLensSubdevAvailable()) {
+    if (!mLensHw->isLensSubdevAvailable() || afResults.next_lens_position == 0) {
         return OK;
     }
 

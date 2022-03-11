@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Intel Corporation.
+ * Copyright (C) 2015-2022 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -236,8 +236,20 @@ bool PlatformData::isEnableLtmThread(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mEnableLtmThread;
 }
 
+bool PlatformData::isFaceDetectionSupported(int cameraId) {
+    Parameters *source = &(getInstance()->mStaticCfg.mCameras[cameraId].mCapability);
+    const icamera::CameraMetadata& meta = icamera::ParameterHelper::getMetadata(*source);
+    auto entry = meta.find(CAMERA_STATISTICS_INFO_AVAILABLE_FACE_DETECT_MODES);
+    for (size_t i = 0; i < entry.count; i++) {
+        if (entry.data.u8[i] != CAMERA_STATISTICS_FACE_DETECT_MODE_OFF) return true;
+    }
+
+    return false;
+}
+
 bool PlatformData::isFaceAeEnabled(int cameraId) {
-    return getInstance()->mStaticCfg.mCameras[cameraId].mFaceAeEnabled;
+    return (isFaceDetectionSupported(cameraId) &&
+            getInstance()->mStaticCfg.mCameras[cameraId].mFaceAeEnabled);
 }
 
 int PlatformData::faceEngineVendor(int cameraId) {
@@ -304,13 +316,11 @@ bool PlatformData::isNeedToPreRegisterBuffer(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mNeedPreRegisterBuffers;
 }
 
-int PlatformData::getAutoSwitchType(int cameraId) {
-    return getInstance()->mStaticCfg.mCameras[cameraId].mAutoSwitchType;
-}
-
+// FRAME_SYNC_S
 bool PlatformData::isEnableFrameSyncCheck(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mFrameSyncCheckEnabled;
 }
+// FRAME_SYNC_E
 
 bool PlatformData::isEnableDefog(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mEnableLtmDefog;
@@ -361,10 +371,6 @@ bool PlatformData::isPsysContinueStats(int cameraId) {
 
 unsigned int PlatformData::getPreferredBufQSize(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mPreferredBufQSize;
-}
-
-unsigned int PlatformData::getPipeSwitchDelayFrame(int cameraId) {
-    return getInstance()->mStaticCfg.mCameras[cameraId].mPipeSwitchDelayFrame;
 }
 
 int PlatformData::getLtmGainLag(int cameraId) {
@@ -704,11 +710,10 @@ int PlatformData::getDevNameByType(int cameraId, VideoNodeType videoNodeType, st
             break;
         }
         case VIDEO_ISYS_RECEIVER_BACKEND:
-        case VIDEO_ISYS_RECEIVER:
-            {
-                isSubDev = true;
-                break;
-            }
+        case VIDEO_ISYS_RECEIVER: {
+            isSubDev = true;
+            break;
+        }
         default:
             break;
     }
@@ -1191,7 +1196,10 @@ ia_binary_data* PlatformData::getNvm(int cameraId) {
     CheckAndLogError(cameraId >= static_cast<int>(getInstance()->mAiqInitData.size()), nullptr,
                      "@%s, bad cameraId:%d", __func__, cameraId);
 
-    return getInstance()->mAiqInitData[cameraId]->getNvm(cameraId);
+    // Allow overwritten nvm file if needed
+    int size = getInstance()->mStaticCfg.mCameras[cameraId].mNvmOverwrittenFileSize;
+    const char* nvmFile = getInstance()->mStaticCfg.mCameras[cameraId].mNvmOverwrittenFile.c_str();
+    return getInstance()->mAiqInitData[cameraId]->getNvm(cameraId, nvmFile, size);
 }
 
 camera_coordinate_system_t PlatformData::getActivePixelArray(int cameraId) {
@@ -1335,9 +1343,20 @@ int PlatformData::getVideoStreamNum() {
     return getInstance()->mStaticCfg.mCommonConfig.videoStreamNum;
 }
 
+bool PlatformData::supportUpdateTuning() {
+    return getInstance()->mStaticCfg.mCommonConfig.supportIspTuningUpdate;
+}
+
+bool PlatformData::supportHwJpegEncode() {
+    return getInstance()->mStaticCfg.mCommonConfig.supportHwJpegEncode;
+}
+
 bool PlatformData::isUsingGpuAlgo() {
     bool enabled = false;
     enabled |= isGpuTnrEnabled();
+    // ENABLE_EVCP_S
+    enabled |= isGpuEvcpEnabled();
+    // ENABLE_EVCP_E
     return enabled;
 }
 
@@ -1353,6 +1372,10 @@ int PlatformData::getTnrExtraFrameCount(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mTnrExtraFrameNum;
 }
 
+bool PlatformData::useTnrGlobalProtection() {
+    return getInstance()->mStaticCfg.mCommonConfig.useTnrGlobalProtection;
+}
+
 void PlatformData::setSensorOrientation(int cameraId, int orientation) {
     getInstance()->mStaticCfg.mCameras[cameraId].mSensorOrientation = orientation;
 }
@@ -1365,8 +1388,8 @@ bool PlatformData::isDummyStillSink(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mDummyStillSink;
 }
 
-bool PlatformData::getForceFlushIpuBuffer(int cameraId) {
-    return getInstance()->mStaticCfg.mCameras[cameraId].mForceFlushIpuBuffer;
+bool PlatformData::removeCacheFlushOutputBuffer(int cameraId) {
+    return getInstance()->mStaticCfg.mCameras[cameraId].mRemoveCacheFlushOutputBuffer;
 }
 
 bool PlatformData::getPLCEnable(int cameraId) {
@@ -1378,4 +1401,12 @@ bool PlatformData::isGpuEvcpEnabled() {
     return getInstance()->mStaticCfg.mCommonConfig.isGpuEvcpEnabled;
 }
 // ENABLE_EVCP_E
+
+bool PlatformData::getSupportPrivacy(int cameraId) {
+    return getInstance()->mStaticCfg.mCameras[cameraId].mSupportPrivacy;
+}
+
+bool PlatformData::isStillOnlyPipeEnabled(int cameraId) {
+    return getInstance()->mStaticCfg.mCameras[cameraId].mStillOnlyPipe;
+}
 }  // namespace icamera

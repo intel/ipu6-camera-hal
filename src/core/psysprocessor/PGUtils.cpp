@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2021 Intel Corporation.
+ * Copyright (C) 2019-2022 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -250,7 +250,7 @@ int getStride(int cssFmt, int width) {
 #define PG_BB_TERMINAL_ID_TNR_SIM_REF_OUT 7  // spetial_terminal
 
 // the below terminals belong to PG_PSYS_IPU6_ISA_LB
-#ifdef IPU_SYSVER_ipu6v5
+#if defined(IPU_SYSVER_ipu6v5) || defined(IPU_SYSVER_ipu6v6)
 #define ISA_LB_TERMINAL_ID_DVS_FE_IN_L0 20  // program_terminal
 #define ISA_LB_TERMINAL_ID_DVS_FE_IN_L1 21  // program_terminal
 #define ISA_LB_TERMINAL_ID_DVS_FE_IN_L2 22  // program_terminal

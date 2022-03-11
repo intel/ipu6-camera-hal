@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<!-- Copyright (C) 2020-2021 Intel Corporation.
+<!-- Copyright (C) 2020-2022 Intel Corporation.
 
      Licensed under the Apache License, Version 2.0 (the "License");
      you may not use this file except in compliance with the License.
@@ -21,6 +21,6 @@
         <!-- The value format of availableSensors is "sensor name"-wf/uf-"CSI port ID".
              wf is word facing, and uf is user facing.
         -->
-        <availableSensors value="ov8856-wf-2,ov8856-uf-1,ov01a10-uf-1,ov01a10-uf-2"/>
+        <availableSensors value="ov01a10-uf-1,ov01a10-uf-2,ov02c10-uf-1"/>
     </Common>
 </CameraSettings>

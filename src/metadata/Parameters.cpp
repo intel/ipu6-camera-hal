@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Intel Corporation.
+ * Copyright (C) 2015-2022 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -2198,5 +2198,28 @@ int Parameters::getEvcpFFMode(uint8_t* mode) const
     return OK;
 }
 // ENABLE_EVCP_E
+
+int Parameters::setZoomRegion(const camera_zoom_region_t& region) {
+    ParameterHelper::AutoWLock wl(mData);
+    int32_t values[4] = {region.left, region.top, region.right, region.bottom};
+    return ParameterHelper::getMetadata(mData).update(INTEL_CONTROL_SCALER_CROP_REGION,
+                                                      values, 4);
+}
+
+int Parameters::getZoomRegion(camera_zoom_region_t* region) const {
+    ParameterHelper::AutoRLock rl(mData);
+    auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_CONTROL_SCALER_CROP_REGION);
+
+    if (entry.count != 4) {
+        return NAME_NOT_FOUND;
+    }
+
+    region->left = entry.data.i32[0];
+    region->top = entry.data.i32[1];
+    region->right = entry.data.i32[2];
+    region->bottom = entry.data.i32[3];
+
+    return OK;
+}
 
 } // end of namespace icamera

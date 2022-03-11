@@ -18,6 +18,7 @@
 
 #include "PostProcessorCore.h"
 
+#include "HALv3Utils.h"
 #include "iutils/CameraLog.h"
 
 using std::shared_ptr;
@@ -72,10 +73,19 @@ status_t PostProcessorCore::allocateBuffers() {
     mInterBuffers.clear();
     for (size_t i = 0; i < mProcessorsInfo.size() - 1; i++) {
         const stream_t& info = mProcessorsInfo[i].outputInfo;
-        shared_ptr<camera3::Camera3Buffer> buf = camera3::MemoryUtils::allocateHeapBuffer(
-            info.width, info.height, info.stride, info.format, mCameraId, info.size);
-        CheckAndLogError(!buf, NO_MEMORY, "@%s: Failed to allocate internal buffer: processor: %s",
-                         __func__, mProcessorVector[i]->getName().c_str());
+        int gfxFormat =
+            camera3::HalV3Utils::V4l2FormatToHALFormat(mProcessorsInfo[i].inputInfo.format);
+        std::shared_ptr<camera3::Camera3Buffer> buf = camera3::MemoryUtils::allocateHandleBuffer(
+            info.width, info.height, gfxFormat,
+            (GRALLOC_USAGE_SW_READ_MASK | GRALLOC_USAGE_SW_WRITE_MASK |
+             GRALLOC_USAGE_HW_CAMERA_MASK),
+            mCameraId);
+        if (!buf || buf->lock() != icamera::OK) {
+            mInterBuffers.clear();
+            LOGE("Failed to allocate internal buffer: processor: %s",
+                 mProcessorVector[i]->getName().c_str());
+            return icamera::NO_MEMORY;
+        }
         mInterBuffers[mProcessorVector[i]] = buf;
     }
 

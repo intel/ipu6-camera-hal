@@ -34,10 +34,6 @@ RequestThread::RequestThread(int cameraId, AiqUnitBase *a3AControl, ParameterGen
     mGet3AStatWithFakeRequest(false),
     mRequestsInProcessing(0),
     mFirstRequest(true),
-    mRequestConfigMode(CAMERA_STREAM_CONFIGURATION_MODE_END),
-    mUserConfigMode(CAMERA_STREAM_CONFIGURATION_MODE_END),
-    mNeedReconfigPipe(false),
-    mReconfigPipeScore(0),
     mActive(false),
     mRequestTriggerEvent(NONE_EVENT),
     mLastRequestId(-1),
@@ -46,11 +42,8 @@ RequestThread::RequestThread(int cameraId, AiqUnitBase *a3AControl, ParameterGen
     mLastSofSeq(-1),
     mBlockRequest(true),
     mSofEnabled(false) {
-    CLEAR(mStreamConfig);
-    CLEAR(mConfiguredStreams);
     CLEAR(mFakeReqBuf);
 
-    mStreamConfig.operation_mode = CAMERA_STREAM_CONFIGURATION_MODE_END;
     mPerframeControlSupport = PlatformData::isFeatureSupported(mCameraId, PER_FRAME_CONTROL);
 
     mSofEnabled = PlatformData::isIsysEnabled(cameraId);
@@ -97,125 +90,48 @@ void RequestThread::clearRequests() {
     mBlockRequest = true;
 }
 
-void RequestThread::setConfigureModeByParam(camera_scene_mode_t sceneMode) {
-    ConfigMode configMode = CameraUtils::getConfigModeBySceneMode(sceneMode);
-    LOG2("@%s, sceneMode %d, configMode %d", __func__, sceneMode, configMode);
-
-    if (configMode == CAMERA_STREAM_CONFIGURATION_MODE_END) {
-        LOG2("%s: no valid config mode, skip setting", __func__);
-        return;
-    }
-
-    /* Reset internal mode related settings if requested mode is same as
-     * the mode currently running for better stability.
-     */
-    if (mStreamConfig.operation_mode == configMode) {
-        LOG2("%s: config mode %d keep unchanged.", __func__, configMode);
-        mNeedReconfigPipe = false;
-        mReconfigPipeScore = 0;
-        mRequestConfigMode = configMode;
-        return;
-    }
-
-    if (mRequestConfigMode != configMode) {
-        if (mRequestConfigMode != CAMERA_STREAM_CONFIGURATION_MODE_END) {
-            mNeedReconfigPipe = true;
-            mReconfigPipeScore = 0;
-            LOG2("%s: request configure mode changed, reset score %d", __func__, mReconfigPipeScore);
-        }
-        LOG2("%s: mRequestConfigMode updated from %d to %d", __func__, mRequestConfigMode, configMode);
-        mRequestConfigMode = configMode;
-    } else if (mReconfigPipeScore < PlatformData::getPipeSwitchDelayFrame(mCameraId)) {
-        mReconfigPipeScore ++;
-        LOG2("%s: request configure mode unchanged, current score %d", __func__, mReconfigPipeScore);
-    }
-}
-
 int RequestThread::configure(const stream_config_t *streamList) {
-    bool hasVideoStream = false;
-
-    mStreamConfig.num_streams = streamList->num_streams;
-    mStreamConfig.operation_mode = streamList->operation_mode;
-    mUserConfigMode = (ConfigMode)streamList->operation_mode;
-    int previewStreamIndex = -1;
+    int previewIndex = -1, videoIndex = -1, stillIndex = -1;
     for (int i = 0; i < streamList->num_streams; i++) {
-        mConfiguredStreams[i] = streamList->streams[i];
-        if (previewStreamIndex < 0 && mConfiguredStreams[i].usage == CAMERA_STREAM_PREVIEW) {
-            previewStreamIndex = i;
-        }
-        if (mConfiguredStreams[i].usage == CAMERA_STREAM_PREVIEW ||
-            mConfiguredStreams[i].usage == CAMERA_STREAM_VIDEO_CAPTURE) {
-            hasVideoStream = true;
-        }
-    }
-    LOG1("%s: user specified Configmode: %d, hasVideoStream %d", __func__,
-         mUserConfigMode, hasVideoStream);
-    mStreamConfig.streams = mConfiguredStreams;
-
-    // Use concrete mode in RequestThread
-    if ((ConfigMode)mStreamConfig.operation_mode == CAMERA_STREAM_CONFIGURATION_MODE_AUTO) {
-        vector <ConfigMode> configModes;
-        int ret = PlatformData::getConfigModesByOperationMode(mCameraId,
-                                                              mStreamConfig.operation_mode,
-                                                              configModes);
-        CheckAndLogError((ret != OK || configModes.empty()), ret,
-                         "%s, get real ConfigMode failed %d", __func__, ret);
-
-        mRequestConfigMode = configModes[0];
-        LOG1("%s: use concrete mode %d as default initial mode for auto op mode",
-             __func__, mRequestConfigMode);
-        mStreamConfig.operation_mode = mRequestConfigMode;
-    }
-
-    // Don't block request handling if no 3A stats (from video pipe)
-    mBlockRequest = PlatformData::isEnableAIQ(mCameraId) && hasVideoStream;
-
-    LOG1("%s: mRequestConfigMode initial value: %d", __func__, mRequestConfigMode);
-    return OK;
-}
-
-void RequestThread::postConfigure(const stream_config_t *streamList) {
-    mGet3AStatWithFakeRequest =
-        mPerframeControlSupport ? PlatformData::isPsysContinueStats(mCameraId) : false;
-
-    if (!mGet3AStatWithFakeRequest) return;
-
-    CLEAR(mFakeReqBuf);
-    int fakeStreamIndex = -1, videoIndex = -1, stillIndex = -1;
-    for (int i = 0; i < streamList->num_streams; i++) {
-        // Select preview stream firstly
         if (streamList->streams[i].usage == CAMERA_STREAM_PREVIEW) {
-            fakeStreamIndex = i;
-            break;
+            previewIndex = i;
         } else if (streamList->streams[i].usage == CAMERA_STREAM_VIDEO_CAPTURE) {
             videoIndex = i;
         } else if (streamList->streams[i].usage == CAMERA_STREAM_STILL_CAPTURE) {
             stillIndex = i;
         }
     }
-    if (fakeStreamIndex < 0) {
-        if (videoIndex >= 0) {
-            fakeStreamIndex = videoIndex;
-        } else if (stillIndex >=0) {
-            fakeStreamIndex = stillIndex;
+
+    // Don't block request handling if no 3A stats (from video pipe)
+    mBlockRequest = PlatformData::isEnableAIQ(mCameraId) && (previewIndex >= 0 || videoIndex >= 0);
+    LOG1("%s: user specified Configmode: %d, blockRequest: %d", __func__,
+         static_cast<ConfigMode>(streamList->operation_mode), mBlockRequest);
+
+    mGet3AStatWithFakeRequest =
+        mPerframeControlSupport ? PlatformData::isPsysContinueStats(mCameraId) : false;
+    if (mGet3AStatWithFakeRequest) {
+        int fakeStreamIndex = (previewIndex >= 0) ? previewIndex :
+                              ((videoIndex >= 0) ? videoIndex : stillIndex);
+        if (fakeStreamIndex < 0) {
+            LOGW("There isn't valid stream to trigger stats event");
+            mGet3AStatWithFakeRequest = false;
+            return OK;
         }
+
+        CLEAR(mFakeReqBuf);
+        stream_t &fakeStream = streamList->streams[fakeStreamIndex];
+        LOG2("%s: create fake request with stream index %d", __func__, fakeStreamIndex);
+        mFakeBuffer = CameraBuffer::create(mCameraId, BUFFER_USAGE_PSYS_INTERNAL,
+                                           V4L2_MEMORY_USERPTR, fakeStream.size, 0,
+                                           fakeStream.format, fakeStream.width,
+                                           fakeStream.height);
+
+        mFakeReqBuf.s = fakeStream;
+        mFakeReqBuf.s.memType = V4L2_MEMORY_USERPTR;
+        mFakeReqBuf.addr = mFakeBuffer->getUserBuffer()->addr;
     }
 
-    if (fakeStreamIndex < 0) {
-        LOGW("There isn't valid stream to trigger stats event");
-        mGet3AStatWithFakeRequest = false;
-        return;
-    }
-
-    stream_t &fakeStream = streamList->streams[fakeStreamIndex];
-    LOG2("%s: create fake request with stream index %d", __func__, fakeStreamIndex);
-    mFakeBuffer = CameraBuffer::create(mCameraId, BUFFER_USAGE_PSYS_INTERNAL, V4L2_MEMORY_USERPTR,
-                                       fakeStream.size, 0, fakeStream.format, fakeStream.width,
-                                       fakeStream.height);
-
-    mFakeReqBuf.s = fakeStream;
-    mFakeReqBuf.s.memType = V4L2_MEMORY_USERPTR;
-    mFakeReqBuf.addr = mFakeBuffer->getUserBuffer()->addr;
+    return OK;
 }
 
 bool RequestThread::blockRequest() {
@@ -410,10 +326,6 @@ void RequestThread::handleEvent(EventData eventData) {
  */
 bool RequestThread::fetchNextRequest(CameraRequest& request) {
     ConditionLock lock(mPendingReqLock);
-    if (isReconfigurationNeeded() && !isReadyForReconfigure()) {
-        return false;
-    }
-
     if (mPendingRequests.empty()) {
         return false;
     }
@@ -425,32 +337,7 @@ bool RequestThread::fetchNextRequest(CameraRequest& request) {
     return true;
 }
 
-/**
- * Check if ConfigMode is changed or not.
- * If new ConfigMode is different with previous configured ConfigMode,
- * return true.
- */
-bool RequestThread::isReconfigurationNeeded() {
-    bool needReconfig = (mUserConfigMode == CAMERA_STREAM_CONFIGURATION_MODE_AUTO &&
-                         PlatformData::getAutoSwitchType(mCameraId) == AUTO_SWITCH_FULL &&
-                         mNeedReconfigPipe &&
-                         (mReconfigPipeScore >= PlatformData::getPipeSwitchDelayFrame(mCameraId)));
-    LOG2("%s: need reconfigure %d, score %d, decision %d",
-         __func__, mNeedReconfigPipe, mReconfigPipeScore, needReconfig);
-    return needReconfig;
-}
-
-/**
- * If reconfiguration is needed, there are 2 extra conditions for reconfiguration:
- * 1, there is no buffer in processing; 2, there is buffer in mPendingRequests.
- * Return true if reconfiguration is ready.
- */
-bool RequestThread::isReadyForReconfigure() {
-    return (!mPendingRequests.empty() && mRequestsInProcessing == 0);
-}
-
 bool RequestThread::threadLoop() {
-    bool restart = false;
     int64_t applyingSeq = -1;
     {
          ConditionLock lock(mPendingReqLock);
@@ -468,8 +355,6 @@ bool RequestThread::threadLoop() {
                 return true;
             }
         }
-
-        restart = isReconfigurationNeeded();
 
         /* for perframe control cases, one request should be processed in one SOF period only.
          * 1, for new SOF, processes request for current sequence if no request processed for it;
@@ -507,41 +392,13 @@ bool RequestThread::threadLoop() {
 
     CameraRequest request;
     if (fetchNextRequest(request)) {
-        // Update for reconfiguration
-        if (request.mParams.get()) {
-            camera_scene_mode_t sceneMode = SCENE_MODE_MAX;
-            if (request.mParams.get()->getSceneMode(sceneMode) == OK) {
-                setConfigureModeByParam(sceneMode);
-            }
-        }
-        // Re-check
-        if (restart && isReconfigurationNeeded()) {
-            handleReconfig();
-        }
-
         handleRequest(request, applyingSeq);
-
         {
             AutoMutex l(mPendingReqLock);
             mRequestTriggerEvent = NONE_EVENT;
         }
     }
     return true;
-}
-
-void RequestThread::handleReconfig() {
-    LOG1("%s, ConfigMode change from %x to %x", __func__,
-         mStreamConfig.operation_mode, mRequestConfigMode);
-    mStreamConfig.operation_mode = mRequestConfigMode;
-    EventConfigData configData;
-    configData.streamList = &mStreamConfig;
-    EventData eventData;
-    eventData.type = EVENT_DEVICE_RECONFIGURE;
-    eventData.data.config = configData;
-    notifyListeners(eventData);
-    mNeedReconfigPipe = false;
-    mReconfigPipeScore = 0;
-    return;
 }
 
 void RequestThread::handleRequest(CameraRequest& request, int64_t applyingSeq) {

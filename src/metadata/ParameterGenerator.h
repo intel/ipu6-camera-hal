@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Intel Corporation.
+ * Copyright (C) 2015-2022 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,7 +58,6 @@ class ParameterGenerator {
      */
     int getParameters(int64_t sequence, Parameters* param, bool setting = true, bool result = true);
     int getRequestId(int64_t predictSequence, long& requestId);
-    void setRequestIdMap(long currentRequestId, long requestIdWithAiq);
 
  private:
     ParameterGenerator(const ParameterGenerator& other);
@@ -67,6 +66,7 @@ class ParameterGenerator {
     int generateParametersL(int64_t sequence, Parameters* params);
     int updateWithAiqResultsL(int64_t sequence, Parameters* params);
     int updateAwbGainsL(Parameters* params, const cca::cca_awb_results& result);
+    int updateCcmL(Parameters* params, const AiqResult* aiqResult);
     int updateTonemapCurve(int64_t sequence, Parameters* params);
 
     int updateCommonMetadata(Parameters* params, const AiqResult* aiqResult);
@@ -96,13 +96,12 @@ class ParameterGenerator {
     std::map<int64_t, std::shared_ptr<RequestParam> > mRequestParamMap;
     Parameters mLastParam;
 
-    // first: request id of none running AIQ, second: request id of running AIQ
-    std::map<long, long> mRequestIdMap;
-
     std::unique_ptr<float[]> mTonemapCurveRed;
     std::unique_ptr<float[]> mTonemapCurveBlue;
     std::unique_ptr<float[]> mTonemapCurveGreen;
     int32_t mTonemapMaxCurvePoints;
+
+    camera_color_transform_t mPaCcm;
 };
 
 } /* namespace icamera */

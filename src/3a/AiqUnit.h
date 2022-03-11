@@ -77,8 +77,7 @@ private:
 class AiqUnit : public AiqUnitBase {
 
 public:
-    AiqUnit(int cameraId, SensorHwCtrl *sensorHw, LensHw *lensHw,
-            ParameterGenerator* paramGen);
+    AiqUnit(int cameraId, SensorHwCtrl *sensorHw, LensHw *lensHw);
     ~AiqUnit();
 
     /**

@@ -38,7 +38,7 @@ class IntelECC;
 class EvcpManager {
  public:
     EvcpManager(int cameraId, int width, int height, EvcpParam* evcpParam);
-    virtual ~EvcpManager();
+    ~EvcpManager() {}
 
     static bool createInstance(int cameraId, int width, int height);
     static EvcpManager* getInstance(int cameraId);

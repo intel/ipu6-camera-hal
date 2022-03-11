@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2021 Intel Corporation
+ * Copyright (C) 2020-2022 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,6 @@ extern "C" {
 #include "3a/AiqResultStorage.h"
 #include "AiqInitData.h"
 #include "PSysDAG.h"
-#include "SyncManager.h"
 #include "ia_pal_output_data.h"
 #include "iutils/CameraDump.h"
 
@@ -472,9 +471,13 @@ int GPUExecutor::updateTnrISPConfig(Tnr7Param* pbuffer, uint32_t sequence) {
             tnr7_bc->coeffs[i] = pBc->coeffs[i];
         }
 
-        tnr7_bc->global_protection = pBc->global_protection;
-        tnr7_bc->global_protection_inv_num_pixels = pBc->global_protection_inv_num_pixels;
-        tnr7_bc->global_protection_motion_level = pBc->global_protection_motion_level;
+        if (!icamera::PlatformData::useTnrGlobalProtection()) {
+            tnr7_bc->global_protection = 0;
+        } else {
+            tnr7_bc->global_protection = pBc->global_protection;
+            tnr7_bc->global_protection_inv_num_pixels = pBc->global_protection_inv_num_pixels;
+            tnr7_bc->global_protection_motion_level = pBc->global_protection_motion_level;
+        }
         for (int i = 0; i < sizeof(pBc->global_protection_sensitivity_lut_values) / sizeof(int32_t);
              i++) {
             tnr7_bc->global_protection_sensitivity_lut_values[i] =
@@ -521,22 +524,6 @@ int GPUExecutor::runTnrFrame(const std::shared_ptr<CameraBuffer>& inBuf,
     CheckAndLogError(!inBuf->getBufferAddr(), UNKNOWN_ERROR, "Invalid input buffer");
     int ret = OK;
     uint32_t sequence = inBuf->getSequence();
-    bool paramSyncUpdate = (mStreamId == VIDEO_STREAM_ID) ? false : true;
-
-    if (!paramSyncUpdate) {
-        // request update tnr parameters before wait
-        float totalGain = 0.0f;
-        ret = getTotalGain(sequence, &totalGain);
-        CheckAndLogError(ret, UNKNOWN_ERROR, "Failed to get total gain");
-        // update tnr param when total gain changes
-        bool isTnrParamForceUpdate = icamera::PlatformData::isTnrParamForceUpdate();
-        // multiply totalGain by 100, to avoid lose accuracy
-        ret = mIntelTNR->asyncParamUpdate(static_cast<int>(totalGain * 100), isTnrParamForceUpdate);
-    }
-    if (mPolicyManager) {
-        // Check if need to wait other executors.
-        mPolicyManager->wait(mName);
-    }
     LOG2("Enter executor name:%s, sequence: %u", mName.c_str(), inBuf->getSequence());
     TRACE_LOG_PROCESS(mName.c_str(), __func__, MAKE_COLOR(inBuf->getSequence()),
                       inBuf->getSequence());
@@ -555,6 +542,25 @@ int GPUExecutor::runTnrFrame(const std::shared_ptr<CameraBuffer>& inBuf,
                  mName.c_str(), inBuf->getSequence(), timeUsedUs);
         }
         CheckAndLogError(ret != OK, UNKNOWN_ERROR, "Failed to update TNR parameters");
+    }
+
+    // wait other executors after parameters update finished, sync the main computing stage only
+    if (mPolicyManager) {
+        // Check if need to wait other executors.
+        mPolicyManager->wait(mName, sequence);
+    }
+
+    bool paramSyncUpdate = (mStreamId == VIDEO_STREAM_ID) ? false : true;
+
+    if (!paramSyncUpdate && mIntelTNR) {
+        // request update tnr parameters before wait
+        float totalGain = 0.0f;
+        ret = getTotalGain(sequence, &totalGain);
+        CheckAndLogError(ret, UNKNOWN_ERROR, "Failed to get total gain");
+        // update tnr param when total gain changes
+        bool isTnrParamForceUpdate = icamera::PlatformData::isTnrParamForceUpdate();
+        // multiply totalGain by 100, to avoid lose accuracy
+        ret = mIntelTNR->asyncParamUpdate(static_cast<int>(totalGain * 100), isTnrParamForceUpdate);
     }
 
     int fd = outBuf->getFd();

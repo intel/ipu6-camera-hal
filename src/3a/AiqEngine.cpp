@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Intel Corporation.
+ * Copyright (C) 2015-2022 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,19 +18,21 @@
 
 #include "AiqEngine.h"
 
+#include <memory>
+
 #include "FaceDetection.h"
 #include "PlatformData.h"
 #include "iutils/CameraLog.h"
 #include "iutils/Errors.h"
 #include "iutils/Utils.h"
 
+#include "gc/IGraphConfigManager.h"
+
 namespace icamera {
 
-AiqEngine::AiqEngine(int cameraId, SensorHwCtrl* sensorHw, LensHw* lensHw, AiqSetting* setting,
-                     ParameterGenerator* paramGen)
+AiqEngine::AiqEngine(int cameraId, SensorHwCtrl* sensorHw, LensHw* lensHw, AiqSetting* setting)
         : mCameraId(cameraId),
           mAiqSetting(setting),
-          mParamGen(paramGen),
           mFirstAiqRunning(true) {
     LOG1("<id%d>%s", mCameraId, __func__);
 
@@ -194,9 +196,27 @@ int AiqEngine::prepareStatsParams(cca::cca_stats_params* statsParams,
             timestamp = aiqStatistics->mTimestamp;
         }
 
-        int64_t requestId = -1;
-        mParamGen->getRequestId(aiqStatistics->mSequence, requestId);
-        statsParams->frame_id = requestId;
+        const AiqResult* aiqResult = mAiqResultStorage->getAiqResult(aiqStatistics->mSequence);
+
+        if (PlatformData::isDvsSupported(mCameraId) &&
+            PlatformData::getGraphConfigNodes(mCameraId)) {
+            std::shared_ptr<IGraphConfig> gc = nullptr;
+            IGraphConfigManager *GCM = IGraphConfigManager::getInstance(mCameraId);
+            if (GCM) {
+                gc = GCM->getGraphConfig(CAMERA_STREAM_CONFIGURATION_MODE_NORMAL);
+            }
+
+            CheckAndLogError(!gc, UNKNOWN_ERROR, "%s, Failed to get graph config", __func__);
+            ia_isp_bxt_resolution_info_t resolution;
+            uint32_t gdcKernelId;
+            int status = gc->getGdcKernelSetting(&gdcKernelId, &resolution);
+            CheckWarning(status != OK, UNKNOWN_ERROR, "Failed to get GDC kernel setting");
+
+            statsParams->dvs_stats_height = resolution.output_height;
+            statsParams->dvs_stats_width = resolution.output_width;
+        }
+
+        statsParams->frame_id = aiqResult ? aiqResult->mFrameId : -1;
         statsParams->frame_timestamp = timestamp;
         statsParams->camera_orientation = ia_aiq_camera_orientation_unknown;
     } while (0);
@@ -290,8 +310,6 @@ AiqEngine::AiqState AiqEngine::prepareInputParam(AiqStatistics* aiqStats, AiqRes
 
     // set Stats
     cca::cca_stats_params statsParams = {};
-    aiqResult->mOutStats.get_rgbs_stats = mAiqParam.callbackRgbs;
-
     ret = prepareStatsParams(&statsParams, aiqStats);
     if (ret != OK) {
         LOG2("%s: no useful stats", __func__);
@@ -303,7 +321,7 @@ AiqEngine::AiqState AiqEngine::prepareInputParam(AiqStatistics* aiqStats, AiqRes
         statsParams.using_rgbs_for_aec = true;
     }
 
-    mAiqCore->setStatsParams(statsParams, &aiqResult->mOutStats, aiqStats);
+    mAiqCore->setStatsParams(statsParams, aiqStats);
 
     return AIQ_STATE_RUN;
 }
@@ -323,10 +341,10 @@ AiqEngine::AiqState AiqEngine::runAiq(long requestId, int64_t applyingSeq, AiqRe
             return AIQ_STATE_ERROR;
         }
         *aiqRun = true;
+        aiqResult->mFrameId = requestId;
     } else {
         *aiqResult = *(mAiqRunningHistory.aiqResult);
         setSensorExposure(aiqResult, applyingSeq);
-        mParamGen->setRequestIdMap(requestId, mAiqRunningHistory.requestId);
     }
 
     return AIQ_STATE_RESULT_SET;

@@ -20,7 +20,8 @@
 
 #include <memory>
 
-#include "CameraDevice.h"
+#include "AiqUtils.h"
+#include "iutils/CameraDump.h"
 #include "iutils/CameraLog.h"
 #include "iutils/Errors.h"
 

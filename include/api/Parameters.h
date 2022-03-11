@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2013 The Android Open Source Project
- * Copyright (C) 2015-2021 Intel Corporation.
+ * Copyright (C) 2015-2022 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1040,6 +1040,16 @@ typedef enum {
     LENS_SHADING_MAP_MODE_OFF,
     LENS_SHADING_MAP_MODE_ON
 } camera_lens_shading_map_mode_type_t;
+
+/**
+ * \struct camera_zoom_region_t: Used to specify zoom regions.
+ */
+typedef struct {
+    int32_t left;
+    int32_t top;
+    int32_t right;
+    int32_t bottom;
+} camera_zoom_region_t;
 
 /**
  * \class Parameters
@@ -2818,6 +2828,24 @@ public:
      */
     int getEvcpFFMode(uint8_t* mode) const;
 // ENABLE_EVCP_E
+
+    /**
+     * \brief Set scale & crop region
+     *
+     * \param[in] camera_zoom_region_t region
+     *
+     * \return 0 if set successfully, otherwise non-0 value is returned.
+     */
+    int setZoomRegion(const camera_zoom_region_t& region);
+
+    /**
+     * \brief Get scale & crop region
+     *
+     * \param[in] camera_zoom_region_t region
+     *
+     * \return 0 if flag was set, otherwise non-0 value is returned.
+     */
+    int getZoomRegion(camera_zoom_region_t* region) const;
 
 private:
     friend class ParameterHelper;

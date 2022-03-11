@@ -28,7 +28,6 @@
 
 #include "BufferQueue.h"
 #include "CameraBuffer.h"
-#include "IspParamAdaptor.h"
 #include "iutils/Thread.h"
 #include "v4l2/NodeInfo.h"
 

@@ -343,28 +343,6 @@ ia_isp_bxt_program_group* GraphConfigPipe::getProgramGroup(int32_t streamId) {
     return &(mProgramGroup[streamId]);
 }
 
-int GraphConfigPipe::getProgramGroup(string pgName, ia_isp_bxt_program_group* programGroupForPG) {
-    GCSS::NodeIterator iter(mSettings);
-    GCSS::IGraphConfig* pg = iter.iterateByType(GCSS_KEY_PROGRAM_GROUP);
-    std::string name;
-    for (; pg != nullptr; pg = iter.iterateByType(GCSS_KEY_PROGRAM_GROUP)) {
-        css_err_t ret = pg->getValue(GCSS_KEY_NAME, name);
-        CheckAndLogError(ret != css_err_none, BAD_VALUE,
-                         "Failed to get the name of an existing PG node, BUG");
-        if (name == pgName) {
-            break;
-        }
-    }
-    CheckAndLogError(pg == nullptr, UNKNOWN_ERROR, "Failed to get program groups, BUG");
-
-    mGCSSAicUtil.getProgramGroup(pg, *programGroupForPG);
-
-    LOG3("Dump kernel info for %s", pgName.c_str());
-    GraphUtils::dumpKernelInfo(*programGroupForPG);
-
-    return OK;
-}
-
 status_t GraphConfigPipe::getPgRbmValue(string pgName, IGraphType::StageAttr* stageAttr) {
     std::string name;
     GCSS::NodeIterator iter(mSettings);
@@ -1117,6 +1095,35 @@ status_t GraphConfigPipe::graphGetStreamIds(StreamsVector* streamIds) {
 
     LOG2("%s: stream IDs size %zu", __func__, streamIds->size());
     return OK;
+}
+
+int32_t GraphConfigPipe::getTuningMode(const int32_t streamId) {
+    GraphConfigNode* result = nullptr;
+    int32_t tuningMode = -1, graphStreamId = -1;
+    GraphConfigNode::const_iterator it = mSettings->begin();
+
+    while (it != mSettings->end()) {
+        // Get the tuning mode by psys streamId
+        css_err_t ret = mSettings->getDescendant(GCSS_KEY_TYPE, "program_group", it, &result);
+        if (ret != css_err_none) continue;
+
+        ret = result->getValue(GCSS_KEY_STREAM_ID, graphStreamId);
+        if (ret == css_err_none && graphStreamId == streamId && graphStreamId != -1) {
+            GraphConfigNode *tuningModeNode = nullptr;
+            ret = result->getDescendant(GCSS_KEY_TUNING_MODE, &tuningModeNode);
+            if (ret == css_err_none && tuningModeNode) {
+                string tuningModeStr;
+                ret = tuningModeNode->getValue(GCSS_KEY_VALUE, tuningModeStr);
+                if (ret == css_err_none && !tuningModeStr.empty()) {
+                    tuningMode = atoi(tuningModeStr.c_str());
+                    LOG2("%s, streamId: %d, tuningMode: %d", __func__, streamId, tuningMode);
+                    break;
+                }
+            }
+        }
+    }
+
+    return tuningMode;
 }
 
 int32_t GraphConfigPipe::portGetStreamId(Node* port) {

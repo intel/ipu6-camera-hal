@@ -227,7 +227,6 @@ class PGCommon {
     CIPR::Command* mCmd = nullptr;
     CIPR::Buffer* mCmdExtBuffer = nullptr;
 
-    bool mPPG;
     bool mPPGStarted;
     CIPR::Buffer* mPPGBuffer = nullptr;
     ia_css_process_group_t* mPPGProcessGroup;

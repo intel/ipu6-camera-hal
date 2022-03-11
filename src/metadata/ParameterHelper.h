@@ -53,6 +53,16 @@ public:
     static void merge(const CameraMetadata& metadata, Parameters* dst);
 
     /**
+     * \brief Merge and update dst parameter buffer by entry.
+     *
+     * \param[in] const icamera_metadata_ro_entry& entry: the source entry.
+     * \param[out] Parameters dst: the parameter to be updated.
+     *
+     * \return void
+     */
+    static void mergeTag(const icamera_metadata_ro_entry& entry, Parameters* dst);
+
+    /**
      * \brief Copy metadata from parameter buffer.
      *
      * Some HAL V3 style parameters are not returned in the getParameter()

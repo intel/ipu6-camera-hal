@@ -85,4 +85,33 @@ const CameraMetadata& ParameterHelper::getMetadata(const Parameters& source) {
     return getMetadata(source.mData);
 }
 
+void ParameterHelper::mergeTag(const icamera_metadata_ro_entry& entry, Parameters* dst) {
+    CheckAndLogError(!dst, VOID_VALUE, "dst is nullptr");
+
+    AutoWLock wl(dst->mData);
+    switch (entry.type) {
+        case ICAMERA_TYPE_BYTE:
+            getMetadata(dst->mData).update(entry.tag, entry.data.u8, entry.count);
+            break;
+        case ICAMERA_TYPE_INT32:
+            getMetadata(dst->mData).update(entry.tag, entry.data.i32, entry.count);
+            break;
+        case ICAMERA_TYPE_FLOAT:
+            getMetadata(dst->mData).update(entry.tag, entry.data.f, entry.count);
+            break;
+        case ICAMERA_TYPE_INT64:
+            getMetadata(dst->mData).update(entry.tag, entry.data.i64, entry.count);
+            break;
+        case ICAMERA_TYPE_DOUBLE:
+            getMetadata(dst->mData).update(entry.tag, entry.data.d, entry.count);
+            break;
+        case ICAMERA_TYPE_RATIONAL:
+            getMetadata(dst->mData).update(entry.tag, entry.data.r, entry.count);
+            break;
+        default:
+            LOGW("Invalid entry type, should never happen");
+            break;
+    }
+}
+
 } // end of namespace icamera

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013-2021 Intel Corporation
+ * Copyright (C) 2013-2022 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@
 #include "iutils/CameraDump.h"
 #include "iutils/Errors.h"
 #include "iutils/Utils.h"
+#include "HALv3Utils.h"
 
 using namespace icamera;
 
@@ -161,8 +162,8 @@ icamera::status_t Camera3Buffer::init(const camera3_stream_buffer* aBuffer, int 
                                                   mHalBuffer.s.height, false, false, false);
     mLocked = false;
     mUsage = aBuffer->stream->usage;
-    mHalBuffer.flags = IS_NO_FLUSH_USAGE(mUsage) ? 0 : camera_buffer_flags_t::BUFFER_FLAG_SW_WRITE
-                                                     | camera_buffer_flags_t::BUFFER_FLAG_SW_READ;
+    mHalBuffer.flags = camera_buffer_flags_t::BUFFER_FLAG_SW_WRITE
+                       | camera_buffer_flags_t::BUFFER_FLAG_SW_READ;
     mInit = true;
     mHalBuffer.addr = nullptr;
     mUserBuffer = *aBuffer;
@@ -459,8 +460,16 @@ std::shared_ptr<Camera3Buffer> allocateHandleBuffer(int w, int h, int gfxFmt, in
     buffer_handle_t handle;
     uint32_t stride = 0;
 
-    LOG1("%s, [wxh] = [%dx%d], format 0x%x, usage 0x%x", __func__, w, h, gfxFmt, usage);
-    int ret = bufManager->Allocate(w, h, gfxFmt, usage, &handle, &stride);
+    int width = w;
+    int height = h;
+    if (gfxFmt == HAL_PIXEL_FORMAT_BLOB) {
+        width = CameraUtils::getFrameSize(
+            HalV3Utils::HALFormatToV4l2Format(cameraId, gfxFmt, usage), w, h, false, false, false);
+        height = 1;
+    }
+
+    LOG1("%s, [wxh] = [%dx%d], format 0x%x, usage 0x%x", __func__, width, height, gfxFmt, usage);
+    int ret = bufManager->Allocate(width, height, gfxFmt, usage, &handle, &stride);
     CheckAndLogError(ret != 0, nullptr, "Allocate handle failed! ret:%d", ret);
 
     std::shared_ptr<Camera3Buffer> buffer(new Camera3Buffer());

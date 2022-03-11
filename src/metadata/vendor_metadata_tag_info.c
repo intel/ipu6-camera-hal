@@ -58,6 +58,7 @@ static tag_info_t intel_vendor_camera[INTEL_VENDOR_CAMERA_END -
     { "icFfMode",                      ICAMERA_TYPE_BYTE   },
 // ENABLE_EVCP_E
     { "totalExposureTarget",           ICAMERA_TYPE_INT64  },
+    { "totalExposureTargetRange",      ICAMERA_TYPE_INT64  },
 };
 
 tag_info_t *vendor_tag_info[INTEL_VENDOR_SECTION_COUNT] = {
@@ -212,6 +213,9 @@ int vendor_metadata_enum_snprint(uint32_t tag,
         }
 // ENABLE_EVCP_E
         case INTEL_VENDOR_CAMERA_TOTAL_EXPOSURE_TARGET: {
+            break;
+        }
+        case INTEL_VENDOR_CAMERA_TOTAL_EXPOSURE_TARGET_RANGE: {
             break;
         }
 

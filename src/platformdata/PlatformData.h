@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Intel Corporation.
+ * Copyright (C) 2015-2022 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -93,6 +93,8 @@ namespace icamera {
 #define CAMERA_GRAPH_SETTINGS_DIR "gcss/"
 #endif
 
+#define NVM_DATA_PATH "/sys/bus/i2c/devices/"
+
 #define TNR7US_RESTART_THRESHOLD 5
 
 class GraphConfigNodes;
@@ -122,7 +124,6 @@ class PlatformData {
                       mSensorAwb(false),
                       mSensorAe(false),
                       mRunIspAlways(false),
-                      mAutoSwitchType(AUTO_SWITCH_PSYS),
                       mLtmEnabled(false),
                       mSensorExposureNum(2),
                       mSensorExposureType(SENSOR_EXPOSURE_SINGLE),
@@ -141,7 +142,6 @@ class PlatformData {
                       mPsysContinueStats(false),
                       mMaxRequestsInflight(0),
                       mPreferredBufQSize(MAX_BUFFER_COUNT),
-                      mPipeSwitchDelayFrame(0),
                       mDigitalGainLag(-1),
                       mExposureLag(MAX_BUFFER_COUNT),
                       mAnalogGainLag(0),
@@ -159,7 +159,9 @@ class PlatformData {
                       mUseSensorDigitalGain(false),
                       mUseIspDigitalGain(false),
                       mNeedPreRegisterBuffers(false),
+                      // FRAME_SYNC_S
                       mFrameSyncCheckEnabled(false),
+                      // FRAME_SYNC_E
                       mEnableAiqd(false),
                       mCurrentMcConf(nullptr),
                       mGraphSettingsType(COUPLED),
@@ -167,7 +169,7 @@ class PlatformData {
                       mISYSCompression(false),
                       mPSACompression(false),
                       mOFSCompression(false),
-                      mFaceAeEnabled(false),
+                      mFaceAeEnabled(true),
                       mFaceEngineVendor(FACE_ENGINE_INTEL_PVL),
                       mFaceEngineRunningInterval(FACE_ENGINE_DEFAULT_RUNNING_INTERVAL),
                       mFaceEngineRunningIntervalNoFace(FACE_ENGINE_DEFAULT_RUNNING_INTERVAL),
@@ -178,10 +180,13 @@ class PlatformData {
                       mPsysBundleWithAic(false),
                       mSwProcessingAlignWithIsp(false),
                       mMaxNvmDataSize(0),
+                      mNvmOverwrittenFileSize(0),
                       mTnrExtraFrameNum(DEFAULT_TNR_EXTRA_FRAME_NUM),
                       mDummyStillSink(false),
-                      mForceFlushIpuBuffer(false),
-                      mPLCEnable(false) {
+                      mRemoveCacheFlushOutputBuffer(false),
+                      mPLCEnable(false),
+                      mSupportPrivacy(false),
+                      mStillOnlyPipe(false) {
             }
 
             std::vector<MediaCtlConf> mMediaCtlConfs;
@@ -194,7 +199,6 @@ class PlatformData {
             bool mSensorAwb;
             bool mSensorAe;
             bool mRunIspAlways;
-            int mAutoSwitchType;
             bool mLtmEnabled;
             int mSensorExposureNum;
             int mSensorExposureType;
@@ -215,7 +219,6 @@ class PlatformData {
             bool mPsysContinueStats;
             int mMaxRequestsInflight;
             unsigned int mPreferredBufQSize;
-            unsigned int mPipeSwitchDelayFrame;
             int mDigitalGainLag;
             int mExposureLag;
             int mAnalogGainLag;
@@ -243,7 +246,9 @@ class PlatformData {
             bool mUseSensorDigitalGain;
             bool mUseIspDigitalGain;
             bool mNeedPreRegisterBuffers;
+            // FRAME_SYNC_S
             bool mFrameSyncCheckEnabled;
+            // FRAME_SYNC_E
             bool mEnableAiqd;
             MediaCtlConf* mCurrentMcConf;
             std::map<int, stream_array_t> mStreamToMcMap;
@@ -277,13 +282,17 @@ class PlatformData {
             std::vector<UserToPslOutputMap> mOutputMap;
             int mMaxNvmDataSize;
             std::string mNvmDirectory;
+            int mNvmOverwrittenFileSize;
+            std::string mNvmOverwrittenFile;  // overwrite NVM data
             /* key: camera module name, value: camera module info */
             std::unordered_map<std::string, CameraMetadata> mCameraModuleInfoMap;
             std::vector<IGraphType::ScalerInfo> mScalerInfo;
             int mTnrExtraFrameNum;
             bool mDummyStillSink;
-            bool mForceFlushIpuBuffer;
+            bool mRemoveCacheFlushOutputBuffer;
             bool mPLCEnable;
+            bool mSupportPrivacy;
+            bool mStillOnlyPipe;
         };
 
         std::vector<CameraInfo> mCameras;
@@ -541,14 +550,6 @@ class PlatformData {
     static bool isNeedToPreRegisterBuffer(int cameraId);
 
     /**
-     * Get auto switch type
-     *
-     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
-     * \return the value of auto switch type
-     */
-    static int getAutoSwitchType(int cameraId);
-
-    /**
      * Check Defog(LTM) is enabled or not
      *
      * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
@@ -556,6 +557,7 @@ class PlatformData {
      */
     static bool isEnableDefog(int cameraId);
 
+    // FRAME_SYNC_S
     /**
      * Check Frame Sync is enabled or not
      *
@@ -563,6 +565,7 @@ class PlatformData {
      * \return if Frame Sync is enabled or not.
      */
     static bool isEnableFrameSyncCheck(int cameraId);
+    // FRAME_SYNC_E
 
     /**
      * Get exposure number
@@ -638,14 +641,6 @@ class PlatformData {
     static unsigned int getPreferredBufQSize(int cameraId);
 
     /**
-     * Get pipe switch delay frame
-     *
-     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
-     * \return the value of delay frame
-     */
-    static unsigned int getPipeSwitchDelayFrame(int cameraId);
-
-    /**
      * Get Ltm Gain lag
      *
      * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
@@ -662,10 +657,18 @@ class PlatformData {
     static bool isEnableLtmThread(int cameraId);
 
     /**
-     * Check face detection is enabled or not
+     * Check face engine is enabled or not
      *
      * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
-     * \return if face detection is enabled or not.
+     * \return if face engine is enabled or not.
+     */
+    static bool isFaceDetectionSupported(int cameraId);
+
+    /**
+     * Check face AE is enabled or not, only for debug
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return if face ae is enabled or not.
      */
     static bool isFaceAeEnabled(int cameraId);
 
@@ -1325,6 +1328,16 @@ class PlatformData {
     static int getVideoStreamNum();
 
     /**
+     * Check if support to update tuning data or not
+     */
+    static bool supportUpdateTuning();
+
+    /**
+     * Check if support hardware jpeg encode or not
+     */
+    static bool supportHwJpegEncode();
+
+    /**
      * Check should connect gpu algo or not
      * should connect gpu algo service if any gpu algorithm is used
      * \return true if should connect gpu algo.
@@ -1345,6 +1358,11 @@ class PlatformData {
      * the extra frame count for still stream
      */
     static int getTnrExtraFrameCount(int cameraId);
+
+    /**
+     * Check if global protection is enabled for tnr7us
+     */
+    static bool useTnrGlobalProtection();
 
     /*
      * Set the orientation Info
@@ -1371,12 +1389,12 @@ class PlatformData {
     static bool isDummyStillSink(int cameraId);
 
     /*
-     * check if forcing flushing IPU buffer is enabled
+     * check if removing cache flush output buffer
      *
      * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
-     * \return true if forcing flush IPU buffer.
+     * \return true if removing cache flush output buffer.
      */
-    static bool getForceFlushIpuBuffer(int cameraId);
+    static bool removeCacheFlushOutputBuffer(int cameraId);
 
     /*
      * Get PLC Enable status
@@ -1394,5 +1412,19 @@ class PlatformData {
      */
     static bool isGpuEvcpEnabled();
     // ENABLE_EVCP_E
+
+    /**
+     * Check supports privacy or not
+     *
+     * \return true if supports privacy.
+     */
+    static bool getSupportPrivacy(int cameraId);
+
+    /**
+     * Check support of still-only pipe is enabled or not
+     *
+     * \return true if is enabled.
+     */
+    static bool isStillOnlyPipeEnabled(int cameraId);
 };
 } /* namespace icamera */

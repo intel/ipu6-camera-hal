@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2021 Intel Corporation
+ * Copyright (C) 2019-2022 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,9 @@
 #include <algorithm>
 
 #include "PSysDAG.h"
+// FRAME_SYNC_S
 #include "SyncManager.h"
+// FRAME_SYNC_E
 #include "iutils/CameraDump.h"
 
 // CIPF backends
@@ -579,6 +581,7 @@ int PipeLiteExecutor::processNewFrame() {
 
     LOG2("%s:Id:%d run pipe start for buffer:%ld", mName.c_str(), mCameraId, inBufSequence);
 
+    // FRAME_SYNC_S
     if (PlatformData::isEnableFrameSyncCheck(mCameraId)) {
         shared_ptr<CameraBuffer> cInBuffer = inBuffers[MAIN_PORT];
         int vc = cInBuffer->getVirtualChannel();
@@ -601,9 +604,12 @@ int PipeLiteExecutor::processNewFrame() {
              cInBuffer->getTimestamp().tv_sec * 1000.0 +
              cInBuffer->getTimestamp().tv_usec / 1000.0);
     } else {
+    // FRAME_SYNC_E
         // Run pipe with buffers
         ret = runPipe(inBuffers, outBuffers, outStatsBuffers, eventType);
+    // FRAME_SYNC_S
     }
+    // FRAME_SYNC_E
     CheckAndLogError((ret != OK), UNKNOWN_ERROR, "@%s: failed to run pipe", __func__);
     LOG2("%s:Id:%d run pipe end for buffer:%ld", mName.c_str(), mCameraId, inBufSequence);
 
@@ -657,9 +663,10 @@ int PipeLiteExecutor::runPipe(map<Port, shared_ptr<CameraBuffer>>& inBuffers,
                      "Error in pipe iteration input/output bufs");
 
     int ret = OK;
+    int64_t sequence = inBuffers.begin()->second ? inBuffers.begin()->second->getSequence() : -1;
     if (mPolicyManager) {
         // Check if need to wait other executors.
-        ret = mPolicyManager->wait(mName);
+        ret = mPolicyManager->wait(mName, sequence);
     }
 
     // Accept external buffers for in/out edge PGs
@@ -670,7 +677,6 @@ int PipeLiteExecutor::runPipe(map<Port, shared_ptr<CameraBuffer>>& inBuffers,
 
     // Get ISP parameters
     const ia_binary_data* ipuParameters = nullptr;
-    int64_t sequence = inBuffers.begin()->second ? inBuffers.begin()->second->getSequence() : -1;
     TRACE_LOG_PROCESS(mName.c_str(), "runPipe", MAKE_COLOR(sequence), sequence);
     if (mAdaptor) {
         ipuParameters = mAdaptor->getIpuParameter(sequence, mStreamId);
@@ -801,8 +807,14 @@ int PipeLiteExecutor::notifyStatsDone(TuningMode tuningMode, const v4l2_buffer_t
                                       const vector<EventType>& eventType) {
     PERF_CAMERA_ATRACE();
 
-    // The executor does not produce stats, so no need to notify.
-    if (outStatsBuffers.empty()) return OK;
+    if (outStatsBuffers.empty()) {
+        // notify event even though no stats is output
+        if (mkernelsCountWithStats > 0) {
+            LOG2("%s, notify stats done Stats %d", __func__, mkernelsCountWithStats);
+            mPSysDag->onStatsDone(inV4l2Buf.sequence);
+        }
+        return OK;
+    }
 
     /**
      * Notice for EVENT_PSYS_STATS_BUF_READY:
@@ -824,9 +836,11 @@ int PipeLiteExecutor::notifyStatsDone(TuningMode tuningMode, const v4l2_buffer_t
         if (!statsBuf) continue;
 
         if (mStreamId != VIDEO_STREAM_ID) {
-            LOG2("%s: No statistics data for still pipe in buffer", __func__);
-            releaseStatsBuffer(statsBuf);
-            continue;
+            if (!PlatformData::isStillOnlyPipeEnabled(mCameraId)) {
+                LOG2("%s: Drop still pipe statistics data", __func__);
+                releaseStatsBuffer(statsBuf);
+                continue;
+            }
         } else if (inV4l2Buf.sequence <= mLastStatsSequence) {
             // Ignore old statistics for Raw reprocessing
             LOG2("%s: <seq%d> is less than last sequence %ld", __func__, inV4l2Buf.sequence,
@@ -836,7 +850,7 @@ int PipeLiteExecutor::notifyStatsDone(TuningMode tuningMode, const v4l2_buffer_t
         }
 
         ia_binary_data* hwStatsData = (ia_binary_data*)(statsBuf->getBufferAddr());
-        if (hwStatsData->data == nullptr || hwStatsData->size == 0) {
+        if (hwStatsData == nullptr || hwStatsData->data == nullptr || hwStatsData->size == 0) {
             LOGW("%s: No statistics data in buffer", __func__);
             releaseStatsBuffer(statsBuf);
             continue;
@@ -871,8 +885,9 @@ int PipeLiteExecutor::notifyStatsDone(TuningMode tuningMode, const v4l2_buffer_t
 
     if (mStreamId == VIDEO_STREAM_ID && inV4l2Buf.sequence > mLastStatsSequence) {
         mLastStatsSequence = inV4l2Buf.sequence;
-        mPSysDag->onStatsDone(inV4l2Buf.sequence);
     }
+    LOG2("%s, notify stats done", __func__);
+    mPSysDag->onStatsDone(inV4l2Buf.sequence);
 
     return OK;
 }

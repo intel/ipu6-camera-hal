@@ -98,6 +98,9 @@ struct GraphGetDataParams {
     uint32_t streamIdNum;
     int32_t streamIdData[MAX_STREAM];
 
+    uint32_t tuningModeNum;
+    IGraphType::TuningModeInfo tuningModes[MAX_STREAM];
+
     uint32_t pgInfoNum;
     GraphPgInfo pgInfoData[MAX_PG_NUMBER];
 

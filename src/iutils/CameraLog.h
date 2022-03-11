@@ -74,18 +74,18 @@ extern int gSlowlyRunRatio;
  */
 enum {
     /* verbosity level of general traces */
+    // [0 - 3] bits
     CAMERA_DEBUG_LOG_LEVEL1 = 1,
     CAMERA_DEBUG_LOG_LEVEL2 = 1 << 1,
     CAMERA_DEBUG_LOG_LEVEL3 = 1 << 2,
-    CAMERA_DEBUG_LOG_WARNING = 1 << 3,
-
+    // [4 - 7] bits
     CAMERA_DEBUG_LOG_INFO = 1 << 4,
-    CAMERA_DEBUG_LOG_ERR = 1 << 5,
-
-    CAMERA_DEBUG_LOG_CCA = 1 << 9,
+    CAMERA_DEBUG_LOG_WARNING = 1 << 5,
+    CAMERA_DEBUG_LOG_ERR = 1 << 6,
+    // [8 - 11] bits
+    CAMERA_DEBUG_LOG_CCA = 1 << 8,
+    CAMERA_DEBUG_LOG_METADATA = 1 << 9,
     CAMERA_DEBUG_LOG_KERNEL_TOGGLE = 1 << 10,
-
-    CAMERA_DEBUG_LOG_METADATA = 1 << 13,
 };
 
 enum {
@@ -128,7 +128,7 @@ namespace Log {
 void setDebugLevel(void);
 void print_log(bool enable, const char* module, const int level, const char* format, ...);
 bool isDebugLevelEnable(int level);
-bool isLogTagEnabled(int tag);
+bool isLogTagEnabled(int tag, int level = 0);
 // DUMP_ENTITY_TOPOLOGY_S
 bool isDumpMediaTopo(void);
 // DUMP_ENTITY_TOPOLOGY_E

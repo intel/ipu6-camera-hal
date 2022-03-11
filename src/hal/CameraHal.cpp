@@ -23,7 +23,9 @@
 #include "ICamera.h"
 #include "Parameters.h"
 #include "PlatformData.h"
+// FRAME_SYNC_S
 #include "SyncManager.h"
+// FRAME_SYNC_E
 #include "iutils/CameraLog.h"
 
 namespace icamera {
@@ -78,9 +80,11 @@ int CameraHal::deinit() {
         return OK;
     }
 
+    // FRAME_SYNC_S
     // SyncManager is used to do synchronization with multi-devices.
     // Release it when the last device exit
     SyncManager::releaseInstance();
+    // FRAME_SYNC_E
     // Release the PlatformData instance here due to it was
     // created in init() period
     PlatformData::releaseInstance();

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Intel Corporation.
+ * Copyright (C) 2015-2022 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,6 @@ CameraDevice::CameraDevice(int cameraId)
         : mState(DEVICE_UNINIT),
           mCameraId(cameraId),
           mStreamNum(0),
-          mLastSceneMode(SCENE_MODE_AUTO),
           mCallback(nullptr) {
     PERF_CAMERA_ATRACE();
     LOG1("<id%d>@%s", mCameraId, __func__);
@@ -63,10 +62,9 @@ CameraDevice::CameraDevice(int cameraId)
     mSensorCtrl = SensorHwCtrl::createSensorCtrl(mCameraId);
 
     m3AControl =
-        I3AControlFactory::createI3AControl(mCameraId, mSensorCtrl, mLensCtrl, mParamGenerator);
+        I3AControlFactory::createI3AControl(mCameraId, mSensorCtrl, mLensCtrl);
     mRequestThread = new RequestThread(mCameraId, m3AControl, mParamGenerator);
     mRequestThread->registerListener(EVENT_PROCESS_REQUEST, this);
-    mRequestThread->registerListener(EVENT_DEVICE_RECONFIGURE, this);
 
     mProcessorManager = new ProcessorManager(mCameraId);
 
@@ -75,6 +73,9 @@ CameraDevice::CameraDevice(int cameraId)
     } else {
         mGCM = nullptr;
     }
+    if (PlatformData::getSupportPrivacy(mCameraId)) {
+        mCvfPrivacyChecker = new CvfPrivacyChecker(mCameraId, mStreams);
+    }
 }
 
 CameraDevice::~CameraDevice() {
@@ -82,6 +83,9 @@ CameraDevice::~CameraDevice() {
     LOG1("<id%d>@%s", mCameraId, __func__);
     AutoMutex m(mDeviceLock);
 
+    if (PlatformData::getSupportPrivacy(mCameraId)) {
+        delete mCvfPrivacyChecker;
+    }
     // Clear the media control when close the device.
     MediaControl* mc = MediaControl::getInstance();
     MediaCtlConf* mediaCtl = PlatformData::getMediaCtlConf(mCameraId);
@@ -90,7 +94,6 @@ CameraDevice::~CameraDevice() {
     }
 
     mRequestThread->removeListener(EVENT_PROCESS_REQUEST, this);
-    mRequestThread->removeListener(EVENT_DEVICE_RECONFIGURE, this);
 
     delete mProcessorManager;
 
@@ -127,6 +130,12 @@ int CameraDevice::init() {
     ret = mLensCtrl->init();
     CheckAndLogError((ret != OK), ret, "%s: Init Lens falied", __func__);
 
+    if (PlatformData::getSupportPrivacy(mCameraId)) {
+        ret = mCvfPrivacyChecker->init();
+        CheckAndLogError((ret != OK), ret, "%s: Init privacy checker falied", __func__);
+        mCvfPrivacyChecker->run("CvfPrivacyChecker", PRIORITY_NORMAL);
+    }
+
     mRequestThread->run("RequestThread", PRIORITY_NORMAL);
 
     mState = DEVICE_INIT;
@@ -151,6 +160,10 @@ void CameraDevice::deinit() {
         stopLocked();
     }
 
+    if (PlatformData::getSupportPrivacy(mCameraId)) {
+        mCvfPrivacyChecker->requestExit();
+        mCvfPrivacyChecker->join();
+    }
     // stop request thread
     mRequestThread->requestExit();
     mRequestThread->join();
@@ -180,16 +193,16 @@ StreamSource* CameraDevice::createBufferProducer() {
 void CameraDevice::bindListeners() {
     vector<EventListener*> statsListenerList = m3AControl->getStatsEventListener();
     for (auto statsListener : statsListenerList) {
-
         for (auto& item : mProcessors) {
             // Subscribe PSys statistics.
             item->registerListener(EVENT_PSYS_STATS_BUF_READY, statsListener);
             item->registerListener(EVENT_PSYS_STATS_SIS_BUF_READY, statsListener);
         }
     }
-        for (auto& item : mProcessors) {
-            item->registerListener(EVENT_PSYS_STATS_BUF_READY, mRequestThread);
-        }
+
+    for (auto& item : mProcessors) {
+        item->registerListener(EVENT_PSYS_STATS_BUF_READY, mRequestThread);
+    }
 
     vector<EventListener*> sofListenerList = m3AControl->getSofEventListener();
     for (auto sofListener : sofListenerList) {
@@ -219,15 +232,14 @@ void CameraDevice::bindListeners() {
 void CameraDevice::unbindListeners() {
     vector<EventListener*> statsListenerList = m3AControl->getStatsEventListener();
     for (auto statsListener : statsListenerList) {
-
         for (auto& item : mProcessors) {
             item->removeListener(EVENT_PSYS_STATS_BUF_READY, statsListener);
             item->removeListener(EVENT_PSYS_STATS_SIS_BUF_READY, statsListener);
         }
     }
-        for (auto& item : mProcessors) {
-            item->removeListener(EVENT_PSYS_STATS_BUF_READY, mRequestThread);
-        }
+    for (auto& item : mProcessors) {
+        item->removeListener(EVENT_PSYS_STATS_BUF_READY, mRequestThread);
+    }
 
     vector<EventListener*> sofListenerList = m3AControl->getSofEventListener();
     for (auto sofListener : sofListenerList) {
@@ -263,53 +275,29 @@ int CameraDevice::configureInput(const stream_t* inputConfig) {
 
 int CameraDevice::configure(stream_config_t* streamList) {
     PERF_CAMERA_ATRACE();
-
-    int numOfStreams = streamList->num_streams;
     CheckAndLogError(!streamList->streams, BAD_VALUE, "%s: No valid stream config", __func__);
-    CheckAndLogError(numOfStreams > MAX_STREAM_NUMBER || numOfStreams <= 0, BAD_VALUE,
-                     "%s: The requested stream number(%d) is invalid. Should be between [1-%d]",
-                     __func__, numOfStreams, MAX_STREAM_NUMBER);
-
-    AutoMutex lock(mDeviceLock);
-
+    CheckAndLogError((streamList->num_streams > MAX_STREAM_NUMBER || streamList->num_streams <= 0),
+                     BAD_VALUE, "%s: The stream number(%d) out of range: [1-%d]", __func__,
+                     streamList->num_streams, MAX_STREAM_NUMBER);
     CheckAndLogError(
         (mState != DEVICE_STOP) && (mState != DEVICE_INIT) && (mState != DEVICE_CONFIGURE),
         INVALID_OPERATION, "%s: Add streams in wrong state %d", __func__, mState);
 
-    mRequestThread->configure(streamList);
-
-    // Use concrete ISP mode from request thread for full and auto switch
-    if (PlatformData::getAutoSwitchType(mCameraId) == AUTO_SWITCH_FULL &&
-        (ConfigMode)(streamList->operation_mode) == CAMERA_STREAM_CONFIGURATION_MODE_AUTO) {
-        stream_config_t requestStreamList = mRequestThread->getStreamConfig();
-        LOG2("%s: for full and auto switch, use concrete config mode %u from request thread.",
-             __func__, requestStreamList.operation_mode);
-        return configureL(&requestStreamList);
-    }
-
-    return configureL(streamList);
-}
-
-int CameraDevice::configureL(stream_config_t* streamList, bool clean) {
     LOG1("<id%d>@%s, operation_mode %x", mCameraId, __func__,
-         (ConfigMode)streamList->operation_mode);
+         static_cast<ConfigMode>(streamList->operation_mode));
 
+    AutoMutex lock(mDeviceLock);
     int ret = analyzeStream(streamList);
     CheckAndLogError(ret != OK, ret, "@%s, analyzeStream failed", __func__);
 
-    // If configured before, destroy current streams first.
-    if (mStreamNum > 0 && clean) {
-        deleteStreams();
-    }
+    deleteStreams();
     mProcessorManager->deleteProcessors();
-
     // Clear all previous added listeners.
     mProducer->removeAllFrameAvailableListener();
-    if (clean) {
-        ret = createStreams(streamList);
-        CheckAndLogError(ret < 0, ret, "@%s create stream failed with %d", __func__, ret);
-    }
-    mRequestThread->postConfigure(streamList);
+
+    ret = createStreams(streamList);
+    CheckAndLogError(ret < 0, ret, "@%s create stream failed with %d", __func__, ret);
+    mRequestThread->configure(streamList);
 
     int mcId = -1;
     if (mGCM != nullptr) {
@@ -345,9 +333,8 @@ int CameraDevice::configureL(stream_config_t* streamList, bool clean) {
     m3AControl->configure(streamList);
 
     if (needProcessor) {
-        mProcessors = mProcessorManager->createProcessors(mInputConfig.format, producerConfigs,
-                                                          mStreamIdToPortMap, streamList,
-                                                          mParameter, mParamGenerator);
+        mProcessors = mProcessorManager->createProcessors(producerConfigs, mStreamIdToPortMap,
+                                                          streamList, mParamGenerator);
         ret = mProcessorManager->configureProcessors(configModes, mProducer, mParameter);
         CheckAndLogError(ret != OK, ret, "@%s configure post processor failed with:%d", __func__,
                          ret);
@@ -702,12 +689,6 @@ int CameraDevice::dqbuf(int streamId, camera_buffer_t** ubuffer, Parameters* set
 
     CheckAndLogError(!*ubuffer || ret != OK, ret, "failed to get ubuffer from stream %d", streamId);
 
-    const AiqResult* aiqResult =
-        AiqResultStorage::getInstance(mCameraId)->getAiqResult((*ubuffer)->sequence);
-    if (aiqResult != nullptr) {
-        mLastSceneMode = aiqResult->mSceneMode;
-    }
-
     if (settings) {
         ret = mParamGenerator->getParameters((*ubuffer)->sequence, settings);
     }
@@ -798,11 +779,6 @@ int CameraDevice::qbuf(camera_buffer_t** ubuffer, int bufferNum, const Parameter
 
     if (mState != DEVICE_START && PlatformData::isNeedToPreRegisterBuffer(mCameraId)) {
         registerBuffer(ubuffer, bufferNum);
-    }
-
-    // Make sure request's configure mode is updated by latest result param if no settings
-    if (!settings) {
-        mRequestThread->setConfigureModeByParam(mLastSceneMode);
     }
 
     return mRequestThread->processRequest(bufferNum, ubuffer, settings);
@@ -918,117 +894,6 @@ int CameraDevice::stopLocked() {
     return OK;
 }
 
-int CameraDevice::reconfigure(stream_config_t* streamList) {
-    AutoMutex m(mDeviceLock);
-
-    int ret = OK;
-
-    LOG2("%s: switch type: %d, new mode:%d", __func__, PlatformData::getAutoSwitchType(mCameraId),
-         streamList->operation_mode);
-
-    if (PlatformData::getAutoSwitchType(mCameraId) == AUTO_SWITCH_FULL) {
-        // Wait and return all user buffers in all streams firstly
-        for (int streamId = 0; streamId < mStreamNum; streamId++) {
-            mStreams[streamId]->waitToReturnAllUserBufffers();
-        }
-
-        LOG2("%s: all streams stopped", __func__);
-
-        // Stop and clean what needed.
-        m3AControl->stop();
-
-        if (mState == DEVICE_START) stopLocked();
-
-        mState = DEVICE_STOP;
-
-        for (int streamId = 0; streamId < mStreamNum; streamId++) {
-            mStreams[streamId]->stop();
-        }
-
-        mProcessorManager->deleteProcessors();
-
-        m3AControl->deinit();
-
-        mSofSource->deinit();
-
-        mProducer->deinit();
-
-        /* Currently kernel have issue and need reopen subdevices
-         * when stream off and on. Remove below delete and recreate code
-         * when all kernel issues got fixed.
-         */
-        // Delete related components and v4l2 devices
-        delete mLensCtrl;
-        delete m3AControl;
-        delete mSensorCtrl;
-        delete mSofSource;
-        delete mProducer;
-
-        V4l2DeviceFactory::releaseDeviceFactory(mCameraId);
-
-        // Re-create related components and v4l2 devices
-        mProducer = createBufferProducer();
-        mSofSource = new SofSource(mCameraId);
-        mLensCtrl = new LensHw(mCameraId);
-        mSensorCtrl = SensorHwCtrl::createSensorCtrl(mCameraId);
-        m3AControl =
-            I3AControlFactory::createI3AControl(mCameraId, mSensorCtrl, mLensCtrl, mParamGenerator);
-
-        // Init and config with new mode
-        int ret = mProducer->init();
-        CheckAndLogError(ret < 0, ret, "%s: Init capture unit failed", __func__);
-
-        ret = mSofSource->init();
-        CheckAndLogError(ret != OK, ret, "@%s: init sync manager failed", __func__);
-
-        initDefaultParameters();
-
-        ret = m3AControl->init();
-        CheckAndLogError((ret != OK), ret, "%s: Init 3A Unit falied", __func__);
-
-        ret = mLensCtrl->init();
-        CheckAndLogError((ret != OK), ret, "%s: Init Lens falied", __func__);
-
-        mState = DEVICE_INIT;
-
-        // Auto switch do not recreate streams.
-        configureL(streamList, false);
-
-        ret = m3AControl->setParameters(mParameter);
-        for (auto& item : mProcessors) {
-            item->setParameters(mParameter);
-        }
-        CheckAndLogError((ret != OK), ret, "%s: set parameters falied", __func__);
-
-        ret = m3AControl->start();
-        CheckAndLogError((ret != OK), BAD_VALUE, "Start 3a unit failed with ret:%d.", ret);
-
-        mState = DEVICE_BUFFER_READY;
-
-        ret = startLocked();
-        if (ret != OK) {
-            LOGE("Camera device starts failed.");
-            stopLocked();  // There is error happened, stop all related units.
-            return INVALID_OPERATION;
-        }
-
-        mState = DEVICE_START;
-
-        LOG2("%s: reconfigure CameraDevice done", __func__);
-    } else {
-        /* Scene mode based psys-only auto switch here will be used to
-         * replace current auto-switch mechanism in AiqSetting:updateTuningMode,
-         * which is for non-DOL sensor auto-switch. The switch stabilization
-         * counting in AiqSetting:updateTuningMode will also be replaced by the
-         * same mechanism in RequestThread.
-         */
-        LOG2("%s: reconfigure CameraDevice to new mode %d with psys-only switch", __func__,
-             streamList->operation_mode);
-    }
-
-    return ret;
-}
-
 void CameraDevice::handleEvent(EventData eventData) {
     LOG2("%s, event type:%d", __func__, eventData.type);
 
@@ -1036,10 +901,6 @@ void CameraDevice::handleEvent(EventData eventData) {
         case EVENT_PROCESS_REQUEST: {
             const EventRequestData& request = eventData.data.request;
             if (request.param) {
-                for (auto& item : mProcessors) {
-                    item->setParameters(*request.param);
-                }
-
                 // Set test pattern mode
                 camera_test_pattern_mode_t testPatternMode = TEST_PATTERN_OFF;
                 if (PlatformData::isTestPatternSupported(mCameraId) &&
@@ -1055,12 +916,6 @@ void CameraDevice::handleEvent(EventData eventData) {
             }
 
             handleQueueBuffer(request.bufferNum, request.buffer, request.settingSeq);
-            break;
-        }
-
-        case EVENT_DEVICE_RECONFIGURE: {
-            const EventConfigData& config = eventData.data.config;
-            reconfigure(config.streamList);
             break;
         }
 

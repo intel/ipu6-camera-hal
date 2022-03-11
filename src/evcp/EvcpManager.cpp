@@ -89,10 +89,6 @@ bool EvcpManager::init() {
     return mEvcp->updateEvcpParam(&mLatestParam[mCameraId]);
 }
 
-EvcpManager::~EvcpManager() {
-    mEvcp->deinit();
-}
-
 bool EvcpManager::checkingStatus() {
     AutoMutex lock(sParamLock);
 
@@ -140,9 +136,10 @@ bool EvcpManager::saveNV12Img(int fd, int width, int height, char* filename) {
 EvcpParam EvcpManager::getParamFromExp(const icamera::Parameters* param) {
     EvcpParam earam = {};
 
-    int eccEnable, bcMode, w, h, bgFD, ffMode;
+    uint8_t eccEnable, bcMode, ffMode;
+    int w, h, bgFD;
 
-    param->getEvcpEccEnable(&eccEnable);
+    param->getEvcpEccMode(&eccEnable);
     param->getEvcpBCMode(&bcMode);
     param->getEvcpBRParameters(&w, &h, &bgFD);
     param->getEvcpFFMode(&ffMode);

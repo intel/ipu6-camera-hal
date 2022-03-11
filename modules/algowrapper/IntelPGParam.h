@@ -141,11 +141,7 @@ class IntelPGParam {
     PgFrameDesc mOutputMainFrame;
 
     uint8_t mFragmentCount;
-    ia_p2p_fragment_desc* mFragmentDesc;
     ia_p2p_fragment_configuration_t* mFragmentConfig;
-    // for pg fragment with new api:
-    // ia_p2p_calculate_fragments_rbm
-    // Instead of mFragmentDesc
     ia_p2p_handle mP2pHandle;
     ia_binary_data mP2pCacheBuffer;
 

@@ -30,11 +30,9 @@ namespace icamera {
 SensorManager::SensorManager(int cameraId, SensorHwCtrl *sensorHw) :
     mCameraId(cameraId),
     mSensorHwCtrl(sensorHw),
-    mModeSwitched(false),
     mLastSofSequence(-1),
     mAnalogGainDelay(0),
     mDigitalGainDelay(0) {
-    CLEAR(mWdrModeSetting);
 
     if (PlatformData::getAnalogGainLag(mCameraId) > 0) {
         mAnalogGainDelay = PlatformData::getExposureLag(mCameraId)
@@ -59,10 +57,6 @@ void SensorManager::reset() {
     mExposureDataMap.clear();
     mAnalogGainMap.clear();
     mDigitalGainMap.clear();
-
-    mModeSwitched = false;
-    CLEAR(mWdrModeSetting);
-    mWdrModeSetting.tuningMode = TUNING_MODE_MAX;
 
     mSofEventInfo.clear();
 }

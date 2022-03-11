@@ -37,11 +37,6 @@
 namespace icamera {
 
 /**
- * Stream id associated with the ISA PG that runs on Psys.
- */
-static const int32_t PSYS_ISA_STREAM_ID = 60002;
-
-/**
  * \class SinkDependency
  *
  * This class is a container for sink dependency information for each virtual sink.
@@ -91,7 +86,6 @@ class GraphConfigPipe {
      */
     const GCSS::IGraphConfig* getInterface(Node* node) const;
     ia_isp_bxt_program_group* getProgramGroup(int32_t streamId);
-    int getProgramGroup(std::string pgName, ia_isp_bxt_program_group* programGroupForPG);
     status_t getGdcKernelSetting(uint32_t* kernelId, ia_isp_bxt_resolution_info_t* resolution);
     const ia_isp_bxt_resolution_info_t* getKernelResolutionInfo(uint32_t streamId,
                                                                 uint32_t kernelId);
@@ -116,6 +110,8 @@ class GraphConfigPipe {
      * Port Interrogation methods
      */
     status_t portGetFullName(Node* port, std::string* fullName);
+
+    int32_t getTuningMode(const int32_t streamId);
     status_t portGetPeer(Node* port, Node** peer);
     status_t portGetFormat(Node* port, IGraphType::PortFormatSettings* format);
     status_t portGetConnection(Node* port, IGraphType::ConnectionConfig* connectionInfo,

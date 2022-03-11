@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Intel Corporation.
+ * Copyright (C) 2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,23 +14,29 @@
  * limitations under the License.
  */
 
-#define LOG_TAG I3AControlFactory
+#pragma once
 
-#include "iutils/CameraLog.h"
-#include "PlatformData.h"
+#include <memory>
 
-#include "I3AControlFactory.h"
+#include "evcp/EvcpCommon.h"
+#include "iutils/Errors.h"
+#include "modules/algowrapper/IntelEvcp.h"
 
 namespace icamera {
 
-AiqUnitBase *I3AControlFactory::createI3AControl(int cameraId, SensorHwCtrl *sensorHw,
-                                                 LensHw *lensHw)
-{
-    LOG1("<id%d>@%s", cameraId, __func__);
-    if (PlatformData::isEnableAIQ(cameraId)) {
-        return new AiqUnit(cameraId, sensorHw, lensHw);
-    }
-    return new AiqUnitBase();
-}
+class IntelEvcpServer {
+ public:
+    IntelEvcpServer() {}
+    ~IntelEvcpServer() {}
 
+    int init(void* pData, int dataSize);
+    int deInit();
+
+    int runEvcpFrame(void* bufAddr, int size);
+    int updateEvcpParam(EvcpParam* param);
+    int getEvcpParam(EvcpParam* evcpParam) const;
+
+ private:
+    std::unique_ptr<IntelEvcp> mIntelEvcp;
+};
 } /* namespace icamera */

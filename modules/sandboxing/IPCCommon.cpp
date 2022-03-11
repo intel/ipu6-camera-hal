@@ -47,8 +47,8 @@ const char* IntelAlgoIpcCmdToString(IPC_CMD cmd) {
                                            "IPC_CCA_UPDATE_TUNING",
                                            "IPC_CCA_DEINIT",
                                            "IPC_CCA_RUN_AIC",
-                                           "IPC_CCA_DECODE_STATS",
                                            "IPC_CCA_GET_PAL_SIZE",
+                                           "IPC_CCA_DECODE_STATS",
                                            "IPC_PG_PARAM_INIT",
                                            "IPC_PG_PARAM_PREPARE",
                                            "IPC_PG_PARAM_ALLOCATE_PG",
@@ -84,6 +84,8 @@ IPC_GROUP IntelAlgoIpcCmdToGroup(IPC_CMD cmd) {
         group = IPC_GROUP_AIQ;
     } else if (cmd >= IPC_CCA_RUN_AIC && cmd <= IPC_CCA_GET_PAL_SIZE) {
         group = IPC_GROUP_PAL;
+    } else if (cmd == IPC_CCA_DECODE_STATS) {
+        group = IPC_GROUP_STATS;
     } else if (cmd >= IPC_PG_PARAM_INIT && cmd <= IPC_PG_PARAM_DEINIT) {
         group = IPC_GROUP_PSYS;
     } else if (cmd >= IPC_FD_INIT && cmd <= IPC_FD_DEINIT) {
@@ -108,6 +110,7 @@ const char* IntelAlgoServerThreadName(int index) {
 #ifndef GPU_ALGO_SERVER
     static const char* gIpcCmdMapping[IPC_CPU_GROUP_NUM] = {"AiqCPUAlgoServer",
                                                             "PalCPUAlgoServer",
+                                                            "StatsCPUAlgoServer",
                                                             "PsysCPUAlgoServer",
                                                             "FdCPUAlgoServer",
                                                             "OtherCPUAlgoServer"};

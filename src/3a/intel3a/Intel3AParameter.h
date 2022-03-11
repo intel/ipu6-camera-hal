@@ -94,6 +94,8 @@ class Intel3AParameter {
     camera_af_mode_t mAfMode;
     camera_af_trigger_t mAfTrigger;
     bool mDuringAfTriggerScan;
+
+    camera_range_t mSensitivityRange;
 };
 
 } /* namespace icamera */

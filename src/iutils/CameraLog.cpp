@@ -186,15 +186,11 @@ static void setLogTagLevel() {
             name = token;
         }
 
-        int itemIdx = 0;
-        for (; itemIdx < TAGS_MAX_NUM; ++itemIdx) {
+        for (int itemIdx = 0; itemIdx < TAGS_MAX_NUM; ++itemIdx) {
             if (name != tagNames[itemIdx]) continue;
 
-            if (levelStr.empty()) {
-                globalGroupsDescp[itemIdx].level = gLogLevel;
-            } else {
+            if (!levelStr.empty())
                 globalGroupsDescp[itemIdx].level = strtoul(levelStr.c_str(), nullptr, 0);
-            }
         }
     }
 }
@@ -262,9 +258,10 @@ bool isDebugLevelEnable(int level) {
     return gLogLevel & level;
 }
 
-bool isLogTagEnabled(int tag) {
+bool isLogTagEnabled(int tag, int level) {
     if (tag < 0 || tag >= TAGS_MAX_NUM) return false;
-    return globalGroupsDescp[tag].level > 0;
+    return level ? (globalGroupsDescp[tag].level & level)
+                 : (globalGroupsDescp[tag].level > 0);
 }
 
 // DUMP_ENTITY_TOPOLOGY_S

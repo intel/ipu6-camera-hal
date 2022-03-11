@@ -28,8 +28,7 @@
 namespace icamera {
 
 AiqSetting::AiqSetting(int cameraId) :
-    mCameraId(cameraId),
-    mPipeSwitchFrameCount(0) {
+    mCameraId(cameraId) {
 }
 
 AiqSetting::~AiqSetting() {
@@ -37,8 +36,6 @@ AiqSetting::~AiqSetting() {
 
 int AiqSetting::init(void) {
     AutoWMutex wlock(mParamLock);
-
-    mPipeSwitchFrameCount = 0;
 
     mAiqParam.reset();
 
@@ -350,7 +347,7 @@ void aiq_parameter_t::reset() {
 }
 
 void aiq_parameter_t::dump() {
-    if (!Log::isLogTagEnabled(GET_FILE_SHIFT(AiqSetting))) return;
+    if (!Log::isLogTagEnabled(GET_FILE_SHIFT(AiqSetting), CAMERA_DEBUG_LOG_LEVEL3)) return;
 
     LOG3("Application parameters:");
     LOG3("3A mode: ae %d, awb %d, af %d, scene %d", aeMode, awbMode, afMode, sceneMode);

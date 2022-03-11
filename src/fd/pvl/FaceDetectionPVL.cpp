@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Intel Corporation
+ * Copyright (C) 2021-2022 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,8 +34,6 @@ FaceDetectionPVL::FaceDetectionPVL(int cameraId, unsigned int maxFaceNum, int32_
     CLEAR(mResult);
     int ret = initFaceDetection();
     CheckAndLogError(ret != OK, VOID_VALUE, "failed to init face detection, ret %d", ret);
-
-    mInitialized = true;
 }
 
 FaceDetectionPVL::~FaceDetectionPVL() {
@@ -80,6 +78,7 @@ int FaceDetectionPVL::initFaceDetection() {
         CheckAndLogError(ret != OK, NO_INIT, "Camera thread failed to start, ret %d", ret);
     }
 
+    mInitialized = true;
     return OK;
 }
 
@@ -225,11 +224,8 @@ int FaceDetectionPVL::getFaceNum() {
 void FaceDetectionPVL::getResultFor3A(cca::cca_face_state* faceState) {
     LOG2("@%s", __func__);
 
-    float fovRatioWTmp = mFovInfo.fovRatioW;
-    float fovRatioHTmp = mFovInfo.fovRatioH;
-    float offsetW = mFovInfo.offsetW;
-    float offsetH = mFovInfo.offsetH;
-
+    camera_coordinate_system_t sysCoord = {IA_COORDINATE_LEFT, IA_COORDINATE_TOP,
+                                           IA_COORDINATE_RIGHT, IA_COORDINATE_BOTTOM};
     AutoMutex l(mFaceResultLock);
     FaceDetectionPVLResult* pvlResult = &mResult;
     faceState->is_video_conf = true;
@@ -239,14 +235,13 @@ void FaceDetectionPVL::getResultFor3A(cca::cca_face_state* faceState) {
 
     for (int i = 0; i < pvlResult->faceNum; i++) {
         CLEAR(faceState->faces[i]);
-        faceState->faces[i].face_area.left =
-            static_cast<int>(pvlResult->faceResults[i].rect.left * fovRatioWTmp + offsetW);
-        faceState->faces[i].face_area.top =
-            static_cast<int>(pvlResult->faceResults[i].rect.top * fovRatioHTmp + offsetH);
-        faceState->faces[i].face_area.bottom =
-            static_cast<int>(pvlResult->faceResults[i].rect.bottom * fovRatioHTmp + offsetH);
-        faceState->faces[i].face_area.right =
-            static_cast<int>(pvlResult->faceResults[i].rect.right * fovRatioWTmp + offsetW);
+        faceState->faces[i].face_area.left = pvlResult->faceResults[i].rect.left;
+        faceState->faces[i].face_area.top = pvlResult->faceResults[i].rect.top;
+        faceState->faces[i].face_area.bottom = pvlResult->faceResults[i].rect.bottom;
+        faceState->faces[i].face_area.right = pvlResult->faceResults[i].rect.right;
+        convertFaceCoordinate(
+            sysCoord, &faceState->faces[i].face_area.left, &faceState->faces[i].face_area.top,
+            &faceState->faces[i].face_area.right, &faceState->faces[i].face_area.bottom);
         faceState->faces[i].rip_angle = pvlResult->faceResults[i].rip_angle;
         faceState->faces[i].rop_angle = pvlResult->faceResults[i].rop_angle;
         faceState->faces[i].tracking_id = pvlResult->faceResults[i].tracking_id;
@@ -258,30 +253,19 @@ void FaceDetectionPVL::getResultFor3A(cca::cca_face_state* faceState) {
 
         faceState->faces[i].smile_state = 0;
         faceState->faces[i].smile_score = 0;
-        faceState->faces[i].mouth.x =
-            static_cast<int>(pvlResult->mouthResults[i].mouth.x * fovRatioWTmp + offsetW);
-        faceState->faces[i].mouth.y =
-            static_cast<int>(pvlResult->mouthResults[i].mouth.y * fovRatioHTmp + offsetH);
+        faceState->faces[i].mouth.x = 0;
+        faceState->faces[i].mouth.y = 0;
 
         faceState->faces[i].eye_validity = 0;
+        LOG2("@%s, face info, id:%d, left:%d, top:%d, right:%d, bottom:%d", __func__, i,
+             faceState->faces[i].face_area.left, faceState->faces[i].face_area.top,
+             faceState->faces[i].face_area.right, faceState->faces[i].face_area.bottom);
     }
 }
 
 /* The result for android statistics metadata */
 void FaceDetectionPVL::getResultForApp(CVFaceDetectionAbstractResult* result) {
     LOG2("@%s", __func__);
-
-    camera_coordinate_system_t sysCoord = mRatioInfo.sysCoord;
-    int verticalCrop = mRatioInfo.verticalCrop;
-    int horizontalCrop = mRatioInfo.horizontalCrop;
-    bool imageRotationChanged = mRatioInfo.imageRotationChanged;
-    camera_coordinate_t srcCoord = {0, 0};
-    camera_coordinate_t destCoord = {0, 0};
-    const camera_coordinate_system_t iaCoord = {IA_COORDINATE_LEFT, IA_COORDINATE_TOP,
-                                                IA_COORDINATE_RIGHT, IA_COORDINATE_BOTTOM};
-    const camera_coordinate_system_t fillFrameCoord = {0, 0, mWidth + horizontalCrop,
-                                                       mHeight + verticalCrop};
-    const camera_coordinate_system_t frameCoord = {0, 0, mWidth, mHeight};
 
     CLEAR(*result);
     AutoMutex l(mFaceResultLock);
@@ -290,78 +274,18 @@ void FaceDetectionPVL::getResultForApp(CVFaceDetectionAbstractResult* result) {
     for (int i = 0; i < pvlResult->faceNum; i++) {
         if (i == MAX_FACES_DETECTABLE) break;
 
-        camera_coordinate_t pointCoord = {0, 0};
         result->faceScores[i] = pvlResult->faceResults[i].confidence;
         result->faceIds[i] = pvlResult->faceResults[i].tracking_id;
-
-        if (!imageRotationChanged) {
-            srcCoord = {pvlResult->faceResults[i].rect.left, pvlResult->faceResults[i].rect.top};
-            destCoord = AiqUtils::convertCoordinateSystem(iaCoord, sysCoord, srcCoord);
-            result->faceRect[i * 4] = destCoord.x;      // rect.left
-            result->faceRect[i * 4 + 1] = destCoord.y;  // rect.top
-
-            srcCoord = {pvlResult->faceResults[i].rect.right,
-                        pvlResult->faceResults[i].rect.bottom};
-            destCoord = AiqUtils::convertCoordinateSystem(iaCoord, sysCoord, srcCoord);
-            result->faceRect[i * 4 + 2] = destCoord.x;  // rect.right
-            result->faceRect[i * 4 + 3] = destCoord.y;  // rect.bottom
-
-            srcCoord = {pvlResult->eyeResults[i].left_eye.x, pvlResult->eyeResults[i].left_eye.y};
-            destCoord = AiqUtils::convertCoordinateSystem(iaCoord, sysCoord, srcCoord);
-            result->faceLandmarks[i * 6] = destCoord.x;      // left_eye.x;
-            result->faceLandmarks[i * 6 + 1] = destCoord.y;  // left_eye.y;
-
-            srcCoord = {pvlResult->eyeResults[i].right_eye.x, pvlResult->eyeResults[i].right_eye.y};
-            destCoord = AiqUtils::convertCoordinateSystem(iaCoord, sysCoord, srcCoord);
-            result->faceLandmarks[i * 6 + 2] = destCoord.x;  // right_eye.x;
-            result->faceLandmarks[i * 6 + 3] = destCoord.y;  // right_eye.y;
-
-            srcCoord = {pvlResult->mouthResults[i].mouth.x, pvlResult->mouthResults[i].mouth.y};
-            destCoord = AiqUtils::convertCoordinateSystem(iaCoord, sysCoord, srcCoord);
-            result->faceLandmarks[i * 6 + 4] = destCoord.x;  // mouth.x;
-            result->faceLandmarks[i * 6 + 5] = destCoord.y;  // mouth.y;
-        } else {
-            srcCoord = {pvlResult->faceResults[i].rect.left, pvlResult->faceResults[i].rect.top};
-            pointCoord = AiqUtils::convertCoordinateSystem(iaCoord, frameCoord, srcCoord);
-            pointCoord.x += horizontalCrop / 2;
-            pointCoord.y += verticalCrop / 2;
-            destCoord = AiqUtils::convertCoordinateSystem(fillFrameCoord, sysCoord, pointCoord);
-            result->faceRect[i * 4] = destCoord.x;      // rect.left
-            result->faceRect[i * 4 + 1] = destCoord.y;  // rect.top
-
-            srcCoord = {pvlResult->faceResults[i].rect.right,
-                        pvlResult->faceResults[i].rect.bottom};
-            pointCoord = AiqUtils::convertCoordinateSystem(iaCoord, frameCoord, srcCoord);
-            pointCoord.x += horizontalCrop / 2;
-            pointCoord.y += verticalCrop / 2;
-            destCoord = AiqUtils::convertCoordinateSystem(fillFrameCoord, sysCoord, pointCoord);
-            result->faceRect[i * 4 + 2] = destCoord.x;  // rect.right
-            result->faceRect[i * 4 + 3] = destCoord.y;  // rect.bottom
-
-            srcCoord = {pvlResult->eyeResults[i].left_eye.x, pvlResult->eyeResults[i].left_eye.y};
-            pointCoord = AiqUtils::convertCoordinateSystem(iaCoord, frameCoord, srcCoord);
-            pointCoord.x += horizontalCrop / 2;
-            pointCoord.y += verticalCrop / 2;
-            destCoord = AiqUtils::convertCoordinateSystem(fillFrameCoord, sysCoord, pointCoord);
-            result->faceLandmarks[i * 6] = destCoord.x;      // left_eye.x;
-            result->faceLandmarks[i * 6 + 1] = destCoord.y;  // left_eye.y;
-
-            srcCoord = {pvlResult->eyeResults[i].right_eye.x, pvlResult->eyeResults[i].right_eye.y};
-            pointCoord = AiqUtils::convertCoordinateSystem(iaCoord, frameCoord, srcCoord);
-            pointCoord.x += horizontalCrop / 2;
-            pointCoord.y += verticalCrop / 2;
-            destCoord = AiqUtils::convertCoordinateSystem(fillFrameCoord, sysCoord, pointCoord);
-            result->faceLandmarks[i * 6 + 2] = destCoord.x;  // right_eye.x;
-            result->faceLandmarks[i * 6 + 3] = destCoord.y;  // right_eye.y;
-
-            srcCoord = {pvlResult->mouthResults[i].mouth.x, pvlResult->mouthResults[i].mouth.y};
-            pointCoord = AiqUtils::convertCoordinateSystem(iaCoord, frameCoord, srcCoord);
-            pointCoord.x += horizontalCrop / 2;
-            pointCoord.y += verticalCrop / 2;
-            destCoord = AiqUtils::convertCoordinateSystem(fillFrameCoord, sysCoord, pointCoord);
-            result->faceLandmarks[i * 6 + 4] = destCoord.x;  // mouth.x;
-            result->faceLandmarks[i * 6 + 5] = destCoord.y;  // mouth.y;
-        }
+        result->faceRect[i * 4] = pvlResult->faceResults[i].rect.left;
+        result->faceRect[i * 4 + 1] = pvlResult->faceResults[i].rect.top;
+        result->faceRect[i * 4 + 2] = pvlResult->faceResults[i].rect.right;
+        result->faceRect[i * 4 + 3] = pvlResult->faceResults[i].rect.bottom;  // rect.bottom
+        convertFaceCoordinate(mRatioInfo.sysCoord, &result->faceRect[i * 4],
+                              &result->faceRect[i * 4 + 1], &result->faceRect[i * 4 + 2],
+                              &result->faceRect[i * 4 + 3]);
+        LOG2("@%s, face info, id:%d, left:%d, top:%d, right:%d, bottom:%d", __func__, i,
+             result->faceRect[i * 4], result->faceRect[i * 4 + 1], result->faceRect[i * 4 + 2],
+             result->faceRect[i * 4 + 3]);
     }
     result->faceNum = pvlResult->faceNum;
 }
