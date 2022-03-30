@@ -37,7 +37,8 @@ AiqUnit::AiqUnit(int cameraId, SensorHwCtrl *sensorHw, LensHw *lensHw) :
     // INTEL_DVS_S
     mDvs(nullptr),
     // INTEL_DVS_S
-    mCcaInitialized(false) {
+    mCcaInitialized(false),
+    mActiveStreamCount(0) {
     mAiqSetting = new AiqSetting(cameraId);
     mAiqEngine = new AiqEngine(cameraId, sensorHw, lensHw, mAiqSetting);
 
@@ -95,6 +96,7 @@ int AiqUnit::init() {
         // LOCAL_TONEMAP_E
     }
 
+    mActiveStreamCount = 0;
     mAiqUnitState = AIQ_UNIT_INIT;
 
     return OK;
@@ -114,6 +116,7 @@ int AiqUnit::deinit() {
     mAiqSetting->deinit();
 
     deinitIntelCcaHandle();
+    mActiveStreamCount = 0;
     mAiqUnitState = AIQ_UNIT_NOT_INIT;
 
     return OK;
@@ -125,7 +128,8 @@ int AiqUnit::configure(const stream_config_t *streamList) {
     AutoMutex l(mAiqUnitLock);
     LOG1("<id%d>@%s", mCameraId, __func__);
 
-    if (mAiqUnitState != AIQ_UNIT_INIT && mAiqUnitState != AIQ_UNIT_STOP) {
+    if (mAiqUnitState != AIQ_UNIT_INIT && mAiqUnitState != AIQ_UNIT_STOP &&
+        mAiqUnitState != AIQ_UNIT_CONFIGURED) {
         LOGW("%s: configure in wrong state: %d", __func__, mAiqUnitState);
         return BAD_VALUE;
     }
@@ -154,6 +158,22 @@ int AiqUnit::configure(const stream_config_t *streamList) {
 }
 
 int AiqUnit::initIntelCcaHandle(const std::vector<ConfigMode> &configModes) {
+    if (PlatformData::supportUpdateTuning() && !configModes.empty()) {
+        std::shared_ptr<IGraphConfig> graphConfig =
+            IGraphConfigManager::getInstance(mCameraId)->getGraphConfig(configModes[0]);
+        if (graphConfig != nullptr) {
+            std::vector<int32_t> streamIds;
+            graphConfig->graphGetStreamIds(streamIds);
+
+            if (streamIds.size() != mActiveStreamCount) {
+                LOG2("%s, the pipe count(%zu) changed, need to re-init CCA", __func__,
+                     streamIds.size());
+                deinitIntelCcaHandle();
+                mActiveStreamCount = streamIds.size();
+            }
+        }
+    }
+
     if (mCcaInitialized) return OK;
 
     LOG1("<id%d>@%s", mCameraId, __func__);

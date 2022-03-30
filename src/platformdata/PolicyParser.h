@@ -58,6 +58,7 @@ class PolicyParser : public ParserBase {
     void handlePipeExecutor(PolicyParser* profiles, const char* name, const char** atts);
     void handleExclusivePGs(PolicyParser* profiles, const char* name, const char** atts);
     void handleBundles(PolicyParser* profiles, const char* name, const char** atts);
+    int parseExecutorDepth(const char** atts, struct ExecutorDepth* executorsDepth);
     void handleShareReferPair(PolicyParser* profiles, const char* name, const char** atts);
 
  private:

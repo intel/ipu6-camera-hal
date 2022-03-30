@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2021 Intel Corporation
+ * Copyright (C) 2019-2022 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -664,9 +664,9 @@ int PipeLiteExecutor::runPipe(map<Port, shared_ptr<CameraBuffer>>& inBuffers,
 
     int ret = OK;
     int64_t sequence = inBuffers.begin()->second ? inBuffers.begin()->second->getSequence() : -1;
-    if (mPolicyManager && sequence > 0) {
+    if (mPolicyManager) {
         // Check if need to wait other executors.
-        ret = mPolicyManager->wait(mName);
+        ret = mPolicyManager->wait(mName, sequence);
     }
 
     // Accept external buffers for in/out edge PGs

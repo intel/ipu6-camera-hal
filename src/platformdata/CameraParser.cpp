@@ -277,6 +277,8 @@ void CameraParser::handleCommon(CameraParser* profiles, const char* name, const 
         cfg->videoStreamNum = val > 0 ? val : DEFAULT_VIDEO_STREAM_NUM;
     } else if (strcmp(name, "supportIspTuningUpdate") == 0) {
         cfg->supportIspTuningUpdate = strcmp(atts[1], "true") == 0;
+    } else if (strcmp(name, "supportHwJpegEncode") == 0) {
+        cfg->supportHwJpegEncode = strcmp(atts[1], "true") == 0;
 // ENABLE_EVCP_S
     } else if (strcmp(name, "useGpuEvcp") == 0) {
         cfg->isGpuEvcpEnabled = strcmp(atts[1], "true") == 0;
@@ -593,6 +595,17 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
         pCurrentCam->mPLCEnable = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "stillOnlyPipe") == 0) {
         pCurrentCam->mStillOnlyPipe = strcmp(atts[1], "true") == 0;
+    } else if (strcmp(name, "disableBLCByAGain") == 0) {
+        int size = strlen(atts[1]);
+        char src[size + 1];
+        MEMCPY_S(src, size, atts[1], size);
+        src[size] = '\0';
+        char* savePtr = nullptr;
+        char* tablePtr = strtok_r(src, ",", &savePtr);
+        if (tablePtr) profiles->pCurrentCam->mDisableBLCAGainLow = atoi(tablePtr);
+        tablePtr = strtok_r(nullptr, ",", &savePtr);
+        if (tablePtr) profiles->pCurrentCam->mDisableBLCAGainHigh = atoi(tablePtr);
+        profiles->pCurrentCam->mDisableBLCByAGain = true;
     }
 }
 

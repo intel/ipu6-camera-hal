@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Intel Corporation.
+ * Copyright (C) 2015-2022 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -158,6 +158,7 @@ struct ExecutorPolicy {
 struct ExecutorDepth {
     std::vector<std::string> bundledExecutors;
     std::vector<int> depths;
+    int64_t startSequence;
 };
 
 // <pgname, port of input refer terminal>
@@ -188,6 +189,7 @@ struct CommonConfig {
     int cameraNumber;
     int videoStreamNum;
     bool supportIspTuningUpdate;
+    bool supportHwJpegEncode;
 // ENABLE_EVCP_S
     bool isGpuEvcpEnabled;
 // ENABLE_EVCP_E
@@ -201,6 +203,7 @@ struct CommonConfig {
         cameraNumber = -1;
         videoStreamNum = DEFAULT_VIDEO_STREAM_NUM;
         supportIspTuningUpdate = false;
+        supportHwJpegEncode = true;
 // ENABLE_EVCP_S
         isGpuEvcpEnabled = false;
 // ENABLE_EVCP_E

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Intel Corporation.
+ * Copyright (C) 2015-2022 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,6 +74,7 @@ int ParameterGenerator::reset() {
     LOG1("<id%d>%s", mCameraId, __func__);
     AutoMutex l(mParamsLock);
     mRequestParamMap.clear();
+    CLEAR(mPaCcm);
 
     return OK;
 }
@@ -256,11 +257,7 @@ int ParameterGenerator::updateWithAiqResultsL(int64_t sequence, Parameters* para
 
     // Update AWB related parameters
     updateAwbGainsL(params, aiqResult->mAwbResults);
-    camera_color_transform_t ccm;
-    MEMCPY_S(ccm.color_transform, sizeof(ccm.color_transform),
-             aiqResult->mPaResults.color_conversion_matrix,
-             sizeof(aiqResult->mPaResults.color_conversion_matrix));
-    params->setColorTransform(ccm);
+    updateCcmL(params, aiqResult);
 
     camera_color_gains_t colorGains;
     colorGains.color_gains_rggb[0] = aiqResult->mPaResults.color_gains.r;
@@ -348,6 +345,34 @@ int ParameterGenerator::updateAwbGainsL(Parameters* params, const cca::cca_awb_r
     LOG2("awb result: %f, %f", awbResult.r_per_g, awbResult.b_per_g);
     params->setAwbResult(&awbResult);
 
+    return OK;
+}
+
+int ParameterGenerator::updateCcmL(Parameters* params, const AiqResult* aiqResult) {
+    // CCM has tiny changes (delta ~0.0002) during AWB lock.
+    // Report previous values if delta can be ignored to meet CTS requirement.
+    bool valueConsistent = false;
+    if (aiqResult->mAiqParam.awbForceLock) {
+        valueConsistent = true;
+        for (int i = 0; i < 3 && valueConsistent; i++) {
+            for (int j = 0; j < 3; j++) {
+                float delta = mPaCcm.color_transform[i][j] -
+                              aiqResult->mPaResults.color_conversion_matrix[i][j];
+                if (fabs(delta) > 0.001) {
+                    valueConsistent = false;
+                    LOG2("<seq%ld>ccm changed during awb force lock", aiqResult->mSequence);
+                    break;
+                }
+            }
+        }
+    }
+
+    if (!valueConsistent) {
+        MEMCPY_S(mPaCcm.color_transform, sizeof(mPaCcm.color_transform),
+                 aiqResult->mPaResults.color_conversion_matrix,
+                 sizeof(aiqResult->mPaResults.color_conversion_matrix));
+    }
+    params->setColorTransform(mPaCcm);
     return OK;
 }
 

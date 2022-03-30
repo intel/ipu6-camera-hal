@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2021 Intel Corporation
+ * Copyright (C) 2020-2022 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -545,9 +545,9 @@ int GPUExecutor::runTnrFrame(const std::shared_ptr<CameraBuffer>& inBuf,
     }
 
     // wait other executors after parameters update finished, sync the main computing stage only
-    if (mPolicyManager && sequence > 0) {
+    if (mPolicyManager) {
         // Check if need to wait other executors.
-        mPolicyManager->wait(mName);
+        mPolicyManager->wait(mName, sequence);
     }
 
     bool paramSyncUpdate = (mStreamId == VIDEO_STREAM_ID) ? false : true;

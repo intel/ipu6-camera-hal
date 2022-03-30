@@ -2002,15 +2002,31 @@ int Parameters::getTonemapCurves(camera_tonemap_curves_t& curves) const {
     return (curves.rSize && curves.bSize && curves.gSize) ? OK : NAME_NOT_FOUND;
 }
 
-int Parameters::setPowerMode(camera_power_mode_t mode)
-{
+int Parameters::setRawDataOutput(raw_data_output_t mode) {
+    uint8_t value = mode;
+    ParameterHelper::AutoWLock wl(mData);
+    return ParameterHelper::getMetadata(mData).update(INTEL_VENDOR_CAMERA_RAW_DATA_OUTPUT,
+                                                      &value, 1);
+}
+
+int Parameters::getRawDataOutput(raw_data_output_t &mode) const {
+    ParameterHelper::AutoRLock rl(mData);
+    auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_VENDOR_CAMERA_RAW_DATA_OUTPUT);
+    if (entry.count != 1) {
+        return NAME_NOT_FOUND;
+    }
+
+    mode = (raw_data_output_t)entry.data.u8[0];
+    return OK;
+}
+
+int Parameters::setPowerMode(camera_power_mode_t mode) {
     uint8_t value = mode;
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(INTEL_VENDOR_CAMERA_POWER_MODE, &value, 1);
 }
 
-int Parameters::getPowerMode(camera_power_mode_t &mode) const
-{
+int Parameters::getPowerMode(camera_power_mode_t &mode) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_VENDOR_CAMERA_POWER_MODE);
     if (entry.count != 1) {
@@ -2021,15 +2037,13 @@ int Parameters::getPowerMode(camera_power_mode_t &mode) const
     return OK;
 }
 
-int Parameters::setTotalExposureTarget(int64_t totalExposureTarget)
-{
+int Parameters::setTotalExposureTarget(int64_t totalExposureTarget) {
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(INTEL_VENDOR_CAMERA_TOTAL_EXPOSURE_TARGET,
                                                       &totalExposureTarget, 1);
 }
 
-int Parameters::getTotalExposureTarget(int64_t &totalExposureTarget) const
-{
+int Parameters::getTotalExposureTarget(int64_t &totalExposureTarget) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData,
                                                    INTEL_VENDOR_CAMERA_TOTAL_EXPOSURE_TARGET);

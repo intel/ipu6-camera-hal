@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2021 Intel Corporation.
+ * Copyright (C) 2018-2022 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -143,6 +143,9 @@ int DeviceBase::queueBuffer(int64_t sequence) {
         AutoMutex l(mBufferLock);
         mPendingBuffers.pop_front();
         mBuffersInDevice.push_back(buffer);
+    } else {
+        LOGE("%s, index:%u size:%u, memory:%u, used:%u", __func__, buffer->getIndex(),
+             buffer->getBufferSize(), buffer->getMemory(), buffer->getBytesused());
     }
 
     return ret;

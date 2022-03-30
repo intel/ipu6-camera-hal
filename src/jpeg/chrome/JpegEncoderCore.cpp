@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2021 Intel Corporation
+ * Copyright (C) 2019-2022 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@
 #include "iutils/CameraLog.h"
 #include "iutils/Errors.h"
 #include "iutils/Utils.h"
+#include "PlatformData.h"
 
 namespace icamera {
 
@@ -61,7 +62,8 @@ bool JpegEncoderCore::doJpegEncode(EncodePackage* pa) {
     nsecs_t startTime = CameraUtils::systemTime();
 
     bool ret = false;
-    if (pa->inputBufferHandle && pa->outputBufferHandle) {
+    if (pa->inputBufferHandle && pa->outputBufferHandle &&
+        PlatformData::supportHwJpegEncode()) {
         LOG1("%s, use buffer handle to do jpeg encode input: %p, output: %p", __func__,
              pa->inputBufferHandle, pa->outputBufferHandle);
         ret = mJpegCompressor->CompressImageFromHandle(

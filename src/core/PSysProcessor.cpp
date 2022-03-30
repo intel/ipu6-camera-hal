@@ -541,13 +541,28 @@ void PSysProcessor::handleRawReprocessing(CameraBufferPortMap *srcBuffers,
                  __func__, inputSequence, settingSequence);
             return;
         }
-        // Return opaque RAW data
-        sensor_raw_info_t opaqueRawInfo = { inputSequence, timestamp };
+
+        Parameters params;
+        if (mParameterGenerator &&
+            mParameterGenerator->getParameters(inputSequence, &params, true, false) == OK) {
+            raw_data_output_t rawDataOutput = CAMERA_RAW_DATA_OUTPUT_OFF;
+            params.getRawDataOutput(rawDataOutput);
+
+            if (rawDataOutput == CAMERA_RAW_DATA_OUTPUT_ON) {
+                uint32_t srcBufferSize = mainBuf->getBufferSize();
+
+                if (srcBufferSize <= rawOutputBuffer->getBufferSize()) {
+                    MEMCPY_S(rawOutputBuffer->getBufferAddr(), rawOutputBuffer->getBufferSize(),
+                             mainBuf->getBufferAddr(), srcBufferSize);
+                } else {
+                    LOGW("%s, raw dst size %d is smaller than raw src size %d", __func__,
+                         rawOutputBuffer->getBufferSize(), srcBufferSize);
+                }
+            }
+        }
 
         rawOutputBuffer->updateV4l2Buffer(*mainBuf->getV4L2Buffer().Get());
 
-        MEMCPY_S(rawOutputBuffer->getBufferAddr(), rawOutputBuffer->getBufferSize(),
-                 &opaqueRawInfo, sizeof(opaqueRawInfo));
         LOG2("%s, timestamp %ld, inputSequence %ld, dstBufferSize %d, addr %p", __func__,
              timestamp, inputSequence, rawOutputBuffer->getBufferSize(),
              rawOutputBuffer->getBufferAddr());

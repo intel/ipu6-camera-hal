@@ -92,6 +92,7 @@ int AiqEngine::startEngine() {
 
     AutoMutex l(mEngineLock);
     mFirstAiqRunning = true;
+    mAiqResultStorage->resetAiqStatistics();
     mSensorManager->reset();
     mLensManager->start();
 

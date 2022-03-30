@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2021 Intel Corporation
+#  Copyright (C) 2021-2022 Intel Corporation
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -61,6 +61,28 @@ set(MODULE_IA_CSS_SRC
 set(MODULE_IA_CSS_HEADER_INCLUDE_DIR ${MODULE_IA_CSS_DIR}/ipu6se/include PARENT_SCOPE)
 
 elseif("${IPU_VER}" STREQUAL "ipu6ep")
+set(MODULE_IA_CSS_SRC
+    ${MODULE_IA_CSS_DIR}/ipu6ep/src/ia_css_terminal.c
+    ${MODULE_IA_CSS_DIR}/ipu6ep/src/ia_css_psys_program_group_manifest.c
+    ${MODULE_IA_CSS_DIR}/ipu6ep/src/ia_css_psys_process_group.c
+    ${MODULE_IA_CSS_DIR}/ipu6ep/src/ia_css_rbm.c
+    ${MODULE_IA_CSS_DIR}/ipu6ep/src/ia_css_program_group_data.c
+    ${MODULE_IA_CSS_DIR}/ipu6ep/src/ia_css_psys_process_group_cmd_impl.c
+    ${MODULE_IA_CSS_DIR}/ipu6ep/src/ia_css_psys_process.c
+    ${MODULE_IA_CSS_DIR}/ipu6ep/src/vied_nci_psys_system.c
+    ${MODULE_IA_CSS_DIR}/ipu6ep/src/ia_css_psys_terminal.c
+    ${MODULE_IA_CSS_DIR}/ipu6ep/src/ia_css_program_group_param.c
+    ${MODULE_IA_CSS_DIR}/ipu6ep/src/ia_css_terminal_manifest.c
+    ${MODULE_IA_CSS_DIR}/ipu6ep/src/ia_css_psys_program_manifest.c
+    ${MODULE_IA_CSS_DIR}/ipu6ep/src/ia_css_psys_terminal_manifest.c
+    ${MODULE_IA_CSS_DIR}/ipu6ep/src/ia_css_kernel_bitmap.c
+    PARENT_SCOPE
+)
+
+set(MODULE_IA_CSS_HEADER_INCLUDE_DIR ${MODULE_IA_CSS_DIR}/ipu6ep/include PARENT_SCOPE)
+
+# Currently use the ipu6ep for ipu6epmtl
+elseif("${IPU_VER}" STREQUAL "ipu6epmtl")
 set(MODULE_IA_CSS_SRC
     ${MODULE_IA_CSS_DIR}/ipu6ep/src/ia_css_terminal.c
     ${MODULE_IA_CSS_DIR}/ipu6ep/src/ia_css_psys_program_group_manifest.c

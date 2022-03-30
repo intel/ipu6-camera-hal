@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2021 Intel Corporation
+ * Copyright (C) 2017-2022 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,7 +73,7 @@ void PolicyManager::setActive(bool isActive)
 }
 
 int PolicyManager::addExecutorBundle(const std::vector<std::string>& executors,
-                                     const std::vector<int>& depths) {
+                                     const std::vector<int>& depths, int64_t startSequence) {
     LOG1("@%s: camera id:%d", __func__, mCameraId);
 
     AutoMutex lock(mPolicyLock);
@@ -98,6 +98,7 @@ int PolicyManager::addExecutorBundle(const std::vector<std::string>& executors,
     bundle->mExecutorNum = size;
     bundle->mMaxDepth = maxDepth;
     bundle->mWaitingCount = 0;
+    bundle->mStartSequence = startSequence;
     bundle->mIsActive = true;
 
     mBundles.push_back(bundle);
@@ -105,7 +106,7 @@ int PolicyManager::addExecutorBundle(const std::vector<std::string>& executors,
     return OK;
 }
 
-int PolicyManager::wait(std::string executorName)
+int PolicyManager::wait(std::string executorName, int64_t sequence)
 {
     ExecutorBundle* bundle = nullptr;
     {
@@ -128,6 +129,8 @@ int PolicyManager::wait(std::string executorName)
 
     // If it's already inactive, there is no need to align the executors anymore.
     if (!bundle->mIsActive) return OK;
+    // start to sync when frame sequence exceed the setting sequence
+    if (sequence <= bundle->mStartSequence) return OK;
 
     ExecutorData& executorData = bundle->mExecutorData[executorName];
     executorData.mRunCount++;
