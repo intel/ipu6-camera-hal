@@ -541,6 +541,26 @@ void PSysProcessor::handleRawReprocessing(CameraBufferPortMap *srcBuffers,
                  __func__, inputSequence, settingSequence);
             return;
         }
+
+        Parameters params;
+        if (mParameterGenerator &&
+            mParameterGenerator->getParameters(inputSequence, &params, true, false) == OK) {
+            raw_data_output_t rawDataOutput = CAMERA_RAW_DATA_OUTPUT_OFF;
+            params.getRawDataOutput(rawDataOutput);
+
+            if (rawDataOutput == CAMERA_RAW_DATA_OUTPUT_ON) {
+                uint32_t srcBufferSize = mainBuf->getBufferSize();
+
+                if (srcBufferSize <= rawOutputBuffer->getBufferSize()) {
+                    MEMCPY_S(rawOutputBuffer->getBufferAddr(), rawOutputBuffer->getBufferSize(),
+                             mainBuf->getBufferAddr(), srcBufferSize);
+                } else {
+                    LOGW("%s, raw dst size %d is smaller than raw src size %d", __func__,
+                         rawOutputBuffer->getBufferSize(), srcBufferSize);
+                }
+            }
+        }
+
         // Return opaque RAW data
         sensor_raw_info_t opaqueRawInfo = { inputSequence, timestamp };
 

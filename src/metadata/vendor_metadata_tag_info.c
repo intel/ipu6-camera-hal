@@ -59,6 +59,7 @@ static tag_info_t intel_vendor_camera[INTEL_VENDOR_CAMERA_END -
 // ENABLE_EVCP_E
     { "totalExposureTarget",           ICAMERA_TYPE_INT64  },
     { "totalExposureTargetRange",      ICAMERA_TYPE_INT64  },
+    { "rawDataOutput",                 ICAMERA_TYPE_BYTE   },
 };
 
 tag_info_t *vendor_tag_info[INTEL_VENDOR_SECTION_COUNT] = {
@@ -216,6 +217,21 @@ int vendor_metadata_enum_snprint(uint32_t tag,
             break;
         }
         case INTEL_VENDOR_CAMERA_TOTAL_EXPOSURE_TARGET_RANGE: {
+            break;
+        }
+        case INTEL_VENDOR_CAMERA_RAW_DATA_OUTPUT: {
+            switch (value) {
+                case INTEL_VENDOR_CAMERA_RAW_DATA_OUTPUT_OFF:
+                    msg = "OFF";
+                    ret = 0;
+                    break;
+                case INTEL_VENDOR_CAMERA_RAW_DATA_OUTPUT_ON:
+                    msg = "ON";
+                    ret = 0;
+                    break;
+                default:
+                    msg = "error: enum value out of range";
+            }
             break;
         }
 

@@ -597,6 +597,17 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
         pCurrentCam->mSupportPrivacy = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "stillOnlyPipe") == 0) {
         pCurrentCam->mStillOnlyPipe = strcmp(atts[1], "true") == 0;
+    } else if (strcmp(name, "disableBLCByAGain") == 0) {
+        int size = strlen(atts[1]);
+        char src[size + 1];
+        MEMCPY_S(src, size, atts[1], size);
+        src[size] = '\0';
+        char* savePtr = nullptr;
+        char* tablePtr = strtok_r(src, ",", &savePtr);
+        if (tablePtr) profiles->pCurrentCam->mDisableBLCAGainLow = atoi(tablePtr);
+        tablePtr = strtok_r(nullptr, ",", &savePtr);
+        if (tablePtr) profiles->pCurrentCam->mDisableBLCAGainHigh = atoi(tablePtr);
+        profiles->pCurrentCam->mDisableBLCByAGain = true;
     }
 }
 

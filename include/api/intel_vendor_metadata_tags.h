@@ -75,6 +75,7 @@ typedef enum vendor_metadata_tag {
 // ENABLE_EVCP_E
     INTEL_VENDOR_CAMERA_TOTAL_EXPOSURE_TARGET,        // int64        | public
     INTEL_VENDOR_CAMERA_TOTAL_EXPOSURE_TARGET_RANGE,  // int64[]      | public
+    INTEL_VENDOR_CAMERA_RAW_DATA_OUTPUT,              // enum         | public
     INTEL_VENDOR_CAMERA_END,
 } vendor_metadata_tag_t;
 
@@ -131,4 +132,9 @@ typedef enum vendor_metadata_enum_intel_vendor_camera_ic_ff_mode {
 } vendor_metadata_enum_intel_vendor_camera_ic_ff_mode_t;
 
 // ENABLE_EVCP_E
+// INTEL_VENDOR_CAMERA_RAW_DATA_OUTPUT
+typedef enum vendor_metadata_enum_intel_vendor_camera_raw_data_output {
+    INTEL_VENDOR_CAMERA_RAW_DATA_OUTPUT_OFF,
+    INTEL_VENDOR_CAMERA_RAW_DATA_OUTPUT_ON,
+} vendor_metadata_enum_intel_vendor_camera_raw_data_output_t;
 

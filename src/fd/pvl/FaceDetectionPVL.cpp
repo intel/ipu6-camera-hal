@@ -182,12 +182,8 @@ bool FaceDetectionPVL::threadLoop() {
     {
         ConditionLock lock(mRunBufQueueLock);
         if (mRunPvlBufQueue.empty()) {
-            std::cv_status ret = mRunCondition.wait_for(
-                lock, std::chrono::nanoseconds(kMaxDuration * SLOWLY_MULTIPLIER));
-            if (ret == std::cv_status::timeout) {
-                LOGW("wait camera buffer time out");
-            }
-
+            mRunCondition.wait_for(lock,
+                                   std::chrono::nanoseconds(kMaxDuration * SLOWLY_MULTIPLIER));
             return true;
         }
         faceParams = mRunPvlBufQueue.front();

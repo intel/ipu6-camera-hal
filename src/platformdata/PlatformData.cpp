@@ -1409,4 +1409,10 @@ bool PlatformData::getSupportPrivacy(int cameraId) {
 bool PlatformData::isStillOnlyPipeEnabled(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mStillOnlyPipe;
 }
+
+bool PlatformData::getDisableBLCByAGain(int cameraId, int& low, int& high) {
+    low = getInstance()->mStaticCfg.mCameras[cameraId].mDisableBLCAGainLow;
+    high = getInstance()->mStaticCfg.mCameras[cameraId].mDisableBLCAGainHigh;
+    return getInstance()->mStaticCfg.mCameras[cameraId].mDisableBLCByAGain;
+}
 }  // namespace icamera
