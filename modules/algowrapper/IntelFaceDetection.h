@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Intel Corporation
+ * Copyright (C) 2019-2022 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,6 @@ class IntelFaceDetection {
     pvl_face_detection* mFDHandle;
     unsigned int mMaxFacesNum;
     FaceDetectionRunParams mMemRunBufs[MAX_STORE_FACE_DATA_BUF_NUM];
-    void convertCoordinate(int faceId, int width, int height, const pvl_rect& src, pvl_rect* dst);
 
     DISALLOW_COPY_AND_ASSIGN(IntelFaceDetection);
 };

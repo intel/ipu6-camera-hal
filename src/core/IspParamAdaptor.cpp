@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Intel Corporation.
+ * Copyright (C) 2015-2022 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,8 +44,7 @@ IspParamAdaptor::IspParamAdaptor(int cameraId) :
         mIpuOutputFormat(V4L2_PIX_FMT_NV12),
         mGraphConfig(nullptr),
         mIntelCca(nullptr),
-        mGammaTmOffset(-1),
-        mIspTuningIndex(-1) {
+        mGammaTmOffset(-1) {
     LOG1("<id%d>@%s", mCameraId, __func__);
     CLEAR(mLastPalDataForVideoPipe);
 
@@ -246,21 +245,20 @@ int IspParamAdaptor::configure(const stream_t &stream, ConfigMode configMode,
     if (PlatformData::supportUpdateTuning()) {
         for (auto& ispParamIt : mStreamIdToIspParameterMap) {
             int ispTuningIndex = mGraphConfig->getTuningModeByStreamId(ispParamIt.first);
-            // Use the tuning mode in video pipe to update the isp tuning data
-            if (ispParamIt.first == VIDEO_STREAM_ID &&
-                ispTuningIndex != -1 && ispTuningIndex != mIspTuningIndex) {
+            // Use the tuning mode in graph to update the isp tuning data
+            if (ispTuningIndex != -1) {
                 uint8_t lardTag = cca::CCA_LARD_ISP;
                 ia_lard_input_params lardParam = {};
                 lardParam.isp_mode_index = ispTuningIndex;
                 cca::cca_nvm tmpNvm = {};
 
-                ia_err iaErr = mIntelCca->updateTuning(lardTag, lardParam, tmpNvm);
+                ia_err iaErr = mIntelCca->updateTuning(lardTag, lardParam, tmpNvm,
+                                                       ispParamIt.first);
                 CheckAndLogError(iaErr != ia_err_none, UNKNOWN_ERROR,
                                  "%s, Failed to update isp tuning data. tuning_mode %d",
                                  __func__, ispTuningIndex);
-                mIspTuningIndex = ispTuningIndex;
-                LOG2("%s, Update isp tuning data. tuning_mode: %d", __func__, mIspTuningIndex);
-                break;
+                LOG2("%s, Update isp tuning data. tuning_mode:%d, streamId: %d,",
+                     __func__, ispTuningIndex, ispParamIt.first);
             }
         }
     }
@@ -947,7 +945,7 @@ void IspParamAdaptor::dumpIspParameter(int streamId, int64_t sequence, ia_binary
 }
 
 void IspParamAdaptor::dumpProgramGroup(ia_isp_bxt_program_group *pgPtr) {
-    if (!Log::isLogTagEnabled(GET_FILE_SHIFT(IspParamAdaptor))) return;
+    if (!Log::isLogTagEnabled(GET_FILE_SHIFT(IspParamAdaptor), CAMERA_DEBUG_LOG_LEVEL3)) return;
 
     LOG3("the kernel count: %d, run_kernels: %p", pgPtr->kernel_count, pgPtr->run_kernels);
     for (unsigned int i = 0; i < pgPtr->kernel_count; i++) {

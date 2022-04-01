@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Intel Corporation.
+ * Copyright (C) 2015-2022 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1347,6 +1347,10 @@ bool PlatformData::supportUpdateTuning() {
     return getInstance()->mStaticCfg.mCommonConfig.supportIspTuningUpdate;
 }
 
+bool PlatformData::supportHwJpegEncode() {
+    return getInstance()->mStaticCfg.mCommonConfig.supportHwJpegEncode;
+}
+
 bool PlatformData::isUsingGpuAlgo() {
     bool enabled = false;
     enabled |= isGpuTnrEnabled();
@@ -1384,8 +1388,8 @@ bool PlatformData::isDummyStillSink(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mDummyStillSink;
 }
 
-bool PlatformData::getForceFlushIpuBuffer(int cameraId) {
-    return getInstance()->mStaticCfg.mCameras[cameraId].mForceFlushIpuBuffer;
+bool PlatformData::removeCacheFlushOutputBuffer(int cameraId) {
+    return getInstance()->mStaticCfg.mCameras[cameraId].mRemoveCacheFlushOutputBuffer;
 }
 
 bool PlatformData::getPLCEnable(int cameraId) {

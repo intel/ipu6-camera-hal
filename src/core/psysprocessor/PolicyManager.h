@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018 Intel Corporation
+ * Copyright (C) 2017-2022 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,9 @@ public:
      * Create a bundle for the given set of executors, and add the bundle into mBundles.
      * These executors are guaranteed running at the same time.
      */
-    int addExecutorBundle(const std::vector<std::string>& executors, const std::vector<int>& depths);
+    int addExecutorBundle(const std::vector<std::string>& executors,
+                                     const std::vector<int>& depths,
+                                     int64_t startSequence);
 
     void setActive(bool isActive);
 
@@ -44,7 +46,7 @@ public:
      * Once all executors are ready to run, then a broadcast will be sent out to wake all
      * executors up and then run together.
      */
-    int wait(std::string executorName);
+    int wait(std::string executorName, int64_t sequence = 0);
 
 private:
     DISALLOW_COPY_AND_ASSIGN(PolicyManager);
@@ -64,6 +66,7 @@ private:
         int mExecutorNum;  // Indicates how many executors the bundle has.
         int mWaitingCount; // How many executors have already waited.
         bool mIsActive;
+        int64_t mStartSequence;
         //Guard for the Bundle data
         Mutex mLock;
         Condition mCondition;

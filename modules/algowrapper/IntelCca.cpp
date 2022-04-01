@@ -197,8 +197,8 @@ ia_err IntelCca::getAiqd(cca::cca_aiqd* aiqd) {
 }
 
 ia_err IntelCca::updateTuning(uint8_t lardTags, const ia_lard_input_params& lardParams,
-                              const cca::cca_nvm& nvm) {
-    ia_err ret = getIntelCCA()->updateTuning(lardTags, lardParams, nvm);
+                              const cca::cca_nvm& nvm, int32_t streamId) {
+    ia_err ret = getIntelCCA()->updateTuning(lardTags, lardParams, nvm, streamId);
     LOG2("@%s, ret:%d", __func__, ret);
 
     return ret;

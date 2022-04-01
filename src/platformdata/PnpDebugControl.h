@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Intel Corporation.
+ * Copyright (C) 2021-2022 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,6 +50,13 @@ class PnpDebugControl {
      */
     static bool useMockAAL();
 
+    /**
+     * the fake fps of mock AAL layer
+     *
+     * \return fps if set, otherwise return 30.
+     */
+
+    static float pnpMockFps();
     /**
      * check if 3A algo is skipped for PNP test
      *
@@ -130,7 +137,8 @@ class PnpDebugControl {
                   isBypassFDAlgo(false),
                   isBypassISys(false),
                   useMockHal(false),
-                  isBypassP2p(false) {}
+                  isBypassP2p(false),
+                  pnpMockFps(30.0) {}
         bool useMockAAL;
         bool isBypass3A;
         bool isBypassPAL;
@@ -141,6 +149,7 @@ class PnpDebugControl {
         bool isBypassISys;
         bool useMockHal;
         bool isBypassP2p;
+        float pnpMockFps;
     };
 
  private:

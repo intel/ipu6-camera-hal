@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Intel Corporation.
+ * Copyright (C) 2015-2022 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,8 @@ AiqUnit::AiqUnit(int cameraId, SensorHwCtrl *sensorHw, LensHw *lensHw) :
     // INTEL_DVS_S
     mDvs(nullptr),
     // INTEL_DVS_S
-    mCcaInitialized(false) {
+    mCcaInitialized(false),
+    mActiveStreamCount(0) {
     mAiqSetting = new AiqSetting(cameraId);
     mAiqEngine = new AiqEngine(cameraId, sensorHw, lensHw, mAiqSetting);
 
@@ -95,6 +96,7 @@ int AiqUnit::init() {
         // LOCAL_TONEMAP_E
     }
 
+    mActiveStreamCount = 0;
     mAiqUnitState = AIQ_UNIT_INIT;
 
     return OK;
@@ -114,6 +116,7 @@ int AiqUnit::deinit() {
     mAiqSetting->deinit();
 
     deinitIntelCcaHandle();
+    mActiveStreamCount = 0;
     mAiqUnitState = AIQ_UNIT_NOT_INIT;
 
     return OK;
@@ -125,7 +128,8 @@ int AiqUnit::configure(const stream_config_t *streamList) {
     AutoMutex l(mAiqUnitLock);
     LOG1("<id%d>@%s", mCameraId, __func__);
 
-    if (mAiqUnitState != AIQ_UNIT_INIT && mAiqUnitState != AIQ_UNIT_STOP) {
+    if (mAiqUnitState != AIQ_UNIT_INIT && mAiqUnitState != AIQ_UNIT_STOP &&
+        mAiqUnitState != AIQ_UNIT_CONFIGURED) {
         LOGW("%s: configure in wrong state: %d", __func__, mAiqUnitState);
         return BAD_VALUE;
     }
@@ -154,6 +158,22 @@ int AiqUnit::configure(const stream_config_t *streamList) {
 }
 
 int AiqUnit::initIntelCcaHandle(const std::vector<ConfigMode> &configModes) {
+    if (PlatformData::supportUpdateTuning() && !configModes.empty()) {
+        std::shared_ptr<IGraphConfig> graphConfig =
+            IGraphConfigManager::getInstance(mCameraId)->getGraphConfig(configModes[0]);
+        if (graphConfig != nullptr) {
+            std::vector<int32_t> streamIds;
+            graphConfig->graphGetStreamIds(streamIds);
+
+            if (streamIds.size() != mActiveStreamCount) {
+                LOG2("%s, the pipe count(%zu) changed, need to re-init CCA", __func__,
+                     streamIds.size());
+                deinitIntelCcaHandle();
+                mActiveStreamCount = streamIds.size();
+            }
+        }
+    }
+
     if (mCcaInitialized) return OK;
 
     LOG1("<id%d>@%s", mCameraId, __func__);
@@ -231,6 +251,20 @@ int AiqUnit::initIntelCcaHandle(const std::vector<ConfigMode> &configModes) {
         }
         // INTEL_DVS_E
 
+        if (PlatformData::supportUpdateTuning()) {
+            std::shared_ptr<IGraphConfig> graphConfig =
+                IGraphConfigManager::getInstance(mCameraId)->getGraphConfig(cfg);
+            if (graphConfig != nullptr) {
+                std::vector<int32_t> streamIds;
+                graphConfig->graphGetStreamIds(streamIds);
+                params.aic_stream_ids.count = streamIds.size();
+                CheckAndLogError(streamIds.size() > cca::MAX_STREAM_NUM, UNKNOWN_ERROR,
+                        "%s, Too many streams: %zu in graph", __func__, streamIds.size());
+                for (size_t i = 0; i < streamIds.size(); ++i) {
+                    params.aic_stream_ids.ids[i] = streamIds[i];
+                }
+            }
+        }
         IntelCca *intelCca = IntelCca::getInstance(mCameraId, tuningMode);
         CheckAndLogError(!intelCca, UNKNOWN_ERROR,
                          "Failed to get cca. mode:%d cameraId:%d", tuningMode, mCameraId);
@@ -365,11 +399,15 @@ std::vector<EventListener*> AiqUnit::getStatsEventListener() {
 
 int AiqUnit::setParameters(const Parameters &params) {
     AutoMutex l(mAiqUnitLock);
+    if (mDvs) {
+        mDvs->setParameter(params);
+    }
+
     return mAiqSetting->setParameters(params);
 }
 
 void AiqUnit::dumpCcaInitParam(const cca::cca_init_params params) {
-    if (!Log::isLogTagEnabled(GET_FILE_SHIFT(AiqUnit))) return;
+    if (!Log::isLogTagEnabled(GET_FILE_SHIFT(AiqUnit), CAMERA_DEBUG_LOG_LEVEL3)) return;
 
     LOG3("aiqStorageLen:%d", params.aiqStorageLen);
     LOG3("aecFrameDelay:%d", params.aecFrameDelay);

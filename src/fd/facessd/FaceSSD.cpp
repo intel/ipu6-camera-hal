@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Intel Corporation
+ * Copyright (C) 2021-2022 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -131,12 +131,8 @@ bool FaceSSD::threadLoop() {
     {
         ConditionLock lock(mRunBufQueueLock);
         if (mRunGoogleBufQueue.empty()) {
-            std::cv_status ret = mRunCondition.wait_for(
-                lock, std::chrono::nanoseconds(kMaxDuration * SLOWLY_MULTIPLIER));
-            if (ret == std::cv_status::timeout) {
-                LOGW("wait camera buffer time out");
-            }
-
+            mRunCondition.wait_for(lock,
+                                   std::chrono::nanoseconds(kMaxDuration * SLOWLY_MULTIPLIER));
             return true;
         }
         faceParams = mRunGoogleBufQueue.front();
@@ -149,27 +145,6 @@ bool FaceSSD::threadLoop() {
     return true;
 }
 
-void FaceSSD::convertCoordinate(int width, int height, const human_sensing::CrosFace& src,
-                                human_sensing::CrosFace* dst) {
-    CheckAndLogError(!dst, VOID_VALUE, "dst is nullptr");
-
-    const camera_coordinate_system_t iaCoordinate = {IA_COORDINATE_LEFT, IA_COORDINATE_TOP,
-                                                     IA_COORDINATE_RIGHT, IA_COORDINATE_BOTTOM};
-    const camera_coordinate_system_t faceCoordinate = {0, 0, width, height};
-
-    camera_coordinate_t topLeft = AiqUtils::convertCoordinateSystem(
-        faceCoordinate, iaCoordinate,
-        {static_cast<int>(src.bounding_box.x1), static_cast<int>(src.bounding_box.y1)});
-    camera_coordinate_t bottomRight = AiqUtils::convertCoordinateSystem(
-        faceCoordinate, iaCoordinate,
-        {static_cast<int>(src.bounding_box.x2), static_cast<int>(src.bounding_box.y2)});
-
-    dst->bounding_box.x1 = static_cast<float>(topLeft.x);     /* left */
-    dst->bounding_box.y1 = static_cast<float>(topLeft.y);     /* top */
-    dst->bounding_box.x2 = static_cast<float>(bottomRight.x); /* right */
-    dst->bounding_box.y2 = static_cast<float>(bottomRight.y); /* bottom */
-}
-
 int FaceSSD::getFaceNum() {
     AutoMutex l(mFaceResultLock);
     return mResult.faceNum;
@@ -178,11 +153,8 @@ int FaceSSD::getFaceNum() {
 void FaceSSD::getResultFor3A(cca::cca_face_state* faceState) {
     LOG2("@%s", __func__);
 
-    float fovRatioW = mFovInfo.fovRatioW;
-    float fovRatioH = mFovInfo.fovRatioH;
-    float offsetW = mFovInfo.offsetW;
-    float offsetH = mFovInfo.offsetH;
-
+    camera_coordinate_system_t sysCoord = {IA_COORDINATE_LEFT, IA_COORDINATE_TOP,
+                                           IA_COORDINATE_RIGHT, IA_COORDINATE_BOTTOM};
     AutoMutex l(mFaceResultLock);
     FaceSSDResult* faceSsdResult = &mResult;
     faceState->is_video_conf = true;
@@ -192,16 +164,17 @@ void FaceSSD::getResultFor3A(cca::cca_face_state* faceState) {
 
     for (int i = 0; i < faceSsdResult->faceNum; i++) {
         CLEAR(faceState->faces[i]);
-        human_sensing::CrosFace googleFaceResult = {};
-        convertCoordinate(mWidth, mHeight, faceSsdResult->faceSsdResults[i], &googleFaceResult);
-        faceState->faces[i].face_area.left = static_cast<int>(
-            static_cast<int>(googleFaceResult.bounding_box.x1) * fovRatioW + offsetW);
-        faceState->faces[i].face_area.top = static_cast<int>(
-            static_cast<int>(googleFaceResult.bounding_box.y1) * fovRatioH + offsetH);
-        faceState->faces[i].face_area.bottom = static_cast<int>(
-            static_cast<int>(googleFaceResult.bounding_box.y2) * fovRatioH + offsetH);
-        faceState->faces[i].face_area.right = static_cast<int>(
-            static_cast<int>(googleFaceResult.bounding_box.x2) * fovRatioW + offsetW);
+        faceState->faces[i].face_area.left =
+            static_cast<int>(faceSsdResult->faceSsdResults[i].bounding_box.x1);  // rect.left
+        faceState->faces[i].face_area.top =
+            static_cast<int>(faceSsdResult->faceSsdResults[i].bounding_box.y1);  // rect.top
+        faceState->faces[i].face_area.right =
+            static_cast<int>(faceSsdResult->faceSsdResults[i].bounding_box.x2);  // rect.right
+        faceState->faces[i].face_area.bottom =
+            static_cast<int>(faceSsdResult->faceSsdResults[i].bounding_box.y2);  // rect.bottom
+        convertFaceCoordinate(
+            sysCoord, &faceState->faces[i].face_area.left, &faceState->faces[i].face_area.top,
+            &faceState->faces[i].face_area.right, &faceState->faces[i].face_area.bottom);
         faceState->faces[i].rip_angle = 0;
         faceState->faces[i].rop_angle = 0;
         faceState->faces[i].tracking_id = i;
@@ -226,15 +199,6 @@ void FaceSSD::getResultFor3A(cca::cca_face_state* faceState) {
 void FaceSSD::getResultForApp(CVFaceDetectionAbstractResult* result) {
     LOG2("@%s", __func__);
 
-    camera_coordinate_system_t sysCoord = mRatioInfo.sysCoord;
-    int verticalCrop = mRatioInfo.verticalCrop;
-    int horizontalCrop = mRatioInfo.horizontalCrop;
-    bool imageRotationChanged = mRatioInfo.imageRotationChanged;
-    camera_coordinate_t srcCoord = {0, 0};
-    camera_coordinate_t destCoord = {0, 0};
-    const camera_coordinate_system_t fillFrameCoord = {0, 0, mWidth + horizontalCrop,
-                                                       mHeight + verticalCrop};
-
     CLEAR(*result);
     AutoMutex l(mFaceResultLock);
     FaceSSDResult* faceSsdResult = &mResult;
@@ -250,29 +214,9 @@ void FaceSSD::getResultForApp(CVFaceDetectionAbstractResult* result) {
             static_cast<int>(faceSsdResult->faceSsdResults[i].bounding_box.x2);  // rect.right
         result->faceRect[i * 4 + 3] =
             static_cast<int>(faceSsdResult->faceSsdResults[i].bounding_box.y2);  // rect.bottom
-        if (imageRotationChanged) {
-            camera_coordinate_t pointCoord = {0, 0};
-            pointCoord.x = result->faceRect[i * 4] + (horizontalCrop / 2);
-            pointCoord.y = result->faceRect[i * 4 + 1] + (verticalCrop / 2);
-            destCoord = AiqUtils::convertCoordinateSystem(fillFrameCoord, sysCoord, pointCoord);
-            result->faceRect[i * 4] = destCoord.x;      // rect.left
-            result->faceRect[i * 4 + 1] = destCoord.y;  // rect.top
-            pointCoord.x = result->faceRect[i * 4 + 2] + (horizontalCrop / 2);
-            pointCoord.y = result->faceRect[i * 4 + 3] + (verticalCrop / 2);
-            destCoord = AiqUtils::convertCoordinateSystem(fillFrameCoord, sysCoord, pointCoord);
-            result->faceRect[i * 4 + 2] = destCoord.x;  // rect.right
-            result->faceRect[i * 4 + 3] = destCoord.y;  // rect.bottom
-        } else {
-            srcCoord = {result->faceRect[i * 4], result->faceRect[i * 4 + 1]};
-            destCoord = AiqUtils::convertCoordinateSystem(fillFrameCoord, sysCoord, srcCoord);
-            result->faceRect[i * 4] = destCoord.x;      // rect.left
-            result->faceRect[i * 4 + 1] = destCoord.y;  // rect.top
-
-            srcCoord = {result->faceRect[i * 4 + 2], result->faceRect[i * 4 + 3]};
-            destCoord = AiqUtils::convertCoordinateSystem(fillFrameCoord, sysCoord, srcCoord);
-            result->faceRect[i * 4 + 2] = destCoord.x;  // rect.right
-            result->faceRect[i * 4 + 3] = destCoord.y;  // rect.bottom
-        }
+        convertFaceCoordinate(mRatioInfo.sysCoord, &result->faceRect[i * 4],
+                              &result->faceRect[i * 4 + 1], &result->faceRect[i * 4 + 2],
+                              &result->faceRect[i * 4 + 3]);
         LOG2("@%s, face info, id:%d, left:%d, top:%d, right:%d, bottom:%d", __func__, i,
              result->faceRect[i * 4], result->faceRect[i * 4 + 1], result->faceRect[i * 4 + 2],
              result->faceRect[i * 4 + 3]);

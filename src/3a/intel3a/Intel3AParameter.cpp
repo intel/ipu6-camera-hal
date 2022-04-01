@@ -703,7 +703,7 @@ void Intel3AParameter::fillAfTriggerResult(cca::cca_af_results* afResults) {
 }
 
 void Intel3AParameter::dumpParameter() {
-    if (!Log::isLogTagEnabled(GET_FILE_SHIFT(Intel3AParameter))) return;
+    if (!Log::isLogTagEnabled(GET_FILE_SHIFT(Intel3AParameter), CAMERA_DEBUG_LOG_LEVEL3)) return;
 
     LOG3("AE parameters: mode %d, bypass %d, frame_use %d, PerTicks %d", mAeMode,
          mAeParams.is_bypass, mAeParams.frame_use, mAePerTicks);

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Intel Corporation.
+ * Copyright (C) 2021-2022 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,6 +54,10 @@ PnpDebugControl::PnpDebugControl() {
 
 bool PnpDebugControl::useMockAAL() {
     return getInstance()->mStaticCfg.useMockAAL;
+}
+
+float PnpDebugControl::pnpMockFps() {
+    return getInstance()->mStaticCfg.pnpMockFps;
 }
 
 bool PnpDebugControl::isBypass3A() {
@@ -142,6 +146,8 @@ void PnpDebugParser::handlePowerConfig(PnpDebugParser* profiles, const char* nam
     LOG2("@%s, name:%s, atts[0]:%s, atts[1]: %s", __func__, name, atts[0], atts[1]);
     if (strcmp(name, "useMockAAL") == 0) {
         mStaticCfg->useMockAAL = strcmp(atts[1], "true") == 0;
+    } else if (strcmp(name, "pnpMockFps") == 0) {
+        mStaticCfg->pnpMockFps = atof(atts[1]);
     } else if (strcmp(name, "bypass3A") == 0) {
         mStaticCfg->isBypass3A = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "bypassPAL") == 0) {

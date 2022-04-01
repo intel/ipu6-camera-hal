@@ -57,7 +57,7 @@ class IntelCca {
     ia_err getMKN(ia_mkn_trg type, cca::cca_mkn* mkn);
     ia_err getAiqd(cca::cca_aiqd* aiqd);
     ia_err updateTuning(uint8_t lardTags, const ia_lard_input_params& lardParams,
-                        const cca::cca_nvm& nvm);
+                        const cca::cca_nvm& nvm, int32_t streamId);
 
     bool allocStatsDataMem(unsigned int size);
     void* getStatsDataBuffer();

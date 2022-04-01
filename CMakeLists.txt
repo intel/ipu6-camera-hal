@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017-2021 Intel Corporation
+#  Copyright (C) 2017-2022 Intel Corporation
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -119,14 +119,19 @@ endif()
 # IPU6_FEATURE_E
 
 # IPU6_SE_FEATURE_S
-if (IPU_VER MATCHES "ipu6sepla")
+if ("${IPU_VER}" STREQUAL "ipu6sepla")
     add_definitions(-DIPU_SYSVER_ipu6v3)
 endif()
 # IPU6_SE_FEATURE_E
 
-if (IPU_VER MATCHES "ipu6ep")
+if ("${IPU_VER}" STREQUAL "ipu6ep")
     message(INFO "add definition -DIPU_SYSVER_ipu6v5 for ipu6ep")
     add_definitions(-DIPU_SYSVER_ipu6v5)
+endif()
+
+if ("${IPU_VER}" STREQUAL "ipu6epmtl")
+    message(INFO "add definition -DIPU_SYSVER_ipu6v6 for ipu6ep")
+    add_definitions(-DIPU_SYSVER_ipu6v6)
 endif()
 
 include_directories(include
@@ -379,6 +384,11 @@ elseif("${IPU_VER}" STREQUAL "ipu6ep")
     else()
         message("Install ADL IPU6EP configure files")
         install(DIRECTORY config/linux/ipu6ep/ DESTINATION share/defaults/etc/camera)
+    endif()
+elseif("${IPU_VER}" STREQUAL "ipu6epmtl")
+    if("${PRODUCTION_NAME}" STREQUAL "mtl-ubuntu")
+        message("Install MTL ubuntu configure files")
+        install(DIRECTORY config/ubuntu/mtl/ DESTINATION share/defaults/etc/camera)
     endif()
 elseif("${IPU_VER}" STREQUAL "ipu6sepla")
     if("${PRODUCTION_NAME}" STREQUAL "penguin_peak")

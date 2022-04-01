@@ -128,7 +128,7 @@ namespace Log {
 void setDebugLevel(void);
 void print_log(bool enable, const char* module, const int level, const char* format, ...);
 bool isDebugLevelEnable(int level);
-bool isLogTagEnabled(int tag);
+bool isLogTagEnabled(int tag, int level = 0);
 // DUMP_ENTITY_TOPOLOGY_S
 bool isDumpMediaTopo(void);
 // DUMP_ENTITY_TOPOLOGY_E

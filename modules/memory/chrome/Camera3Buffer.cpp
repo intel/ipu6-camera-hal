@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013-2021 Intel Corporation
+ * Copyright (C) 2013-2022 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -162,8 +162,8 @@ icamera::status_t Camera3Buffer::init(const camera3_stream_buffer* aBuffer, int 
                                                   mHalBuffer.s.height, false, false, false);
     mLocked = false;
     mUsage = aBuffer->stream->usage;
-    mHalBuffer.flags = IS_NO_FLUSH_USAGE(mUsage) ? 0 : camera_buffer_flags_t::BUFFER_FLAG_SW_WRITE
-                                                     | camera_buffer_flags_t::BUFFER_FLAG_SW_READ;
+    mHalBuffer.flags = camera_buffer_flags_t::BUFFER_FLAG_SW_WRITE
+                       | camera_buffer_flags_t::BUFFER_FLAG_SW_READ;
     mInit = true;
     mHalBuffer.addr = nullptr;
     mUserBuffer = *aBuffer;

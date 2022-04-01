@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Intel Corporation
+ * Copyright (C) 2015-2022 Intel Corporation
  * Copyright 2008-2017, The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -277,6 +277,8 @@ void CameraParser::handleCommon(CameraParser* profiles, const char* name, const 
         cfg->videoStreamNum = val > 0 ? val : DEFAULT_VIDEO_STREAM_NUM;
     } else if (strcmp(name, "supportIspTuningUpdate") == 0) {
         cfg->supportIspTuningUpdate = strcmp(atts[1], "true") == 0;
+    } else if (strcmp(name, "supportHwJpegEncode") == 0) {
+        cfg->supportHwJpegEncode = strcmp(atts[1], "true") == 0;
 // ENABLE_EVCP_S
     } else if (strcmp(name, "useGpuEvcp") == 0) {
         cfg->isGpuEvcpEnabled = strcmp(atts[1], "true") == 0;
@@ -587,8 +589,8 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
         pCurrentCam->mTnrExtraFrameNum = val > 0 ? val : DEFAULT_TNR_EXTRA_FRAME_NUM;
     } else if (strcmp(name, "dummyStillSink") == 0) {
         pCurrentCam->mDummyStillSink = strcmp(atts[1], "true") == 0;
-    } else if (!strcmp(name, "forceFlushIpuBuffer")) {
-        pCurrentCam->mForceFlushIpuBuffer = strcmp(atts[1], "true") == 0;
+    } else if (!strcmp(name, "removeCacheFlushOutputBuffer")) {
+        pCurrentCam->mRemoveCacheFlushOutputBuffer = strcmp(atts[1], "true") == 0;
     } else if (!strcmp(name, "isPLCEnable")) {
         pCurrentCam->mPLCEnable = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "stillOnlyPipe") == 0) {
@@ -2088,7 +2090,7 @@ void CameraParser::getSensorDataFromXmlFile(void) {
             sensorName.append(sensor);
         }
         sensorName.append(".xml");
-        LOG1("%s: parse sensor name %s", sensorName.c_str());
+        LOG1("%s: parse sensor name %s", __func__, sensorName.c_str());
         int ret = getDataFromXmlFile(sensorName);
         CheckAndLogError(ret != OK, VOID_VALUE, "Failed to get sensor profile data from %s",
                          sensorName.c_str());
@@ -2096,7 +2098,7 @@ void CameraParser::getSensorDataFromXmlFile(void) {
 }
 
 void CameraParser::dumpSensorInfo(void) {
-    if (!Log::isLogTagEnabled(GET_FILE_SHIFT(CameraParser))) return;
+    if (!Log::isLogTagEnabled(GET_FILE_SHIFT(CameraParser), CAMERA_DEBUG_LOG_LEVEL3)) return;
 
     LOG3("@%s, sensor number: %d ==================", __func__, getSensorNum());
     for (unsigned i = 0; i < getSensorNum(); i++) {

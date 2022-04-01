@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2021 Intel Corporation.
+ * Copyright (C) 2017-2022 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -190,7 +190,8 @@ int PSysDAG::createPipeExecutors(bool useTnrOutBuffer) {
         }
 
         if (foundExecutor)
-            mPolicyManager->addExecutorBundle(bundle.bundledExecutors, bundle.depths);
+            mPolicyManager->addExecutorBundle(bundle.bundledExecutors, bundle.depths,
+                                              bundle.startSequence);
     }
 
     return OK;

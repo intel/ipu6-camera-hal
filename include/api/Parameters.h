@@ -736,6 +736,14 @@ typedef enum {
 } camera_power_mode_t;
 
 /**
+ * \enum raw_data_output_t: Use to control if output raw data
+ */
+typedef enum {
+    CAMERA_RAW_DATA_OUTPUT_OFF = 0,
+    CAMERA_RAW_DATA_OUTPUT_ON,
+} raw_data_output_t;
+
+/**
  * \struct Sensor RAW data info for ZSL.
  */
 typedef struct {
@@ -2662,6 +2670,24 @@ public:
      * \return 0 if power mode was set, otherwise non-0 value is returned.
      */
     int getPowerMode(camera_power_mode_t &mode) const;
+
+    /**
+     * \brief Set raw data output mode.
+     *
+     * \param[in] raw_data_output_t mode
+     *
+     * \return 0 if set successfully, otherwise non-0 value is returned.
+     */
+    int setRawDataOutput(raw_data_output_t mode);
+
+    /**
+     * \brief Get raw data output mode.
+     *
+     * \param[out] raw_data_output_t mode
+     *
+     * \return 0 if raw data output mode was set, otherwise non-0 value is returned.
+     */
+    int getRawDataOutput(raw_data_output_t &mode) const;
 
     /**
      * \brief Set total exposure target

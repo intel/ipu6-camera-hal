@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Intel Corporation.
+ * Copyright (C) 2015-2022 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -148,7 +148,6 @@ private:
     std::shared_ptr<IGraphConfig> mGraphConfig;
     IntelCca *mIntelCca;
     int mGammaTmOffset;
-    int mIspTuningIndex;
 
     struct PalRecord {
         int uuid;

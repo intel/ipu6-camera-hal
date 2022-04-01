@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2021 Intel Corporation.
+ * Copyright (C) 2017-2022 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -541,6 +541,26 @@ void PSysProcessor::handleRawReprocessing(CameraBufferPortMap *srcBuffers,
                  __func__, inputSequence, settingSequence);
             return;
         }
+
+        Parameters params;
+        if (mParameterGenerator &&
+            mParameterGenerator->getParameters(inputSequence, &params, true, false) == OK) {
+            raw_data_output_t rawDataOutput = CAMERA_RAW_DATA_OUTPUT_OFF;
+            params.getRawDataOutput(rawDataOutput);
+
+            if (rawDataOutput == CAMERA_RAW_DATA_OUTPUT_ON) {
+                uint32_t srcBufferSize = mainBuf->getBufferSize();
+
+                if (srcBufferSize <= rawOutputBuffer->getBufferSize()) {
+                    MEMCPY_S(rawOutputBuffer->getBufferAddr(), rawOutputBuffer->getBufferSize(),
+                             mainBuf->getBufferAddr(), srcBufferSize);
+                } else {
+                    LOGW("%s, raw dst size %d is smaller than raw src size %d", __func__,
+                         rawOutputBuffer->getBufferSize(), srcBufferSize);
+                }
+            }
+        }
+
         // Return opaque RAW data
         sensor_raw_info_t opaqueRawInfo = { inputSequence, timestamp };
 
@@ -854,8 +874,11 @@ void PSysProcessor::dispatchTask(CameraBufferPortMap &inBuf, CameraBufferPortMap
         }
         mSequencesInflight.insert(currentSequence);
     }  // End of lock mBufferQueueLock
-    LOG2("<id%d:seq:%ld>@%s, fake task %d, pending task: %zu", mCameraId, currentSequence,
-         __func__, fakeTask, mSequencesInflight.size());
+
+    int32_t userRequestId = -1;
+    mParameterGenerator->getUserRequestId(currentSequence, userRequestId);
+    LOG2("<id%d:seq:%ld:req:%d>@%s, fake task %d, pending task: %zu", mCameraId, currentSequence,
+         userRequestId, __func__, fakeTask, mSequencesInflight.size());
 
     // Prepare the task input paramerters including input and output buffers, settings etc.
     PSysTaskData taskParam;
@@ -883,7 +906,6 @@ void PSysProcessor::dispatchTask(CameraBufferPortMap &inBuf, CameraBufferPortMap
         }
 
         // Check if next sequence is used or not
-        int32_t userRequestId = -1;
         if (mParameterGenerator->getUserRequestId(currentSequence + 1, userRequestId) == OK) {
             taskParam.mNextSeqUsed = true;
         }
@@ -929,7 +951,16 @@ void PSysProcessor::onBufferDone(int64_t sequence, Port port,
     LOG2("<id%d:seq%ld>@%s, port %d", mCameraId, sequence, __func__, port);
 
     if (CameraDump::isDumpTypeEnable(DUMP_PSYS_OUTPUT_BUFFER)) {
-        CameraDump::dumpImage(mCameraId, camBuffer, M_PSYS, port);
+        int32_t userRequestId = -1;
+        if (mParameterGenerator->getUserRequestId(sequence, userRequestId) == OK &&
+            userRequestId >= 0) {
+            char desc[MAX_NAME_LEN];
+            int len = snprintf(desc, (MAX_NAME_LEN - 1), "_req#%d", userRequestId);
+            desc[len] = '\0';
+            CameraDump::dumpImage(mCameraId, camBuffer, M_PSYS, port, desc);
+        } else {
+            CameraDump::dumpImage(mCameraId, camBuffer, M_PSYS, port);
+        }
     }
 
     if (!needSkipOutputFrame(sequence)) {
