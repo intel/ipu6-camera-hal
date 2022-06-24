@@ -601,6 +601,7 @@ void Intel3AParameter::updateAfParameter(const aiq_parameter_t& param) {
 
     // Region
     mAfParams.focus_rect = {};
+    mAfParams.focus_metering_mode = ia_aiq_af_metering_mode_auto;
     if (!param.afRegions.empty()) {
         // Current only one AF metering window is supported, so use the latest one
         camera_window_t window = param.afRegions.back();
@@ -608,6 +609,7 @@ void Intel3AParameter::updateAfParameter(const aiq_parameter_t& param) {
             camera_coordinate_system_t frameCoord = {0, 0, param.resolution.width,
                                                      param.resolution.height};
             window = AiqUtils::convertToIaWindow(frameCoord, window);
+            mAfParams.focus_metering_mode = ia_aiq_af_metering_mode_touch;
             mAfParams.focus_rect = {window.left, window.top, window.right, window.bottom};
         }
     }

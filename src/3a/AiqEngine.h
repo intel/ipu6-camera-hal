@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Intel Corporation.
+ * Copyright (C) 2015-2022 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -88,7 +88,8 @@ class AiqEngine : public EventListener {
      */
     void handleEvent(EventData eventData);
 
-    int prepareStatsParams(cca::cca_stats_params* statsParams, AiqStatistics* aiqStatistics);
+    int prepareStatsParams(cca::cca_stats_params* statsParams, AiqStatistics* aiqStatistics,
+                           AiqResult* aiqResult);
 
     // Handle AIQ results except Exposure results which are handled in setSensorExposure
     void setAiqResult(AiqResult* aiqResult, bool skip);
@@ -129,13 +130,13 @@ class AiqEngine : public EventListener {
     AiqCore* mAiqCore;
     SensorManager* mSensorManager;
     LensManager* mLensManager;
+
+    int mRun3ACadence;
     bool mFirstAiqRunning;
     bool mAiqRunningForPerframe;
 
     // Guard for public API of AiqEngine.
     Mutex mEngineLock;
-
-    aiq_parameter_t mAiqParam;
 
     struct AiqRunningHistory {
         AiqResult* aiqResult;

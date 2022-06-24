@@ -918,7 +918,11 @@ void PSysProcessor::dispatchTask(CameraBufferPortMap &inBuf, CameraBufferPortMap
 
 void PSysProcessor::registerListener(EventType eventType, EventListener* eventListener) {
     // Only delegate stats event registration to deeper layer DAG and PipeExecutor
-    if ((eventType != EVENT_PSYS_STATS_BUF_READY) && (eventType != EVENT_PSYS_STATS_SIS_BUF_READY)) {
+    if ((eventType != EVENT_PSYS_STATS_BUF_READY) && (eventType != EVENT_PSYS_STATS_SIS_BUF_READY)
+    // INTEL_DVS_S
+        && eventType != EVENT_DVS_READY
+    // INTEL_DVS_E
+    ) {
         BufferQueue::registerListener(eventType, eventListener);
         return;
     }
@@ -995,6 +999,7 @@ void PSysProcessor::sendPsysRequestEvent(const CameraBufferPortMap* dstBuffers, 
             event.data.requestReady.timestamp =
                 timestamp > 0 ? timestamp : output.second->getUserBuffer()->timestamp;
             event.data.requestReady.sequence = sequence;
+            event.data.requestReady.requestId = output.second->getUserBuffer()->requestId;
 
             notifyListeners(event);
             break;

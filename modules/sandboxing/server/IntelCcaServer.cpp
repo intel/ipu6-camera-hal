@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2021 Intel Corporation
+ * Copyright (C) 2020-2022 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -117,7 +117,7 @@ status_t IntelCcaServer::updateZoom(void* pData, int dataSize) {
 
     intel_cca_update_zoom_data* params = static_cast<intel_cca_update_zoom_data*>(pData);
 
-    ia_err ret = mCca->updateZoom(params->inParams);
+    ia_err ret = mCca->updateZoom(params->streamId, params->inParams);
     CheckAndLogError(ret != ia_err_none, UNKNOWN_ERROR, "@%s, fails: %d", __func__, ret);
 
     return OK;
@@ -131,7 +131,7 @@ status_t IntelCcaServer::runDVS(void* pData, int dataSize) {
 
     intel_cca_run_dvs_data* params = static_cast<intel_cca_run_dvs_data*>(pData);
 
-    ia_err ret = mCca->runDVS(params->frameId);
+    ia_err ret = mCca->runDVS(params->streamId, params->frameId);
     CheckAndLogError(ret != ia_err_none, UNKNOWN_ERROR, "@%s, fails: %d", __func__, ret);
 
     return OK;

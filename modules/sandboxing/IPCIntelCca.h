@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2021 Intel Corporation.
+ * Copyright (C) 2020-2022 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,6 +72,7 @@ struct intel_cca_update_zoom_data {
     TuningMode tuningMode;
 
     cca::cca_dvs_zoom inParams;
+    uint32_t streamId;
 };
 
 struct intel_cca_run_dvs_data {
@@ -79,6 +80,7 @@ struct intel_cca_run_dvs_data {
     TuningMode tuningMode;
 
     uint64_t frameId;
+    uint32_t streamId;
 };
 
 struct intel_cca_run_aic_data {

@@ -836,6 +836,14 @@ int PipeLiteExecutor::notifyStatsDone(TuningMode tuningMode, const v4l2_buffer_t
         if (!statsBuf) continue;
 
         if (mStreamId != VIDEO_STREAM_ID) {
+            // DVS Zoom without STAT buffer.
+            {
+                EventData eventData;
+                eventData.type = EVENT_DVS_READY;
+                eventData.data.dvsRunReady.streamId = mStreamId;
+                notifyListeners(eventData);
+            }
+
             if (!PlatformData::isStillOnlyPipeEnabled(mCameraId)) {
                 LOG2("%s: Drop still pipe statistics data", __func__);
                 releaseStatsBuffer(statsBuf);

@@ -300,11 +300,14 @@ bool getTerminalPairs(int pgId, TERMINAL_PAIR_TYPE type, std::vector<TerminalPai
 
 bool isCompressionTerminal(int terminalId) {
     bool cmp = false;
-    /* only pg 187 terminal 3/7 and pg 189 terminal 0 support compression
-    ** tnr compression 189 terminal 4/6 not enabled in software
-    */
+    /*
+     * pg 187 terminal 3/7 and pg 189 terminal 0 support compression
+     * pg 196 termianl 0 support compression
+     * tnr compression 189 terminal 4/6 not enabled in software
+     */
     if (terminalId == psys_ipu6_isa_lb_input_high_uid ||
-        terminalId == psys_ipu6_isa_lb_output_uid || terminalId == psys_ipu6_bb_input_uid ||
+        terminalId == psys_ipu6_isa_lb_output_uid ||
+        terminalId == psys_ipu6_bb_input_uid || terminalId == psys_ipu6_bb_gdc_input_uid ||
         terminalId == psys_ipu6_bb_tnr_ref_in_uid || terminalId == psys_ipu6_bb_tnr_ref_out_uid) {
         cmp = true;
     }

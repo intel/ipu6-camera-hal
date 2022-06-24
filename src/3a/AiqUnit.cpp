@@ -245,6 +245,14 @@ int AiqUnit::initIntelCcaHandle(const std::vector<ConfigMode> &configModes) {
 
         // INTEL_DVS_S
         if (mDvs) {
+            std::shared_ptr<IGraphConfig> graphConfig =
+                IGraphConfigManager::getInstance(mCameraId)->getGraphConfig(cfg);
+            std::vector<int32_t> streamIds;
+            graphConfig->graphGetStreamIds(streamIds);
+            params.dvs_ids.count = streamIds.size();
+            for (size_t i = 0; i < streamIds.size(); ++i) {
+                params.dvs_ids.ids[i] = streamIds[i];
+            }
             ret = mDvs->configure(cfg, &params);
             CheckAndLogError(ret != OK, UNKNOWN_ERROR, "%s, configure DVS error", __func__);
             params.bitmap |= cca::CCA_MODULE_DVS;
@@ -389,13 +397,19 @@ std::vector<EventListener*> AiqUnit::getStatsEventListener() {
         eventListenerList.push_back(mLtm);
     }
     // LOCAL_TONEMAP_E
-    // INTEL_DVS_S
-    if (mDvs) {
-        eventListenerList.push_back(mDvs);
-    }
-    // INTEL_DVS_E
+
     return eventListenerList;
 }
+
+// INTEL_DVS_S
+std::vector<EventListener*> AiqUnit::getDVSEventListener() {
+    AutoMutex l(mAiqUnitLock);
+    std::vector<EventListener*> eventListenerList;
+    if (mDvs)
+        eventListenerList.push_back(mDvs);
+    return eventListenerList;
+}
+// INTEL_DVS_E
 
 int AiqUnit::setParameters(const Parameters &params) {
     AutoMutex l(mAiqUnitLock);

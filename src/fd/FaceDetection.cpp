@@ -153,12 +153,13 @@ void FaceDetection::printfFDRunRate() {
     mRequestRunTime = curTime;
 }
 
-void FaceDetection::runFaceDetection(const std::shared_ptr<camera3::Camera3Buffer>& ccBuf) {
+void FaceDetection::runFaceDetection(const std::shared_ptr<camera3::Camera3Buffer>& ccBuf,
+                                     bool forceSync) {
     CheckAndLogError(mInitialized == false, VOID_VALUE, "mInitialized is false");
 
     if (!faceRunningByCondition()) return;
 
-    if (PlatformData::isFaceEngineSyncRunning(mCameraId)) {
+    if (forceSync || PlatformData::isFaceEngineSyncRunning(mCameraId)) {
         runFaceDetectionBySync(ccBuf);
     } else {
         runFaceDetectionByAsync(ccBuf);

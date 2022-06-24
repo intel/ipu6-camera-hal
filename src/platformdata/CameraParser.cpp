@@ -279,6 +279,8 @@ void CameraParser::handleCommon(CameraParser* profiles, const char* name, const 
         cfg->supportIspTuningUpdate = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "supportHwJpegEncode") == 0) {
         cfg->supportHwJpegEncode = strcmp(atts[1], "true") == 0;
+    } else if (strcmp(name, "maxIsysTimeoutValue") == 0) {
+        cfg->maxIsysTimeoutValue = atoi(atts[1]);
 // ENABLE_EVCP_S
     } else if (strcmp(name, "useGpuEvcp") == 0) {
         cfg->isGpuEvcpEnabled = strcmp(atts[1], "true") == 0;
@@ -606,6 +608,8 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
         tablePtr = strtok_r(nullptr, ",", &savePtr);
         if (tablePtr) profiles->pCurrentCam->mDisableBLCAGainHigh = atoi(tablePtr);
         profiles->pCurrentCam->mDisableBLCByAGain = true;
+    } else if (strcmp(name, "resetLinkRoute") == 0) {
+        pCurrentCam->mResetLinkRoute = strcmp(atts[1], "true") == 0;
     }
 }
 
@@ -2003,6 +2007,8 @@ void CameraParser::getNVMDirectory(CameraParser* profiles) {
             if (found) break;
         }
         closedir(dir);
+    } else {
+        LOGE("Failed to open dir %s", nvmPath.c_str());
     }
 
     for (auto nvm : profiles->mNvmDeviceInfo) {
@@ -2012,6 +2018,8 @@ void CameraParser::getNVMDirectory(CameraParser* profiles) {
             profiles->pCurrentCam->mMaxNvmDataSize = nvm.dataSize;
             LOG2("NVM dir %s", profiles->pCurrentCam->mNvmDirectory.c_str());
             break;
+        } else {
+            LOGE("Failed to find NVM directory");
         }
     }
 }

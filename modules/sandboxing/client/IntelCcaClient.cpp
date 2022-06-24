@@ -234,14 +234,15 @@ ia_err IntelCca::runLTM(uint64_t frameId, const cca::cca_ltm_input_params& param
     return ret;
 }
 
-ia_err IntelCca::updateZoom(const cca::cca_dvs_zoom& params) {
-    LOG1("<id%d> @%s, tuningMode:%d", mCameraId, __func__, mTuningMode);
+ia_err IntelCca::updateZoom(uint32_t streamId, const cca::cca_dvs_zoom& params) {
+    LOG1("<id%d> @%s, tuningMode:%d, streamId: %u", mCameraId, __func__, mTuningMode, streamId);
 
     intel_cca_update_zoom_data* zoomParams =
         static_cast<intel_cca_update_zoom_data*>(mMemZoom.mAddr);
     zoomParams->cameraId = mCameraId;
     zoomParams->tuningMode = mTuningMode;
     zoomParams->inParams = params;
+    zoomParams->streamId = streamId;
 
     ia_err ret = mCommon.requestSyncCca(IPC_CCA_UPDATE_ZOOM, mMemZoom.mHandle);
     CheckAndLogError(ret != ia_err_none, ia_err_general, "@%s, requestSyncCca fails", __func__);
@@ -249,13 +250,15 @@ ia_err IntelCca::updateZoom(const cca::cca_dvs_zoom& params) {
     return ret;
 }
 
-ia_err IntelCca::runDVS(uint64_t frameId) {
-    LOG2("<id%d:req%ld> @%s, tuningMode:%d", mCameraId, frameId, __func__, mTuningMode);
+ia_err IntelCca::runDVS(uint32_t streamId, uint64_t frameId) {
+    LOG2("<id%d:req%ld> @%s, tuningMode:%d, streamId: %u", mCameraId, frameId, __func__,
+         mTuningMode, streamId);
 
     intel_cca_run_dvs_data* params = static_cast<intel_cca_run_dvs_data*>(mMemDVS.mAddr);
     params->cameraId = mCameraId;
     params->tuningMode = mTuningMode;
     params->frameId = frameId;
+    params->streamId = streamId;
 
     ia_err ret = mCommon.requestSyncCca(IPC_CCA_RUN_DVS, mMemDVS.mHandle);
     CheckAndLogError(ret != ia_err_none, ia_err_general, "@%s, requestSyncCca fails", __func__);

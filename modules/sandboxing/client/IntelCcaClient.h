@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2021 Intel Corporation.
+ * Copyright (C) 2020-2022 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,9 +47,9 @@ class IntelCca {
 
     ia_err runLTM(uint64_t frameId, const cca::cca_ltm_input_params& params);
 
-    ia_err updateZoom(const cca::cca_dvs_zoom& params);
+    ia_err updateZoom(uint32_t streamId, const cca::cca_dvs_zoom& params);
 
-    ia_err runDVS(uint64_t frameId);
+    ia_err runDVS(uint32_t streamId, uint64_t frameId);
 
     ia_err runAIC(uint64_t frameId, cca::cca_pal_input_params* params, ia_binary_data* pal);
 
