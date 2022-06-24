@@ -182,19 +182,15 @@ int ParameterGenerator::getParameters(int64_t sequence, Parameters* param, bool 
         AutoMutex l(mParamsLock);
         if (sequence < 0) {
             *param = mLastParam;
-        } else if (mRequestParamMap.find(sequence) != mRequestParamMap.end()) {
-            *param = mRequestParamMap[sequence]->param;
         } else {
             // Find nearest parameter
-            bool found = false;
-            for (auto it = mRequestParamMap.crbegin(); it != mRequestParamMap.crend(); ++it) {
-                if (it->first <= sequence) {
-                    *param = mRequestParamMap[it->first]->param;
-                    found = true;
-                    break;
-                }
+            // The sequence of parameter should <= sequence
+            auto it = mRequestParamMap.upper_bound(sequence);
+            if (it == mRequestParamMap.begin()) {
+                LOGE("Can't find settings for seq %ld", sequence);
+            } else {
+                *param = (--it)->second->param;
             }
-            if (!found) LOGE("Can't find settings for seq %ld", sequence);
         }
     }
 

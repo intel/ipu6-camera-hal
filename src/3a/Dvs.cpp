@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2021 Intel Corporation.
+ * Copyright (C) 2017-2022 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -158,7 +158,8 @@ void Dvs::setParameter(const Parameters& p) {
 void Dvs::handleEvent(EventData eventData) {
     LOG2("@%s: eventData.type:%d", __func__, eventData.type);
 
-    if (eventData.type != EVENT_PSYS_STATS_BUF_READY) return;
+    if (eventData.type != EVENT_DVS_READY) return;
+    int streamId = eventData.data.dvsRunReady.streamId;
 
     IntelCca* intelCcaHandle = IntelCca::getInstance(mCameraId, mTuningMode);
     CheckAndLogError(!intelCcaHandle, VOID_VALUE, "@%s, Failed to get IntelCca instance", __func__);
@@ -171,13 +172,43 @@ void Dvs::handleEvent(EventData eventData) {
     zp.digital_zoom_ratio = 1.0f;
     zp.digital_zoom_factor = 1.0f;
     zp.zoom_mode = ia_dvs_zoom_mode_region;
-    if (!mPtzRegion.left && !mPtzRegion.top && !mPtzRegion.right && !mPtzRegion.bottom)
+    if (!mPtzRegion.left && !mPtzRegion.top && !mPtzRegion.right && !mPtzRegion.bottom) {
         zp.zoom_region = {mGDCRegion.left, mGDCRegion.top, mGDCRegion.right, mGDCRegion.bottom};
-    else
-        zp.zoom_region = { mPtzRegion.left, mPtzRegion.top, mPtzRegion.right, mPtzRegion.bottom };
-    intelCcaHandle->updateZoom(zp);
+    } else {
+        /*
+            SCALER_CROP_REGION can adjust to a small crop region if the aspect of active
+            pixel array is not same as the crop region aspect. Crop can only on either
+            horizontally or veritacl but never both.
+            If active pixel array's aspect ratio is wider than the crop region, the region
+            should be further cropped vertically.
+        */
+        auto coord = PlatformData::getActivePixelArray(mCameraId);
+        int wpa = coord.right - coord.left;
+        int hpa = coord.bottom - coord.top;
 
-    ia_err iaErr = intelCcaHandle->runDVS(eventData.data.statsReady.sequence);
+        int width = mPtzRegion.right - mPtzRegion.left;
+        int height = mPtzRegion.bottom - mPtzRegion.top;
+
+        float aspect0 = static_cast<float>(wpa) / hpa;
+        float aspect1 = static_cast<float>(width) / height;
+
+        if (std::fabs(aspect0 - aspect1) < 0.00001) {
+            zp.zoom_region = {mPtzRegion.left, mPtzRegion.top, mPtzRegion.right, mPtzRegion.bottom};
+        } else if (aspect0 > aspect1) {
+            auto croppedHeight = width / aspect0;
+            int diff = std::abs(height - croppedHeight) / 2;
+            zp.zoom_region = { mPtzRegion.left, mPtzRegion.top + diff, mPtzRegion.right,
+                               mPtzRegion.bottom - diff };
+        } else {
+            auto croppedWidth = height * aspect0;
+            int diff = std::abs(width - croppedWidth) / 2;
+            zp.zoom_region = { mPtzRegion.left + diff, mPtzRegion.top, mPtzRegion.right - diff,
+                               mPtzRegion.bottom };
+        }
+    }
+    intelCcaHandle->updateZoom(streamId, zp);
+
+    ia_err iaErr = intelCcaHandle->runDVS(streamId, eventData.data.statsReady.sequence);
     int ret = AiqUtils::convertError(iaErr);
     CheckAndLogError(ret != OK, VOID_VALUE, "Error running DVS: %d", ret);
     return;

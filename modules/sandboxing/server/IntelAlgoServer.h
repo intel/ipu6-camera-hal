@@ -28,6 +28,7 @@
 #include "cros-camera/camera_algorithm.h"
 #include "iutils/Errors.h"
 #include "iutils/Thread.h"
+#include "iutils/Utils.h"
 #include "modules/sandboxing/IPCCommon.h"
 
 namespace icamera {

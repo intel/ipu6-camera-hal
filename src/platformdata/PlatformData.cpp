@@ -1351,6 +1351,10 @@ bool PlatformData::supportHwJpegEncode() {
     return getInstance()->mStaticCfg.mCommonConfig.supportHwJpegEncode;
 }
 
+int PlatformData::getMaxIsysTimeout() {
+    return getInstance()->mStaticCfg.mCommonConfig.maxIsysTimeoutValue;
+}
+
 bool PlatformData::isUsingGpuAlgo() {
     bool enabled = false;
     enabled |= isGpuTnrEnabled();
@@ -1410,5 +1414,9 @@ bool PlatformData::getDisableBLCByAGain(int cameraId, int& low, int& high) {
     low = getInstance()->mStaticCfg.mCameras[cameraId].mDisableBLCAGainLow;
     high = getInstance()->mStaticCfg.mCameras[cameraId].mDisableBLCAGainHigh;
     return getInstance()->mStaticCfg.mCameras[cameraId].mDisableBLCByAGain;
+}
+
+bool PlatformData::isResetLinkRoute(int cameraId) {
+    return getInstance()->mStaticCfg.mCameras[cameraId].mResetLinkRoute;
 }
 }  // namespace icamera

@@ -66,6 +66,13 @@ public:
         std::vector<EventListener*> eventListenerList;
         return eventListenerList;
     }
+// INTEL_DVS_S
+    virtual std::vector<EventListener*> getDVSEventListener()
+    {
+        std::vector<EventListener*> eventListenerList;
+        return eventListenerList;
+    }
+// INTEL_DVS_E
 
     virtual int setParameters(const Parameters & /*params*/) { return OK; }
 
@@ -127,6 +134,13 @@ public:
      * \brief Get stats EventListener
      */
     std::vector<EventListener*> getStatsEventListener();
+
+// INTEL_DVS_S
+    /**
+     * \brief Get DVS EventListener
+     */
+    std::vector<EventListener*> getDVSEventListener();
+// INTEL_DVS_E
 
     /**
      * \brief Set 3A Parameters

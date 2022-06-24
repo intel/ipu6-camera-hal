@@ -140,15 +140,15 @@ ia_err IntelCca::runLTM(uint64_t frameId, const cca::cca_ltm_input_params& param
     return ret;
 }
 
-ia_err IntelCca::updateZoom(const cca::cca_dvs_zoom& params) {
-    ia_err ret = getIntelCCA()->updateZoom(params);
+ia_err IntelCca::updateZoom(uint32_t streamId, const cca::cca_dvs_zoom& params) {
+    ia_err ret = getIntelCCA()->updateZoom(streamId, params);
     LOG2("@%s, ret:%d", __func__, ret);
 
     return ret;
 }
 
-ia_err IntelCca::runDVS(uint64_t frameId) {
-    ia_err ret = getIntelCCA()->runDVS(frameId);
+ia_err IntelCca::runDVS(uint32_t streamId, uint64_t frameId) {
+    ia_err ret = getIntelCCA()->runDVS(streamId, frameId);
     LOG2("@%s, ret:%d", __func__, ret);
 
     return ret;
