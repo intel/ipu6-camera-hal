@@ -27,10 +27,13 @@
 
 #include <sys/time.h>
 #include <time.h>
-
 #include "iutils/LogSink.h"
 #include "iutils/Utils.h"
 
+#include <stdarg.h>
+#include <syslog.h>
+#include <map>
+#include <iostream>
 namespace icamera {
 extern const char* cameraDebugLogToString(int level);
 #define CAMERA_DEBUG_LOG_ERR (1 << 5)
@@ -61,8 +64,8 @@ void GLogSink::sendOffLog(LogItem logItem) {
             break;
     }
 }
-
 #endif
+
 const char* StdconLogSink::getName() const {
     return "Stdcon LOG";
 }
@@ -130,6 +133,35 @@ void FileLogSink::sendOffLog(LogItem logItem) {
     fprintf(mFp, "[%s] CamHAL[%s] %s:%s\n", timeInfo,
             icamera::cameraDebugLogToString(logItem.level), logItem.logTags, logItem.logEntry);
     fflush(mFp);
+}
+
+SysLogSink::SysLogSink() {
+}
+
+SysLogSink::~SysLogSink() {
+}
+
+const char* SysLogSink::getName() const {
+    return "SYS LOG";
+}
+
+void SysLogSink::sendOffLog(LogItem logItem) {
+#define TIME_BUF_SIZE 128
+     char logMsg[500] = {0};
+     char timeInfo[TIME_BUF_SIZE] = {0};
+     setLogTime(timeInfo);
+     const char * levelStr = icamera::cameraDebugLogToString(logItem.level);
+     snprintf(logMsg, sizeof(logMsg), "[%s] CamHAL[%s] %s\n", timeInfo, levelStr, logItem.logEntry);
+     std::map<const char *, int> levelMap {
+             {"LV1", LOG_DEBUG}, {"LV2", LOG_DEBUG},
+             {"LV3", LOG_DEBUG}, {"INF", LOG_INFO},
+             {"ERR", LOG_ERR},   {"WAR", LOG_WARNING},
+             {"UKN", LOG_DEBUG}
+     };
+
+     openlog("cameraHal", LOG_PID | LOG_CONS, LOG_USER);
+     syslog(levelMap[levelStr], "%s", logMsg);
+     closelog();
 }
 
 };  // namespace icamera

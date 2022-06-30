@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Intel Corporation.
+ * Copyright (C) 2015-2022 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,8 @@
 #ifdef USE_VSYS_LOG
 #include <base/logging.h>
 #endif
+
+#include <syslog.h>
 
 #include "CameraLog.h"
 #include "Trace.h"
@@ -87,7 +89,52 @@ __attribute__((__format__(__printf__, 3, 0))) static void printLog(const char* m
             break;
     }
 }
-#else
+#endif
+
+__attribute__((__format__(__printf__, 3, 0))) static void printLog(const char* module, int level,
+                                                                   const char* fmt, va_list ap) {
+    const char *levelStr = nullptr;
+    int priority;
+
+    switch (level) {
+        case CAMERA_DEBUG_LOG_LEVEL1:
+            levelStr = "LV1";
+            priority = LOG_DEBUG;
+        break;
+        case CAMERA_DEBUG_LOG_LEVEL2:
+            levelStr = "LV2";
+            priority = LOG_DEBUG;
+        break;
+        case CAMERA_DEBUG_LOG_LEVEL3:
+            levelStr = "LV3";
+            priority = LOG_DEBUG;
+        break;
+        case CAMERA_DEBUG_LOG_INFO:
+            levelStr = "INF";
+            priority = LOG_INFO;
+        break;
+        case CAMERA_DEBUG_LOG_ERR:
+            levelStr = "ERR";
+            priority = LOG_ERR;
+        break;
+        case CAMERA_DEBUG_LOG_WARNING:
+            levelStr = "WAR";
+            priority = LOG_WARNING;
+        break;
+        default:
+            levelStr = "UKN";
+            priority = LOG_DEBUG;
+        break;
+    }
+
+    char format[1024] = {0};
+    snprintf(format, sizeof(format), "[%s]: CamHAL_%s: %s", levelStr, module, fmt);
+    openlog("cameraHal", LOG_PID | LOG_CONS, LOG_USER);
+    vsyslog(priority, format, ap);
+    closelog();
+}
+
+#ifdef CAMERA_TERMINAL_LOG
 static void getLogTime(char* timeBuf, int bufLen) {
     // The format of time is: 01-22 15:24:53.071
     struct timeval tv;
@@ -160,8 +207,24 @@ static void initLogSinks() {
     } else {
         globalLogSink = new StdconLogSink();
     }
-#else
-    globalLogSink = new StdconLogSink();
+#endif
+
+    const char* sinkName = ::getenv("logSink");
+
+    if (!sinkName) {
+        sinkName = DEFAULT_LOG_SINK;
+    }
+
+    if (!::strcmp(sinkName, DEFAULT_LOG_SINK)) {
+        globalLogSink = new SysLogSink();
+    } else if (!::strcmp(sinkName, FILELOG_SINK)) {
+        globalLogSink = new FileLogSink;
+    } else {
+        globalLogSink = new StdconLogSink();
+    }
+
+#ifdef CAMERA_TERMINAL_LOG
+  globalLogSink = new StdconLogSink();
 #endif
 }
 

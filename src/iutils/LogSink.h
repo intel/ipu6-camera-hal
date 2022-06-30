@@ -62,6 +62,14 @@ class StdconLogSink : public LogOutputSink {
     void sendOffLog(LogItem logItem) override;
 };
 
+class SysLogSink : public LogOutputSink {
+ public:
+  SysLogSink();
+  ~SysLogSink();
+  const char* getName() const override;
+  void sendOffLog(LogItem logItem) override;
+};
+
 class FileLogSink : public LogOutputSink {
  public:
     FileLogSink();
