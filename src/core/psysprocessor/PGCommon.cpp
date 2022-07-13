@@ -21,6 +21,7 @@
 #include <math.h>
 #include <stdint.h>
 
+#include <algorithm>
 #include <utility>
 
 #include "iutils/CameraDump.h"
