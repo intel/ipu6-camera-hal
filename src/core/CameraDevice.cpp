@@ -932,6 +932,7 @@ void CameraDevice::handleEvent(EventData eventData) {
         case EVENT_PSYS_REQUEST_BUF_READY: {
             if (mCallback) {
                 camera_msg_data_t data = {CAMERA_ISP_BUF_READY, {}};
+
                 data.data.buffer_ready.timestamp = eventData.data.requestReady.timestamp;
                 data.data.buffer_ready.frameNumber = eventData.data.requestReady.requestId;
                 mCallback->notify(mCallback, data);
@@ -945,6 +946,7 @@ void CameraDevice::handleEvent(EventData eventData) {
         case EVENT_REQUEST_METADATA_READY: {
             if (mCallback) {
                 camera_msg_data_t data = {CAMERA_METADATA_READY, {}};
+
                 data.data.metadata_ready.sequence = eventData.data.requestReady.sequence;
                 data.data.metadata_ready.frameNumber = eventData.data.requestReady.requestId;
                 mCallback->notify(mCallback, data);
