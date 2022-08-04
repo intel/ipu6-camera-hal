@@ -102,8 +102,7 @@ int AiqCore::initAiqPlusParams() {
     }
     mGbceParams.gbce_on = (tonemapMaxCurvePoints > 0) ? true : false;
     mGbceParams.athena_mode = PlatformData::getPLCEnable(mCameraId);
-    LOG1("%s, gbce_on: %d, plc enable: %d", __func__, mGbceParams.gbce_on,
-         mGbceParams.athena_mode);
+    LOG1("%s, gbce_on: %d, plc enable: %d", __func__, mGbceParams.gbce_on, mGbceParams.athena_mode);
 
     return OK;
 }
@@ -688,7 +687,8 @@ bool AiqCore::bypassAe(const aiq_parameter_t& param) {
 
     // run AE if manual AE or total exposure target is set
     if (param.aeMode != AE_MODE_AUTO || param.powerMode != CAMERA_LOW_POWER ||
-        param.totalExposureTarget > 0) return false;
+        param.totalExposureTarget > 0)
+        return false;
 
     bool converged = mLastAeResult.exposures[0].converged;
 

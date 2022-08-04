@@ -277,10 +277,9 @@ status_t JpegProcess::doPostProcessing(const shared_ptr<camera3::Camera3Buffer>&
                  thumbnailPackage.quality > 0);
 
         if (!isEncoded || thumbnailPackage.quality < 0) {
-            LOGW(
-                "Failed to generate thumbnail, isEncoded: %d, encoded thumbnail size: %d, "
-                "quality:%d",
-                isEncoded, thumbnailPackage.encodedDataSize, thumbnailPackage.quality);
+            LOGW("Failed to generate thumbnail, isEncoded: %d, encoded thumbnail size: %d, "
+                 "quality:%d",
+                 isEncoded, thumbnailPackage.encodedDataSize, thumbnailPackage.quality);
         }
     }
 

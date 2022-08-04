@@ -199,8 +199,8 @@ status_t IntelCcaServer::updateTuning(void* pData, int dataSize) {
 
     intel_cca_update_tuning_data* params = static_cast<intel_cca_update_tuning_data*>(pData);
 
-    ia_err ret = mCca->updateTuning(params->lardTags, params->lardParams,
-                                    params->nvmParams, params->streamId);
+    ia_err ret = mCca->updateTuning(params->lardTags, params->lardParams, params->nvmParams,
+                                    params->streamId);
     CheckAndLogError(ret != ia_err_none, UNKNOWN_ERROR, "@%s, fails: %d", __func__, ret);
 
     return OK;

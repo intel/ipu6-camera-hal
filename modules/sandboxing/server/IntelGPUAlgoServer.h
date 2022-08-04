@@ -50,10 +50,10 @@ class IntelGPUAlgoServer : public RequestHandler {
     IntelTNRServer mTNR;
 #endif
 
-// ENABLE_EVCP_S
+    // ENABLE_EVCP_S
  private:
     IntelEvcpServer mEvcp;
-// ENABLE_EVCP_E
+    // ENABLE_EVCP_E
 };
 
 }  // namespace icamera

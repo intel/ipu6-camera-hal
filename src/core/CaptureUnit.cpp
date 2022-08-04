@@ -374,8 +374,8 @@ int CaptureUnit::poll() {
     CheckAndLogError((mState != CAPTURE_CONFIGURE && mState != CAPTURE_START), INVALID_OPERATION,
                      "@%s: poll buffer in wrong state %d", __func__, mState);
 
-    int timeOutCount = (PlatformData::getMaxIsysTimeout() > 0) ?
-                       PlatformData::getMaxIsysTimeout() : poll_timeout_count;
+    int timeOutCount = (PlatformData::getMaxIsysTimeout() > 0) ? PlatformData::getMaxIsysTimeout() :
+                                                                 poll_timeout_count;
     std::vector<V4L2Device*> pollDevs, readyDevices;
     for (const auto& device : mDevices) {
         pollDevs.push_back(device->getV4l2Device());
@@ -404,14 +404,13 @@ int CaptureUnit::poll() {
     CheckAndLogError(ret < 0, UNKNOWN_ERROR, "%s: Poll error, ret:%d", __func__, ret);
     if (ret == 0) {
 #ifdef CAL_BUILD
-        LOGI("<id%d>%s, timeout happens, buffer in device: %d. wait recovery",
-             mCameraId, __func__, mDevices.front()->getBufferNumInDevice());
+        LOGI("<id%d>%s, timeout happens, buffer in device: %d. wait recovery", mCameraId, __func__,
+             mDevices.front()->getBufferNumInDevice());
 #else
-        LOG1("<id%d>%s, timeout happens, buffer in device: %d. wait recovery",
-             mCameraId, __func__, mDevices.front()->getBufferNumInDevice());
+        LOG1("<id%d>%s, timeout happens, buffer in device: %d. wait recovery", mCameraId, __func__,
+             mDevices.front()->getBufferNumInDevice());
 #endif
-        if (PlatformData::getMaxIsysTimeout() > 0 &&
-            mDevices.front()->getBufferNumInDevice() > 0) {
+        if (PlatformData::getMaxIsysTimeout() > 0 && mDevices.front()->getBufferNumInDevice() > 0) {
             EventData errorData;
             errorData.type = EVENT_ISYS_ERROR;
             errorData.buffer = nullptr;
@@ -463,15 +462,13 @@ void CaptureUnit::registerListener(EventType eventType, EventListener* eventList
     for (auto device : mDevices) {
         device->registerListener(eventType, eventListener);
     }
-    if (eventType == EVENT_ISYS_ERROR)
-        EventSource::registerListener(eventType, eventListener);
+    if (eventType == EVENT_ISYS_ERROR) EventSource::registerListener(eventType, eventListener);
 }
 
 void CaptureUnit::removeListener(EventType eventType, EventListener* eventListener) {
     for (auto device : mDevices) {
         device->removeListener(eventType, eventListener);
     }
-    if (eventType == EVENT_ISYS_ERROR)
-        EventSource::removeListener(eventType, eventListener);
+    if (eventType == EVENT_ISYS_ERROR) EventSource::removeListener(eventType, eventListener);
 }
 }  // namespace icamera

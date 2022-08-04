@@ -24,16 +24,14 @@
 
 namespace icamera {
 
-LensManager::LensManager(int cameraId, LensHw *lensHw) :
-    mCameraId(cameraId),
-    mLensHw(lensHw),
-    mDcIrisCommand(ia_aiq_aperture_control_dc_iris_close),
-    mFocusPosition(-1),
-    mLastSofSequence(-1) {
-}
+LensManager::LensManager(int cameraId, LensHw* lensHw)
+        : mCameraId(cameraId),
+          mLensHw(lensHw),
+          mDcIrisCommand(ia_aiq_aperture_control_dc_iris_close),
+          mFocusPosition(-1),
+          mLastSofSequence(-1) {}
 
-LensManager::~LensManager() {
-}
+LensManager::~LensManager() {}
 
 int LensManager::start() {
     AutoMutex l(mLock);
@@ -76,8 +74,8 @@ void LensManager::handleSofEvent(EventData eventData) {
     }
 }
 
-int LensManager::setLensResult(const cca::cca_af_results &afResults,
-                               int64_t sequence, const aiq_parameter_t &aiqParam) {
+int LensManager::setLensResult(const cca::cca_af_results& afResults, int64_t sequence,
+                               const aiq_parameter_t& aiqParam) {
     AutoMutex l(mLock);
 
     if (!mLensHw->isLensSubdevAvailable() || afResults.next_lens_position == 0) {
@@ -87,7 +85,7 @@ int LensManager::setLensResult(const cca::cca_af_results &afResults,
     int ret = OK;
 
     int lensHwType = PlatformData::getLensHwType(mCameraId);
-    switch(lensHwType) {
+    switch (lensHwType) {
         case LENS_VCM_HW:
             if (aiqParam.afMode == AF_MODE_OFF && aiqParam.focusDistance > 0.0f) {
                 // The manual focus setting requires perframe control
@@ -117,7 +115,7 @@ void LensManager::setFocusPosition(int focusPosition) {
     }
 }
 
-void LensManager::getLensInfo(aiq_parameter_t &aiqParam) {
+void LensManager::getLensInfo(aiq_parameter_t& aiqParam) {
     if (PlatformData::getLensHwType(mCameraId) == LENS_VCM_HW) {
         mLensHw->getLatestPosition(aiqParam.lensPosition, aiqParam.lensMovementStartTimestamp);
     }

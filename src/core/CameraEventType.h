@@ -103,10 +103,11 @@ struct EventData {
         EventRequestData request;
         EventConfigData config;
         EventFrameAvailable frameDone;
-        EventRequestReady requestReady;  // use for returning metadata and shutter event
-// INTEL_DVS_S
+        // use for returning metadata and shutter event
+        EventRequestReady requestReady;
+        // INTEL_DVS_S
         EventDVSRunReady dvsRunReady;
-// INTEL_DVS_E
+        // INTEL_DVS_E
     } data;
 };
 

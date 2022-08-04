@@ -36,38 +36,40 @@ namespace icamera {
  * recursive, i.e. the same thread can't lock it multiple times.
  */
 class RWLock {
-public:
-                RWLock() {};
-                ~RWLock();
+ public:
+    RWLock(){};
+    ~RWLock();
 
-    status_t    readLock();
-    status_t    tryReadLock();
-    status_t    writeLock();
-    status_t    tryWriteLock();
-    void        unlock();
+    status_t readLock();
+    status_t tryReadLock();
+    status_t writeLock();
+    status_t tryWriteLock();
+    void unlock();
 
     class AutoRLock {
-    public:
-        inline AutoRLock(RWLock& rwlock) : mLock(rwlock)  { mLock.readLock(); }
+     public:
+        inline AutoRLock(RWLock& rwlock) : mLock(rwlock) { mLock.readLock(); }
         inline ~AutoRLock() { mLock.unlock(); }
-    private:
+
+     private:
         RWLock& mLock;
     };
 
     class AutoWLock {
-    public:
-        inline AutoWLock(RWLock& rwlock) : mLock(rwlock)  { mLock.writeLock(); }
+     public:
+        inline AutoWLock(RWLock& rwlock) : mLock(rwlock) { mLock.writeLock(); }
         inline ~AutoWLock() { mLock.unlock(); }
-    private:
+
+     private:
         RWLock& mLock;
     };
 
-private:
+ private:
     // A RWLock cannot be copied
-                RWLock(const RWLock&);
-   RWLock&      operator = (const RWLock&);
+    RWLock(const RWLock&);
+    RWLock& operator=(const RWLock&);
 
-   pthread_rwlock_t mRWLock = PTHREAD_RWLOCK_INITIALIZER;
+    pthread_rwlock_t mRWLock = PTHREAD_RWLOCK_INITIALIZER;
 };
 
 inline RWLock::~RWLock() {
@@ -89,10 +91,10 @@ inline void RWLock::unlock() {
     pthread_rwlock_unlock(&mRWLock);
 }
 
-#endif // HAVE_PTHREADS
+#endif  // HAVE_PTHREADS
 typedef RWLock::AutoRLock AutoRMutex;
 typedef RWLock::AutoWLock AutoWMutex;
 
 // ---------------------------------------------------------------------------
-} // namespace icamera
+}  // namespace icamera
 // ---------------------------------------------------------------------------

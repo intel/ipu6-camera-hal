@@ -35,13 +35,13 @@ namespace icamera {
 
 static CameraHal* gCameraHal = nullptr;
 
-#define CheckCameraId(camera_id, err_code)                                        \
-    do {                                                                          \
-        int max_cam = PlatformData::numberOfCameras();                            \
-        if (((camera_id) < 0) || (camera_id) >= max_cam) {                        \
-            LOGE("<id%d> is invalid, max_cam:%d", camera_id, max_cam);            \
-            return err_code;                                                      \
-        }                                                                         \
+#define CheckCameraId(camera_id, err_code)                             \
+    do {                                                               \
+        int max_cam = PlatformData::numberOfCameras();                 \
+        if (((camera_id) < 0) || (camera_id) >= max_cam) {             \
+            LOGE("<id%d> is invalid, max_cam:%d", camera_id, max_cam); \
+            return err_code;                                           \
+        }                                                              \
     } while (0)
 
 /**

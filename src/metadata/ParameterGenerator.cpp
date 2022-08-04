@@ -262,22 +262,21 @@ int ParameterGenerator::updateWithAiqResultsL(int64_t sequence, Parameters* para
     colorGains.color_gains_rggb[3] = aiqResult->mPaResults.color_gains.b;
     params->setColorGains(colorGains);
 
-    camera_awb_state_t awbState = (fabs(aiqResult->mAwbResults.distance_from_convergence) < 0.001)
-                                      ? AWB_STATE_CONVERGED
-                                      : AWB_STATE_NOT_CONVERGED;
+    camera_awb_state_t awbState = (fabs(aiqResult->mAwbResults.distance_from_convergence) < 0.001) ?
+                                      AWB_STATE_CONVERGED :
+                                      AWB_STATE_NOT_CONVERGED;
     params->setAwbState(awbState);
 
     // Update AF related parameters
     camera_af_state_t afState =
-        (aiqResult->mAfResults.status == ia_aiq_af_status_local_search)
-            ? AF_STATE_LOCAL_SEARCH
-            : (aiqResult->mAfResults.status == ia_aiq_af_status_extended_search)
-                  ? AF_STATE_EXTENDED_SEARCH
-                  : ((aiqResult->mAfResults.status == ia_aiq_af_status_success) &&
-                     aiqResult->mAfResults.final_lens_position_reached)
-                        ? AF_STATE_SUCCESS
-                        : (aiqResult->mAfResults.status == ia_aiq_af_status_fail) ? AF_STATE_FAIL
-                                                                                  : AF_STATE_IDLE;
+        (aiqResult->mAfResults.status == ia_aiq_af_status_local_search) ?
+            AF_STATE_LOCAL_SEARCH :
+            (aiqResult->mAfResults.status == ia_aiq_af_status_extended_search) ?
+            AF_STATE_EXTENDED_SEARCH :
+            ((aiqResult->mAfResults.status == ia_aiq_af_status_success) &&
+             aiqResult->mAfResults.final_lens_position_reached) ?
+            AF_STATE_SUCCESS :
+            (aiqResult->mAfResults.status == ia_aiq_af_status_fail) ? AF_STATE_FAIL : AF_STATE_IDLE;
     params->setAfState(afState);
 
     bool lensMoving = false;
@@ -436,19 +435,20 @@ int ParameterGenerator::updateCommonMetadata(Parameters* params, const AiqResult
         ParameterHelper::mergeTag(entry, params);
 
         if (Log::isLogTagEnabled(ST_STATS)) {
-            const cca::cca_out_stats *outStats = &aiqResult->mOutStats;
-            const rgbs_grid_block *rgbsPtr = aiqResult->mOutStats.rgbs_blocks;
+            const cca::cca_out_stats* outStats = &aiqResult->mOutStats;
+            const rgbs_grid_block* rgbsPtr = aiqResult->mOutStats.rgbs_blocks;
             int size = outStats->rgbs_grid.grid_width * outStats->rgbs_grid.grid_height;
 
             int sumLuma = 0;
             for (int j = 0; j < size; j++) {
-                sumLuma += (rgbsPtr[j].avg_b + rgbsPtr[j].avg_r +
-                            (rgbsPtr[j].avg_gb + rgbsPtr[j].avg_gr) / 2) / 3;
+                sumLuma += ((rgbsPtr[j].avg_b + rgbsPtr[j].avg_r +
+                             (rgbsPtr[j].avg_gb + rgbsPtr[j].avg_gr) / 2) /
+                            3);
             }
 
             LOG2(ST_STATS, "RGB stat %dx%d, sequence %lld, y_mean %d",
                  outStats->rgbs_grid.grid_width, outStats->rgbs_grid.grid_height,
-                 aiqResult->mSequence, size > 0 ? sumLuma/size : 0);
+                 aiqResult->mSequence, size > 0 ? sumLuma / size : 0);
         }
 
         entry.tag = INTEL_VENDOR_CAMERA_RGBS_STATS_BLOCKS;
@@ -459,9 +459,8 @@ int ParameterGenerator::updateCommonMetadata(Parameters* params, const AiqResult
     }
 
     if (aiqResult->mAiqParam.manualExpTimeUs <= 0 && aiqResult->mAiqParam.manualIso <= 0) {
-        int64_t range[] =
-            { aiqResult->mAeResults.exposures[0].exposure[0].low_limit_total_exposure,
-              aiqResult->mAeResults.exposures[0].exposure[0].up_limit_total_exposure };
+        int64_t range[] = {aiqResult->mAeResults.exposures[0].exposure[0].low_limit_total_exposure,
+                           aiqResult->mAeResults.exposures[0].exposure[0].up_limit_total_exposure};
         LOG2("total et limits [%ldx%ld]", range[0], range[1]);
         entry.tag = INTEL_VENDOR_CAMERA_TOTAL_EXPOSURE_TARGET_RANGE;
         entry.type = ICAMERA_TYPE_INT64;

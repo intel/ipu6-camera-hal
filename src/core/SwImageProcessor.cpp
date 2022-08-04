@@ -42,7 +42,7 @@ SwImageProcessor::~SwImageProcessor() {
 int SwImageProcessor::start() {
     PERF_CAMERA_ATRACE();
     LOG1("<id%d>@%s", mCameraId, __func__);
-    AutoMutex   l(mBufferQueueLock);
+    AutoMutex l(mBufferQueueLock);
 
     int memType = mOutputFrameInfo.begin()->second.memType;
     CheckAndLogError(memType == V4L2_MEMORY_DMABUF, BAD_VALUE,
@@ -64,7 +64,7 @@ void SwImageProcessor::stop() {
     {
         AutoMutex l(mBufferQueueLock);
         mThreadRunning = false;
-        //Wakeup the thread to exit
+        // Wakeup the thread to exit
         mFrameAvailableSignal.signal();
         mOutputAvailableSignal.signal();
     }
@@ -84,25 +84,25 @@ int SwImageProcessor::processNewFrame() {
     Port inputPort = INVALID_PORT;
     LOG1("<id%d>@%s", mCameraId, __func__);
 
-    { // Auto lock mBufferQueueLock scope
+    {  // Auto lock mBufferQueueLock scope
         ConditionLock lock(mBufferQueueLock);
         ret = waitFreeBuffersInQueue(lock, srcBuffers, dstBuffers);
 
         if (!mThreadRunning) return -1;
-        CheckAndLogError((ret < 0), -1,
-                         "@%s: wake up from the wait abnomal such as stop", __func__);
+        CheckAndLogError((ret < 0), -1, "@%s: wake up from the wait abnomal such as stop",
+                         __func__);
 
         inputPort = srcBuffers.begin()->first;
         cInBuffer = srcBuffers[inputPort];
 
-        for (auto& output: mOutputQueue) {
+        for (auto& output : mOutputQueue) {
             output.second.pop();
         }
 
-        for (auto& input: mInputQueue) {
+        for (auto& input : mInputQueue) {
             input.second.pop();
         }
-    } // End of auto lock mBufferQueueLock scope
+    }  // End of auto lock mBufferQueueLock scope
     CheckAndLogError(!cInBuffer, BAD_VALUE, "Invalid input buffer.");
 
     for (auto& dst : dstBuffers) {
@@ -114,24 +114,23 @@ int SwImageProcessor::processNewFrame() {
             continue;
         }
 
-        //No Lock for this function make sure buffers are not freed before the stop
+        // No Lock for this function make sure buffers are not freed before the stop
         ret = SwImageConverter::convertFormat(
-                cInBuffer->getWidth(), cInBuffer->getHeight(),
-                static_cast<unsigned char*>(cInBuffer->getBufferAddr()),
-                cInBuffer->getBufferSize(), cInBuffer->getFormat(),
-                static_cast<unsigned char*>(cOutBuffer->getBufferAddr()),
-                cOutBuffer->getBufferSize(), cOutBuffer->getFormat());
+            cInBuffer->getWidth(), cInBuffer->getHeight(),
+            static_cast<unsigned char*>(cInBuffer->getBufferAddr()), cInBuffer->getBufferSize(),
+            cInBuffer->getFormat(), static_cast<unsigned char*>(cOutBuffer->getBufferAddr()),
+            cOutBuffer->getBufferSize(), cOutBuffer->getFormat());
         CheckAndLogError((ret < 0), ret, "format convertion failed with %d", ret);
 
         if (CameraDump::isDumpTypeEnable(DUMP_SW_IMG_PROC_OUTPUT)) {
             CameraDump::dumpImage(mCameraId, cOutBuffer, M_SWIPOP);
         }
 
-        //update the interlaced field, sequence, and timestamp  from the src buf to dst buf
+        // update the interlaced field, sequence, and timestamp  from the src buf to dst buf
         cOutBuffer->updateV4l2Buffer(*cInBuffer->getV4L2Buffer().Get());
 
-        //Notify listener: No lock here: mBufferConsumerList will not updated in this state
-        for (auto &it : mBufferConsumerList) {
+        // Notify listener: No lock here: mBufferConsumerList will not updated in this state
+        for (auto& it : mBufferConsumerList) {
             it->onFrameAvailable(port, cOutBuffer);
         }
     }
@@ -144,4 +143,4 @@ int SwImageProcessor::processNewFrame() {
     return OK;
 }
 
-} //namespace icamera
+}  // namespace icamera

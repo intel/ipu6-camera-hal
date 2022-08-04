@@ -42,16 +42,16 @@ bool IntelEvcp::runEvcpFrame(void* inBufAddr, int size) {
         const int CACHE_LINE_SIZE_FOR_ADL = 64;
         const int CACHE_LINE_MASK_FOR_ADL = CACHE_LINE_SIZE_FOR_ADL - 1;
 
-        char* p = reinterpret_cast<char*>(reinterpret_cast<uintptr_t>(start) &
-                                          ~CACHE_LINE_MASK_FOR_ADL);
+        char* p =
+            reinterpret_cast<char*>(reinterpret_cast<uintptr_t>(start) & ~CACHE_LINE_MASK_FOR_ADL);
         char* end = reinterpret_cast<char*>(start) + sz;
 
-        asm volatile("mfence" :::"memory");
+        asm volatile("mfence" ::: "memory");
         while (p < end) {
             asm volatile("clflush (%0)" ::"r"(p));
             p += CACHE_LINE_SIZE_FOR_ADL;
         }
-        asm volatile("mfence" :::"memory");
+        asm volatile("mfence" ::: "memory");
         return true;
     };
 

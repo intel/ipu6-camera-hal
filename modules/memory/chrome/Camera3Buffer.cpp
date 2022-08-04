@@ -93,15 +93,16 @@ Camera3Buffer::Camera3Buffer(int w, int h, int stride, int v4l2fmt, void* usrPtr
     mHalBuffer.s.height = h;
     mHalBuffer.s.stride = stride;
     mHalBuffer.s.memType = V4L2_MEMORY_USERPTR;
-    mHalBuffer.flags = camera_buffer_flags_t::BUFFER_FLAG_SW_WRITE
-                       | camera_buffer_flags_t::BUFFER_FLAG_SW_READ;
+    mHalBuffer.flags =
+        camera_buffer_flags_t::BUFFER_FLAG_SW_WRITE | camera_buffer_flags_t::BUFFER_FLAG_SW_READ;
     mHalBuffer.dmafd = -1;
 
     if (usrPtr != nullptr) {
         mHalBuffer.addr = usrPtr;
         mInit = true;
-        mHalBuffer.s.size =  dataSizeOverride ?
-            dataSizeOverride : CameraUtils::getFrameSize(v4l2fmt, w, h, false, false, false);
+        mHalBuffer.s.size = dataSizeOverride ?
+                                dataSizeOverride :
+                                CameraUtils::getFrameSize(v4l2fmt, w, h, false, false, false);
     } else {
         LOGE("Tried to initialize a buffer with nullptr ptr!!");
     }
@@ -162,8 +163,8 @@ icamera::status_t Camera3Buffer::init(const camera3_stream_buffer* aBuffer, int 
                                                   mHalBuffer.s.height, false, false, false);
     mLocked = false;
     mUsage = aBuffer->stream->usage;
-    mHalBuffer.flags = camera_buffer_flags_t::BUFFER_FLAG_SW_WRITE
-                       | camera_buffer_flags_t::BUFFER_FLAG_SW_READ;
+    mHalBuffer.flags =
+        camera_buffer_flags_t::BUFFER_FLAG_SW_WRITE | camera_buffer_flags_t::BUFFER_FLAG_SW_READ;
     mInit = true;
     mHalBuffer.addr = nullptr;
     mUserBuffer = *aBuffer;
@@ -204,8 +205,8 @@ icamera::status_t Camera3Buffer::init(const camera3_stream_t* stream, buffer_han
     // Use actual width from platform native handle for stride
     mHalBuffer.s.stride = mGbmBufferManager->GetPlaneStride(handle, 0);
     mHalBuffer.s.size = 0;
-    mHalBuffer.flags = camera_buffer_flags_t::BUFFER_FLAG_SW_WRITE
-                       | camera_buffer_flags_t::BUFFER_FLAG_SW_READ;
+    mHalBuffer.flags =
+        camera_buffer_flags_t::BUFFER_FLAG_SW_WRITE | camera_buffer_flags_t::BUFFER_FLAG_SW_READ;
     mLocked = false;
     mUsage = (stream->usage | GRALLOC_USAGE_SW_READ_MASK | GRALLOC_USAGE_SW_WRITE_MASK);
     mInit = true;
@@ -298,10 +299,10 @@ icamera::status_t Camera3Buffer::lock(int flags) {
 
     if (planeNum == 1) {
         void* data = nullptr;
-        ret = (mFormat == HAL_PIXEL_FORMAT_BLOB)
-                  ? mGbmBufferManager->Lock(mHandle, 0, 0, 0, mHalBuffer.s.stride, 1, &data)
-                  : mGbmBufferManager->Lock(mHandle, 0, 0, 0, mHalBuffer.s.width,
-                                            mHalBuffer.s.height, &data);
+        ret = (mFormat == HAL_PIXEL_FORMAT_BLOB) ?
+                  mGbmBufferManager->Lock(mHandle, 0, 0, 0, mHalBuffer.s.stride, 1, &data) :
+                  mGbmBufferManager->Lock(mHandle, 0, 0, 0, mHalBuffer.s.width, mHalBuffer.s.height,
+                                          &data);
         mHalBuffer.addr = data;
     } else if (planeNum > 1) {
         struct android_ycbcr ycbrData;
@@ -343,7 +344,7 @@ icamera::status_t Camera3Buffer::lock() {
                      __func__);
 
     int lockMode = mUsage & (GRALLOC_USAGE_SW_READ_MASK | GRALLOC_USAGE_SW_WRITE_MASK |
-                   GRALLOC_USAGE_HW_CAMERA_MASK);
+                             GRALLOC_USAGE_HW_CAMERA_MASK);
     if (!lockMode) {
         LOGW("@%s:trying to lock a buffer with no flags", __func__);
         return INVALID_OPERATION;
@@ -436,8 +437,8 @@ std::shared_ptr<Camera3Buffer> allocateHeapBuffer(int w, int h, int stride, int 
     HAL_TRACE_CALL(CAMERA_DEBUG_LOG_LEVEL1);
     void* dataPtr;
 
-    int dataSize = dataSizeOverride ? PAGE_ALIGN(dataSizeOverride)
-                                    : CameraUtils::getFrameSize(v4l2Fmt, w, h, false, false, false);
+    int dataSize = dataSizeOverride ? PAGE_ALIGN(dataSizeOverride) :
+                                      CameraUtils::getFrameSize(v4l2Fmt, w, h, false, false, false);
     LOG1("@%s, dataSize:%d", __func__, dataSize);
 
     int ret = posix_memalign(&dataPtr, sysconf(_SC_PAGESIZE), dataSize);

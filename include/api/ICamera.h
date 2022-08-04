@@ -50,7 +50,8 @@
  *******************************************************************************
  *     Version        0.44       Change output parameter of get_frame_size
  *******************************************************************************
- *     Version        0.45       Add two parameters(number of buffers, parameters) for camera_stream_qbuf
+ *     Version        0.45       Add two parameters(number of buffers, parameters)
+                                 for camera_stream_qbuf
                                  Add one parameter(parameters) for camera_stream_dqbuf
 *******************************************************************************
  *     Version        0.46       Add virtual channel camera number for camera_device_open
@@ -75,7 +76,7 @@
 
 #include "Parameters.h"
 
-#include <stdlib.h> // For including definition of NULL
+#include <stdlib.h>  // For including definition of NULL
 
 extern "C" {
 namespace icamera {
@@ -87,9 +88,9 @@ typedef struct {
     int facing;
     int orientation;
     int device_version;
-    const char* name; /**< Sensor name */
-    const char* description; /**< Sensor description */
-    const Parameters *capability; /**< camera capability */
+    const char* name;             /**< Sensor name */
+    const char* description;      /**< Sensor description */
+    const Parameters* capability; /**< camera capability */
 } camera_info_t;
 
 /**
@@ -185,7 +186,7 @@ int camera_hal_deinit();
  *   camera_callback_ops_t *callback: callback handle
  *
  **/
-void camera_callback_register(int camera_id, const camera_callback_ops_t *callback);
+void camera_callback_register(int camera_id, const camera_callback_ops_t* callback);
 
 /**
  * \brief
@@ -255,7 +256,7 @@ void camera_device_close(int camera_id);
  *   ret = camera_device_config_sensor_input(camera_id, &input_config);
  * \endcode
  **/
-int camera_device_config_sensor_input(int camera_id, const stream_t *inputConfig);
+int camera_device_config_sensor_input(int camera_id, const stream_t* inputConfig);
 
 /**
  * \brief
@@ -268,7 +269,8 @@ int camera_device_config_sensor_input(int camera_id, const stream_t *inputConfig
  * \param[in]
  *   int camera_id: ID of the camera
  * \param[in]
- *   stream_config_t stream_list: stream configuration list, if success, stream id is filled in streams[]
+ *   stream_config_t stream_list: stream configuration list, if success, stream id is filled in
+ *                                streams[]
  *
  * \return
  *   0 succeed to configure streams
@@ -290,7 +292,7 @@ int camera_device_config_sensor_input(int camera_id, const stream_t *inputConfig
  *   ret = camera_device_config_streams(camera_id, &stream_list);
  * \endcode
  **/
-int camera_device_config_streams(int camera_id, stream_config_t *stream_list);
+int camera_device_config_streams(int camera_id, stream_config_t* stream_list);
 
 /**
  * \brief
@@ -369,7 +371,7 @@ int camera_device_stop(int camera_id);
  * \endcode
  *
  */
-int camera_device_allocate_memory(int camera_id, camera_buffer_t *buffer);
+int camera_device_allocate_memory(int camera_id, camera_buffer_t* buffer);
 
 /**
  * \brief
@@ -398,8 +400,8 @@ int camera_device_allocate_memory(int camera_id, camera_buffer_t *buffer);
  *
  * \see camera_stream_qbuf();
  **/
-int camera_stream_qbuf(int camera_id, camera_buffer_t **buffer,
-                       int num_buffers = 1, const Parameters* settings = NULL);
+int camera_stream_qbuf(int camera_id, camera_buffer_t** buffer, int num_buffers = 1,
+                       const Parameters* settings = NULL);
 
 /**
  * \brief
@@ -427,13 +429,15 @@ int camera_stream_qbuf(int camera_id, camera_buffer_t **buffer,
  * \code
  *   const int buffer_count = 8;
  *   int bpp = 0;
- *   int buffer_size = get_frame_size(camera_id, V4L2_PIX_FMT_SGRBG8, 1920, 1080, V4L2_FIELD_ANY, &bpp);
+ *   int buffer_size = get_frame_size(camera_id, V4L2_PIX_FMT_SGRBG8, 1920, 1080, V4L2_FIELD_ANY,
+ *                                    &bpp);
  *   camera_buffer_t buffers[buffer_count];
  *   camera_buffer_t *buf = nullptr;
  *   for (int i = 0; i < buffer_count; i++) {
  *     buf = &buffers[i];
  *     posix_memalign(&buf->addr, getpagesize(), buffer_size);
- *     buf->s = stream; // stream here comes from parameter and result of camera_device_config_streams.
+ *     // stream here comes from parameter and result of camera_device_config_streams.
+ *     buf->s = stream;
  *   }
  *
  *   for (int i = 0; i < buffer_count; i++) {
@@ -450,7 +454,7 @@ int camera_stream_qbuf(int camera_id, camera_buffer_t **buffer,
  * \endcode
  *
  **/
-int camera_stream_dqbuf(int camera_id, int stream_id, camera_buffer_t **buffer,
+int camera_stream_dqbuf(int camera_id, int stream_id, camera_buffer_t** buffer,
                         Parameters* settings = NULL);
 
 /**
@@ -547,7 +551,7 @@ int camera_get_parameters(int camera_id, Parameters& param, int64_t sequence = -
  * \return
  *   frame size.
  **/
-int get_frame_size(int camera_id, int format, int width, int height, int field, int *bpp);
+int get_frame_size(int camera_id, int format, int width, int height, int field, int* bpp);
 
-} // namespace icamera
-} // extern "C"
+}  // namespace icamera
+}  // extern "C"

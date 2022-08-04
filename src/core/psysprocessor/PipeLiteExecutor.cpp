@@ -63,7 +63,8 @@ PipeLiteExecutor::PipeLiteExecutor(int cameraId, const ExecutorPolicy& policy,
           mLastStatsSequence(-1),
           mExclusivePGs(exclusivePGs),
           mPSysDag(psysDag),
-          mkernelsCountWithStats(0) {}
+          mkernelsCountWithStats(0) {
+}
 
 PipeLiteExecutor::~PipeLiteExecutor() {
     while (!mPGExecutors.empty()) {
@@ -231,7 +232,7 @@ int PipeLiteExecutor::createPGs() {
 
 int PipeLiteExecutor::configurePGs(const vector<IGraphType::PrivPortFormat>& tnrPortFormat) {
     FrameInfo tnrFormatInfo = {};
-    for (auto &tnrFormat : tnrPortFormat) {
+    for (auto& tnrFormat : tnrPortFormat) {
         if (tnrFormat.streamId == mStreamId) {
             tnrFormatInfo.mWidth = tnrFormat.formatSetting.width;
             tnrFormatInfo.mHeight = tnrFormat.formatSetting.height;
@@ -590,24 +591,24 @@ int PipeLiteExecutor::processNewFrame() {
 
         int seq = cInBuffer->getSequence();
         SyncManager::getInstance()->printVcSyncCount();
-        LOG2("<seq%d> [start runPipe], CPU-timestamp:%lu, vc:%d, kernel-timestamp:%.3l", seq,
-             CameraUtils::systemTime(), cInBuffer->getVirtualChannel(),
-             cInBuffer->getTimestamp().tv_sec * 1000.0 +
-             cInBuffer->getTimestamp().tv_usec / 1000.0);
+        LOG2(
+            "<seq%d> [start runPipe], CPU-timestamp:%lu, vc:%d, kernel-timestamp:%.3l", seq,
+            CameraUtils::systemTime(), cInBuffer->getVirtualChannel(),
+            cInBuffer->getTimestamp().tv_sec * 1000.0 + cInBuffer->getTimestamp().tv_usec / 1000.0);
 
         SyncManager::getInstance()->updateVcSyncCount(vc);
 
         // Run pipe with buffers
         ret = runPipe(inBuffers, outBuffers, outStatsBuffers, eventType);
-        LOG2("<seq%u> [done runPipe], CPU-timestamp:%lu, vc:%d, kernel-timestamp:%.3lf",
-             cInBuffer->getSequence(), CameraUtils::systemTime(), cInBuffer->getVirtualChannel(),
-             cInBuffer->getTimestamp().tv_sec * 1000.0 +
-             cInBuffer->getTimestamp().tv_usec / 1000.0);
+        LOG2(
+            "<seq%u> [done runPipe], CPU-timestamp:%lu, vc:%d, kernel-timestamp:%.3lf",
+            cInBuffer->getSequence(), CameraUtils::systemTime(), cInBuffer->getVirtualChannel(),
+            cInBuffer->getTimestamp().tv_sec * 1000.0 + cInBuffer->getTimestamp().tv_usec / 1000.0);
     } else {
-    // FRAME_SYNC_E
+        // FRAME_SYNC_E
         // Run pipe with buffers
         ret = runPipe(inBuffers, outBuffers, outStatsBuffers, eventType);
-    // FRAME_SYNC_S
+        // FRAME_SYNC_S
     }
     // FRAME_SYNC_E
     CheckAndLogError((ret != OK), UNKNOWN_ERROR, "@%s: failed to run pipe", __func__);
@@ -929,9 +930,9 @@ int PipeLiteExecutor::allocBuffers() {
         bool isCompression = PlatformData::getPSACompression(mCameraId) &&
                              PGUtils::isCompressionTerminal(termDesc.terminal);
 
-        int size = isCompression
-                       ? PGCommon::getFrameSize(srcFmt, srcWidth, srcHeight, false, true, true)
-                       : PGCommon::getFrameSize(srcFmt, srcWidth, srcHeight, true);
+        int size = isCompression ?
+                       PGCommon::getFrameSize(srcFmt, srcWidth, srcHeight, false, true, true) :
+                       PGCommon::getFrameSize(srcFmt, srcWidth, srcHeight, true);
 
         shared_ptr<CameraBuffer> buf =
             CameraBuffer::create(mCameraId, BUFFER_USAGE_PSYS_INPUT, V4L2_MEMORY_USERPTR, size, 0,
@@ -987,9 +988,9 @@ int PipeLiteExecutor::allocBuffers() {
             bool isCompression = PlatformData::getPSACompression(mCameraId) &&
                                  PGUtils::isCompressionTerminal(terminal);
 
-            int size = isCompression
-                           ? PGCommon::getFrameSize(srcFmt, srcWidth, srcHeight, false, true, true)
-                           : PGCommon::getFrameSize(srcFmt, srcWidth, srcHeight, true);
+            int size = isCompression ?
+                           PGCommon::getFrameSize(srcFmt, srcWidth, srcHeight, false, true, true) :
+                           PGCommon::getFrameSize(srcFmt, srcWidth, srcHeight, true);
 
             for (int i = 0; i < MAX_BUFFER_COUNT; i++) {
                 // Prepare internal frame buffer for its producer.

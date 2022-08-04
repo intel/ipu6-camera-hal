@@ -81,8 +81,8 @@ class IntelCca {
     void freeStatsDataMem();
 
  private:
-     int mCameraId;
-     TuningMode mTuningMode;
+    int mCameraId;
+    TuningMode mTuningMode;
 
     // Only 3 buffers will be held in AiqResultStorage (kAiqResultStorageSize is 3),
     // So it is safe to use other 3 buffers.
