@@ -46,8 +46,8 @@ const char* GLogSink::getName() const {
 
 void GLogSink::sendOffLog(LogItem logItem) {
     char prefix[32];
-    ::snprintf(prefix, sizeof(prefix), "CamHAL[%s]: ",
-            icamera::cameraDebugLogToString(logItem.level));
+    ::snprintf(prefix, sizeof(prefix),
+               "CamHAL[%s]: ", icamera::cameraDebugLogToString(logItem.level));
 
     switch (logItem.level) {
         case CAMERA_DEBUG_LOG_ERR:
@@ -135,11 +135,9 @@ void FileLogSink::sendOffLog(LogItem logItem) {
     fflush(mFp);
 }
 
-SysLogSink::SysLogSink() {
-}
+SysLogSink::SysLogSink() {}
 
-SysLogSink::~SysLogSink() {
-}
+SysLogSink::~SysLogSink() {}
 
 const char* SysLogSink::getName() const {
     return "SYS LOG";
@@ -147,21 +145,18 @@ const char* SysLogSink::getName() const {
 
 void SysLogSink::sendOffLog(LogItem logItem) {
 #define TIME_BUF_SIZE 128
-     char logMsg[500] = {0};
-     char timeInfo[TIME_BUF_SIZE] = {0};
-     setLogTime(timeInfo);
-     const char * levelStr = icamera::cameraDebugLogToString(logItem.level);
-     snprintf(logMsg, sizeof(logMsg), "[%s] CamHAL[%s] %s\n", timeInfo, levelStr, logItem.logEntry);
-     std::map<const char *, int> levelMap {
-             {"LV1", LOG_DEBUG}, {"LV2", LOG_DEBUG},
-             {"LV3", LOG_DEBUG}, {"INF", LOG_INFO},
-             {"ERR", LOG_ERR},   {"WAR", LOG_WARNING},
-             {"UKN", LOG_DEBUG}
-     };
+    char logMsg[500] = {0};
+    char timeInfo[TIME_BUF_SIZE] = {0};
+    setLogTime(timeInfo);
+    const char* levelStr = icamera::cameraDebugLogToString(logItem.level);
+    snprintf(logMsg, sizeof(logMsg), "[%s] CamHAL[%s] %s\n", timeInfo, levelStr, logItem.logEntry);
+    std::map<const char*, int> levelMap{
+        {"LV1", LOG_DEBUG}, {"LV2", LOG_DEBUG},   {"LV3", LOG_DEBUG}, {"INF", LOG_INFO},
+        {"ERR", LOG_ERR},   {"WAR", LOG_WARNING}, {"UKN", LOG_DEBUG}};
 
-     openlog("cameraHal", LOG_PID | LOG_CONS, LOG_USER);
-     syslog(levelMap[levelStr], "%s", logMsg);
-     closelog();
+    openlog("cameraHal", LOG_PID | LOG_CONS, LOG_USER);
+    syslog(levelMap[levelStr], "%s", logMsg);
+    closelog();
 }
 
 };  // namespace icamera

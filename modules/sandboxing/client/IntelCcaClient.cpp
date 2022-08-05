@@ -71,9 +71,7 @@ void IntelCca::releaseAllInstances() {
     }
 }
 
-IntelCca::IntelCca(int cameraId, TuningMode mode)
-        : mCameraId(cameraId),
-          mTuningMode(mode) {
+IntelCca::IntelCca(int cameraId, TuningMode mode) : mCameraId(cameraId), mTuningMode(mode) {
     LOG1("<id%d> @%s, tuningMode:%d", cameraId, __func__, mode);
 
     std::string number = std::to_string(cameraId) + std::to_string(mode) +
@@ -424,8 +422,8 @@ void* IntelCca::fetchHwStatsData(int64_t sequence, unsigned int* byteUsed) {
     if (mMemStatsInfoMap.find(sequence) != mMemStatsInfoMap.end()) {
         *byteUsed = mMemStatsInfoMap[sequence].usedSize;
         ShmMemInfo memInfo = mMemStatsInfoMap[sequence].shmMem;
-        LOG2("<id%d:seq%ld> @%s, tuningMode:%d, memInfo.mAddr %p",
-             mCameraId, sequence, __func__, mTuningMode, memInfo.mAddr);
+        LOG2("<id%d:seq%ld> @%s, tuningMode:%d, memInfo.mAddr %p", mCameraId, sequence, __func__,
+             mTuningMode, memInfo.mAddr);
         return memInfo.mAddr;
     }
 
@@ -501,8 +499,9 @@ void* IntelCca::allocMem(int streamId, const std::string& name, int index, int s
     bool ret = mCommon.allocShmMem(finalName, size, &memInfo);
     CheckAndLogError(ret == false, nullptr, "%s, mCommon.allocShmMem fails for pal buf", __func__);
     LOG1("<id%d> @%s, tuningMode:%d, name:%s, index:%d, streamId:%d, size:%d, handle: %d,"
-         "address: %p", mCameraId, __func__, mTuningMode, name.c_str(), index, streamId, size,
-         memInfo.mHandle, memInfo.mAddr);
+         "address: %p",
+         mCameraId, __func__, mTuningMode, name.c_str(), index, streamId, size, memInfo.mHandle,
+         memInfo.mAddr);
     mMemsOuter[memInfo.mAddr] = memInfo;
 
     return memInfo.mAddr;

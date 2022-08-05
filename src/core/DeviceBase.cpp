@@ -389,9 +389,8 @@ int MainDevice::onDequeueBuffer(shared_ptr<CameraBuffer> buffer) {
 
     if (mNeedSkipFrame) return OK;
 
-    LOG2("<seq%ld>@%s, field:%d, timestamp: sec=%ld, usec=%ld", buffer->getSequence(),
-         __func__, buffer->getField(), buffer->getTimestamp().tv_sec,
-         buffer->getTimestamp().tv_usec);
+    LOG2("<seq%ld>@%s, field:%d, timestamp: sec=%ld, usec=%ld", buffer->getSequence(), __func__,
+         buffer->getField(), buffer->getTimestamp().tv_sec, buffer->getTimestamp().tv_usec);
 
     for (auto& consumer : mConsumers) {
         consumer->onFrameAvailable(mPort, buffer);

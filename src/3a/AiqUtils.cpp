@@ -46,7 +46,7 @@ void AiqUtils::dumpAeResults(const cca::cca_ae_results& aeResult) {
              aeResult.exposures[i].exposure[0].aperture_fn,
              aeResult.exposures[i].exposure[0].exposure_time_us,
              aeResult.exposures[i].exposure[0].total_target_exposure,
-             aeResult.exposures[i].exposure[0].nd_filter_enabled? "YES": "NO",
+             aeResult.exposures[i].exposure[0].nd_filter_enabled ? "YES" : "NO",
              aeResult.exposures[i].exposure[0].iso,
              aeResult.exposures[i].exposure[0].low_limit_total_exposure,
              aeResult.exposures[i].exposure[0].up_limit_total_exposure);
@@ -62,13 +62,13 @@ void AiqUtils::dumpAeResults(const cca::cca_ae_results& aeResult) {
     if (wg.width != 0 && wg.height != 0) {
         LOG3("AE weight grid [%dx%d]", wg.width, wg.height);
         for (int i = 0; i < 5 && i < wg.height; i++) {
-            LOG3("AE weight_grid[%d] = %d ", wg.width/2, wg.weights[wg.width/2]);
+            LOG3("AE weight_grid[%d] = %d ", wg.width / 2, wg.weights[wg.width / 2]);
         }
     }
 
     const ia_aiq_aperture_control& ac = aeResult.aperture_control;
-    LOG3("AE aperture fn = %f, iris command = %d, code = %d",
-         ac.aperture_fn, ac.dc_iris_command, ac.code);
+    LOG3("AE aperture fn = %f, iris command = %d, code = %d", ac.aperture_fn, ac.dc_iris_command,
+         ac.code);
 }
 
 void AiqUtils::dumpAfResults(const cca::cca_af_results& afResult) {
@@ -76,24 +76,24 @@ void AiqUtils::dumpAfResults(const cca::cca_af_results& afResult) {
 
     LOG3("AF results: current/next dis %d/%d, next pos %d, final_position_reached %s, status %d",
          afResult.current_focus_distance, afResult.next_focus_distance, afResult.next_lens_position,
-         afResult.final_lens_position_reached ? "TRUE":"FALSE", afResult.status);
+         afResult.final_lens_position_reached ? "TRUE" : "FALSE", afResult.status);
 
     switch (afResult.status) {
-    case ia_aiq_af_status_local_search:
-        LOG3("AF result state _local_search");
-        break;
-    case ia_aiq_af_status_extended_search:
-        LOG3("AF result state extended_search");
-        break;
-    case ia_aiq_af_status_success:
-        LOG3("AF state success");
-        break;
-    case ia_aiq_af_status_fail:
-        LOG3("AF state fail");
-        break;
-    case ia_aiq_af_status_idle:
-    default:
-        LOG3("AF state idle");
+        case ia_aiq_af_status_local_search:
+            LOG3("AF result state _local_search");
+            break;
+        case ia_aiq_af_status_extended_search:
+            LOG3("AF result state extended_search");
+            break;
+        case ia_aiq_af_status_success:
+            LOG3("AF state success");
+            break;
+        case ia_aiq_af_status_fail:
+            LOG3("AF state fail");
+            break;
+        case ia_aiq_af_status_idle:
+        default:
+            LOG3("AF state idle");
     }
 }
 
@@ -108,22 +108,22 @@ void AiqUtils::dumpAwbResults(const cca::cca_awb_results& awbResult) {
 void AiqUtils::dumpGbceResults(const cca::cca_gbce_params& gbceResult) {
     if (!Log::isLogTagEnabled(GET_FILE_SHIFT(AiqUtils), CAMERA_DEBUG_LOG_LEVEL3)) return;
 
-    LOG3("gamma_lut_size: %u, tone_map_lut_size: %u",
-         gbceResult.gamma_lut_size, gbceResult.tone_map_lut_size);
+    LOG3("gamma_lut_size: %u, tone_map_lut_size: %u", gbceResult.gamma_lut_size,
+         gbceResult.tone_map_lut_size);
 
     if (gbceResult.gamma_lut_size <= 0 || gbceResult.tone_map_lut_size <= 0) return;
 
     LOG3("gamma table: R: 0(%f), %u(%f), %u(%f)", gbceResult.r_gamma_lut[0],
          (gbceResult.gamma_lut_size / 2), gbceResult.r_gamma_lut[gbceResult.gamma_lut_size / 2],
-         (gbceResult.gamma_lut_size - 1),  gbceResult.r_gamma_lut[gbceResult.gamma_lut_size - 1]);
+         (gbceResult.gamma_lut_size - 1), gbceResult.r_gamma_lut[gbceResult.gamma_lut_size - 1]);
 
     LOG3("gamma table: G: 0(%f), %u(%f), %u(%f)", gbceResult.g_gamma_lut[0],
          (gbceResult.gamma_lut_size / 2), gbceResult.g_gamma_lut[gbceResult.gamma_lut_size / 2],
-         (gbceResult.gamma_lut_size - 1),  gbceResult.g_gamma_lut[gbceResult.gamma_lut_size - 1]);
+         (gbceResult.gamma_lut_size - 1), gbceResult.g_gamma_lut[gbceResult.gamma_lut_size - 1]);
 
     LOG3("gamma table: B: 0(%f), %u(%f), %u(%f)", gbceResult.b_gamma_lut[0],
          (gbceResult.gamma_lut_size / 2), gbceResult.b_gamma_lut[gbceResult.gamma_lut_size / 2],
-         (gbceResult.gamma_lut_size - 1),  gbceResult.b_gamma_lut[gbceResult.gamma_lut_size - 1]);
+         (gbceResult.gamma_lut_size - 1), gbceResult.b_gamma_lut[gbceResult.gamma_lut_size - 1]);
 
     LOG3("tonemap table: 0(%f), %u(%f), %u(%f)", gbceResult.tone_map_lut[0],
          (gbceResult.tone_map_lut_size / 2),
@@ -136,47 +136,44 @@ void AiqUtils::dumpPaResults(const cca::cca_pa_params& paResult) {
     if (!Log::isLogTagEnabled(GET_FILE_SHIFT(AiqUtils), CAMERA_DEBUG_LOG_LEVEL3)) return;
 
     for (int i = 0; i < 3; i++) {
-        LOG3("color_conversion_matrix  [%.4f %.4f %.4f] ",
-             paResult.color_conversion_matrix[i][0],
-             paResult.color_conversion_matrix[i][1],
-             paResult.color_conversion_matrix[i][2]);
+        LOG3("color_conversion_matrix  [%.4f %.4f %.4f] ", paResult.color_conversion_matrix[i][0],
+             paResult.color_conversion_matrix[i][1], paResult.color_conversion_matrix[i][2]);
     }
 
-    LOG3("color_gains, gr:%f, r:%f, b:%f, gb:%f",
-         paResult.color_gains.gr, paResult.color_gains.r,
+    LOG3("color_gains, gr:%f, r:%f, b:%f, gb:%f", paResult.color_gains.gr, paResult.color_gains.r,
          paResult.color_gains.b, paResult.color_gains.gb);
 }
 
 void AiqUtils::dumpSaResults(const cca::cca_sa_results& saResult) {
     if (!Log::isLogTagEnabled(GET_FILE_SHIFT(AiqUtils), CAMERA_DEBUG_LOG_LEVEL3)) return;
 
-    LOG3("SA results color_order %d size %dx%d",
-         saResult.color_order, saResult.width,  saResult.height);
+    LOG3("SA results color_order %d size %dx%d", saResult.color_order, saResult.width,
+         saResult.height);
 }
 
 int AiqUtils::convertError(ia_err iaErr) {
     switch (iaErr) {
-    case ia_err_none:
-        return OK;
-    case ia_err_general:
-        return UNKNOWN_ERROR;
-    case ia_err_nomemory:
-        return NO_MEMORY;
-    case ia_err_data:
-        return BAD_VALUE;
-    case ia_err_internal:
-        return INVALID_OPERATION;
-    case ia_err_argument:
-        return BAD_VALUE;
-    default:
-        return UNKNOWN_ERROR;
+        case ia_err_none:
+            return OK;
+        case ia_err_general:
+            return UNKNOWN_ERROR;
+        case ia_err_nomemory:
+            return NO_MEMORY;
+        case ia_err_data:
+            return BAD_VALUE;
+        case ia_err_internal:
+            return INVALID_OPERATION;
+        case ia_err_argument:
+            return BAD_VALUE;
+        default:
+            return UNKNOWN_ERROR;
     }
 }
 
 /**
  * Convert SensorFrameParams defined in PlatformData to ia_aiq_frame_params in aiq
  */
-void AiqUtils::convertToAiqFrameParam(const SensorFrameParams &sensor, ia_aiq_frame_params &aiq) {
+void AiqUtils::convertToAiqFrameParam(const SensorFrameParams& sensor, ia_aiq_frame_params& aiq) {
     aiq.cropped_image_height = sensor.cropped_image_height;
     aiq.cropped_image_width = sensor.cropped_image_width;
     aiq.horizontal_crop_offset = sensor.horizontal_crop_offset;
@@ -214,17 +211,17 @@ camera_window_t AiqUtils::convertToIaWindow(const camera_coordinate_system_t& sr
                                             const camera_window_t& srcWindow) {
     camera_coordinate_t leftTop;
     camera_coordinate_t rightBottom;
-    leftTop.x     = srcWindow.left;
-    leftTop.y     = srcWindow.top;
+    leftTop.x = srcWindow.left;
+    leftTop.y = srcWindow.top;
     rightBottom.x = srcWindow.right;
     rightBottom.y = srcWindow.bottom;
-    leftTop       = convertToIaCoordinate(srcSystem, leftTop);
-    rightBottom   = convertToIaCoordinate(srcSystem, rightBottom);
+    leftTop = convertToIaCoordinate(srcSystem, leftTop);
+    rightBottom = convertToIaCoordinate(srcSystem, rightBottom);
 
     camera_window_t result;
-    result.left   = leftTop.x;
-    result.top    = leftTop.y;
-    result.right  = rightBottom.x;
+    result.left = leftTop.x;
+    result.top = leftTop.y;
+    result.right = rightBottom.x;
     result.bottom = rightBottom.y;
     result.weight = srcWindow.weight;
     return result;
@@ -235,14 +232,14 @@ camera_window_t AiqUtils::convertToIaWindow(const camera_coordinate_system_t& sr
  */
 float AiqUtils::normalizeAwbGain(int gain) {
     gain = CLIP(gain, AWB_GAIN_MAX, AWB_GAIN_MIN);
-    return AWB_GAIN_NORMALIZED_START + (float)(gain - AWB_GAIN_MIN) * \
-                                       AWB_GAIN_RANGE_NORMALIZED / AWB_GAIN_RANGE_USER;
+    return AWB_GAIN_NORMALIZED_START + static_cast<float>(gain - AWB_GAIN_MIN) *
+                                           AWB_GAIN_RANGE_NORMALIZED / AWB_GAIN_RANGE_USER;
 }
 
 int AiqUtils::convertToUserAwbGain(float normalizedGain) {
     normalizedGain = CLIP(normalizedGain, AWB_GAIN_NORMALIZED_START, AWB_GAIN_NORMALIZED_END);
-    return AWB_GAIN_MIN + (normalizedGain - AWB_GAIN_NORMALIZED_START) * \
-                          AWB_GAIN_RANGE_USER / AWB_GAIN_RANGE_NORMALIZED;
+    return AWB_GAIN_MIN + (normalizedGain - AWB_GAIN_NORMALIZED_START) * AWB_GAIN_RANGE_USER /
+                              AWB_GAIN_RANGE_NORMALIZED;
 }
 
 float AiqUtils::convertSpeedModeToTime(camera_converge_speed_t mode) {
@@ -294,10 +291,10 @@ void AiqUtils::applyTonemapGamma(float gamma, cca::cca_gbce_params* results) {
         results->g_gamma_lut[i] = pow(i / static_cast<float>(lutSize), 1 / gamma);
     }
 
-    MEMCPY_S(results->b_gamma_lut, lutSize * sizeof(float),
-             results->g_gamma_lut, lutSize * sizeof(float));
-    MEMCPY_S(results->r_gamma_lut, lutSize * sizeof(float),
-             results->g_gamma_lut, lutSize * sizeof(float));
+    MEMCPY_S(results->b_gamma_lut, lutSize * sizeof(float), results->g_gamma_lut,
+             lutSize * sizeof(float));
+    MEMCPY_S(results->r_gamma_lut, lutSize * sizeof(float), results->g_gamma_lut,
+             lutSize * sizeof(float));
 }
 
 void AiqUtils::applyTonemapSRGB(cca::cca_gbce_params* results) {
@@ -307,17 +304,17 @@ void AiqUtils::applyTonemapSRGB(cca::cca_gbce_params* results) {
     CheckAndLogError(lutSize < MIN_TONEMAP_POINTS, VOID_VALUE,
                      "Bad gamma lut size (%d) in gbce results", lutSize);
     for (int i = 0; i < lutSize; i++) {
-        if (i / (lutSize - 1)  < 0.0031308)
+        if (i / (lutSize - 1) < 0.0031308)
             results->g_gamma_lut[i] = 12.92 * (i / (lutSize - 1));
         else
             results->g_gamma_lut[i] =
-                    1.055 * pow(i / static_cast<float>(lutSize - 1), 1 / 2.4) - 0.055;
+                1.055 * pow(i / static_cast<float>(lutSize - 1), 1 / 2.4) - 0.055;
     }
 
-    MEMCPY_S(results->b_gamma_lut, lutSize * sizeof(float),
-             results->g_gamma_lut, lutSize * sizeof(float));
-    MEMCPY_S(results->r_gamma_lut, lutSize * sizeof(float),
-             results->g_gamma_lut, lutSize * sizeof(float));
+    MEMCPY_S(results->b_gamma_lut, lutSize * sizeof(float), results->g_gamma_lut,
+             lutSize * sizeof(float));
+    MEMCPY_S(results->r_gamma_lut, lutSize * sizeof(float), results->g_gamma_lut,
+             lutSize * sizeof(float));
 }
 
 void AiqUtils::applyTonemapREC709(cca::cca_gbce_params* results) {
@@ -331,13 +328,13 @@ void AiqUtils::applyTonemapREC709(cca::cca_gbce_params* results) {
             results->g_gamma_lut[i] = 4.5 * (i / (lutSize - 1));
         else
             results->g_gamma_lut[i] =
-                    1.099 * pow(i / static_cast<float>(lutSize - 1), 0.45) - 0.099;
+                1.099 * pow(i / static_cast<float>(lutSize - 1), 0.45) - 0.099;
     }
 
-    MEMCPY_S(results->b_gamma_lut, lutSize * sizeof(float),
-             results->g_gamma_lut, lutSize * sizeof(float));
-    MEMCPY_S(results->r_gamma_lut, lutSize * sizeof(float),
-             results->g_gamma_lut, lutSize * sizeof(float));
+    MEMCPY_S(results->b_gamma_lut, lutSize * sizeof(float), results->g_gamma_lut,
+             lutSize * sizeof(float));
+    MEMCPY_S(results->r_gamma_lut, lutSize * sizeof(float), results->g_gamma_lut,
+             lutSize * sizeof(float));
 }
 
 void AiqUtils::applyTonemapCurve(const camera_tonemap_curves_t& curves,
@@ -360,12 +357,12 @@ void AiqUtils::applyTonemapCurve(const camera_tonemap_curves_t& curves,
             results->g_gamma_lut[i] = curves.gCurve[left];
             results->b_gamma_lut[i] = curves.bCurve[left];
         } else {
-            results->r_gamma_lut[i] = curves.rCurve[left]
-                                      + ratio * (curves.rCurve[right] - curves.rCurve[left]);
-            results->g_gamma_lut[i] = curves.gCurve[left]
-                                      + ratio * (curves.gCurve[right] - curves.gCurve[left]);
-            results->b_gamma_lut[i] = curves.bCurve[left]
-                                      + ratio * (curves.bCurve[right] - curves.bCurve[left]);
+            results->r_gamma_lut[i] =
+                curves.rCurve[left] + ratio * (curves.rCurve[right] - curves.rCurve[left]);
+            results->g_gamma_lut[i] =
+                curves.gCurve[left] + ratio * (curves.gCurve[right] - curves.gCurve[left]);
+            results->b_gamma_lut[i] =
+                curves.bCurve[left] + ratio * (curves.bCurve[right] - curves.bCurve[left]);
         }
     }
 }
@@ -396,16 +393,16 @@ void AiqUtils::applyAwbGainForTonemapCurve(const camera_tonemap_curves_t& curves
     float maxAverage = std::max(averageR, averageG);
     maxAverage = std::max(maxAverage, averageB);
     if (maxAverage - minAverage > EPSILON) {
-        averageR =  AWB_GAIN_NORMALIZED_START + (averageR - minAverage) * \
-                                           AWB_GAIN_RANGE_NORMALIZED / (maxAverage - minAverage);
-        averageG =  AWB_GAIN_NORMALIZED_START + (averageG - minAverage) * \
-                                           AWB_GAIN_RANGE_NORMALIZED / (maxAverage - minAverage);
-        averageB =  AWB_GAIN_NORMALIZED_START + (averageB - minAverage) * \
-                                           AWB_GAIN_RANGE_NORMALIZED / (maxAverage - minAverage);
+        averageR = AWB_GAIN_NORMALIZED_START +
+                   (averageR - minAverage) * AWB_GAIN_RANGE_NORMALIZED / (maxAverage - minAverage);
+        averageG = AWB_GAIN_NORMALIZED_START +
+                   (averageG - minAverage) * AWB_GAIN_RANGE_NORMALIZED / (maxAverage - minAverage);
+        averageB = AWB_GAIN_NORMALIZED_START +
+                   (averageB - minAverage) * AWB_GAIN_RANGE_NORMALIZED / (maxAverage - minAverage);
         results->accurate_r_per_g = averageR / averageG;
         results->accurate_b_per_g = averageB / averageG;
-        LOG2("%s: overwrite awb gain %f %f", __func__,
-             results->accurate_r_per_g, results->accurate_b_per_g);
+        LOG2("%s: overwrite awb gain %f %f", __func__, results->accurate_r_per_g,
+             results->accurate_b_per_g);
     }
 }
 
@@ -431,7 +428,7 @@ void AiqUtils::applyAwbGainForTonemapCurve(const camera_tonemap_curves_t& curves
  *  avoid division by 0. If any of the required CMC items is missing
  *  it will return the default value 5m
  */
-float AiqUtils::calculateHyperfocalDistance(const cca::cca_cmc &cmc) {
+float AiqUtils::calculateHyperfocalDistance(const cca::cca_cmc& cmc) {
     const float DEFAULT_HYPERFOCAL_DISTANCE = 5000.0f;
 
     // Pixel size is stored in CMC in hundreds of micrometers
@@ -450,8 +447,8 @@ float AiqUtils::calculateHyperfocalDistance(const cca::cca_cmc &cmc) {
     // assuming square pixel
     const int CIRCLE_OF_CONFUSION_IN_PIXELS = 2;
     float cocMicros = pixelSizeMicro * CIRCLE_OF_CONFUSION_IN_PIXELS;
-    float hyperfocalDistanceMillis = 1000 * (focalLengthMillis * focalLengthMillis) /
-                                     (fNumber * cocMicros);
+    float hyperfocalDistanceMillis =
+        1000 * (focalLengthMillis * focalLengthMillis) / (fNumber * cocMicros);
 
     return (hyperfocalDistanceMillis == 0.0f) ? DEFAULT_HYPERFOCAL_DISTANCE :
                                                 hyperfocalDistanceMillis;

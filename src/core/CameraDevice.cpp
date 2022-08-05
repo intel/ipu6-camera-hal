@@ -61,8 +61,7 @@ CameraDevice::CameraDevice(int cameraId)
     mLensCtrl = new LensHw(mCameraId);
     mSensorCtrl = SensorHwCtrl::createSensorCtrl(mCameraId);
 
-    m3AControl =
-        I3AControlFactory::createI3AControl(mCameraId, mSensorCtrl, mLensCtrl);
+    m3AControl = I3AControlFactory::createI3AControl(mCameraId, mSensorCtrl, mLensCtrl);
     mRequestThread = new RequestThread(mCameraId, m3AControl, mParamGenerator);
     mRequestThread->registerListener(EVENT_PROCESS_REQUEST, this);
 
@@ -216,8 +215,7 @@ void CameraDevice::bindListeners() {
     // INTEL_DVS_S
     auto dvsListener = m3AControl->getDVSEventListener();
     for (auto lis : dvsListener)
-        for (auto& item : mProcessors)
-            item->registerListener(EVENT_DVS_READY, lis);
+        for (auto& item : mProcessors) item->registerListener(EVENT_DVS_READY, lis);
     // INTEL_DVS_E
 }
 
@@ -261,8 +259,7 @@ void CameraDevice::unbindListeners() {
     // INTEL_DVS_S
     auto dvsListener = m3AControl->getDVSEventListener();
     for (auto lis : dvsListener)
-        for (auto& item : mProcessors)
-            item->removeListener(EVENT_DVS_READY, lis);
+        for (auto& item : mProcessors) item->removeListener(EVENT_DVS_READY, lis);
     // INTEL_DVS_E
 }
 

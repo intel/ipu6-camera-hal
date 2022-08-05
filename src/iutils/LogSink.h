@@ -64,10 +64,10 @@ class StdconLogSink : public LogOutputSink {
 
 class SysLogSink : public LogOutputSink {
  public:
-  SysLogSink();
-  ~SysLogSink();
-  const char* getName() const override;
-  void sendOffLog(LogItem logItem) override;
+    SysLogSink();
+    ~SysLogSink();
+    const char* getName() const override;
+    void sendOffLog(LogItem logItem) override;
 };
 
 class FileLogSink : public LogOutputSink {

@@ -121,26 +121,25 @@ struct aiq_parameter_t {
  * and return some useful status of aiq results
  */
 class AiqSetting {
-
-public:
+ public:
     AiqSetting(int cameraId);
     ~AiqSetting();
 
     int init(void);
     int deinit(void);
-    int configure(const stream_config_t *streamList);
+    int configure(const stream_config_t* streamList);
 
     int setParameters(const Parameters& params);
 
-    int getAiqParameter(aiq_parameter_t &param);
+    int getAiqParameter(aiq_parameter_t& param);
 
-private:
-    void updateFrameUsage(const stream_config_t *streamList);
+ private:
+    void updateFrameUsage(const stream_config_t* streamList);
 
-public:
+ public:
     int mCameraId;
 
-private:
+ private:
     std::vector<TuningMode> mTuningModes;
     aiq_parameter_t mAiqParam;
 

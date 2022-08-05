@@ -35,7 +35,7 @@
  * it's based on sensor vblank, psys iterating time
  * and thread scheduling
  */
-#define SOF_EVENT_MARGIN (5000000)  // 5ms
+#define SOF_EVENT_MARGIN (5000000)       // 5ms
 #define SOF_EVENT_MAX_MARGIN (60000000)  // 60ms
 
 #define EXTREME_STRENGTH_LEVEL4 (-120)
@@ -47,17 +47,17 @@ using std::shared_ptr;
 using std::unique_ptr;
 
 namespace icamera {
-PSysProcessor::PSysProcessor(int cameraId, ParameterGenerator *pGenerator) :
-        mCameraId(cameraId),
-        mParameterGenerator(pGenerator),
-        mCurConfigMode(CAMERA_STREAM_CONFIGURATION_MODE_NORMAL),
-        mTuningMode(TUNING_MODE_MAX),
-        mRawPort(INVALID_PORT),
-        mSofSequence(-1),
-        mOpaqueRawPort(INVALID_PORT),
-        mHoldRawBuffers(false),
-        mLastStillTnrSequence(-1),
-        mStatus(PIPELINE_UNCREATED) {
+PSysProcessor::PSysProcessor(int cameraId, ParameterGenerator* pGenerator)
+        : mCameraId(cameraId),
+          mParameterGenerator(pGenerator),
+          mCurConfigMode(CAMERA_STREAM_CONFIGURATION_MODE_NORMAL),
+          mTuningMode(TUNING_MODE_MAX),
+          mRawPort(INVALID_PORT),
+          mSofSequence(-1),
+          mOpaqueRawPort(INVALID_PORT),
+          mHoldRawBuffers(false),
+          mLastStillTnrSequence(-1),
+          mStatus(PIPELINE_UNCREATED) {
     mProcessThread = new ProcessThread(this);
     CLEAR(mSofTimestamp);
 }
@@ -68,7 +68,7 @@ PSysProcessor::~PSysProcessor() {
 }
 
 int PSysProcessor::configure(const std::vector<ConfigMode>& configModes) {
-    //Create PSysDAGs actually
+    // Create PSysDAGs actually
     CheckAndLogError(mStatus == PIPELINE_CREATED, -1,
                      "@%s mStatus is in wrong status: PIPELINE_CREATED", __func__);
 
@@ -81,7 +81,7 @@ int PSysProcessor::configure(const std::vector<ConfigMode>& configModes) {
 
     std::map<Port, stream_t> outputFrameInfo;
     stream_t stillStream = {}, videoStream = {};
-    for (auto &outFrameInfo : mOutputFrameInfo) {
+    for (auto& outFrameInfo : mOutputFrameInfo) {
         // Check if it's required to output raw image from ISYS
         if (outFrameInfo.second.format == V4L2_PIX_FMT_SGRBG12) {
             mRawPort = outFrameInfo.first;
@@ -104,8 +104,8 @@ int PSysProcessor::configure(const std::vector<ConfigMode>& configModes) {
     }
 
     int ret = OK;
-    //Create PSysDAG according to real configure mode
-    for (auto &cfg : mConfigModes) {
+    // Create PSysDAG according to real configure mode
+    for (auto& cfg : mConfigModes) {
         if (mPSysDAGs.find(cfg) != mPSysDAGs.end()) {
             continue;
         }
@@ -119,28 +119,26 @@ int PSysProcessor::configure(const std::vector<ConfigMode>& configModes) {
 
         pSysDAG->setFrameInfo(mInputFrameInfo, outputFrameInfo);
         bool useTnrOutBuffer = mOpaqueRawPort != INVALID_PORT;
-        ret = pSysDAG->configure(tuningConfig.configMode, tuningConfig.tuningMode,
-                                 useTnrOutBuffer);
+        ret = pSysDAG->configure(tuningConfig.configMode, tuningConfig.tuningMode, useTnrOutBuffer);
         CheckAndLogError(ret != OK, ret, "@%s configure psys dag failed:%d", __func__, ret);
 
         mPSysDAGs[tuningConfig.configMode] = std::move(pSysDAG);
 
-        //Update default active config mode
+        // Update default active config mode
         mCurConfigMode = tuningConfig.configMode;
         mTuningMode = tuningConfig.tuningMode;
     }
 
     if (ret == OK) mStatus = PIPELINE_CREATED;
     return ret;
-
 }
 
-int PSysProcessor::registerUserOutputBufs(Port port, const shared_ptr<CameraBuffer> &camBuffer) {
-    for (auto &psysDAGPair : mPSysDAGs) {
+int PSysProcessor::registerUserOutputBufs(Port port, const shared_ptr<CameraBuffer>& camBuffer) {
+    for (auto& psysDAGPair : mPSysDAGs) {
         if (!psysDAGPair.second) continue;
         int ret = psysDAGPair.second->registerUserOutputBufs(port, camBuffer);
-        CheckAndLogError(ret != OK, BAD_VALUE, "%s, register user buffer failed, ret: %d",
-                         __func__, ret);
+        CheckAndLogError(ret != OK, BAD_VALUE, "%s, register user buffer failed, ret: %d", __func__,
+                         ret);
     }
 
     return OK;
@@ -148,9 +146,9 @@ int PSysProcessor::registerUserOutputBufs(Port port, const shared_ptr<CameraBuff
 
 int PSysProcessor::start() {
     PERF_CAMERA_ATRACE();
-    AutoMutex   l(mBufferQueueLock);
+    AutoMutex l(mBufferQueueLock);
     int rawBufferNum = mHoldRawBuffers ? PlatformData::getMaxRawDataNum(mCameraId) :
-                       PlatformData::getPreferredBufQSize(mCameraId);
+                                         PlatformData::getPreferredBufQSize(mCameraId);
 
     /* Should use MIN_BUFFER_COUNT to optimize frame latency when PSYS processing
      * time is slower than ISYS
@@ -165,7 +163,7 @@ int PSysProcessor::start() {
     mThreadRunning = true;
     CLEAR(mSofTimestamp);
     mProcessThread->run("PsysProcessor", PRIORITY_NORMAL);
-    for (auto &psysDAGPair : mPSysDAGs) {
+    for (auto& psysDAGPair : mPSysDAGs) {
         if (!psysDAGPair.second) continue;
         psysDAGPair.second->start();
         if (needProducerBuffer && PlatformData::isNeedToPreRegisterBuffer(mCameraId)) {
@@ -179,7 +177,7 @@ int PSysProcessor::start() {
 void PSysProcessor::stop() {
     PERF_CAMERA_ATRACE();
 
-    for (auto &psysDAGPair : mPSysDAGs) {
+    for (auto& psysDAGPair : mPSysDAGs) {
         if (!psysDAGPair.second) continue;
         psysDAGPair.second->stop();
     }
@@ -188,7 +186,7 @@ void PSysProcessor::stop() {
     {
         AutoMutex l(mBufferQueueLock);
         mThreadRunning = false;
-        //Wakeup the thread to exit
+        // Wakeup the thread to exit
         mFrameAvailableSignal.signal();
         mOutputAvailableSignal.signal();
         mFrameDoneSignal.signal();
@@ -245,7 +243,7 @@ int PSysProcessor::setParameters(const Parameters& param) {
         }
     }
 
-    LOG2("%s: ISP EE setting, level: %d, strength: %d",  __func__,
+    LOG2("%s: ISP EE setting, level: %d, strength: %d", __func__,
          static_cast<int>(mIspSettings.eeSetting.feature_level),
          static_cast<int>(mIspSettings.eeSetting.strength));
 
@@ -287,9 +285,9 @@ int PSysProcessor::setParameters(const Parameters& param) {
     camera_video_stabilization_mode_t stabilizationMode;
     ret = param.getVideoStabilizationMode(stabilizationMode);
     if (ret == OK) {
-         mIspSettings.videoStabilization = (stabilizationMode == VIDEO_STABILIZATION_MODE_ON);
+        mIspSettings.videoStabilization = (stabilizationMode == VIDEO_STABILIZATION_MODE_ON);
     } else {
-         mIspSettings.videoStabilization = false;
+        mIspSettings.videoStabilization = false;
     }
     LOG2("%s: Video stablilization enabled:%d", __func__, mIspSettings.videoStabilization);
 
@@ -298,11 +296,10 @@ int PSysProcessor::setParameters(const Parameters& param) {
 
 int PSysProcessor::getParameters(Parameters& param) {
     AutoRMutex rl(mIspSettingsLock);
-    camera_image_enhancement_t enhancement = { mIspSettings.manualSettings.manualSharpness,
-                                               mIspSettings.manualSettings.manualBrightness,
-                                               mIspSettings.manualSettings.manualContrast,
-                                               mIspSettings.manualSettings.manualHue,
-                                               mIspSettings.manualSettings.manualSaturation };
+    camera_image_enhancement_t enhancement = {
+        mIspSettings.manualSettings.manualSharpness, mIspSettings.manualSettings.manualBrightness,
+        mIspSettings.manualSettings.manualContrast, mIspSettings.manualSettings.manualHue,
+        mIspSettings.manualSettings.manualSaturation};
     int ret = param.setImageEnhancement(enhancement);
 
     return ret;
@@ -311,9 +308,9 @@ int PSysProcessor::getParameters(Parameters& param) {
 /**
  * Get available setting sequence from outBuf
  */
-int64_t PSysProcessor::getSettingSequence(const CameraBufferPortMap &outBuf) {
+int64_t PSysProcessor::getSettingSequence(const CameraBufferPortMap& outBuf) {
     int64_t settingSequence = -1;
-    for (auto& output: outBuf) {
+    for (auto& output : outBuf) {
         if (output.second) {
             settingSequence = output.second->getSettingSequence();
             break;
@@ -377,8 +374,8 @@ bool PSysProcessor::needHoldOnInputFrame(int64_t settingSequence, int64_t inputS
 bool PSysProcessor::needSwitchPipe(int64_t sequence) {
     const AiqResult* aiqResults = AiqResultStorage::getInstance(mCameraId)->getAiqResult(sequence);
     if (aiqResults == nullptr) {
-        LOG2("%s: not found sequence %ld in AiqResultStorage, no update for active modes",
-             __func__, sequence);
+        LOG2("%s: not found sequence %ld in AiqResultStorage, no update for active modes", __func__,
+             sequence);
         return false;
     }
 
@@ -404,17 +401,16 @@ bool PSysProcessor::needSwitchPipe(int64_t sequence) {
 void PSysProcessor::handleEvent(EventData eventData) {
     // Process registered events
     switch (eventData.type) {
-        case EVENT_ISYS_SOF:
-            {
-                AutoMutex l(mSofLock);
+        case EVENT_ISYS_SOF: {
+            AutoMutex l(mSofLock);
 
-                mSofSequence = eventData.data.sync.sequence;
-                gettimeofday(&mSofTimestamp, nullptr);
-                LOG2("%s, received SOF event sequence: %ld, timestamp: %ld",
-                     __func__, eventData.data.sync.sequence, TIMEVAL2USECS(mSofTimestamp));
-                mSofCondition.signal();
-            }
+            mSofSequence = eventData.data.sync.sequence;
+            gettimeofday(&mSofTimestamp, nullptr);
+            LOG2("%s, received SOF event sequence: %ld, timestamp: %ld", __func__,
+                 eventData.data.sync.sequence, TIMEVAL2USECS(mSofTimestamp));
+            mSofCondition.signal();
             break;
+        }
         default:
             LOGW("Unexpected event: %d", eventData.type);
             break;
@@ -471,8 +467,7 @@ int PSysProcessor::processNewFrame() {
         // push all the pending buffers to task
         int64_t waitTime = SOF_EVENT_MARGIN;
         // Don't need to catch sof for 1st frame or sof time out
-        if (TIMEVAL2NSECS(mSofTimestamp) == 0 || sofInterval >= SOF_EVENT_MAX_MARGIN)
-            waitTime = 0;
+        if (TIMEVAL2NSECS(mSofTimestamp) == 0 || sofInterval >= SOF_EVENT_MAX_MARGIN) waitTime = 0;
         while (true) {
             {
                 ConditionLock lock(mBufferQueueLock);
@@ -508,9 +503,9 @@ int PSysProcessor::processNewFrame() {
     return OK;
 }
 
-void PSysProcessor::handleRawReprocessing(CameraBufferPortMap *srcBuffers,
-                                          CameraBufferPortMap *dstBuffers, bool *allBufDone,
-                                          bool *hasRawOutput, bool *hasRawInput) {
+void PSysProcessor::handleRawReprocessing(CameraBufferPortMap* srcBuffers,
+                                          CameraBufferPortMap* dstBuffers, bool* allBufDone,
+                                          bool* hasRawOutput, bool* hasRawInput) {
     std::shared_ptr<CameraBuffer> rawOutputBuffer = nullptr;
     int64_t settingSequence = -1;
     CameraBufferPortMap videoBuf, stillBuf;
@@ -563,15 +558,14 @@ void PSysProcessor::handleRawReprocessing(CameraBufferPortMap *srcBuffers,
 
         rawOutputBuffer->updateV4l2Buffer(*mainBuf->getV4L2Buffer().Get());
 
-        LOG2("%s, timestamp %ld, inputSequence %ld, dstBufferSize %d, addr %p", __func__,
-             timestamp, inputSequence, rawOutputBuffer->getBufferSize(),
-             rawOutputBuffer->getBufferAddr());
+        LOG2("%s, timestamp %ld, inputSequence %ld, dstBufferSize %d, addr %p", __func__, timestamp,
+             inputSequence, rawOutputBuffer->getBufferSize(), rawOutputBuffer->getBufferAddr());
 
         // handle Shutter first if has raw output
         sendPsysRequestEvent(dstBuffers, settingSequence, timestamp, EVENT_PSYS_REQUEST_BUF_READY);
 
         // Return opaque RAW buffer
-        for (auto &it : mBufferConsumerList) {
+        for (auto& it : mBufferConsumerList) {
             it->onFrameAvailable(mOpaqueRawPort, rawOutputBuffer);
         }
         *hasRawOutput = true;
@@ -606,7 +600,7 @@ void PSysProcessor::handleRawReprocessing(CameraBufferPortMap *srcBuffers,
             AutoMutex lock(mBufferMapLock);
             // Find Raw buffer in mRawBufferMap
             if (mRawBufferMap.find(settingSequence) != mRawBufferMap.end()) {
-                CameraBufferPortMap &mapBuf = mRawBufferMap[settingSequence];
+                CameraBufferPortMap& mapBuf = mRawBufferMap[settingSequence];
                 // Update source buffers
                 for (const auto& bufPortMap : mapBuf) {
                     (*srcBuffers)[bufPortMap.first] = bufPortMap.second;
@@ -634,7 +628,7 @@ bool PSysProcessor::isBufferHoldForRawReprocess(int64_t sequence) {
     return true;
 }
 
-void PSysProcessor::saveRawBuffer(CameraBufferPortMap *srcBuffers) {
+void PSysProcessor::saveRawBuffer(CameraBufferPortMap* srcBuffers) {
     // Save buffer into mRawBufferMap
     CameraBufferPortMap mapBuf;
     for (const auto& src : *srcBuffers) {
@@ -658,7 +652,7 @@ void PSysProcessor::returnRawBuffer() {
     AutoMutex lock(mBufferMapLock);
     // If too many buffers are holden in mRawQueue, return back to producer
     if (mRawBufferMap.size() > (PlatformData::getMaxRawDataNum(mCameraId) -
-        PlatformData::getMaxRequestsInflight(mCameraId))) {
+                                PlatformData::getMaxRequestsInflight(mCameraId))) {
         auto it = mRawBufferMap.cbegin();
         {
             AutoMutex l(mBufferQueueLock);
@@ -668,8 +662,8 @@ void PSysProcessor::returnRawBuffer() {
             }
         }
 
-        const CameraBufferPortMap &bufferPortMap = it->second;
-        for (auto &item : bufferPortMap) {
+        const CameraBufferPortMap& bufferPortMap = it->second;
+        for (auto& item : bufferPortMap) {
             mBufferProducer->qbuf(item.first, item.second);
         }
         LOG2("@%s, returned sequence %ld", __func__, it->first);
@@ -677,10 +671,10 @@ void PSysProcessor::returnRawBuffer() {
     }
 }
 
-status_t PSysProcessor::prepareTask(CameraBufferPortMap *srcBuffers,
-                                    CameraBufferPortMap *dstBuffers) {
-    CheckAndLogError(srcBuffers->empty() || dstBuffers->empty(),
-                     UNKNOWN_ERROR, "%s, the input or output buffer is empty", __func__);
+status_t PSysProcessor::prepareTask(CameraBufferPortMap* srcBuffers,
+                                    CameraBufferPortMap* dstBuffers) {
+    CheckAndLogError(srcBuffers->empty() || dstBuffers->empty(), UNKNOWN_ERROR,
+                     "%s, the input or output buffer is empty", __func__);
     if (mHoldRawBuffers && mOpaqueRawPort == INVALID_PORT) {
         saveRawBuffer(srcBuffers);
     }
@@ -698,11 +692,11 @@ status_t PSysProcessor::prepareTask(CameraBufferPortMap *srcBuffers,
             // If all buffers are handled
             AutoMutex l(mBufferQueueLock);
             if (hasRawOutput) {
-                for (auto& input: mInputQueue) {
+                for (auto& input : mInputQueue) {
                     input.second.pop();
                 }
             }
-            for (auto& output: mOutputQueue) {
+            for (auto& output : mOutputQueue) {
                 output.second.pop();
             }
             return OK;
@@ -722,7 +716,7 @@ status_t PSysProcessor::prepareTask(CameraBufferPortMap *srcBuffers,
         shared_ptr<CameraBuffer> dstBuf = nullptr;
 
         // Get output buffer and remove it from dstBuffers
-        for (auto &buffer : *dstBuffers) {
+        for (auto& buffer : *dstBuffers) {
             if (buffer.first == mRawPort) {
                 dstBuf = buffer.second;
                 CheckAndLogError(!dstBuf, UNKNOWN_ERROR, "%s, dstBuf for output raw is null",
@@ -744,14 +738,14 @@ status_t PSysProcessor::prepareTask(CameraBufferPortMap *srcBuffers,
     {
         AutoMutex l(mBufferQueueLock);
         if (needRunPipe && !needSkipOutputFrame(inputSequence)) {
-            for (auto& output: mOutputQueue) {
+            for (auto& output : mOutputQueue) {
                 output.second.pop();
             }
         }
 
         // If input buffer will be used later, don't pop it from the queue.
         if (!holdOnInput && !hasRawInput) {
-            for (auto& input: mInputQueue) {
+            for (auto& input : mInputQueue) {
                 input.second.pop();
             }
         }
@@ -791,7 +785,7 @@ status_t PSysProcessor::prepareTask(CameraBufferPortMap *srcBuffers,
     return OK;
 }
 
-void PSysProcessor::handleStillPipeForTnr(int64_t sequence, CameraBufferPortMap *dstBuffers) {
+void PSysProcessor::handleStillPipeForTnr(int64_t sequence, CameraBufferPortMap* dstBuffers) {
     bool hasStill = false;
     for (const auto& item : *dstBuffers) {
         if (item.second && item.second->getStreamUsage() == CAMERA_STREAM_STILL_CAPTURE) {
@@ -815,13 +809,13 @@ void PSysProcessor::handleStillPipeForTnr(int64_t sequence, CameraBufferPortMap 
         for (int i = mPSysDAGs[mCurConfigMode]->getTnrExtraFrameCount(sequence); i > 0; i--) {
             CameraBufferPortMap srcBuf;
             {
-            AutoMutex lock(mBufferMapLock);
-            if (sequence - i != mLastStillTnrSequence &&
-                mRawBufferMap.find(sequence - i) != mRawBufferMap.end()) {
-                for (const auto& item : mRawBufferMap[sequence - i]) {
-                    srcBuf[item.first] = item.second;
+                AutoMutex lock(mBufferMapLock);
+                if (sequence - i != mLastStillTnrSequence &&
+                    mRawBufferMap.find(sequence - i) != mRawBufferMap.end()) {
+                    for (const auto& item : mRawBufferMap[sequence - i]) {
+                        srcBuf[item.first] = item.second;
+                    }
                 }
-            }
             }
             if (!srcBuf.empty()) {
                 dispatchTask(srcBuf, fakeTaskBuffers, true, false);
@@ -832,7 +826,7 @@ void PSysProcessor::handleStillPipeForTnr(int64_t sequence, CameraBufferPortMap 
     if (hasStill) mLastStillTnrSequence = sequence;
 }
 
-void PSysProcessor::dispatchTask(CameraBufferPortMap &inBuf, CameraBufferPortMap &outBuf,
+void PSysProcessor::dispatchTask(CameraBufferPortMap& inBuf, CameraBufferPortMap& outBuf,
                                  bool fakeTask, bool callbackRgbs) {
     int64_t currentSequence = inBuf.begin()->second->getSequence();
     TRACE_LOG_POINT("PSysProcessor", "start run PSYS", MAKE_COLOR(currentSequence),
@@ -844,8 +838,8 @@ void PSysProcessor::dispatchTask(CameraBufferPortMap &inBuf, CameraBufferPortMap
         bool needSwitch = needSwitchPipe(currentSequence);
 
         if (needSwitch) {
-            LOG1("Switch pipe for sequence:%ld, unprocessed buffer number:%zu",
-                  currentSequence, mSequencesInflight.size());
+            LOG1("Switch pipe for sequence:%ld, unprocessed buffer number:%zu", currentSequence,
+                 mSequencesInflight.size());
 
             // Deactive the PSysDag which is no longer used.
             mPSysDAGs[previousMode]->pause();
@@ -918,16 +912,17 @@ void PSysProcessor::dispatchTask(CameraBufferPortMap &inBuf, CameraBufferPortMap
 
 void PSysProcessor::registerListener(EventType eventType, EventListener* eventListener) {
     // Only delegate stats event registration to deeper layer DAG and PipeExecutor
-    if ((eventType != EVENT_PSYS_STATS_BUF_READY) && (eventType != EVENT_PSYS_STATS_SIS_BUF_READY)
-    // INTEL_DVS_S
+    if ((eventType != EVENT_PSYS_STATS_BUF_READY) &&
+        (eventType != EVENT_PSYS_STATS_SIS_BUF_READY)
+        // INTEL_DVS_S
         && eventType != EVENT_DVS_READY
-    // INTEL_DVS_E
+        // INTEL_DVS_E
     ) {
         BufferQueue::registerListener(eventType, eventListener);
         return;
     }
 
-    for (auto const& realModeDAGPair: mPSysDAGs) {
+    for (auto const& realModeDAGPair : mPSysDAGs) {
         realModeDAGPair.second->registerListener(eventType, eventListener);
     }
 }
@@ -940,13 +935,13 @@ void PSysProcessor::removeListener(EventType eventType, EventListener* eventList
         return;
     }
 
-    for (auto const& realModeDAGPair: mPSysDAGs) {
+    for (auto const& realModeDAGPair : mPSysDAGs) {
         realModeDAGPair.second->removeListener(eventType, eventListener);
     }
 }
 
 void PSysProcessor::onBufferDone(int64_t sequence, Port port,
-                                 const std::shared_ptr<CameraBuffer> &camBuffer) {
+                                 const std::shared_ptr<CameraBuffer>& camBuffer) {
     LOG2("<id%d:seq%ld>@%s, port %d", mCameraId, sequence, __func__, port);
 
     if (CameraDump::isDumpTypeEnable(DUMP_PSYS_OUTPUT_BUFFER)) {
@@ -963,7 +958,7 @@ void PSysProcessor::onBufferDone(int64_t sequence, Port port,
     }
 
     if (!needSkipOutputFrame(sequence)) {
-        for (auto &it : mBufferConsumerList) {
+        for (auto& it : mBufferConsumerList) {
             it->onFrameAvailable(port, camBuffer);
         }
     }
@@ -1029,7 +1024,7 @@ void PSysProcessor::onFrameDone(const PSysTaskData& result) {
                 mBufferProducer->qbuf(src.first, src.second);
 
                 if (src.second->getStreamType() == CAMERA_STREAM_INPUT) {
-                    for (auto &it : mBufferConsumerList) {
+                    for (auto& it : mBufferConsumerList) {
                         it->onFrameAvailable(src.first, src.second);
                     }
                 }
@@ -1038,15 +1033,15 @@ void PSysProcessor::onFrameDone(const PSysTaskData& result) {
     }
 
     {
-    AutoMutex l(mBufferQueueLock);
-    std::multiset<int64_t>::iterator it = mSequencesInflight.find(sequence);
-    if (it != mSequencesInflight.end()) {
-        mSequencesInflight.erase(it);
-    }
+        AutoMutex l(mBufferQueueLock);
+        std::multiset<int64_t>::iterator it = mSequencesInflight.find(sequence);
+        if (it != mSequencesInflight.end()) {
+            mSequencesInflight.erase(it);
+        }
 
-    if (mSequencesInflight.empty()) {
-        mFrameDoneSignal.signal();
-    }
+        if (mSequencesInflight.empty()) {
+            mFrameDoneSignal.signal();
+        }
     }
 
     returnRawBuffer();
@@ -1059,8 +1054,8 @@ void PSysProcessor::onStatsDone(int64_t sequence, const CameraBufferPortMap& out
     sendPsysRequestEvent(&outBuf, sequence, 0, EVENT_REQUEST_METADATA_READY);
 }
 
-void PSysProcessor::outputRawImage(shared_ptr<CameraBuffer> &srcBuf,
-                                   shared_ptr<CameraBuffer> &dstBuf) {
+void PSysProcessor::outputRawImage(shared_ptr<CameraBuffer>& srcBuf,
+                                   shared_ptr<CameraBuffer>& dstBuf) {
     if ((srcBuf == nullptr) || (dstBuf == nullptr)) {
         return;
     }
@@ -1068,15 +1063,15 @@ void PSysProcessor::outputRawImage(shared_ptr<CameraBuffer> &srcBuf,
     // Copy from source buffer
     int srcBufferSize = srcBuf->getBufferSize();
     int srcMemoryType = srcBuf->getMemory();
-    void* pSrcBuf = (srcMemoryType == V4L2_MEMORY_DMABUF)
-                    ? CameraBuffer::mapDmaBufferAddr(srcBuf->getFd(), srcBufferSize)
-                    : srcBuf->getBufferAddr();
+    void* pSrcBuf = (srcMemoryType == V4L2_MEMORY_DMABUF) ?
+                        CameraBuffer::mapDmaBufferAddr(srcBuf->getFd(), srcBufferSize) :
+                        srcBuf->getBufferAddr();
 
     int dstBufferSize = dstBuf->getBufferSize();
     int dstMemoryType = dstBuf->getMemory();
-    void* pDstBuf = (dstMemoryType == V4L2_MEMORY_DMABUF)
-                    ? CameraBuffer::mapDmaBufferAddr(dstBuf->getFd(), dstBufferSize)
-                    : dstBuf->getBufferAddr();
+    void* pDstBuf = (dstMemoryType == V4L2_MEMORY_DMABUF) ?
+                        CameraBuffer::mapDmaBufferAddr(dstBuf->getFd(), dstBufferSize) :
+                        dstBuf->getBufferAddr();
 
     MEMCPY_S(pDstBuf, dstBufferSize, pSrcBuf, srcBufferSize);
 
@@ -1088,9 +1083,9 @@ void PSysProcessor::outputRawImage(shared_ptr<CameraBuffer> &srcBuf,
     }
 
     // Send output buffer to its consumer
-    for (auto &it : mBufferConsumerList) {
+    for (auto& it : mBufferConsumerList) {
         it->onFrameAvailable(mRawPort, dstBuf);
     }
 }
 
-} //namespace icamera
+}  // namespace icamera

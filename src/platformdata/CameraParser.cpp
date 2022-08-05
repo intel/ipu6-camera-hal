@@ -281,10 +281,10 @@ void CameraParser::handleCommon(CameraParser* profiles, const char* name, const 
         cfg->supportHwJpegEncode = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "maxIsysTimeoutValue") == 0) {
         cfg->maxIsysTimeoutValue = atoi(atts[1]);
-// ENABLE_EVCP_S
+        // ENABLE_EVCP_S
     } else if (strcmp(name, "useGpuEvcp") == 0) {
         cfg->isGpuEvcpEnabled = strcmp(atts[1], "true") == 0;
-// ENABLE_EVCP_E
+        // ENABLE_EVCP_E
     }
 }
 
@@ -379,10 +379,10 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
         pCurrentCam->mUseIspDigitalGain = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "preRegisterBuffer") == 0) {
         pCurrentCam->mNeedPreRegisterBuffers = strcmp(atts[1], "true") == 0;
-    // FRAME_SYNC_S
+        // FRAME_SYNC_S
     } else if (strcmp(name, "enableFrameSyncCheck") == 0) {
         pCurrentCam->mFrameSyncCheckEnabled = strcmp(atts[1], "true") == 0;
-    // FRAME_SYNC_E
+        // FRAME_SYNC_E
     } else if (strcmp(name, "lensName") == 0) {
         string vcmName = atts[1];
         if (!profiles->mI2CBus.empty()) {
@@ -568,8 +568,7 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
         pCurrentCam->mSwProcessingAlignWithIsp = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "faceEngineVendor") == 0) {
         int val = atoi(atts[1]);
-        pCurrentCam->mFaceEngineVendor =
-            val >= 0 ? val : FACE_ENGINE_INTEL_PVL;
+        pCurrentCam->mFaceEngineVendor = val >= 0 ? val : FACE_ENGINE_INTEL_PVL;
     } else if (strcmp(name, "faceEngineRunningInterval") == 0) {
         int val = atoi(atts[1]);
         pCurrentCam->mFaceEngineRunningInterval =

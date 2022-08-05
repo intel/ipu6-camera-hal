@@ -27,12 +27,9 @@
 
 namespace icamera {
 
-AiqSetting::AiqSetting(int cameraId) :
-    mCameraId(cameraId) {
-}
+AiqSetting::AiqSetting(int cameraId) : mCameraId(cameraId) {}
 
-AiqSetting::~AiqSetting() {
-}
+AiqSetting::~AiqSetting() {}
 
 int AiqSetting::init(void) {
     AutoWMutex wlock(mParamLock);
@@ -53,7 +50,7 @@ int AiqSetting::deinit(void) {
     return OK;
 }
 
-int AiqSetting::configure(const stream_config_t *streamList) {
+int AiqSetting::configure(const stream_config_t* streamList) {
     AutoWMutex wlock(mParamLock);
 
     camera_resolution_t resolution = {streamList->streams[0].width, streamList->streams[0].height};
@@ -90,21 +87,21 @@ int AiqSetting::configure(const stream_config_t *streamList) {
         mAiqParam.tuningMode = mTuningModes[0];
     }
     LOG1("%s, tuningMode %d, configMode %x, fame usage %d, res %dx%d", __func__,
-         mAiqParam.tuningMode, configModes[0], mAiqParam.frameUsage,
-         mAiqParam.resolution.width, mAiqParam.resolution.height);
+         mAiqParam.tuningMode, configModes[0], mAiqParam.frameUsage, mAiqParam.resolution.width,
+         mAiqParam.resolution.height);
 
     return OK;
 }
 
-void AiqSetting::updateFrameUsage(const stream_config_t *streamList) {
+void AiqSetting::updateFrameUsage(const stream_config_t* streamList) {
     bool preview = false, still = false, video = false;
     for (int i = 0; i < streamList->num_streams; i++) {
         if (streamList->streams[i].usage == CAMERA_STREAM_VIDEO_CAPTURE) {
             video = true;
         } else if (streamList->streams[i].usage == CAMERA_STREAM_STILL_CAPTURE) {
             still = true;
-        } else if (streamList->streams[i].usage == CAMERA_STREAM_PREVIEW
-                   || streamList->streams[i].usage == CAMERA_STREAM_APP) {
+        } else if (streamList->streams[i].usage == CAMERA_STREAM_PREVIEW ||
+                   streamList->streams[i].usage == CAMERA_STREAM_APP) {
             preview = true;
         }
     }
@@ -146,8 +143,8 @@ int AiqSetting::setParameters(const Parameters& params) {
         mAiqParam.evShift = 0.0;
     } else {
         ev = CLIP(ev, mAiqParam.evRange.max, mAiqParam.evRange.min);
-        mAiqParam.evShift = static_cast<float>(ev) *
-            mAiqParam.evStep.numerator / mAiqParam.evStep.denominator;
+        mAiqParam.evShift =
+            static_cast<float>(ev) * mAiqParam.evStep.numerator / mAiqParam.evStep.denominator;
     }
 
     params.getFrameRate(mAiqParam.fps);
@@ -221,8 +218,8 @@ int AiqSetting::setParameters(const Parameters& params) {
             CheckWarningNoReturn(curves.bSize > DEFAULT_TONEMAP_CURVE_POINT_NUM,
                                  "user v curve size is too big %d", curves.bSize);
             int curveSize = sizeof(float) * DEFAULT_TONEMAP_CURVE_POINT_NUM;
-            MEMCPY_S(&mAiqParam.tonemapCurveMem[0], curveSize,
-                     curves.rCurve, sizeof(float) * curves.rSize);
+            MEMCPY_S(&mAiqParam.tonemapCurveMem[0], curveSize, curves.rCurve,
+                     sizeof(float) * curves.rSize);
             MEMCPY_S(&mAiqParam.tonemapCurveMem[DEFAULT_TONEMAP_CURVE_POINT_NUM], curveSize,
                      curves.gCurve, sizeof(float) * curves.gSize);
             MEMCPY_S(&mAiqParam.tonemapCurveMem[DEFAULT_TONEMAP_CURVE_POINT_NUM * 2], curveSize,
@@ -240,19 +237,19 @@ int AiqSetting::setParameters(const Parameters& params) {
     uint8_t captureIntent = 0;
     if (params.getCaptureIntent(captureIntent) == OK) {
         switch (captureIntent) {
-        case CAMERA_CONTROL_CAPTUREINTENT_STILL_CAPTURE:
-            mAiqParam.frameUsage = FRAME_USAGE_STILL;
-            break;
-        case CAMERA_CONTROL_CAPTUREINTENT_VIDEO_RECORD:
-        case CAMERA_CONTROL_CAPTUREINTENT_VIDEO_SNAPSHOT:
-            mAiqParam.frameUsage = FRAME_USAGE_VIDEO;
-            break;
-        case CAMERA_CONTROL_CAPTUREINTENT_PREVIEW:
-            mAiqParam.frameUsage = FRAME_USAGE_PREVIEW;
-            break;
-        default:
-            mAiqParam.frameUsage = FRAME_USAGE_CONTINUOUS;
-            break;
+            case CAMERA_CONTROL_CAPTUREINTENT_STILL_CAPTURE:
+                mAiqParam.frameUsage = FRAME_USAGE_STILL;
+                break;
+            case CAMERA_CONTROL_CAPTUREINTENT_VIDEO_RECORD:
+            case CAMERA_CONTROL_CAPTUREINTENT_VIDEO_SNAPSHOT:
+                mAiqParam.frameUsage = FRAME_USAGE_VIDEO;
+                break;
+            case CAMERA_CONTROL_CAPTUREINTENT_PREVIEW:
+                mAiqParam.frameUsage = FRAME_USAGE_PREVIEW;
+                break;
+            default:
+                mAiqParam.frameUsage = FRAME_USAGE_CONTINUOUS;
+                break;
         }
     }
 
@@ -264,7 +261,7 @@ int AiqSetting::setParameters(const Parameters& params) {
     return OK;
 }
 
-int AiqSetting::getAiqParameter(aiq_parameter_t &param) {
+int AiqSetting::getAiqParameter(aiq_parameter_t& param) {
     AutoRMutex rlock(mParamLock);
 
     param = mAiqParam;
@@ -287,12 +284,12 @@ void aiq_parameter_t::reset() {
     evStep = {1, 3};
     evRange = {-6, 6};
     fps = 0;
-    aeFpsRange = { 0.0, 0.0 };
+    aeFpsRange = {0.0, 0.0};
     antibandingMode = ANTIBANDING_MODE_AUTO;
-    cctRange = { 0, 0 };
-    whitePoint = { 0, 0 };
-    awbManualGain = { 0, 0, 0 };
-    awbGainShift = { 0, 0, 0 };
+    cctRange = {0, 0};
+    whitePoint = {0, 0};
+    awbManualGain = {0, 0, 0};
+    awbGainShift = {0, 0, 0};
     CLEAR(manualColorMatrix);
     CLEAR(manualColorGains);
     aeRegions.clear();
@@ -355,38 +352,36 @@ void aiq_parameter_t::dump() {
     LOG3("converge speed mode: ae %d, awb %d", aeConvergeSpeedMode, awbConvergeSpeedMode);
     LOG3("converge speed: ae %d, awb %d", aeConvergeSpeed, awbConvergeSpeed);
 
-    LOG3("EV:%f, range (%f-%f), step %d/%d", evShift, evRange.min, evRange.max,
-         evStep.numerator, evStep.denominator);
-    LOG3("manualExpTimeUs:%ld, time range (%f-%f)", manualExpTimeUs,
-         exposureTimeRange.min, exposureTimeRange.max);
+    LOG3("EV:%f, range (%f-%f), step %d/%d", evShift, evRange.min, evRange.max, evStep.numerator,
+         evStep.denominator);
+    LOG3("manualExpTimeUs:%ld, time range (%f-%f)", manualExpTimeUs, exposureTimeRange.min,
+         exposureTimeRange.max);
     LOG3("manualGain %f, manualIso %d, gain range (%f-%f)", manualGain, manualIso,
          sensitivityGainRange.min, sensitivityGainRange.max);
     LOG3("FPS %f, range (%f-%f)", fps, aeFpsRange.min, aeFpsRange.max);
-    for (auto &region : aeRegions) {
-        LOG3("ae region (%d, %d, %d, %d, %d)",
-             region.left, region.top, region.right, region.bottom, region.weight);
+    for (auto& region : aeRegions) {
+        LOG3("ae region (%d, %d, %d, %d, %d)", region.left, region.top, region.right, region.bottom,
+             region.weight);
     }
     LOG3("Antibanding mode:%d", antibandingMode);
     LOG3("AE Distribution Priority:%d", aeDistributionPriority);
 
     LOG3("cctRange:(%f-%f)", cctRange.min, cctRange.max);
     LOG3("manual awb: white point:(%d,%d)", whitePoint.x, whitePoint.y);
-    LOG3("manual awb gain:(%d,%d,%d), gain shift:(%d,%d,%d)",
-         awbManualGain.r_gain, awbManualGain.g_gain, awbManualGain.b_gain,
-         awbGainShift.r_gain, awbGainShift.g_gain, awbGainShift.b_gain);
+    LOG3("manual awb gain:(%d,%d,%d), gain shift:(%d,%d,%d)", awbManualGain.r_gain,
+         awbManualGain.g_gain, awbManualGain.b_gain, awbGainShift.r_gain, awbGainShift.g_gain,
+         awbGainShift.b_gain);
     for (int i = 0; i < 3; i++) {
-        LOG3("manual color matrix: [%.3f %.3f %.3f]",
-             manualColorMatrix.color_transform[i][0],
-             manualColorMatrix.color_transform[i][1],
-             manualColorMatrix.color_transform[i][2]);
+        LOG3("manual color matrix: [%.3f %.3f %.3f]", manualColorMatrix.color_transform[i][0],
+             manualColorMatrix.color_transform[i][1], manualColorMatrix.color_transform[i][2]);
     }
-    LOG3("manual color gains in rggb:(%.3f,%.3f,%.3f,%.3f)",
-         manualColorGains.color_gains_rggb[0], manualColorGains.color_gains_rggb[1],
-         manualColorGains.color_gains_rggb[2], manualColorGains.color_gains_rggb[3]);
+    LOG3("manual color gains in rggb:(%.3f,%.3f,%.3f,%.3f)", manualColorGains.color_gains_rggb[0],
+         manualColorGains.color_gains_rggb[1], manualColorGains.color_gains_rggb[2],
+         manualColorGains.color_gains_rggb[3]);
 
-    for (auto &region : afRegions) {
-        LOG3("af region (%d, %d, %d, %d, %d)",
-             region.left, region.top, region.right, region.bottom, region.weight);
+    for (auto& region : afRegions) {
+        LOG3("af region (%d, %d, %d, %d, %d)", region.left, region.top, region.right, region.bottom,
+             region.weight);
     }
     LOG3("manual focus distance: %f, min focus distance: %f", focusDistance, minFocusDistance);
     LOG3("Focus position %d, start timestamp %llu", lensPosition, lensMovementStartTimestamp);
@@ -407,14 +402,14 @@ void aiq_parameter_t::dump() {
     LOG3("DVS mode %d", videoStabilizationMode);
 
     LOG3("makernoteMode %d", makernoteMode);
-    LOG3("shadingMode %d, lensShadingMapMode %d, size %dx%d", shadingMode,
-         lensShadingMapMode, lensShadingMapSize.x, lensShadingMapSize.y);
+    LOG3("shadingMode %d, lensShadingMapMode %d, size %dx%d", shadingMode, lensShadingMapMode,
+         lensShadingMapSize.x, lensShadingMapSize.y);
 
     LOG3("ldcMode %d, rscMode %d, flipMode %d", ldcMode, ldcMode, flipMode);
 
     LOG3("run3ACadence %d", run3ACadence);
-    LOG3("tonemap mode %d, preset curve %d, gamma %f, curve points %d",
-          tonemapMode, tonemapPresetCurve, tonemapGamma, tonemapCurves.gSize);
+    LOG3("tonemap mode %d, preset curve %d, gamma %f, curve points %d", tonemapMode,
+         tonemapPresetCurve, tonemapGamma, tonemapCurves.gSize);
     LOG3("testPatternMode %d", testPatternMode);
     LOG3("power mode %d", powerMode);
     LOG3("totalExposureTarget %ld", totalExposureTarget);

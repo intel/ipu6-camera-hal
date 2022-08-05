@@ -116,8 +116,8 @@ int AiqEngine::run3A(long requestId, int64_t applyingSeq, int64_t* effectSeq) {
     AutoMutex l(mEngineLock);
 
     AiqStatistics* aiqStats =
-        mFirstAiqRunning ? nullptr
-                         : const_cast<AiqStatistics*>(mAiqResultStorage->getAndLockAiqStatistics());
+        mFirstAiqRunning ? nullptr :
+                           const_cast<AiqStatistics*>(mAiqResultStorage->getAndLockAiqStatistics());
     AiqState state = AIQ_STATE_IDLE;
     AiqResult* aiqResult = mAiqResultStorage->acquireAiqResult();
 
@@ -173,8 +173,8 @@ void AiqEngine::handleEvent(EventData eventData) {
     mLensManager->handleSofEvent(eventData);
 }
 
-int AiqEngine::prepareStatsParams(cca::cca_stats_params* statsParams,
-                                  AiqStatistics* aiqStatistics, AiqResult* aiqResult) {
+int AiqEngine::prepareStatsParams(cca::cca_stats_params* statsParams, AiqStatistics* aiqStatistics,
+                                  AiqResult* aiqResult) {
     LOG2("%s, sequence %ld", __func__, aiqStatistics->mSequence);
 
     // update face detection related parameters
@@ -203,7 +203,7 @@ int AiqEngine::prepareStatsParams(cca::cca_stats_params* statsParams,
         if (PlatformData::isDvsSupported(mCameraId) &&
             PlatformData::getGraphConfigNodes(mCameraId)) {
             std::shared_ptr<IGraphConfig> gc = nullptr;
-            IGraphConfigManager *GCM = IGraphConfigManager::getInstance(mCameraId);
+            IGraphConfigManager* GCM = IGraphConfigManager::getInstance(mCameraId);
             if (GCM) {
                 gc = GCM->getGraphConfig(CAMERA_STREAM_CONFIGURATION_MODE_NORMAL);
             }
@@ -395,8 +395,8 @@ int AiqEngine::applyManualTonemaps(AiqResult* aiqResult) {
         aiqResult->mAiqParam.tonemapMode == TONEMAP_MODE_HIGH_QUALITY) {
         aiqResult->mGbceResults.have_manual_settings = false;
 
-        if (aiqResult->mAiqParam.aeMode != AE_MODE_AUTO && aiqResult->mAiqParam.manualIso != 0
-            && aiqResult->mAiqParam.manualExpTimeUs != 0) {
+        if (aiqResult->mAiqParam.aeMode != AE_MODE_AUTO && aiqResult->mAiqParam.manualIso != 0 &&
+            aiqResult->mAiqParam.manualExpTimeUs != 0) {
             aiqResult->mGbceResults.have_manual_settings = true;
         }
     }
