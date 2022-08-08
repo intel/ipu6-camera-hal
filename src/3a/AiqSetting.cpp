@@ -271,6 +271,39 @@ int AiqSetting::getAiqParameter(aiq_parameter_t &param) {
     return OK;
 }
 
+// HDR_FEATURE_S
+/* When multi-TuningModes supported in AUTO ConfigMode, TuningMode may be changed
+   based on AE result. Current it only has HDR and ULL mode switching case,
+   this maybe changed if more cases are supported. */
+void AiqSetting::updateTuningMode(aec_scene_t aecScene) {
+    if (!PlatformData::isEnableHDR(mCameraId)
+        || mTuningModes.size() <= 1
+        || mAiqParam.aeMode != AE_MODE_AUTO) {
+        return;
+    }
+
+    TuningMode tuningMode = mAiqParam.tuningMode;
+    if (aecScene == AEC_SCENE_HDR) {
+        tuningMode = TUNING_MODE_VIDEO_HDR;
+    } else if (aecScene == AEC_SCENE_ULL) {
+        tuningMode = TUNING_MODE_VIDEO_ULL;
+    }
+
+    bool found = false;
+    for (auto &tMode : mTuningModes) {
+        // Check tuningMode if support or not
+        if (tMode == tuningMode) {
+            found = true;
+            break;
+        }
+    }
+    if (!found) {
+        LOG1("%s, new tuningMode %d isn't supported", __func__, tuningMode);
+        return;
+    }
+}
+// HDR_FEATURE_E
+
 void aiq_parameter_t::reset() {
     frameUsage = FRAME_USAGE_VIDEO;
     aeMode = AE_MODE_AUTO;

@@ -266,6 +266,29 @@ float AiqUtils::convertSpeedModeToTime(camera_converge_speed_t mode) {
     return convergenceTime;
 }
 
+// HDR_FEATURE_S
+float AiqUtils::convertSpeedModeToTimeForHDR(camera_converge_speed_t mode) {
+    float convergenceTime = -1;
+    /*
+     * The unit of manual_convergence_time is second, and 1.0 means 1 second.
+     * The default value can be changed based on customer requirement.
+     */
+    switch (mode) {
+        case CONVERGE_MID:
+            convergenceTime = 0.6;
+            break;
+        case CONVERGE_LOW:
+            convergenceTime = 1.0;
+            break;
+        case CONVERGE_NORMAL:
+        default:
+            convergenceTime = -1;
+            break;
+    }
+    return convergenceTime;
+}
+// HDR_FEATURE_E
+
 /*
  * Get ia_aiq_frame_use
  *

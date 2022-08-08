@@ -30,6 +30,11 @@
 
 #include "PSysProcessor.h"
 
+// ISP_CONTROL_S
+#include "IspControl.h"
+#include "isp_control/IspControlUtils.h"
+// ISP_CONTROL_E
+
 /*
  * The sof event time margin is a tunning value
  * it's based on sensor vblank, psys iterating time
@@ -50,6 +55,10 @@ namespace icamera {
 PSysProcessor::PSysProcessor(int cameraId, ParameterGenerator *pGenerator) :
         mCameraId(cameraId),
         mParameterGenerator(pGenerator),
+        // ISP_CONTROL_S
+        mUpdatedIspIndex(-1),
+        mUsedIspIndex(-1),
+        // ISP_CONTROL_E
         mCurConfigMode(CAMERA_STREAM_CONFIGURATION_MODE_NORMAL),
         mTuningMode(TUNING_MODE_MAX),
         mRawPort(INVALID_PORT),
@@ -59,10 +68,20 @@ PSysProcessor::PSysProcessor(int cameraId, ParameterGenerator *pGenerator) :
         mLastStillTnrSequence(-1),
         mStatus(PIPELINE_UNCREATED) {
     mProcessThread = new ProcessThread(this);
+    // ISP_CONTROL_S
+    allocPalControlBuffers();
+    // ISP_CONTROL_E
     CLEAR(mSofTimestamp);
 }
 
 PSysProcessor::~PSysProcessor() {
+    // ISP_CONTROL_S
+    for (int i = 0; i < IA_PAL_CONTROL_BUFFER_SIZE; i++)
+        free(mPalCtrlBuffers[i].data);
+
+    mUpdatedIspIndex = -1;
+    mUsedIspIndex = -1;
+    // ISP_CONTROL_E
     mProcessThread->join();
     delete mProcessThread;
 }
@@ -156,6 +175,10 @@ int PSysProcessor::start() {
      * time is slower than ISYS
      */
     bool needProducerBuffer = PlatformData::isIsysEnabled(mCameraId);
+
+    // FILE_SOURCE_S
+    needProducerBuffer = needProducerBuffer || PlatformData::isFileSourceEnabled();
+    // FILE_SOURCE_E
 
     if (needProducerBuffer) {
         int ret = allocProducerBuffers(mCameraId, rawBufferNum);
@@ -293,6 +316,10 @@ int PSysProcessor::setParameters(const Parameters& param) {
     }
     LOG2("%s: Video stablilization enabled:%d", __func__, mIspSettings.videoStabilization);
 
+    // ISP_CONTROL_S
+    fillPalOverrideData(param);
+    // ISP_CONTROL_E
+
     return ret;
 }
 
@@ -305,8 +332,143 @@ int PSysProcessor::getParameters(Parameters& param) {
                                                mIspSettings.manualSettings.manualSaturation };
     int ret = param.setImageEnhancement(enhancement);
 
+    // ISP_CONTROL_S
+    // Override the data with what user has enabled before, since the data get from
+    // IspParamAdaptor might be old, and it causes inconsistent between what user sets and gets.
+    if (mUpdatedIspIndex != -1) {
+        ia_binary_data *palOverride = &mPalCtrlBuffers[mUpdatedIspIndex];
+
+        std::set<uint32_t> enabledControls;
+        param.getEnabledIspControls(enabledControls);
+        for (auto ctrlId : enabledControls) {
+            void* data = IspControlUtils::findDataById(ctrlId, palOverride->data,
+                                                       palOverride->size);
+            if (data == nullptr) continue;
+
+            param.setIspControl(ctrlId, data);
+        }
+    }
+    // ISP_CONTROL_E
+
     return ret;
 }
+
+// ISP_CONTROL_S
+/**
+ * Get required PAL override buffer size
+ *
+ * According to the supported ISP control feature list, calculate how much the buffer we need
+ * to be able to store all data sent from application.
+ */
+size_t PSysProcessor::getRequiredPalBufferSize() {
+    std::vector<uint32_t> controls = PlatformData::getSupportedIspControlFeatures(mCameraId);
+    const size_t kHeaderSize = sizeof(ia_record_header);
+    size_t totalSize = 0;
+    for (auto ctrlId : controls) {
+        totalSize += ALIGN_8(kHeaderSize + IspControlUtils::getSizeById(ctrlId));
+    }
+
+    return totalSize;
+}
+
+/**
+ * Fill the PAL override data by the given param
+ */
+int PSysProcessor::fillPalOverrideData(const Parameters& param) {
+    // Find one new pal control buffer to update the pal override data
+    if (mUpdatedIspIndex == mUsedIspIndex) {
+        mUpdatedIspIndex++;
+        mUpdatedIspIndex = mUpdatedIspIndex % IA_PAL_CONTROL_BUFFER_SIZE;
+    }
+
+    // Use mPalCtrlBuffers[mUpdatedIspIndex] to store the override data
+    ia_binary_data *palOverride = &mPalCtrlBuffers[mUpdatedIspIndex];
+    palOverride->size = getRequiredPalBufferSize();
+
+    const size_t kHeaderSize = sizeof(ia_record_header);
+    uint32_t offset = 0;
+    uint8_t* overrideData = (uint8_t*)palOverride->data;
+
+    std::set<uint32_t> enabledControls;
+    param.getEnabledIspControls(enabledControls);
+
+    bool isCcmEnabled = false;
+    bool isAcmEnabled = false;
+
+    for (auto ctrlId : enabledControls) {
+        if (!PlatformData::isIspControlFeatureSupported(mCameraId, ctrlId)) continue;
+
+        LOG2("Enabled ISP control: %s", IspControlUtils::getNameById(ctrlId));
+        ia_record_header* header = (ia_record_header*)(overrideData + offset);
+        header->uuid = ctrlId;
+        header->size = ALIGN_8(kHeaderSize + IspControlUtils::getSizeById(ctrlId));
+        CheckAndLogError((offset + header->size) > palOverride->size, BAD_VALUE,
+                         "The given buffer is not big enough for the override data");
+
+        int ret = param.getIspControl(ctrlId, overrideData + (offset + kHeaderSize));
+        // If ctrlId is set by the app, then move to next memory block, otherwise the offest
+        // remain unchanged in order to use the same memory block.
+        if (ret != OK) continue;
+
+        offset += header->size;
+
+        if (ctrlId == camera_control_isp_ctrl_id_color_correction_matrix) {
+            isCcmEnabled = true;
+        } else if (ctrlId == camera_control_isp_ctrl_id_advanced_color_correction_matrix) {
+            isAcmEnabled = true;
+        }
+    }
+
+    // Use identity matrix to fill ACM's matrices since ACM may be used and combined with CCM,
+    // if ACM is not provided, then there will be no IQ effect for CCM as well.
+    if (isCcmEnabled && !isAcmEnabled) {
+        offset += fillDefaultAcmData(overrideData + offset);
+    }
+
+    // Reset the original size of palOverride to the size of its valid data.
+    palOverride->size = offset;
+    LOG2("%s, the data size for pal override: %u", __func__, palOverride->size);
+
+    return OK;
+}
+
+int PSysProcessor::fillDefaultAcmData(uint8_t* overrideData) {
+    // Don't fill ACM if it's not supported.
+    if (!PlatformData::isIspControlFeatureSupported(mCameraId,
+            camera_control_isp_ctrl_id_advanced_color_correction_matrix)) {
+        return 0;
+    }
+
+    const size_t kHeaderSize = sizeof(ia_record_header);
+    ia_record_header* header = (ia_record_header*)(overrideData);
+    header->uuid = camera_control_isp_ctrl_id_advanced_color_correction_matrix;
+    header->size = ALIGN_8(kHeaderSize + IspControlUtils::getSizeById(header->uuid));
+
+    camera_control_isp_advanced_color_correction_matrix_t* acm =
+        (camera_control_isp_advanced_color_correction_matrix_t*)(overrideData + kHeaderSize);
+
+    acm->bypass = 0;
+    acm->number_of_sectors = 24;
+    const float kIdentityMatrix[] = {1, 0, 0, 0, 1, 0, 0, 0, 1};
+    for (int i = 0; i < acm->number_of_sectors; i++) {
+        MEMCPY_S(acm->ccm_matrices + i * 9, sizeof(kIdentityMatrix),
+                 kIdentityMatrix, sizeof(kIdentityMatrix));
+    }
+
+    return header->size;
+}
+
+int PSysProcessor::allocPalControlBuffers() {
+    for (int i = 0; i < IA_PAL_CONTROL_BUFFER_SIZE; i++) {
+        mPalCtrlBuffers[i].size = getRequiredPalBufferSize();
+        mPalCtrlBuffers[i].data = calloc(1, mPalCtrlBuffers[i].size);
+        CheckAndLogError(mPalCtrlBuffers[i].data == nullptr, NO_MEMORY,
+                         "Faile to calloc the memory for pal override");
+    }
+
+    return OK;
+}
+// ISP_CONTROL_E
 
 /**
  * Get available setting sequence from outBuf
@@ -404,6 +566,19 @@ bool PSysProcessor::needSwitchPipe(int64_t sequence) {
 void PSysProcessor::handleEvent(EventData eventData) {
     // Process registered events
     switch (eventData.type) {
+        // CSI_META_S
+        case EVENT_META:
+            // DOL_FEATURE_S
+            if (PlatformData::needHandleVbpInMetaData(mCameraId, mCurConfigMode)) {
+                AutoMutex l(mMetaQueueLock);
+                mMetaQueue.push(eventData.data.meta);
+                LOG2("%s: received meta data, current queue size %lu",
+                     __func__, mMetaQueue.size());
+                mMetaAvailableSignal.signal();
+            }
+            // DOL_FEATURE_E
+            break;
+        // CSI_META_E
         case EVENT_ISYS_SOF:
             {
                 AutoMutex l(mSofLock);
@@ -420,6 +595,53 @@ void PSysProcessor::handleEvent(EventData eventData) {
             break;
     }
 }
+
+// DOL_FEATURE_S
+int PSysProcessor::setVbpToIspParam(int64_t sequence, timeval timestamp) {
+    //Check fixed VBP firstly.
+    int fixedVbp = PlatformData::getFixedVbp(mCameraId);
+    if (fixedVbp >= 0) {
+        AutoWMutex wl(mIspSettingsLock);
+        LOG2("%s: set fixed vbp %d", __func__, fixedVbp);
+        mIspSettings.vbp = fixedVbp;
+        return OK;
+    }
+
+    //Check dynamic VBP.
+    ConditionLock lock(mMetaQueueLock);
+
+    //Remove all older meta data
+    while (!mMetaQueue.empty() && mMetaQueue.front().sequence < sequence) {
+        LOG2("%s: remove older meta data for sequence %ld", __func__,
+             mMetaQueue.front().sequence);
+        mMetaQueue.pop();
+    }
+
+    while (mMetaQueue.empty()) {
+        int ret = mMetaAvailableSignal.waitRelative(lock, kWaitDuration * SLOWLY_MULTIPLIER);
+
+        if (!mThreadRunning) {
+            LOG2("@%s: Processor is not active while waiting for meta data.", __func__);
+            return UNKNOWN_ERROR;
+        }
+
+        CheckAndLogError(ret == TIMED_OUT, ret, "@%s: dqbuf MetaQueue timed out", __func__);
+    }
+
+    if (mMetaQueue.front().sequence == sequence) {
+        AutoWMutex l(mIspSettingsLock);
+        mIspSettings.vbp = mMetaQueue.front().vbp;
+        mMetaQueue.pop();
+        LOG2("%s: found vbp %d for frame sequence %ld", __func__, mIspSettings.vbp, sequence);
+        return OK;
+    }
+
+    LOGW("Missing meta data for seq %ld, timestamp %ld, Cur meta seq %ld, timestamp %ld",
+         sequence, TIMEVAL2USECS(timestamp),
+         mMetaQueue.front().sequence, TIMEVAL2USECS(mMetaQueue.front().timestamp));
+    return UNKNOWN_ERROR;
+}
+// DOL_FEATURE_E
 
 // PSysProcessor ThreadLoop
 int PSysProcessor::processNewFrame() {
@@ -561,13 +783,8 @@ void PSysProcessor::handleRawReprocessing(CameraBufferPortMap *srcBuffers,
             }
         }
 
-        // Return opaque RAW data
-        sensor_raw_info_t opaqueRawInfo = { inputSequence, timestamp };
-
         rawOutputBuffer->updateV4l2Buffer(*mainBuf->getV4L2Buffer().Get());
 
-        MEMCPY_S(rawOutputBuffer->getBufferAddr(), rawOutputBuffer->getBufferSize(),
-                 &opaqueRawInfo, sizeof(opaqueRawInfo));
         LOG2("%s, timestamp %ld, inputSequence %ld, dstBufferSize %d, addr %p", __func__,
              timestamp, inputSequence, rawOutputBuffer->getBufferSize(),
              rawOutputBuffer->getBufferAddr());
@@ -721,6 +938,25 @@ status_t PSysProcessor::prepareTask(CameraBufferPortMap *srcBuffers,
                     inputSequence);
     uint64_t timestamp = TIMEVAL2NSECS(mainBuf->getTimestamp());
     LOG2("%s: input buffer sequence %ld timestamp %ld", __func__, inputSequence, timestamp);
+
+    // DOL_FEATURE_S
+    if (PlatformData::needSetVbp(mCameraId, mCurConfigMode)) {
+        int vbpStatus = setVbpToIspParam(inputSequence, mainBuf->getTimestamp());
+
+        // Skip input frame and return buffer if no matching vbp set to ISP params
+        if (vbpStatus != OK) {
+            AutoMutex l(mBufferQueueLock);
+            for (auto& input: mInputQueue) {
+                input.second.pop();
+            }
+
+            for (const auto& item : *srcBuffers) {
+                mBufferProducer->qbuf(item.first, item.second);
+            }
+            return OK;
+        }
+    }
+    // DOL_FEATURE_E
 
     // Output raw image
     if (mRawPort != INVALID_PORT) {
@@ -913,6 +1149,14 @@ void PSysProcessor::dispatchTask(CameraBufferPortMap &inBuf, CameraBufferPortMap
     {
         AutoRMutex rl(mIspSettingsLock);
         mIspSettings.palOverride = nullptr;
+        // ISP_CONTROL_S
+        if (mUpdatedIspIndex > -1)
+            mUsedIspIndex = mUpdatedIspIndex;
+        if (mUsedIspIndex > -1 &&
+            mPalCtrlBuffers[mUsedIspIndex].size > 0) {
+            mIspSettings.palOverride = &mPalCtrlBuffers[mUsedIspIndex];
+        }
+        // ISP_CONTROL_E
         taskParam.mIspSettings = mIspSettings;
     }
 

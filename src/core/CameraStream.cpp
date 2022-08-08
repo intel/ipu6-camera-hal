@@ -140,33 +140,7 @@ void CameraStream::setBufferProducer(BufferProducer* producer) {
     if (producer != nullptr) producer->addFrameAvailableListener(this);
 }
 
-shared_ptr<CameraBuffer> CameraStream::getPrivacyBuffer() {
-    AutoMutex l(mBufferPoolLock);
-    shared_ptr<CameraBuffer> buf = nullptr;
-    if (!mPrivacyBuffer.empty()) {
-        buf = mPrivacyBuffer.front();
-        mPrivacyBuffer.pop();
-    }
-    return buf;
-}
-
 int CameraStream::onFrameAvailable(Port port, const shared_ptr<CameraBuffer>& camBuffer) {
-    if (mPort != port) return OK;
-    if (camBuffer->getStreamId() != mStreamId) return OK;
-    std::shared_ptr<CameraBuffer> buf;
-    {
-        AutoMutex l(mBufferPoolLock);
-        mPrivacyBuffer.push(camBuffer);
-        if (mPrivacyBuffer.size() <= 1) {
-            return OK;
-        }
-        buf = mPrivacyBuffer.front();
-        mPrivacyBuffer.pop();
-    }
-    return doFrameAvailable(port, buf);
-}
-
-int CameraStream::doFrameAvailable(Port port, const shared_ptr<CameraBuffer>& camBuffer) {
     // Ignore if the buffer is not for this stream.
     if (mPort != port) return OK;
     if (camBuffer->getStreamId() != mStreamId) return OK;

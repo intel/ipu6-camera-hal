@@ -20,6 +20,9 @@ const VideoNodeInfo gVideoNodeInfos[] = {
     { VIDEO_GENERIC,             "VIDEO_GENERIC",              "Generic" },
     { VIDEO_GENERIC_MEDIUM_EXPO, "VIDEO_GENERIC_MEDIUM_EXPO",  "GenericMediumExpo" },
     { VIDEO_GENERIC_SHORT_EXPO,  "VIDEO_GENERIC_SHORT_EXPO",   "GenericShortExpo" },
+    // CSI_META_S
+    { VIDEO_CSI_META,            "VIDEO_CSI_META",             "CsiMeta" },
+    // CSI_META_E
 
     { VIDEO_PIXEL_ARRAY,         "VIDEO_PIXEL_ARRAY",          "PixelArray" },
     { VIDEO_PIXEL_BINNER,        "VIDEO_PIXEL_BINNER",         "PixelBinner" },

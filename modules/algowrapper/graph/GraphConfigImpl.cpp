@@ -344,6 +344,9 @@ status_t GraphConfigImpl::getRawInputSize(GCSS::IGraphConfig* query, camera_reso
                      "%s, Failed to create the graph", __func__);
 
     vector<string> isysOutput = {"csi_be:output",
+                                 // DOL_FEATURE_S
+                                 "csi_be_dol:output",
+                                 // DOL_FEATURE_E
                                  "csi_be_soc:output"};
     for (auto& item : isysOutput) {
         GCSS::IGraphConfig* isysNode = graphResult->getDescendantByString(item.c_str());
@@ -630,6 +633,10 @@ status_t GraphConfigImpl::getGraphConfigData(IGraphType::GraphConfigData* data) 
     // The graph id, csi output and sensor mode must be same if there are two graph config pipes
     data->graphId = mGraphConfigPipe.begin()->second->getGraphId();
     mGraphConfigPipe.begin()->second->getCSIOutputResolution(&(data->csiReso));
+    // DOL_FEATURE_S
+    mGraphConfigPipe.begin()->second->getDolInfo(&(data->dolInfo.conversionGain),
+                                                 &(data->dolInfo.dolMode));
+    // DOL_FEATURE_E
 
     data->mcId = mMcId;
     getGdcKernelSetting(&(data->gdcKernelId), &(data->gdcReso));

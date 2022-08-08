@@ -51,6 +51,9 @@ extern "C" {
 #include "ia_isp_bxt_types.h"
 #include "ia_isp_bxt_statistics_types.h"
 #include "ia_isp_bxt.h"
+// DOL_FEATURE_S
+#include "ia_bcomp.h"
+// DOL_FEATURE_E
 #include "ia_bcomp_types.h"
 #include "gc/IGraphConfigManager.h"
 #include "IspSettings.h"
@@ -120,6 +123,9 @@ private:
     void applyMediaFormat(const AiqResult* aiqResult,
                           ia_media_format* mediaFormat, bool* useLinearGamma);
     void dumpCscMatrix(const ia_isp_bxt_csc* cscMatrix);
+#ifdef PAL_DEBUG
+    void loadPalBinFile(ia_binary_data *binaryData);
+#endif
     void applyCscMatrix(ia_isp_bxt_csc* cscMatrix);
     void updateResultFromAlgo(ia_binary_data* binaryData, int64_t sequence);
     uint32_t getRequestedStats();

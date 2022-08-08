@@ -73,6 +73,9 @@ private:
                       bool fakeTask = false, bool callbackRgbs = false);
 
     void handleEvent(EventData eventData);
+    // DOL_FEATURE_S
+    int setVbpToIspParam(int64_t sequence, timeval timestamp);
+    // DOL_FEATURE_E
 
     int64_t getSettingSequence(const CameraBufferPortMap &outBuf);
     bool needSkipOutputFrame(int64_t sequence);
@@ -80,6 +83,12 @@ private:
     bool needHoldOnInputFrame(int64_t settingSequence, int64_t inputSequence);
     bool needSwitchPipe(int64_t sequence);
 
+    // ISP_CONTROL_S
+    int allocPalControlBuffers();
+    size_t getRequiredPalBufferSize();
+    int fillPalOverrideData(const Parameters& param);
+    int fillDefaultAcmData(uint8_t* overrideData);
+    // ISP_CONTROL_E
     void outputRawImage(std::shared_ptr<CameraBuffer> &srcBuf,
                         std::shared_ptr<CameraBuffer> &dstBuf);
 
@@ -105,6 +114,14 @@ private:
     //Since the isp settings may be re-used in all modes, so the buffer size of
     //isp settings should be equal to frame buffer size.
     static const int IA_PAL_CONTROL_BUFFER_SIZE = 10;
+
+    // ISP_CONTROL_S
+    //Use mUpdatedIspIndex to select the buffer to store the updated param
+    //and use mUsedIspIndex to select the buffer to set isp control.
+    int mUpdatedIspIndex;
+    int mUsedIspIndex;
+    ia_binary_data mPalCtrlBuffers[IA_PAL_CONTROL_BUFFER_SIZE];
+    // ISP_CONTROL_E
 
     Condition mFrameDoneSignal;
     // Save the sequences which are being processed.

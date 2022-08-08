@@ -25,6 +25,11 @@
 #include "Parameters.h"
 #include "ParameterHelper.h"
 
+// ISP_CONTROL_S
+#include "IspControl.h"
+#include "isp_control/IspControlUtils.h"
+// ISP_CONTROL_E
+
 using std::vector;
 
 namespace icamera {
@@ -580,6 +585,26 @@ int Parameters::getIrisLevel(int& level)
     return OK;
 }
 
+// HDR_FEATURE_S
+int Parameters::setWdrMode(camera_wdr_mode_t wdrMode)
+{
+    uint8_t mode = wdrMode;
+    ParameterHelper::AutoWLock wl(mData);
+    return ParameterHelper::getMetadata(mData).update(INTEL_CONTROL_WDR_MODE, &mode, 1);
+}
+
+int Parameters::getWdrMode(camera_wdr_mode_t& wdrMode) const
+{
+    ParameterHelper::AutoRLock rl(mData);
+    auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_CONTROL_WDR_MODE);
+    if (entry.count != 1) {
+        return NAME_NOT_FOUND;
+    }
+    wdrMode = (camera_wdr_mode_t)entry.data.u8[0];
+    return OK;
+}
+// HDR_FEATURE_E
+
 int Parameters::setWdrLevel(uint8_t level)
 {
     ParameterHelper::AutoWLock wl(mData);
@@ -885,6 +910,20 @@ int Parameters::getSupportedFeatures(camera_features_list_t& features) const
     return OK;
 }
 
+// ISP_CONTROL_S
+int Parameters::getSupportedIspControlFeatures(vector<uint32_t>& controls) const
+{
+    controls.clear();
+    ParameterHelper::AutoRLock rl(mData);
+    auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_CONTROL_ISP_SUPPORTED_CTRL_IDS);
+    for (size_t i = 0; i < entry.count; i++) {
+        controls.push_back((uint32_t)entry.data.i32[i]);
+    }
+
+    return OK;
+}
+// ISP_CONTROL_E
+
 int Parameters::getAeCompensationRange(camera_range_t& evRange) const
 {
     ParameterHelper::AutoRLock rl(mData);
@@ -1169,6 +1208,73 @@ int Parameters::getMakernoteMode(camera_makernote_mode_t &mode) const
 
     return OK;
 }
+
+// ISP_CONTROL_S
+int Parameters::setIspControl(uint32_t ctrlId, void* data)
+{
+    uint32_t size = IspControlUtils::getSizeById(ctrlId);
+    uint32_t tag = IspControlUtils::getTagById(ctrlId);
+    CheckAndLogError(size == 0, BAD_VALUE, "Unsupported ISP control id:%u", ctrlId);
+
+    ParameterHelper::AutoWLock wl(mData);
+    if (data == NULL) {
+        return ParameterHelper::getMetadata(mData).erase(tag);
+    }
+    return ParameterHelper::getMetadata(mData).update(tag, (uint8_t*)data, size);
+}
+
+int Parameters::getIspControl(uint32_t ctrlId, void* data) const
+{
+    uint32_t size = IspControlUtils::getSizeById(ctrlId);
+    uint32_t tag = IspControlUtils::getTagById(ctrlId);
+    CheckAndLogError(size == 0, BAD_VALUE, "Unsupported ISP control id:%u", ctrlId);
+
+    ParameterHelper::AutoRLock rl(mData);
+
+    auto entry = ParameterHelper::getMetadataEntry(mData, tag);
+    if (entry.count != size) {
+        return NAME_NOT_FOUND;
+    }
+
+    if (data != NULL) {
+        MEMCPY_S(data, size, entry.data.u8, size);
+    }
+
+    return OK;
+}
+
+int Parameters::setEnabledIspControls(const std::set<uint32_t>& ctrlIds)
+{
+    ParameterHelper::AutoWLock wl(mData);
+
+    size_t size = ctrlIds.size();
+    if (size == 0) {
+        return ParameterHelper::getMetadata(mData).erase(INTEL_CONTROL_ISP_ENABLED_CTRL_IDS);
+    }
+
+    int32_t data[size];
+    int index = 0;
+    for (auto ctrlId : ctrlIds) {
+        data[index] = ctrlId;
+        index++;
+    }
+
+    return ParameterHelper::getMetadata(mData).update(INTEL_CONTROL_ISP_ENABLED_CTRL_IDS, data, size);
+}
+
+int Parameters::getEnabledIspControls(std::set<uint32_t>& ctrlIds) const
+{
+    ctrlIds.clear();
+
+    ParameterHelper::AutoRLock rl(mData);
+    auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_CONTROL_ISP_ENABLED_CTRL_IDS);
+    for (size_t i = 0; i < entry.count; i++) {
+        ctrlIds.insert((uint32_t)entry.data.i32[i]);
+    }
+
+    return OK;
+}
+// ISP_CONTROL_E
 
 int Parameters::setDigitalZoomRatio(float ratio)
 {

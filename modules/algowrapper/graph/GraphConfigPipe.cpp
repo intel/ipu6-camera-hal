@@ -149,6 +149,9 @@ status_t GraphConfigPipe::analyzeSourceType() {
 
 status_t GraphConfigPipe::analyzeCSIOutput() {
     vector<string> csiBeOutput = {"csi_be:output",
+                                  // DOL_FEATURE_S
+                                  "csi_be_dol:output",
+                                  // DOL_FEATURE_E
                                   "csi_be_soc:output"};
     for (auto& item : csiBeOutput) {
         GCSS::IGraphConfig* csiBeNode =
@@ -1575,6 +1578,17 @@ bool GraphConfigPipe::portIsEdgePort(Node* port) {
 
     return isEdge;
 }
+
+// DOL_FEATURE_S
+int GraphConfigPipe::getDolInfo(float* gain, string* mode) {
+    CheckAndLogError(!gain || !mode, UNKNOWN_ERROR, "%s, the gain or mode is nullptr", __func__);
+
+    css_err_t status = mGCSSAicUtil.getDolInfo(*gain, *mode);
+    CheckAndLogError(status != css_err_none, UNKNOWN_ERROR, "%s, Get DOL info fails", __func__);
+
+    return OK;
+}
+// DOL_FEATURE_E
 
 void GraphConfigPipe::dumpSettings() {
     mSettings->dumpNodeTree(mSettings, 2);

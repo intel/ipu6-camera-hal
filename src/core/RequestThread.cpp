@@ -47,6 +47,9 @@ RequestThread::RequestThread(int cameraId, AiqUnitBase *a3AControl, ParameterGen
     mPerframeControlSupport = PlatformData::isFeatureSupported(mCameraId, PER_FRAME_CONTROL);
 
     mSofEnabled = PlatformData::isIsysEnabled(cameraId);
+    // FILE_SOURCE_S
+    mSofEnabled = mSofEnabled || PlatformData::isFileSourceEnabled();
+    // FILE_SOURCE_E
 }
 
 RequestThread::~RequestThread() {

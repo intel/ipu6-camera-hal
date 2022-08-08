@@ -237,6 +237,17 @@ int AiqUnit::initIntelCcaHandle(const std::vector<ConfigMode> &configModes) {
 
         // LOCAL_TONEMAP_S
         bool hasLtm = PlatformData::isLtmEnabled(mCameraId);
+        // HDR_FEATURE_S
+        if (PlatformData::isEnableHDR(mCameraId) &&
+            !CameraUtils::isMultiExposureCase(mCameraId, tuningMode)) {
+            hasLtm = false;
+        }
+        // HDR_FEATURE_E
+
+        // DOL_FEATURE_S
+        hasLtm |= (PlatformData::isDolShortEnabled(mCameraId)
+                   || PlatformData::isDolMediumEnabled(mCameraId));
+        // DOL_FEATURE_E
 
         if (hasLtm) {
             params.bitmap |= cca::CCA_MODULE_LTM;
@@ -250,6 +261,37 @@ int AiqUnit::initIntelCcaHandle(const std::vector<ConfigMode> &configModes) {
             params.bitmap |= cca::CCA_MODULE_DVS;
         }
         // INTEL_DVS_E
+
+        // DOL_FEATURE_S
+        // Initialize Bcomp params
+        if (PlatformData::isDolShortEnabled(mCameraId) ||
+                PlatformData::isDolMediumEnabled(mCameraId)) {
+            // Parse the DOL mode and CG ratio from sensor mode config
+            std::shared_ptr<IGraphConfig> graphConfig =
+                IGraphConfigManager::getInstance(mCameraId)->getGraphConfig(cfg);
+            if (graphConfig != nullptr) {
+                std::string dol_mode_name;
+                graphConfig->getDolInfo(params.conversionGainRatio, dol_mode_name);
+                std::map<std::string, ia_bcomp_dol_mode_t> dolModeNameMap;
+                dolModeNameMap["DOL_MODE_2_3_FRAME"] = ia_bcomp_dol_two_or_three_frame;
+                dolModeNameMap["DOL_MODE_DCG"] = ia_bcomp_dol_dcg;
+                dolModeNameMap["DOL_MODE_COMBINED_VERY_SHORT"] = ia_bcomp_dol_combined_very_short;
+                dolModeNameMap["DOL_MODE_DCG_VERY_SHORT"] = ia_bcomp_dol_dcg_very_short;
+                if (dolModeNameMap.count(dol_mode_name)) {
+                    params.dolMode = dolModeNameMap[dol_mode_name];
+                }
+            }
+            LOG2("conversionGainRatio: %f, dolMode: %d",
+                 params.conversionGainRatio, params.dolMode);
+            params.bitmap = params.bitmap | cca::CCA_MODULE_BCOM;
+        } else if (PlatformData::getSensorAeEnable(mCameraId)) {
+            params.conversionGainRatio = 1;
+            params.dolMode = ia_bcomp_linear_hdr_mode;
+            LOG2("WA: conversionGainRatio: %f, dolMode: %d",
+                 params.conversionGainRatio, params.dolMode);
+            params.bitmap = params.bitmap | cca::CCA_MODULE_BCOM;
+        }
+        // DOL_FEATURE_E
 
         if (PlatformData::supportUpdateTuning()) {
             std::shared_ptr<IGraphConfig> graphConfig =

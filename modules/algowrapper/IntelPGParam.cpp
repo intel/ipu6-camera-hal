@@ -772,7 +772,11 @@ ia_css_kernel_bitmap_t IntelPGParam::getCachedTerminalKernelBitmap(
         ia_css_param_manifest_section_desc_t* desc =
             ia_css_param_terminal_manifest_get_prm_sct_desc(manifest, section);
         CheckAndLogError(!desc, kernelBitmap, "failed to get desc");
+#ifdef IPU_SYSVER_IPU6
         int index = ia_css_param_manifest_section_desc_get_kernel_id(desc);
+#else
+        int index = desc->kernel_id;
+#endif
         kernelBitmap = ia_css_kernel_bitmap_set(kernelBitmap, index);
     }
 
@@ -790,7 +794,11 @@ ia_css_kernel_bitmap_t IntelPGParam::getProgramTerminalKernelBitmap(
         ia_css_fragment_param_manifest_section_desc_t* desc =
             ia_css_program_terminal_manifest_get_frgmnt_prm_sct_desc(manifest, section);
         CheckAndLogError(!desc, kernelBitmap, "failed to get desc");
+#ifdef IPU_SYSVER_IPU6
         int index = ia_css_fragment_param_manifest_section_desc_get_kernel_id(desc);
+#else
+        int index = desc->kernel_id;
+#endif
         kernelBitmap = ia_css_kernel_bitmap_set(kernelBitmap, index);
     }
 
@@ -867,10 +875,14 @@ css_err_t IntelPGParam::getKernelOrderForParamCachedInTerm(
          * encoded in a row. Here, skipping sections of the same kernel
          * based on this assumption.
          */
+#ifdef IPU_SYSVER_IPU6
         /* info: Indication of the kernel this parameter belongs to,
          * may stand for mem_type, region and kernel_id for ipu6
          */
         int index = ia_css_param_manifest_section_desc_get_kernel_id(param);
+#else
+        int index = param->kernel_id;
+#endif
         if (kernelCount > 0 && kernelOrder[kernelCount - 1].id == index) {
             ++kernelOrder[kernelCount - 1].sections;
             kernelOrder[kernelCount - 1].size += param->max_mem_size;
@@ -903,10 +915,14 @@ css_err_t IntelPGParam::getKernelOrderForProgramTerm(
          * encoded in a row. Here, skipping sections of the same kernel
          * based on this assumption.
          */
+#ifdef IPU_SYSVER_IPU6
         /* info: Indication of the kernel this parameter belongs to,
          * may stand for mem_type, region and kernel_id for ipu6
          */
         int index = ia_css_fragment_param_manifest_section_desc_get_kernel_id(param);
+#else
+        int index = param->kernel_id;
+#endif
         if (kernelCount > 0 && kernelOrder[kernelCount - 1].id == index) {
             ++kernelOrder[kernelCount - 1].sections;
             kernelOrder[kernelCount - 1].size += param->max_mem_size;

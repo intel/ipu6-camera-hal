@@ -139,6 +139,15 @@ int GraphConfig::getPgIdByPgName(string pgName) {
     return -1;
 }
 
+// DOL_FEATURE_S
+int GraphConfig::getDolInfo(float& gain, string& mode) {
+    gain = mGraphData.dolInfo.conversionGain;
+    mode = mGraphData.dolInfo.dolMode;
+
+    return OK;
+}
+// DOL_FEATURE_E
+
 ia_isp_bxt_program_group* GraphConfig::getProgramGroup(int32_t streamId) {
     CheckAndLogError(mGraphData.programGroup.empty(), nullptr,
                      "%s, The programGroup vector is empty", __func__);

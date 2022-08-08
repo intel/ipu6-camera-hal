@@ -19,6 +19,10 @@
 #include "CameraDevice.h"
 #include "Parameters.h"
 
+#ifdef SUPPORT_MULTI_PROCESS
+#include "iutils/CameraShm.h"
+#endif
+
 namespace icamera {
 
 /**
@@ -47,7 +51,11 @@ class CameraHal {
     virtual int deinit();
 
     // Device API
+#ifdef NO_VIRTUAL_CHANNEL
     virtual int deviceOpen(int cameraId);
+#else
+    virtual int deviceOpen(int cameraId, int vcNum = 0);
+#endif
     virtual void deviceClose(int cameraId);
 
     virtual void deviceCallbackRegister(int cameraId, const camera_callback_ops_t* callback);
@@ -71,9 +79,19 @@ class CameraHal {
     int mInitTimes;
     // Guard for CameraHal public API.
     Mutex mLock;
+    // VIRTUAL_CHANNEL_S
+    int mTotalVirtualChannelCamNum[MAX_VC_GROUP_NUMBER];
+    int mConfigTimes[MAX_VC_GROUP_NUMBER];
+    Condition mVirtualChannelSignal[MAX_VC_GROUP_NUMBER];
+    static const nsecs_t mWaitDuration = 500000000;  // 500ms
+    // VIRTUAL_CHANNEL_E
 
     enum { HAL_UNINIT, HAL_INIT } mState;
 
+#ifdef SUPPORT_MULTI_PROCESS
+    // Used to store variables in different process
+    CameraSharedMemory mCameraShm;
+#endif
     int mCameraOpenNum;
 };
 

@@ -579,6 +579,14 @@ int PipeLiteExecutor::processNewFrame() {
     v4l2_buffer_t inV4l2Buf = *inBuf->getV4L2Buffer().Get();
     TuningMode tuningMode = mPSysDag->getTuningMode(inBufSequence);
 
+    // HDR_FEATURE_S
+    // Prepare the ipu parameters before run pipe
+    // TODO remove it when 4k ull pipe run faster
+    if ((tuningMode == TUNING_MODE_VIDEO_HDR) || (tuningMode == TUNING_MODE_VIDEO_HDR2)) {
+        mPSysDag->prepareIpuParams(inBufSequence);
+    }
+    // HDR_FEATURE_E
+
     LOG2("%s:Id:%d run pipe start for buffer:%ld", mName.c_str(), mCameraId, inBufSequence);
 
     // FRAME_SYNC_S

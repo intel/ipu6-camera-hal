@@ -144,6 +144,12 @@ class GraphConfigPipe {
      * -1 will be returned if cannot find the valid PG id.
      */
     int getStreamIdByPgName(std::string pgName);
+    // DOL_FEATURE_S
+    /*
+     * retieve the conversion gain and the DOL mode from the settings of the sensor mode.
+     */
+    int getDolInfo(float* gain, std::string* mode);
+    // DOL_FEATURE_E
 
     /*
      * Debugging support

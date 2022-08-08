@@ -1135,6 +1135,7 @@ int PGCommon::prepareTerminalBuffers(const ia_binary_data* ipuParameters,
         mTerminalBuffers[pair.outId]->getMemoryCpuPtr(&mParamPayload[pair.outId].data);
     }
 
+
     return mPGParamAdapt->updatePALAndEncode(ipuParameters, mTerminalCount, mParamPayload);
 }
 

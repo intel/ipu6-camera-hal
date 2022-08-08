@@ -75,6 +75,11 @@ enum {
 typedef enum {
     TUNING_MODE_VIDEO,
     TUNING_MODE_VIDEO_ULL,
+    // HDR_FEATURE_S
+    TUNING_MODE_VIDEO_HDR,
+    TUNING_MODE_VIDEO_HDR2,
+    TUNING_MODE_VIDEO_HLC,
+    // HDR_FEATURE_E
     TUNING_MODE_VIDEO_CUSTOM_AIC,
     TUNING_MODE_VIDEO_LL,
     TUNING_MODE_VIDEO_REAR_VIEW,
@@ -138,6 +143,14 @@ typedef struct {
     uint32_t vertical_scaling_numerator;
     uint32_t vertical_scaling_denominator;
 } SensorFrameParams;
+
+// CUSTOM_WEIGHT_GRID_S
+typedef struct {
+    unsigned short width;
+    unsigned short height;
+    unsigned char *table;
+} WeightGridTable;
+// CUSTOM_WEIGHT_GRID_E
 
 enum ExecutorNotifyPolicy {
     POLICY_FRAME_FIRST = 0,

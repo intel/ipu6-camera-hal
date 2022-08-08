@@ -31,6 +31,9 @@ enum EventType {
     EVENT_PSYS_STATS_SIS_BUF_READY,
     EVENT_ISYS_FRAME,
     EVENT_PSYS_FRAME,
+    // CSI_META_S
+    EVENT_META,
+    // CSI_META_E
     EVENT_PROCESS_REQUEST,
     EVENT_FRAME_AVAILABLE,
     EVENT_PSYS_REQUEST_BUF_READY,
@@ -55,6 +58,9 @@ struct EventDataFrame {
 struct EventDataMeta {
     timeval timestamp;
     int64_t sequence;
+    // DOL_FEATURE_S
+    short vbp;
+    // DOL_FEATURE_E
 };
 
 struct EventRequestData {

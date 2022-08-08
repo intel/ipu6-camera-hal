@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 Intel Corporation.
+ * Copyright (C) 2016-2022 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,6 +72,11 @@ void AiqResultStorage::updateAiqStatistics(int64_t sequence) {
     mCurrentAiqStatsIndex %= kAiqStatsStorageSize;
 
     mAiqStatistics[mCurrentAiqStatsIndex].mSequence = sequence;
+}
+
+void AiqResultStorage::resetAiqStatistics() {
+    AutoWMutex wlock(mDataLock);
+    mCurrentAiqStatsIndex = -1;
 }
 
 const AiqStatistics* AiqResultStorage::getAndLockAiqStatistics() {

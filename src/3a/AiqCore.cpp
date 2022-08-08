@@ -104,6 +104,13 @@ int AiqCore::initAiqPlusParams() {
     LOG1("%s, gbce_on: %d, plc enable: %d", __func__, mGbceParams.gbce_on,
          mGbceParams.athena_mode);
 
+    // HDR_FEATURE_S
+    if (PlatformData::getSensorAeEnable(mCameraId)) {
+        LOG2("@%s, enable_gtm_desaturation for HDR sensor", __func__);
+        mPaParams.enable_gtm_desaturation = true;
+    }
+    // HDR_FEATURE_E
+
     return OK;
 }
 
@@ -301,12 +308,14 @@ int AiqCore::runAe(long requestId, AiqResult* aiqResult) {
     CheckAndLogError(!aiqResult, BAD_VALUE, "@%s, aiqResult is nullptr", __func__);
     LOG2("<req%ld>@%s, aiqResult %p", requestId, __func__, aiqResult);
 
+
     // run AE
     return runAEC(requestId, &aiqResult->mAeResults);
 }
 
 int AiqCore::runAiq(long requestId, AiqResult* aiqResult) {
     CheckAndLogError(!aiqResult, BAD_VALUE, "@%s, aiqResult is nullptr", __func__);
+
 
     int aaaRunType = IMAGING_ALGO_AWB | IMAGING_ALGO_GBCE | IMAGING_ALGO_PA;
     if (PlatformData::getLensHwType(mCameraId) == LENS_VCM_HW) {

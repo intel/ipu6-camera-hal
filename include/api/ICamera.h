@@ -80,6 +80,17 @@
 extern "C" {
 namespace icamera {
 
+// VIRTUAL_CHANNEL_S
+/**
+ * \struct vc_info_t: Define the virtual channel information for the device
+ */
+typedef struct {
+    int total_num; /**< the total camera number of virtual channel. 0: the virtual channel is disabled */
+    int sequence; /**< the current camera's sequence in all the virtual channel cameras */
+    int group; /**< the virtual channel group id */
+} vc_info_t;
+// VIRTUAL_CHANNEL_E
+
 /**
  * \struct camera_info_t: Define each camera basic information
  */
@@ -90,6 +101,14 @@ typedef struct {
     const char* name; /**< Sensor name */
     const char* description; /**< Sensor description */
     const Parameters *capability; /**< camera capability */
+    // VIRTUAL_CHANNEL_S
+    vc_info_t   vc; /**< Virtual Channel information */
+
+    /** The following three field are replaced by the vc_info_t, please don't use them */
+    int vc_total_num; /**deprecated */
+    int vc_sequence; /**deprecated */
+    int vc_group; /** deprecated */
+    // VIRTUAL_CHANNEL_E
 } camera_info_t;
 
 /**
@@ -193,6 +212,10 @@ void camera_callback_register(int camera_id, const camera_callback_ops_t *callba
  *
  * \param[in]
  *   int camera_id: ID of the camera
+ // VIRTUAL_CHANNEL_S
+ * \param[in]
+ *   int vc_num: the total virtual channel camera number to be opened, default value is 0
+ // VIRTUAL_CHANNEL_E
  *
  * \return
  *   0 succeed to open camera device
@@ -206,7 +229,11 @@ void camera_callback_register(int camera_id, const camera_callback_ops_t *callba
  *   int ret = camera_device_open(camera_id);
  * \endcode
  **/
+#ifdef NO_VIRTUAL_CHANNEL
 int camera_device_open(int camera_id);
+#else
+int camera_device_open(int camera_id, int vc_num = 0);
+#endif
 
 /**
  * \brief

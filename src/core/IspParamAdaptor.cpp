@@ -31,9 +31,15 @@
 #include "PlatformData.h"
 #include "IGraphConfig.h"
 
+// ISP_CONTROL_S
+#include "IspControl.h"
+#include "isp_control/IspControlUtils.h"
+// ISP_CONTROL_E
+
 #include "ia_pal_types_isp_ids_autogen.h"
 #include "ia_pal_types_isp_parameters_autogen.h"
 #include "ia_pal_types_isp.h"
+
 
 namespace icamera {
 
@@ -865,6 +871,12 @@ int IspParamAdaptor::runIspAdaptL(ia_isp_bxt_program_group *pgPtr, ia_isp_bxt_gd
     {
         PERF_CAMERA_ATRACE_PARAM1_IMAGING("ia_isp_bxt_run", 1);
 
+        // HDR_FEATURE_S
+        if (PlatformData::getSensorAeEnable(mCameraId)) {
+            inputParams->gain_id_gaic = 1;
+        }
+        // HDR_FEATURE_E
+
         iaErr = mIntelCca->runAIC(aiqResults->mFrameId, inputParams, binaryData);
     }
     CheckAndLogError(iaErr != ia_err_none && iaErr != ia_err_not_run, UNKNOWN_ERROR,
@@ -981,6 +993,88 @@ void IspParamAdaptor::dumpCscMatrix(const ia_isp_bxt_csc* cscMatrix) {
          cscMatrix->rgb2yuv_coef[3], cscMatrix->rgb2yuv_coef[4], cscMatrix->rgb2yuv_coef[5],
          cscMatrix->rgb2yuv_coef[6], cscMatrix->rgb2yuv_coef[7], cscMatrix->rgb2yuv_coef[8]);
 }
+
+#ifdef PAL_DEBUG
+/*
+ * How to use:
+ * 1, copy pal.bin file to local directory;
+ * 2, define pal uuid in palRecordArray which are expected to be replaced.
+ */
+void IspParamAdaptor::loadPalBinFile(ia_binary_data *binaryData) {
+    // Get file size
+    struct stat fileStat;
+    CLEAR(fileStat);
+    const char *fileName = "./pal.bin";
+    int ret = stat(fileName, &fileStat);
+    CheckWarning(ret != 0, VOID_VALUE, "no pal bin %s", fileName);
+
+    FILE* fp = fopen(fileName, "rb");
+    CheckWarning(fp == nullptr, VOID_VALUE, "Failed to open %s, err %s", fileName,
+                 strerror(errno));
+
+    std::unique_ptr<char[]> dataPtr(new char[fileStat.st_size]);
+    size_t readSize = fread(dataPtr.get(), sizeof(char), fileStat.st_size, fp);
+    fclose(fp);
+
+    CheckWarning(readSize != (size_t)fileStat.st_size, VOID_VALUE,
+                 "Failed to read %s, err %s", fileName, strerror(errno));
+
+    static PalRecord palRecordArray[] = {
+        { ia_pal_uuid_isp_bnlm_3_2, -1  },
+        { ia_pal_uuid_isp_tnr_6_0, -1   },
+    };
+
+    ia_pal_record_header *header = nullptr;
+    char* src = static_cast<char*>(dataPtr.get());
+    // find uuid offset in PAL bin
+    if (palRecordArray[0].offset < 0) {
+        uint32_t offset = 0;
+        while (offset < readSize) {
+            ia_pal_record_header *header = reinterpret_cast<ia_pal_record_header*>(src + offset);
+            for (uint32_t i = 0; i < sizeof(palRecordArray) / sizeof(PalRecord); i++) {
+                if (palRecordArray[i].offset < 0 && palRecordArray[i].uuid == header->uuid) {
+                    palRecordArray[i].offset = offset;
+                    LOG2("src uuid %d, offset %d, size %d", header->uuid, offset, header->size);
+                    break;
+                }
+            }
+            offset += header->size;
+        }
+    }
+
+    char* dest = static_cast<char*>(binaryData->data);
+    ia_pal_record_header *headerSrc = nullptr;
+    for (uint32_t i = 0; i < sizeof(palRecordArray) / sizeof(PalRecord); i++) {
+        if (palRecordArray[i].offset >= 0) {
+            // find source record header
+            header = reinterpret_cast<ia_pal_record_header*>(src + palRecordArray[i].offset);
+            if (header->uuid == palRecordArray[i].uuid) {
+                headerSrc = header;
+            }
+            if (!headerSrc) {
+                LOGW("Failed to find PAL recorder header %d", palRecordArray[i].uuid);
+                continue;
+            }
+
+            uint32_t offset = 0;
+            // find uuid offset in PAL buffer
+            while (offset < readSize) {
+                header = reinterpret_cast<ia_pal_record_header*>(dest + offset);
+                if (header->uuid == palRecordArray[i].uuid) {
+                    LOG2("%s, dst uuid %d, size %d", __func__, header->uuid, header->size);
+                    break;
+                }
+                offset += header->size;
+            }
+
+            if (header->uuid == palRecordArray[i].uuid) {
+                MEMCPY_S(header, header->size, headerSrc, headerSrc->size);
+                LOG2("%s, PAL data of kernel uuid %d has been updated", __func__, header->uuid);
+            }
+        }
+    }
+}
+#endif
 
 uint32_t IspParamAdaptor::getRequestedStats() {
     uint32_t bitmap = cca::CCA_STATS_RGBS | cca::CCA_STATS_HIST | cca::CCA_STATS_AF |

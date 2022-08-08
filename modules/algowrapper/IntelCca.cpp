@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2021 Intel Corporation
+ * Copyright (C) 2020-2022 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -206,13 +206,6 @@ ia_err IntelCca::updateTuning(uint8_t lardTags, const ia_lard_input_params& lard
 
 bool IntelCca::allocStatsDataMem(unsigned int size) {
     LOG2("<id%d>@%s, tuningMode:%d, size:%d", mCameraId, __func__, mTuningMode, size);
-    {
-        AutoMutex l(mMemStatsMLock);
-        if (!mMemStatsInfoMap.empty() &&
-            mMemStatsInfoMap.begin()->second.bufSize >= size) {
-            return true;
-        }
-    }
 
     freeStatsDataMem();
 
@@ -259,7 +252,8 @@ void IntelCca::decodeHwStatsDone(int64_t sequence, unsigned int byteUsed) {
     auto it = mMemStatsInfoMap.begin();
     it->second.usedSize = byteUsed;
     mMemStatsInfoMap[sequence] = it->second;
-    mMemStatsInfoMap.erase(it->first);
+
+    if (sequence != it->first) mMemStatsInfoMap.erase(it->first);
 }
 
 void* IntelCca::fetchHwStatsData(int64_t sequence, unsigned int* byteUsed) {

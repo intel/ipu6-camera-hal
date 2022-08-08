@@ -34,6 +34,9 @@ SofSource::SofSource(int cameraId)
     LOG1("%s: SofSource is constructed", __func__);
 
     mSofDisabled = !PlatformData::isIsysEnabled(cameraId);
+    // FILE_SOURCE_S
+    mSofDisabled = mSofDisabled || PlatformData::isFileSourceEnabled();
+    // FILE_SOURCE_E
 }
 
 SofSource::~SofSource() {
@@ -79,6 +82,14 @@ int SofSource::initDev() {
     LOG1("%s: Using SOF event id 0 for sync", __func__);
 #else
     int id = 0;
+    // VIRTUAL_CHANNEL_S
+    /* The value of virtual channel sequence is 1, 2, 3, ... if virtual channel supported.
+       The value of SOF event id is 0, 1, 2, ... (sequence -1)  when virtual channel supported. */
+    int sequence = PlatformData::getVirtualChannelSequence(mCameraId);
+    if (sequence > 0) {
+        id = sequence - 1;
+    }
+    // VIRTUAL_CHANNEL_E
     int status = mIsysReceiverSubDev->SubscribeEvent(V4L2_EVENT_FRAME_SYNC, id);
     CheckAndLogError(status != OK, status, "Failed to subscribe sync event %d", id);
     LOG1("%s: Using SOF event id %d for sync", __func__, id);
@@ -100,6 +111,14 @@ int SofSource::deinitDev() {
     }
 #else
     int id = 0;
+    // VIRTUAL_CHANNEL_S
+    /* The value of virtual channel sequence is 1, 2, 3, ... if virtual channel supported.
+       The value of SOF event id is 0, 1, 2, ... (sequence -1)  when virtual channel supported. */
+    int sequence = PlatformData::getVirtualChannelSequence(mCameraId);
+    if (sequence > 0) {
+        id = sequence - 1;
+    }
+    // VIRTUAL_CHANNEL_E
     status = mIsysReceiverSubDev->UnsubscribeEvent(V4L2_EVENT_FRAME_SYNC, id);
     if (status == OK) {
         LOG1("%s: Unsubscribe SOF event id %d done", __func__, id);
