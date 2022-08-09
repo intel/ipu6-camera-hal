@@ -61,8 +61,7 @@ CameraDevice::CameraDevice(int cameraId)
     mLensCtrl = new LensHw(mCameraId);
     mSensorCtrl = SensorHwCtrl::createSensorCtrl(mCameraId);
 
-    m3AControl =
-        I3AControlFactory::createI3AControl(mCameraId, mSensorCtrl, mLensCtrl);
+    m3AControl = I3AControlFactory::createI3AControl(mCameraId, mSensorCtrl, mLensCtrl);
     mRequestThread = new RequestThread(mCameraId, m3AControl, mParamGenerator);
     mRequestThread->registerListener(EVENT_PROCESS_REQUEST, this);
 
@@ -215,6 +214,7 @@ void CameraDevice::bindListeners() {
         }
     }
 
+    mProducer->registerListener(EVENT_ISYS_ERROR, this);
     if (mPerframeControlSupport || !PlatformData::isIsysEnabled(mCameraId)) {
         mProcessors.back()->registerListener(EVENT_PSYS_FRAME, mRequestThread);
     } else {
@@ -227,6 +227,12 @@ void CameraDevice::bindListeners() {
     }
 
     mSofSource->registerListener(EVENT_ISYS_SOF, mRequestThread);
+
+    // INTEL_DVS_S
+    auto dvsListener = m3AControl->getDVSEventListener();
+    for (auto lis : dvsListener)
+        for (auto& item : mProcessors) item->registerListener(EVENT_DVS_READY, lis);
+    // INTEL_DVS_E
 }
 
 void CameraDevice::unbindListeners() {
@@ -257,6 +263,7 @@ void CameraDevice::unbindListeners() {
         mProcessors.front()->removeListener(EVENT_REQUEST_METADATA_READY, this);
     }
 
+    mProducer->removeListener(EVENT_ISYS_ERROR, this);
     if (mPerframeControlSupport || !PlatformData::isIsysEnabled(mCameraId)) {
         mProcessors.back()->removeListener(EVENT_PSYS_FRAME, mRequestThread);
     } else {
@@ -264,6 +271,12 @@ void CameraDevice::unbindListeners() {
     }
 
     mSofSource->removeListener(EVENT_ISYS_SOF, mRequestThread);
+
+    // INTEL_DVS_S
+    auto dvsListener = m3AControl->getDVSEventListener();
+    for (auto lis : dvsListener)
+        for (auto& item : mProcessors) item->removeListener(EVENT_DVS_READY, lis);
+    // INTEL_DVS_E
 }
 
 int CameraDevice::configureInput(const stream_t* inputConfig) {
@@ -789,12 +802,22 @@ int CameraDevice::getParameters(Parameters& param, int64_t sequence) {
     LOG2("<id%d:seq%ld>@%s", mCameraId, sequence, __func__);
     AutoMutex m(mDeviceLock);
 
+#ifdef CAL_BUILD
     if (sequence >= 0 && mState != DEVICE_STOP) {
         // fetch target parameter and results
         return mParamGenerator->getParameters(sequence, &param);
     }
 
     param = mParameter;
+#else
+    param = mParameter;
+    Parameters nParam;
+    if (mState != DEVICE_STOP) {
+        // fetch target parameter and results
+        mParamGenerator->getParameters(sequence, &nParam, false);
+    }
+    param.merge(nParam);
+#endif
 
     for (auto& item : mProcessors) {
         item->getParameters(param);
@@ -922,14 +945,9 @@ void CameraDevice::handleEvent(EventData eventData) {
         case EVENT_PSYS_REQUEST_BUF_READY: {
             if (mCallback) {
                 camera_msg_data_t data = {CAMERA_ISP_BUF_READY, {}};
-                int32_t userRequestId = 0;
-                int ret = mParamGenerator->getUserRequestId(eventData.data.requestReady.sequence,
-                                                            userRequestId);
-                CheckAndLogError(ret != OK, VOID_VALUE, "failed to find request id,  seq %ld",
-                                 eventData.data.requestReady.sequence);
 
                 data.data.buffer_ready.timestamp = eventData.data.requestReady.timestamp;
-                data.data.buffer_ready.frameNumber = static_cast<uint32_t>(userRequestId);
+                data.data.buffer_ready.frameNumber = eventData.data.requestReady.requestId;
                 mCallback->notify(mCallback, data);
                 PlatformData::updateMakernoteTimeStamp(mCameraId,
                                                        eventData.data.requestReady.sequence,
@@ -941,14 +959,16 @@ void CameraDevice::handleEvent(EventData eventData) {
         case EVENT_REQUEST_METADATA_READY: {
             if (mCallback) {
                 camera_msg_data_t data = {CAMERA_METADATA_READY, {}};
-                int32_t userRequestId = 0;
-                int ret = mParamGenerator->getUserRequestId(eventData.data.requestReady.sequence,
-                                                            userRequestId);
-                CheckAndLogError(ret != OK, VOID_VALUE, "failed to find request id,  seq %ld",
-                                 eventData.data.requestReady.sequence);
 
                 data.data.metadata_ready.sequence = eventData.data.requestReady.sequence;
-                data.data.metadata_ready.frameNumber = static_cast<uint32_t>(userRequestId);
+                data.data.metadata_ready.frameNumber = eventData.data.requestReady.requestId;
+                mCallback->notify(mCallback, data);
+            }
+            break;
+        }
+        case EVENT_ISYS_ERROR: {
+            if (mCallback) {
+                camera_msg_data_t data = {CAMERA_DEVICE_ERROR, {}};
                 mCallback->notify(mCallback, data);
             }
             break;

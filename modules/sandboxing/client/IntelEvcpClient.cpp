@@ -56,17 +56,16 @@ int IntelEvcp::init(int width, int height, EvcpParam* param) {
 }
 
 bool IntelEvcp::initRunInfoBuffer() {
-    std::string name = "/evcpRuninfo" + std::to_string(reinterpret_cast<uintptr_t>(this))
-                        + SHM_NAME;
+    std::string name =
+        "/evcpRuninfo" + std::to_string(reinterpret_cast<uintptr_t>(this)) + SHM_NAME;
     mEvcpRunInfoMem.mName = name.c_str();
     mEvcpRunInfoMem.mSize = sizeof(EvcpRunInfo);
     return mCommon.allocShmMem(mEvcpRunInfoMem.mName, mEvcpRunInfoMem.mSize, &mEvcpRunInfoMem,
-                                   GPU_ALGO_SHM);
+                               GPU_ALGO_SHM);
 }
 
 bool IntelEvcp::initParamBuffer() {
-    std::string name = "/evcpParam" + std::to_string(reinterpret_cast<uintptr_t>(this))
-                        + SHM_NAME;
+    std::string name = "/evcpParam" + std::to_string(reinterpret_cast<uintptr_t>(this)) + SHM_NAME;
     mParamMems.mName = name.c_str();
     mParamMems.mSize = sizeof(EvcpParam);
     return mCommon.allocShmMem(mParamMems.mName, mParamMems.mSize, &mParamMems, GPU_ALGO_SHM);

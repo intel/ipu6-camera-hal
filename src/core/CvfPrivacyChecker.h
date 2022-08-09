@@ -38,21 +38,19 @@ class CvfPrivacyChecker : public Thread {
     V4L2Subdevice* mPixelArraySubdev;
 
  public:
-    CvfPrivacyChecker(int _id, CameraStream** _streams,
-                      uint32_t _interval = 67000) :
-                        mCameraId(_id),
-                        mInterval(_interval),
-                        mPrivacy(-1),
-                        mCameraStreams(_streams),
-                        mPixelArraySubdev(nullptr) {}
+    CvfPrivacyChecker(int _id, CameraStream** _streams, uint32_t _interval = 67000)
+            : mCameraId(_id),
+              mInterval(_interval),
+              mPrivacy(-1),
+              mCameraStreams(_streams),
+              mPixelArraySubdev(nullptr) {}
 
     int init() {
         std::string subDevName;
-        int ret = PlatformData::getDevNameByType(mCameraId, VIDEO_PIXEL_ARRAY,
-                                                 subDevName);
+        int ret = PlatformData::getDevNameByType(mCameraId, VIDEO_PIXEL_ARRAY, subDevName);
         if (ret == OK) {
-            LOG1("%s: ArraySubdev camera id:%d dev name:%s",
-                 __PRETTY_FUNCTION__, mCameraId, subDevName.c_str());
+            LOG1("%s: ArraySubdev camera id:%d dev name:%s", __PRETTY_FUNCTION__, mCameraId,
+                 subDevName.c_str());
             mPixelArraySubdev = V4l2DeviceFactory::getSubDev(mCameraId, subDevName);
         } else {
             LOG1("%s: Can't get pixel array subdevice. camera id:%d, return: %d",
@@ -71,14 +69,12 @@ class CvfPrivacyChecker : public Thread {
 
         if (privacy == 1 && mPrivacy < 1) {
             for (int i = 0; i < MAX_STREAM_NUMBER; ++i) {
-                LOGI("%s: mCameraStreams[%d] == %p", __PRETTY_FUNCTION__, i,
-                     mCameraStreams[i]);
+                LOGI("%s: mCameraStreams[%d] == %p", __PRETTY_FUNCTION__, i, mCameraStreams[i]);
                 if (mCameraStreams[i]) {
                     auto buf = mCameraStreams[i]->getPrivacyBuffer();
                     auto port = mCameraStreams[i]->getPort();
                     if (buf == nullptr) {
-                        LOGI("%s: getPrivacyBuffer returned nullptr",
-                             __PRETTY_FUNCTION__);
+                        LOGI("%s: getPrivacyBuffer returned nullptr", __PRETTY_FUNCTION__);
                         return true;
                     }
                     setPrivacyImage(buf);
@@ -99,8 +95,7 @@ class CvfPrivacyChecker : public Thread {
         }
         int privacy = -1;
         int status = mPixelArraySubdev->GetControl(V4L2_CID_PRIVACY, &privacy);
-        CheckAndLogError(status != OK, status,
-                         "Couldn't get V4L2_CID_PRIVACY, status:%d", status);
+        CheckAndLogError(status != OK, status, "Couldn't get V4L2_CID_PRIVACY, status:%d", status);
         return privacy;
     }
 
@@ -122,10 +117,8 @@ class CvfPrivacyChecker : public Thread {
         uint32_t offset = width * height;
 
         memset(buf->getBufferAddr(), 0, offset);
-        memset(reinterpret_cast<char*>(buf->getBufferAddr()) + offset, 128,
-               offset / 2);
-        LOG1("%s: set %p size %u to black", __func__, buf->getBufferAddr(),
-             buf->getBufferSize());
+        memset(reinterpret_cast<char*>(buf->getBufferAddr()) + offset, 128, offset / 2);
+        LOG1("%s: set %p size %u to black", __func__, buf->getBufferAddr(), buf->getBufferSize());
     }
 
     DISALLOW_COPY_AND_ASSIGN(CvfPrivacyChecker);

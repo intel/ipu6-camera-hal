@@ -70,8 +70,8 @@ status_t IntelFDServer::deinit(void* pData, int dataSize) {
 
     FaceDetectionDeinitParams* deinitParams = static_cast<FaceDetectionDeinitParams*>(pData);
     CheckAndLogError((mFaceDetection.find(deinitParams->cameraId) == mFaceDetection.end()),
-                     UNKNOWN_ERROR, "<id%d> @%s, mFaceDetection is nullptr",
-                     deinitParams->cameraId, __func__);
+                     UNKNOWN_ERROR, "<id%d> @%s, mFaceDetection is nullptr", deinitParams->cameraId,
+                     __func__);
 
     return mFaceDetection[deinitParams->cameraId]->deinit(deinitParams, dataSize);
 }

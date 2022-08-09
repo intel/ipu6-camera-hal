@@ -48,7 +48,8 @@ class IntelAlgoClient : public camera_algorithm_callback_ops_t {
     virtual ~IntelAlgoClient();
 
     void setMojoManagerToken(cros::CameraMojoChannelManagerToken* token) {
-        mMojoManagerToken = token;}
+        mMojoManagerToken = token;
+    }
 
     // Connect to the algo processes(cpu and gpu)
     // It must be called after all preparation are ready in camera service

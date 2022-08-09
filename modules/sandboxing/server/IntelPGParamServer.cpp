@@ -181,8 +181,7 @@ int IntelPGParamServer::updatePALAndEncode(void* pData, int dataSize, void* palD
                               package.mPayloads);
     CheckAndLogError(result != OK, result, "@%s, findPayloads fails", __func__);
 
-    result = package.mPGParamAdapt->updatePALAndEncode(&ipuParameters,
-                                                       package.mPayloadCount,
+    result = package.mPGParamAdapt->updatePALAndEncode(&ipuParameters, package.mPayloadCount,
                                                        package.mPayloads);
     CheckAndLogError(result != OK, result, "@%s, updatePALAndEncode fails", __func__);
 

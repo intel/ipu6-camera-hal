@@ -62,6 +62,16 @@ class StdconLogSink : public LogOutputSink {
     void sendOffLog(LogItem logItem) override;
 };
 
+#ifdef CAMERA_SYS_LOG
+class SysLogSink : public LogOutputSink {
+ public:
+    SysLogSink();
+    ~SysLogSink();
+    const char* getName() const override;
+    void sendOffLog(LogItem logItem) override;
+};
+#endif
+
 class FileLogSink : public LogOutputSink {
  public:
     FileLogSink();

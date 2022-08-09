@@ -38,35 +38,35 @@ extern char gDumpPath[50];
 // Dump bit mask definition
 enum {
     // IPU Buffer dump (bit[0-3]), export cameraDump=0xf
-    DUMP_ISYS_BUFFER =          1 << 0,
-    DUMP_PSYS_OUTPUT_BUFFER =   1 << 1,
-    DUMP_PSYS_INTERM_BUFFER =   1 << 2, // dump Psys intermediate buffers like PreGDC output
-    DUMP_EXECUTOR_OUTPUT =      1 << 3,
+    DUMP_ISYS_BUFFER = 1 << 0,
+    DUMP_PSYS_OUTPUT_BUFFER = 1 << 1,
+    DUMP_PSYS_INTERM_BUFFER = 1 << 2,  // dump Psys intermediate buffers like PreGDC output
+    DUMP_EXECUTOR_OUTPUT = 1 << 3,
 
     // Other buffer dump (bit[4-7]), export cameraDump=0xf0
-    DUMP_JPEG_BUFFER =          1 << 4,
-    DUMP_UT_BUFFER =            1 << 5,
-    DUMP_SW_IMG_PROC_OUTPUT =   1 << 6,
-    DUMP_GPU_TNR =              1 << 7,
+    DUMP_JPEG_BUFFER = 1 << 4,
+    DUMP_UT_BUFFER = 1 << 5,
+    DUMP_SW_IMG_PROC_OUTPUT = 1 << 6,
+    DUMP_GPU_TNR = 1 << 7,
 
     // PG/PAL/Stats dump (bit[8-11]), export cameraDump=0xf00
-    DUMP_PSYS_PAL =             1 << 8,  // ISP param binary
-    DUMP_PSYS_PG =              1 << 9,  // PSYS whole PG dump assisted by libiacss
-    DUMP_PSYS_DECODED_STAT =    1 << 10, // p2p decoded statistics
+    DUMP_PSYS_PAL = 1 << 8,            // ISP param binary
+    DUMP_PSYS_PG = 1 << 9,             // PSYS whole PG dump assisted by libiacss
+    DUMP_PSYS_DECODED_STAT = 1 << 10,  // p2p decoded statistics
 
     // AAL dump (bit[12-15]), export cameraDump=0xf000
-    DUMP_AAL_OUTPUT =           1 << 12,
-    DUMP_AAL_INPUT =            1 << 13,
+    DUMP_AAL_OUTPUT = 1 << 12,
+    DUMP_AAL_INPUT = 1 << 13,
 
     // Other dump (bit[16-19]), export cameraDump=0xf0000
-    DUMP_NVM_DATA =             1 << 16,
-    DUMP_MAKER_NOTE =           1 << 17,
-    DUMP_EMBEDDED_METADATA =    1 << 18,
+    DUMP_NVM_DATA = 1 << 16,
+    DUMP_MAKER_NOTE = 1 << 17,
+    DUMP_EMBEDDED_METADATA = 1 << 18,
 };
 
 enum {
-    DUMP_FORMAT_NORMAL =          1 << 0,  // Normal format
-    DUMP_FORMAT_IQSTUDIO =        1 << 1,  // IQStudio format
+    DUMP_FORMAT_NORMAL = 1 << 0,    // Normal format
+    DUMP_FORMAT_IQSTUDIO = 1 << 1,  // IQStudio format
 };
 
 const int MAX_NAME_LEN = 256;

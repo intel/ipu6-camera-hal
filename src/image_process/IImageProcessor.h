@@ -24,23 +24,24 @@
 namespace icamera {
 
 class IImageProcessor {
-public:
-    IImageProcessor() {};
-    virtual ~IImageProcessor() {};
+ public:
+    IImageProcessor(){};
+    virtual ~IImageProcessor(){};
 
     static std::unique_ptr<IImageProcessor> createImageProcessor();
     static bool isProcessingTypeSupported(PostProcessType type);
 
-    virtual status_t cropFrame(const std::shared_ptr<camera3::Camera3Buffer> &input,
-                               std::shared_ptr<camera3::Camera3Buffer> &output) = 0;
-    virtual status_t scaleFrame(const std::shared_ptr<camera3::Camera3Buffer> &input,
-                                std::shared_ptr<camera3::Camera3Buffer> &output) = 0;
-    virtual status_t rotateFrame(const std::shared_ptr<camera3::Camera3Buffer> &input,
-                                 std::shared_ptr<camera3::Camera3Buffer> &output,
-                                 int angle, std::vector<uint8_t> &rotateBuf) = 0;
-    virtual status_t convertFrame(const std::shared_ptr<camera3::Camera3Buffer> &input,
-                                  std::shared_ptr<camera3::Camera3Buffer> &output) = 0;
-private:
+    virtual status_t cropFrame(const std::shared_ptr<camera3::Camera3Buffer>& input,
+                               std::shared_ptr<camera3::Camera3Buffer>& output) = 0;
+    virtual status_t scaleFrame(const std::shared_ptr<camera3::Camera3Buffer>& input,
+                                std::shared_ptr<camera3::Camera3Buffer>& output) = 0;
+    virtual status_t rotateFrame(const std::shared_ptr<camera3::Camera3Buffer>& input,
+                                 std::shared_ptr<camera3::Camera3Buffer>& output, int angle,
+                                 std::vector<uint8_t>& rotateBuf) = 0;
+    virtual status_t convertFrame(const std::shared_ptr<camera3::Camera3Buffer>& input,
+                                  std::shared_ptr<camera3::Camera3Buffer>& output) = 0;
+
+ private:
     DISALLOW_COPY_AND_ASSIGN(IImageProcessor);
 };
-} // namespace icamera
+}  // namespace icamera
