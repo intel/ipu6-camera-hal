@@ -24,8 +24,7 @@
 extern "C" {
 #endif
 
-#define ALIGN_TO(val, alignment) \
-    (((uintptr_t)(val) + ((alignment) - 1)) & ~((alignment) - 1))
+#define ALIGN_TO(val, alignment) (((uintptr_t)(val) + ((alignment)-1)) & ~((alignment)-1))
 
 /**
  * Tag hierarchy and enum definitions for camera_metadata_entry
@@ -45,7 +44,7 @@ extern "C" {
 
 extern unsigned int icamera_metadata_section_bounds[CAMERA_SECTION_COUNT][2];
 
-extern const char *icamera_metadata_section_names[CAMERA_SECTION_COUNT];
+extern const char* icamera_metadata_section_names[CAMERA_SECTION_COUNT];
 
 /**
  * Type definitions for camera_metadata_entry
@@ -75,8 +74,8 @@ typedef struct icamera_metadata_rational {
 
 /** Tag information */
 typedef struct tag_info {
-    const char *tag_name;
-    uint8_t     tag_type;
+    const char* tag_name;
+    uint8_t tag_type;
 } tag_info_t;
 
 /**
@@ -87,17 +86,17 @@ typedef struct tag_info {
  * number of entries in data of the entry's type, not a count of bytes.
  */
 typedef struct icamera_metadata_entry {
-    size_t   index;
+    size_t index;
     uint32_t tag;
-    uint8_t  type;
-    size_t   count;
+    uint8_t type;
+    size_t count;
     union {
-        uint8_t *u8;
-        int32_t *i32;
-        float   *f;
-        int64_t *i64;
-        double  *d;
-        icamera_metadata_rational_t *r;
+        uint8_t* u8;
+        int32_t* i32;
+        float* f;
+        int64_t* i64;
+        double* d;
+        icamera_metadata_rational_t* r;
     } data;
 } icamera_metadata_entry_t;
 
@@ -106,17 +105,17 @@ typedef struct icamera_metadata_entry {
  * camera_metadata_entry in layout
  */
 typedef struct icamera_metadata_ro_entry {
-    size_t   index;
+    size_t index;
     uint32_t tag;
-    uint8_t  type;
-    size_t   count;
+    uint8_t type;
+    size_t count;
     union {
-        const uint8_t *u8;
-        const int32_t *i32;
-        const float   *f;
-        const int64_t *i64;
-        const double  *d;
-        const icamera_metadata_rational_t *r;
+        const uint8_t* u8;
+        const int32_t* i32;
+        const float* f;
+        const int64_t* i64;
+        const double* d;
+        const icamera_metadata_rational_t* r;
     } data;
 } icamera_metadata_ro_entry_t;
 
@@ -170,8 +169,7 @@ typedef struct icamera_metadata icamera_metadata_t;
  * data_capacity in bytes. The resulting structure is all contiguous in memory,
  * and can be freed with free_camera_metadata().
  */
-icamera_metadata_t *allocate_icamera_metadata(size_t entry_capacity,
-        size_t data_capacity);
+icamera_metadata_t* allocate_icamera_metadata(size_t entry_capacity, size_t data_capacity);
 
 /**
  * Get the required alignment of a packet of camera metadata, which is the
@@ -187,9 +185,8 @@ size_t get_icamera_metadata_alignment();
  *
  * The resulting pointer can be freed with free_camera_metadata().
  */
-icamera_metadata_t *allocate_copy_icamera_metadata_checked(
-        const icamera_metadata_t *src,
-        size_t src_size);
+icamera_metadata_t* allocate_copy_icamera_metadata_checked(const icamera_metadata_t* src,
+                                                           size_t src_size);
 
 /**
  * Place a camera metadata structure into an existing buffer. Returns NULL if
@@ -201,35 +198,33 @@ icamera_metadata_t *allocate_copy_icamera_metadata_checked(
  * responsibility to free the original buffer; do not call
  * free_camera_metadata() with the returned pointer.
  */
-icamera_metadata_t *place_icamera_metadata(void *dst, size_t dst_size,
-        size_t entry_capacity,
-        size_t data_capacity);
+icamera_metadata_t* place_icamera_metadata(void* dst, size_t dst_size, size_t entry_capacity,
+                                           size_t data_capacity);
 
 /**
  * Free a camera_metadata structure. Should only be used with structures
  * allocated with allocate_camera_metadata().
  */
-void free_icamera_metadata(icamera_metadata_t *metadata);
+void free_icamera_metadata(icamera_metadata_t* metadata);
 
 /**
  * Calculate the buffer size needed for a metadata structure of entry_count
  * metadata entries, needing a total of data_count bytes of extra data storage.
  */
-size_t calculate_icamera_metadata_size(size_t entry_count,
-        size_t data_count);
+size_t calculate_icamera_metadata_size(size_t entry_count, size_t data_count);
 
 /**
  * Get current size of entire metadata structure in bytes, including reserved
  * but unused space.
  */
-size_t get_icamera_metadata_size(const icamera_metadata_t *metadata);
+size_t get_icamera_metadata_size(const icamera_metadata_t* metadata);
 
 /**
  * Get size of entire metadata buffer in bytes, not including reserved but
  * unused space. This is the amount of space needed by copy_camera_metadata for
  * its dst buffer.
  */
-size_t get_icamera_metadata_compact_size(const icamera_metadata_t *metadata);
+size_t get_icamera_metadata_compact_size(const icamera_metadata_t* metadata);
 
 /**
  * Get the current number of entries in the metadata packet.
@@ -237,23 +232,23 @@ size_t get_icamera_metadata_compact_size(const icamera_metadata_t *metadata);
  * metadata packet must be valid, which can be checked before the call with
  * validate_camera_metadata_structure().
  */
-size_t get_icamera_metadata_entry_count(const icamera_metadata_t *metadata);
+size_t get_icamera_metadata_entry_count(const icamera_metadata_t* metadata);
 
 /**
  * Get the maximum number of entries that could fit in the metadata packet.
  */
-size_t get_icamera_metadata_entry_capacity(const icamera_metadata_t *metadata);
+size_t get_icamera_metadata_entry_capacity(const icamera_metadata_t* metadata);
 
 /**
  * Get the current count of bytes used for value storage in the metadata packet.
  */
-size_t get_icamera_metadata_data_count(const icamera_metadata_t *metadata);
+size_t get_icamera_metadata_data_count(const icamera_metadata_t* metadata);
 
 /**
  * Get the maximum count of bytes that could be used for value storage in the
  * metadata packet.
  */
-size_t get_icamera_metadata_data_capacity(const icamera_metadata_t *metadata);
+size_t get_icamera_metadata_data_capacity(const icamera_metadata_t* metadata);
 
 /**
  * Copy a metadata structure to a memory buffer, compacting it along the
@@ -269,8 +264,8 @@ size_t get_icamera_metadata_data_capacity(const icamera_metadata_t *metadata);
  * responsible for freeing the underlying buffer when needed; do not call
  * free_camera_metadata.
  */
-icamera_metadata_t *copy_icamera_metadata(void *dst, size_t dst_size,
-        const icamera_metadata_t *src);
+icamera_metadata_t* copy_icamera_metadata(void* dst, size_t dst_size,
+                                          const icamera_metadata_t* src);
 
 /**
  * Validate that a metadata is structurally sane. That is, its internal
@@ -285,8 +280,8 @@ icamera_metadata_t *copy_icamera_metadata(void *dst, size_t dst_size,
  *
  * Returns 0 on success. A non-0 value is returned on error.
  */
-int validate_icamera_metadata_structure(const icamera_metadata_t *metadata,
-                                        const size_t *expected_size);
+int validate_icamera_metadata_structure(const icamera_metadata_t* metadata,
+                                        const size_t* expected_size);
 
 /**
  * Append camera metadata in src to an existing metadata structure in dst.  This
@@ -294,7 +289,7 @@ int validate_icamera_metadata_structure(const icamera_metadata_t *metadata,
  * value is returned. On success, 0 is returned. Appending onto a sorted
  * structure results in a non-sorted combined structure.
  */
-int append_icamera_metadata(icamera_metadata_t *dst, const icamera_metadata_t *src);
+int append_icamera_metadata(icamera_metadata_t* dst, const icamera_metadata_t* src);
 
 /**
  * Clone an existing metadata buffer, compacting along the way. This is
@@ -303,15 +298,14 @@ int append_icamera_metadata(icamera_metadata_t *dst, const icamera_metadata_t *s
  * can be freed with free_camera_metadata(). Returns NULL if cloning failed.
  */
 
-icamera_metadata_t *clone_icamera_metadata(const icamera_metadata_t *src);
+icamera_metadata_t* clone_icamera_metadata(const icamera_metadata_t* src);
 /**
  * Calculate the number of bytes of extra data a given metadata entry will take
  * up. That is, if entry of 'type' with a payload of 'data_count' values is
  * added, how much will the value returned by get_camera_metadata_data_count()
  * be increased? This value may be zero, if no extra data storage is needed.
  */
-size_t calculate_icamera_metadata_entry_data_size(uint8_t type,
-        size_t data_count);
+size_t calculate_icamera_metadata_entry_data_size(uint8_t type, size_t data_count);
 
 /**
  * Add a metadata entry to a metadata structure. Returns 0 if the addition
@@ -323,10 +317,8 @@ size_t calculate_icamera_metadata_entry_data_size(uint8_t type,
  *
  * Returns 0 on success. A non-0 value is returned on error.
  */
-int add_icamera_metadata_entry(icamera_metadata_t *dst,
-        uint32_t tag,
-        const void *data,
-        size_t data_count);
+int add_icamera_metadata_entry(icamera_metadata_t* dst, uint32_t tag, const void* data,
+                               size_t data_count);
 
 /**
  * Sort the metadata buffer for fast searching. If already marked as sorted,
@@ -335,7 +327,7 @@ int add_icamera_metadata_entry(icamera_metadata_t *dst,
  *
  * Returns 0 on success. A non-0 value is returned on error.
  */
-int sort_icamera_metadata(icamera_metadata_t *dst);
+int sort_icamera_metadata(icamera_metadata_t* dst);
 
 /**
  * Get metadata entry at position index in the metadata buffer.
@@ -348,16 +340,14 @@ int sort_icamera_metadata(icamera_metadata_t *dst);
  *
  * Returns 0 on success. A non-0 value is returned on error.
  */
-int get_icamera_metadata_entry(icamera_metadata_t *src,
-        size_t index,
-        icamera_metadata_entry_t *entry);
+int get_icamera_metadata_entry(icamera_metadata_t* src, size_t index,
+                               icamera_metadata_entry_t* entry);
 
 /**
  * Get metadata entry at position index, but disallow editing the data.
  */
-int get_icamera_metadata_ro_entry(const icamera_metadata_t *src,
-        size_t index,
-        icamera_metadata_ro_entry_t *entry);
+int get_icamera_metadata_ro_entry(const icamera_metadata_t* src, size_t index,
+                                  icamera_metadata_ro_entry_t* entry);
 
 /**
  * Find an entry with given tag value. If not found, returns -ENOENT. Otherwise,
@@ -367,16 +357,14 @@ int get_icamera_metadata_ro_entry(const icamera_metadata_t *src,
  * which is returned. To speed up searching for tags, sort the metadata
  * structure first by calling sort_camera_metadata().
  */
-int find_icamera_metadata_entry(icamera_metadata_t *src,
-        uint32_t tag,
-        icamera_metadata_entry_t *entry);
+int find_icamera_metadata_entry(icamera_metadata_t* src, uint32_t tag,
+                                icamera_metadata_entry_t* entry);
 
 /**
  * Find an entry with given tag value, but disallow editing the data
  */
-int find_icamera_metadata_ro_entry(const icamera_metadata_t *src,
-        uint32_t tag,
-        icamera_metadata_ro_entry_t *entry);
+int find_icamera_metadata_ro_entry(const icamera_metadata_t* src, uint32_t tag,
+                                   icamera_metadata_ro_entry_t* entry);
 
 /**
  * Delete an entry at given index. This is an expensive operation, since it
@@ -384,8 +372,7 @@ int find_icamera_metadata_ro_entry(const icamera_metadata_t *src,
  * existing camera_metadata_entry.data pointers to this buffer. Sorting is
  * maintained.
  */
-int delete_icamera_metadata_entry(icamera_metadata_t *dst,
-        size_t index);
+int delete_icamera_metadata_entry(icamera_metadata_t* dst, size_t index);
 
 /**
  * Updates a metadata entry with new data. If the data size is changing, may
@@ -396,23 +383,20 @@ int delete_icamera_metadata_entry(icamera_metadata_t *dst,
  * is updated to match the new buffer state.  Returns a non-zero value if there
  * is no room for the new data in the buffer.
  */
-int update_icamera_metadata_entry(icamera_metadata_t *dst,
-        size_t index,
-        const void *data,
-        size_t data_count,
-        icamera_metadata_entry_t *updated_entry);
+int update_icamera_metadata_entry(icamera_metadata_t* dst, size_t index, const void* data,
+                                  size_t data_count, icamera_metadata_entry_t* updated_entry);
 
 /**
  * Retrieve human-readable name of section the tag is in. Returns NULL if
  * no such tag is defined.
  */
-const char *get_icamera_metadata_section_name(uint32_t tag);
+const char* get_icamera_metadata_section_name(uint32_t tag);
 
 /**
  * Retrieve human-readable name of tag (not including section). Returns NULL if
  * no such tag is defined.
  */
-const char *get_icamera_metadata_tag_name(uint32_t tag);
+const char* get_icamera_metadata_tag_name(uint32_t tag);
 
 /**
  * Retrieve the type of a tag. Returns -1 if no such tag is defined.
@@ -425,27 +409,20 @@ int get_icamera_metadata_tag_type(uint32_t tag);
  * verbosity = 1: Tag entry information plus at most 16 data values
  * verbosity = 2: All information
  */
-void dump_icamera_metadata(const icamera_metadata_t *metadata,
-        int fd,
-        int verbosity);
+void dump_icamera_metadata(const icamera_metadata_t* metadata, int fd, int verbosity);
 
 /**
  * Print fields in the metadata to the log; adds indentation parameter, which
  * specifies the number of spaces to insert before each line of the dump
  */
-void dump_indented_icamera_metadata(const icamera_metadata_t *metadata,
-        int fd,
-        int verbosity,
-        int indentation);
+void dump_indented_icamera_metadata(const icamera_metadata_t* metadata, int fd, int verbosity,
+                                    int indentation);
 
 /**
  * Prints the specified tag value as a string. Only works for enum tags.
  * Returns 0 on success, -1 on failure.
  */
-int icamera_metadata_enum_snprint(uint32_t tag,
-                                  int32_t value,
-                                  char *dst,
-                                  size_t size);
+int icamera_metadata_enum_snprint(uint32_t tag, int32_t value, char* dst, size_t size);
 
 #ifdef __cplusplus
 }

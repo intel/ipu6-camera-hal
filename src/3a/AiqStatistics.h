@@ -27,11 +27,11 @@ struct AiqStatistics {
     bool mInUse;
     bool mPendingDecode;
 
-    AiqStatistics() : mSequence(-1),
-                      mTimestamp(0),
-                      mTuningMode(TUNING_MODE_MAX),
-                      mInUse(false),
-                      mPendingDecode(false) {}
+    AiqStatistics()
+            : mSequence(-1),
+              mTimestamp(0),
+              mTuningMode(TUNING_MODE_MAX),
+              mInUse(false),
+              mPendingDecode(false) {}
 };
 } /* namespace icamera */
-

@@ -113,7 +113,7 @@ void IntelGPUAlgoServer::handleRequest(const MsgReq& msg) {
             break;
         }
 #endif
-// ENABLE_EVCP_S
+            // ENABLE_EVCP_S
         case IPC_EVCP_INIT:
             status = mEvcp.init(addr, requestSize);
             break;
@@ -142,7 +142,7 @@ void IntelGPUAlgoServer::handleRequest(const MsgReq& msg) {
         case IPC_EVCP_DEINIT:
             status = mEvcp.deInit();
             break;
-// ENABLE_EVCP_E
+            // ENABLE_EVCP_E
         default:
             LOGE("@%s, req_id:%d is not defined", __func__, req_id);
             status = UNKNOWN_ERROR;

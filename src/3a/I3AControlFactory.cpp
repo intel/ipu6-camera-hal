@@ -23,9 +23,8 @@
 
 namespace icamera {
 
-AiqUnitBase *I3AControlFactory::createI3AControl(int cameraId, SensorHwCtrl *sensorHw,
-                                                 LensHw *lensHw)
-{
+AiqUnitBase* I3AControlFactory::createI3AControl(int cameraId, SensorHwCtrl* sensorHw,
+                                                 LensHw* lensHw) {
     LOG1("<id%d>@%s", cameraId, __func__);
     if (PlatformData::isEnableAIQ(cameraId)) {
         return new AiqUnit(cameraId, sensorHw, lensHw);

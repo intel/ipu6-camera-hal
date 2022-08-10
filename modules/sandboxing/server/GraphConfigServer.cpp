@@ -65,8 +65,8 @@ status_t GraphConfigServer::queryGraphSettings(void* pData, size_t dataSize) {
     GraphSettingType type;
     std::vector<HalStream*> streams;
     bool dummyStillSink;
-    bool ret = mIpc.serverUnflattenConfigStreams(pData, dataSize, &info, &type, &dummyStillSink,
-                                                 &streams);
+    bool ret =
+        mIpc.serverUnflattenConfigStreams(pData, dataSize, &info, &type, &dummyStillSink, &streams);
     CheckAndLogError(ret == false, UNKNOWN_ERROR, "@%s, clientFlattenConfigStreams fails",
                      __func__);
 
@@ -85,8 +85,8 @@ status_t GraphConfigServer::configStreams(void* pData, size_t dataSize) {
     GraphSettingType type;
     std::vector<HalStream*> streams;
     bool dummyStillSink;
-    bool ret = mIpc.serverUnflattenConfigStreams(pData, dataSize, &info, &type,
-                                                 &dummyStillSink, &streams);
+    bool ret =
+        mIpc.serverUnflattenConfigStreams(pData, dataSize, &info, &type, &dummyStillSink, &streams);
     CheckAndLogError(ret == false, UNKNOWN_ERROR, "@%s, serverUnflattenConfigStreams fails",
                      __func__);
 
@@ -95,8 +95,8 @@ status_t GraphConfigServer::configStreams(void* pData, size_t dataSize) {
     if (it != mGraphConfigMap.end()) {
         mGraphConfigMap.erase(it);
     }
-    LOG1("<id%d> @%s configMode: %d, settingType: %d, dummyStillSink: %d",
-         info.cameraId, __func__, info.configMode, type, dummyStillSink);
+    LOG1("<id%d> @%s configMode: %d, settingType: %d, dummyStillSink: %d", info.cameraId, __func__,
+         info.configMode, type, dummyStillSink);
     std::shared_ptr<GraphConfigImpl> graphConfigImpl =
         std::make_shared<GraphConfigImpl>(info.cameraId, info.configMode, type);
     status_t rt = graphConfigImpl->configStreams(streams, dummyStillSink);
@@ -168,13 +168,12 @@ status_t GraphConfigServer::pipelineGetConnections(void* pData, size_t dataSize)
     std::vector<IGraphType::PipelineConnection> confVector;
     std::vector<IGraphType::ScalerInfo> scalerInfo;
     std::vector<IGraphType::PrivPortFormat> tnrPortFormat;
-    status_t rt = it->second->pipelineGetConnections(pgList, &scalerInfo,
-                                                     &confVector, &tnrPortFormat);
-    CheckAndLogError(rt != OK, UNKNOWN_ERROR, "<id%d> @%s, Failed to getConnection",
-                     info.cameraId, __func__);
+    status_t rt =
+        it->second->pipelineGetConnections(pgList, &scalerInfo, &confVector, &tnrPortFormat);
+    CheckAndLogError(rt != OK, UNKNOWN_ERROR, "<id%d> @%s, Failed to getConnection", info.cameraId,
+                     __func__);
 
-    ret = mIpc.serverFlattenGetConnection(pData, dataSize, scalerInfo,
-                                          confVector, tnrPortFormat);
+    ret = mIpc.serverFlattenGetConnection(pData, dataSize, scalerInfo, confVector, tnrPortFormat);
     CheckAndLogError(ret == false, UNKNOWN_ERROR, "@%s, serverFlattenGetPgId fails", __func__);
 
     return OK;
