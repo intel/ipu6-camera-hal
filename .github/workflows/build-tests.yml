@@ -8,29 +8,6 @@ on:
   pull_request:
 
 jobs:
-  build-ipu6ep:
-    runs-on: ubuntu-20.04
-
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Build for ipu6ep
-        run: |
-          sudo apt-get update -q -q
-          sudo apt-get install git cmake libexpat-dev automake libtool libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev --yes
-          git clone https://github.com/intel/ipu6-camera-bins -b main --depth 1
-          sudo cp -rv ipu6-camera-bins/ipu6ep/include/* /usr/include/
-          sudo cp -rv ipu6-camera-bins/ipu6ep/lib/* /usr/lib/
-          rm -fr ipu6-camera-bins
-          mkdir -p ./build/out/install/usr && cd ./build/
-          cmake -DCMAKE_BUILD_TYPE=Release \
-            -DIPU_VER=ipu6ep \
-            -DENABLE_VIRTUAL_IPU_PIPE=OFF \
-            -DUSE_PG_LITE_PIPE=ON \
-            -DUSE_STATIC_GRAPH=OFF \
-            -DCMAKE_INSTALL_PREFIX=/usr ..
-          make
-          sudo make install
   build-ipu6:
     runs-on: ubuntu-20.04
 
@@ -41,13 +18,36 @@ jobs:
         run: |
           sudo apt-get update -q -q
           sudo apt-get install git cmake libexpat-dev automake libtool libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev --yes
-          git clone https://github.com/intel/ipu6-camera-bins -b main --depth 1
+          git clone https://github.com/hao-yao/ipu6-camera-bins -b main --depth 1
           sudo cp -rv ipu6-camera-bins/ipu6/include/* /usr/include/
           sudo cp -rv ipu6-camera-bins/ipu6/lib/* /usr/lib/
           rm -fr ipu6-camera-bins
           mkdir -p ./build/out/install/usr && cd ./build/
           cmake -DCMAKE_BUILD_TYPE=Release \
             -DIPU_VER=ipu6 \
+            -DENABLE_VIRTUAL_IPU_PIPE=OFF \
+            -DUSE_PG_LITE_PIPE=ON \
+            -DUSE_STATIC_GRAPH=OFF \
+            -DCMAKE_INSTALL_PREFIX=/usr ..
+          make
+          sudo make install
+  build-ipu6ep:
+    runs-on: ubuntu-20.04
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Build for ipu6ep
+        run: |
+          sudo apt-get update -q -q
+          sudo apt-get install git cmake libexpat-dev automake libtool libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev --yes
+          git clone https://github.com/hao-yao/ipu6-camera-bins -b main --depth 1
+          sudo cp -rv ipu6-camera-bins/ipu6ep/include/* /usr/include/
+          sudo cp -rv ipu6-camera-bins/ipu6ep/lib/* /usr/lib/
+          rm -fr ipu6-camera-bins
+          mkdir -p ./build/out/install/usr && cd ./build/
+          cmake -DCMAKE_BUILD_TYPE=Release \
+            -DIPU_VER=ipu6ep \
             -DENABLE_VIRTUAL_IPU_PIPE=OFF \
             -DUSE_PG_LITE_PIPE=ON \
             -DUSE_STATIC_GRAPH=OFF \
