@@ -31,36 +31,31 @@ namespace icamera {
 
 Parameters::Parameters() : mData(ParameterHelper::createParameterData()) {}
 
-Parameters::Parameters(const Parameters& other) :
-        mData(ParameterHelper::createParameterData(other.mData)) {}
+Parameters::Parameters(const Parameters& other)
+        : mData(ParameterHelper::createParameterData(other.mData)) {}
 
-Parameters& Parameters::operator=(const Parameters& other)
-{
+Parameters& Parameters::operator=(const Parameters& other) {
     ParameterHelper::AutoWLock wl(mData);
     ParameterHelper::deepCopy(other.mData, mData);
     return *this;
 }
 
-Parameters::~Parameters()
-{
+Parameters::~Parameters() {
     ParameterHelper::releaseParameterData(mData);
     mData = nullptr;
 }
 
-void Parameters::merge(const Parameters& other)
-{
+void Parameters::merge(const Parameters& other) {
     ParameterHelper::merge(other, this);
 }
 
-int Parameters::setAeMode(camera_ae_mode_t aeMode)
-{
+int Parameters::setAeMode(camera_ae_mode_t aeMode) {
     uint8_t mode = aeMode;
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(CAMERA_AE_MODE, &mode, 1);
 }
 
-int Parameters::getAeMode(camera_ae_mode_t& aeMode) const
-{
+int Parameters::getAeMode(camera_ae_mode_t& aeMode) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_AE_MODE);
     if (entry.count != 1) {
@@ -70,15 +65,13 @@ int Parameters::getAeMode(camera_ae_mode_t& aeMode) const
     return OK;
 }
 
-int Parameters::setAeState(camera_ae_state_t aeState)
-{
+int Parameters::setAeState(camera_ae_state_t aeState) {
     uint8_t state = aeState;
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(CAMERA_AE_STATE, &state, 1);
 }
 
-int Parameters::getAeState(camera_ae_state_t& aeState) const
-{
+int Parameters::getAeState(camera_ae_state_t& aeState) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_AE_STATE);
     if (entry.count != 1) {
@@ -88,8 +81,7 @@ int Parameters::getAeState(camera_ae_state_t& aeState) const
     return OK;
 }
 
-static int setRegions(CameraMetadata& metadata, camera_window_list_t regions, int tag)
-{
+static int setRegions(CameraMetadata& metadata, camera_window_list_t regions, int tag) {
     if (regions.empty()) {
         // Nothing to do with an empty parameter.
         return INVALID_OPERATION;
@@ -108,8 +100,7 @@ static int setRegions(CameraMetadata& metadata, camera_window_list_t regions, in
     return metadata.update(tag, values, ARRAY_SIZE(values));
 }
 
-static int getRegions(icamera_metadata_ro_entry_t entry, camera_window_list_t& regions)
-{
+static int getRegions(icamera_metadata_ro_entry_t entry, camera_window_list_t& regions) {
     regions.clear();
     const int ELEM_NUM = sizeof(camera_window_t) / sizeof(int);
     if (entry.count == 0 || entry.count % ELEM_NUM != 0) {
@@ -129,27 +120,23 @@ static int getRegions(icamera_metadata_ro_entry_t entry, camera_window_list_t& r
     return OK;
 }
 
-int Parameters::setAeRegions(camera_window_list_t aeRegions)
-{
+int Parameters::setAeRegions(camera_window_list_t aeRegions) {
     ParameterHelper::AutoWLock wl(mData);
     return setRegions(ParameterHelper::getMetadata(mData), aeRegions, CAMERA_AE_REGIONS);
 }
 
-int Parameters::getAeRegions(camera_window_list_t& aeRegions) const
-{
+int Parameters::getAeRegions(camera_window_list_t& aeRegions) const {
     ParameterHelper::AutoRLock rl(mData);
     return getRegions(ParameterHelper::getMetadataEntry(mData, CAMERA_AE_REGIONS), aeRegions);
 }
 
-int Parameters::setAeLock(bool lock)
-{
+int Parameters::setAeLock(bool lock) {
     uint8_t lockValue = lock ? 1 : 0;
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(CAMERA_AE_LOCK, &lockValue, 1);
 }
 
-int Parameters::getAeLock(bool& lock) const
-{
+int Parameters::getAeLock(bool& lock) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_AE_LOCK);
     if (entry.count != 1) {
@@ -159,14 +146,13 @@ int Parameters::getAeLock(bool& lock) const
     return OK;
 }
 
-int Parameters::setExposureTime(int64_t exposureTime)
-{
+int Parameters::setExposureTime(int64_t exposureTime) {
     ParameterHelper::AutoWLock wl(mData);
-    return ParameterHelper::getMetadata(mData).update(CAMERA_SENSOR_EXPOSURE_TIME, &exposureTime, 1);
+    return ParameterHelper::getMetadata(mData).update(CAMERA_SENSOR_EXPOSURE_TIME, &exposureTime,
+                                                      1);
 }
 
-int Parameters::getExposureTime(int64_t& exposureTime) const
-{
+int Parameters::getExposureTime(int64_t& exposureTime) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_SENSOR_EXPOSURE_TIME);
     if (entry.count != 1) {
@@ -176,14 +162,12 @@ int Parameters::getExposureTime(int64_t& exposureTime) const
     return OK;
 }
 
-int Parameters::setSensitivityGain(float gain)
-{
+int Parameters::setSensitivityGain(float gain) {
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(INTEL_CONTROL_SENSITIVITY_GAIN, &gain, 1);
 }
 
-int Parameters::getSensitivityGain(float& gain) const
-{
+int Parameters::getSensitivityGain(float& gain) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_CONTROL_SENSITIVITY_GAIN);
     if (entry.count != 1) {
@@ -193,14 +177,12 @@ int Parameters::getSensitivityGain(float& gain) const
     return OK;
 }
 
-int Parameters::setSensitivityIso(int32_t iso)
-{
+int Parameters::setSensitivityIso(int32_t iso) {
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(CAMERA_SENSOR_SENSITIVITY, &iso, 1);
 }
 
-int Parameters::getSensitivityIso(int32_t& iso) const
-{
+int Parameters::getSensitivityIso(int32_t& iso) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_SENSOR_SENSITIVITY);
     if (entry.count != 1) {
@@ -210,14 +192,12 @@ int Parameters::getSensitivityIso(int32_t& iso) const
     return OK;
 }
 
-int Parameters::setAeCompensation(int ev)
-{
+int Parameters::setAeCompensation(int ev) {
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(CAMERA_AE_COMPENSATION, &ev, 1);
 }
 
-int Parameters::getAeCompensation(int& ev) const
-{
+int Parameters::getAeCompensation(int& ev) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_AE_COMPENSATION);
     if (entry.count != 1) {
@@ -227,14 +207,12 @@ int Parameters::getAeCompensation(int& ev) const
     return OK;
 }
 
-int Parameters::setFrameRate(float fps)
-{
+int Parameters::setFrameRate(float fps) {
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(INTEL_CONTROL_FRAME_RATE, &fps, 1);
 }
 
-int Parameters::getFrameRate(float& fps) const
-{
+int Parameters::getFrameRate(float& fps) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_CONTROL_FRAME_RATE);
     if (entry.count != 1) {
@@ -244,15 +222,13 @@ int Parameters::getFrameRate(float& fps) const
     return OK;
 }
 
-int Parameters::setAntiBandingMode(camera_antibanding_mode_t bandingMode)
-{
+int Parameters::setAntiBandingMode(camera_antibanding_mode_t bandingMode) {
     uint8_t mode = bandingMode;
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(CAMERA_AE_ANTIBANDING_MODE, &mode, 1);
 }
 
-int Parameters::getAntiBandingMode(camera_antibanding_mode_t& bandingMode) const
-{
+int Parameters::getAntiBandingMode(camera_antibanding_mode_t& bandingMode) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_AE_ANTIBANDING_MODE);
     if (entry.count != 1) {
@@ -262,15 +238,13 @@ int Parameters::getAntiBandingMode(camera_antibanding_mode_t& bandingMode) const
     return OK;
 }
 
-int Parameters::setAwbMode(camera_awb_mode_t awbMode)
-{
+int Parameters::setAwbMode(camera_awb_mode_t awbMode) {
     uint8_t mode = awbMode;
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(CAMERA_AWB_MODE, &mode, 1);
 }
 
-int Parameters::getAwbMode(camera_awb_mode_t& awbMode) const
-{
+int Parameters::getAwbMode(camera_awb_mode_t& awbMode) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_AWB_MODE);
     if (entry.count != 1) {
@@ -280,15 +254,13 @@ int Parameters::getAwbMode(camera_awb_mode_t& awbMode) const
     return OK;
 }
 
-int Parameters::setAwbState(camera_awb_state_t awbState)
-{
+int Parameters::setAwbState(camera_awb_state_t awbState) {
     uint8_t state = awbState;
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(CAMERA_AWB_STATE, &state, 1);
 }
 
-int Parameters::getAwbState(camera_awb_state_t& awbState) const
-{
+int Parameters::getAwbState(camera_awb_state_t& awbState) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_AWB_STATE);
     if (entry.count != 1) {
@@ -298,15 +270,13 @@ int Parameters::getAwbState(camera_awb_state_t& awbState) const
     return OK;
 }
 
-int Parameters::setAwbLock(bool lock)
-{
+int Parameters::setAwbLock(bool lock) {
     uint8_t lockValue = lock ? 1 : 0;
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(CAMERA_AWB_LOCK, &lockValue, 1);
 }
 
-int Parameters::getAwbLock(bool& lock) const
-{
+int Parameters::getAwbLock(bool& lock) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_AWB_LOCK);
     if (entry.count != 1) {
@@ -316,15 +286,14 @@ int Parameters::getAwbLock(bool& lock) const
     return OK;
 }
 
-int Parameters::setAwbCctRange(camera_range_t cct)
-{
+int Parameters::setAwbCctRange(camera_range_t cct) {
     int range[] = {(int)cct.min, (int)cct.max};
     ParameterHelper::AutoWLock wl(mData);
-    return ParameterHelper::getMetadata(mData).update(CAMERA_AWB_CCT_RANGE, range, ARRAY_SIZE(range));
+    return ParameterHelper::getMetadata(mData).update(CAMERA_AWB_CCT_RANGE, range,
+                                                      ARRAY_SIZE(range));
 }
 
-int Parameters::getAwbCctRange(camera_range_t& cct) const
-{
+int Parameters::getAwbCctRange(camera_range_t& cct) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_AWB_CCT_RANGE);
     const size_t ELEM_NUM = sizeof(camera_range_t) / sizeof(int);
@@ -336,15 +305,13 @@ int Parameters::getAwbCctRange(camera_range_t& cct) const
     return OK;
 }
 
-int Parameters::setAwbGains(camera_awb_gains_t awbGains)
-{
+int Parameters::setAwbGains(camera_awb_gains_t awbGains) {
     int values[] = {awbGains.r_gain, awbGains.g_gain, awbGains.b_gain};
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(CAMERA_AWB_GAINS, values, ARRAY_SIZE(values));
 }
 
-int Parameters::getAwbGains(camera_awb_gains_t& awbGains) const
-{
+int Parameters::getAwbGains(camera_awb_gains_t& awbGains) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_AWB_GAINS);
     const size_t ELEM_NUM = sizeof(camera_awb_gains_t) / sizeof(int);
@@ -357,8 +324,7 @@ int Parameters::getAwbGains(camera_awb_gains_t& awbGains) const
     return OK;
 }
 
-int Parameters::setAwbResult(void* data)
-{
+int Parameters::setAwbResult(void* data) {
     uint32_t size = sizeof(camera_awb_result_t);
     uint32_t tag = CAMERA_AWB_RESULT;
     ParameterHelper::AutoWLock wl(mData);
@@ -369,8 +335,7 @@ int Parameters::setAwbResult(void* data)
     return ParameterHelper::getMetadata(mData).update(tag, (uint8_t*)data, size);
 }
 
-int Parameters::getAwbResult(void* data) const
-{
+int Parameters::getAwbResult(void* data) const {
     if (data == NULL) {
         return BAD_VALUE;
     }
@@ -389,15 +354,14 @@ int Parameters::getAwbResult(void* data) const
     return OK;
 }
 
-int Parameters::setAwbGainShift(camera_awb_gains_t awbGainShift)
-{
+int Parameters::setAwbGainShift(camera_awb_gains_t awbGainShift) {
     int values[] = {awbGainShift.r_gain, awbGainShift.g_gain, awbGainShift.b_gain};
     ParameterHelper::AutoWLock wl(mData);
-    return ParameterHelper::getMetadata(mData).update(CAMERA_AWB_GAIN_SHIFT, values, ARRAY_SIZE(values));
+    return ParameterHelper::getMetadata(mData).update(CAMERA_AWB_GAIN_SHIFT, values,
+                                                      ARRAY_SIZE(values));
 }
 
-int Parameters::getAwbGainShift(camera_awb_gains_t& awbGainShift) const
-{
+int Parameters::getAwbGainShift(camera_awb_gains_t& awbGainShift) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_AWB_GAIN_SHIFT);
     const size_t ELEM_NUM = sizeof(camera_awb_gains_t) / sizeof(int);
@@ -410,15 +374,14 @@ int Parameters::getAwbGainShift(camera_awb_gains_t& awbGainShift) const
     return OK;
 }
 
-int Parameters::setAwbWhitePoint(camera_coordinate_t whitePoint)
-{
+int Parameters::setAwbWhitePoint(camera_coordinate_t whitePoint) {
     int values[] = {whitePoint.x, whitePoint.y};
     ParameterHelper::AutoWLock wl(mData);
-    return ParameterHelper::getMetadata(mData).update(CAMERA_AWB_WHITE_POINT, values, ARRAY_SIZE(values));
+    return ParameterHelper::getMetadata(mData).update(CAMERA_AWB_WHITE_POINT, values,
+                                                      ARRAY_SIZE(values));
 }
 
-int Parameters::getAwbWhitePoint(camera_coordinate_t& whitePoint) const
-{
+int Parameters::getAwbWhitePoint(camera_coordinate_t& whitePoint) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_AWB_WHITE_POINT);
     const size_t ELEM_NUM = sizeof(camera_coordinate_t) / sizeof(int);
@@ -432,15 +395,13 @@ int Parameters::getAwbWhitePoint(camera_coordinate_t& whitePoint) const
     return OK;
 }
 
-int Parameters::setColorTransform(camera_color_transform_t colorTransform)
-{
+int Parameters::setColorTransform(camera_color_transform_t colorTransform) {
     float* transform = (float*)colorTransform.color_transform;
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(CAMERA_AWB_COLOR_TRANSFORM, transform, 3 * 3);
 }
 
-int Parameters::getColorTransform(camera_color_transform_t& colorTransform) const
-{
+int Parameters::getColorTransform(camera_color_transform_t& colorTransform) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_AWB_COLOR_TRANSFORM);
     const size_t ELEM_NUM = 3 * 3;
@@ -454,15 +415,13 @@ int Parameters::getColorTransform(camera_color_transform_t& colorTransform) cons
     return OK;
 }
 
-int Parameters::setColorGains(camera_color_gains_t colorGains)
-{
+int Parameters::setColorGains(camera_color_gains_t colorGains) {
     float* gains = colorGains.color_gains_rggb;
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(CAMERA_AWB_COLOR_GAINS, gains, 4);
 }
 
-int Parameters::getColorGains(camera_color_gains_t& colorGains) const
-{
+int Parameters::getColorGains(camera_color_gains_t& colorGains) const {
     ParameterHelper::AutoRLock rl(mData);
     icamera_metadata_ro_entry_t entry =
         ParameterHelper::getMetadataEntry(mData, CAMERA_AWB_COLOR_GAINS);
@@ -476,27 +435,23 @@ int Parameters::getColorGains(camera_color_gains_t& colorGains) const
     return OK;
 }
 
-int Parameters::setAwbRegions(camera_window_list_t awbRegions)
-{
+int Parameters::setAwbRegions(camera_window_list_t awbRegions) {
     ParameterHelper::AutoWLock wl(mData);
     return setRegions(ParameterHelper::getMetadata(mData), awbRegions, CAMERA_AWB_REGIONS);
 }
 
-int Parameters::getAwbRegions(camera_window_list_t& awbRegions) const
-{
+int Parameters::getAwbRegions(camera_window_list_t& awbRegions) const {
     ParameterHelper::AutoRLock rl(mData);
     return getRegions(ParameterHelper::getMetadataEntry(mData, CAMERA_AWB_REGIONS), awbRegions);
 }
 
-int Parameters::setEdgeMode(camera_edge_mode_t edgeMode)
-{
+int Parameters::setEdgeMode(camera_edge_mode_t edgeMode) {
     uint8_t mode = edgeMode;
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(CAMERA_EDGE_MODE, &mode, 1);
 }
 
-int Parameters::getEdgeMode(camera_edge_mode_t& edgeMode) const
-{
+int Parameters::getEdgeMode(camera_edge_mode_t& edgeMode) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_EDGE_MODE);
     if (entry.count != 1) {
@@ -506,15 +461,13 @@ int Parameters::getEdgeMode(camera_edge_mode_t& edgeMode) const
     return OK;
 }
 
-int Parameters::setNrMode(camera_nr_mode_t nrMode)
-{
+int Parameters::setNrMode(camera_nr_mode_t nrMode) {
     uint8_t mode = nrMode;
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(INTEL_CONTROL_NR_MODE, &mode, 1);
 }
 
-int Parameters::getNrMode(camera_nr_mode_t& nrMode) const
-{
+int Parameters::getNrMode(camera_nr_mode_t& nrMode) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_CONTROL_NR_MODE);
     if (entry.count != 1) {
@@ -524,15 +477,14 @@ int Parameters::getNrMode(camera_nr_mode_t& nrMode) const
     return OK;
 }
 
-int Parameters::setNrLevel(camera_nr_level_t level)
-{
-    int values [] = {level.overall, level.spatial, level.temporal};
+int Parameters::setNrLevel(camera_nr_level_t level) {
+    int values[] = {level.overall, level.spatial, level.temporal};
     ParameterHelper::AutoWLock wl(mData);
-    return ParameterHelper::getMetadata(mData).update(INTEL_CONTROL_NR_LEVEL, values, ARRAY_SIZE(values));
+    return ParameterHelper::getMetadata(mData).update(INTEL_CONTROL_NR_LEVEL, values,
+                                                      ARRAY_SIZE(values));
 }
 
-int Parameters::getNrLevel(camera_nr_level_t& level) const
-{
+int Parameters::getNrLevel(camera_nr_level_t& level) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_CONTROL_NR_LEVEL);
     const size_t ELEM_NUM = sizeof(camera_nr_level_t) / sizeof(int);
@@ -545,15 +497,13 @@ int Parameters::getNrLevel(camera_nr_level_t& level) const
     return OK;
 }
 
-int Parameters::setIrisMode(camera_iris_mode_t irisMode)
-{
+int Parameters::setIrisMode(camera_iris_mode_t irisMode) {
     uint8_t mode = irisMode;
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(INTEL_CONTROL_IRIS_MODE, &mode, 1);
 }
 
-int Parameters::getIrisMode(camera_iris_mode_t& irisMode)
-{
+int Parameters::getIrisMode(camera_iris_mode_t& irisMode) {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_CONTROL_IRIS_MODE);
     if (entry.count != 1) {
@@ -563,14 +513,12 @@ int Parameters::getIrisMode(camera_iris_mode_t& irisMode)
     return OK;
 }
 
-int Parameters::setIrisLevel(int level)
-{
+int Parameters::setIrisLevel(int level) {
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(INTEL_CONTROL_IRIS_LEVEL, &level, 1);
 }
 
-int Parameters::getIrisLevel(int& level)
-{
+int Parameters::getIrisLevel(int& level) {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_CONTROL_IRIS_LEVEL);
     if (entry.count != 1) {
@@ -580,14 +528,12 @@ int Parameters::getIrisLevel(int& level)
     return OK;
 }
 
-int Parameters::setWdrLevel(uint8_t level)
-{
+int Parameters::setWdrLevel(uint8_t level) {
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(INTEL_CONTROL_WDR_LEVEL, &level, 1);
 }
 
-int Parameters::getWdrLevel(uint8_t& level) const
-{
+int Parameters::getWdrLevel(uint8_t& level) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_CONTROL_WDR_LEVEL);
     if (entry.count != 1) {
@@ -597,16 +543,14 @@ int Parameters::getWdrLevel(uint8_t& level) const
     return OK;
 }
 
-int Parameters::setEffectSceneMode(camera_scene_mode_t sceneMode)
-{
+int Parameters::setEffectSceneMode(camera_scene_mode_t sceneMode) {
     uint8_t mode = sceneMode;
     LOGW("Effect scene mode is deprecated. Please use setSceneMode() instead.");
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(INTEL_CONTROL_SCENE_MODE, &mode, 1);
 }
 
-int Parameters::getEffectSceneMode(camera_scene_mode_t& sceneMode) const
-{
+int Parameters::getEffectSceneMode(camera_scene_mode_t& sceneMode) const {
     LOGW("Effect scene mode is deprecated. Please use getSceneMode() instead.");
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_CONTROL_SCENE_MODE);
@@ -617,15 +561,13 @@ int Parameters::getEffectSceneMode(camera_scene_mode_t& sceneMode) const
     return OK;
 }
 
-int Parameters::setSceneMode(camera_scene_mode_t sceneMode)
-{
+int Parameters::setSceneMode(camera_scene_mode_t sceneMode) {
     uint8_t mode = sceneMode;
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(INTEL_CONTROL_SCENE_MODE, &mode, 1);
 }
 
-int Parameters::getSceneMode(camera_scene_mode_t& sceneMode) const
-{
+int Parameters::getSceneMode(camera_scene_mode_t& sceneMode) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_CONTROL_SCENE_MODE);
     if (entry.count != 1) {
@@ -635,15 +577,13 @@ int Parameters::getSceneMode(camera_scene_mode_t& sceneMode) const
     return OK;
 }
 
-int Parameters::setWeightGridMode(camera_weight_grid_mode_t weightGridMode)
-{
+int Parameters::setWeightGridMode(camera_weight_grid_mode_t weightGridMode) {
     uint8_t mode = (uint8_t)weightGridMode;
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(INTEL_CONTROL_WEIGHT_GRID_MODE, &mode, 1);
 }
 
-int Parameters::getWeightGridMode(camera_weight_grid_mode_t& weightGridMode) const
-{
+int Parameters::getWeightGridMode(camera_weight_grid_mode_t& weightGridMode) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_CONTROL_WEIGHT_GRID_MODE);
     if (entry.count != 1) {
@@ -653,15 +593,13 @@ int Parameters::getWeightGridMode(camera_weight_grid_mode_t& weightGridMode) con
     return OK;
 }
 
-int Parameters::setBlcAreaMode(camera_blc_area_mode_t blcAreaMode)
-{
+int Parameters::setBlcAreaMode(camera_blc_area_mode_t blcAreaMode) {
     uint8_t mode = blcAreaMode;
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(INTEL_CONTROL_BLC_AREA_MODE, &mode, 1);
 }
 
-int Parameters::getBlcAreaMode(camera_blc_area_mode_t& blcAreaMode) const
-{
+int Parameters::getBlcAreaMode(camera_blc_area_mode_t& blcAreaMode) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_CONTROL_BLC_AREA_MODE);
     if (entry.count != 1) {
@@ -671,15 +609,14 @@ int Parameters::getBlcAreaMode(camera_blc_area_mode_t& blcAreaMode) const
     return OK;
 }
 
-int Parameters::setFpsRange(camera_range_t fpsRange)
-{
+int Parameters::setFpsRange(camera_range_t fpsRange) {
     float range[] = {fpsRange.min, fpsRange.max};
     ParameterHelper::AutoWLock wl(mData);
-    return ParameterHelper::getMetadata(mData).update(CAMERA_AE_TARGET_FPS_RANGE, range, ARRAY_SIZE(range));
+    return ParameterHelper::getMetadata(mData).update(CAMERA_AE_TARGET_FPS_RANGE, range,
+                                                      ARRAY_SIZE(range));
 }
 
-int Parameters::getFpsRange(camera_range_t& fpsRange) const
-{
+int Parameters::getFpsRange(camera_range_t& fpsRange) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_AE_TARGET_FPS_RANGE);
     const size_t ELEM_NUM = sizeof(camera_range_t) / sizeof(float);
@@ -691,15 +628,15 @@ int Parameters::getFpsRange(camera_range_t& fpsRange) const
     return OK;
 }
 
-int Parameters::setImageEnhancement(camera_image_enhancement_t effects)
-{
-    int values[] = {effects.sharpness, effects.brightness, effects.contrast, effects.hue, effects.saturation};
+int Parameters::setImageEnhancement(camera_image_enhancement_t effects) {
+    int values[] = {effects.sharpness, effects.brightness, effects.contrast, effects.hue,
+                    effects.saturation};
     ParameterHelper::AutoWLock wl(mData);
-    return ParameterHelper::getMetadata(mData).update(INTEL_CONTROL_IMAGE_ENHANCEMENT, values, ARRAY_SIZE(values));
+    return ParameterHelper::getMetadata(mData).update(INTEL_CONTROL_IMAGE_ENHANCEMENT, values,
+                                                      ARRAY_SIZE(values));
 }
 
-int Parameters::getImageEnhancement(camera_image_enhancement_t& effects) const
-{
+int Parameters::getImageEnhancement(camera_image_enhancement_t& effects) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_CONTROL_IMAGE_ENHANCEMENT);
     size_t number_of_effects = sizeof(camera_image_enhancement_t) / sizeof(int);
@@ -715,15 +652,13 @@ int Parameters::getImageEnhancement(camera_image_enhancement_t& effects) const
     return OK;
 }
 
-int Parameters::setDeinterlaceMode(camera_deinterlace_mode_t deinterlaceMode)
-{
+int Parameters::setDeinterlaceMode(camera_deinterlace_mode_t deinterlaceMode) {
     uint8_t mode = deinterlaceMode;
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(INTEL_CONTROL_DEINTERLACE_MODE, &mode, 1);
 }
 
-int Parameters::getDeinterlaceMode(camera_deinterlace_mode_t &deinterlaceMode) const
-{
+int Parameters::getDeinterlaceMode(camera_deinterlace_mode_t& deinterlaceMode) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_CONTROL_DEINTERLACE_MODE);
     if (entry.count != 1) {
@@ -733,11 +668,12 @@ int Parameters::getDeinterlaceMode(camera_deinterlace_mode_t &deinterlaceMode) c
     return OK;
 }
 
-int Parameters::getSupportedVideoStabilizationMode(camera_video_stabilization_list_t &supportedModes) const
-{
+int Parameters::getSupportedVideoStabilizationMode(
+    camera_video_stabilization_list_t& supportedModes) const {
     supportedModes.clear();
     ParameterHelper::AutoRLock rl(mData);
-    auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_CONTROL_AVAILABLE_VIDEO_STABILIZATION_MODES);
+    auto entry = ParameterHelper::getMetadataEntry(
+        mData, CAMERA_CONTROL_AVAILABLE_VIDEO_STABILIZATION_MODES);
     for (size_t i = 0; i < entry.count; i++) {
         supportedModes.push_back((camera_video_stabilization_mode_t)entry.data.u8[i]);
     }
@@ -745,8 +681,7 @@ int Parameters::getSupportedVideoStabilizationMode(camera_video_stabilization_li
     return OK;
 }
 
-int Parameters::getSupportedAeMode(vector <camera_ae_mode_t> &supportedAeModes) const
-{
+int Parameters::getSupportedAeMode(vector<camera_ae_mode_t>& supportedAeModes) const {
     supportedAeModes.clear();
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_AE_AVAILABLE_MODES);
@@ -757,8 +692,7 @@ int Parameters::getSupportedAeMode(vector <camera_ae_mode_t> &supportedAeModes) 
     return OK;
 }
 
-int Parameters::getSupportedAwbMode(vector <camera_awb_mode_t> &supportedAwbModes) const
-{
+int Parameters::getSupportedAwbMode(vector<camera_awb_mode_t>& supportedAwbModes) const {
     supportedAwbModes.clear();
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_AWB_AVAILABLE_MODES);
@@ -769,8 +703,7 @@ int Parameters::getSupportedAwbMode(vector <camera_awb_mode_t> &supportedAwbMode
     return OK;
 }
 
-int Parameters::getSupportedAfMode(vector <camera_af_mode_t> &supportedAfModes) const
-{
+int Parameters::getSupportedAfMode(vector<camera_af_mode_t>& supportedAfModes) const {
     supportedAfModes.clear();
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_AF_AVAILABLE_MODES);
@@ -781,8 +714,7 @@ int Parameters::getSupportedAfMode(vector <camera_af_mode_t> &supportedAfModes) 
     return OK;
 }
 
-int Parameters::getSupportedSceneMode(vector <camera_scene_mode_t> &supportedSceneModes) const
-{
+int Parameters::getSupportedSceneMode(vector<camera_scene_mode_t>& supportedSceneModes) const {
     supportedSceneModes.clear();
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_CONTROL_AVAILABLE_SCENE_MODES);
@@ -793,8 +725,8 @@ int Parameters::getSupportedSceneMode(vector <camera_scene_mode_t> &supportedSce
     return OK;
 }
 
-int Parameters::getSupportedAntibandingMode(vector <camera_antibanding_mode_t> &supportedAntibindingModes) const
-{
+int Parameters::getSupportedAntibandingMode(
+    vector<camera_antibanding_mode_t>& supportedAntibindingModes) const {
     supportedAntibindingModes.clear();
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_AE_AVAILABLE_ANTIBANDING_MODES);
@@ -805,8 +737,7 @@ int Parameters::getSupportedAntibandingMode(vector <camera_antibanding_mode_t> &
     return OK;
 }
 
-int Parameters::getSupportedFpsRange(camera_range_array_t& ranges) const
-{
+int Parameters::getSupportedFpsRange(camera_range_array_t& ranges) const {
     ranges.clear();
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_AE_AVAILABLE_TARGET_FPS_RANGES);
@@ -824,8 +755,7 @@ int Parameters::getSupportedFpsRange(camera_range_array_t& ranges) const
     return OK;
 }
 
-int Parameters::getSupportedStreamConfig(stream_array_t& config) const
-{
+int Parameters::getSupportedStreamConfig(stream_array_t& config) const {
     config.clear();
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_INFO_AVAILABLE_CONFIGURATIONS);
@@ -840,14 +770,13 @@ int Parameters::getSupportedStreamConfig(stream_array_t& config) const
     for (size_t i = 0; i < entry.count; i += streamConfMemberNum) {
         MEMCPY_S(&cfg, sizeof(stream_t), &entry.data.i32[i], sizeof(stream_t));
         cfg.stride = CameraUtils::getStride(cfg.format, cfg.width);
-        cfg.size   = CameraUtils::getFrameSize(cfg.format, cfg.width, cfg.height);
+        cfg.size = CameraUtils::getFrameSize(cfg.format, cfg.width, cfg.height);
         config.push_back(cfg);
     }
     return OK;
 }
 
-int Parameters::getSupportedSensorExposureTimeRange(camera_range_t& range) const
-{
+int Parameters::getSupportedSensorExposureTimeRange(camera_range_t& range) const {
     CLEAR(range);
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_SENSOR_INFO_EXPOSURE_TIME_RANGE);
@@ -860,8 +789,7 @@ int Parameters::getSupportedSensorExposureTimeRange(camera_range_t& range) const
     return OK;
 }
 
-int Parameters::getSupportedSensorSensitivityRange(camera_range_t& range) const
-{
+int Parameters::getSupportedSensorSensitivityRange(camera_range_t& range) const {
     CLEAR(range);
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_SENSOR_INFO_SENSITIVITY_RANGE);
@@ -874,8 +802,7 @@ int Parameters::getSupportedSensorSensitivityRange(camera_range_t& range) const
     return OK;
 }
 
-int Parameters::getSupportedFeatures(camera_features_list_t& features) const
-{
+int Parameters::getSupportedFeatures(camera_features_list_t& features) const {
     features.clear();
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_INFO_AVAILABLE_FEATURES);
@@ -885,8 +812,7 @@ int Parameters::getSupportedFeatures(camera_features_list_t& features) const
     return OK;
 }
 
-int Parameters::getAeCompensationRange(camera_range_t& evRange) const
-{
+int Parameters::getAeCompensationRange(camera_range_t& evRange) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_AE_COMPENSATION_RANGE);
     const size_t ELEM_NUM = sizeof(camera_range_t) / sizeof(int);
@@ -899,8 +825,7 @@ int Parameters::getAeCompensationRange(camera_range_t& evRange) const
     return OK;
 }
 
-int Parameters::getAeCompensationStep(camera_rational_t& evStep) const
-{
+int Parameters::getAeCompensationStep(camera_rational_t& evStep) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_AE_COMPENSATION_STEP);
     if (entry.count != 1) {
@@ -912,8 +837,8 @@ int Parameters::getAeCompensationStep(camera_rational_t& evStep) const
     return OK;
 }
 
-int Parameters::getSupportedAeExposureTimeRange(std::vector<camera_ae_exposure_time_range_t> & etRanges) const
-{
+int Parameters::getSupportedAeExposureTimeRange(
+    std::vector<camera_ae_exposure_time_range_t>& etRanges) const {
     ParameterHelper::AutoRLock rl(mData);
 
     const int MEMBER_COUNT = 3;
@@ -934,8 +859,7 @@ int Parameters::getSupportedAeExposureTimeRange(std::vector<camera_ae_exposure_t
     return OK;
 }
 
-int Parameters::getSupportedAeGainRange(std::vector<camera_ae_gain_range_t>& gainRanges) const
-{
+int Parameters::getSupportedAeGainRange(std::vector<camera_ae_gain_range_t>& gainRanges) const {
     ParameterHelper::AutoRLock rl(mData);
 
     const int MEMBER_COUNT = 3;
@@ -958,8 +882,7 @@ int Parameters::getSupportedAeGainRange(std::vector<camera_ae_gain_range_t>& gai
     return OK;
 }
 
-bool Parameters::getAeLockAvailable() const
-{
+bool Parameters::getAeLockAvailable() const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_AE_LOCK_AVAILABLE);
     if (entry.count != 1) {
@@ -969,8 +892,7 @@ bool Parameters::getAeLockAvailable() const
     return (entry.data.u8[0] == CAMERA_AE_LOCK_AVAILABLE_TRUE);
 }
 
-bool Parameters::getAwbLockAvailable() const
-{
+bool Parameters::getAwbLockAvailable() const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_AWB_LOCK_AVAILABLE);
     if (entry.count != 1) {
@@ -980,16 +902,15 @@ bool Parameters::getAwbLockAvailable() const
     return (entry.data.u8[0] == CAMERA_AWB_LOCK_AVAILABLE_TRUE);
 }
 
-int Parameters::setExposureTimeRange(camera_range_t exposureTimeRange)
-{
+int Parameters::setExposureTimeRange(camera_range_t exposureTimeRange) {
     ParameterHelper::AutoWLock wl(mData);
     const int MEMBER_COUNT = 2;
     int values[MEMBER_COUNT] = {(int)exposureTimeRange.min, (int)exposureTimeRange.max};
-    return ParameterHelper::getMetadata(mData).update(INTEL_CONTROL_EXPOSURE_TIME_RANGE, values, MEMBER_COUNT);
+    return ParameterHelper::getMetadata(mData).update(INTEL_CONTROL_EXPOSURE_TIME_RANGE, values,
+                                                      MEMBER_COUNT);
 }
 
-int Parameters::getExposureTimeRange(camera_range_t& exposureTimeRange) const
-{
+int Parameters::getExposureTimeRange(camera_range_t& exposureTimeRange) const {
     ParameterHelper::AutoRLock rl(mData);
 
     const int MEMBER_COUNT = 2;
@@ -1003,16 +924,15 @@ int Parameters::getExposureTimeRange(camera_range_t& exposureTimeRange) const
     return OK;
 }
 
-int Parameters::setSensitivityGainRange(camera_range_t sensitivityGainRange)
-{
+int Parameters::setSensitivityGainRange(camera_range_t sensitivityGainRange) {
     ParameterHelper::AutoWLock wl(mData);
     float values[] = {sensitivityGainRange.min, sensitivityGainRange.max};
 
-    return ParameterHelper::getMetadata(mData).update(INTEL_CONTROL_SENSITIVITY_GAIN_RANGE, values, ARRAY_SIZE(values));
+    return ParameterHelper::getMetadata(mData).update(INTEL_CONTROL_SENSITIVITY_GAIN_RANGE, values,
+                                                      ARRAY_SIZE(values));
 }
 
-int Parameters::getSensitivityGainRange(camera_range_t& sensitivityGainRange) const
-{
+int Parameters::getSensitivityGainRange(camera_range_t& sensitivityGainRange) const {
     ParameterHelper::AutoRLock rl(mData);
 
     const int MEMBER_COUNT = 2;
@@ -1026,15 +946,13 @@ int Parameters::getSensitivityGainRange(camera_range_t& sensitivityGainRange) co
     return OK;
 }
 
-int Parameters::setAeConvergeSpeed(camera_converge_speed_t speed)
-{
+int Parameters::setAeConvergeSpeed(camera_converge_speed_t speed) {
     uint8_t aeSpeed = speed;
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(INTEL_CONTROL_AE_CONVERGE_SPEED, &aeSpeed, 1);
 }
 
-int Parameters::getAeConvergeSpeed(camera_converge_speed_t& speed) const
-{
+int Parameters::getAeConvergeSpeed(camera_converge_speed_t& speed) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_CONTROL_AE_CONVERGE_SPEED);
     if (entry.count != 1) {
@@ -1045,15 +963,13 @@ int Parameters::getAeConvergeSpeed(camera_converge_speed_t& speed) const
     return OK;
 }
 
-int Parameters::setAwbConvergeSpeed(camera_converge_speed_t speed)
-{
+int Parameters::setAwbConvergeSpeed(camera_converge_speed_t speed) {
     uint8_t awbSpeed = speed;
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(CAMERA_AWB_CONVERGE_SPEED, &awbSpeed, 1);
 }
 
-int Parameters::getAwbConvergeSpeed(camera_converge_speed_t& speed) const
-{
+int Parameters::getAwbConvergeSpeed(camera_converge_speed_t& speed) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_AWB_CONVERGE_SPEED);
     if (entry.count != 1) {
@@ -1064,15 +980,14 @@ int Parameters::getAwbConvergeSpeed(camera_converge_speed_t& speed) const
     return OK;
 }
 
-int Parameters::setAeConvergeSpeedMode(camera_converge_speed_mode_t mode)
-{
+int Parameters::setAeConvergeSpeedMode(camera_converge_speed_mode_t mode) {
     uint8_t speedMode = mode;
     ParameterHelper::AutoWLock wl(mData);
-    return ParameterHelper::getMetadata(mData).update(INTEL_CONTROL_AE_CONVERGE_SPEED_MODE, &speedMode, 1);
+    return ParameterHelper::getMetadata(mData).update(INTEL_CONTROL_AE_CONVERGE_SPEED_MODE,
+                                                      &speedMode, 1);
 }
 
-int Parameters::getAeConvergeSpeedMode(camera_converge_speed_mode_t& mode) const
-{
+int Parameters::getAeConvergeSpeedMode(camera_converge_speed_mode_t& mode) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_CONTROL_AE_CONVERGE_SPEED_MODE);
     if (entry.count != 1) {
@@ -1083,15 +998,14 @@ int Parameters::getAeConvergeSpeedMode(camera_converge_speed_mode_t& mode) const
     return OK;
 }
 
-int Parameters::setAwbConvergeSpeedMode(camera_converge_speed_mode_t mode)
-{
+int Parameters::setAwbConvergeSpeedMode(camera_converge_speed_mode_t mode) {
     uint8_t speedMode = mode;
     ParameterHelper::AutoWLock wl(mData);
-    return ParameterHelper::getMetadata(mData).update(CAMERA_AWB_CONVERGE_SPEED_MODE, &speedMode, 1);
+    return ParameterHelper::getMetadata(mData).update(CAMERA_AWB_CONVERGE_SPEED_MODE, &speedMode,
+                                                      1);
 }
 
-int Parameters::getAwbConvergeSpeedMode(camera_converge_speed_mode_t& mode) const
-{
+int Parameters::getAwbConvergeSpeedMode(camera_converge_speed_mode_t& mode) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_AWB_CONVERGE_SPEED_MODE);
     if (entry.count != 1) {
@@ -1102,16 +1016,15 @@ int Parameters::getAwbConvergeSpeedMode(camera_converge_speed_mode_t& mode) cons
     return OK;
 }
 
-int Parameters::setMakernoteData(const void* data, unsigned int size)
-{
+int Parameters::setMakernoteData(const void* data, unsigned int size) {
     CheckAndLogError(!data || size == 0, BAD_VALUE, "%s, invalid parameters", __func__);
     ParameterHelper::AutoWLock wl(mData);
 
-    return ParameterHelper::getMetadata(mData).update(INTEL_CONTROL_MAKERNOTE_DATA, (uint8_t*)data, size);
+    return ParameterHelper::getMetadata(mData).update(INTEL_CONTROL_MAKERNOTE_DATA, (uint8_t*)data,
+                                                      size);
 }
 
-int Parameters::getMakernoteData(void* data, unsigned int* size) const
-{
+int Parameters::getMakernoteData(void* data, unsigned int* size) const {
     CheckAndLogError(!data || !size, BAD_VALUE, "%s, invalid parameters", __func__);
     ParameterHelper::AutoRLock rl(mData);
 
@@ -1126,16 +1039,15 @@ int Parameters::getMakernoteData(void* data, unsigned int* size) const
     return OK;
 }
 
-int Parameters::setCustomAicParam(const void* data, unsigned int length)
-{
+int Parameters::setCustomAicParam(const void* data, unsigned int length) {
     CheckAndLogError(!data, BAD_VALUE, "%s, invalid parameters", __func__);
     ParameterHelper::AutoWLock wl(mData);
 
-    return ParameterHelper::getMetadata(mData).update(INTEL_CONTROL_CUSTOM_AIC_PARAM, (uint8_t*)data, length);
+    return ParameterHelper::getMetadata(mData).update(INTEL_CONTROL_CUSTOM_AIC_PARAM,
+                                                      (uint8_t*)data, length);
 }
 
-int Parameters::getCustomAicParam(void* data, unsigned int* length) const
-{
+int Parameters::getCustomAicParam(void* data, unsigned int* length) const {
     CheckAndLogError(!data || !length, BAD_VALUE, "%s, invalid parameters", __func__);
     ParameterHelper::AutoRLock rl(mData);
 
@@ -1150,15 +1062,13 @@ int Parameters::getCustomAicParam(void* data, unsigned int* length) const
     return OK;
 }
 
-int Parameters::setMakernoteMode(camera_makernote_mode_t mode)
-{
+int Parameters::setMakernoteMode(camera_makernote_mode_t mode) {
     uint8_t mknMode = mode;
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(INTEL_CONTROL_MAKERNOTE_MODE, &mknMode, 1);
 }
 
-int Parameters::getMakernoteMode(camera_makernote_mode_t &mode) const
-{
+int Parameters::getMakernoteMode(camera_makernote_mode_t& mode) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_CONTROL_MAKERNOTE_MODE);
     if (entry.count != 1) {
@@ -1170,14 +1080,12 @@ int Parameters::getMakernoteMode(camera_makernote_mode_t &mode) const
     return OK;
 }
 
-int Parameters::setDigitalZoomRatio(float ratio)
-{
+int Parameters::setDigitalZoomRatio(float ratio) {
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(INTEL_CONTROL_DIGITAL_ZOOM_RATIO, &ratio, 1);
 }
 
-int Parameters::getDigitalZoomRatio(float& ratio) const
-{
+int Parameters::getDigitalZoomRatio(float& ratio) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_CONTROL_DIGITAL_ZOOM_RATIO);
     if (entry.count != 1) {
@@ -1187,15 +1095,13 @@ int Parameters::getDigitalZoomRatio(float& ratio) const
     return OK;
 }
 
-int Parameters::setLdcMode(camera_ldc_mode_t mode)
-{
+int Parameters::setLdcMode(camera_ldc_mode_t mode) {
     uint8_t ldcMode = mode;
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(INTEL_CONTROL_LDC_MODE, &ldcMode, 1);
 }
 
-int Parameters::getLdcMode(camera_ldc_mode_t &mode) const
-{
+int Parameters::getLdcMode(camera_ldc_mode_t& mode) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_CONTROL_LDC_MODE);
     if (entry.count != 1) {
@@ -1205,15 +1111,13 @@ int Parameters::getLdcMode(camera_ldc_mode_t &mode) const
     return OK;
 }
 
-int Parameters::setRscMode(camera_rsc_mode_t mode)
-{
+int Parameters::setRscMode(camera_rsc_mode_t mode) {
     uint8_t rscMode = mode;
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(INTEL_CONTROL_RSC_MODE, &rscMode, 1);
 }
 
-int Parameters::getRscMode(camera_rsc_mode_t &mode) const
-{
+int Parameters::getRscMode(camera_rsc_mode_t& mode) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_CONTROL_RSC_MODE);
     if (entry.count != 1) {
@@ -1223,15 +1127,13 @@ int Parameters::getRscMode(camera_rsc_mode_t &mode) const
     return OK;
 }
 
-int Parameters::setFlipMode(camera_flip_mode_t mode)
-{
+int Parameters::setFlipMode(camera_flip_mode_t mode) {
     uint8_t flipMode = mode;
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(INTEL_CONTROL_FLIP_MODE, &flipMode, 1);
 }
 
-int Parameters::getFlipMode(camera_flip_mode_t &mode) const
-{
+int Parameters::getFlipMode(camera_flip_mode_t& mode) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_CONTROL_FLIP_MODE);
     if (entry.count != 1) {
@@ -1241,15 +1143,13 @@ int Parameters::getFlipMode(camera_flip_mode_t &mode) const
     return OK;
 }
 
-int Parameters::setMonoDsMode(camera_mono_downscale_mode_t mode)
-{
+int Parameters::setMonoDsMode(camera_mono_downscale_mode_t mode) {
     uint8_t monoDsMode = mode;
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(INTEL_CONTROL_MONO_DOWNSCALE, &monoDsMode, 1);
 }
 
-int Parameters::getMonoDsMode(camera_mono_downscale_mode_t &mode) const
-{
+int Parameters::getMonoDsMode(camera_mono_downscale_mode_t& mode) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_CONTROL_MONO_DOWNSCALE);
     if (entry.count != 1) {
@@ -1259,14 +1159,12 @@ int Parameters::getMonoDsMode(camera_mono_downscale_mode_t &mode) const
     return OK;
 }
 
-int Parameters::setRun3ACadence(int cadence)
-{
+int Parameters::setRun3ACadence(int cadence) {
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(INTEL_CONTROL_RUN3_A_CADENCE, &cadence, 1);
 }
 
-int Parameters::getRun3ACadence(int &cadence) const
-{
+int Parameters::getRun3ACadence(int& cadence) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_CONTROL_RUN3_A_CADENCE);
     if (entry.count != 1) {
@@ -1276,15 +1174,14 @@ int Parameters::getRun3ACadence(int &cadence) const
     return OK;
 }
 
-int Parameters::setFisheyeDewarpingMode(camera_fisheye_dewarping_mode_t mode)
-{
+int Parameters::setFisheyeDewarpingMode(camera_fisheye_dewarping_mode_t mode) {
     uint8_t dewarpingMode = mode;
     ParameterHelper::AutoWLock wl(mData);
-    return ParameterHelper::getMetadata(mData).update(INTEL_CONTROL_FISHEYE_DEWARPING_MODE, &dewarpingMode, 1);
+    return ParameterHelper::getMetadata(mData).update(INTEL_CONTROL_FISHEYE_DEWARPING_MODE,
+                                                      &dewarpingMode, 1);
 }
 
-int Parameters::getFisheyeDewarpingMode(camera_fisheye_dewarping_mode_t &mode) const
-{
+int Parameters::getFisheyeDewarpingMode(camera_fisheye_dewarping_mode_t& mode) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_CONTROL_FISHEYE_DEWARPING_MODE);
     if (entry.count != 1) {
@@ -1294,15 +1191,14 @@ int Parameters::getFisheyeDewarpingMode(camera_fisheye_dewarping_mode_t &mode) c
     return OK;
 }
 
-int Parameters::setAeDistributionPriority(camera_ae_distribution_priority_t priority)
-{
+int Parameters::setAeDistributionPriority(camera_ae_distribution_priority_t priority) {
     uint8_t distributionPriority = priority;
     ParameterHelper::AutoWLock wl(mData);
-    return ParameterHelper::getMetadata(mData).update(INTEL_CONTROL_AE_DISTRIBUTION_PRIORITY, &distributionPriority, 1);
+    return ParameterHelper::getMetadata(mData).update(INTEL_CONTROL_AE_DISTRIBUTION_PRIORITY,
+                                                      &distributionPriority, 1);
 }
 
-int Parameters::getAeDistributionPriority(camera_ae_distribution_priority_t& priority) const
-{
+int Parameters::getAeDistributionPriority(camera_ae_distribution_priority_t& priority) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_CONTROL_AE_DISTRIBUTION_PRIORITY);
     if (entry.count != 1) {
@@ -1313,15 +1209,13 @@ int Parameters::getAeDistributionPriority(camera_ae_distribution_priority_t& pri
     return OK;
 }
 
-int Parameters::setYuvColorRangeMode(camera_yuv_color_range_mode_t colorRange)
-{
+int Parameters::setYuvColorRangeMode(camera_yuv_color_range_mode_t colorRange) {
     uint8_t mode = colorRange;
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(INTEL_CONTROL_YUV_COLOR_RANGE, &mode, 1);
 }
 
-int Parameters::getYuvColorRangeMode(camera_yuv_color_range_mode_t& colorRange) const
-{
+int Parameters::getYuvColorRangeMode(camera_yuv_color_range_mode_t& colorRange) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_CONTROL_YUV_COLOR_RANGE);
     if (entry.count != 1) {
@@ -1332,14 +1226,12 @@ int Parameters::getYuvColorRangeMode(camera_yuv_color_range_mode_t& colorRange) 
     return OK;
 }
 
-int Parameters::setJpegQuality(uint8_t quality)
-{
+int Parameters::setJpegQuality(uint8_t quality) {
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(CAMERA_JPEG_QUALITY, &quality, 1);
 }
 
-int Parameters::getJpegQuality(uint8_t *quality) const
-{
+int Parameters::getJpegQuality(uint8_t* quality) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_JPEG_QUALITY);
     if (entry.count != 1) {
@@ -1349,14 +1241,12 @@ int Parameters::getJpegQuality(uint8_t *quality) const
     return OK;
 }
 
-int Parameters::setJpegThumbnailQuality(uint8_t quality)
-{
+int Parameters::setJpegThumbnailQuality(uint8_t quality) {
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(CAMERA_JPEG_THUMBNAIL_QUALITY, &quality, 1);
 }
 
-int Parameters::getJpegThumbnailQuality(uint8_t *quality) const
-{
+int Parameters::getJpegThumbnailQuality(uint8_t* quality) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_JPEG_THUMBNAIL_QUALITY);
     if (entry.count != 1) {
@@ -1366,33 +1256,29 @@ int Parameters::getJpegThumbnailQuality(uint8_t *quality) const
     return OK;
 }
 
-int Parameters::setJpegThumbnailSize(const camera_resolution_t& res)
-{
+int Parameters::setJpegThumbnailSize(const camera_resolution_t& res) {
     int size[2] = {res.width, res.height};
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(CAMERA_JPEG_THUMBNAIL_SIZE, size, 2);
 }
 
-int Parameters::getJpegThumbnailSize(camera_resolution_t& res) const
-{
+int Parameters::getJpegThumbnailSize(camera_resolution_t& res) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_JPEG_THUMBNAIL_SIZE);
     if (entry.count != 2) {
         return NAME_NOT_FOUND;
     }
-    res.width  = entry.data.i32[0];
+    res.width = entry.data.i32[0];
     res.height = entry.data.i32[1];
     return OK;
 }
 
-int Parameters::setJpegRotation(int rotation)
-{
+int Parameters::setJpegRotation(int rotation) {
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(CAMERA_JPEG_ORIENTATION, &rotation, 1);
 }
 
-int Parameters::getJpegRotation(int &rotation) const
-{
+int Parameters::getJpegRotation(int& rotation) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_JPEG_ORIENTATION);
     if (entry.count != 1) {
@@ -1402,14 +1288,12 @@ int Parameters::getJpegRotation(int &rotation) const
     return OK;
 }
 
-int Parameters::setJpegGpsCoordinates(const double *coordinates)
-{
+int Parameters::setJpegGpsCoordinates(const double* coordinates) {
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(CAMERA_JPEG_GPS_COORDINATES, coordinates, 3);
 }
 
-int Parameters::getJpegGpsLatitude(double &latitude) const
-{
+int Parameters::getJpegGpsLatitude(double& latitude) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_JPEG_GPS_COORDINATES);
     if (entry.count != 3) {
@@ -1419,8 +1303,7 @@ int Parameters::getJpegGpsLatitude(double &latitude) const
     return OK;
 }
 
-int Parameters::getJpegGpsLongitude(double &longitude) const
-{
+int Parameters::getJpegGpsLongitude(double& longitude) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_JPEG_GPS_COORDINATES);
     if (entry.count != 3) {
@@ -1430,8 +1313,7 @@ int Parameters::getJpegGpsLongitude(double &longitude) const
     return OK;
 }
 
-int Parameters::getJpegGpsAltitude(double &altitude) const
-{
+int Parameters::getJpegGpsAltitude(double& altitude) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_JPEG_GPS_COORDINATES);
     if (entry.count != 3) {
@@ -1441,14 +1323,12 @@ int Parameters::getJpegGpsAltitude(double &altitude) const
     return OK;
 }
 
-int Parameters::setJpegGpsTimeStamp(int64_t  timestamp)
-{
+int Parameters::setJpegGpsTimeStamp(int64_t timestamp) {
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(CAMERA_JPEG_GPS_TIMESTAMP, &timestamp, 1);
 }
 
-int Parameters::getJpegGpsTimeStamp(int64_t &timestamp) const
-{
+int Parameters::getJpegGpsTimeStamp(int64_t& timestamp) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_JPEG_GPS_TIMESTAMP);
     if (entry.count != 1) {
@@ -1458,14 +1338,13 @@ int Parameters::getJpegGpsTimeStamp(int64_t &timestamp) const
     return OK;
 }
 
-int Parameters::setJpegGpsProcessingMethod(int processMethod)
-{
+int Parameters::setJpegGpsProcessingMethod(int processMethod) {
     ParameterHelper::AutoWLock wl(mData);
-    return ParameterHelper::getMetadata(mData).update(CAMERA_JPEG_GPS_PROCESSING_METHOD, &processMethod, 1);
+    return ParameterHelper::getMetadata(mData).update(CAMERA_JPEG_GPS_PROCESSING_METHOD,
+                                                      &processMethod, 1);
 }
 
-int Parameters::getJpegGpsProcessingMethod(int &processMethod) const
-{
+int Parameters::getJpegGpsProcessingMethod(int& processMethod) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_JPEG_GPS_PROCESSING_METHOD);
     if (entry.count != 1) {
@@ -1475,14 +1354,14 @@ int Parameters::getJpegGpsProcessingMethod(int &processMethod) const
     return OK;
 }
 
-int Parameters::setJpegGpsProcessingMethod(const char* processMethod)
-{
+int Parameters::setJpegGpsProcessingMethod(const char* processMethod) {
     ParameterHelper::AutoWLock wl(mData);
-    return ParameterHelper::getMetadata(mData).update(CAMERA_JPEG_GPS_PROCESSING_METHOD, (const uint8_t*)processMethod, strlen(processMethod) + 1);
+    return ParameterHelper::getMetadata(mData).update(CAMERA_JPEG_GPS_PROCESSING_METHOD,
+                                                      (const uint8_t*)processMethod,
+                                                      strlen(processMethod) + 1);
 }
 
-int Parameters::getJpegGpsProcessingMethod(int size, char* processMethod) const
-{
+int Parameters::getJpegGpsProcessingMethod(int size, char* processMethod) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_JPEG_GPS_PROCESSING_METHOD);
     if (entry.count <= 0) {
@@ -1492,15 +1371,13 @@ int Parameters::getJpegGpsProcessingMethod(int size, char* processMethod) const
     return OK;
 }
 
-int Parameters::setImageEffect(camera_effect_mode_t  effect)
-{
+int Parameters::setImageEffect(camera_effect_mode_t effect) {
     uint8_t effectmode = effect;
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(CAMERA_CONTROL_EFFECT_MODE, &effectmode, 1);
 }
 
-int Parameters::getImageEffect(camera_effect_mode_t &effect) const
-{
+int Parameters::getImageEffect(camera_effect_mode_t& effect) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_CONTROL_EFFECT_MODE);
     if (entry.count != 1) {
@@ -1510,15 +1387,14 @@ int Parameters::getImageEffect(camera_effect_mode_t &effect) const
     return OK;
 }
 
-int Parameters::setVideoStabilizationMode(camera_video_stabilization_mode_t mode)
-{
+int Parameters::setVideoStabilizationMode(camera_video_stabilization_mode_t mode) {
     uint8_t dvsMode = mode;
     ParameterHelper::AutoWLock wl(mData);
-    return ParameterHelper::getMetadata(mData).update(CAMERA_CONTROL_VIDEO_STABILIZATION_MODE, &dvsMode, 1);
+    return ParameterHelper::getMetadata(mData).update(CAMERA_CONTROL_VIDEO_STABILIZATION_MODE,
+                                                      &dvsMode, 1);
 }
 
-int Parameters::getVideoStabilizationMode(camera_video_stabilization_mode_t &mode) const
-{
+int Parameters::getVideoStabilizationMode(camera_video_stabilization_mode_t& mode) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_CONTROL_VIDEO_STABILIZATION_MODE);
     if (entry.count != 1) {
@@ -1528,8 +1404,7 @@ int Parameters::getVideoStabilizationMode(camera_video_stabilization_mode_t &mod
     return OK;
 }
 
-int Parameters::getFocalLength(float &focal) const
-{
+int Parameters::getFocalLength(float& focal) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_LENS_FOCAL_LENGTH);
     if (entry.count != 1) {
@@ -1539,14 +1414,12 @@ int Parameters::getFocalLength(float &focal) const
     return OK;
 }
 
-int Parameters::setFocalLength(float focal)
-{
+int Parameters::setFocalLength(float focal) {
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(CAMERA_LENS_FOCAL_LENGTH, &focal, 1);
 }
 
-int Parameters::getAperture(float &aperture) const
-{
+int Parameters::getAperture(float& aperture) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_LENS_APERTURE);
     if (entry.count != 1) {
@@ -1556,13 +1429,12 @@ int Parameters::getAperture(float &aperture) const
     return OK;
 }
 
-int Parameters::setAperture(float aperture)
-{
+int Parameters::setAperture(float aperture) {
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(CAMERA_LENS_APERTURE, &aperture, 1);
 }
 
-int Parameters::getFocusDistance(float &distance) const {
+int Parameters::getFocusDistance(float& distance) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_LENS_FOCUS_DISTANCE);
     if (entry.count != 1) {
@@ -1577,16 +1449,14 @@ int Parameters::setFocusDistance(float distance) {
     return ParameterHelper::getMetadata(mData).update(CAMERA_LENS_FOCUS_DISTANCE, &distance, 1);
 }
 
-int Parameters::setFocusRange(const camera_range_t &focusRange)
-{
+int Parameters::setFocusRange(const camera_range_t& focusRange) {
     float range[] = {focusRange.min, focusRange.max};
     ParameterHelper::AutoWLock wl(mData);
-    return ParameterHelper::getMetadata(mData).update(CAMERA_LENS_FOCUS_RANGE,
-                                                      range, ARRAY_SIZE(range));
+    return ParameterHelper::getMetadata(mData).update(CAMERA_LENS_FOCUS_RANGE, range,
+                                                      ARRAY_SIZE(range));
 }
 
-int Parameters::getFocusRange(camera_range_t& focusRange) const
-{
+int Parameters::getFocusRange(camera_range_t& focusRange) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_LENS_FOCUS_RANGE);
     if (entry.count != (sizeof(camera_range_t) / sizeof(float))) {
@@ -1597,15 +1467,13 @@ int Parameters::getFocusRange(camera_range_t& focusRange) const
     return OK;
 }
 
-int Parameters::setAfMode(camera_af_mode_t afMode)
-{
+int Parameters::setAfMode(camera_af_mode_t afMode) {
     uint8_t mode = afMode;
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(CAMERA_AF_MODE, &mode, 1);
 }
 
-int Parameters::getAfMode(camera_af_mode_t& afMode) const
-{
+int Parameters::getAfMode(camera_af_mode_t& afMode) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_AF_MODE);
     if (entry.count != 1) {
@@ -1615,15 +1483,13 @@ int Parameters::getAfMode(camera_af_mode_t& afMode) const
     return OK;
 }
 
-int Parameters::setAfTrigger(camera_af_trigger_t afTrigger)
-{
+int Parameters::setAfTrigger(camera_af_trigger_t afTrigger) {
     uint8_t trigger = afTrigger;
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(CAMERA_AF_TRIGGER, &trigger, 1);
 }
 
-int Parameters::getAfTrigger(camera_af_trigger_t& afTrigger) const
-{
+int Parameters::getAfTrigger(camera_af_trigger_t& afTrigger) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_AF_TRIGGER);
     if (entry.count != 1) {
@@ -1633,27 +1499,23 @@ int Parameters::getAfTrigger(camera_af_trigger_t& afTrigger) const
     return OK;
 }
 
-int Parameters::setAfRegions(camera_window_list_t afRegions)
-{
+int Parameters::setAfRegions(camera_window_list_t afRegions) {
     ParameterHelper::AutoWLock wl(mData);
     return setRegions(ParameterHelper::getMetadata(mData), afRegions, CAMERA_AF_REGIONS);
 }
 
-int Parameters::getAfRegions(camera_window_list_t& afRegions) const
-{
+int Parameters::getAfRegions(camera_window_list_t& afRegions) const {
     ParameterHelper::AutoRLock rl(mData);
     return getRegions(ParameterHelper::getMetadataEntry(mData, CAMERA_AF_REGIONS), afRegions);
 }
 
-int Parameters::setAfState(camera_af_state_t afState)
-{
+int Parameters::setAfState(camera_af_state_t afState) {
     uint8_t state = afState;
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(CAMERA_AF_STATE, &state, 1);
 }
 
-int Parameters::getAfState(camera_af_state_t& afState) const
-{
+int Parameters::getAfState(camera_af_state_t& afState) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_AF_STATE);
     if (entry.count != 1) {
@@ -1663,15 +1525,13 @@ int Parameters::getAfState(camera_af_state_t& afState) const
     return OK;
 }
 
-int Parameters::setLensState(bool lensMoving)
-{
+int Parameters::setLensState(bool lensMoving) {
     uint8_t state = (lensMoving) ? 1 : 0;
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(CAMERA_LENS_STATE, &state, 1);
 }
 
-int Parameters::getLensState(bool& lensMoving) const
-{
+int Parameters::getLensState(bool& lensMoving) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_LENS_STATE);
     if (entry.count != 1) {
@@ -1681,8 +1541,7 @@ int Parameters::getLensState(bool& lensMoving) const
     return OK;
 }
 
-int Parameters::getLensAperture(float &aperture) const
-{
+int Parameters::getLensAperture(float& aperture) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_LENS_INFO_AVAILABLE_APERTURES);
     if (entry.count != 1) {
@@ -1692,11 +1551,10 @@ int Parameters::getLensAperture(float &aperture) const
     return OK;
 }
 
-int Parameters::getLensFilterDensity(float &filterDensity) const
-{
+int Parameters::getLensFilterDensity(float& filterDensity) const {
     ParameterHelper::AutoRLock rl(mData);
-    auto entry = ParameterHelper::getMetadataEntry(mData,
-                                                   CAMERA_LENS_INFO_AVAILABLE_FILTER_DENSITIES);
+    auto entry =
+        ParameterHelper::getMetadataEntry(mData, CAMERA_LENS_INFO_AVAILABLE_FILTER_DENSITIES);
     if (entry.count != 1) {
         return NAME_NOT_FOUND;
     }
@@ -1704,8 +1562,7 @@ int Parameters::getLensFilterDensity(float &filterDensity) const
     return OK;
 }
 
-int Parameters::getLensMinFocusDistance(float &minFocusDistance) const
-{
+int Parameters::getLensMinFocusDistance(float& minFocusDistance) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_LENS_INFO_MINIMUM_FOCUS_DISTANCE);
     if (entry.count != 1) {
@@ -1715,8 +1572,7 @@ int Parameters::getLensMinFocusDistance(float &minFocusDistance) const
     return OK;
 }
 
-int Parameters::getLensHyperfocalDistance(float &hyperfocalDistance) const
-{
+int Parameters::getLensHyperfocalDistance(float& hyperfocalDistance) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_LENS_INFO_HYPERFOCAL_DISTANCE);
     if (entry.count != 1) {
@@ -1726,8 +1582,7 @@ int Parameters::getLensHyperfocalDistance(float &hyperfocalDistance) const
     return OK;
 }
 
-int Parameters::getSensorMountType(camera_mount_type_t& sensorMountType) const
-{
+int Parameters::getSensorMountType(camera_mount_type_t& sensorMountType) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_INFO_SENSOR_MOUNT_TYPE);
     if (entry.count != 1) {
@@ -1739,22 +1594,20 @@ int Parameters::getSensorMountType(camera_mount_type_t& sensorMountType) const
 }
 
 // User can set envrionment and then call api to update the debug level.
-int Parameters::updateDebugLevel()
-{
+int Parameters::updateDebugLevel() {
     Log::setDebugLevel();
     CameraDump::setDumpLevel();
     return OK;
 }
 
-int Parameters::setTestPatternMode(camera_test_pattern_mode_t mode)
-{
+int Parameters::setTestPatternMode(camera_test_pattern_mode_t mode) {
     int32_t testPatterMode = mode;
     ParameterHelper::AutoWLock wl(mData);
-    return ParameterHelper::getMetadata(mData).update(CAMERA_SENSOR_TEST_PATTERN_MODE, &testPatterMode, 1);
+    return ParameterHelper::getMetadata(mData).update(CAMERA_SENSOR_TEST_PATTERN_MODE,
+                                                      &testPatterMode, 1);
 }
 
-int Parameters::getTestPatternMode(camera_test_pattern_mode_t& mode) const
-{
+int Parameters::getTestPatternMode(camera_test_pattern_mode_t& mode) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_SENSOR_TEST_PATTERN_MODE);
     if (entry.count != 1) {
@@ -1764,15 +1617,14 @@ int Parameters::getTestPatternMode(camera_test_pattern_mode_t& mode) const
     return OK;
 }
 
-int Parameters::setCropRegion(camera_crop_region_t cropRegion)
-{
+int Parameters::setCropRegion(camera_crop_region_t cropRegion) {
     int values[] = {cropRegion.flag, cropRegion.x, cropRegion.y};
     ParameterHelper::AutoWLock wl(mData);
-    return ParameterHelper::getMetadata(mData).update(CAMERA_SCALER_CROP_REGION, values, ARRAY_SIZE(values));
+    return ParameterHelper::getMetadata(mData).update(CAMERA_SCALER_CROP_REGION, values,
+                                                      ARRAY_SIZE(values));
 }
 
-int Parameters::getCropRegion(camera_crop_region_t& cropRegion) const
-{
+int Parameters::getCropRegion(camera_crop_region_t& cropRegion) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_SCALER_CROP_REGION);
     if (entry.count <= 0) {
@@ -1784,20 +1636,19 @@ int Parameters::getCropRegion(camera_crop_region_t& cropRegion) const
     return OK;
 }
 
-int Parameters::setControlSceneMode(uint8_t sceneModeValue)
-{
+int Parameters::setControlSceneMode(uint8_t sceneModeValue) {
     ParameterHelper::AutoWLock wl(mData);
-    return ParameterHelper::getMetadata(mData).update(CAMERA_CONTROL_SCENE_MODE, &sceneModeValue, 1);
+    return ParameterHelper::getMetadata(mData).update(CAMERA_CONTROL_SCENE_MODE, &sceneModeValue,
+                                                      1);
 }
 
-int Parameters::setFaceDetectMode(uint8_t faceDetectMode)
-{
+int Parameters::setFaceDetectMode(uint8_t faceDetectMode) {
     ParameterHelper::AutoWLock wl(mData);
-    return ParameterHelper::getMetadata(mData).update(CAMERA_STATISTICS_FACE_DETECT_MODE, &faceDetectMode, 1);
+    return ParameterHelper::getMetadata(mData).update(CAMERA_STATISTICS_FACE_DETECT_MODE,
+                                                      &faceDetectMode, 1);
 }
 
-int Parameters::getFaceDetectMode(uint8_t& faceDetectMode) const
-{
+int Parameters::getFaceDetectMode(uint8_t& faceDetectMode) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_STATISTICS_FACE_DETECT_MODE);
     if (entry.count != 1) {
@@ -1807,14 +1658,12 @@ int Parameters::getFaceDetectMode(uint8_t& faceDetectMode) const
     return OK;
 }
 
-int Parameters::setFaceIds(int *faceIds, int faceNum)
-{
+int Parameters::setFaceIds(int* faceIds, int faceNum) {
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(CAMERA_STATISTICS_FACE_IDS, faceIds, faceNum);
 }
 
-int Parameters::getSensorActiveArraySize(camera_coordinate_system_t& arraySize) const
-{
+int Parameters::getSensorActiveArraySize(camera_coordinate_system_t& arraySize) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_SENSOR_INFO_ACTIVE_ARRAY_SIZE);
     if (entry.count <= 0) {
@@ -1822,20 +1671,18 @@ int Parameters::getSensorActiveArraySize(camera_coordinate_system_t& arraySize) 
     }
     arraySize.left = entry.data.i32[0];
     arraySize.top = entry.data.i32[1];
-    arraySize.right = arraySize.left + entry.data.i32[2]; //width
-    arraySize.bottom = arraySize.top + entry.data.i32[3]; //height
+    arraySize.right = arraySize.left + entry.data.i32[2];  // width
+    arraySize.bottom = arraySize.top + entry.data.i32[3];  // height
     return OK;
 }
 
-int Parameters::setShadingMode(camera_shading_mode_t shadingMode)
-{
+int Parameters::setShadingMode(camera_shading_mode_t shadingMode) {
     uint8_t mode = shadingMode;
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(CAMERA_SHADING_MODE, &mode, 1);
 }
 
-int Parameters::getShadingMode(camera_shading_mode_t& shadingMode) const
-{
+int Parameters::getShadingMode(camera_shading_mode_t& shadingMode) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_SHADING_MODE);
     if (entry.count != 1) {
@@ -1845,8 +1692,7 @@ int Parameters::getShadingMode(camera_shading_mode_t& shadingMode) const
     return OK;
 }
 
-int Parameters::setLensShadingMapMode(camera_lens_shading_map_mode_type_t lensShadingMapMode)
-{
+int Parameters::setLensShadingMapMode(camera_lens_shading_map_mode_type_t lensShadingMapMode) {
     uint8_t mode = lensShadingMapMode;
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(CAMERA_STATISTICS_LENS_SHADING_MAP_MODE,
@@ -1854,8 +1700,7 @@ int Parameters::setLensShadingMapMode(camera_lens_shading_map_mode_type_t lensSh
 }
 
 int Parameters::getLensShadingMapMode(
-                                  camera_lens_shading_map_mode_type_t &lensShadingMapMode) const
-{
+    camera_lens_shading_map_mode_type_t& lensShadingMapMode) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_STATISTICS_LENS_SHADING_MAP_MODE);
     if (entry.count != 1) {
@@ -1865,15 +1710,13 @@ int Parameters::getLensShadingMapMode(
     return OK;
 }
 
-int Parameters::setLensShadingMap(const float *lensShadingMap, size_t lensShadingMapSize)
-{
+int Parameters::setLensShadingMap(const float* lensShadingMap, size_t lensShadingMapSize) {
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(CAMERA_STATISTICS_LENS_SHADING_MAP,
                                                       lensShadingMap, lensShadingMapSize);
 }
 
-int Parameters::getLensShadingMap(float **lensShadingMap, size_t &lensShadingMapSize) const
-{
+int Parameters::getLensShadingMap(float** lensShadingMap, size_t& lensShadingMapSize) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_STATISTICS_LENS_SHADING_MAP);
 
@@ -1886,8 +1729,7 @@ int Parameters::getLensShadingMap(float **lensShadingMap, size_t &lensShadingMap
     return OK;
 }
 
-int Parameters::getLensInfoShadingMapSize(camera_coordinate_t &shadingMapSize) const
-{
+int Parameters::getLensInfoShadingMapSize(camera_coordinate_t& shadingMapSize) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_LENS_INFO_SHADING_MAP_SIZE);
     if (entry.count <= 0) {
@@ -1969,12 +1811,12 @@ int Parameters::getTonemapMaxCurvePoints(int32_t& number) const {
 
 int Parameters::setTonemapCurves(const camera_tonemap_curves_t& curves) {
     ParameterHelper::AutoWLock wl(mData);
-    int ret = ParameterHelper::getMetadata(mData).update(CAMERA_TONEMAP_CURVE_RED,
-                                                         curves.rCurve, curves.rSize);
-    ret |= ParameterHelper::getMetadata(mData).update(CAMERA_TONEMAP_CURVE_BLUE,
-                                                      curves.bCurve, curves.bSize);
-    ret |= ParameterHelper::getMetadata(mData).update(CAMERA_TONEMAP_CURVE_GREEN,
-                                                      curves.gCurve, curves.gSize);
+    int ret = ParameterHelper::getMetadata(mData).update(CAMERA_TONEMAP_CURVE_RED, curves.rCurve,
+                                                         curves.rSize);
+    ret |= ParameterHelper::getMetadata(mData).update(CAMERA_TONEMAP_CURVE_BLUE, curves.bCurve,
+                                                      curves.bSize);
+    ret |= ParameterHelper::getMetadata(mData).update(CAMERA_TONEMAP_CURVE_GREEN, curves.gCurve,
+                                                      curves.gSize);
     return ret;
 }
 
@@ -2005,11 +1847,11 @@ int Parameters::getTonemapCurves(camera_tonemap_curves_t& curves) const {
 int Parameters::setRawDataOutput(raw_data_output_t mode) {
     uint8_t value = mode;
     ParameterHelper::AutoWLock wl(mData);
-    return ParameterHelper::getMetadata(mData).update(INTEL_VENDOR_CAMERA_RAW_DATA_OUTPUT,
-                                                      &value, 1);
+    return ParameterHelper::getMetadata(mData).update(INTEL_VENDOR_CAMERA_RAW_DATA_OUTPUT, &value,
+                                                      1);
 }
 
-int Parameters::getRawDataOutput(raw_data_output_t &mode) const {
+int Parameters::getRawDataOutput(raw_data_output_t& mode) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_VENDOR_CAMERA_RAW_DATA_OUTPUT);
     if (entry.count != 1) {
@@ -2026,7 +1868,7 @@ int Parameters::setPowerMode(camera_power_mode_t mode) {
     return ParameterHelper::getMetadata(mData).update(INTEL_VENDOR_CAMERA_POWER_MODE, &value, 1);
 }
 
-int Parameters::getPowerMode(camera_power_mode_t &mode) const {
+int Parameters::getPowerMode(camera_power_mode_t& mode) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_VENDOR_CAMERA_POWER_MODE);
     if (entry.count != 1) {
@@ -2043,10 +1885,10 @@ int Parameters::setTotalExposureTarget(int64_t totalExposureTarget) {
                                                       &totalExposureTarget, 1);
 }
 
-int Parameters::getTotalExposureTarget(int64_t &totalExposureTarget) const {
+int Parameters::getTotalExposureTarget(int64_t& totalExposureTarget) const {
     ParameterHelper::AutoRLock rl(mData);
-    auto entry = ParameterHelper::getMetadataEntry(mData,
-                                                   INTEL_VENDOR_CAMERA_TOTAL_EXPOSURE_TARGET);
+    auto entry =
+        ParameterHelper::getMetadataEntry(mData, INTEL_VENDOR_CAMERA_TOTAL_EXPOSURE_TARGET);
     if (entry.count != 1) {
         return NAME_NOT_FOUND;
     }
@@ -2073,15 +1915,13 @@ int Parameters::getUserRequestId(int32_t& userRequestId) const {
     return OK;
 }
 
-int Parameters::setCaptureIntent(uint8_t captureIntent)
-{
+int Parameters::setCaptureIntent(uint8_t captureIntent) {
     ParameterHelper::AutoWLock wl(mData);
-    return ParameterHelper::getMetadata(mData).update(CAMERA_CONTROL_CAPTUREINTENT,
-                                                      &captureIntent, 1);
+    return ParameterHelper::getMetadata(mData).update(CAMERA_CONTROL_CAPTUREINTENT, &captureIntent,
+                                                      1);
 }
 
-int Parameters::getCaptureIntent(uint8_t& captureIntent) const
-{
+int Parameters::getCaptureIntent(uint8_t& captureIntent) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, CAMERA_CONTROL_CAPTUREINTENT);
     if (entry.count != 1) {
@@ -2091,16 +1931,14 @@ int Parameters::getCaptureIntent(uint8_t& captureIntent) const
     return OK;
 }
 
-int Parameters::setCallbackRgbs(bool enabled)
-{
+int Parameters::setCallbackRgbs(bool enabled) {
     uint8_t lockValue = enabled ? 1 : 0;
     ParameterHelper::AutoWLock wl(mData);
-    return ParameterHelper::getMetadata(mData).update(INTEL_VENDOR_CAMERA_CALLBACK_RGBS,
-                                                      &lockValue, 1);
+    return ParameterHelper::getMetadata(mData).update(INTEL_VENDOR_CAMERA_CALLBACK_RGBS, &lockValue,
+                                                      1);
 }
 
-int Parameters::getCallbackRgbs(bool *enabled) const
-{
+int Parameters::getCallbackRgbs(bool* enabled) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_VENDOR_CAMERA_CALLBACK_RGBS);
     if (entry.count != 1) {
@@ -2110,16 +1948,14 @@ int Parameters::getCallbackRgbs(bool *enabled) const
     return OK;
 }
 
-int Parameters::setCallbackTmCurve(bool enabled)
-{
+int Parameters::setCallbackTmCurve(bool enabled) {
     uint8_t value = enabled ? 1 : 0;
     ParameterHelper::AutoWLock wl(mData);
-    return ParameterHelper::getMetadata(mData).update(INTEL_VENDOR_CAMERA_CALLBACK_TM_CURVE,
-                                                      &value, 1);
+    return ParameterHelper::getMetadata(mData).update(INTEL_VENDOR_CAMERA_CALLBACK_TM_CURVE, &value,
+                                                      1);
 }
 
-int Parameters::getCallbackTmCurve(bool *enabled) const
-{
+int Parameters::getCallbackTmCurve(bool* enabled) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_VENDOR_CAMERA_CALLBACK_TM_CURVE);
     if (entry.count != 1) {
@@ -2130,14 +1966,11 @@ int Parameters::getCallbackTmCurve(bool *enabled) const
 }
 
 // ENABLE_EVCP_S
-int Parameters::setEvcpEccMode(uint8_t enabled)
-{
+int Parameters::setEvcpEccMode(uint8_t enabled) {
     ParameterHelper::AutoWLock wl(mData);
-    return ParameterHelper::getMetadata(mData).update(INTEL_VENDOR_CAMERA_IC_ECC_MODE,
-                                                      &enabled, 1);
+    return ParameterHelper::getMetadata(mData).update(INTEL_VENDOR_CAMERA_IC_ECC_MODE, &enabled, 1);
 }
-int Parameters::getEvcpEccMode(uint8_t* enabled) const
-{
+int Parameters::getEvcpEccMode(uint8_t* enabled) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_VENDOR_CAMERA_IC_ECC_MODE);
 
@@ -2149,14 +1982,11 @@ int Parameters::getEvcpEccMode(uint8_t* enabled) const
     return OK;
 }
 
-int Parameters::setEvcpBCMode(uint8_t mode)
-{
+int Parameters::setEvcpBCMode(uint8_t mode) {
     ParameterHelper::AutoWLock wl(mData);
-    return ParameterHelper::getMetadata(mData).update(INTEL_VENDOR_CAMERA_IC_BC_MODE,
-                                                      &mode, 1);
+    return ParameterHelper::getMetadata(mData).update(INTEL_VENDOR_CAMERA_IC_BC_MODE, &mode, 1);
 }
-int Parameters::getEvcpBCMode(uint8_t* mode) const
-{
+int Parameters::getEvcpBCMode(uint8_t* mode) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_VENDOR_CAMERA_IC_BC_MODE);
 
@@ -2169,16 +1999,14 @@ int Parameters::getEvcpBCMode(uint8_t* mode) const
     return OK;
 }
 
-int Parameters::setEvcpBRParameters(int height, int width, int fd)
-{
+int Parameters::setEvcpBRParameters(int height, int width, int fd) {
     ParameterHelper::AutoWLock wl(mData);
     int32_t values[3] = {width, height, fd};
-    return ParameterHelper::getMetadata(mData).update(INTEL_VENDOR_CAMERA_IC_BR_PARAMETERS,
-                                        values, 3);
+    return ParameterHelper::getMetadata(mData).update(INTEL_VENDOR_CAMERA_IC_BR_PARAMETERS, values,
+                                                      3);
 }
 
-int Parameters::getEvcpBRParameters(int* height, int* width, int* fd) const
-{
+int Parameters::getEvcpBRParameters(int* height, int* width, int* fd) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_VENDOR_CAMERA_IC_BR_PARAMETERS);
 
@@ -2193,14 +2021,11 @@ int Parameters::getEvcpBRParameters(int* height, int* width, int* fd) const
     return OK;
 }
 
-int Parameters::setEvcpFFMode(uint8_t mode)
-{
+int Parameters::setEvcpFFMode(uint8_t mode) {
     ParameterHelper::AutoWLock wl(mData);
-    return ParameterHelper::getMetadata(mData).update(INTEL_VENDOR_CAMERA_IC_FF_MODE,
-                                                      &mode, 1);;
+    return ParameterHelper::getMetadata(mData).update(INTEL_VENDOR_CAMERA_IC_FF_MODE, &mode, 1);
 }
-int Parameters::getEvcpFFMode(uint8_t* mode) const
-{
+int Parameters::getEvcpFFMode(uint8_t* mode) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_VENDOR_CAMERA_IC_FF_MODE);
 
@@ -2216,8 +2041,7 @@ int Parameters::getEvcpFFMode(uint8_t* mode) const
 int Parameters::setZoomRegion(const camera_zoom_region_t& region) {
     ParameterHelper::AutoWLock wl(mData);
     int32_t values[4] = {region.left, region.top, region.right, region.bottom};
-    return ParameterHelper::getMetadata(mData).update(INTEL_CONTROL_SCALER_CROP_REGION,
-                                                      values, 4);
+    return ParameterHelper::getMetadata(mData).update(INTEL_CONTROL_SCALER_CROP_REGION, values, 4);
 }
 
 int Parameters::getZoomRegion(camera_zoom_region_t* region) const {
@@ -2236,4 +2060,4 @@ int Parameters::getZoomRegion(camera_zoom_region_t* region) const {
     return OK;
 }
 
-} // end of namespace icamera
+}  // end of namespace icamera

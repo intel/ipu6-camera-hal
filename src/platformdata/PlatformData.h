@@ -185,7 +185,11 @@ class PlatformData {
                       mDummyStillSink(false),
                       mRemoveCacheFlushOutputBuffer(false),
                       mPLCEnable(false),
-                      mStillOnlyPipe(false) {
+                      mStillOnlyPipe(false),
+                      mDisableBLCByAGain(false),
+                      mDisableBLCAGainLow(-1),
+                      mDisableBLCAGainHigh(-1),
+                      mResetLinkRoute(true) {
             }
 
             std::vector<MediaCtlConf> mMediaCtlConfs;
@@ -291,6 +295,11 @@ class PlatformData {
             bool mRemoveCacheFlushOutputBuffer;
             bool mPLCEnable;
             bool mStillOnlyPipe;
+
+            bool mDisableBLCByAGain;
+            int mDisableBLCAGainLow;
+            int mDisableBLCAGainHigh;
+            bool mResetLinkRoute;
         };
 
         std::vector<CameraInfo> mCameras;
@@ -1336,6 +1345,11 @@ class PlatformData {
     static bool supportHwJpegEncode();
 
     /**
+     * get the max ISYS timeout value
+     */
+    static int getMaxIsysTimeout();
+
+    /**
      * Check should connect gpu algo or not
      * should connect gpu algo service if any gpu algorithm is used
      * \return true if should connect gpu algo.
@@ -1417,5 +1431,20 @@ class PlatformData {
      * \return true if is enabled.
      */
     static bool isStillOnlyPipeEnabled(int cameraId);
+
+    /**
+     * Check if BLC needs to be disabled in specific analog gain range.
+     *
+     * \return true if BLC needs to be disabled by analog gain.
+     */
+    static bool getDisableBLCByAGain(int cameraId, int& low, int& high);
+
+    /**
+     * Check if reset links and routes
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return if reset links and routes
+     */
+    static bool isResetLinkRoute(int cameraId);
 };
 } /* namespace icamera */

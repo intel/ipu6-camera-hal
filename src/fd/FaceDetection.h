@@ -62,7 +62,8 @@ class FaceDetection : public Thread {
     static void destoryInstance(int cameraId);
     static FaceDetection* getInstance(int cameraId);
 
-    void runFaceDetection(const std::shared_ptr<camera3::Camera3Buffer>& ccBuf);
+    void runFaceDetection(const std::shared_ptr<camera3::Camera3Buffer>& ccBuf,
+                          bool forceSync = false);
     virtual void runFaceDetectionBySync(const std::shared_ptr<camera3::Camera3Buffer>& ccBuf) = 0;
     virtual void runFaceDetectionByAsync(const std::shared_ptr<camera3::Camera3Buffer>& ccBuf) = 0;
     static int getResult(int cameraId, cca::cca_face_state* faceState);

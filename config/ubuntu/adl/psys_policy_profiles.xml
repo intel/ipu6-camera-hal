@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<!-- Copyright (C) 2019-2020 Intel Corporation.
+<!-- Copyright (C) 2020-2022 Intel Corporation.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,6 +19,15 @@ limitations under the License.
         <!-- op_modes: 0-disabled, 2-coupled. see ia_cipf_css.h in libiacss -->
         <pipe_executor name="still_pipe"  pgs="isa_lb_stills,post_gdc_stills"/>
         <pipe_executor name="video_pipe"  pgs="isa_lb_video,post_gdc_video"/>
+    </graph>
+    <graph id="100111">
+        <!-- op_modes: 0-disabled, 2-coupled. see ia_cipf_css.h in libiacss -->
+        <pipe_executor name="isa_lb_video_pdaf_3"  pgs="isa_lb_video_pdaf_3"/>
+        <pipe_executor name="ipu6_bb_video"  pgs="post_gdc_video"/>
+        <bundle executors="isa_lb_video_pdaf_3:0,ipu6_bb_video:1"/>
+        <enableBundleInSdv name="false"/>
+
+        <pipe_executor name="ipu6_full_still"  pgs="isa_lb_stills,post_gdc_stills_no_tnr"/>
     </graph>
     <graph id="100200">
         <!-- op_modes: 0-disabled, 2-coupled. see ia_cipf_css.h in libiacss -->

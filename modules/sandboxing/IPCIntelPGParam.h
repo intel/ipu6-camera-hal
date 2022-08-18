@@ -154,12 +154,12 @@ class IPCIntelPGParam {
                                          int* payloadCount, ia_binary_data** cPayloads,
                                          ia_binary_data** sPayloads);
 
-    bool clientFlattenEncode(void* pData, int dataSize, uintptr_t client,
-                             unsigned int ipuParamSize, int32_t ipuParamHandle,
-                             int32_t payloadCount, const ia_binary_data* payloads);
-    bool serverUnflattenEncode(void* pData, int dataSize, uintptr_t* client,
-                               void* palDataAddr, ia_binary_data* ipuParameters,
-                               int32_t* payloadCount, ia_binary_data** payloads);
+    bool clientFlattenEncode(void* pData, int dataSize, uintptr_t client, unsigned int ipuParamSize,
+                             int32_t ipuParamHandle, int32_t payloadCount,
+                             const ia_binary_data* payloads);
+    bool serverUnflattenEncode(void* pData, int dataSize, uintptr_t* client, void* palDataAddr,
+                               ia_binary_data* ipuParameters, int32_t* payloadCount,
+                               ia_binary_data** payloads);
 
     bool clientFlattenDecode(void* pData, int dataSize, uintptr_t client, int32_t payloadCount,
                              const ia_binary_data* payloads, int32_t statsHandle);
@@ -174,8 +174,8 @@ class IPCIntelPGParam {
  private:
     bool getPayloadOffsets(const void* pData, int dataSize, int payloadCount,
                            const ia_binary_data* payloads, int32_t* payloadOffsets);
-    bool getPayloadData(void* pData, int dataSize, int payloadCount,
-                        const int32_t* payloadOffsets, ia_binary_data* payloads);
+    bool getPayloadData(void* pData, int dataSize, int payloadCount, const int32_t* payloadOffsets,
+                        ia_binary_data* payloads);
 };
 
 }  // namespace icamera

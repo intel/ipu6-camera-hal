@@ -244,14 +244,14 @@ void SWJpegEncoder::config(const EncodePackage& package) {
          */
         cfg.fourcc = package.inputFormat;
         cfg.inBufY =
-            (cfg.fourcc == V4L2_PIX_FMT_YUYV)
-                ? static_cast<unsigned char*>(package.inputData) + cfg.stride * cfg.height * 2 * i
-                : static_cast<unsigned char*>(package.inputData) + cfg.stride * cfg.height * i;
+            (cfg.fourcc == V4L2_PIX_FMT_YUYV) ?
+                static_cast<unsigned char*>(package.inputData) + cfg.stride * cfg.height * 2 * i :
+                static_cast<unsigned char*>(package.inputData) + cfg.stride * cfg.height * i;
         cfg.inBufUV =
-            (cfg.fourcc == V4L2_PIX_FMT_NV12 || cfg.fourcc == V4L2_PIX_FMT_NV21)
-                ? (static_cast<unsigned char*>(package.inputData) +
-                   package.inputStride * package.inputHeight + cfg.stride * cfg.height * i / 2)
-                : nullptr;
+            (cfg.fourcc == V4L2_PIX_FMT_NV12 || cfg.fourcc == V4L2_PIX_FMT_NV21) ?
+                (static_cast<unsigned char*>(package.inputData) +
+                 package.inputStride * package.inputHeight + cfg.stride * cfg.height * i / 2) :
+                nullptr;
         cfg.quality = package.quality;
         cfg.outBufSize = (package.outputSize - package.exifDataSize - DEST_BUF_OFFSET) /
                          package.inputHeight * cfg.height;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 Intel Corporation.
+ * Copyright (C) 2016-2022 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,8 +36,7 @@ void AiqResultStorage::releaseAiqResultStorage(int cameraId) {
     delete storage;
 }
 
-AiqResultStorage::AiqResultStorage(int cameraId) :
-    mCameraId(cameraId) {
+AiqResultStorage::AiqResultStorage(int cameraId) : mCameraId(cameraId) {
     for (int i = 0; i < kStorageSize; i++) {
         mAiqResults[i] = new AiqResult(mCameraId);
         mAiqResults[i]->init();
@@ -74,14 +73,18 @@ void AiqResultStorage::updateAiqStatistics(int64_t sequence) {
     mAiqStatistics[mCurrentAiqStatsIndex].mSequence = sequence;
 }
 
+void AiqResultStorage::resetAiqStatistics() {
+    AutoWMutex wlock(mDataLock);
+    mCurrentAiqStatsIndex = -1;
+}
+
 const AiqStatistics* AiqResultStorage::getAndLockAiqStatistics() {
     AutoRMutex rlock(mDataLock);
 
-    if (mCurrentAiqStatsIndex == -1)
-        return nullptr;
+    if (mCurrentAiqStatsIndex == -1) return nullptr;
 
-    CheckAndLogError(mAiqStatistics[mCurrentAiqStatsIndex].mSequence == -1,
-                     nullptr, "Invalid sequence id -1 of stored aiq statistics");
+    CheckAndLogError(mAiqStatistics[mCurrentAiqStatsIndex].mSequence == -1, nullptr,
+                     "Invalid sequence id -1 of stored aiq statistics");
 
     mAiqStatistics[mCurrentAiqStatsIndex].mInUse = true;
     return &mAiqStatistics[mCurrentAiqStatsIndex];
@@ -145,5 +148,4 @@ AiqResultStorage* AiqResultStorage::getInstanceLocked(int cameraId) {
     return sInstances[cameraId];
 }
 
-} //namespace icamera
-
+}  // namespace icamera

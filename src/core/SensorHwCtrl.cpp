@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Intel Corporation
+ * Copyright (C) 2015-2022 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -131,7 +131,17 @@ int SensorHwCtrl::setAnalogGains(const vector<int>& analogGains) {
     CheckAndLogError(analogGains.empty(), BAD_VALUE, "No analog gain data!");
 
     LOG2("%s analogGain=%d", __func__, analogGains[0]);
-    return mPixelArraySubdev->SetControl(V4L2_CID_ANALOGUE_GAIN, analogGains[0]);
+    int status = mPixelArraySubdev->SetControl(V4L2_CID_ANALOGUE_GAIN, analogGains[0]);
+    CheckAndLogError(status != OK, status, "failed to set analog gain %d.", analogGains[0]);
+#ifdef V4L2_CID_BLC
+    int low, high;
+    if (PlatformData::getDisableBLCByAGain(mCameraId, low, high)) {
+        // Set V4L2_CID_BLC to 0(disable) if analog gain falls into the given range.
+        status = mPixelArraySubdev->SetControl(
+            V4L2_CID_BLC, (analogGains[0] >= low && analogGains[0] <= high) ? 0 : 1);
+    }
+#endif
+    return status;
 }
 
 int SensorHwCtrl::setDigitalGains(const vector<int>& digitalGains) {

@@ -22,8 +22,8 @@
 #include "iutils/Utils.h"
 #include "modules/ia_cipr/include/Context.h"
 
-using icamera::CAMERA_DEBUG_LOG_INFO;
 using icamera::CAMERA_DEBUG_LOG_ERR;
+using icamera::CAMERA_DEBUG_LOG_INFO;
 using icamera::CAMERA_DEBUG_LOG_WARNING;
 
 namespace icamera {
@@ -98,8 +98,7 @@ Result Buffer::validateBuffer(const MemoryDesc* memory) {
         valid &= false;
     }
 
-    bool haveMemory = mem->flags & MemoryFlag::Allocated ||
-                      mem->flags & MemoryFlag::MemoryFromUser;
+    bool haveMemory = mem->flags & MemoryFlag::Allocated || mem->flags & MemoryFlag::MemoryFromUser;
     if (!haveMemory &&
         ((mem->flags & MemoryFlag::MemoryHandle) || (mem->flags & MemoryFlag::CpuPtr))) {
         valid &= false;

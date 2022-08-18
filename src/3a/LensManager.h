@@ -31,9 +31,8 @@ namespace icamera {
  * This class is used to control focus and aperture related controls.
  */
 class LensManager {
-
-public:
-    LensManager(int cameraId, LensHw *lensHw);
+ public:
+    LensManager(int cameraId, LensHw* lensHw);
     ~LensManager();
 
     /**
@@ -60,24 +59,24 @@ public:
      *
      * \return OK if set successfully.
      */
-    int setLensResult(const cca::cca_af_results &afResults,
-                      int64_t sequence, const aiq_parameter_t &aiqParam);
+    int setLensResult(const cca::cca_af_results& afResults, int64_t sequence,
+                      const aiq_parameter_t& aiqParam);
     /**
      * \brief Get Lens info
      *
      * \param[out] aiqParam: updating lens related parameters.
      *
      */
-    void getLensInfo(aiq_parameter_t &aiqParam);
+    void getLensInfo(aiq_parameter_t& aiqParam);
 
-private:
+ private:
     DISALLOW_COPY_AND_ASSIGN(LensManager);
 
     void setFocusPosition(int focusPostion);
 
-private:
+ private:
     int mCameraId;
-    LensHw *mLensHw;
+    LensHw* mLensHw;
     ia_aiq_aperture_control_dc_iris_command mDcIrisCommand;
     int mFocusPosition;
 

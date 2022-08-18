@@ -25,20 +25,15 @@
 
 namespace icamera {
 
-ProcessorManager::ProcessorManager(int cameraId) :
-        mCameraId(cameraId),
-        mPsysUsage(PSYS_NOT_USED) {
-}
+ProcessorManager::ProcessorManager(int cameraId) : mCameraId(cameraId), mPsysUsage(PSYS_NOT_USED) {}
 
 ProcessorManager::~ProcessorManager() {
     deleteProcessors();
 }
 
-std::vector<BufferQueue*>
-ProcessorManager::createProcessors(const std::map<Port, stream_t>& producerConfigs,
-                                   const std::map<int, Port>& streamIdToPortMap,
-                                   stream_config_t *streamList,
-                                   ParameterGenerator* paramGenerator) {
+std::vector<BufferQueue*> ProcessorManager::createProcessors(
+    const std::map<Port, stream_t>& producerConfigs, const std::map<int, Port>& streamIdToPortMap,
+    stream_config_t* streamList, ParameterGenerator* paramGenerator) {
     LOG1("<id%d>@%s", mCameraId, __func__);
 
     ProcessorConfig processorItem;
@@ -52,7 +47,8 @@ ProcessorManager::createProcessors(const std::map<Port, stream_t>& producerConfi
     mPsysUsage = PSYS_NORMAL;
     for (int i = 0; i < streamList->num_streams; i++) {
         if (streamList->streams[i].streamType == CAMERA_STREAM_INPUT ||
-            streamList->streams[i].usage == CAMERA_STREAM_OPAQUE_RAW) continue;
+            streamList->streams[i].usage == CAMERA_STREAM_OPAQUE_RAW)
+            continue;
 
         if (!PlatformData::usePsys(mCameraId, streamList->streams[i].format)) {
             mPsysUsage = PSYS_NOT_USED;
@@ -98,7 +94,7 @@ int ProcessorManager::configureProcessors(const std::vector<ConfigMode>& configM
                                           BufferProducer* producer, const Parameters& param) {
     LOG1("<id%d>@%s", mCameraId, __func__);
 
-    BufferProducer* preProcess =  nullptr;
+    BufferProducer* preProcess = nullptr;
     for (auto& item : mProcessors) {
         BufferQueue* processor = item.mProcessor;
         processor->setFrameInfo(item.mInputConfigs, item.mOutputConfigs);
@@ -113,5 +109,4 @@ int ProcessorManager::configureProcessors(const std::vector<ConfigMode>& configM
     return OK;
 }
 
-} // end of namespace icamera
-
+}  // end of namespace icamera

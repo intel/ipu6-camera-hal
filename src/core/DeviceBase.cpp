@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2021 Intel Corporation.
+ * Copyright (C) 2018-2022 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,7 +47,8 @@ DeviceBase::DeviceBase(int cameraId, VideoNodeType nodeType, VideoNodeDirection 
           mLatestSequence(-1),
           mNeedSkipFrame(false),
           mDeviceCB(deviceCB),
-          mMaxBufferNumber(MAX_BUFFER_COUNT) {
+          mMaxBufferNumber(MAX_BUFFER_COUNT),
+          mBufferQueuing(false) {
     LOG1("<id%d>%s, device:%s", mCameraId, __func__, mName);
 
     mFrameSkipNum = PlatformData::getInitialSkipFrame(mCameraId);
@@ -126,23 +127,38 @@ int DeviceBase::queueBuffer(int64_t sequence) {
     shared_ptr<CameraBuffer> buffer;
     {
         AutoMutex l(mBufferLock);
+        if (mBufferQueuing) {
+            LOG2("buffer is queuing");
+            return OK;
+        }
+
         if (mPendingBuffers.empty()) {
             LOG2("Device:%s has no pending buffer to be queued.", mName);
             return OK;
         }
         buffer = mPendingBuffers.front();
+        mBufferQueuing = true;
     }
 
     int ret = onQueueBuffer(sequence, buffer);
-    CheckAndLogError(ret != OK, ret, "Device:%s failed to preprocess the buffer with ret=%d", mName,
-                     ret);
+    if (ret == OK) {
+        ret = mDevice->PutFrame(&buffer->getV4L2Buffer());
 
-    ret = mDevice->PutFrame(&buffer->getV4L2Buffer());
+        if (ret >= 0) {
+            AutoMutex l(mBufferLock);
+            mPendingBuffers.pop_front();
+            mBuffersInDevice.push_back(buffer);
+        } else {
+            LOGE("%s, index:%u size:%u, memory:%u, used:%u", __func__, buffer->getIndex(),
+                 buffer->getBufferSize(), buffer->getMemory(), buffer->getBytesused());
+        }
+    } else {
+        LOGE("Device:%s failed to preprocess the buffer with ret=%d", mName, ret);
+    }
 
-    if (ret >= 0) {
+    {
         AutoMutex l(mBufferLock);
-        mPendingBuffers.pop_front();
-        mBuffersInDevice.push_back(buffer);
+        mBufferQueuing = false;
     }
 
     return ret;
@@ -373,9 +389,8 @@ int MainDevice::onDequeueBuffer(shared_ptr<CameraBuffer> buffer) {
 
     if (mNeedSkipFrame) return OK;
 
-    LOG2("<seq%ld>@%s, field:%d, timestamp: sec=%ld, usec=%ld", buffer->getSequence(),
-         __func__, buffer->getField(), buffer->getTimestamp().tv_sec,
-         buffer->getTimestamp().tv_usec);
+    LOG2("<seq%ld>@%s, field:%d, timestamp: sec=%ld, usec=%ld", buffer->getSequence(), __func__,
+         buffer->getField(), buffer->getTimestamp().tv_sec, buffer->getTimestamp().tv_usec);
 
     for (auto& consumer : mConsumers) {
         consumer->onFrameAvailable(mPort, buffer);

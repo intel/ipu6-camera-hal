@@ -31,26 +31,24 @@ void GraphUtils::dumpConnections(const std::vector<IGraphType::PipelineConnectio
 
     LOG3("Graph connections:");
     for (auto& conn : connections) {
-        LOG3(
-            "Format settings: enabled === %d ===, terminalIdx %d, width %d, height %d, fourcc %s, "
-            "bpl %d, bpp %d",
-            conn.portFormatSettings.enabled, conn.portFormatSettings.terminalId,
-            conn.portFormatSettings.width, conn.portFormatSettings.height,
-            CameraUtils::fourcc2String(conn.portFormatSettings.fourcc).c_str(),
-            conn.portFormatSettings.bpl, conn.portFormatSettings.bpp);
+        LOG3("Format settings: enabled === %d ===, terminalIdx %d, width %d, height %d, fourcc %s, "
+             "bpl %d, bpp %d",
+             conn.portFormatSettings.enabled, conn.portFormatSettings.terminalId,
+             conn.portFormatSettings.width, conn.portFormatSettings.height,
+             CameraUtils::fourcc2String(conn.portFormatSettings.fourcc).c_str(),
+             conn.portFormatSettings.bpl, conn.portFormatSettings.bpp);
 
-        LOG3(
-            "Connection config: sourceStage %d(%d), sourceTerminal %d(%d), sourceIteration %d, "
-            "sinkStage %d(%d), sinkTerminal %d(%d), sinkIteration %d, connectionType %d",
-            psys_2600_pg_id_from_uid(conn.connectionConfig.mSourceStage),
-            conn.connectionConfig.mSourceStage,
-            conn.connectionConfig.mSourceTerminal - conn.connectionConfig.mSourceStage - 1,
-            conn.connectionConfig.mSourceTerminal, conn.connectionConfig.mSourceIteration,
-            psys_2600_pg_id_from_uid(conn.connectionConfig.mSinkStage),
-            conn.connectionConfig.mSinkStage,
-            conn.connectionConfig.mSinkTerminal - conn.connectionConfig.mSinkStage - 1,
-            conn.connectionConfig.mSinkTerminal, conn.connectionConfig.mSinkIteration,
-            conn.connectionConfig.mConnectionType);
+        LOG3("Connection config: sourceStage %d(%d), sourceTerminal %d(%d), sourceIteration %d, "
+             "sinkStage %d(%d), sinkTerminal %d(%d), sinkIteration %d, connectionType %d",
+             psys_2600_pg_id_from_uid(conn.connectionConfig.mSourceStage),
+             conn.connectionConfig.mSourceStage,
+             conn.connectionConfig.mSourceTerminal - conn.connectionConfig.mSourceStage - 1,
+             conn.connectionConfig.mSourceTerminal, conn.connectionConfig.mSourceIteration,
+             psys_2600_pg_id_from_uid(conn.connectionConfig.mSinkStage),
+             conn.connectionConfig.mSinkStage,
+             conn.connectionConfig.mSinkTerminal - conn.connectionConfig.mSinkStage - 1,
+             conn.connectionConfig.mSinkTerminal, conn.connectionConfig.mSinkIteration,
+             conn.connectionConfig.mConnectionType);
 
         LOG3("Edge port: %d", conn.hasEdgePort);
     }
@@ -71,39 +69,37 @@ void GraphUtils::dumpKernelInfo(const ia_isp_bxt_program_group& programGroup) {
              curRunKernel.enable);
 
         if (programGroup.run_kernels[i].resolution_info) {
-            LOG3(
-                "Resolution: inputWidth %d, inputHeight %d, inputCrop %d %d %d %d,"
-                "outputWidth %d, outputHeight %d, outputCrop %d %d %d %d,",
-                curRunKernel.resolution_info->input_width,
-                curRunKernel.resolution_info->input_height,
-                curRunKernel.resolution_info->input_crop.left,
-                curRunKernel.resolution_info->input_crop.top,
-                curRunKernel.resolution_info->input_crop.right,
-                curRunKernel.resolution_info->input_crop.bottom,
-                curRunKernel.resolution_info->output_width,
-                curRunKernel.resolution_info->output_height,
-                curRunKernel.resolution_info->output_crop.left,
-                curRunKernel.resolution_info->output_crop.top,
-                curRunKernel.resolution_info->output_crop.right,
-                curRunKernel.resolution_info->output_crop.bottom);
+            LOG3("Resolution: inputWidth %d, inputHeight %d, inputCrop %d %d %d %d,"
+                 "outputWidth %d, outputHeight %d, outputCrop %d %d %d %d,",
+                 curRunKernel.resolution_info->input_width,
+                 curRunKernel.resolution_info->input_height,
+                 curRunKernel.resolution_info->input_crop.left,
+                 curRunKernel.resolution_info->input_crop.top,
+                 curRunKernel.resolution_info->input_crop.right,
+                 curRunKernel.resolution_info->input_crop.bottom,
+                 curRunKernel.resolution_info->output_width,
+                 curRunKernel.resolution_info->output_height,
+                 curRunKernel.resolution_info->output_crop.left,
+                 curRunKernel.resolution_info->output_crop.top,
+                 curRunKernel.resolution_info->output_crop.right,
+                 curRunKernel.resolution_info->output_crop.bottom);
         }
 
         if (programGroup.run_kernels[i].resolution_history) {
-            LOG3(
-                "Resolution history: inputWidth %d, inputHeight %d, inputCrop %d %d %d %d,"
-                "outputWidth %d, outputHeight %d, outputCrop %d %d %d %d,",
-                curRunKernel.resolution_history->input_width,
-                curRunKernel.resolution_history->input_height,
-                curRunKernel.resolution_history->input_crop.left,
-                curRunKernel.resolution_history->input_crop.top,
-                curRunKernel.resolution_history->input_crop.right,
-                curRunKernel.resolution_history->input_crop.bottom,
-                curRunKernel.resolution_history->output_width,
-                curRunKernel.resolution_history->output_height,
-                curRunKernel.resolution_history->output_crop.left,
-                curRunKernel.resolution_history->output_crop.top,
-                curRunKernel.resolution_history->output_crop.right,
-                curRunKernel.resolution_history->output_crop.bottom);
+            LOG3("Resolution history: inputWidth %d, inputHeight %d, inputCrop %d %d %d %d,"
+                 "outputWidth %d, outputHeight %d, outputCrop %d %d %d %d,",
+                 curRunKernel.resolution_history->input_width,
+                 curRunKernel.resolution_history->input_height,
+                 curRunKernel.resolution_history->input_crop.left,
+                 curRunKernel.resolution_history->input_crop.top,
+                 curRunKernel.resolution_history->input_crop.right,
+                 curRunKernel.resolution_history->input_crop.bottom,
+                 curRunKernel.resolution_history->output_width,
+                 curRunKernel.resolution_history->output_height,
+                 curRunKernel.resolution_history->output_crop.left,
+                 curRunKernel.resolution_history->output_crop.top,
+                 curRunKernel.resolution_history->output_crop.right,
+                 curRunKernel.resolution_history->output_crop.bottom);
         }
 
         LOG3("metadata %d %d %d %d, bppInfo: %d %d, outputCount %d", curRunKernel.metadata[0],
