@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2021 Intel Corporation
+ * Copyright (C) 2020-2022 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -71,9 +71,7 @@ void IntelCca::releaseAllInstances() {
     }
 }
 
-IntelCca::IntelCca(int cameraId, TuningMode mode)
-        : mCameraId(cameraId),
-          mTuningMode(mode) {
+IntelCca::IntelCca(int cameraId, TuningMode mode) : mCameraId(cameraId), mTuningMode(mode) {
     LOG1("<id%d> @%s, tuningMode:%d", cameraId, __func__, mode);
 
     std::string number = std::to_string(cameraId) + std::to_string(mode) +
@@ -234,14 +232,15 @@ ia_err IntelCca::runLTM(uint64_t frameId, const cca::cca_ltm_input_params& param
     return ret;
 }
 
-ia_err IntelCca::updateZoom(const cca::cca_dvs_zoom& params) {
-    LOG1("<id%d> @%s, tuningMode:%d", mCameraId, __func__, mTuningMode);
+ia_err IntelCca::updateZoom(uint32_t streamId, const cca::cca_dvs_zoom& params) {
+    LOG1("<id%d> @%s, tuningMode:%d, streamId: %u", mCameraId, __func__, mTuningMode, streamId);
 
     intel_cca_update_zoom_data* zoomParams =
         static_cast<intel_cca_update_zoom_data*>(mMemZoom.mAddr);
     zoomParams->cameraId = mCameraId;
     zoomParams->tuningMode = mTuningMode;
     zoomParams->inParams = params;
+    zoomParams->streamId = streamId;
 
     ia_err ret = mCommon.requestSyncCca(IPC_CCA_UPDATE_ZOOM, mMemZoom.mHandle);
     CheckAndLogError(ret != ia_err_none, ia_err_general, "@%s, requestSyncCca fails", __func__);
@@ -249,13 +248,15 @@ ia_err IntelCca::updateZoom(const cca::cca_dvs_zoom& params) {
     return ret;
 }
 
-ia_err IntelCca::runDVS(uint64_t frameId) {
-    LOG2("<id%d:req%ld> @%s, tuningMode:%d", mCameraId, frameId, __func__, mTuningMode);
+ia_err IntelCca::runDVS(uint32_t streamId, uint64_t frameId) {
+    LOG2("<id%d:req%ld> @%s, tuningMode:%d, streamId: %u", mCameraId, frameId, __func__,
+         mTuningMode, streamId);
 
     intel_cca_run_dvs_data* params = static_cast<intel_cca_run_dvs_data*>(mMemDVS.mAddr);
     params->cameraId = mCameraId;
     params->tuningMode = mTuningMode;
     params->frameId = frameId;
+    params->streamId = streamId;
 
     ia_err ret = mCommon.requestSyncCca(IPC_CCA_RUN_DVS, mMemDVS.mHandle);
     CheckAndLogError(ret != ia_err_none, ia_err_general, "@%s, requestSyncCca fails", __func__);
@@ -358,13 +359,6 @@ ia_err IntelCca::updateTuning(uint8_t lardTags, const ia_lard_input_params& lard
 bool IntelCca::allocStatsDataMem(unsigned int size) {
     LOG1("<id%d> @%s, tuningMode:%d, size:%d", mCameraId, __func__, mTuningMode, size);
 
-    {
-        AutoMutex l(mMemStatsMLock);
-        if (!mMemStatsInfoMap.empty() && mMemStatsInfoMap.begin()->second.bufSize >= size) {
-            return true;
-        }
-    }
-
     freeStatsDataMem();
 
     AutoMutex l(mMemStatsMLock);
@@ -417,7 +411,8 @@ void IntelCca::decodeHwStatsDone(int64_t sequence, unsigned int byteUsed) {
     auto it = mMemStatsInfoMap.begin();
     it->second.usedSize = byteUsed;
     mMemStatsInfoMap[sequence] = it->second;
-    mMemStatsInfoMap.erase(it->first);
+
+    if (sequence != it->first) mMemStatsInfoMap.erase(it->first);
 }
 
 void* IntelCca::fetchHwStatsData(int64_t sequence, unsigned int* byteUsed) {
@@ -427,8 +422,8 @@ void* IntelCca::fetchHwStatsData(int64_t sequence, unsigned int* byteUsed) {
     if (mMemStatsInfoMap.find(sequence) != mMemStatsInfoMap.end()) {
         *byteUsed = mMemStatsInfoMap[sequence].usedSize;
         ShmMemInfo memInfo = mMemStatsInfoMap[sequence].shmMem;
-        LOG2("<id%d:seq%ld> @%s, tuningMode:%d, memInfo.mAddr %p",
-             mCameraId, sequence, __func__, mTuningMode, memInfo.mAddr);
+        LOG2("<id%d:seq%ld> @%s, tuningMode:%d, memInfo.mAddr %p", mCameraId, sequence, __func__,
+             mTuningMode, memInfo.mAddr);
         return memInfo.mAddr;
     }
 
@@ -504,8 +499,9 @@ void* IntelCca::allocMem(int streamId, const std::string& name, int index, int s
     bool ret = mCommon.allocShmMem(finalName, size, &memInfo);
     CheckAndLogError(ret == false, nullptr, "%s, mCommon.allocShmMem fails for pal buf", __func__);
     LOG1("<id%d> @%s, tuningMode:%d, name:%s, index:%d, streamId:%d, size:%d, handle: %d,"
-         "address: %p", mCameraId, __func__, mTuningMode, name.c_str(), index, streamId, size,
-         memInfo.mHandle, memInfo.mAddr);
+         "address: %p",
+         mCameraId, __func__, mTuningMode, name.c_str(), index, streamId, size, memInfo.mHandle,
+         memInfo.mAddr);
     mMemsOuter[memInfo.mAddr] = memInfo;
 
     return memInfo.mAddr;

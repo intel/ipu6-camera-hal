@@ -279,10 +279,12 @@ void CameraParser::handleCommon(CameraParser* profiles, const char* name, const 
         cfg->supportIspTuningUpdate = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "supportHwJpegEncode") == 0) {
         cfg->supportHwJpegEncode = strcmp(atts[1], "true") == 0;
-// ENABLE_EVCP_S
+    } else if (strcmp(name, "maxIsysTimeoutValue") == 0) {
+        cfg->maxIsysTimeoutValue = atoi(atts[1]);
+        // ENABLE_EVCP_S
     } else if (strcmp(name, "useGpuEvcp") == 0) {
         cfg->isGpuEvcpEnabled = strcmp(atts[1], "true") == 0;
-// ENABLE_EVCP_E
+        // ENABLE_EVCP_E
     }
 }
 
@@ -377,10 +379,10 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
         pCurrentCam->mUseIspDigitalGain = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "preRegisterBuffer") == 0) {
         pCurrentCam->mNeedPreRegisterBuffers = strcmp(atts[1], "true") == 0;
-    // FRAME_SYNC_S
+        // FRAME_SYNC_S
     } else if (strcmp(name, "enableFrameSyncCheck") == 0) {
         pCurrentCam->mFrameSyncCheckEnabled = strcmp(atts[1], "true") == 0;
-    // FRAME_SYNC_E
+        // FRAME_SYNC_E
     } else if (strcmp(name, "lensName") == 0) {
         string vcmName = atts[1];
         if (!profiles->mI2CBus.empty()) {
@@ -566,8 +568,7 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
         pCurrentCam->mSwProcessingAlignWithIsp = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "faceEngineVendor") == 0) {
         int val = atoi(atts[1]);
-        pCurrentCam->mFaceEngineVendor =
-            val >= 0 ? val : FACE_ENGINE_INTEL_PVL;
+        pCurrentCam->mFaceEngineVendor = val >= 0 ? val : FACE_ENGINE_INTEL_PVL;
     } else if (strcmp(name, "faceEngineRunningInterval") == 0) {
         int val = atoi(atts[1]);
         pCurrentCam->mFaceEngineRunningInterval =
@@ -595,6 +596,19 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
         pCurrentCam->mPLCEnable = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "stillOnlyPipe") == 0) {
         pCurrentCam->mStillOnlyPipe = strcmp(atts[1], "true") == 0;
+    } else if (strcmp(name, "disableBLCByAGain") == 0) {
+        int size = strlen(atts[1]);
+        char src[size + 1];
+        MEMCPY_S(src, size, atts[1], size);
+        src[size] = '\0';
+        char* savePtr = nullptr;
+        char* tablePtr = strtok_r(src, ",", &savePtr);
+        if (tablePtr) profiles->pCurrentCam->mDisableBLCAGainLow = atoi(tablePtr);
+        tablePtr = strtok_r(nullptr, ",", &savePtr);
+        if (tablePtr) profiles->pCurrentCam->mDisableBLCAGainHigh = atoi(tablePtr);
+        profiles->pCurrentCam->mDisableBLCByAGain = true;
+    } else if (strcmp(name, "resetLinkRoute") == 0) {
+        pCurrentCam->mResetLinkRoute = strcmp(atts[1], "true") == 0;
     }
 }
 
@@ -1992,6 +2006,8 @@ void CameraParser::getNVMDirectory(CameraParser* profiles) {
             if (found) break;
         }
         closedir(dir);
+    } else {
+        LOGE("Failed to open dir %s", nvmPath.c_str());
     }
 
     for (auto nvm : profiles->mNvmDeviceInfo) {
@@ -2001,6 +2017,8 @@ void CameraParser::getNVMDirectory(CameraParser* profiles) {
             profiles->pCurrentCam->mMaxNvmDataSize = nvm.dataSize;
             LOG2("NVM dir %s", profiles->pCurrentCam->mNvmDirectory.c_str());
             break;
+        } else {
+            LOGE("Failed to find NVM directory");
         }
     }
 }

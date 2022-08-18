@@ -25,10 +25,10 @@
 
 namespace icamera {
 class IGraphConfigManager {
-public:
+ public:
     virtual ~IGraphConfigManager() = default;
 
-    virtual int queryGraphSettings(const stream_config_t *streamList) = 0;
+    virtual int queryGraphSettings(const stream_config_t* streamList) = 0;
     virtual int configStreams(const stream_config_t* streams) = 0;
     virtual int getSelectedMcId() = 0;
     virtual std::shared_ptr<IGraphConfig> getGraphConfig(ConfigMode configMode) = 0;
@@ -36,9 +36,9 @@ public:
     static void releaseInstance(int cameraId);
     static IGraphConfigManager* getInstance(int cameraId);
 
-private:
+ private:
     // Guard for singleton instance creation.
     static Mutex sLock;
     static std::map<int, IGraphConfigManager*> sInstances;
 };
-}
+}  // namespace icamera

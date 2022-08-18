@@ -21,6 +21,6 @@
         <!-- The value format of availableSensors is "sensor name"-wf/uf-"CSI port ID".
              wf is word facing, and uf is user facing.
         -->
-        <availableSensors value="ov8856-wf-2,ov8856-uf-1,ov01a10-uf-1,ov01a10-uf-2,ov02c10-uf-1"/>
+        <availableSensors value="ov13b10-wf-2,ov13b10-uf-1,ov8856-wf-2,ov8856-uf-1,ov01a10-uf-1,ov01a10-uf-2,ov02c10-uf-1,ov2740-uf-1"/>
     </Common>
 </CameraSettings>

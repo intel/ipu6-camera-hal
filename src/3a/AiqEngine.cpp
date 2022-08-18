@@ -33,6 +33,7 @@ namespace icamera {
 AiqEngine::AiqEngine(int cameraId, SensorHwCtrl* sensorHw, LensHw* lensHw, AiqSetting* setting)
         : mCameraId(cameraId),
           mAiqSetting(setting),
+          mRun3ACadence(1),
           mFirstAiqRunning(true) {
     LOG1("<id%d>%s", mCameraId, __func__);
 
@@ -92,6 +93,7 @@ int AiqEngine::startEngine() {
 
     AutoMutex l(mEngineLock);
     mFirstAiqRunning = true;
+    mAiqResultStorage->resetAiqStatistics();
     mSensorManager->reset();
     mLensManager->start();
 
@@ -114,8 +116,8 @@ int AiqEngine::run3A(long requestId, int64_t applyingSeq, int64_t* effectSeq) {
     AutoMutex l(mEngineLock);
 
     AiqStatistics* aiqStats =
-        mFirstAiqRunning ? nullptr
-                         : const_cast<AiqStatistics*>(mAiqResultStorage->getAndLockAiqStatistics());
+        mFirstAiqRunning ? nullptr :
+                           const_cast<AiqStatistics*>(mAiqResultStorage->getAndLockAiqStatistics());
     AiqState state = AIQ_STATE_IDLE;
     AiqResult* aiqResult = mAiqResultStorage->acquireAiqResult();
 
@@ -124,7 +126,7 @@ int AiqEngine::run3A(long requestId, int64_t applyingSeq, int64_t* effectSeq) {
         state = AIQ_STATE_WAIT;
     } else {
         state = prepareInputParam(aiqStats, aiqResult);
-        aiqResult->mTuningMode = mAiqParam.tuningMode;
+        aiqResult->mTuningMode = aiqResult->mAiqParam.tuningMode;
     }
 
     bool aiqRun = false;
@@ -153,7 +155,7 @@ int AiqEngine::run3A(long requestId, int64_t applyingSeq, int64_t* effectSeq) {
              mAiqRunningHistory.statsSequnce);
     }
 
-    PlatformData::saveMakernoteData(mCameraId, mAiqParam.makernoteMode,
+    PlatformData::saveMakernoteData(mCameraId, aiqResult->mAiqParam.makernoteMode,
                                     mAiqResultStorage->getAiqResult()->mSequence,
                                     aiqResult->mTuningMode);
 
@@ -171,8 +173,8 @@ void AiqEngine::handleEvent(EventData eventData) {
     mLensManager->handleSofEvent(eventData);
 }
 
-int AiqEngine::prepareStatsParams(cca::cca_stats_params* statsParams,
-                                  AiqStatistics* aiqStatistics) {
+int AiqEngine::prepareStatsParams(cca::cca_stats_params* statsParams, AiqStatistics* aiqStatistics,
+                                  AiqResult* aiqResult) {
     LOG2("%s, sequence %ld", __func__, aiqStatistics->mSequence);
 
     // update face detection related parameters
@@ -201,7 +203,7 @@ int AiqEngine::prepareStatsParams(cca::cca_stats_params* statsParams,
         if (PlatformData::isDvsSupported(mCameraId) &&
             PlatformData::getGraphConfigNodes(mCameraId)) {
             std::shared_ptr<IGraphConfig> gc = nullptr;
-            IGraphConfigManager *GCM = IGraphConfigManager::getInstance(mCameraId);
+            IGraphConfigManager* GCM = IGraphConfigManager::getInstance(mCameraId);
             if (GCM) {
                 gc = GCM->getGraphConfig(CAMERA_STREAM_CONFIGURATION_MODE_NORMAL);
             }
@@ -230,8 +232,7 @@ void AiqEngine::setAiqResult(AiqResult* aiqResult, bool skip) {
         LOG2("<seq%ld>%s, skipping the frame", aiqResult->mSequence, __func__);
     }
 
-    mLensManager->setLensResult(aiqResult->mAfResults, aiqResult->mSequence, mAiqParam);
-    aiqResult->mAiqParam = mAiqParam;
+    mLensManager->setLensResult(aiqResult->mAfResults, aiqResult->mSequence, aiqResult->mAiqParam);
 }
 
 int AiqEngine::getSkippingNum(AiqResult* aiqResult) {
@@ -262,7 +263,7 @@ bool AiqEngine::needRun3A(AiqStatistics* aiqStatistics, long requestId) {
         return true;
     }
 
-    if (requestId % mAiqParam.run3ACadence != 0) {
+    if (requestId % mRun3ACadence != 0) {
         // Skip 3A per cadence
         return false;
     }
@@ -285,8 +286,10 @@ bool AiqEngine::needRun3A(AiqStatistics* aiqStatistics, long requestId) {
 
 AiqEngine::AiqState AiqEngine::prepareInputParam(AiqStatistics* aiqStats, AiqResult* aiqResult) {
     // set Aiq Params
-    int ret = mAiqSetting->getAiqParameter(mAiqParam);
+    int ret = mAiqSetting->getAiqParameter(aiqResult->mAiqParam);
     if (ret != OK) return AIQ_STATE_ERROR;
+
+    mRun3ACadence = aiqResult->mAiqParam.run3ACadence;
 
     // Update sensor info for the first-run of AIQ
     if (mFirstAiqRunning) {
@@ -299,9 +302,9 @@ AiqEngine::AiqState AiqEngine::prepareInputParam(AiqStatistics* aiqStats, AiqRes
     }
 
     // update lens related parameters
-    mLensManager->getLensInfo(mAiqParam);
+    mLensManager->getLensInfo(aiqResult->mAiqParam);
 
-    mAiqCore->updateParameter(mAiqParam);
+    mAiqCore->updateParameter(aiqResult->mAiqParam);
 
     if (aiqStats == nullptr) {
         LOG2("%s: run aiq without stats data", __func__);
@@ -310,7 +313,7 @@ AiqEngine::AiqState AiqEngine::prepareInputParam(AiqStatistics* aiqStats, AiqRes
 
     // set Stats
     cca::cca_stats_params statsParams = {};
-    ret = prepareStatsParams(&statsParams, aiqStats);
+    ret = prepareStatsParams(&statsParams, aiqStats, aiqResult);
     if (ret != OK) {
         LOG2("%s: no useful stats", __func__);
         return AIQ_STATE_RUN;
@@ -369,7 +372,7 @@ AiqEngine::AiqState AiqEngine::handleAiqResult(AiqResult* aiqResult) {
      * Besides needed by full pipe auto-switch, this is also necessary when user want to
      * switch pipe in user app according to AE result.
      */
-    if (mAiqParam.sceneMode == SCENE_MODE_AUTO) {
+    if (aiqResult->mAiqParam.sceneMode == SCENE_MODE_AUTO) {
         if (aiqResult->mAeResults.multiframe == ia_aiq_bracket_mode_hdr) {
             aiqResult->mSceneMode = SCENE_MODE_HDR;
         } else if (aiqResult->mAeResults.multiframe == ia_aiq_bracket_mode_ull) {
@@ -388,32 +391,34 @@ int AiqEngine::applyManualTonemaps(AiqResult* aiqResult) {
 
     // Due to the tone map curve effect on image IQ, so need to apply
     // manual/fixed tone map table in manual tonemap or manual ISO/ET mode
-    if (mAiqParam.tonemapMode == TONEMAP_MODE_FAST ||
-        mAiqParam.tonemapMode == TONEMAP_MODE_HIGH_QUALITY) {
+    if (aiqResult->mAiqParam.tonemapMode == TONEMAP_MODE_FAST ||
+        aiqResult->mAiqParam.tonemapMode == TONEMAP_MODE_HIGH_QUALITY) {
         aiqResult->mGbceResults.have_manual_settings = false;
 
-        if (mAiqParam.aeMode != AE_MODE_AUTO && mAiqParam.manualIso != 0
-            && mAiqParam.manualExpTimeUs != 0) {
+        if (aiqResult->mAiqParam.aeMode != AE_MODE_AUTO && aiqResult->mAiqParam.manualIso != 0 &&
+            aiqResult->mAiqParam.manualExpTimeUs != 0) {
             aiqResult->mGbceResults.have_manual_settings = true;
         }
     }
     LOG2("%s, has manual setting: %d, aeMode: %d, tonemapMode: %d", __func__,
-         aiqResult->mGbceResults.have_manual_settings, mAiqParam.aeMode, mAiqParam.tonemapMode);
+         aiqResult->mGbceResults.have_manual_settings, aiqResult->mAiqParam.aeMode,
+         aiqResult->mAiqParam.tonemapMode);
 
     if (!aiqResult->mGbceResults.have_manual_settings) return OK;
 
     // Apply user value or gamma curve for gamma table
-    if (mAiqParam.tonemapMode == TONEMAP_MODE_GAMMA_VALUE) {
-        AiqUtils::applyTonemapGamma(mAiqParam.tonemapGamma, &aiqResult->mGbceResults);
-    } else if (mAiqParam.tonemapMode == TONEMAP_MODE_PRESET_CURVE) {
-        if (mAiqParam.tonemapPresetCurve == TONEMAP_PRESET_CURVE_SRGB) {
+    if (aiqResult->mAiqParam.tonemapMode == TONEMAP_MODE_GAMMA_VALUE) {
+        AiqUtils::applyTonemapGamma(aiqResult->mAiqParam.tonemapGamma, &aiqResult->mGbceResults);
+    } else if (aiqResult->mAiqParam.tonemapMode == TONEMAP_MODE_PRESET_CURVE) {
+        if (aiqResult->mAiqParam.tonemapPresetCurve == TONEMAP_PRESET_CURVE_SRGB) {
             AiqUtils::applyTonemapSRGB(&aiqResult->mGbceResults);
-        } else if (mAiqParam.tonemapPresetCurve == TONEMAP_PRESET_CURVE_REC709) {
+        } else if (aiqResult->mAiqParam.tonemapPresetCurve == TONEMAP_PRESET_CURVE_REC709) {
             AiqUtils::applyTonemapREC709(&aiqResult->mGbceResults);
         }
-    } else if (mAiqParam.tonemapMode == TONEMAP_MODE_CONTRAST_CURVE) {
-        AiqUtils::applyTonemapCurve(mAiqParam.tonemapCurves, &aiqResult->mGbceResults);
-        AiqUtils::applyAwbGainForTonemapCurve(mAiqParam.tonemapCurves, &aiqResult->mAwbResults);
+    } else if (aiqResult->mAiqParam.tonemapMode == TONEMAP_MODE_CONTRAST_CURVE) {
+        AiqUtils::applyTonemapCurve(aiqResult->mAiqParam.tonemapCurves, &aiqResult->mGbceResults);
+        AiqUtils::applyAwbGainForTonemapCurve(aiqResult->mAiqParam.tonemapCurves,
+                                              &aiqResult->mAwbResults);
     }
 
     // Apply the fixed unity value for tone map table

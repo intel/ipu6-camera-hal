@@ -34,21 +34,20 @@ typedef std::map<Port, std::shared_ptr<CameraBuffer>> CameraBufferPortMap;
 typedef std::map<ConfigMode, std::unique_ptr<PSysDAG>> PSysDAGConfigModeMap;
 
 /**
-  * PSysProcessor runs the Image Process Algorithm in the PSYS.
-  * It implements the BufferConsumer and BufferProducer Interface
-  */
-class PSysProcessor: public BufferQueue, public PSysDagCallback {
-
-public:
-    PSysProcessor(int cameraId, ParameterGenerator *pGenerator);
+ * PSysProcessor runs the Image Process Algorithm in the PSYS.
+ * It implements the BufferConsumer and BufferProducer Interface
+ */
+class PSysProcessor : public BufferQueue, public PSysDagCallback {
+ public:
+    PSysProcessor(int cameraId, ParameterGenerator* pGenerator);
     virtual ~PSysProcessor();
     virtual int configure(const std::vector<ConfigMode>& configModes);
     virtual int setParameters(const Parameters& param);
     virtual int getParameters(Parameters& param);
 
-    virtual int registerUserOutputBufs(Port port, const std::shared_ptr<CameraBuffer> &camBuffer);
+    virtual int registerUserOutputBufs(Port port, const std::shared_ptr<CameraBuffer>& camBuffer);
 
-    //Overwrite event source API to delegate related functions
+    // Overwrite event source API to delegate related functions
     void registerListener(EventType eventType, EventListener* eventListener);
     void removeListener(EventType eventType, EventListener* eventListener);
 
@@ -57,53 +56,51 @@ public:
 
     // Overwrite PSysDagCallback API, used for returning back buffers from PSysDAG.
     void onFrameDone(const PSysTaskData& result);
-    void onBufferDone(int64_t sequence, Port port,
-                      const std::shared_ptr<CameraBuffer> &camBuffer);
+    void onBufferDone(int64_t sequence, Port port, const std::shared_ptr<CameraBuffer>& camBuffer);
     void onStatsDone(int64_t sequence, const CameraBufferPortMap& outBuf);
 
-private:
+ private:
     DISALLOW_COPY_AND_ASSIGN(PSysProcessor);
 
-private:
+ private:
     int processNewFrame();
     std::shared_ptr<CameraBuffer> allocStatsBuffer(int index);
 
-    status_t prepareTask(CameraBufferPortMap *srcBuffers, CameraBufferPortMap *dstBuffers);
-    void dispatchTask(CameraBufferPortMap &inBuf, CameraBufferPortMap &outBuf,
+    status_t prepareTask(CameraBufferPortMap* srcBuffers, CameraBufferPortMap* dstBuffers);
+    void dispatchTask(CameraBufferPortMap& inBuf, CameraBufferPortMap& outBuf,
                       bool fakeTask = false, bool callbackRgbs = false);
 
     void handleEvent(EventData eventData);
 
-    int64_t getSettingSequence(const CameraBufferPortMap &outBuf);
+    int64_t getSettingSequence(const CameraBufferPortMap& outBuf);
     bool needSkipOutputFrame(int64_t sequence);
     bool needExecutePipe(int64_t settingSequence, int64_t inputSequence);
     bool needHoldOnInputFrame(int64_t settingSequence, int64_t inputSequence);
     bool needSwitchPipe(int64_t sequence);
 
-    void outputRawImage(std::shared_ptr<CameraBuffer> &srcBuf,
-                        std::shared_ptr<CameraBuffer> &dstBuf);
+    void outputRawImage(std::shared_ptr<CameraBuffer>& srcBuf,
+                        std::shared_ptr<CameraBuffer>& dstBuf);
 
-    void handleRawReprocessing(CameraBufferPortMap *srcBuffers,
-                               CameraBufferPortMap *dstBuffers, bool *allBufDone,
-                               bool *hasRawOutput, bool *hasRawInput);
+    void handleRawReprocessing(CameraBufferPortMap* srcBuffers, CameraBufferPortMap* dstBuffers,
+                               bool* allBufDone, bool* hasRawOutput, bool* hasRawInput);
     bool isBufferHoldForRawReprocess(int64_t sequence);
-    void saveRawBuffer(CameraBufferPortMap *srcBuffers);
+    void saveRawBuffer(CameraBufferPortMap* srcBuffers);
     void returnRawBuffer();
-    void handleStillPipeForTnr(int64_t sequence, CameraBufferPortMap *dstBuffers);
+    void handleStillPipeForTnr(int64_t sequence, CameraBufferPortMap* dstBuffers);
     void sendPsysFrameDoneEvent(const CameraBufferPortMap* dstBuffers);
-    void sendPsysRequestEvent(const CameraBufferPortMap* dstBuffers,
-                              int64_t sequence, uint64_t timestamp, EventType eventType);
+    void sendPsysRequestEvent(const CameraBufferPortMap* dstBuffers, int64_t sequence,
+                              uint64_t timestamp, EventType eventType);
 
-private:
+ private:
     int mCameraId;
-    static const nsecs_t kWaitDuration = 1000000000; //1000ms
-    ParameterGenerator *mParameterGenerator;
+    static const nsecs_t kWaitDuration = 1000000000;  // 1000ms
+    ParameterGenerator* mParameterGenerator;
 
     IspSettings mIspSettings;
     RWLock mIspSettingsLock;
 
-    //Since the isp settings may be re-used in all modes, so the buffer size of
-    //isp settings should be equal to frame buffer size.
+    // Since the isp settings may be re-used in all modes, so the buffer size of
+    // isp settings should be equal to frame buffer size.
     static const int IA_PAL_CONTROL_BUFFER_SIZE = 10;
 
     Condition mFrameDoneSignal;
@@ -117,8 +114,8 @@ private:
     TuningMode mTuningMode;
 
     std::queue<EventDataMeta> mMetaQueue;
-    //Guard for the metadata queue
-    Mutex  mMetaQueueLock;
+    // Guard for the metadata queue
+    Mutex mMetaQueueLock;
     Condition mMetaAvailableSignal;
 
     Port mRawPort;
@@ -138,10 +135,7 @@ private:
     // Indicate the latest sequence of raw buffer used in still TNR
     int64_t mLastStillTnrSequence;
 
-    enum {
-        PIPELINE_UNCREATED = 0,
-        PIPELINE_CREATED
-    } mStatus;
-}; // End of class PSysProcessor
+    enum { PIPELINE_UNCREATED = 0, PIPELINE_CREATED } mStatus;
+};  // End of class PSysProcessor
 
-} //namespace icamera
+}  // namespace icamera

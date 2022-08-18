@@ -46,7 +46,7 @@ typedef struct {
     uint64_t timestamp;
 } SofEventInfo;
 
-typedef std::vector <SensorExposure> SensorExpGroup;
+typedef std::vector<SensorExposure> SensorExpGroup;
 /*
  * \class SensorManager
  *
@@ -54,39 +54,39 @@ typedef std::vector <SensorExposure> SensorExpGroup;
  * and get some sensor info.
  */
 class SensorManager {
-
-public:
-    SensorManager(int cameraId, SensorHwCtrl *sensorHw);
+ public:
+    SensorManager(int cameraId, SensorHwCtrl* sensorHw);
     ~SensorManager();
     void reset();
 
     void handleSofEvent(EventData eventData);
     /* sensorExposures are exposure results, applyingSeq is the sequence to apply results */
     uint32_t updateSensorExposure(SensorExpGroup sensorExposures, int64_t applyingSeq);
-    int getSensorInfo(ia_aiq_frame_params &frameParams,
-                      ia_aiq_exposure_sensor_descriptor &sensorDescriptor);
+    int getSensorInfo(ia_aiq_frame_params& frameParams,
+                      ia_aiq_exposure_sensor_descriptor& sensorDescriptor);
 
     int getCurrentExposureAppliedDelay();
     uint64_t getSofTimestamp(int64_t sequence);
-private:
+
+ private:
     DISALLOW_COPY_AND_ASSIGN(SensorManager);
 
     void handleSensorExposure();
     int getSensorModeData(ia_aiq_exposure_sensor_descriptor& sensorData);
 
-private:
+ private:
     static const int kMaxSensorExposures = 10;
     static const int kMaxSofEventInfo = 10;
 
     int mCameraId;
-    SensorHwCtrl *mSensorHwCtrl;
+    SensorHwCtrl* mSensorHwCtrl;
 
     int64_t mLastSofSequence;
 
     // Guard for SensorManager public API.
     Mutex mLock;
 
-    int mAnalogGainDelay;  // Analog gain delay comparing exposure
+    int mAnalogGainDelay;   // Analog gain delay comparing exposure
     int mDigitalGainDelay;  // Digital gain delay comparing exposure
     // fisrt: sequence id, second: analog gain vector
     std::map<int64_t, std::vector<int>> mAnalogGainMap;

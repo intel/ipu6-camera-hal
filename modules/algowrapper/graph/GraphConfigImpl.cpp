@@ -93,7 +93,7 @@ void GraphConfigImpl::addCustomKeyMap() {
      */
 #define GCSS_KEY(key, str) std::make_pair(#str, GCSS_KEY_##key),
     map<string, ia_uid> CUSTOM_GRAPH_KEYS = {
-    #include "custom_gcss_keys.h"
+#include "custom_gcss_keys.h"
     };
 #undef GCSS_KEY
 
@@ -357,9 +357,9 @@ status_t GraphConfigImpl::getRawInputSize(GCSS::IGraphConfig* query, camera_reso
     return UNKNOWN_ERROR;
 }
 
-status_t GraphConfigImpl::queryAllMatchedResults(const std::vector<HalStream*>& activeStreams,
-                                    bool dummyStillSink,
-                                    std::map<int, std::vector<GCSS::IGraphConfig*>> *queryResults) {
+status_t GraphConfigImpl::queryAllMatchedResults(
+    const std::vector<HalStream*>& activeStreams, bool dummyStillSink,
+    std::map<int, std::vector<GCSS::IGraphConfig*>>* queryResults) {
     CheckAndLogError(!queryResults, UNKNOWN_ERROR, "%s, The queryResults is nullptr", __func__);
 
     status_t ret = createQueryRule(activeStreams, dummyStillSink);
@@ -392,7 +392,7 @@ status_t GraphConfigImpl::queryAllMatchedResults(const std::vector<HalStream*>& 
 }
 
 bool GraphConfigImpl::queryGraphSettings(const std::vector<HalStream*>& activeStreams) {
-    std::map<int, std::vector<GCSS::IGraphConfig*> > useCaseToQueryResults;
+    std::map<int, std::vector<GCSS::IGraphConfig*>> useCaseToQueryResults;
     status_t ret = queryAllMatchedResults(activeStreams, false, &useCaseToQueryResults);
     return ret == OK ? true : false;
 }
@@ -404,7 +404,7 @@ status_t GraphConfigImpl::configStreams(const vector<HalStream*>& activeStreams,
                                         bool dummyStillSink) {
     HAL_TRACE_CALL(CAMERA_DEBUG_LOG_LEVEL1);
 
-    map<int, vector<GCSS::IGraphConfig*> > useCaseToQueryResults;
+    map<int, vector<GCSS::IGraphConfig*>> useCaseToQueryResults;
     status_t ret = queryAllMatchedResults(activeStreams, dummyStillSink, &useCaseToQueryResults);
     CheckAndLogError(ret != OK, UNKNOWN_ERROR, "%s, Faild to queryAllMatchedResults", __func__);
     // Filter the results with same isys output if there are
@@ -431,7 +431,7 @@ status_t GraphConfigImpl::configStreams(const vector<HalStream*>& activeStreams,
                 camera_resolution_t stillReso;
                 ret = getRawInputSize(still, &stillReso);
                 CheckAndLogError(ret != OK, UNKNOWN_ERROR,
-                           "%s, Failed to get csi ouput resolution for still pipe", __func__);
+                                 "%s, Failed to get csi ouput resolution for still pipe", __func__);
                 LOG2("Isys output resolution for still pipe: %dx%d", stillReso.width,
                      stillReso.height);
 
@@ -556,7 +556,7 @@ string GraphConfigImpl::format2GraphBpp(int format) {
  * Do the secondary filter: configMode and stream format.
  */
 status_t GraphConfigImpl::selectSetting(
-    int useCase, std::map<int, std::vector<GCSS::IGraphConfig*> >* queryResults) {
+    int useCase, std::map<int, std::vector<GCSS::IGraphConfig*>>* queryResults) {
     CheckAndLogError(!queryResults, UNKNOWN_ERROR, "%s, The queryResults is nullptr", __func__);
     string opMode;
     vector<GCSS::IGraphConfig*> internalQueryResults;
@@ -600,9 +600,8 @@ status_t GraphConfigImpl::selectSetting(
             string bpp = format2GraphBpp(s->format());
             queryItem[bppKey] = bpp;
 
-            LOG2("The stream: %dx%d, format: %s, graphFmt: %s, bpp: %s",
-                 s->width(), s->height(), CameraUtils::format2string(s->format()).c_str(),
-                 fmt.c_str(), bpp.c_str());
+            LOG2("The stream: %dx%d, format: %s, graphFmt: %s, bpp: %s", s->width(), s->height(),
+                 CameraUtils::format2string(s->format()).c_str(), fmt.c_str(), bpp.c_str());
         }
 
         LOG1("dumpQuery with format condition");
@@ -826,11 +825,11 @@ status_t GraphConfigImpl::pipelineGetConnections(
 
     std::vector<IGraphType::ScalerInfo> stillScalerInfo, videoScalerInfo;
     std::vector<IGraphType::PrivPortFormat> stillTnrPortFmt, videoTnrPortFmt;
-    int ret = videoGraphPipe->pipelineGetConnections(pgList, &videoScalerInfo,
-                                                     &videoConnVector, &videoTnrPortFmt);
+    int ret = videoGraphPipe->pipelineGetConnections(pgList, &videoScalerInfo, &videoConnVector,
+                                                     &videoTnrPortFmt);
     CheckAndLogError(ret != OK, UNKNOWN_ERROR, "Failed to get the connetction from video pipe");
-    ret = stillGraphPipe->pipelineGetConnections(pgList, &stillScalerInfo,
-                                                 &stillConnVector, &stillTnrPortFmt);
+    ret = stillGraphPipe->pipelineGetConnections(pgList, &stillScalerInfo, &stillConnVector,
+                                                 &stillTnrPortFmt);
     CheckAndLogError(ret != OK, UNKNOWN_ERROR, "Failed to get the connetction from still pipe");
 
     LOG2("The connetction in video: %zu, in still: %zu; the scalera in video: %zu, in still: %zu",
