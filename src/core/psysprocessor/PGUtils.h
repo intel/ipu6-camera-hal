@@ -65,8 +65,8 @@ namespace PGUtils {
  * Common definitions
  * ***********************************************************/
 
-#define IS_DATA_TERMINAL(terminalType) \
-    (terminalType == IA_CSS_TERMINAL_TYPE_DATA_IN || terminalType == IA_CSS_TERMINAL_TYPE_DATA_OUT)
+#define IS_DATA_TERMINAL(terminalType) (terminalType == IA_CSS_TERMINAL_TYPE_DATA_IN || \
+                                        terminalType == IA_CSS_TERMINAL_TYPE_DATA_OUT)
 
 ia_css_frame_format_type getCssFmt(int v4l2Fmt);
 int getCssBpp(int v4l2Fmt, bool compression = false);

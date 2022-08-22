@@ -28,19 +28,19 @@ class ParameterGenerator;
  * \brief ProcessorManager helps to create and maintain the post processors.
  */
 class ProcessorManager {
- public:
+public:
     ProcessorManager(int cameraId);
     ~ProcessorManager();
 
     std::vector<BufferQueue*> createProcessors(const std::map<Port, stream_t>& producerConfigs,
                                                const std::map<int, Port>& streamIdToPortMap,
-                                               stream_config_t* streamList,
+                                               stream_config_t *streamList,
                                                ParameterGenerator* paramGenerator);
     int configureProcessors(const std::vector<ConfigMode>& configModes, BufferProducer* producer,
                             const Parameters& param);
     int deleteProcessors();
 
- private:
+private:
     DISALLOW_COPY_AND_ASSIGN(ProcessorManager);
 
     int mCameraId;
@@ -59,4 +59,4 @@ class ProcessorManager {
     std::vector<ProcessorConfig> mProcessors;
 };
 
-}  // end of namespace icamera
+} // end of namespace icamera

@@ -89,6 +89,9 @@ camera_window_t convertToIaWindow(const camera_coordinate_system_t& srcSystem,
 float normalizeAwbGain(int gain);
 int convertToUserAwbGain(float normalizedGain);
 float convertSpeedModeToTime(camera_converge_speed_t mode);
+// HDR_FEATURE_S
+float convertSpeedModeToTimeForHDR(camera_converge_speed_t mode);
+// HDR_FEATURE_E
 
 ia_aiq_frame_use convertFrameUsageToIaFrameUsage(int frameUsage);
 
@@ -118,12 +121,13 @@ void applyAwbGainForTonemapCurve(const camera_tonemap_curves_t& curves,
  *  in a_dst_w              width of the output array
  *  in a_dst_h              height of the output array
  */
-template <typename T>
-int resize2dArray(const T* a_src, int a_src_w, int a_src_h, T* a_dst, int a_dst_w, int a_dst_h) {
+template <typename T> int resize2dArray(
+    const T* a_src, int a_src_w, int a_src_h,
+    T* a_dst, int a_dst_w, int a_dst_h) {
     int i, j, step_size_w, step_size_h, rounding_term;
 
     if (a_src_w < 2 || a_dst_w < 2 || a_src_h < 2 || a_dst_h < 2) {
-        return -1;
+        return  -1;
     }
     nsecs_t startTime = CameraUtils::systemTime();
     step_size_w = ((a_src_w - 1) << FRAC_BITS_CURR_LOC) / (a_dst_w - 1);
@@ -141,20 +145,19 @@ int resize2dArray(const T* a_src, int a_src_w, int a_src_h, T* a_dst, int a_dst_
             curr_loc_lower_w = (curr_loc_w > 0) ? (curr_loc_w - 1) >> FRAC_BITS_CURR_LOC : 0;
 
             a_dst[a_dst_w * j + i] =
-                (a_src[curr_loc_lower_w + curr_loc_lower_h * a_src_w] *
-                     (((curr_loc_lower_w + 1) << FRAC_BITS_CURR_LOC) - curr_loc_w) *
-                     (((curr_loc_lower_h + 1) << FRAC_BITS_CURR_LOC) - curr_loc_h) +
-                 a_src[curr_loc_lower_w + 1 + curr_loc_lower_h * a_src_w] *
-                     (curr_loc_w - ((curr_loc_lower_w) << FRAC_BITS_CURR_LOC)) *
-                     (((curr_loc_lower_h + 1) << FRAC_BITS_CURR_LOC) - curr_loc_h) +
-                 a_src[curr_loc_lower_w + (curr_loc_lower_h + 1) * a_src_w] *
-                     (((curr_loc_lower_w + 1) << FRAC_BITS_CURR_LOC) - curr_loc_w) *
-                     (curr_loc_h - ((curr_loc_lower_h) << FRAC_BITS_CURR_LOC)) +
-                 a_src[curr_loc_lower_w + 1 + (curr_loc_lower_h + 1) * a_src_w] *
-                     (curr_loc_w - ((curr_loc_lower_w) << FRAC_BITS_CURR_LOC)) *
-                     (curr_loc_h - ((curr_loc_lower_h) << FRAC_BITS_CURR_LOC)) +
-                 rounding_term) /
-                (FRAC_BASE * FRAC_BASE);
+                (a_src[curr_loc_lower_w + curr_loc_lower_h * a_src_w]  *
+                        (((curr_loc_lower_w + 1) << FRAC_BITS_CURR_LOC) - curr_loc_w) *
+                        (((curr_loc_lower_h + 1) << FRAC_BITS_CURR_LOC) - curr_loc_h) +
+                a_src[curr_loc_lower_w + 1 + curr_loc_lower_h * a_src_w] *
+                        (curr_loc_w-((curr_loc_lower_w) << FRAC_BITS_CURR_LOC))   *
+                        (((curr_loc_lower_h + 1) << FRAC_BITS_CURR_LOC) - curr_loc_h) +
+                a_src[curr_loc_lower_w + (curr_loc_lower_h + 1) * a_src_w]  *
+                        (((curr_loc_lower_w + 1) << FRAC_BITS_CURR_LOC) - curr_loc_w) *
+                        (curr_loc_h - ((curr_loc_lower_h) << FRAC_BITS_CURR_LOC)) +
+                a_src[curr_loc_lower_w + 1 + (curr_loc_lower_h + 1) * a_src_w] *
+                        (curr_loc_w - ((curr_loc_lower_w) << FRAC_BITS_CURR_LOC))   *
+                        (curr_loc_h - ((curr_loc_lower_h) << FRAC_BITS_CURR_LOC))
+                + rounding_term) / (FRAC_BASE * FRAC_BASE);
         }
     }
     LOG2("resize the 2D array cost %dus",
@@ -163,13 +166,16 @@ int resize2dArray(const T* a_src, int a_src_w, int a_src_h, T* a_dst, int a_dst_
     return 0;
 }
 
-template int resize2dArray<float>(const float* a_src, int a_src_w, int a_src_h, float* a_dst,
-                                  int a_dst_w, int a_dst_h);
-template int resize2dArray<unsigned short>(const unsigned short* a_src, int a_src_w, int a_src_h,
-                                           unsigned short* a_dst, int a_dst_w, int a_dst_h);
-template int resize2dArray<int>(const int* a_src, int a_src_w, int a_src_h, int* a_dst, int a_dst_w,
-                                int a_dst_h);
+template int resize2dArray<float>(
+    const float* a_src, int a_src_w, int a_src_h,
+    float* a_dst, int a_dst_w, int a_dst_h);
+template int resize2dArray<unsigned short>(
+    const unsigned short* a_src, int a_src_w, int a_src_h,
+    unsigned short* a_dst, int a_dst_w, int a_dst_h);
+template int resize2dArray<int>(
+    const int* a_src, int a_src_w, int a_src_h,
+    int* a_dst, int a_dst_w, int a_dst_h);
 
-float calculateHyperfocalDistance(const cca::cca_cmc& cmc);
+float calculateHyperfocalDistance(const cca::cca_cmc &cmc);
 }  // namespace AiqUtils
 }  // namespace icamera

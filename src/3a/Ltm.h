@@ -100,7 +100,7 @@ class Ltm : public EventListener {
     LtmThread* mLtmThread;
     bool mThreadRunning;
     Condition mParamAvailableSignal;
-    static const int kMaxLtmParamsNum = 2;  // 2 ltm input params
+    static const int kMaxLtmParamsNum = 2;            // 2 ltm input params
 
     int mInputParamIndex;
     LtmInputParams* mLtmParams[kMaxLtmParamsNum];

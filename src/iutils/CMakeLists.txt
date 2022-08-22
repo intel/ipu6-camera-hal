@@ -24,6 +24,9 @@ set(IUTILS_SRCS
     ${IUTILS_DIR}/Thread.cpp
     ${IUTILS_DIR}/Utils.cpp
     ${IUTILS_DIR}/SwImageConverter.cpp
+# SUPPORT_MULTI_PROCESS_S
+    ${IUTILS_DIR}/CameraShm.cpp
+# SUPPORT_MULTI_PROCESS_E
     CACHE INTERNAL "iutils sources"
     )
 

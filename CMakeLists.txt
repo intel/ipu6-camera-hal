@@ -28,6 +28,9 @@ set(3A_DIR              ${SRC_ROOT_DIR}/3a)
 set(CORE_DIR            ${SRC_ROOT_DIR}/core)
 set(HAL_DIR             ${SRC_ROOT_DIR}/hal)
 set(IIO_DIR             ${SRC_ROOT_DIR}/iio)
+# ISP_CONTROL_S
+set(ISP_CTRL_DIR        ${SRC_ROOT_DIR}/isp_control)
+# ISP_CONTROL_E
 set(IUTILS_DIR          ${SRC_ROOT_DIR}/iutils)
 set(METADATA_DIR        ${SRC_ROOT_DIR}/metadata)
 set(PLATFORMDATA_DIR    ${SRC_ROOT_DIR}/platformdata)
@@ -67,8 +70,6 @@ endif()
 message(STATUS "install prefix: " ${CMAKE_INSTALL_PREFIX})
 
 #------------------------- Compilation settings -------------------------
-
-include(GNUInstallDirs)
 
 # -fPIC in xos way
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -242,18 +243,13 @@ endif() #ENABLE_SANDBOXING
     set(LIBCAMHAL_SRCS ${LIBCAMHAL_SRCS} ${IIO_SRCS})
 
 # Add libcamhal using the specified sources
+add_library(camhal SHARED ${LIBCAMHAL_SRCS})
 add_library(camhal_static STATIC ${LIBCAMHAL_SRCS})
 set_target_properties(camhal_static PROPERTIES OUTPUT_NAME "camhal")
-add_library(camhal SHARED $<TARGET_OBJECTS:camhal_static>)
 
 #---------------------------- Link settings ----------------------------
 target_link_libraries(camhal ${CMAKE_DL_LIBS})
 target_link_libraries(camhal_static ${CMAKE_DL_LIBS})
-
-set (THREADS_PREFER_PTHREAD_FLAG ON)
-find_package (Threads REQUIRED)
-target_link_libraries(camhal ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(camhal_static ${CMAKE_THREAD_LIBS_INIT})
 
 target_link_libraries(camhal expat rt)
 target_link_libraries(camhal_static expat rt)
@@ -408,13 +404,15 @@ else()
 endif()
 
 # Install libraries
-install(TARGETS camhal camhal_static)
+install(TARGETS camhal camhal_static
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+        )
 
 # Install package config file
 configure_file(${PROJECT_SOURCE_DIR}/cmake/libcamhal.pc.cmakein
                ${PROJECT_SOURCE_DIR}/libcamhal.pc @ONLY)
-install(FILES libcamhal.pc
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+install(FILES libcamhal.pc DESTINATION lib/pkgconfig)
 
 endif() #NOT CAL_BUILD
 

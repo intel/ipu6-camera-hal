@@ -27,9 +27,12 @@
 
 namespace icamera {
 
-MakerNote::MakerNote() : mMknState(UNINIT) {}
+MakerNote::MakerNote() :
+    mMknState(UNINIT) {
+}
 
-MakerNote::~MakerNote() {}
+MakerNote::~MakerNote() {
+}
 
 int MakerNote::init(int cameraId, TuningMode tuningMode) {
     LOG1("<id%d>@%s, tuningMode:%d", cameraId, __func__, tuningMode);
@@ -86,8 +89,8 @@ int MakerNote::saveMakernoteData(int cameraId, camera_makernote_mode_t makernote
     AutoMutex lock(mMknLock);
     CheckAndLogError(mMknState != INIT, NO_INIT, "@%s, mkn isn't initialized", __func__);
 
-    ia_mkn_trg mknTrg = ((makernoteMode == MAKERNOTE_MODE_JPEG) || dump ? ia_mkn_trg_section_1 :
-                                                                          ia_mkn_trg_section_2);
+    ia_mkn_trg mknTrg = ((makernoteMode == MAKERNOTE_MODE_JPEG) || dump
+                         ? ia_mkn_trg_section_1 : ia_mkn_trg_section_2);
     MakernoteData data = mMakernoteDataList.front();
 
     IntelCca* intelCca = IntelCca::getInstance(cameraId, tuningMode);

@@ -118,7 +118,7 @@ int GraphConfig::getTuningModeByStreamId(const int32_t streamId) {
     CheckAndLogError(mGraphData.tuningModes.empty(), -1, "%s, The tuningModes vector is empty",
                      __func__);
 
-    for (auto& mode : mGraphData.tuningModes) {
+    for (auto &mode : mGraphData.tuningModes) {
         if (mode.streamId == streamId) return mode.tuningMode;
     }
 
@@ -138,6 +138,15 @@ int GraphConfig::getPgIdByPgName(string pgName) {
     LOG2("%s, There is not pg id for pgName: %s", __func__, pgName.c_str());
     return -1;
 }
+
+// DOL_FEATURE_S
+int GraphConfig::getDolInfo(float& gain, string& mode) {
+    gain = mGraphData.dolInfo.conversionGain;
+    mode = mGraphData.dolInfo.dolMode;
+
+    return OK;
+}
+// DOL_FEATURE_E
 
 ia_isp_bxt_program_group* GraphConfig::getProgramGroup(int32_t streamId) {
     CheckAndLogError(mGraphData.programGroup.empty(), nullptr,
@@ -188,7 +197,8 @@ status_t GraphConfig::getPgRbmValue(string pgName, IGraphType::StageAttr* stageA
 }
 
 status_t GraphConfig::pipelineGetConnections(
-    const vector<string>& pgList, vector<IGraphType::PipelineConnection>* confVector,
+    const vector<string>& pgList,
+    vector<IGraphType::PipelineConnection>* confVector,
     std::vector<IGraphType::PrivPortFormat>* tnrPortFormat) {
     CheckAndLogError(!confVector, UNKNOWN_ERROR, "%s, The confVector is nullptr", __func__);
 

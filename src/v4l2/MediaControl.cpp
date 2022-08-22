@@ -202,6 +202,41 @@ int MediaControl::resetAllLinks() {
     return 0;
 }
 
+// VIRTUAL_CHANNEL_S
+int MediaControl::resetAllRoutes(int cameraId) {
+    LOG1("<id%d> %s", cameraId, __func__);
+
+    for (MediaEntity& entity : mEntities) {
+        struct v4l2_subdev_route routes[entity.info.pads];
+        uint32_t numRoutes = entity.info.pads;
+
+        string subDeviceNodeName;
+        subDeviceNodeName.clear();
+        CameraUtils::getSubDeviceName(entity.info.name, subDeviceNodeName);
+        if (subDeviceNodeName.find("/dev/") == std::string::npos) {
+            continue;
+        }
+
+        V4L2Subdevice* subDev = V4l2DeviceFactory::getSubDev(cameraId, subDeviceNodeName);
+        int ret = subDev->GetRouting(routes, &numRoutes);
+        if (ret != 0) {
+            continue;
+        }
+
+        for (uint32_t j = 0; j < numRoutes; j++) {
+            routes[j].flags &= ~V4L2_SUBDEV_ROUTE_FL_ACTIVE;
+        }
+
+        ret = subDev->SetRouting(routes, numRoutes);
+        if (ret < 0) {
+            LOGW("@%s, setRouting ret:%d", __func__, ret);
+        }
+    }
+
+    return OK;
+}
+// VIRTUAL_CHANNEL_E
+
 int MediaControl::setupLink(MediaPad* source, MediaPad* sink, uint32_t flags) {
     MediaLink* link = nullptr;
     media_link_desc ulink;
@@ -346,8 +381,8 @@ int MediaControl::enumInfo() {
     media_device_info info;
     int ret = sc->ioctl(fd, MEDIA_IOC_DEVICE_INFO, &info);
     if (ret < 0) {
-        LOGE("Unable to retrieve media device information for device %s (%s)", mDevName.c_str(),
-             strerror(errno));
+        LOGE("Unable to retrieve media device information for device %s (%s)",
+             mDevName.c_str(), strerror(errno));
         goto done;
     }
 
@@ -617,10 +652,7 @@ const char* MediaControl::entitySubtype2String(unsigned type) {
         "Unknown", "V4L", "FB", "ALSA", "DVB",
     };
     static const char* subdevTypes[] = {
-        "Unknown",
-        "Sensor",
-        "Flash",
-        "Lens",
+        "Unknown", "Sensor", "Flash", "Lens",
     };
 
     uint32_t subtype = type & MEDIA_ENT_SUBTYPE_MASK;
@@ -721,6 +753,9 @@ int MediaControl::setFormat(int cameraId, const McFormat* format, int targetWidt
     fmt.pad = format->pad;
     fmt.which = V4L2_SUBDEV_FORMAT_ACTIVE;
     fmt.format = mbusfmt;
+    // VIRTUAL_CHANNEL_S
+    fmt.stream = format->stream;
+    // VIRTUAL_CHANNEL_E
     ret = subDev->SetFormat(fmt);
     CheckAndLogError(ret < 0, BAD_VALUE, "set format %s [%d:%d] [%dx%d] %s failed.",
                      format->entityName.c_str(), format->entity, format->pad, format->width,
@@ -804,6 +839,22 @@ int MediaControl::mediaCtlSetup(int cameraId, MediaCtlConf* mc, int width, int h
     setMediaMcCtl(cameraId, mc->ctls);
 
     int ret = OK;
+    // VIRTUAL_CHANNEL_S
+    /* Set routing */
+    for (auto& route : mc->routes) {
+        LOG1("<id%d> route entity:%s, sinkPad:%d, srcPad:%d, sinkStream:%d, srcStream:%d, flag:%d",
+             cameraId, route.entityName.c_str(), route.sinkPad, route.srcPad,
+             route.sinkStream, route.srcStream, route.flag);
+
+        string subDeviceNodeName;
+        CameraUtils::getSubDeviceName(route.entityName.c_str(), subDeviceNodeName);
+        V4L2Subdevice* subDev = V4l2DeviceFactory::getSubDev(cameraId, subDeviceNodeName);
+        v4l2_subdev_route r = {route.sinkPad, route.sinkStream, route.srcPad, route.srcStream,
+                               route.flag};
+        ret = subDev->SetRouting(&r, 1);
+        CheckAndLogError(ret != 0, ret, "setRouting fail, ret:%d", ret);
+    }
+    // VIRTUAL_CHANNEL_E
 
     /* Set format & selection in format Configuration */
     for (auto& fmt : mc->formats) {
@@ -843,6 +894,18 @@ int MediaControl::getVCMI2CAddr(const char* vcmName, string* vcmI2CAddr) {
 void MediaControl::mediaCtlClear(int cameraId, MediaCtlConf* mc) {
     LOG1("<id%d> %s", cameraId, __func__);
 
+    // VIRTUAL_CHANNEL_S
+    /* Clear routing */
+    for (auto& route : mc->routes) {
+        string subDeviceNodeName;
+        CameraUtils::getSubDeviceName(route.entityName.c_str(), subDeviceNodeName);
+        V4L2Subdevice* subDev = V4l2DeviceFactory::getSubDev(cameraId, subDeviceNodeName);
+        v4l2_subdev_route r = {route.sinkPad, route.sinkStream, route.srcPad, route.srcStream,
+                               route.flag & ~V4L2_SUBDEV_ROUTE_FL_ACTIVE};
+        int ret = subDev->SetRouting(&r, 1);
+        CheckAndLogError(ret != 0, VOID_VALUE, "Clear routing fail, ret:%d", ret);
+    }
+    // VIRTUAL_CHANNEL_E
 }
 
 // This function must be called after enumEntities().
@@ -932,8 +995,7 @@ void MediaControl::dumpTopologyDot() {
                 // to make KW happy.
                 if (devname)
                     printf("\tn%08x [label=\"%s\\n%s\", shape=box, style=filled, "
-                           "fillcolor=yellow]\n",
-                           info->id, info->name, devname);
+                           "fillcolor=yellow]\n", info->id, info->name, devname);
                 break;
 
             case MEDIA_ENT_T_V4L2_SUBDEV:

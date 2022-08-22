@@ -23,8 +23,8 @@
 #include "iutils/CameraLog.h"
 #include "iutils/Utils.h"
 
-using icamera::CAMERA_DEBUG_LOG_ERR;
 using icamera::CAMERA_DEBUG_LOG_INFO;
+using icamera::CAMERA_DEBUG_LOG_ERR;
 using icamera::CAMERA_DEBUG_LOG_WARNING;
 
 namespace icamera {
@@ -79,19 +79,19 @@ Result Command::updateKernel(const PSysCommandConfig& cfg, const MemoryDesc& mem
     ProcessGroupCommand* ppg_command_ext = reinterpret_cast<ProcessGroupCommand*>(memory.cpuPtr);
 
     CheckAndLogError(ppg_command_ext->header.size != memory.size ||
-                         ppg_command_ext->header.offset != sizeof(PSysCmdExtHeader) ||
-                         (ppg_command_ext->header.version != psys_command_ext_ppg_0 &&
-                          ppg_command_ext->header.version != psys_command_ext_ppg_1),
+                     ppg_command_ext->header.offset != sizeof(PSysCmdExtHeader) ||
+                     (ppg_command_ext->header.version != psys_command_ext_ppg_0 &&
+                     ppg_command_ext->header.version != psys_command_ext_ppg_1),
                      Result::InvaildArg, "Invalid command extension buffer received! (%p)",
                      cfg.extBuf);
 
     if (ppg_command_ext->header.version == psys_command_ext_ppg_1) {
         CheckAndLogError(sizeof(mCmd->iocCmd.kernel_enable_bitmap) !=
-                             sizeof(ppg_command_ext->dynamicKernelBitmap),
-                         Result::DataError, "Invalid bitmap buffer size");
-        MEMCPY_S(&(mCmd->iocCmd.kernel_enable_bitmap), sizeof(mCmd->iocCmd.kernel_enable_bitmap),
-                 ppg_command_ext->dynamicKernelBitmap,
-                 sizeof(ppg_command_ext->dynamicKernelBitmap));
+                         sizeof(ppg_command_ext->dynamicKernelBitmap), Result::DataError,
+                         "Invalid bitmap buffer size");
+        MEMCPY_S(
+            &(mCmd->iocCmd.kernel_enable_bitmap), sizeof(mCmd->iocCmd.kernel_enable_bitmap),
+            ppg_command_ext->dynamicKernelBitmap, sizeof(ppg_command_ext->dynamicKernelBitmap));
     }
 
     mCmd->iocCmd.frame_counter = static_cast<uint32_t>(ppg_command_ext->frameCounter);

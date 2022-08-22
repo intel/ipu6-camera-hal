@@ -26,9 +26,11 @@
 #include "iutils/CameraLog.h"
 
 namespace icamera {
-IntelFaceDetection::IntelFaceDetection() : mFDHandle(nullptr), mMaxFacesNum(0) {}
+IntelFaceDetection::IntelFaceDetection() : mFDHandle(nullptr), mMaxFacesNum(0) {
+}
 
-IntelFaceDetection::~IntelFaceDetection() {}
+IntelFaceDetection::~IntelFaceDetection() {
+}
 
 status_t IntelFaceDetection::init(FaceDetectionInitParams* pData, int dataSize) {
     CheckAndLogError(!pData, UNKNOWN_ERROR, "pData is nullptr");
@@ -65,7 +67,7 @@ status_t IntelFaceDetection::init(FaceDetectionInitParams* pData, int dataSize) 
 status_t IntelFaceDetection::deinit(FaceDetectionDeinitParams* pData, int dataSize) {
     CheckAndLogError(!pData, UNKNOWN_ERROR, "pData is nullptr");
     CheckAndLogError(dataSize < static_cast<int>(sizeof(FaceDetectionDeinitParams)), UNKNOWN_ERROR,
-                     "buffer is small");
+               "buffer is small");
     LOG1("<id%d>@%s", pData->cameraId, __func__);
 
     if (mFDHandle) {

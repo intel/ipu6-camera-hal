@@ -223,9 +223,9 @@ bool GPUExecutor::fetchTnrOutBuffer(int64_t seq, std::shared_ptr<CameraBuffer> b
 
     std::unique_lock<std::mutex> lock(mTnrOutBufMapLock);
     if (mTnrOutBufMap.find(seq) != mTnrOutBufMap.end()) {
-        void* pSrcBuf = (buf->getMemory() == V4L2_MEMORY_DMABUF) ?
-                            CameraBuffer::mapDmaBufferAddr(buf->getFd(), buf->getBufferSize()) :
-                            buf->getBufferAddr();
+        void* pSrcBuf = (buf->getMemory() == V4L2_MEMORY_DMABUF)
+                            ? CameraBuffer::mapDmaBufferAddr(buf->getFd(), buf->getBufferSize())
+                            : buf->getBufferAddr();
         CheckAndLogError(!pSrcBuf, false, "pSrcBuf is nullptr");
         LOG2("Sequence %ld is used for output", seq);
         MEMCPY_S(pSrcBuf, buf->getBufferSize(), mTnrOutBufMap[seq], mOutBufferSize);
@@ -301,9 +301,9 @@ int GPUExecutor::allocTnrOutBufs(uint32_t bufSize) {
 
     /* for yuv still stream, we use maxRaw buffer to do reprocessing, and for real still stream, 2
      * tnr buffers are enough */
-    int maxTnrOutBufCount = (mStreamId == VIDEO_STREAM_ID && mUseInternalTnrBuffer) ?
-                                PlatformData::getMaxRawDataNum(mCameraId) :
-                                DEFAULT_TNR7US_BUFFER_COUNT;
+    int maxTnrOutBufCount = (mStreamId == VIDEO_STREAM_ID && mUseInternalTnrBuffer)
+                                ? PlatformData::getMaxRawDataNum(mCameraId)
+                                : DEFAULT_TNR7US_BUFFER_COUNT;
 
     std::unique_lock<std::mutex> lock(mTnrOutBufMapLock);
     for (int i = 0; i < maxTnrOutBufCount; i++) {
@@ -566,9 +566,9 @@ int GPUExecutor::runTnrFrame(const std::shared_ptr<CameraBuffer>& inBuf,
     int fd = outBuf->getFd();
     int memoryType = outBuf->getMemory();
     int bufferSize = outBuf->getBufferSize();
-    void* outPtr = (memoryType == V4L2_MEMORY_DMABUF) ?
-                       CameraBuffer::mapDmaBufferAddr(fd, bufferSize) :
-                       outBuf->getBufferAddr();
+    void* outPtr = (memoryType == V4L2_MEMORY_DMABUF)
+                       ? CameraBuffer::mapDmaBufferAddr(fd, bufferSize)
+                       : outBuf->getBufferAddr();
     if (!outPtr) return UNKNOWN_ERROR;
 
     outBuf->setSequence(sequence);

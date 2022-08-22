@@ -25,6 +25,9 @@
 
 #include "CameraParser.h"
 #include "iutils/CameraLog.h"
+// CUSTOM_WEIGHT_GRID_S
+#include "TunningParser.h"
+// CUSTOM_WEIGHT_GRID_E
 #include "ParameterHelper.h"
 #include "PolicyParser.h"
 
@@ -64,11 +67,18 @@ PlatformData::PlatformData() {
     }
 
     CameraParser CameraParser(mc, &mStaticCfg);
+    // CUSTOM_WEIGHT_GRID_S
+    TunningParser TunningParser(&mStaticCfg);
+    // CUSTOM_WEIGHT_GRID_E
     PolicyParser PolicyParser(&mStaticCfg);
 }
 
 PlatformData::~PlatformData() {
     LOG1("@%s", __func__);
+
+    // CUSTOM_WEIGHT_GRID_S
+    deinitWeightGridTable();
+    // CUSTOM_WEIGHT_GRID_E
 
     releaseGraphConfigNodes();
 
@@ -145,6 +155,21 @@ int PlatformData::queryGraphSettings(int cameraId, const stream_config_t* stream
     }
     return OK;
 }
+
+// CUSTOM_WEIGHT_GRID_S
+void PlatformData::deinitWeightGridTable() {
+    int cameraNum = mStaticCfg.mCameras.size();
+    for (int i = 0; i < cameraNum; i++) {
+        PlatformData::StaticCfg::CameraInfo* pCam = &(mStaticCfg.mCameras[i]);
+        for (auto& wg : pCam->mWGTable) {
+            if (wg.table) {
+                delete[] wg.table;
+                wg.table = nullptr;
+            }
+        }
+    }
+}
+// CUSTOM_WEIGHT_GRID_E
 
 void PlatformData::releaseGraphConfigNodes() {
     std::shared_ptr<GraphConfig> graphConfig = std::make_shared<GraphConfig>();
@@ -237,7 +262,7 @@ bool PlatformData::isEnableLtmThread(int cameraId) {
 }
 
 bool PlatformData::isFaceDetectionSupported(int cameraId) {
-    Parameters* source = &(getInstance()->mStaticCfg.mCameras[cameraId].mCapability);
+    Parameters *source = &(getInstance()->mStaticCfg.mCameras[cameraId].mCapability);
     const icamera::CameraMetadata& meta = icamera::ParameterHelper::getMetadata(*source);
     auto entry = meta.find(CAMERA_STATISTICS_INFO_AVAILABLE_FACE_DETECT_MODES);
     for (size_t i = 0; i < entry.count; i++) {
@@ -332,14 +357,43 @@ int PlatformData::getExposureNum(int cameraId, bool multiExposure) {
     }
 
     int exposureNum = 1;
+    // DOL_FEATURE_S
+    if (PlatformData::isDolShortEnabled(cameraId)) exposureNum++;
+
+    if (PlatformData::isDolMediumEnabled(cameraId)) exposureNum++;
+    // DOL_FEATURE_E
 
     return exposureNum;
 }
 
 bool PlatformData::isLtmEnabled(int cameraId) {
+    // HDR_FEATURE_S
+    if (isEnableHDR(cameraId)) {
+        return true;
+    }
+    // HDR_FEATURE_E
 
     return getInstance()->mStaticCfg.mCameras[cameraId].mLtmEnabled;
 }
+
+// HDR_FEATURE_S
+bool PlatformData::isEnableHDR(int cameraId) {
+    return (getInstance()->mStaticCfg.mCameras[cameraId].mSensorExposureType !=
+            SENSOR_EXPOSURE_SINGLE);
+}
+
+int PlatformData::getHDRStatsInputBitDepth(int cameraId) {
+    return getInstance()->mStaticCfg.mCameras[cameraId].mHdrStatsInputBitDepth;
+}
+
+int PlatformData::getHDRStatsOutputBitDepth(int cameraId) {
+    return getInstance()->mStaticCfg.mCameras[cameraId].mHdrStatsOutputBitDepth;
+}
+
+int PlatformData::isUseFixedHDRExposureInfo(int cameraId) {
+    return getInstance()->mStaticCfg.mCameras[cameraId].mUseFixedHdrExposureInfo;
+}
+// HDR_FEATURE_E
 
 int PlatformData::getSensorExposureType(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mSensorExposureType;
@@ -397,6 +451,31 @@ int PlatformData::getAnalogGainLag(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mAnalogGainLag;
 }
 
+// CUSTOM_WEIGHT_GRID_S
+/*
+ * According the cameraid, width and height to get the weight grid table.
+ * Use index to get the corresponding one in the matching list.
+ */
+WeightGridTable* PlatformData::getWeightGrild(int cameraId, unsigned short width,
+                                              unsigned short height, int index) {
+    int matchingCount = 0;
+    PlatformData::StaticCfg::CameraInfo* pCam = &getInstance()->mStaticCfg.mCameras[cameraId];
+
+    for (size_t i = 0; i < pCam->mWGTable.size(); i++) {
+        if (pCam->mWGTable[i].width == width && pCam->mWGTable[i].height == height) {
+            matchingCount++;
+            if (matchingCount == index) {
+                return &(pCam->mWGTable[i]);
+            }
+        }
+    }
+
+    LOGW("Required index(%d) exceeds the count of matching tables (%d). Size %dx%d, camera %d",
+         index, matchingCount, width, height, cameraId);
+    return nullptr;
+}
+// CUSTOM_WEIGHT_GRID_E
+
 PolicyConfig* PlatformData::getExecutorPolicyConfig(int graphId) {
     size_t i = 0;
     PlatformData::StaticCfg* cfg = &getInstance()->mStaticCfg;
@@ -430,6 +509,14 @@ int PlatformData::getCameraInfo(int cameraId, camera_info_t& info) {
     info.name = getSensorName(cameraId);
     info.description = getSensorDescription(cameraId);
     info.capability = &getInstance()->mStaticCfg.mCameras[cameraId].mCapability;
+    // VIRTUAL_CHANNEL_S
+    info.vc.total_num = 0;
+    if (getInstance()->mStaticCfg.mCameras[cameraId].mVirtualChannel) {
+        info.vc.total_num = getInstance()->mStaticCfg.mCameras[cameraId].mVCNum;
+        info.vc.sequence = getInstance()->mStaticCfg.mCameras[cameraId].mVCSeq;
+        info.vc.group = getInstance()->mStaticCfg.mCameras[cameraId].mVCGroupId;
+    }
+    // VIRTUAL_CHANNEL_E
     return OK;
 }
 
@@ -656,6 +743,84 @@ stream_t PlatformData::getISysOutputByPort(int cameraId, Port port) {
     return config;
 }
 
+// DOL_FEATURE_S
+int PlatformData::getFixedVbp(int cameraId) {
+    MediaCtlConf* mc = getMediaCtlConf(cameraId);
+    if (!mc) {
+        LOGW("%s: Failed to get MC for fixed VBP, disable fixed VBP.", __func__);
+        return -1;
+    }
+    return mc->vbp;
+}
+
+bool PlatformData::needHandleVbpInMetaData(int cameraId, ConfigMode configMode) {
+    int fixedVbp;
+
+    if (configMode != CAMERA_STREAM_CONFIGURATION_MODE_HDR) {
+        return false;
+    }
+
+    // Fixed VBP take higher priority when both fixed and dynamic VBP are configured
+    fixedVbp = getFixedVbp(cameraId);
+    if (fixedVbp >= 0) {
+        LOG2("%s: fixed VBP configure detected, no need to handle VBP in meta", __func__);
+        return false;
+    }
+
+    vector<int> vbpOffset;
+    PlatformData::getDolVbpOffset(cameraId, vbpOffset);
+    if (vbpOffset.size() > 0) {
+        return true;
+    }
+
+    return false;
+}
+
+bool PlatformData::needSetVbp(int cameraId, ConfigMode configMode) {
+    int fixedVbp;
+
+    if (configMode != CAMERA_STREAM_CONFIGURATION_MODE_HDR) {
+        return false;
+    }
+
+    fixedVbp = getFixedVbp(cameraId);
+    if (fixedVbp >= 0) {
+        LOG2("%s: Fixed VBP configure detected, value %d", __func__, fixedVbp);
+        return true;
+    }
+
+    vector<int> vbpOffset;
+    PlatformData::getDolVbpOffset(cameraId, vbpOffset);
+    if (vbpOffset.size() > 0) {
+        LOG2("%s: Dynamic VBP configure detected", __func__);
+        return true;
+    }
+
+    return false;
+}
+
+void PlatformData::getDolVbpOffset(int cameraId, vector<int>& dolVbpOffset) {
+    dolVbpOffset = getInstance()->mStaticCfg.mCameras[cameraId].mDolVbpOffset;
+}
+
+bool PlatformData::isDolShortEnabled(int cameraId) {
+    return isVideoNodeEnabled(cameraId, VIDEO_GENERIC_SHORT_EXPO);
+}
+
+bool PlatformData::isDolMediumEnabled(int cameraId) {
+    return isVideoNodeEnabled(cameraId, VIDEO_GENERIC_MEDIUM_EXPO);
+}
+// DOL_FEATURE_E
+
+// CSI_META_S
+bool PlatformData::isCsiMetaEnabled(int cameraId) {
+    // FILE_SOURCE_S
+    if (isFileSourceEnabled()) return false;
+    // FILE_SOURCE_E
+    return isVideoNodeEnabled(cameraId, VIDEO_CSI_META);
+}
+// CSI_META_E
+
 bool PlatformData::isAiqdEnabled(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mEnableAiqd;
 }
@@ -881,9 +1046,10 @@ int PlatformData::calculateFrameParams(int cameraId, SensorFrameParams& sensorFr
                 return BAD_VALUE;
             }
             if (current.width == 0 || current.height == 0) {
-                LOGW("%s: Invalid XML configuration for TGT_COMPOSE,"
-                     "0 value detected in width or height",
-                     __func__);
+                LOGW(
+                    "%s: Invalid XML configuration for TGT_COMPOSE,"
+                    "0 value detected in width or height",
+                    __func__);
                 return BAD_VALUE;
             } else {
                 LOG2("%s: Compose width %d/%d, height %d/%d", __func__, width, current.width,
@@ -1158,6 +1324,49 @@ vector<MultiExpRange> PlatformData::getMultiExpRanges(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mMultiExpRanges;
 }
 
+// ISP_CONTROL_S
+vector<uint32_t> PlatformData::getSupportedIspControlFeatures(int cameraId) {
+    vector<uint32_t> features;
+    getInstance()->mStaticCfg.mCameras[cameraId].mCapability.getSupportedIspControlFeatures(
+        features);
+    return features;
+}
+
+bool PlatformData::isIspControlFeatureSupported(int cameraId, uint32_t ctrlId) {
+    vector<uint32_t> features;
+    getInstance()->mStaticCfg.mCameras[cameraId].mCapability.getSupportedIspControlFeatures(
+        features);
+    for (auto& id : features) {
+        if (id == ctrlId) {
+            return true;
+        }
+    }
+
+    return false;
+}
+// ISP_CONTROL_E
+
+// FILE_SOURCE_S
+const char* PlatformData::getInjectedFile() {
+    const char* PROP_CAMERA_FILE_INJECTION = "cameraInjectFile";
+    return getenv(PROP_CAMERA_FILE_INJECTION);
+}
+
+bool PlatformData::isFileSourceEnabled() {
+    return getInjectedFile() != nullptr;
+}
+// FILE_SOURCE_E
+
+// VIRTUAL_CHANNEL_S
+int PlatformData::getVirtualChannelSequence(int cameraId) {
+    if (getInstance()->mStaticCfg.mCameras[cameraId].mVirtualChannel) {
+        return getInstance()->mStaticCfg.mCameras[cameraId].mVCSeq;
+    }
+
+    return -1;
+}
+// VIRTUAL_CHANNEL_E
+
 camera_resolution_t* PlatformData::getPslOutputForRotation(int width, int height, int cameraId) {
     CheckAndLogError(getInstance()->mStaticCfg.mCameras[cameraId].mOutputMap.empty(), nullptr,
                      "<id%d>@%s, there isn't pslOutputMapForRotation field in xml.", cameraId,
@@ -1166,8 +1375,8 @@ camera_resolution_t* PlatformData::getPslOutputForRotation(int width, int height
     vector<UserToPslOutputMap>& outputMap = getInstance()->mStaticCfg.mCameras[cameraId].mOutputMap;
     for (auto& map : outputMap) {
         if (width == map.User.width && height == map.User.height) {
-            LOG2("<id%d> find the psl output resoltion(%d, %d) for %dx%d", cameraId, map.Psl.width,
-                 map.Psl.height, map.User.width, map.User.height);
+            LOG2("<id%d> find the psl output resoltion(%d, %d) for %dx%d", cameraId,
+                 map.Psl.width, map.Psl.height, map.User.width, map.User.height);
             return &map.Psl;
         }
     }
@@ -1350,10 +1559,6 @@ bool PlatformData::supportHwJpegEncode() {
     return getInstance()->mStaticCfg.mCommonConfig.supportHwJpegEncode;
 }
 
-int PlatformData::getMaxIsysTimeout() {
-    return getInstance()->mStaticCfg.mCommonConfig.maxIsysTimeoutValue;
-}
-
 bool PlatformData::isUsingGpuAlgo() {
     bool enabled = false;
     enabled |= isGpuTnrEnabled();
@@ -1404,10 +1609,6 @@ bool PlatformData::isGpuEvcpEnabled() {
     return getInstance()->mStaticCfg.mCommonConfig.isGpuEvcpEnabled;
 }
 // ENABLE_EVCP_E
-
-bool PlatformData::getSupportPrivacy(int cameraId) {
-    return getInstance()->mStaticCfg.mCameras[cameraId].mSupportPrivacy;
-}
 
 bool PlatformData::isStillOnlyPipeEnabled(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mStillOnlyPipe;

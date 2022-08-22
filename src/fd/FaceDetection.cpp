@@ -153,13 +153,12 @@ void FaceDetection::printfFDRunRate() {
     mRequestRunTime = curTime;
 }
 
-void FaceDetection::runFaceDetection(const std::shared_ptr<camera3::Camera3Buffer>& ccBuf,
-                                     bool forceSync) {
+void FaceDetection::runFaceDetection(const std::shared_ptr<camera3::Camera3Buffer>& ccBuf) {
     CheckAndLogError(mInitialized == false, VOID_VALUE, "mInitialized is false");
 
     if (!faceRunningByCondition()) return;
 
-    if (forceSync || PlatformData::isFaceEngineSyncRunning(mCameraId)) {
+    if (PlatformData::isFaceEngineSyncRunning(mCameraId)) {
         runFaceDetectionBySync(ccBuf);
     } else {
         runFaceDetectionByAsync(ccBuf);
@@ -191,17 +190,18 @@ void FaceDetection::initRatioInfo(struct RatioInfo* ratioInfo) {
             horizontalCrop = mHeight * activeWidth / activeHeight - mWidth;
         }
     }
-    LOG2("%s, imageRotationChanged:%d, height:%d, width:%d, activeWidth:%d, activeHeight:%d, "
-         "verticalCrop:%d, horizontalCrop:%d",
-         __func__, imageRotationChanged, mHeight, mWidth, activeWidth, activeHeight, verticalCrop,
-         horizontalCrop);
+    LOG2(
+        "%s, imageRotationChanged:%d, height:%d, width:%d, activeWidth:%d, activeHeight:%d, "
+        "verticalCrop:%d, horizontalCrop:%d",
+        __func__, imageRotationChanged, mHeight, mWidth, activeWidth, activeHeight, verticalCrop,
+        horizontalCrop);
 
     *ratioInfo = {
         {0, 0, activeWidth, activeHeight}, verticalCrop, horizontalCrop, imageRotationChanged};
 }
 
 void FaceDetection::convertFaceCoordinate(camera_coordinate_system_t& sysCoord, int* left, int* top,
-                                          int* right, int* bottom) {
+                                    int* right, int* bottom) {
     int verticalCrop = mRatioInfo.verticalCrop;
     int horizontalCrop = mRatioInfo.horizontalCrop;
     bool imageRotationChanged = mRatioInfo.imageRotationChanged;

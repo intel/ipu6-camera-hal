@@ -51,6 +51,9 @@ namespace icamera {
 #define RESOLUTION_VGA_HEIGHT 480
 
 #define MAX_BUFFER_COUNT (10)
+// VIRTUAL_CHANNEL_S
+#define MAX_VC_GROUP_NUMBER 8
+// VIRTUAL_CHANNEL_E
 #define MAX_STREAM_NUMBER 5
 #define MAX_WEIGHT_GRID_SIDE_LEN 1024
 
@@ -119,11 +122,22 @@ class PlatformData {
                     : sensorName(""),
                       sensorDescription("unset"),
                       mLensName(""),
+                      // VIRTUAL_CHANNEL_S
+                      mVirtualChannel(false),
+                      mVCNum(0),
+                      mVCSeq(0),
+                      mVCGroupId(-1),
+                      // VIRTUAL_CHANNEL_E
                       mLensHwType(LENS_NONE_HW),
                       mEnablePdaf(false),
                       mSensorAwb(false),
                       mSensorAe(false),
                       mRunIspAlways(false),
+                      // HDR_FEATURE_S
+                      mHdrStatsInputBitDepth(0),
+                      mHdrStatsOutputBitDepth(0),
+                      mUseFixedHdrExposureInfo(true),
+                      // HDR_FEATURE_E
                       mLtmEnabled(false),
                       mSensorExposureNum(2),
                       mSensorExposureType(SENSOR_EXPOSURE_SINGLE),
@@ -185,7 +199,6 @@ class PlatformData {
                       mDummyStillSink(false),
                       mRemoveCacheFlushOutputBuffer(false),
                       mPLCEnable(false),
-                      mSupportPrivacy(false),
                       mStillOnlyPipe(false),
                       mDisableBLCByAGain(false),
                       mDisableBLCAGainLow(-1),
@@ -198,11 +211,22 @@ class PlatformData {
             std::string sensorName;
             std::string sensorDescription;
             std::string mLensName;
+            // VIRTUAL_CHANNEL_S
+            bool mVirtualChannel;
+            int mVCNum;
+            int mVCSeq;
+            int mVCGroupId;
+            // VIRTUAL_CHANNEL_E
             int mLensHwType;
             bool mEnablePdaf;
             bool mSensorAwb;
             bool mSensorAe;
             bool mRunIspAlways;
+            // HDR_FEATURE_S
+            int mHdrStatsInputBitDepth;
+            int mHdrStatsOutputBitDepth;
+            bool mUseFixedHdrExposureInfo;
+            // HDR_FEATURE_E
             bool mLtmEnabled;
             int mSensorExposureNum;
             int mSensorExposureType;
@@ -214,6 +238,9 @@ class PlatformData {
             bool mEnableMkn;
             // first: one algo type in imaging_algorithm_t, second: running rate
             std::unordered_map<int, float> mAlgoRunningRateMap;
+            // DOL_FEATURE_S
+            std::vector<int> mDolVbpOffset;
+            // DOL_FEATURE_E
             bool mSkipFrameV4L2Error;
             int mCITMaxMargin;
             camera_yuv_color_range_mode_t mYuvColorRangeMode;
@@ -258,6 +285,9 @@ class PlatformData {
             std::map<int, stream_array_t> mStreamToMcMap;
             Parameters mCapability;
 
+            // CUSTOM_WEIGHT_GRID_S
+            std::vector<WeightGridTable> mWGTable;
+            // CUSTOM_WEIGHT_GRID_E
             std::string mGraphSettingsFile;
             GraphSettingType mGraphSettingsType;
             std::vector<MultiExpRange> mMultiExpRanges;
@@ -295,7 +325,6 @@ class PlatformData {
             bool mDummyStillSink;
             bool mRemoveCacheFlushOutputBuffer;
             bool mPLCEnable;
-            bool mSupportPrivacy;
             bool mStillOnlyPipe;
 
             bool mDisableBLCByAGain;
@@ -323,6 +352,13 @@ class PlatformData {
     static PlatformData* sInstance;
     static Mutex sLock;
     static PlatformData* getInstance();
+
+    // CUSTOM_WEIGHT_GRID_S
+    /**
+     * Deinit and clear weight grid table in camera info
+     */
+    void deinitWeightGridTable();
+    // CUSTOM_WEIGHT_GRID_E
 
     /**
      * Release GraphConfigNodes in StaticCfg::CameraInfo
@@ -593,6 +629,40 @@ class PlatformData {
      */
     static bool isLtmEnabled(int cameraId);
 
+    // HDR_FEATURE_S
+    /**
+     * Check HDR is enabled or not
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return if HDR is enabled or not.
+     */
+    static bool isEnableHDR(int cameraId);
+
+    /**
+     * Get HDR stats input bit depth
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return the value of HDR stats input bit depth
+     */
+    static int getHDRStatsInputBitDepth(int cameraId);
+
+    /**
+     * Get HDR stats output bit depth
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return the value of HDR stats output bit depth
+     */
+    static int getHDRStatsOutputBitDepth(int cameraId);
+
+    /**
+     * Get if HDR exposure info is fixed or not
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return true if HDR exposure info is fixed
+     */
+    static int isUseFixedHDRExposureInfo(int cameraId);
+    // HDR_FEATURE_E
+
     /**
      * Get sensor exposure type
      *
@@ -800,6 +870,21 @@ class PlatformData {
      */
     static int getAnalogGainLag(int cameraId);
 
+    // CUSTOM_WEIGHT_GRID_S
+    /**
+     * Get the weight grid table.
+     *
+     * \param[in] cameraId: camera id
+     * \param[in] width: the table width
+     * \param[in] height: the table height
+     * \param[in] index: which one to be gotten in the matching list
+     *
+     * \return mWGTable object if found, otherwise return nullptr.
+     */
+    static WeightGridTable* getWeightGrild(int cameraId, unsigned short width,
+                                           unsigned short height, int index);
+    // CUSTOM_WEIGHT_GRID_E
+
     /**
      * Get the executor policy config.
      *
@@ -932,6 +1017,16 @@ class PlatformData {
      */
     static stream_t getISysOutputByPort(int cameraId, Port port);
 
+    // CSI_META_S
+    /**
+     * get CSI meta enabled status
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return true if CSI meta is enabled, otherwise return false
+     */
+    static bool isCsiMetaEnabled(int cameraId);
+    // CSI_META_E
+
     /**
      * get the format by device name
      *
@@ -962,6 +1057,59 @@ class PlatformData {
      * \return the status
      */
     static int getDevNameByType(int cameraId, VideoNodeType videoNodeType, std::string& devName);
+
+    // DOL_FEATURE_S
+    /**
+     * get fixed VBP from currently selected media configure
+     * VBP is used to parse sensor output frame under DOL mode
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return fixed vbp value
+     */
+    static int getFixedVbp(int cameraId);
+
+    /**
+     * whether need to handle VBP info from meta data
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \param configMode: the real configure mode
+     * \return true if needed, else false
+     */
+    static bool needHandleVbpInMetaData(int cameraId, ConfigMode configMode);
+
+    /**
+     * whether need to pass down VBP info
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \param configMode: the real configure mode
+     * \return true if needed, else false
+     */
+    static bool needSetVbp(int cameraId, ConfigMode configMode);
+
+    /**
+     * Check DOL VBP offset
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \param dolVbpOffset: return vbp offset for low and high bytes
+     */
+    static void getDolVbpOffset(int cameraId, std::vector<int>& dolVbpOffset);
+
+    /**
+     * get CSI BE SOC for Dol short exposure output enabled status
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return true if video node is enabled, otherwise return false
+     */
+    static bool isDolShortEnabled(int cameraId);
+
+    /**
+     * get CSI BE SOC for Dol medium exposure output enabled status
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return true if video node is enabled, otherwise return false
+     */
+    static bool isDolMediumEnabled(int cameraId);
+    // DOL_FEATURE_E
 
     /**
      * Check if ISYS is enabled or not
@@ -1157,6 +1305,37 @@ class PlatformData {
      */
     static std::vector<MultiExpRange> getMultiExpRanges(int cameraId);
 
+    // ISP_CONTROL_S
+    static std::vector<uint32_t> getSupportedIspControlFeatures(int cameraId);
+    static bool isIspControlFeatureSupported(int cameraId, uint32_t ctrlId);
+    // ISP_CONTROL_E
+
+    // FILE_SOURCE_S
+    /**
+     * Get the injected file.
+     *
+     * \return the injected file or nullptr if cameraInjectFile isn't set.
+     */
+    static const char* getInjectedFile();
+
+    /**
+     * Check if FileSource is enabled.
+     *
+     * \return true cameraInjectFile is set, otherwise return false.
+     */
+    static bool isFileSourceEnabled();
+    // FILE_SOURCE_E
+
+    // VIRTUAL_CHANNEL_S
+    /**
+     * Get virtual channel sequence
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return sequence if Virtual channel supported, otherwise return -1.
+     */
+    static int getVirtualChannelSequence(int cameraId);
+    // VIRTUAL_CHANNEL_E
+
     /**
      * Get the psl output resolution
      *
@@ -1347,11 +1526,6 @@ class PlatformData {
     static bool supportHwJpegEncode();
 
     /**
-     * get the max ISYS timeout value
-     */
-    static int getMaxIsysTimeout();
-
-    /**
      * Check should connect gpu algo or not
      * should connect gpu algo service if any gpu algorithm is used
      * \return true if should connect gpu algo.
@@ -1426,13 +1600,6 @@ class PlatformData {
      */
     static bool isGpuEvcpEnabled();
     // ENABLE_EVCP_E
-
-    /**
-     * Check supports privacy or not
-     *
-     * \return true if supports privacy.
-     */
-    static bool getSupportPrivacy(int cameraId);
 
     /**
      * Check support of still-only pipe is enabled or not

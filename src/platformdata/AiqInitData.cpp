@@ -93,7 +93,7 @@ void AiqData::loadFile(const std::string& fileName, ia_binary_data* data, int ma
     CheckWarning(readSize != (size_t)usedFileSize, VOID_VALUE, "Failed to read %s, error %s",
                  fileName.c_str(), strerror(errno));
 
-    mDataPtr = std::move(dataPtr);
+    mDataPtr = move(dataPtr);
     data->data = mDataPtr.get();
     data->size = usedFileSize;
     LOG1("%s, file %s, size %d", __func__, fileName.c_str(), data->size);

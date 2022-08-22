@@ -27,4 +27,4 @@ enum PostProcessType {
     POST_PROCESS_JPEG_ENCODING = 1 << 4
 };
 
-}  // namespace icamera
+} // namespace icamera

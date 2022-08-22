@@ -109,7 +109,8 @@ int IntelPGParam::getFragmentDescriptors(int descCount, ia_p2p_fragment_desc* de
         CheckAndLogError(!terminal, BAD_VALUE, "terminal is nullptr");
 
         int termIdx = terminal->tm_index;
-        if (!IS_DATA_TERMINAL(mPgReqs.terminals[termIdx].type)) continue;
+          if (!IS_DATA_TERMINAL(mPgReqs.terminals[termIdx].type))
+            continue;
 
         if (mFragmentConfig) {
             int kernelId = kernel_id_ffs(mPgReqs.terminals[termIdx].kernelBitmap);
@@ -243,18 +244,19 @@ int IntelPGParam::prepare(const ia_binary_data* ipuParameters, const ia_css_rbm_
         ret = ia_p2p_get_kernel_terminal_requirements(mP2pHandle, mPgId, (uint32_t)kernelId,
                                                       &mKernel.mSections[kernelId]);
         CheckAndLogError(ret != ia_err_none, ret,
-                         "%s: failed to get requirements for pg %d kernel %d", __func__, mPgId,
-                         kernelId);
+                         "%s: failed to get requirements for pg %d kernel %d", __func__,
+                         mPgId, kernelId);
 
         /* Get payload descriptor */
-        ret = ia_p2p_get_kernel_payload_desc(mP2pHandle, mPgId, (uint32_t)kernelId,
+        ret = ia_p2p_get_kernel_payload_desc(
+            mP2pHandle, mPgId, (uint32_t)kernelId,
 #if defined(IPU_SYSVER_IPU6) && defined(UNIFIED_PROG_TERM_FRAG_DESC)
-                                             1,
+            1,
 #else
-                                             mFragmentCount,
+            mFragmentCount,
 #endif
-                                             mFragmentConfig->pixel_fragment_descs[kernelId],
-                                             &mKernel.mPayloads[kernelId]);
+            mFragmentConfig->pixel_fragment_descs[kernelId],
+            &mKernel.mPayloads[kernelId]);
         CheckAndLogError(ret != ia_err_none, ret,
                          "%s: failed to get payload for pg %d kernel %d, ret %d", __func__, mPgId,
                          kernelId, ret);
@@ -454,7 +456,8 @@ int IntelPGParam::allocatePayloads(int payloadCount, ia_binary_data* payloads) {
     for (int idx = 0; idx < payloadCount; idx++) {
         ia_binary_data payload = {nullptr, payloads[idx].size};
         if (payload.size) {
-            payload.data = CIPR::mallocAlignedMemory(PAGE_ALIGN(payload.size), CIPR::getPageSize());
+            payload.data = CIPR::mallocAlignedMemory(PAGE_ALIGN(payload.size),
+                CIPR::getPageSize());
             CheckAndLogError(!payload.data, BAD_VALUE, "no memory for payload size %d!",
                              payload.size);
             mAllocatedPayloads.push_back(payload);
@@ -466,7 +469,8 @@ int IntelPGParam::allocatePayloads(int payloadCount, ia_binary_data* payloads) {
 
 void IntelPGParam::destroyPayloads() {
     while (!mAllocatedPayloads.empty()) {
-        if (mAllocatedPayloads.back().data) CIPR::freeMemory(mAllocatedPayloads.back().data);
+        if (mAllocatedPayloads.back().data)
+            CIPR::freeMemory(mAllocatedPayloads.back().data);
         mAllocatedPayloads.pop_back();
     }
 }
@@ -529,7 +533,7 @@ int IntelPGParam::encodeTerminal(ia_css_terminal_t* terminal, ia_binary_data pay
             mP2pHandle, mPgId, mFragmentCount, mFragmentConfig,
             mPgReqs.terminals[terminalIndex].userParamAddress.get());
         CheckAndLogError(ret != ia_err_none, ret,
-                         "Failed to call ia_p2p_get_kernel_user_parameters_v2.");
+                   "Failed to call ia_p2p_get_kernel_user_parameters_v2.");
 
         ia_css_kernel_user_param_t* userParam = reinterpret_cast<ia_css_kernel_user_param_t*>(
             mPgReqs.terminals[terminalIndex].userParamAddress.get());
@@ -693,10 +697,9 @@ int IntelPGParam::decodeTerminal(ia_css_terminal_t* terminal, ia_binary_data pay
         /* Use specific ordering of kernels when available */
         if (mPgReqs.terminals[terminalIndex].kernelOrder) {
             kernelId = mPgReqs.terminals[terminalIndex].kernelOrder[kernelIndex++].id;
-            CheckAndLogError(
-                kernelId >= PSYS_MAX_KERNELS_PER_PG, css_err_internal,
-                "%s: Kernel bitmap for terminal %d covers more kernels than in manifest", __func__,
-                terminalIndex);
+            CheckAndLogError(kernelId >= PSYS_MAX_KERNELS_PER_PG, css_err_internal,
+                           "%s: Kernel bitmap for terminal %d covers more kernels than in manifest",
+                            __func__, terminalIndex);
         } else {
             kernelId = getKernelIdByBitmap(kernelBitmap);
         }
@@ -769,7 +772,11 @@ ia_css_kernel_bitmap_t IntelPGParam::getCachedTerminalKernelBitmap(
         ia_css_param_manifest_section_desc_t* desc =
             ia_css_param_terminal_manifest_get_prm_sct_desc(manifest, section);
         CheckAndLogError(!desc, kernelBitmap, "failed to get desc");
+#ifdef IPU_SYSVER_IPU6
         int index = ia_css_param_manifest_section_desc_get_kernel_id(desc);
+#else
+        int index = desc->kernel_id;
+#endif
         kernelBitmap = ia_css_kernel_bitmap_set(kernelBitmap, index);
     }
 
@@ -787,7 +794,11 @@ ia_css_kernel_bitmap_t IntelPGParam::getProgramTerminalKernelBitmap(
         ia_css_fragment_param_manifest_section_desc_t* desc =
             ia_css_program_terminal_manifest_get_frgmnt_prm_sct_desc(manifest, section);
         CheckAndLogError(!desc, kernelBitmap, "failed to get desc");
+#ifdef IPU_SYSVER_IPU6
         int index = ia_css_fragment_param_manifest_section_desc_get_kernel_id(desc);
+#else
+        int index = desc->kernel_id;
+#endif
         kernelBitmap = ia_css_kernel_bitmap_set(kernelBitmap, index);
     }
 
@@ -864,10 +875,14 @@ css_err_t IntelPGParam::getKernelOrderForParamCachedInTerm(
          * encoded in a row. Here, skipping sections of the same kernel
          * based on this assumption.
          */
+#ifdef IPU_SYSVER_IPU6
         /* info: Indication of the kernel this parameter belongs to,
          * may stand for mem_type, region and kernel_id for ipu6
          */
         int index = ia_css_param_manifest_section_desc_get_kernel_id(param);
+#else
+        int index = param->kernel_id;
+#endif
         if (kernelCount > 0 && kernelOrder[kernelCount - 1].id == index) {
             ++kernelOrder[kernelCount - 1].sections;
             kernelOrder[kernelCount - 1].size += param->max_mem_size;
@@ -900,10 +915,14 @@ css_err_t IntelPGParam::getKernelOrderForProgramTerm(
          * encoded in a row. Here, skipping sections of the same kernel
          * based on this assumption.
          */
+#ifdef IPU_SYSVER_IPU6
         /* info: Indication of the kernel this parameter belongs to,
          * may stand for mem_type, region and kernel_id for ipu6
          */
         int index = ia_css_fragment_param_manifest_section_desc_get_kernel_id(param);
+#else
+        int index = param->kernel_id;
+#endif
         if (kernelCount > 0 && kernelOrder[kernelCount - 1].id == index) {
             ++kernelOrder[kernelCount - 1].sections;
             kernelOrder[kernelCount - 1].size += param->max_mem_size;
@@ -1038,24 +1057,26 @@ css_err_t IntelPGParam::payloadSectionSizeSanityTest(ia_p2p_payload_desc* curren
     ia_p2p_payload_desc init = mKernel.mPayloads[kernelId];
     /* calculate again the memory requirements for each kernel
      * and compare it with what we stored at init time. */
-    ia_err ia_ret =
-        ia_p2p_get_kernel_payload_desc(mP2pHandle, mPgId, kernelId,
+    ia_err ia_ret = ia_p2p_get_kernel_payload_desc(
+        mP2pHandle, mPgId, kernelId,
 #if defined(IPU_SYSVER_IPU6) && defined(UNIFIED_PROG_TERM_FRAG_DESC)
-                                       1,
+        1,
 #else
-                                       mFragmentCount,
+        mFragmentCount,
 #endif
-                                       mFragmentConfig->pixel_fragment_descs[kernelId], current);
+        mFragmentConfig->pixel_fragment_descs[kernelId],
+        current);
     CheckAndLogError(ia_ret != ia_err_none, css_err_internal,
                      "Failed to get payload description during sanity check (kernel %d)", kernelId);
 
     switch (mPgReqs.terminals[terminalIndex].type) {
         case IA_CSS_TERMINAL_TYPE_PARAM_CACHED_IN:
             if (current->param_in_payload_size > init.param_in_payload_size) {
-                LOGW("%s: param-in section size mismatch in pg[%d] kernel[%d]"
-                     " p2p size %d pg_die size %d",
-                     __func__, mPgId, kernelId, current->param_in_payload_size,
-                     init.param_in_payload_size);
+                LOGW(
+                    "%s: param-in section size mismatch in pg[%d] kernel[%d]"
+                    " p2p size %d pg_die size %d",
+                    __func__, mPgId, kernelId, current->param_in_payload_size,
+                    init.param_in_payload_size);
             } else {
                 current->param_in_payload_size = init.param_in_payload_size;
             }
@@ -1063,10 +1084,11 @@ css_err_t IntelPGParam::payloadSectionSizeSanityTest(ia_p2p_payload_desc* curren
             break;
         case IA_CSS_TERMINAL_TYPE_PARAM_CACHED_OUT:
             if (current->param_out_payload_size > init.param_out_payload_size) {
-                LOGW("%s: param-out section size mismatch in pg[%d] kernel[%d]"
-                     " p2p size %d pg_die size %d",
-                     __func__, mPgId, kernelId, current->param_out_payload_size,
-                     init.param_out_payload_size);
+                LOGW(
+                    "%s: param-out section size mismatch in pg[%d] kernel[%d]"
+                    " p2p size %d pg_die size %d",
+                    __func__, mPgId, kernelId, current->param_out_payload_size,
+                    init.param_out_payload_size);
             } else {
                 current->param_out_payload_size = init.param_out_payload_size;
             }
@@ -1074,10 +1096,11 @@ css_err_t IntelPGParam::payloadSectionSizeSanityTest(ia_p2p_payload_desc* curren
             break;
         case IA_CSS_TERMINAL_TYPE_PROGRAM:
             if (current->program_payload_size > init.program_payload_size) {
-                LOG1("%s: program section size mismatch in pg[%d] kernel[%d]"
-                     " p2p size %d pg_die size %d",
-                     __func__, mPgId, kernelId, current->program_payload_size,
-                     init.program_payload_size);
+                LOG1(
+                    "%s: program section size mismatch in pg[%d] kernel[%d]"
+                    " p2p size %d pg_die size %d",
+                    __func__, mPgId, kernelId, current->program_payload_size,
+                    init.program_payload_size);
             } else {
                 current->program_payload_size = init.program_payload_size;
             }
@@ -1085,10 +1108,11 @@ css_err_t IntelPGParam::payloadSectionSizeSanityTest(ia_p2p_payload_desc* curren
             break;
         case IA_CSS_TERMINAL_TYPE_PARAM_SPATIAL_IN:
             if (current->spatial_param_in_payload_size > init.spatial_param_in_payload_size) {
-                LOGW("%s: spatial-in section size mismatch in pg[%d] kernel[%d]"
-                     " p2p size %d pg_die size %d",
-                     __func__, mPgId, kernelId, current->spatial_param_in_payload_size,
-                     init.spatial_param_in_payload_size);
+                LOGW(
+                    "%s: spatial-in section size mismatch in pg[%d] kernel[%d]"
+                    " p2p size %d pg_die size %d",
+                    __func__, mPgId, kernelId, current->spatial_param_in_payload_size,
+                    init.spatial_param_in_payload_size);
             } else {
                 current->spatial_param_in_payload_size = init.spatial_param_in_payload_size;
             }
@@ -1096,10 +1120,11 @@ css_err_t IntelPGParam::payloadSectionSizeSanityTest(ia_p2p_payload_desc* curren
             break;
         case IA_CSS_TERMINAL_TYPE_PARAM_SPATIAL_OUT:
             if (current->spatial_param_out_payload_size > init.spatial_param_out_payload_size) {
-                LOGW("%s: spatial-out section size mismatch in pg[%d] kernel[%d]"
-                     " p2p size %d pg_die size %d",
-                     __func__, mPgId, kernelId, current->spatial_param_out_payload_size,
-                     init.spatial_param_out_payload_size);
+                LOGW(
+                    "%s: spatial-out section size mismatch in pg[%d] kernel[%d]"
+                    " p2p size %d pg_die size %d",
+                    __func__, mPgId, kernelId, current->spatial_param_out_payload_size,
+                    init.spatial_param_out_payload_size);
             } else {
                 current->spatial_param_out_payload_size = init.spatial_param_out_payload_size;
             }

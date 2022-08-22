@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2022 Intel Corporation.
+ * Copyright (C) 2017-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,14 +39,17 @@ const int DVS_OXDIM_UV = 64;
 const int DVS_OYDIM_UV = 16;
 const int DVS_MIN_ENVELOPE = 12;
 
-Dvs::Dvs(int cameraId) : mCameraId(cameraId), mTuningMode(TUNING_MODE_VIDEO) {
+Dvs::Dvs(int cameraId)
+        : mCameraId(cameraId),
+          mTuningMode(TUNING_MODE_VIDEO) {
     CLEAR(mPtzRegion);
     CLEAR(mGDCRegion);
 }
 
-Dvs::~Dvs() {}
+Dvs::~Dvs() {
+}
 
-int Dvs::configure(const ConfigMode configMode, cca::cca_init_params* params) {
+int Dvs::configure(const ConfigMode configMode, cca::cca_init_params *params) {
     LOG2("@%s", __func__);
 
     int ret = configCcaDvsData(configMode, params);
@@ -61,11 +64,11 @@ int Dvs::configure(const ConfigMode configMode, cca::cca_init_params* params) {
     return OK;
 }
 
-int Dvs::configCcaDvsData(const ConfigMode configMode, cca::cca_init_params* params) {
+int Dvs::configCcaDvsData(const ConfigMode configMode, cca::cca_init_params *params) {
     // update GC
     std::shared_ptr<IGraphConfig> gc = nullptr;
     if (PlatformData::getGraphConfigNodes(mCameraId)) {
-        IGraphConfigManager* GCM = IGraphConfigManager::getInstance(mCameraId);
+        IGraphConfigManager *GCM = IGraphConfigManager::getInstance(mCameraId);
         if (GCM) {
             gc = GCM->getGraphConfig(configMode);
         }
@@ -77,11 +80,11 @@ int Dvs::configCcaDvsData(const ConfigMode configMode, cca::cca_init_params* par
     int status = gc->getGdcKernelSetting(&gdcKernelId, &resolution);
     CheckWarning(status != OK, UNKNOWN_ERROR, "Failed to get GDC kernel setting, DVS disabled");
 
-    LOG2("%s, GDC kernel setting: id: %u, resolution:src: %dx%d, dst: %dx%d", __func__, gdcKernelId,
-         resolution.input_width, resolution.input_height, resolution.output_width,
+    LOG2("%s, GDC kernel setting: id: %u, resolution:src: %dx%d, dst: %dx%d", __func__,
+         gdcKernelId, resolution.input_width, resolution.input_height, resolution.output_width,
          resolution.output_height);
 
-    cca::cca_gdc_configuration* gdcConfig = &params->gdcConfig;
+    cca::cca_gdc_configuration *gdcConfig = &params->gdcConfig;
     CLEAR(*gdcConfig);
     gdcConfig->gdc_filter_width = DVS_MIN_ENVELOPE / 2;
     gdcConfig->gdc_filter_height = DVS_MIN_ENVELOPE / 2;
@@ -99,7 +102,7 @@ int Dvs::configCcaDvsData(const ConfigMode configMode, cca::cca_init_params* par
         gdcConfig->splitMetadata[0] = DVS_OYDIM_UV;
         gdcConfig->splitMetadata[1] = DVS_OXDIM_UV;
         gdcConfig->splitMetadata[2] = DVS_OYDIM_Y;
-        gdcConfig->splitMetadata[3] = DVS_OXDIM_Y / 2;
+        gdcConfig->splitMetadata[3] = DVS_OXDIM_Y/2;
     }
 
     camera_resolution_t envelopeResolution;
@@ -114,16 +117,17 @@ int Dvs::configCcaDvsData(const ConfigMode configMode, cca::cca_init_params* par
 
     const float Max_Ratio = 1.45f;
     int bq_max_width =
-        static_cast<int>(Max_Ratio * static_cast<float>(resolution.output_width / 2));
+                     static_cast<int>(Max_Ratio * static_cast<float>(resolution.output_width / 2));
     int bq_max_height =
-        static_cast<int>(Max_Ratio * static_cast<float>(resolution.output_height / 2));
-    if (resolution.input_width / 2 - envelope_bq.width - gdcConfig->gdc_filter_width > bq_max_width)
+                     static_cast<int>(Max_Ratio * static_cast<float>(resolution.output_height / 2));
+    if (resolution.input_width / 2 - envelope_bq.width -
+        gdcConfig->gdc_filter_width > bq_max_width)
         envelope_bq.width = resolution.input_width / 2 - gdcConfig->gdc_filter_width - bq_max_width;
 
-    if (resolution.input_height / 2 - envelope_bq.height - gdcConfig->gdc_filter_height >
-        bq_max_height)
-        envelope_bq.height =
-            resolution.input_height / 2 - gdcConfig->gdc_filter_height - bq_max_height;
+    if (resolution.input_height / 2 - envelope_bq.height -
+        gdcConfig->gdc_filter_height > bq_max_height)
+        envelope_bq.height = resolution.input_height / 2 -
+                             gdcConfig->gdc_filter_height - bq_max_height;
 
     float zoomHRatio = resolution.input_width / (resolution.input_width - envelope_bq.width * 2);
     float zoomVRatio = resolution.input_height / (resolution.input_height - envelope_bq.height * 2);
@@ -140,7 +144,7 @@ int Dvs::configCcaDvsData(const ConfigMode configMode, cca::cca_init_params* par
 
     mGDCRegion.left = 0;
     mGDCRegion.top = 0;
-    mGDCRegion.right = resolution.input_width / 2;
+    mGDCRegion.right = resolution.input_width / 2;;
     mGDCRegion.bottom = resolution.input_height / 2;
 
     dumpDvsConfiguration(*params);
@@ -154,8 +158,7 @@ void Dvs::setParameter(const Parameters& p) {
 void Dvs::handleEvent(EventData eventData) {
     LOG2("@%s: eventData.type:%d", __func__, eventData.type);
 
-    if (eventData.type != EVENT_DVS_READY) return;
-    int streamId = eventData.data.dvsRunReady.streamId;
+    if (eventData.type != EVENT_PSYS_STATS_BUF_READY) return;
 
     IntelCca* intelCcaHandle = IntelCca::getInstance(mCameraId, mTuningMode);
     CheckAndLogError(!intelCcaHandle, VOID_VALUE, "@%s, Failed to get IntelCca instance", __func__);
@@ -168,49 +171,19 @@ void Dvs::handleEvent(EventData eventData) {
     zp.digital_zoom_ratio = 1.0f;
     zp.digital_zoom_factor = 1.0f;
     zp.zoom_mode = ia_dvs_zoom_mode_region;
-    if (!mPtzRegion.left && !mPtzRegion.top && !mPtzRegion.right && !mPtzRegion.bottom) {
+    if (!mPtzRegion.left && !mPtzRegion.top && !mPtzRegion.right && !mPtzRegion.bottom)
         zp.zoom_region = {mGDCRegion.left, mGDCRegion.top, mGDCRegion.right, mGDCRegion.bottom};
-    } else {
-        /*
-            SCALER_CROP_REGION can adjust to a small crop region if the aspect of active
-            pixel array is not same as the crop region aspect. Crop can only on either
-            horizontally or veritacl but never both.
-            If active pixel array's aspect ratio is wider than the crop region, the region
-            should be further cropped vertically.
-        */
-        auto coord = PlatformData::getActivePixelArray(mCameraId);
-        int wpa = coord.right - coord.left;
-        int hpa = coord.bottom - coord.top;
+    else
+        zp.zoom_region = { mPtzRegion.left, mPtzRegion.top, mPtzRegion.right, mPtzRegion.bottom };
+    intelCcaHandle->updateZoom(zp);
 
-        int width = mPtzRegion.right - mPtzRegion.left;
-        int height = mPtzRegion.bottom - mPtzRegion.top;
-
-        float aspect0 = static_cast<float>(wpa) / hpa;
-        float aspect1 = static_cast<float>(width) / height;
-
-        if (std::fabs(aspect0 - aspect1) < 0.00001) {
-            zp.zoom_region = {mPtzRegion.left, mPtzRegion.top, mPtzRegion.right, mPtzRegion.bottom};
-        } else if (aspect0 > aspect1) {
-            auto croppedHeight = width / aspect0;
-            int diff = std::abs(height - croppedHeight) / 2;
-            zp.zoom_region = {mPtzRegion.left, mPtzRegion.top + diff, mPtzRegion.right,
-                              mPtzRegion.bottom - diff};
-        } else {
-            auto croppedWidth = height * aspect0;
-            int diff = std::abs(width - croppedWidth) / 2;
-            zp.zoom_region = {mPtzRegion.left + diff, mPtzRegion.top, mPtzRegion.right - diff,
-                              mPtzRegion.bottom};
-        }
-    }
-    intelCcaHandle->updateZoom(streamId, zp);
-
-    ia_err iaErr = intelCcaHandle->runDVS(streamId, eventData.data.statsReady.sequence);
+    ia_err iaErr = intelCcaHandle->runDVS(eventData.data.statsReady.sequence);
     int ret = AiqUtils::convertError(iaErr);
     CheckAndLogError(ret != OK, VOID_VALUE, "Error running DVS: %d", ret);
     return;
 }
 
-void Dvs::dumpDvsConfiguration(const cca::cca_init_params& config) {
+void Dvs::dumpDvsConfiguration(const cca::cca_init_params &config) {
     if (!Log::isLogTagEnabled(GET_FILE_SHIFT(Dvs), CAMERA_DEBUG_LOG_LEVEL3)) return;
 
     LOG3("config.dvsOutputType %d", config.dvsOutputType);

@@ -23,6 +23,9 @@ enum VideoNodeType {
     VIDEO_GENERIC,
     VIDEO_GENERIC_MEDIUM_EXPO,
     VIDEO_GENERIC_SHORT_EXPO,
+    // CSI_META_S
+    VIDEO_CSI_META,
+    // CSI_META_E
 
     // sensor subdevice
     VIDEO_PIXEL_ARRAY,

@@ -70,35 +70,35 @@ typedef enum icamera_metadata_section {
  * Hierarchy positions in enum space.
  */
 typedef enum icamera_metadata_section_start {
-    CAMERA_AE_START = CAMERA_AE << 16,
-    CAMERA_AWB_START = CAMERA_AWB << 16,
-    CAMERA_AF_START = CAMERA_AF << 16,
-    CAMERA_CONTROL_START = CAMERA_CONTROL << 16,
-    CAMERA_DEMOSAIC_START = CAMERA_DEMOSAIC << 16,
-    CAMERA_EDGE_START = CAMERA_EDGE << 16,
-    CAMERA_FLASH_START = CAMERA_FLASH << 16,
-    CAMERA_FLASH_INFO_START = CAMERA_FLASH_INFO << 16,
-    CAMERA_HOT_PIXEL_START = CAMERA_HOT_PIXEL << 16,
-    CAMERA_JPEG_START = CAMERA_JPEG << 16,
-    CAMERA_LENS_START = CAMERA_LENS << 16,
-    CAMERA_LENS_INFO_START = CAMERA_LENS_INFO << 16,
-    CAMERA_NOISE_REDUCTION_START = CAMERA_NOISE_REDUCTION << 16,
-    CAMERA_REQUEST_START = CAMERA_REQUEST << 16,
-    CAMERA_SCALER_START = CAMERA_SCALER << 16,
-    CAMERA_SENSOR_START = CAMERA_SENSOR << 16,
-    CAMERA_SENSOR_INFO_START = CAMERA_SENSOR_INFO << 16,
-    CAMERA_SHADING_START = CAMERA_SHADING << 16,
-    CAMERA_STATISTICS_START = CAMERA_STATISTICS << 16,
-    CAMERA_STATISTICS_INFO_START = CAMERA_STATISTICS_INFO << 16,
-    CAMERA_TONEMAP_START = CAMERA_TONEMAP << 16,
-    CAMERA_LED_START = CAMERA_LED << 16,
-    CAMERA_INFO_START = CAMERA_INFO << 16,
-    CAMERA_BLACK_LEVEL_START = CAMERA_BLACK_LEVEL << 16,
-    CAMERA_SYNC_START = CAMERA_SYNC << 16,
-    CAMERA_REPROCESS_START = CAMERA_REPROCESS << 16,
-    INTEL_INFO_START = INTEL_INFO << 16,
-    INTEL_CONTROL_START = INTEL_CONTROL << 16,
-    INTEL_CONTROL_ISP_START = INTEL_CONTROL_ISP << 16,
+    CAMERA_AE_START                = CAMERA_AE                 << 16,
+    CAMERA_AWB_START               = CAMERA_AWB                << 16,
+    CAMERA_AF_START                = CAMERA_AF                 << 16,
+    CAMERA_CONTROL_START           = CAMERA_CONTROL            << 16,
+    CAMERA_DEMOSAIC_START          = CAMERA_DEMOSAIC           << 16,
+    CAMERA_EDGE_START              = CAMERA_EDGE               << 16,
+    CAMERA_FLASH_START             = CAMERA_FLASH              << 16,
+    CAMERA_FLASH_INFO_START        = CAMERA_FLASH_INFO         << 16,
+    CAMERA_HOT_PIXEL_START         = CAMERA_HOT_PIXEL          << 16,
+    CAMERA_JPEG_START              = CAMERA_JPEG               << 16,
+    CAMERA_LENS_START              = CAMERA_LENS               << 16,
+    CAMERA_LENS_INFO_START         = CAMERA_LENS_INFO          << 16,
+    CAMERA_NOISE_REDUCTION_START   = CAMERA_NOISE_REDUCTION    << 16,
+    CAMERA_REQUEST_START           = CAMERA_REQUEST            << 16,
+    CAMERA_SCALER_START            = CAMERA_SCALER             << 16,
+    CAMERA_SENSOR_START            = CAMERA_SENSOR             << 16,
+    CAMERA_SENSOR_INFO_START       = CAMERA_SENSOR_INFO        << 16,
+    CAMERA_SHADING_START           = CAMERA_SHADING            << 16,
+    CAMERA_STATISTICS_START        = CAMERA_STATISTICS         << 16,
+    CAMERA_STATISTICS_INFO_START   = CAMERA_STATISTICS_INFO    << 16,
+    CAMERA_TONEMAP_START           = CAMERA_TONEMAP            << 16,
+    CAMERA_LED_START               = CAMERA_LED                << 16,
+    CAMERA_INFO_START              = CAMERA_INFO               << 16,
+    CAMERA_BLACK_LEVEL_START       = CAMERA_BLACK_LEVEL        << 16,
+    CAMERA_SYNC_START              = CAMERA_SYNC               << 16,
+    CAMERA_REPROCESS_START         = CAMERA_REPROCESS          << 16,
+    INTEL_INFO_START               = INTEL_INFO                << 16,
+    INTEL_CONTROL_START            = INTEL_CONTROL             << 16,
+    INTEL_CONTROL_ISP_START        = INTEL_CONTROL_ISP         << 16,
 } icamera_metadata_section_start_t;
 
 /**
@@ -108,340 +108,340 @@ typedef enum icamera_metadata_section_start {
  * src/metadata/icamera_metadata_tag_info.c
  */
 typedef enum icamera_metadata_tag {
-    CAMERA_AE_MODE =  // enum         | public
-    CAMERA_AE_START,
-    CAMERA_AE_LOCK,                         // enum         | public
-    CAMERA_AE_REGIONS,                      // int32[]      | public
-    CAMERA_AE_ANTIBANDING_MODE,             // enum         | public
-    CAMERA_AE_COMPENSATION,                 // int32        | public
-    CAMERA_AE_TARGET_FPS_RANGE,             // float[]      | public
-    CAMERA_AE_PRECAPTURE_TRIGGER,           // enum         | public
-    CAMERA_AE_STATE,                        // enum         | public
-    CAMERA_AE_AVAILABLE_MODES,              // byte[]       | public
-    CAMERA_AE_AVAILABLE_ANTIBANDING_MODES,  // byte[]       | public
-    CAMERA_AE_COMPENSATION_STEP,            // rational     | public
-    CAMERA_AE_COMPENSATION_RANGE,           // int32[]      | public
-    CAMERA_AE_AVAILABLE_TARGET_FPS_RANGES,  // float[]      | public
-    CAMERA_AE_LOCK_AVAILABLE,               // enum         | public
+    CAMERA_AE_MODE =                                  // enum         | public
+            CAMERA_AE_START,
+    CAMERA_AE_LOCK,                                   // enum         | public
+    CAMERA_AE_REGIONS,                                // int32[]      | public
+    CAMERA_AE_ANTIBANDING_MODE,                       // enum         | public
+    CAMERA_AE_COMPENSATION,                           // int32        | public
+    CAMERA_AE_TARGET_FPS_RANGE,                       // float[]      | public
+    CAMERA_AE_PRECAPTURE_TRIGGER,                     // enum         | public
+    CAMERA_AE_STATE,                                  // enum         | public
+    CAMERA_AE_AVAILABLE_MODES,                        // byte[]       | public
+    CAMERA_AE_AVAILABLE_ANTIBANDING_MODES,            // byte[]       | public
+    CAMERA_AE_COMPENSATION_STEP,                      // rational     | public
+    CAMERA_AE_COMPENSATION_RANGE,                     // int32[]      | public
+    CAMERA_AE_AVAILABLE_TARGET_FPS_RANGES,            // float[]      | public
+    CAMERA_AE_LOCK_AVAILABLE,                         // enum         | public
     CAMERA_AE_END,
 
-    CAMERA_AWB_MODE =  // enum         | public
-    CAMERA_AWB_START,
-    CAMERA_AWB_COLOR_TRANSFORM,      // float[]      | public
-    CAMERA_AWB_COLOR_GAINS,          // float[]      | public
-    CAMERA_AWB_LOCK,                 // enum         | public
-    CAMERA_AWB_REGIONS,              // int32[]      | public
-    CAMERA_AWB_CCT_RANGE,            // int32[]      | public
-    CAMERA_AWB_GAINS,                // int32[]      | public
-    CAMERA_AWB_GAIN_SHIFT,           // int32[]      | public
-    CAMERA_AWB_WHITE_POINT,          // int32[]      | public
-    CAMERA_AWB_CONVERGE_SPEED,       // enum         | public
-    CAMERA_AWB_CONVERGE_SPEED_MODE,  // enum         | public
-    CAMERA_AWB_STATE,                // enum         | public
-    CAMERA_AWB_RESULT,               // byte[]       | public
-    CAMERA_AWB_AVAILABLE_MODES,      // byte[]       | public
-    CAMERA_AWB_LOCK_AVAILABLE,       // enum         | public
+    CAMERA_AWB_MODE =                                 // enum         | public
+            CAMERA_AWB_START,
+    CAMERA_AWB_COLOR_TRANSFORM,                       // float[]      | public
+    CAMERA_AWB_COLOR_GAINS,                           // float[]      | public
+    CAMERA_AWB_LOCK,                                  // enum         | public
+    CAMERA_AWB_REGIONS,                               // int32[]      | public
+    CAMERA_AWB_CCT_RANGE,                             // int32[]      | public
+    CAMERA_AWB_GAINS,                                 // int32[]      | public
+    CAMERA_AWB_GAIN_SHIFT,                            // int32[]      | public
+    CAMERA_AWB_WHITE_POINT,                           // int32[]      | public
+    CAMERA_AWB_CONVERGE_SPEED,                        // enum         | public
+    CAMERA_AWB_CONVERGE_SPEED_MODE,                   // enum         | public
+    CAMERA_AWB_STATE,                                 // enum         | public
+    CAMERA_AWB_RESULT,                                // byte[]       | public
+    CAMERA_AWB_AVAILABLE_MODES,                       // byte[]       | public
+    CAMERA_AWB_LOCK_AVAILABLE,                        // enum         | public
     CAMERA_AWB_END,
 
-    CAMERA_AF_MODE =  // enum         | public
-    CAMERA_AF_START,
-    CAMERA_AF_REGIONS,          // int32[]      | public
-    CAMERA_AF_TRIGGER,          // enum         | public
-    CAMERA_AF_AVAILABLE_MODES,  // byte[]       | public
-    CAMERA_AF_STATE,            // enum         | public
+    CAMERA_AF_MODE =                                  // enum         | public
+            CAMERA_AF_START,
+    CAMERA_AF_REGIONS,                                // int32[]      | public
+    CAMERA_AF_TRIGGER,                                // enum         | public
+    CAMERA_AF_AVAILABLE_MODES,                        // byte[]       | public
+    CAMERA_AF_STATE,                                  // enum         | public
     CAMERA_AF_END,
 
-    CAMERA_CONTROL_CAPTUREINTENT =  // enum         | public
-    CAMERA_CONTROL_START,
-    CAMERA_CONTROL_EFFECT_MODE,               // enum         | public
-    CAMERA_CONTROL_MODE,                      // enum         | public
-    CAMERA_CONTROL_SCENE_MODE,                // enum         | public
-    CAMERA_CONTROL_VIDEO_STABILIZATION_MODE,  // enum         | public
-    CAMERA_CONTROL_AVAILABLE_EFFECTS,         // byte[]       | public
-    CAMERA_CONTROL_AVAILABLE_MODES,           // byte[]       | public
-    CAMERA_CONTROL_AVAILABLE_SCENE_MODES,     // byte[]       | public
+    CAMERA_CONTROL_CAPTUREINTENT =                    // enum         | public
+            CAMERA_CONTROL_START,
+    CAMERA_CONTROL_EFFECT_MODE,                       // enum         | public
+    CAMERA_CONTROL_MODE,                              // enum         | public
+    CAMERA_CONTROL_SCENE_MODE,                        // enum         | public
+    CAMERA_CONTROL_VIDEO_STABILIZATION_MODE,          // enum         | public
+    CAMERA_CONTROL_AVAILABLE_EFFECTS,                 // byte[]       | public
+    CAMERA_CONTROL_AVAILABLE_MODES,                   // byte[]       | public
+    CAMERA_CONTROL_AVAILABLE_SCENE_MODES,             // byte[]       | public
     CAMERA_CONTROL_AVAILABLE_VIDEO_STABILIZATION_MODES,
-    // byte[]       | public
-    CAMERA_CONTROL_MAX_REGIONS,           // int32[]      | hidden
-    CAMERA_CONTROL_SCENE_MODE_OVERRIDES,  // byte[]       | system
+                                                      // byte[]       | public
+    CAMERA_CONTROL_MAX_REGIONS,                       // int32[]      | hidden
+    CAMERA_CONTROL_SCENE_MODE_OVERRIDES,              // byte[]       | system
     CAMERA_CONTROL_AVAILABLE_HIGH_SPEED_VIDEO_CONFIGURATIONS,
-    // int32[]      | hidden
+                                                      // int32[]      | hidden
     CAMERA_CONTROL_END,
 
-    CAMERA_DEMOSAIC_MODE =  // enum         | system
-    CAMERA_DEMOSAIC_START,
+    CAMERA_DEMOSAIC_MODE =                            // enum         | system
+            CAMERA_DEMOSAIC_START,
     CAMERA_DEMOSAIC_END,
 
-    CAMERA_EDGE_MODE =  // enum         | public
-    CAMERA_EDGE_START,
-    CAMERA_EDGE_STRENGTH,              // byte         | system
-    CAMERA_EDGE_AVAILABLE_EDGE_MODES,  // byte[]       | public
+    CAMERA_EDGE_MODE =                                // enum         | public
+            CAMERA_EDGE_START,
+    CAMERA_EDGE_STRENGTH,                             // byte         | system
+    CAMERA_EDGE_AVAILABLE_EDGE_MODES,                 // byte[]       | public
     CAMERA_EDGE_END,
 
-    CAMERA_FLASH_FIRING_POWER =  // byte         | system
-    CAMERA_FLASH_START,
-    CAMERA_FLASH_FIRING_TIME,        // int64        | system
-    CAMERA_FLASH_MODE,               // enum         | public
-    CAMERA_FLASH_COLOR_TEMPERATURE,  // byte         | system
-    CAMERA_FLASH_MAX_ENERGY,         // byte         | system
-    CAMERA_FLASH_STATE,              // enum         | public
+    CAMERA_FLASH_FIRING_POWER =                       // byte         | system
+            CAMERA_FLASH_START,
+    CAMERA_FLASH_FIRING_TIME,                         // int64        | system
+    CAMERA_FLASH_MODE,                                // enum         | public
+    CAMERA_FLASH_COLOR_TEMPERATURE,                   // byte         | system
+    CAMERA_FLASH_MAX_ENERGY,                          // byte         | system
+    CAMERA_FLASH_STATE,                               // enum         | public
     CAMERA_FLASH_END,
 
-    CAMERA_FLASH_INFO_AVAILABLE =  // enum         | public
-    CAMERA_FLASH_INFO_START,
-    CAMERA_FLASH_INFO_CHARGE_DURATION,  // int64        | system
+    CAMERA_FLASH_INFO_AVAILABLE =                     // enum         | public
+            CAMERA_FLASH_INFO_START,
+    CAMERA_FLASH_INFO_CHARGE_DURATION,                // int64        | system
     CAMERA_FLASH_INFO_END,
 
-    CAMERA_HOT_PIXEL_MODE =  // enum         | public
-    CAMERA_HOT_PIXEL_START,
-    CAMERA_HOT_PIXEL_AVAILABLE_HOT_PIXEL_MODES,  // byte[]       | public
+    CAMERA_HOT_PIXEL_MODE =                           // enum         | public
+            CAMERA_HOT_PIXEL_START,
+    CAMERA_HOT_PIXEL_AVAILABLE_HOT_PIXEL_MODES,       // byte[]       | public
     CAMERA_HOT_PIXEL_END,
 
-    CAMERA_JPEG_GPS_COORDINATES =  // double[]     | hidden
-    CAMERA_JPEG_START,
-    CAMERA_JPEG_GPS_PROCESSING_METHOD,      // byte         | hidden
-    CAMERA_JPEG_GPS_TIMESTAMP,              // int64        | hidden
-    CAMERA_JPEG_ORIENTATION,                // int32        | public
-    CAMERA_JPEG_QUALITY,                    // byte         | public
-    CAMERA_JPEG_THUMBNAIL_QUALITY,          // byte         | public
-    CAMERA_JPEG_THUMBNAIL_SIZE,             // int32[]      | public
-    CAMERA_JPEG_AVAILABLE_THUMBNAIL_SIZES,  // int32[]      | public
-    CAMERA_JPEG_MAX_SIZE,                   // int32        | system
-    CAMERA_JPEG_SIZE,                       // int32        | system
+    CAMERA_JPEG_GPS_COORDINATES =                     // double[]     | hidden
+            CAMERA_JPEG_START,
+    CAMERA_JPEG_GPS_PROCESSING_METHOD,                // byte         | hidden
+    CAMERA_JPEG_GPS_TIMESTAMP,                        // int64        | hidden
+    CAMERA_JPEG_ORIENTATION,                          // int32        | public
+    CAMERA_JPEG_QUALITY,                              // byte         | public
+    CAMERA_JPEG_THUMBNAIL_QUALITY,                    // byte         | public
+    CAMERA_JPEG_THUMBNAIL_SIZE,                       // int32[]      | public
+    CAMERA_JPEG_AVAILABLE_THUMBNAIL_SIZES,            // int32[]      | public
+    CAMERA_JPEG_MAX_SIZE,                             // int32        | system
+    CAMERA_JPEG_SIZE,                                 // int32        | system
     CAMERA_JPEG_END,
 
-    CAMERA_LENS_APERTURE =  // float        | public
-    CAMERA_LENS_START,
-    CAMERA_LENS_FILTER_DENSITY,              // float        | public
-    CAMERA_LENS_FOCAL_LENGTH,                // float        | public
-    CAMERA_LENS_FOCUS_DISTANCE,              // float        | public
-    CAMERA_LENS_OPTICAL_STABILIZATION_MODE,  // enum         | public
-    CAMERA_LENS_FACING,                      // enum         | public
-    CAMERA_LENS_FOCUS_RANGE,                 // float[]      | public
-    CAMERA_LENS_STATE,                       // enum         | public
+    CAMERA_LENS_APERTURE =                            // float        | public
+            CAMERA_LENS_START,
+    CAMERA_LENS_FILTER_DENSITY,                       // float        | public
+    CAMERA_LENS_FOCAL_LENGTH,                         // float        | public
+    CAMERA_LENS_FOCUS_DISTANCE,                       // float        | public
+    CAMERA_LENS_OPTICAL_STABILIZATION_MODE,           // enum         | public
+    CAMERA_LENS_FACING,                               // enum         | public
+    CAMERA_LENS_FOCUS_RANGE,                          // float[]      | public
+    CAMERA_LENS_STATE,                                // enum         | public
     CAMERA_LENS_END,
 
-    CAMERA_LENS_INFO_AVAILABLE_APERTURES =  // float[]      | public
-    CAMERA_LENS_INFO_START,
-    CAMERA_LENS_INFO_AVAILABLE_FILTER_DENSITIES,       // float[]      | public
-    CAMERA_LENS_INFO_AVAILABLE_FOCAL_LENGTHS,          // float[]      | public
-    CAMERA_LENS_INFO_AVAILABLE_OPTICAL_STABILIZATION,  // byte[]       | public
-    CAMERA_LENS_INFO_HYPERFOCAL_DISTANCE,              // float        | public
-    CAMERA_LENS_INFO_MINIMUM_FOCUS_DISTANCE,           // float        | public
-    CAMERA_LENS_INFO_SHADING_MAP_SIZE,                 // int32[]      | hidden
-    CAMERA_LENS_INFO_FOCUS_DISTANCE_CALIBRATION,       // enum         | public
+    CAMERA_LENS_INFO_AVAILABLE_APERTURES =            // float[]      | public
+            CAMERA_LENS_INFO_START,
+    CAMERA_LENS_INFO_AVAILABLE_FILTER_DENSITIES,      // float[]      | public
+    CAMERA_LENS_INFO_AVAILABLE_FOCAL_LENGTHS,         // float[]      | public
+    CAMERA_LENS_INFO_AVAILABLE_OPTICAL_STABILIZATION, // byte[]       | public
+    CAMERA_LENS_INFO_HYPERFOCAL_DISTANCE,             // float        | public
+    CAMERA_LENS_INFO_MINIMUM_FOCUS_DISTANCE,          // float        | public
+    CAMERA_LENS_INFO_SHADING_MAP_SIZE,                // int32[]      | hidden
+    CAMERA_LENS_INFO_FOCUS_DISTANCE_CALIBRATION,      // enum         | public
     CAMERA_LENS_INFO_END,
 
-    CAMERA_NOISE_REDUCTION_MODE =  // enum         | public
-    CAMERA_NOISE_REDUCTION_START,
-    CAMERA_NOISE_REDUCTION_STRENGTH,  // byte         | system
+    CAMERA_NOISE_REDUCTION_MODE =                     // enum         | public
+            CAMERA_NOISE_REDUCTION_START,
+    CAMERA_NOISE_REDUCTION_STRENGTH,                  // byte         | system
     CAMERA_NOISE_REDUCTION_AVAILABLE_NOISE_REDUCTION_MODES,
-    // byte[]       | public
+                                                      // byte[]       | public
     CAMERA_NOISE_REDUCTION_END,
 
-    CAMERA_REQUEST_ID =  // int32        | hidden
-    CAMERA_REQUEST_START,
-    CAMERA_REQUEST_METADATA_MODE,                   // enum         | system
-    CAMERA_REQUEST_MAX_NUM_OUTPUT_STREAMS,          // int32[]      | hidden
-    CAMERA_REQUEST_MAX_NUM_INPUT_STREAMS,           // int32        | hidden
-    CAMERA_REQUEST_PIPELINE_DEPTH,                  // byte         | public
-    CAMERA_REQUEST_PIPELINE_MAX_DEPTH,              // byte         | public
-    CAMERA_REQUEST_PARTIAL_RESULT_COUNT,            // int32        | public
-    CAMERA_REQUEST_AVAILABLE_CAPABILITIES,          // enum[]       | public
-    CAMERA_REQUEST_AVAILABLE_REQUEST_KEYS,          // int32[]      | hidden
-    CAMERA_REQUEST_AVAILABLE_RESULT_KEYS,           // int32[]      | hidden
-    CAMERA_REQUEST_AVAILABLE_CHARACTERISTICS_KEYS,  // int32[]      | hidden
+    CAMERA_REQUEST_ID =                               // int32        | hidden
+            CAMERA_REQUEST_START,
+    CAMERA_REQUEST_METADATA_MODE,                     // enum         | system
+    CAMERA_REQUEST_MAX_NUM_OUTPUT_STREAMS,            // int32[]      | hidden
+    CAMERA_REQUEST_MAX_NUM_INPUT_STREAMS,             // int32        | hidden
+    CAMERA_REQUEST_PIPELINE_DEPTH,                    // byte         | public
+    CAMERA_REQUEST_PIPELINE_MAX_DEPTH,                // byte         | public
+    CAMERA_REQUEST_PARTIAL_RESULT_COUNT,              // int32        | public
+    CAMERA_REQUEST_AVAILABLE_CAPABILITIES,            // enum[]       | public
+    CAMERA_REQUEST_AVAILABLE_REQUEST_KEYS,            // int32[]      | hidden
+    CAMERA_REQUEST_AVAILABLE_RESULT_KEYS,             // int32[]      | hidden
+    CAMERA_REQUEST_AVAILABLE_CHARACTERISTICS_KEYS,    // int32[]      | hidden
     CAMERA_REQUEST_END,
 
-    CAMERA_SCALER_CROP_REGION =  // int32[]      | public
-    CAMERA_SCALER_START,
-    CAMERA_SCALER_AVAILABLE_JPEG_SIZES,                // int32[]      | hidden
-    CAMERA_SCALER_AVAILABLE_MAX_DIGITAL_ZOOM,          // float        | public
-    CAMERA_SCALER_AVAILABLE_INPUT_OUTPUT_FORMATS_MAP,  // int32[]      | hidden
-    CAMERA_SCALER_AVAILABLE_STREAM_CONFIGURATIONS,     // int32[]      | hidden
-    CAMERA_SCALER_AVAILABLE_MIN_FRAME_DURATIONS,       // int64[]      | hidden
-    CAMERA_SCALER_AVAILABLE_STALL_DURATIONS,           // int64[]      | hidden
-    CAMERA_SCALER_CROPPING_TYPE,                       // enum         | public
+    CAMERA_SCALER_CROP_REGION =                       // int32[]      | public
+            CAMERA_SCALER_START,
+    CAMERA_SCALER_AVAILABLE_JPEG_SIZES,               // int32[]      | hidden
+    CAMERA_SCALER_AVAILABLE_MAX_DIGITAL_ZOOM,         // float        | public
+    CAMERA_SCALER_AVAILABLE_INPUT_OUTPUT_FORMATS_MAP, // int32[]      | hidden
+    CAMERA_SCALER_AVAILABLE_STREAM_CONFIGURATIONS,    // int32[]      | hidden
+    CAMERA_SCALER_AVAILABLE_MIN_FRAME_DURATIONS,      // int64[]      | hidden
+    CAMERA_SCALER_AVAILABLE_STALL_DURATIONS,          // int64[]      | hidden
+    CAMERA_SCALER_CROPPING_TYPE,                      // enum         | public
     CAMERA_SCALER_END,
 
-    CAMERA_SENSOR_EXPOSURE_TIME =  // int64        | public
-    CAMERA_SENSOR_START,
-    CAMERA_SENSOR_FRAME_DURATION,                  // int64        | public
-    CAMERA_SENSOR_SENSITIVITY,                     // int32        | public
-    CAMERA_SENSOR_REFERENCE_ILLUMINANT1,           // enum         | public
-    CAMERA_SENSOR_REFERENCE_ILLUMINANT2,           // byte         | public
-    CAMERA_SENSOR_CALIBRATION_TRANSFORM1,          // rational[]   | public
-    CAMERA_SENSOR_CALIBRATION_TRANSFORM2,          // rational[]   | public
-    CAMERA_SENSOR_COLOR_TRANSFORM1,                // rational[]   | public
-    CAMERA_SENSOR_COLOR_TRANSFORM2,                // rational[]   | public
-    CAMERA_SENSOR_FORWARD_MATRIX1,                 // rational[]   | public
-    CAMERA_SENSOR_FORWARD_MATRIX2,                 // rational[]   | public
-    CAMERA_SENSOR_BASE_GAIN_FACTOR,                // rational     | system
-    CAMERA_SENSOR_BLACK_LEVEL_PATTERN,             // int32[]      | public
-    CAMERA_SENSOR_MAX_ANALOG_SENSITIVITY,          // int32        | public
-    CAMERA_SENSOR_ORIENTATION,                     // int32        | public
-    CAMERA_SENSOR_PROFILE_HUE_SAT_MAP_DIMENSIONS,  // int32[]      | system
-    CAMERA_SENSOR_TIMESTAMP,                       // int64        | public
-    CAMERA_SENSOR_TEMPERATURE,                     // float        | system
-    CAMERA_SENSOR_NEUTRAL_COLOR_POINT,             // rational[]   | public
-    CAMERA_SENSOR_NOISE_PROFILE,                   // double[]     | public
-    CAMERA_SENSOR_PROFILE_HUE_SAT_MAP,             // float[]      | system
-    CAMERA_SENSOR_PROFILE_TONE_CURVE,              // float[]      | system
-    CAMERA_SENSOR_GREEN_SPLIT,                     // float        | public
-    CAMERA_SENSOR_TEST_PATTERN_DATA,               // int32[]      | public
-    CAMERA_SENSOR_TEST_PATTERN_MODE,               // enum         | public
-    CAMERA_SENSOR_AVAILABLE_TEST_PATTERN_MODES,    // int32[]      | public
-    CAMERA_SENSOR_OPAQUE_RAW_SIZE,                 // int32[]      | system
-    CAMERA_SENSOR_ROLLING_SHUTTER_SKEW,            // int64        | public
+    CAMERA_SENSOR_EXPOSURE_TIME =                     // int64        | public
+            CAMERA_SENSOR_START,
+    CAMERA_SENSOR_FRAME_DURATION,                     // int64        | public
+    CAMERA_SENSOR_SENSITIVITY,                        // int32        | public
+    CAMERA_SENSOR_REFERENCE_ILLUMINANT1,              // enum         | public
+    CAMERA_SENSOR_REFERENCE_ILLUMINANT2,              // byte         | public
+    CAMERA_SENSOR_CALIBRATION_TRANSFORM1,             // rational[]   | public
+    CAMERA_SENSOR_CALIBRATION_TRANSFORM2,             // rational[]   | public
+    CAMERA_SENSOR_COLOR_TRANSFORM1,                   // rational[]   | public
+    CAMERA_SENSOR_COLOR_TRANSFORM2,                   // rational[]   | public
+    CAMERA_SENSOR_FORWARD_MATRIX1,                    // rational[]   | public
+    CAMERA_SENSOR_FORWARD_MATRIX2,                    // rational[]   | public
+    CAMERA_SENSOR_BASE_GAIN_FACTOR,                   // rational     | system
+    CAMERA_SENSOR_BLACK_LEVEL_PATTERN,                // int32[]      | public
+    CAMERA_SENSOR_MAX_ANALOG_SENSITIVITY,             // int32        | public
+    CAMERA_SENSOR_ORIENTATION,                        // int32        | public
+    CAMERA_SENSOR_PROFILE_HUE_SAT_MAP_DIMENSIONS,     // int32[]      | system
+    CAMERA_SENSOR_TIMESTAMP,                          // int64        | public
+    CAMERA_SENSOR_TEMPERATURE,                        // float        | system
+    CAMERA_SENSOR_NEUTRAL_COLOR_POINT,                // rational[]   | public
+    CAMERA_SENSOR_NOISE_PROFILE,                      // double[]     | public
+    CAMERA_SENSOR_PROFILE_HUE_SAT_MAP,                // float[]      | system
+    CAMERA_SENSOR_PROFILE_TONE_CURVE,                 // float[]      | system
+    CAMERA_SENSOR_GREEN_SPLIT,                        // float        | public
+    CAMERA_SENSOR_TEST_PATTERN_DATA,                  // int32[]      | public
+    CAMERA_SENSOR_TEST_PATTERN_MODE,                  // enum         | public
+    CAMERA_SENSOR_AVAILABLE_TEST_PATTERN_MODES,       // int32[]      | public
+    CAMERA_SENSOR_OPAQUE_RAW_SIZE,                    // int32[]      | system
+    CAMERA_SENSOR_ROLLING_SHUTTER_SKEW,               // int64        | public
     CAMERA_SENSOR_END,
 
-    CAMERA_SENSOR_INFO_ACTIVE_ARRAY_SIZE =  // int32[]      | public
-    CAMERA_SENSOR_INFO_START,
-    CAMERA_SENSOR_INFO_SENSITIVITY_RANGE,         // int32[]      | public
-    CAMERA_SENSOR_INFO_COLOR_FILTER_ARRANGEMENT,  // enum         | public
-    CAMERA_SENSOR_INFO_EXPOSURE_TIME_RANGE,       // int64[]      | public
-    CAMERA_SENSOR_INFO_MAX_FRAME_DURATION,        // int64        | public
-    CAMERA_SENSOR_INFO_PHYSICAL_SIZE,             // float[]      | public
-    CAMERA_SENSOR_INFO_PIXEL_ARRAY_SIZE,          // int32[]      | public
-    CAMERA_SENSOR_INFO_WHITE_LEVEL,               // int32        | public
-    CAMERA_SENSOR_INFO_TIMESTAMP_SOURCE,          // enum         | public
+    CAMERA_SENSOR_INFO_ACTIVE_ARRAY_SIZE =            // int32[]      | public
+            CAMERA_SENSOR_INFO_START,
+    CAMERA_SENSOR_INFO_SENSITIVITY_RANGE,             // int32[]      | public
+    CAMERA_SENSOR_INFO_COLOR_FILTER_ARRANGEMENT,      // enum         | public
+    CAMERA_SENSOR_INFO_EXPOSURE_TIME_RANGE,           // int64[]      | public
+    CAMERA_SENSOR_INFO_MAX_FRAME_DURATION,            // int64        | public
+    CAMERA_SENSOR_INFO_PHYSICAL_SIZE,                 // float[]      | public
+    CAMERA_SENSOR_INFO_PIXEL_ARRAY_SIZE,              // int32[]      | public
+    CAMERA_SENSOR_INFO_WHITE_LEVEL,                   // int32        | public
+    CAMERA_SENSOR_INFO_TIMESTAMP_SOURCE,              // enum         | public
     CAMERA_SENSOR_INFO_END,
 
-    CAMERA_SHADING_MODE =  // enum         | public
-    CAMERA_SHADING_START,
-    CAMERA_SHADING_STRENGTH,         // byte         | system
-    CAMERA_SHADING_AVAILABLE_MODES,  // byte[]       | public
+    CAMERA_SHADING_MODE =                             // enum         | public
+            CAMERA_SHADING_START,
+    CAMERA_SHADING_STRENGTH,                          // byte         | system
+    CAMERA_SHADING_AVAILABLE_MODES,                   // byte[]       | public
     CAMERA_SHADING_END,
 
-    CAMERA_STATISTICS_FACE_DETECT_MODE =  // enum         | public
-    CAMERA_STATISTICS_START,
-    CAMERA_STATISTICS_HISTOGRAM_MODE,               // enum         | system
-    CAMERA_STATISTICS_SHARPNESS_MAP_MODE,           // enum         | system
-    CAMERA_STATISTICS_HOT_PIXEL_MAP_MODE,           // enum         | public
-    CAMERA_STATISTICS_FACE_IDS,                     // int32[]      | hidden
-    CAMERA_STATISTICS_FACE_LANDMARKS,               // int32[]      | hidden
-    CAMERA_STATISTICS_FACE_RECTANGLES,              // int32[]      | hidden
-    CAMERA_STATISTICS_FACE_SCORES,                  // byte[]       | hidden
-    CAMERA_STATISTICS_HISTOGRAM,                    // int32[]      | system
-    CAMERA_STATISTICS_SHARPNESS_MAP,                // int32[]      | system
-    CAMERA_STATISTICS_LENS_SHADING_CORRECTION_MAP,  // byte         | public
-    CAMERA_STATISTICS_LENS_SHADING_MAP,             // float[]      | hidden
-    CAMERA_STATISTICS_PREDICTED_COLOR_GAINS,        // float[]      | hidden
-    CAMERA_STATISTICS_PREDICTED_COLOR_TRANSFORM,    // rational[]   | hidden
-    CAMERA_STATISTICS_SCENE_FLICKER,                // enum         | public
-    CAMERA_STATISTICS_HOT_PIXEL_MAP,                // int32[]      | public
-    CAMERA_STATISTICS_LENS_SHADING_MAP_MODE,        // enum         | public
+    CAMERA_STATISTICS_FACE_DETECT_MODE =              // enum         | public
+            CAMERA_STATISTICS_START,
+    CAMERA_STATISTICS_HISTOGRAM_MODE,                 // enum         | system
+    CAMERA_STATISTICS_SHARPNESS_MAP_MODE,             // enum         | system
+    CAMERA_STATISTICS_HOT_PIXEL_MAP_MODE,             // enum         | public
+    CAMERA_STATISTICS_FACE_IDS,                       // int32[]      | hidden
+    CAMERA_STATISTICS_FACE_LANDMARKS,                 // int32[]      | hidden
+    CAMERA_STATISTICS_FACE_RECTANGLES,                // int32[]      | hidden
+    CAMERA_STATISTICS_FACE_SCORES,                    // byte[]       | hidden
+    CAMERA_STATISTICS_HISTOGRAM,                      // int32[]      | system
+    CAMERA_STATISTICS_SHARPNESS_MAP,                  // int32[]      | system
+    CAMERA_STATISTICS_LENS_SHADING_CORRECTION_MAP,    // byte         | public
+    CAMERA_STATISTICS_LENS_SHADING_MAP,               // float[]      | hidden
+    CAMERA_STATISTICS_PREDICTED_COLOR_GAINS,          // float[]      | hidden
+    CAMERA_STATISTICS_PREDICTED_COLOR_TRANSFORM,      // rational[]   | hidden
+    CAMERA_STATISTICS_SCENE_FLICKER,                  // enum         | public
+    CAMERA_STATISTICS_HOT_PIXEL_MAP,                  // int32[]      | public
+    CAMERA_STATISTICS_LENS_SHADING_MAP_MODE,          // enum         | public
     CAMERA_STATISTICS_END,
 
-    CAMERA_STATISTICS_INFO_AVAILABLE_FACE_DETECT_MODES =
-        // byte[]       | public
-    CAMERA_STATISTICS_INFO_START,
-    CAMERA_STATISTICS_INFO_HISTOGRAM_BUCKET_COUNT,   // int32        | system
-    CAMERA_STATISTICS_INFO_MAX_FACE_COUNT,           // int32        | public
-    CAMERA_STATISTICS_INFO_MAX_HISTOGRAM_COUNT,      // int32        | system
-    CAMERA_STATISTICS_INFO_MAX_SHARPNESS_MAP_VALUE,  // int32        | system
-    CAMERA_STATISTICS_INFO_SHARPNESS_MAP_SIZE,       // int32[]      | system
+    CAMERA_STATISTICS_INFO_AVAILABLE_FACE_DETECT_MODES = 
+                                                      // byte[]       | public
+            CAMERA_STATISTICS_INFO_START,
+    CAMERA_STATISTICS_INFO_HISTOGRAM_BUCKET_COUNT,    // int32        | system
+    CAMERA_STATISTICS_INFO_MAX_FACE_COUNT,            // int32        | public
+    CAMERA_STATISTICS_INFO_MAX_HISTOGRAM_COUNT,       // int32        | system
+    CAMERA_STATISTICS_INFO_MAX_SHARPNESS_MAP_VALUE,   // int32        | system
+    CAMERA_STATISTICS_INFO_SHARPNESS_MAP_SIZE,        // int32[]      | system
     CAMERA_STATISTICS_INFO_AVAILABLE_HOT_PIXEL_MAP_MODES,
-    // byte[]       | public
+                                                      // byte[]       | public
     CAMERA_STATISTICS_INFO_END,
 
-    CAMERA_TONEMAP_CURVE_BLUE =  // float[]      | public
-    CAMERA_TONEMAP_START,
-    CAMERA_TONEMAP_CURVE_GREEN,               // float[]      | public
-    CAMERA_TONEMAP_CURVE_RED,                 // float[]      | public
-    CAMERA_TONEMAP_MODE,                      // enum         | public
-    CAMERA_TONEMAP_MAX_CURVE_POINTS,          // int32        | public
-    CAMERA_TONEMAP_AVAILABLE_TONE_MAP_MODES,  // byte[]       | public
-    CAMERA_TONEMAP_GAMMA,                     // float        | public
-    CAMERA_TONEMAP_PRESET_CURVE,              // enum         | public
+    CAMERA_TONEMAP_CURVE_BLUE =                       // float[]      | public
+            CAMERA_TONEMAP_START,
+    CAMERA_TONEMAP_CURVE_GREEN,                       // float[]      | public
+    CAMERA_TONEMAP_CURVE_RED,                         // float[]      | public
+    CAMERA_TONEMAP_MODE,                              // enum         | public
+    CAMERA_TONEMAP_MAX_CURVE_POINTS,                  // int32        | public
+    CAMERA_TONEMAP_AVAILABLE_TONE_MAP_MODES,          // byte[]       | public
+    CAMERA_TONEMAP_GAMMA,                             // float        | public
+    CAMERA_TONEMAP_PRESET_CURVE,                      // enum         | public
     CAMERA_TONEMAP_END,
 
-    CAMERA_LED_TRANSMIT =  // enum         | hidden
-    CAMERA_LED_START,
-    CAMERA_LED_AVAILABLE_LEDS,  // enum[]       | hidden
+    CAMERA_LED_TRANSMIT =                             // enum         | hidden
+            CAMERA_LED_START,
+    CAMERA_LED_AVAILABLE_LEDS,                        // enum[]       | hidden
     CAMERA_LED_END,
 
-    CAMERA_INFO_SUPPORTED_HARDWARE_LEVEL =  // enum         | public
-    CAMERA_INFO_START,
+    CAMERA_INFO_SUPPORTED_HARDWARE_LEVEL =            // enum         | public
+            CAMERA_INFO_START,
     CAMERA_INFO_END,
 
-    CAMERA_BLACK_LEVEL_LOCK =  // enum         | public
-    CAMERA_BLACK_LEVEL_START,
+    CAMERA_BLACK_LEVEL_LOCK =                         // enum         | public
+            CAMERA_BLACK_LEVEL_START,
     CAMERA_BLACK_LEVEL_END,
 
-    CAMERA_SYNC_FRAME_NUMBER =  // enum         | hidden
-    CAMERA_SYNC_START,
-    CAMERA_SYNC_MAX_LATENCY,  // enum         | public
+    CAMERA_SYNC_FRAME_NUMBER =                        // enum         | hidden
+            CAMERA_SYNC_START,
+    CAMERA_SYNC_MAX_LATENCY,                          // enum         | public
     CAMERA_SYNC_END,
 
-    CAMERA_REPROCESS_MAX_CAPTURE_STALL =  // int32        | public
-    CAMERA_REPROCESS_START,
+    CAMERA_REPROCESS_MAX_CAPTURE_STALL =              // int32        | public
+            CAMERA_REPROCESS_START,
     CAMERA_REPROCESS_END,
 
-    INTEL_INFO_AVAILABLE_CONFIGURATIONS =  // int32[]      | hidden
-    INTEL_INFO_START,
-    INTEL_INFO_AVAILABLE_FEATURES,      // enum[]       | public
-    INTEL_INFO_AE_EXPOSURE_TIME_RANGE,  // int32[]      | public
-    INTEL_INFO_AE_GAIN_RANGE,           // int32[]      | public
-    INTEL_INFO_WFOV,                    // enum         | public
-    INTEL_INFO_SENSOR_MOUNT_TYPE,       // enum         | public
+    INTEL_INFO_AVAILABLE_CONFIGURATIONS =             // int32[]      | hidden
+            INTEL_INFO_START,
+    INTEL_INFO_AVAILABLE_FEATURES,                    // enum[]       | public
+    INTEL_INFO_AE_EXPOSURE_TIME_RANGE,                // int32[]      | public
+    INTEL_INFO_AE_GAIN_RANGE,                         // int32[]      | public
+    INTEL_INFO_WFOV,                                  // enum         | public
+    INTEL_INFO_SENSOR_MOUNT_TYPE,                     // enum         | public
     INTEL_INFO_END,
 
-    INTEL_CONTROL_IMAGE_ENHANCEMENT =  // int32        | public
-    INTEL_CONTROL_START,
-    INTEL_CONTROL_SENSITIVITY_GAIN,          // float        | public
-    INTEL_CONTROL_FRAME_RATE,                // float        | public
-    INTEL_CONTROL_AE_CONVERGE_SPEED,         // enum         | public
-    INTEL_CONTROL_NR_MODE,                   // enum         | public
-    INTEL_CONTROL_NR_LEVEL,                  // int32[]      | public
-    INTEL_CONTROL_IRIS_MODE,                 // enum         | public
-    INTEL_CONTROL_AE_DISTRIBUTION_PRIORITY,  // enum         | public
-    INTEL_CONTROL_IRIS_LEVEL,                // int32        | public
-    INTEL_CONTROL_WDR_MODE,                  // enum         | public
-    INTEL_CONTROL_WDR_LEVEL,                 // byte         | public
-    INTEL_CONTROL_BLC_AREA_MODE,             // enum         | public
-    INTEL_CONTROL_SCENE_MODE,                // enum         | public
-    INTEL_CONTROL_WEIGHT_GRID_MODE,          // enum         | public
-    INTEL_CONTROL_AE_CONVERGE_SPEED_MODE,    // enum         | public
-    INTEL_CONTROL_DEINTERLACE_MODE,          // enum         | public
-    INTEL_CONTROL_MAKERNOTE_DATA,            // byte         | public
-    INTEL_CONTROL_CUSTOM_AIC_PARAM,          // byte         | public
-    INTEL_CONTROL_MAKERNOTE_MODE,            // enum         | public
-    INTEL_CONTROL_YUV_COLOR_RANGE,           // enum         | public
-    INTEL_CONTROL_SENSITIVITY_GAIN_RANGE,    // float[]      | public
-    INTEL_CONTROL_EXPOSURE_TIME_RANGE,       // int32[]      | public
-    INTEL_CONTROL_FISHEYE_DEWARPING_MODE,    // enum         | public
-    INTEL_CONTROL_LTM_TUNING_DATA,           // byte[]       | public
-    INTEL_CONTROL_DIGITAL_ZOOM_RATIO,        // float        | public
-    INTEL_CONTROL_LDC_MODE,                  // enum         | public
-    INTEL_CONTROL_RSC_MODE,                  // enum         | public
-    INTEL_CONTROL_FLIP_MODE,                 // enum         | public
-    INTEL_CONTROL_MONO_DOWNSCALE,            // enum         | public
-    INTEL_CONTROL_RUN3_A_CADENCE,            // int32        | public
-    INTEL_CONTROL_VIEW_PROJECTION,           // byte[]       | public
-    INTEL_CONTROL_VIEW_ROTATION,             // byte[]       | public
-    INTEL_CONTROL_VIEW_FINE_ADJUSTMENTS,     // byte[]       | public
-    INTEL_CONTROL_CAMERA_ROTATION,           // byte[]       | public
-    INTEL_CONTROL_SCALER_CROP_REGION,        // int32[]      | public
+    INTEL_CONTROL_IMAGE_ENHANCEMENT =                 // int32        | public
+            INTEL_CONTROL_START,
+    INTEL_CONTROL_SENSITIVITY_GAIN,                   // float        | public
+    INTEL_CONTROL_FRAME_RATE,                         // float        | public
+    INTEL_CONTROL_AE_CONVERGE_SPEED,                  // enum         | public
+    INTEL_CONTROL_NR_MODE,                            // enum         | public
+    INTEL_CONTROL_NR_LEVEL,                           // int32[]      | public
+    INTEL_CONTROL_IRIS_MODE,                          // enum         | public
+    INTEL_CONTROL_AE_DISTRIBUTION_PRIORITY,           // enum         | public
+    INTEL_CONTROL_IRIS_LEVEL,                         // int32        | public
+    INTEL_CONTROL_WDR_MODE,                           // enum         | public
+    INTEL_CONTROL_WDR_LEVEL,                          // byte         | public
+    INTEL_CONTROL_BLC_AREA_MODE,                      // enum         | public
+    INTEL_CONTROL_SCENE_MODE,                         // enum         | public
+    INTEL_CONTROL_WEIGHT_GRID_MODE,                   // enum         | public
+    INTEL_CONTROL_AE_CONVERGE_SPEED_MODE,             // enum         | public
+    INTEL_CONTROL_DEINTERLACE_MODE,                   // enum         | public
+    INTEL_CONTROL_MAKERNOTE_DATA,                     // byte         | public
+    INTEL_CONTROL_CUSTOM_AIC_PARAM,                   // byte         | public
+    INTEL_CONTROL_MAKERNOTE_MODE,                     // enum         | public
+    INTEL_CONTROL_YUV_COLOR_RANGE,                    // enum         | public
+    INTEL_CONTROL_SENSITIVITY_GAIN_RANGE,             // float[]      | public
+    INTEL_CONTROL_EXPOSURE_TIME_RANGE,                // int32[]      | public
+    INTEL_CONTROL_FISHEYE_DEWARPING_MODE,             // enum         | public
+    INTEL_CONTROL_LTM_TUNING_DATA,                    // byte[]       | public
+    INTEL_CONTROL_DIGITAL_ZOOM_RATIO,                 // float        | public
+    INTEL_CONTROL_LDC_MODE,                           // enum         | public
+    INTEL_CONTROL_RSC_MODE,                           // enum         | public
+    INTEL_CONTROL_FLIP_MODE,                          // enum         | public
+    INTEL_CONTROL_MONO_DOWNSCALE,                     // enum         | public
+    INTEL_CONTROL_RUN3_A_CADENCE,                     // int32        | public
+    INTEL_CONTROL_VIEW_PROJECTION,                    // byte[]       | public
+    INTEL_CONTROL_VIEW_ROTATION,                      // byte[]       | public
+    INTEL_CONTROL_VIEW_FINE_ADJUSTMENTS,              // byte[]       | public
+    INTEL_CONTROL_CAMERA_ROTATION,                    // byte[]       | public
+    INTEL_CONTROL_SCALER_CROP_REGION,                 // int32[]      | public
     INTEL_CONTROL_END,
 
-    INTEL_CONTROL_ISP_SUPPORTED_CTRL_IDS =  // int32[]      | public
-    INTEL_CONTROL_ISP_START,
-    INTEL_CONTROL_ISP_ENABLED_CTRL_IDS,         // int32[]      | public
-    INTEL_CONTROL_ISP_WB_GAINS,                 // byte[]       | public
-    INTEL_CONTROL_ISP_COLOR_CORRECTION_MATRIX,  // byte[]       | public
+    INTEL_CONTROL_ISP_SUPPORTED_CTRL_IDS =            // int32[]      | public
+            INTEL_CONTROL_ISP_START,
+    INTEL_CONTROL_ISP_ENABLED_CTRL_IDS,               // int32[]      | public
+    INTEL_CONTROL_ISP_WB_GAINS,                       // byte[]       | public
+    INTEL_CONTROL_ISP_COLOR_CORRECTION_MATRIX,        // byte[]       | public
     INTEL_CONTROL_ISP_ADVANCED_COLOR_CORRECTION_MATRIX,
-    // byte[]       | public
-    INTEL_CONTROL_ISP_BXT_CSC,         // byte[]       | public
-    INTEL_CONTROL_ISP_BXT_DEMOSAIC,    // byte[]       | public
-    INTEL_CONTROL_ISP_SC_IEFD,         // byte[]       | public
-    INTEL_CONTROL_ISP_SEE,             // byte[]       | public
-    INTEL_CONTROL_ISP_BNLM,            // byte[]       | public
-    INTEL_CONTROL_ISP_TNR5_21,         // byte[]       | public
-    INTEL_CONTROL_ISP_XNR_DSS,         // byte[]       | public
-    INTEL_CONTROL_ISP_GAMMA_TONE_MAP,  // byte[]       | public
-    INTEL_CONTROL_ISP_TNR5_22,         // byte[]       | public
-    INTEL_CONTROL_ISP_TNR5_25,         // byte[]       | public
+                                                      // byte[]       | public
+    INTEL_CONTROL_ISP_BXT_CSC,                        // byte[]       | public
+    INTEL_CONTROL_ISP_BXT_DEMOSAIC,                   // byte[]       | public
+    INTEL_CONTROL_ISP_SC_IEFD,                        // byte[]       | public
+    INTEL_CONTROL_ISP_SEE,                            // byte[]       | public
+    INTEL_CONTROL_ISP_BNLM,                           // byte[]       | public
+    INTEL_CONTROL_ISP_TNR5_21,                        // byte[]       | public
+    INTEL_CONTROL_ISP_XNR_DSS,                        // byte[]       | public
+    INTEL_CONTROL_ISP_GAMMA_TONE_MAP,                 // byte[]       | public
+    INTEL_CONTROL_ISP_TNR5_22,                        // byte[]       | public
+    INTEL_CONTROL_ISP_TNR5_25,                        // byte[]       | public
     INTEL_CONTROL_ISP_END,
 
 } icamera_metadata_tag_t;
@@ -604,7 +604,7 @@ typedef enum icamera_metadata_enum_camera_control_mode {
 
 // CAMERA_CONTROL_SCENE_MODE
 typedef enum icamera_metadata_enum_camera_control_scene_mode {
-    CAMERA_CONTROL_SCENE_MODE_DISABLED = 0,
+    CAMERA_CONTROL_SCENE_MODE_DISABLED                          = 0,
     CAMERA_CONTROL_SCENE_MODE_FACE_PRIORITY,
     CAMERA_CONTROL_SCENE_MODE_ACTION,
     CAMERA_CONTROL_SCENE_MODE_PORTRAIT,
@@ -733,25 +733,25 @@ typedef enum icamera_metadata_enum_camera_scaler_cropping_type {
 
 // CAMERA_SENSOR_REFERENCE_ILLUMINANT1
 typedef enum icamera_metadata_enum_camera_sensor_reference_illuminant1 {
-    CAMERA_SENSOR_REFERENCE_ILLUMINANT1_DAYLIGHT = 1,
-    CAMERA_SENSOR_REFERENCE_ILLUMINANT1_FLUORESCENT = 2,
-    CAMERA_SENSOR_REFERENCE_ILLUMINANT1_TUNGSTEN = 3,
-    CAMERA_SENSOR_REFERENCE_ILLUMINANT1_FLASH = 4,
-    CAMERA_SENSOR_REFERENCE_ILLUMINANT1_FINE_WEATHER = 9,
-    CAMERA_SENSOR_REFERENCE_ILLUMINANT1_CLOUDY_WEATHER = 10,
-    CAMERA_SENSOR_REFERENCE_ILLUMINANT1_SHADE = 11,
-    CAMERA_SENSOR_REFERENCE_ILLUMINANT1_DAYLIGHT_FLUORESCENT = 12,
-    CAMERA_SENSOR_REFERENCE_ILLUMINANT1_DAY_WHITE_FLUORESCENT = 13,
-    CAMERA_SENSOR_REFERENCE_ILLUMINANT1_COOL_WHITE_FLUORESCENT = 14,
-    CAMERA_SENSOR_REFERENCE_ILLUMINANT1_WHITE_FLUORESCENT = 15,
-    CAMERA_SENSOR_REFERENCE_ILLUMINANT1_STANDARD_A = 17,
-    CAMERA_SENSOR_REFERENCE_ILLUMINANT1_STANDARD_B = 18,
-    CAMERA_SENSOR_REFERENCE_ILLUMINANT1_STANDARD_C = 19,
-    CAMERA_SENSOR_REFERENCE_ILLUMINANT1_D55 = 20,
-    CAMERA_SENSOR_REFERENCE_ILLUMINANT1_D65 = 21,
-    CAMERA_SENSOR_REFERENCE_ILLUMINANT1_D75 = 22,
-    CAMERA_SENSOR_REFERENCE_ILLUMINANT1_D50 = 23,
-    CAMERA_SENSOR_REFERENCE_ILLUMINANT1_ISO_STUDIO_TUNGSTEN = 24,
+    CAMERA_SENSOR_REFERENCE_ILLUMINANT1_DAYLIGHT                = 1,
+    CAMERA_SENSOR_REFERENCE_ILLUMINANT1_FLUORESCENT             = 2,
+    CAMERA_SENSOR_REFERENCE_ILLUMINANT1_TUNGSTEN                = 3,
+    CAMERA_SENSOR_REFERENCE_ILLUMINANT1_FLASH                   = 4,
+    CAMERA_SENSOR_REFERENCE_ILLUMINANT1_FINE_WEATHER            = 9,
+    CAMERA_SENSOR_REFERENCE_ILLUMINANT1_CLOUDY_WEATHER          = 10,
+    CAMERA_SENSOR_REFERENCE_ILLUMINANT1_SHADE                   = 11,
+    CAMERA_SENSOR_REFERENCE_ILLUMINANT1_DAYLIGHT_FLUORESCENT    = 12,
+    CAMERA_SENSOR_REFERENCE_ILLUMINANT1_DAY_WHITE_FLUORESCENT   = 13,
+    CAMERA_SENSOR_REFERENCE_ILLUMINANT1_COOL_WHITE_FLUORESCENT  = 14,
+    CAMERA_SENSOR_REFERENCE_ILLUMINANT1_WHITE_FLUORESCENT       = 15,
+    CAMERA_SENSOR_REFERENCE_ILLUMINANT1_STANDARD_A              = 17,
+    CAMERA_SENSOR_REFERENCE_ILLUMINANT1_STANDARD_B              = 18,
+    CAMERA_SENSOR_REFERENCE_ILLUMINANT1_STANDARD_C              = 19,
+    CAMERA_SENSOR_REFERENCE_ILLUMINANT1_D55                     = 20,
+    CAMERA_SENSOR_REFERENCE_ILLUMINANT1_D65                     = 21,
+    CAMERA_SENSOR_REFERENCE_ILLUMINANT1_D75                     = 22,
+    CAMERA_SENSOR_REFERENCE_ILLUMINANT1_D50                     = 23,
+    CAMERA_SENSOR_REFERENCE_ILLUMINANT1_ISO_STUDIO_TUNGSTEN     = 24,
 } icamera_metadata_enum_camera_sensor_reference_illuminant1_t;
 
 // CAMERA_SENSOR_TEST_PATTERN_MODE
@@ -761,7 +761,7 @@ typedef enum icamera_metadata_enum_camera_sensor_test_pattern_mode {
     CAMERA_SENSOR_TEST_PATTERN_MODE_COLOR_BARS,
     CAMERA_SENSOR_TEST_PATTERN_MODE_COLOR_BARS_FADE_TO_GRAY,
     CAMERA_SENSOR_TEST_PATTERN_MODE_PN9,
-    CAMERA_SENSOR_TEST_PATTERN_MODE_CUSTOM1 = 256,
+    CAMERA_SENSOR_TEST_PATTERN_MODE_CUSTOM1                     = 256,
 } icamera_metadata_enum_camera_sensor_test_pattern_mode_t;
 
 // CAMERA_SENSOR_INFO_COLOR_FILTER_ARRANGEMENT
@@ -865,26 +865,26 @@ typedef enum icamera_metadata_enum_camera_black_level_lock {
 
 // CAMERA_SYNC_FRAME_NUMBER
 typedef enum icamera_metadata_enum_camera_sync_frame_number {
-    CAMERA_SYNC_FRAME_NUMBER_CONVERGING = -1,
-    CAMERA_SYNC_FRAME_NUMBER_UNKNOWN = -2,
+    CAMERA_SYNC_FRAME_NUMBER_CONVERGING                         = -1,
+    CAMERA_SYNC_FRAME_NUMBER_UNKNOWN                            = -2,
 } icamera_metadata_enum_camera_sync_frame_number_t;
 
 // CAMERA_SYNC_MAX_LATENCY
 typedef enum icamera_metadata_enum_camera_sync_max_latency {
-    CAMERA_SYNC_MAX_LATENCY_PER_FRAME_CONTROL = 0,
-    CAMERA_SYNC_MAX_LATENCY_UNKNOWN = -1,
+    CAMERA_SYNC_MAX_LATENCY_PER_FRAME_CONTROL                   = 0,
+    CAMERA_SYNC_MAX_LATENCY_UNKNOWN                             = -1,
 } icamera_metadata_enum_camera_sync_max_latency_t;
 
 // INTEL_INFO_AVAILABLE_FEATURES
 typedef enum icamera_metadata_enum_intel_info_available_features {
-    INTEL_INFO_AVAILABLE_FEATURES_MANUAL_EXPOSURE = 0,
-    INTEL_INFO_AVAILABLE_FEATURES_MANUAL_WHITE_BALANCE = 1,
-    INTEL_INFO_AVAILABLE_FEATURES_IMAGE_ENHANCEMENT = 2,
-    INTEL_INFO_AVAILABLE_FEATURES_NOISE_REDUCTION = 3,
-    INTEL_INFO_AVAILABLE_FEATURES_SCENE_MODE = 4,
-    INTEL_INFO_AVAILABLE_FEATURES_WEIGHT_GRID_MODE = 5,
-    INTEL_INFO_AVAILABLE_FEATURES_PER_FRAME_CONTROL = 6,
-    INTEL_INFO_AVAILABLE_FEATURES_ISP_CONTROL = 7,
+    INTEL_INFO_AVAILABLE_FEATURES_MANUAL_EXPOSURE               = 0,
+    INTEL_INFO_AVAILABLE_FEATURES_MANUAL_WHITE_BALANCE          = 1,
+    INTEL_INFO_AVAILABLE_FEATURES_IMAGE_ENHANCEMENT             = 2,
+    INTEL_INFO_AVAILABLE_FEATURES_NOISE_REDUCTION               = 3,
+    INTEL_INFO_AVAILABLE_FEATURES_SCENE_MODE                    = 4,
+    INTEL_INFO_AVAILABLE_FEATURES_WEIGHT_GRID_MODE              = 5,
+    INTEL_INFO_AVAILABLE_FEATURES_PER_FRAME_CONTROL             = 6,
+    INTEL_INFO_AVAILABLE_FEATURES_ISP_CONTROL                   = 7,
 } icamera_metadata_enum_intel_info_available_features_t;
 
 // INTEL_INFO_WFOV
@@ -1016,3 +1016,4 @@ typedef enum icamera_metadata_enum_intel_control_mono_downscale {
     INTEL_CONTROL_MONO_DOWNSCALE_OFF,
     INTEL_CONTROL_MONO_DOWNSCALE_ON,
 } icamera_metadata_enum_intel_control_mono_downscale_t;
+

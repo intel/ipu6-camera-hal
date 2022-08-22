@@ -188,6 +188,11 @@ struct TuningModeStringInfo {
 static const TuningModeStringInfo TuningModeStringInfoTable[] = {
     {TUNING_MODE_VIDEO, "VIDEO"},
     {TUNING_MODE_VIDEO_ULL, "VIDEO-ULL"},
+    // HDR_FEATURE_S
+    {TUNING_MODE_VIDEO_HDR, "VIDEO-HDR"},
+    {TUNING_MODE_VIDEO_HDR2, "VIDEO-HDR2"},
+    {TUNING_MODE_VIDEO_HLC, "VIDEO-HLC"},
+    // HDR_FEATURE_E
     {TUNING_MODE_VIDEO_CUSTOM_AIC, "VIDEO-CUSTOM_AIC"},
     {TUNING_MODE_VIDEO_LL, "VIDEO-LL"},
     {TUNING_MODE_VIDEO_REAR_VIEW, "VIDEO-REAR-VIEW"},
@@ -468,7 +473,7 @@ int CameraUtils::getCompressedFrameSize(int format, int width, int height) {
             break;
         }
         case V4L2_PIX_FMT_NV12:
-        case V4L2_PIX_FMT_P010: {
+        case V4L2_PIX_FMT_P010:  {
             int bpl = 0, heightAlignment = 0, tsBit = 0, tileSize = 0;
             if (format == V4L2_PIX_FMT_NV12) {
                 bpl = width;
@@ -484,8 +489,8 @@ int CameraUtils::getCompressedFrameSize(int format, int width, int height) {
             int alignedBpl = ALIGN(bpl, PSYS_COMPRESSION_TNR_STRIDE_ALIGNMENT);
             int alignedHeight = ALIGN(height, heightAlignment);
             int alignedHeightUV = ALIGN(height / UV_HEIGHT_DIVIDER, heightAlignment);
-            int imageBufferSize =
-                ALIGN(alignedBpl * (alignedHeight + alignedHeightUV), PSYS_COMPRESSION_PAGE_SIZE);
+            int imageBufferSize = ALIGN(alignedBpl * (alignedHeight + alignedHeightUV),
+                                  PSYS_COMPRESSION_PAGE_SIZE);
             int planarYTileStatus =
                 CAMHAL_CEIL_DIV((alignedBpl * alignedHeight / tileSize) * tsBit, 8);
             planarYTileStatus = ALIGN(planarYTileStatus, PSYS_COMPRESSION_PAGE_SIZE);
@@ -494,9 +499,8 @@ int CameraUtils::getCompressedFrameSize(int format, int width, int height) {
             planarUVTileStatus = ALIGN(planarUVTileStatus, PSYS_COMPRESSION_PAGE_SIZE);
 
             LOG1("@%s: format: %s, stride:%d height:%d imageSize:%d, tile_status_Y:%d, "
-                 "tile_status_UV:%d",
-                 __func__, pixelCode2String(format), alignedBpl, alignedHeight, imageBufferSize,
-                 planarYTileStatus, planarUVTileStatus);
+                 "tile_status_UV:%d", __func__, pixelCode2String(format), alignedBpl,
+                 alignedHeight, imageBufferSize, planarYTileStatus, planarUVTileStatus);
             frameSize = imageBufferSize + planarYTileStatus + planarUVTileStatus;
             break;
         }
@@ -552,9 +556,9 @@ int CameraUtils::getFrameSize(int format, int width, int height, bool needAligne
     }
 
     // Extra size should be at least one alignedBpl
-    int extraSize = isPlanarFormat(format) ?
-                        (alignedBpl * getBpp(format) / 8 / getPlanarByte(format)) :
-                        alignedBpl;
+    int extraSize = isPlanarFormat(format)
+                        ? (alignedBpl * getBpp(format) / 8 / getPlanarByte(format))
+                        : alignedBpl;
     extraSize = std::max(extraSize, 1024);
 
     return alignedBpl * bufferHeight + extraSize;
@@ -617,6 +621,14 @@ int CameraUtils::getInterlaceHeight(int field, int height) {
 }
 
 bool CameraUtils::isMultiExposureCase(int cameraId, TuningMode tuningMode) {
+    // HDR_FEATURE_S
+    if (tuningMode == TUNING_MODE_VIDEO_HDR || tuningMode == TUNING_MODE_VIDEO_HDR2 ||
+        tuningMode == TUNING_MODE_VIDEO_HLC) {
+        return true;
+    } else if (PlatformData::getSensorAeEnable(cameraId)) {
+        return true;
+    }
+    // HDR_FEATURE_E
 
     return false;
 }
@@ -632,6 +644,14 @@ ConfigMode CameraUtils::getConfigModeByName(const char* ConfigName) {
         LOGE("%s, the ConfigName is nullptr", __func__);
     } else if (strcmp(ConfigName, "AUTO") == 0) {
         configMode = CAMERA_STREAM_CONFIGURATION_MODE_AUTO;
+        // HDR_FEATURE_S
+    } else if (strcmp(ConfigName, "HDR") == 0) {
+        configMode = CAMERA_STREAM_CONFIGURATION_MODE_HDR;
+    } else if (strcmp(ConfigName, "HDR2") == 0) {
+        configMode = CAMERA_STREAM_CONFIGURATION_MODE_HDR2;
+    } else if (strcmp(ConfigName, "HLC") == 0) {
+        configMode = CAMERA_STREAM_CONFIGURATION_MODE_HLC;
+        // HDR_FEATURE_E
     } else if (strcmp(ConfigName, "ULL") == 0) {
         configMode = CAMERA_STREAM_CONFIGURATION_MODE_ULL;
     } else if (strcmp(ConfigName, "NORMAL") == 0) {
@@ -683,6 +703,17 @@ ConfigMode CameraUtils::getConfigModeBySceneMode(camera_scene_mode_t sceneMode) 
         case SCENE_MODE_ULL:
             configMode = CAMERA_STREAM_CONFIGURATION_MODE_ULL;
             break;
+        // HDR_FEATURE_S
+        case SCENE_MODE_HDR:
+            configMode = CAMERA_STREAM_CONFIGURATION_MODE_HDR;
+            break;
+        case SCENE_MODE_HDR2:
+            configMode = CAMERA_STREAM_CONFIGURATION_MODE_HDR2;
+            break;
+        case SCENE_MODE_HLC:
+            configMode = CAMERA_STREAM_CONFIGURATION_MODE_HLC;
+            break;
+        // HDR_FEATURE_E
         case SCENE_MODE_CUSTOM_AIC:
             configMode = CAMERA_STREAM_CONFIGURATION_MODE_CUSTOM_AIC;
             break;
@@ -702,6 +733,14 @@ camera_scene_mode_t CameraUtils::getSceneModeByName(const char* sceneName) {
         return SCENE_MODE_MAX;
     else if (strcmp(sceneName, "AUTO") == 0)
         return SCENE_MODE_AUTO;
+    // HDR_FEATURE_S
+    else if (strcmp(sceneName, "HDR") == 0)
+        return SCENE_MODE_HDR;
+    else if (strcmp(sceneName, "HDR2") == 0)
+        return SCENE_MODE_HDR2;
+    else if (strcmp(sceneName, "HLC") == 0)
+        return SCENE_MODE_HLC;
+    // HDR_FEATURE_E
     else if (strcmp(sceneName, "ULL") == 0)
         return SCENE_MODE_ULL;
     else if (strcmp(sceneName, "VIDEO_LL") == 0)

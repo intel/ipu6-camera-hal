@@ -173,6 +173,9 @@ struct MediaCtlConf {
     int outputHeight;
     std::vector<ConfigMode> configMode;
     int format;
+    // DOL_FEATURE_S
+    int vbp;  // Vertical blanking period
+    // DOL_FEATURE_E
     /*
      * The outputWidth or outputHeight is 0 if there isn't this setting
      * in MediaCtlConf. It means the isys output size is dynamic, and
@@ -183,6 +186,9 @@ struct MediaCtlConf {
         outputWidth = 0;
         outputHeight = 0;
         format = -1;
+        // DOL_FEATURE_S
+        vbp = -1;
+        // DOL_FEATURE_E
     }
 };
 
@@ -254,6 +260,9 @@ class MediaControl {
     /**
      * \brief Clear media controller pipe
      *
+     // VIRTUAL_CHANNEL_S
+     * Currently only the virtual channels are cleared.
+     // VIRTUAL_CHANNEL_E
      *
      * \param cameraId: the current camera id
      * \param mc: the MediaCtlConf got from platform data
@@ -261,6 +270,9 @@ class MediaControl {
     void mediaCtlClear(int cameraId, MediaCtlConf* mc);
 
     int resetAllLinks();
+    // VIRTUAL_CHANNEL_S
+    int resetAllRoutes(int cameraId);
+    // VIRTUAL_CHANNEL_E
 
     int getLensName(std::string* lensName);
     bool checkAvailableSensor(const std::string& sensorEntityName,

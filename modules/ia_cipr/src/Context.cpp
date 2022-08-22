@@ -29,8 +29,8 @@
 #include "iutils/CameraLog.h"
 #include "iutils/Utils.h"
 
-using icamera::CAMERA_DEBUG_LOG_ERR;
 using icamera::CAMERA_DEBUG_LOG_INFO;
+using icamera::CAMERA_DEBUG_LOG_ERR;
 using icamera::CAMERA_DEBUG_LOG_WARNING;
 
 #include "modules/ia_cipr/include/Context.h"
@@ -120,13 +120,13 @@ Result Context::getCapabilities(PSYSCapability* cap) {
     cap->version = psys_capability.version;
     CheckAndLogError(sizeof(cap->driver) != sizeof(psys_capability.driver), Result::DataError,
                      "the driver array size wasn't matching");
-    MEMCPY_S(cap->driver, sizeof(cap->driver), psys_capability.driver,
-             sizeof(psys_capability.driver));
+    MEMCPY_S(cap->driver, sizeof(cap->driver),
+             psys_capability.driver, sizeof(psys_capability.driver));
 
     CheckAndLogError(sizeof(cap->devModel) != sizeof(psys_capability.dev_model), Result::DataError,
                      "the dev model array size wasn't matching");
-    MEMCPY_S(cap->devModel, sizeof(cap->devModel), psys_capability.dev_model,
-             sizeof(psys_capability.dev_model));
+    MEMCPY_S(cap->devModel, sizeof(cap->devModel),
+             psys_capability.dev_model, sizeof(psys_capability.dev_model));
 
     cap->programGroupCount = psys_capability.pg_count;
 

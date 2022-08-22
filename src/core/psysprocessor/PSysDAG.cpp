@@ -585,6 +585,11 @@ void PSysDAG::addTask(PSysTaskData taskParam) {
     // It's too early to runIspAdapt here, and the ipu parameters
     // may be incorrect when runPipe.
     bool runIspAdaptor = true;
+    // HDR_FEATURE_S
+    if (mTuningMode == TUNING_MODE_VIDEO_HDR || mTuningMode == TUNING_MODE_VIDEO_HDR2) {
+        runIspAdaptor = false;
+    }
+    // HDR_FEATURE_E
 
     int64_t sequence = taskParam.mInputBuffers.at(mDefaultMainInputPort)->getSequence();
     if (runIspAdaptor) {

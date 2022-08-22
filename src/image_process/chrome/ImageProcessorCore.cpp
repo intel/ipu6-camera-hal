@@ -75,9 +75,9 @@ status_t ImageProcessorCore::cropFrame(const std::shared_ptr<camera3::Camera3Buf
     int top = (srcH - dstH) / 2;
     ret = libyuv::ConvertToI420(static_cast<uint8_t*>(srcI420Buf.get()), srcI420BufSize,
                                 static_cast<uint8_t*>(output->data()), dstW, dstI420BufU,
-                                (dstW + 1) / 2, dstI420BufV, (dstW + 1) / 2, left, top, srcW, srcH,
-                                output->width(), dstH, libyuv::RotationMode::kRotate0,
-                                libyuv::FourCC::FOURCC_I420);
+                                (dstW + 1) / 2, dstI420BufV, (dstW + 1) / 2, left, top,
+                                srcW, srcH, output->width(), dstH,
+                                libyuv::RotationMode::kRotate0, libyuv::FourCC::FOURCC_I420);
     CheckAndLogError(ret != 0, UNKNOWN_ERROR, "ConvertToI420 failed");
 
     uint8_t* dstBufUV = static_cast<uint8_t*>(output->data()) + dstW * dstH;

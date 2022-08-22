@@ -41,13 +41,13 @@ class Dvs : public EventListener {
     explicit Dvs(int cameraId);
     ~Dvs();
 
-    int configure(const ConfigMode configMode, cca::cca_init_params* params);
+    int configure(const ConfigMode configMode, cca::cca_init_params *params);
     void handleEvent(EventData eventData);
     void setParameter(const Parameters& p);
 
  private:
-    int configCcaDvsData(const ConfigMode configMode, cca::cca_init_params* params);
-    void dumpDvsConfiguration(const cca::cca_init_params& config);
+    int configCcaDvsData(const ConfigMode configMode, cca::cca_init_params *params);
+    void dumpDvsConfiguration(const cca::cca_init_params &config);
 
  private:
     int mCameraId;

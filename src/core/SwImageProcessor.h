@@ -21,26 +21,26 @@
 namespace icamera {
 
 /**
- * SwImageProcessor runs the Image Process Alogirhtm in the CPU.
- * It implements the BufferConsumer and BufferProducer Interface
- * This class is for debug purpose when the PsysProcess is not ready.
- */
-class SwImageProcessor : public BufferQueue {
- public:
+  * SwImageProcessor runs the Image Process Alogirhtm in the CPU.
+  * It implements the BufferConsumer and BufferProducer Interface
+  * This class is for debug purpose when the PsysProcess is not ready.
+  */
+class SwImageProcessor: public BufferQueue {
+public:
     SwImageProcessor(int cameraId);
     virtual ~SwImageProcessor();
 
     /**
      * \brief Buffer producer Interface
      */
-    virtual int start();
-    virtual void stop();
+    virtual int     start();
+    virtual void    stop();
 
- private:
+private:
     int processNewFrame();
 
- private:
+private:
     int mCameraId;
 };
 
-}  // namespace icamera
+} //namespace icamera

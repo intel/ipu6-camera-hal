@@ -30,10 +30,10 @@
 typedef uint32_t ia_uid;
 
 namespace GCSS {
-class GraphConfigNode;
-class GraphQueryManager;
-class ItemUID;
-}  // namespace GCSS
+    class GraphConfigNode;
+    class GraphQueryManager;
+    class ItemUID;
+}
 
 typedef GCSS::GraphConfigNode Node;
 typedef std::vector<Node*> NodesPtrVector;
@@ -51,33 +51,36 @@ static const int32_t STILL_TNR_STREAM_ID = 60009;
 // Stream id associated with still capture.
 static const int32_t STILL_STREAM_ID = 60000;
 
-#define MAX_RBM_STR_SIZE 128
+#define MAX_RBM_STR_SIZE    128
 
 namespace IGraphType {
 class ConnectionConfig {
  public:
-    ConnectionConfig()
-            : mSourceStage(0),
-              mSourceTerminal(0),
-              mSourceIteration(0),
-              mSinkStage(0),
-              mSinkTerminal(0),
-              mSinkIteration(0),
-              mConnectionType(0) {}
+    ConnectionConfig(): mSourceStage(0),
+                        mSourceTerminal(0),
+                        mSourceIteration(0),
+                        mSinkStage(0),
+                        mSinkTerminal(0),
+                        mSinkIteration(0),
+                        mConnectionType(0) {}
 
-    ConnectionConfig(ia_uid sourceStage, ia_uid sourceTerminal, ia_uid sourceIteration,
-                     ia_uid sinkStage, ia_uid sinkTerminal, ia_uid sinkIteration,
-                     int connectionType)
-            : mSourceStage(sourceStage),
-              mSourceTerminal(sourceTerminal),
-              mSourceIteration(sourceIteration),
-              mSinkStage(sinkStage),
-              mSinkTerminal(sinkTerminal),
-              mSinkIteration(sinkIteration),
-              mConnectionType(connectionType) {}
+    ConnectionConfig(ia_uid sourceStage,
+                     ia_uid sourceTerminal,
+                     ia_uid sourceIteration,
+                     ia_uid sinkStage,
+                     ia_uid sinkTerminal,
+                     ia_uid sinkIteration,
+                     int connectionType):
+                         mSourceStage(sourceStage),
+                         mSourceTerminal(sourceTerminal),
+                         mSourceIteration(sourceIteration),
+                         mSinkStage(sinkStage),
+                         mSinkTerminal(sinkTerminal),
+                         mSinkIteration(sinkIteration),
+                         mConnectionType(connectionType) {}
     void dump() {
-        LOG1("connection src 0x%x (0x%x) sink 0x%x(0x%x)", mSourceStage, mSourceTerminal,
-             mSinkStage, mSinkTerminal);
+        LOG1("connection src 0x%x (0x%x) sink 0x%x(0x%x)",
+             mSourceStage, mSourceTerminal, mSinkStage, mSinkTerminal);
     }
 
     ia_uid mSourceStage;
@@ -90,17 +93,17 @@ class ConnectionConfig {
 };
 
 /**
- * \struct PortFormatSettings
- * Format settings for a port in the graph
- */
+* \struct PortFormatSettings
+* Format settings for a port in the graph
+*/
 struct PortFormatSettings {
-    int32_t enabled;
-    uint32_t terminalId; /**< Unique terminal id (is a fourcc code) */
-    int32_t width;       /**< Width of the frame in pixels */
-    int32_t height;      /**< Height of the frame in lines */
-    int32_t fourcc;      /**< Frame format */
-    int32_t bpl;         /**< Bytes per line*/
-    int32_t bpp;         /**< Bits per pixel */
+    int32_t      enabled;
+    uint32_t     terminalId; /**< Unique terminal id (is a fourcc code) */
+    int32_t      width;    /**< Width of the frame in pixels */
+    int32_t      height;   /**< Height of the frame in lines */
+    int32_t      fourcc;   /**< Frame format */
+    int32_t      bpl;      /**< Bytes per line*/
+    int32_t      bpp;      /**< Bits per pixel */
 };
 
 /**
@@ -112,11 +115,11 @@ struct PipelineConnection {
     PipelineConnection() : stream(nullptr), hasEdgePort(false) { CLEAR(portFormatSettings); }
     PortFormatSettings portFormatSettings;
     ConnectionConfig connectionConfig;
-    HalStream* stream;
+    HalStream *stream;
     bool hasEdgePort;
 };
 
-struct StageAttr {
+struct StageAttr{
     char rbm[MAX_RBM_STR_SIZE];
     uint32_t rbm_bytes;
     StageAttr() : rbm_bytes(0) {}
@@ -135,22 +138,24 @@ struct PgInfo {
     StageAttr rbmValue;
 };
 
+// DOL_FEATURE_S
+struct DolInfo {
+    DolInfo() : conversionGain(0.0) {}
+    float conversionGain;
+    std::string dolMode;
+};
+// DOL_FEATURE_E
+
 struct MbrInfo {
-    MbrInfo() {
-        streamId = -1;
-        CLEAR(data);
-    }
+    MbrInfo() { streamId = -1; CLEAR(data); }
     int streamId;
     ia_isp_bxt_gdc_limits data;
 };
 
 struct ProgramGroupInfo {
-    ProgramGroupInfo() {
-        streamId = -1;
-        pgPtr = nullptr;
-    }
+    ProgramGroupInfo() { streamId = -1; pgPtr = nullptr; }
     int streamId;
-    ia_isp_bxt_program_group* pgPtr;
+    ia_isp_bxt_program_group *pgPtr;
 };
 
 struct TuningModeInfo {
@@ -162,6 +167,9 @@ struct GraphConfigData {
     int mcId;
     int graphId;
     uint32_t gdcKernelId;
+    // DOL_FEATURE_S
+    DolInfo  dolInfo;
+    // DOL_FEATURE_E
     camera_resolution_t csiReso;
     ia_isp_bxt_resolution_info_t gdcReso;
     std::vector<int32_t> streamIds;
@@ -170,7 +178,9 @@ struct GraphConfigData {
     std::vector<std::string> pgNames;
     std::vector<ProgramGroupInfo> programGroup;
     std::vector<TuningModeInfo> tuningModes;
-    GraphConfigData() : mcId(-1), graphId(-1), gdcKernelId(-1) {
+    GraphConfigData() : mcId(-1),
+                        graphId(-1),
+                        gdcKernelId(-1) {
         CLEAR(csiReso);
         CLEAR(gdcReso);
     }
@@ -189,30 +199,30 @@ struct PrivPortFormat {
 }  // namespace IGraphType
 
 class IGraphConfig {
- public:
+public:
     virtual ~IGraphConfig() = default;
 
-    virtual void getCSIOutputResolution(camera_resolution_t& reso) = 0;
-    virtual status_t getGdcKernelSetting(uint32_t* kernelId,
-                                         ia_isp_bxt_resolution_info_t* resolution) = 0;
-    virtual status_t graphGetStreamIds(std::vector<int32_t>& streamIds) = 0;
+    virtual void getCSIOutputResolution(camera_resolution_t &reso) = 0;
+    virtual status_t getGdcKernelSetting(uint32_t *kernelId,
+                                         ia_isp_bxt_resolution_info_t *resolution) = 0;
+    virtual status_t graphGetStreamIds(std::vector<int32_t> &streamIds) = 0;
     virtual int getGraphId(void) = 0;
     virtual int getStreamIdByPgName(std::string pgName) = 0;
     virtual int getTuningModeByStreamId(const int32_t streamId) = 0;
     virtual int getPgIdByPgName(std::string pgName) = 0;
-    virtual ia_isp_bxt_program_group* getProgramGroup(int32_t streamId) = 0;
-    virtual status_t getMBRData(int32_t streamId, ia_isp_bxt_gdc_limits* data) = 0;
-    virtual status_t getPgRbmValue(std::string pgName, IGraphType::StageAttr* stageAttr) {
-        return OK;
-    }
-    virtual status_t getPgIdForKernel(const uint32_t streamIds, const int32_t kernelId,
-                                      int32_t* pgId) {
-        return OK;
-    }
+    // DOL_FEATURE_S
+    virtual int getDolInfo(float &gain, std::string &mode) = 0;
+    // DOL_FEATURE_E
+    virtual ia_isp_bxt_program_group *getProgramGroup(int32_t streamId) = 0;
+    virtual status_t getMBRData(int32_t streamId, ia_isp_bxt_gdc_limits *data) = 0;
+    virtual status_t getPgRbmValue(std::string pgName,
+                                   IGraphType::StageAttr *stageAttr) {return OK;}
+    virtual status_t getPgIdForKernel(const uint32_t streamIds,
+                                      const int32_t kernelId, int32_t *pgId) {return OK;}
     virtual status_t getPgNames(std::vector<std::string>* pgNames) = 0;
     virtual status_t pipelineGetConnections(
-        const std::vector<std::string>& pgList,
-        std::vector<IGraphType::PipelineConnection>* confVector,
-        std::vector<IGraphType::PrivPortFormat>* tnrPortFormat = nullptr) = 0;
+                         const std::vector<std::string> &pgList,
+                         std::vector<IGraphType::PipelineConnection> *confVector,
+                         std::vector<IGraphType::PrivPortFormat> *tnrPortFormat = nullptr) = 0;
 };
-}  // namespace icamera
+}

@@ -21,32 +21,35 @@
 
 #include "RequestThread.h"
 
-using std::shared_ptr;
 using std::vector;
+using std::shared_ptr;
 
 namespace icamera {
 
-RequestThread::RequestThread(int cameraId, AiqUnitBase* a3AControl, ParameterGenerator* aParamGen)
-        : mCameraId(cameraId),
-          m3AControl(a3AControl),
-          mParamGenerator(aParamGen),
-          mPerframeControlSupport(false),
-          mGet3AStatWithFakeRequest(false),
-          mRequestsInProcessing(0),
-          mFirstRequest(true),
-          mActive(false),
-          mRequestTriggerEvent(NONE_EVENT),
-          mLastRequestId(-1),
-          mLastEffectSeq(-1),
-          mLastAppliedSeq(-1),
-          mLastSofSeq(-1),
-          mBlockRequest(true),
-          mSofEnabled(false) {
+RequestThread::RequestThread(int cameraId, AiqUnitBase *a3AControl, ParameterGenerator* aParamGen) :
+    mCameraId(cameraId),
+    m3AControl(a3AControl),
+    mParamGenerator(aParamGen),
+    mPerframeControlSupport(false),
+    mGet3AStatWithFakeRequest(false),
+    mRequestsInProcessing(0),
+    mFirstRequest(true),
+    mActive(false),
+    mRequestTriggerEvent(NONE_EVENT),
+    mLastRequestId(-1),
+    mLastEffectSeq(-1),
+    mLastAppliedSeq(-1),
+    mLastSofSeq(-1),
+    mBlockRequest(true),
+    mSofEnabled(false) {
     CLEAR(mFakeReqBuf);
 
     mPerframeControlSupport = PlatformData::isFeatureSupported(mCameraId, PER_FRAME_CONTROL);
 
     mSofEnabled = PlatformData::isIsysEnabled(cameraId);
+    // FILE_SOURCE_S
+    mSofEnabled = mSofEnabled || PlatformData::isFileSourceEnabled();
+    // FILE_SOURCE_E
 }
 
 RequestThread::~RequestThread() {
@@ -90,7 +93,7 @@ void RequestThread::clearRequests() {
     mBlockRequest = true;
 }
 
-int RequestThread::configure(const stream_config_t* streamList) {
+int RequestThread::configure(const stream_config_t *streamList) {
     int previewIndex = -1, videoIndex = -1, stillIndex = -1;
     for (int i = 0; i < streamList->num_streams; i++) {
         if (streamList->streams[i].usage == CAMERA_STREAM_PREVIEW) {
@@ -110,8 +113,8 @@ int RequestThread::configure(const stream_config_t* streamList) {
     mGet3AStatWithFakeRequest =
         mPerframeControlSupport ? PlatformData::isPsysContinueStats(mCameraId) : false;
     if (mGet3AStatWithFakeRequest) {
-        int fakeStreamIndex =
-            (previewIndex >= 0) ? previewIndex : ((videoIndex >= 0) ? videoIndex : stillIndex);
+        int fakeStreamIndex = (previewIndex >= 0) ? previewIndex :
+                              ((videoIndex >= 0) ? videoIndex : stillIndex);
         if (fakeStreamIndex < 0) {
             LOGW("There isn't valid stream to trigger stats event");
             mGet3AStatWithFakeRequest = false;
@@ -119,11 +122,12 @@ int RequestThread::configure(const stream_config_t* streamList) {
         }
 
         CLEAR(mFakeReqBuf);
-        stream_t& fakeStream = streamList->streams[fakeStreamIndex];
+        stream_t &fakeStream = streamList->streams[fakeStreamIndex];
         LOG2("%s: create fake request with stream index %d", __func__, fakeStreamIndex);
         mFakeBuffer = CameraBuffer::create(mCameraId, BUFFER_USAGE_PSYS_INTERNAL,
                                            V4L2_MEMORY_USERPTR, fakeStream.size, 0,
-                                           fakeStream.format, fakeStream.width, fakeStream.height);
+                                           fakeStream.format, fakeStream.width,
+                                           fakeStream.height);
 
         mFakeReqBuf.s = fakeStream;
         mFakeReqBuf.s.memType = V4L2_MEMORY_USERPTR;
@@ -143,11 +147,11 @@ bool RequestThread::blockRequest() {
      * 3. if no trigger event is available.
      */
     return ((mBlockRequest && (mLastRequestId >= 0)) ||
-            (mRequestsInProcessing >= PlatformData::getMaxRequestsInflight(mCameraId)) ||
-            (mPerframeControlSupport && (mRequestTriggerEvent == NONE_EVENT)));
+        (mRequestsInProcessing >= PlatformData::getMaxRequestsInflight(mCameraId)) ||
+        (mPerframeControlSupport && (mRequestTriggerEvent == NONE_EVENT)));
 }
 
-int RequestThread::processRequest(int bufferNum, camera_buffer_t** ubuffer,
+int RequestThread::processRequest(int bufferNum, camera_buffer_t **ubuffer,
                                   const Parameters* params) {
     AutoMutex l(mPendingReqLock);
     CameraRequest request;
@@ -179,8 +183,10 @@ int RequestThread::processRequest(int bufferNum, camera_buffer_t** ubuffer,
     return OK;
 }
 
-shared_ptr<Parameters> RequestThread::copyRequestParams(const Parameters* srcParams) {
-    if (srcParams == nullptr) return nullptr;
+shared_ptr<Parameters>
+RequestThread::copyRequestParams(const Parameters *srcParams) {
+    if (srcParams == nullptr)
+        return nullptr;
 
     if (mReqParamsPool.empty()) {
         shared_ptr<Parameters> sParams = std::make_shared<Parameters>();
@@ -194,18 +200,19 @@ shared_ptr<Parameters> RequestThread::copyRequestParams(const Parameters* srcPar
     return sParams;
 }
 
-int RequestThread::waitFrame(int streamId, camera_buffer_t** ubuffer) {
+int RequestThread::waitFrame(int streamId, camera_buffer_t **ubuffer) {
     FrameQueue& frameQueue = mOutputFrames[streamId];
     ConditionLock lock(frameQueue.mFrameMutex);
 
     if (!mActive) return NO_INIT;
     while (frameQueue.mFrameQueue.empty()) {
         int ret = frameQueue.mFrameAvailableSignal.waitRelative(
-            lock, kWaitFrameDuration * SLOWLY_MULTIPLIER);
+                      lock,
+                      kWaitFrameDuration * SLOWLY_MULTIPLIER);
         if (!mActive) return NO_INIT;
 
-        CheckWarning(ret == TIMED_OUT, ret, "<id%d>@%s, time out happens, wait recovery", mCameraId,
-                     __func__);
+        CheckWarning(ret == TIMED_OUT, ret, "<id%d>@%s, time out happens, wait recovery",
+                     mCameraId, __func__);
     }
 
     shared_ptr<CameraBuffer> camBuffer = frameQueue.mFrameQueue.front();
@@ -222,9 +229,11 @@ int RequestThread::wait1stRequestDone() {
     ConditionLock lock(mFirstRequestLock);
     if (mFirstRequest) {
         LOG2("%s, waiting the first request done", __func__);
-        ret = mFirstRequestSignal.waitRelative(lock,
-                                               kWaitFirstRequestDoneDuration * SLOWLY_MULTIPLIER);
-        if (ret == TIMED_OUT) LOGE("@%s: Wait 1st request timed out", __func__);
+        ret = mFirstRequestSignal.waitRelative(
+                  lock,
+                  kWaitFirstRequestDoneDuration * SLOWLY_MULTIPLIER);
+        if (ret == TIMED_OUT)
+            LOGE("@%s: Wait 1st request timed out", __func__);
     }
 
     return ret;
@@ -234,72 +243,83 @@ void RequestThread::handleEvent(EventData eventData) {
     if (!mActive) return;
 
     /* Notes:
-     * There should be only one of EVENT_ISYS_FRAME
-     * and EVENT_PSYS_FRAME registered.
-     * There should be only one of EVENT_xx_STATS_BUF_READY
-     * registered.
-     */
+      * There should be only one of EVENT_ISYS_FRAME
+      * and EVENT_PSYS_FRAME registered.
+      * There should be only one of EVENT_xx_STATS_BUF_READY
+      * registered.
+      */
     switch (eventData.type) {
         case EVENT_ISYS_FRAME:
-        case EVENT_PSYS_FRAME: {
-            AutoMutex l(mPendingReqLock);
-            if (mRequestsInProcessing > 0) {
-                mRequestsInProcessing--;
-            }
-            // Just in case too many requests are pending in mPendingRequests.
-            if (!mPendingRequests.empty()) {
-                mRequestTriggerEvent |= NEW_FRAME;
-                mRequestSignal.signal();
-            }
-        } break;
-        case EVENT_PSYS_STATS_BUF_READY: {
-            TRACE_LOG_POINT("RequestThread", "receive the stat event");
-            AutoMutex l(mPendingReqLock);
-            if (mBlockRequest) {
-                mBlockRequest = false;
-            }
-            mRequestTriggerEvent |= NEW_STATS;
-            mRequestSignal.signal();
-        } break;
-        case EVENT_ISYS_SOF: {
-            AutoMutex l(mPendingReqLock);
-            mLastSofSeq = eventData.data.sync.sequence;
-            mRequestTriggerEvent |= NEW_SOF;
-            mRequestSignal.signal();
-        } break;
-        case EVENT_FRAME_AVAILABLE: {
-            if (eventData.buffer->getUserBuffer() != &mFakeReqBuf) {
-                int streamId = eventData.data.frameDone.streamId;
-                FrameQueue& frameQueue = mOutputFrames[streamId];
-
-                AutoMutex lock(frameQueue.mFrameMutex);
-                bool needSignal = frameQueue.mFrameQueue.empty();
-                frameQueue.mFrameQueue.push(eventData.buffer);
-                if (needSignal) {
-                    frameQueue.mFrameAvailableSignal.signal();
+        case EVENT_PSYS_FRAME:
+            {
+                AutoMutex l(mPendingReqLock);
+                if (mRequestsInProcessing > 0) {
+                    mRequestsInProcessing--;
                 }
-            } else {
-                LOG2("%s: fake request return %u", __func__, eventData.buffer->getSequence());
+                // Just in case too many requests are pending in mPendingRequests.
+                if (!mPendingRequests.empty()) {
+                    mRequestTriggerEvent |= NEW_FRAME;
+                    mRequestSignal.signal();
+                }
             }
-
-            AutoMutex l(mPendingReqLock);
-            // Insert fake request if no any request in the HAL to keep 3A running
-            if (mGet3AStatWithFakeRequest && eventData.buffer->getSequence() >= mLastEffectSeq &&
-                mPendingRequests.empty()) {
-                LOGW("No request, insert fake req after req %ld to keep 3A stats update",
-                     mLastRequestId);
-                CameraRequest fakeRequest;
-                fakeRequest.mBufferNum = 1;
-                fakeRequest.mBuffer[0] = &mFakeReqBuf;
-                mFakeReqBuf.sequence = -1;
-                mPendingRequests.push_back(fakeRequest);
-                mRequestTriggerEvent |= NEW_REQUEST;
+            break;
+        case EVENT_PSYS_STATS_BUF_READY:
+            {
+                TRACE_LOG_POINT("RequestThread", "receive the stat event");
+                AutoMutex l(mPendingReqLock);
+                if (mBlockRequest) {
+                    mBlockRequest = false;
+                }
+                mRequestTriggerEvent |= NEW_STATS;
                 mRequestSignal.signal();
             }
-        } break;
-        default: {
-            LOGW("Unknown event type %d", eventData.type);
-        } break;
+            break;
+        case EVENT_ISYS_SOF:
+            {
+                AutoMutex l(mPendingReqLock);
+                mLastSofSeq = eventData.data.sync.sequence;
+                mRequestTriggerEvent |= NEW_SOF;
+                mRequestSignal.signal();
+            }
+            break;
+        case EVENT_FRAME_AVAILABLE:
+            {
+                if (eventData.buffer->getUserBuffer() != &mFakeReqBuf) {
+                    int streamId = eventData.data.frameDone.streamId;
+                    FrameQueue& frameQueue = mOutputFrames[streamId];
+
+                    AutoMutex lock(frameQueue.mFrameMutex);
+                    bool needSignal = frameQueue.mFrameQueue.empty();
+                    frameQueue.mFrameQueue.push(eventData.buffer);
+                    if (needSignal) {
+                        frameQueue.mFrameAvailableSignal.signal();
+                    }
+                } else {
+                    LOG2("%s: fake request return %u", __func__, eventData.buffer->getSequence());
+                }
+
+                AutoMutex l(mPendingReqLock);
+                // Insert fake request if no any request in the HAL to keep 3A running
+                if (mGet3AStatWithFakeRequest &&
+                    eventData.buffer->getSequence() >= mLastEffectSeq &&
+                    mPendingRequests.empty()) {
+                    LOGW("No request, insert fake req after req %ld to keep 3A stats update",
+                         mLastRequestId);
+                    CameraRequest fakeRequest;
+                    fakeRequest.mBufferNum = 1;
+                    fakeRequest.mBuffer[0] = &mFakeReqBuf;
+                    mFakeReqBuf.sequence = -1;
+                    mPendingRequests.push_back(fakeRequest);
+                    mRequestTriggerEvent |= NEW_REQUEST;
+                    mRequestSignal.signal();
+                }
+            }
+            break;
+        default:
+            {
+                LOGW("Unknown event type %d", eventData.type);
+            }
+            break;
     }
 }
 
@@ -323,9 +343,9 @@ bool RequestThread::fetchNextRequest(CameraRequest& request) {
 bool RequestThread::threadLoop() {
     int64_t applyingSeq = -1;
     {
-        ConditionLock lock(mPendingReqLock);
+         ConditionLock lock(mPendingReqLock);
 
-        if (blockRequest()) {
+         if (blockRequest()) {
             int ret = mRequestSignal.waitRelative(lock, kWaitDuration * SLOWLY_MULTIPLIER);
             CheckWarning(ret == TIMED_OUT, true,
                          "wait event time out, %d requests processing, %zu requests in HAL",
@@ -392,8 +412,8 @@ void RequestThread::handleRequest(CameraRequest& request, int64_t applyingSeq) {
         if (request.mParams.get()) {
             mParamGenerator->updateParameters(effectSeq, request.mParams.get());
         }
-        LOG2("%s: Reprocess request: seq %ld, out buffer %d", __func__, effectSeq,
-             request.mBufferNum);
+        LOG2("%s: Reprocess request: seq %ld, out buffer %d", __func__,
+             effectSeq, request.mBufferNum);
     } else {
         long requestId = -1;
         {
@@ -428,8 +448,9 @@ void RequestThread::handleRequest(CameraRequest& request, int64_t applyingSeq) {
             mParamGenerator->saveParameters(effectSeq, mLastRequestId, request.mParams.get());
             mLastEffectSeq = effectSeq;
 
-            LOG2("%s: Process request: %ld:%ld, out buffer %d, param? %s", __func__, mLastRequestId,
-                 effectSeq, request.mBufferNum, request.mParams.get() ? "true" : "false");
+            LOG2("%s: Process request: %ld:%ld, out buffer %d, param? %s", __func__,
+                 mLastRequestId, effectSeq, request.mBufferNum,
+                 request.mParams.get() ? "true" : "false");
         }
     }
 
@@ -460,4 +481,4 @@ void RequestThread::handleRequest(CameraRequest& request, int64_t applyingSeq) {
     }
 }
 
-}  // namespace icamera
+} //namespace icamera

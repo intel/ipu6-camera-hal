@@ -37,7 +37,7 @@ typedef enum vendor_metadata_section {
  * Hierarchy positions in enum space.
  */
 typedef enum vendor_metadata_section_start {
-    INTEL_VENDOR_CAMERA_START = uint32_t(INTEL_VENDOR_CAMERA << 16),
+    INTEL_VENDOR_CAMERA_START      = uint32_t(INTEL_VENDOR_CAMERA              << 16),
 } vendor_metadata_section_start_t;
 
 /**
@@ -47,32 +47,32 @@ typedef enum vendor_metadata_section_start {
  * src/metadata/vendor_metadata_tag_info.c
  */
 typedef enum vendor_metadata_tag {
-    INTEL_VENDOR_CAMERA_CALLBACK_RGBS =  // enum         | public
-    INTEL_VENDOR_CAMERA_START,
+    INTEL_VENDOR_CAMERA_CALLBACK_RGBS =               // enum         | public
+            INTEL_VENDOR_CAMERA_START,
     INTEL_VENDOR_CAMERA_RGBS_GRID_SIZE,               // int32[]      | public
     INTEL_VENDOR_CAMERA_SHADING_CORRECTION,           // enum         | public
     INTEL_VENDOR_CAMERA_RGBS_STATS_BLOCKS,            // byte[]       | public
     INTEL_VENDOR_CAMERA_CALLBACK_TM_CURVE,            // enum         | public
     INTEL_VENDOR_CAMERA_TONE_MAP_CURVE,               // float[]      | public
     INTEL_VENDOR_CAMERA_POWER_MODE,                   // enum         | public
-                                                      // ENABLE_EVCP_S
+// ENABLE_EVCP_S
     INTEL_VENDOR_CAMERA_IC_CAPS,                      // int32        | public
-                                                      // ENABLE_EVCP_E
-                                                      // ENABLE_EVCP_S
+// ENABLE_EVCP_E
+// ENABLE_EVCP_S
     INTEL_VENDOR_CAMERA_IC_PEACE_FEATURES,            // int32[]      | public
-                                                      // ENABLE_EVCP_E
-                                                      // ENABLE_EVCP_S
+// ENABLE_EVCP_E
+// ENABLE_EVCP_S
     INTEL_VENDOR_CAMERA_IC_ECC_MODE,                  // enum         | public
-                                                      // ENABLE_EVCP_E
-                                                      // ENABLE_EVCP_S
+// ENABLE_EVCP_E
+// ENABLE_EVCP_S
     INTEL_VENDOR_CAMERA_IC_BC_MODE,                   // enum         | public
-                                                      // ENABLE_EVCP_E
-                                                      // ENABLE_EVCP_S
+// ENABLE_EVCP_E
+// ENABLE_EVCP_S
     INTEL_VENDOR_CAMERA_IC_BR_PARAMETERS,             // int32[]      | public
-                                                      // ENABLE_EVCP_E
-                                                      // ENABLE_EVCP_S
+// ENABLE_EVCP_E
+// ENABLE_EVCP_S
     INTEL_VENDOR_CAMERA_IC_FF_MODE,                   // enum         | public
-                                                      // ENABLE_EVCP_E
+// ENABLE_EVCP_E
     INTEL_VENDOR_CAMERA_TOTAL_EXPOSURE_TARGET,        // int64        | public
     INTEL_VENDOR_CAMERA_TOTAL_EXPOSURE_TARGET_RANGE,  // int64[]      | public
     INTEL_VENDOR_CAMERA_RAW_DATA_OUTPUT,              // enum         | public
@@ -137,3 +137,4 @@ typedef enum vendor_metadata_enum_intel_vendor_camera_raw_data_output {
     INTEL_VENDOR_CAMERA_RAW_DATA_OUTPUT_OFF,
     INTEL_VENDOR_CAMERA_RAW_DATA_OUTPUT_ON,
 } vendor_metadata_enum_intel_vendor_camera_raw_data_output_t;
+

@@ -84,16 +84,6 @@ class CameraStream : public BufferConsumer, public EventSource {
      */
     virtual int onFrameAvailable(Port port, const std::shared_ptr<CameraBuffer>& camBuffer);
 
-    /**
-     * \brief Return a privacy buffer
-     */
-    virtual std::shared_ptr<CameraBuffer> getPrivacyBuffer();
-
-    /**
-     * \brief Special function to send last frame after privacy on
-     */
-    virtual int doFrameAvailable(Port port, const std::shared_ptr<CameraBuffer>& camBuffer);
-
  private:
     int mCameraId;
     int mStreamId;
@@ -105,8 +95,6 @@ class CameraStream : public BufferConsumer, public EventSource {
     CameraBufVector mUserBuffersPool;
     // How many user buffers are currently processing underhood.
     int mBufferInProcessing;
-    // An extra queue at the end of pipeline, to store 1 buffer at least when privacy on.
-    CameraBufQ mPrivacyBuffer;
 };
 
 }  // namespace icamera

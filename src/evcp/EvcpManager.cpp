@@ -188,9 +188,9 @@ void EvcpManager::runEvcpL(const camera_buffer_t& buffer) {
 #ifdef ENABLE_SANDBOXING
     bool ret = mEvcp->runEvcpFrame(buffer.dmafd, size);
 #else
-    void* pBuf = (buffer.s.memType == V4L2_MEMORY_DMABUF) ?
-                     CameraBuffer::mapDmaBufferAddr(buffer.dmafd, size) :
-                     buffer.addr;
+    void* pBuf = (buffer.s.memType == V4L2_MEMORY_DMABUF)
+                     ? CameraBuffer::mapDmaBufferAddr(buffer.dmafd, size)
+                     : buffer.addr;
 
     bool ret = mEvcp->runEvcpFrame(pBuf, size);
 

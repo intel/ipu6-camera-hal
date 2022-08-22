@@ -77,8 +77,8 @@ bool PnpDebugControl::isFaceDisabled() {
 }
 
 bool PnpDebugControl::isFaceAeDisabled() {
-    return getInstance()->mStaticCfg.isFaceDisabled ? true :
-                                                      getInstance()->mStaticCfg.isFaceAeDisabled;
+    return getInstance()->mStaticCfg.isFaceDisabled ? true
+                                                    : getInstance()->mStaticCfg.isFaceAeDisabled;
 }
 
 bool PnpDebugControl::isBypassFDAlgo() {

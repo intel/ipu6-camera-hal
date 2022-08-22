@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2022 Intel Corporation.
+ * Copyright (C) 2015-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,14 +31,13 @@ enum EventType {
     EVENT_PSYS_STATS_SIS_BUF_READY,
     EVENT_ISYS_FRAME,
     EVENT_PSYS_FRAME,
+    // CSI_META_S
+    EVENT_META,
+    // CSI_META_E
     EVENT_PROCESS_REQUEST,
     EVENT_FRAME_AVAILABLE,
     EVENT_PSYS_REQUEST_BUF_READY,
     EVENT_REQUEST_METADATA_READY,
-    // INTEL_DVS_S
-    EVENT_DVS_READY,
-    // INTEL_DVS_E
-    EVENT_ISYS_ERROR,
 };
 
 struct EventDataStatsReady {
@@ -59,6 +58,9 @@ struct EventDataFrame {
 struct EventDataMeta {
     timeval timestamp;
     int64_t sequence;
+    // DOL_FEATURE_S
+    short vbp;
+    // DOL_FEATURE_E
 };
 
 struct EventRequestData {
@@ -80,14 +82,7 @@ struct EventFrameAvailable {
 struct EventRequestReady {
     int64_t timestamp;
     int64_t sequence;
-    uint32_t requestId;
 };
-
-// INTEL_DVS_S
-struct EventDVSRunReady {
-    int streamId;
-};
-// INTEL_DVS_E
 
 struct EventData {
     EventData() : type(EVENT_ISYS_SOF), pipeType(-1) { CLEAR(data); }
@@ -103,11 +98,7 @@ struct EventData {
         EventRequestData request;
         EventConfigData config;
         EventFrameAvailable frameDone;
-        // use for returning metadata and shutter event
-        EventRequestReady requestReady;
-        // INTEL_DVS_S
-        EventDVSRunReady dvsRunReady;
-        // INTEL_DVS_E
+        EventRequestReady requestReady;  // use for returning metadata and shutter event
     } data;
 };
 

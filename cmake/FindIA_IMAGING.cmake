@@ -40,6 +40,9 @@ find_library(IA_LARD_LIB        ia_lard)
 endif() #ENABLE_SANDBOXING
 find_library(IA_EXC_LIB         ia_exc)
 find_library(IA_MKN_LIB         ia_mkn)
+# DOL_FEATURE_S
+find_library(IA_BCOMP_LIB       ia_bcomp)
+# DOL_FEATURE_E
 find_library(IA_NVM_LIB         ia_nvm)
 find_library(IA_LOG_LIB         ia_log)
 find_library(IA_DVS_LIB         ia_dvs)
