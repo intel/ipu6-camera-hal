@@ -37,7 +37,7 @@ const char* IntelAlgoIpcCmdToString(IPC_CMD cmd) {
         "IPC_GPU_TNR_DEINIT",
         // ENABLE_EVCP_S
         "IPC_EVCP_INIT", "IPC_EVCP_UPDCONF", "IPC_EVCP_SETCONF", "IPC_EVCP_RUN_FRAME",
-        "IPC_EVCP_DEINIT"
+        "IPC_EVCP_DEINIT",
         // ENABLE_EVCP_E
         "IPC_GPU_TNR_THREAD2_RUN_FRAME",
         "IPC_GPU_TNR_THREAD2_PARAM_UPDATE"};
