@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2021 Intel Corporation.
+ * Copyright (C) 2019-2022 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,10 +39,7 @@ int PGCommon::getFrameSize(int format, int width, int height, bool needAlignedHe
     int stride = PGUtils::getCssStride(format, width);
     switch (cssFormat) {
         case IA_CSS_DATA_FORMAT_BAYER_LINE_INTERLEAVED:  // CSL6
-            if (needAlignedHeight) {
-                height = ALIGN_64(height);
-            }
-            size = stride * height * 3 / 2;
+            size = stride * height;
             break;
         default:
             break;

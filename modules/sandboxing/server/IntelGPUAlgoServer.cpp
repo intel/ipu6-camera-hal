@@ -148,7 +148,7 @@ void IntelGPUAlgoServer::handleRequest(const MsgReq& msg) {
             status = UNKNOWN_ERROR;
             break;
     }
-    LOG1("@%s, req_id:%d:%s, status", __func__, req_id,
+    LOG1("@%s, req_id:%d:%s, status:%d", __func__, req_id,
          IntelAlgoIpcCmdToString(static_cast<IPC_CMD>(req_id)), status);
 
     getIntelAlgoServer()->returnCallback(req_id, status, buffer_handle);
