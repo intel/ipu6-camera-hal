@@ -241,7 +241,7 @@
         <psysAlignWithSof value="true"/>
         <psysBundleWithAic value="true"/>
         <skipFrameV4L2Error value="true"/>
-        <isISYSCompression value="1true"/>
-        <isPSACompression value="1true"/>
+        <isISYSCompression value="true"/>
+        <isPSACompression value="true"/>
     </Sensor>
 </CameraSettings>
