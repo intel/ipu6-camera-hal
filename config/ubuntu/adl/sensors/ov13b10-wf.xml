@@ -224,7 +224,7 @@
         <enablePSysProcessor value="true"/>
         <dvsType value="IMG_TRANS"/>
         <nvmDeviceInfo value="NVM,1680"/>
-        <lensName value="dw9768"/>
+        <lensName value="dw9714"/>
         <lensHwType value="LENS_VCM_HW"/>
         <testPatternMap value="Off,0,ColorBars,2"/>
         <AlgoRunningRate value="AE,0.2,AWB,0.2"/> <!-- AE running rate is 0.2, AWB running rate is 0.2. -->
