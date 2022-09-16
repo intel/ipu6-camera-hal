@@ -247,6 +247,10 @@ bool PlatformData::isFaceDetectionSupported(int cameraId) {
     return false;
 }
 
+bool PlatformData::isSchedulerEnabled(int cameraId) {
+    return getInstance()->mStaticCfg.mCameras[cameraId].mSchedulerEnabled;
+}
+
 bool PlatformData::isFaceAeEnabled(int cameraId) {
     return (isFaceDetectionSupported(cameraId) &&
             getInstance()->mStaticCfg.mCameras[cameraId].mFaceAeEnabled);

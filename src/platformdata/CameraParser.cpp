@@ -558,6 +558,8 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
         pCurrentCam->mPSACompression = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "isOFSCompression") == 0) {
         pCurrentCam->mOFSCompression = strcmp(atts[1], "true") == 0;
+    } else if (strcmp(name, "schedulerEnabled") == 0) {
+        pCurrentCam->mSchedulerEnabled = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "faceAeEnabled") == 0) {
         pCurrentCam->mFaceAeEnabled = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "psysAlignWithSof") == 0) {

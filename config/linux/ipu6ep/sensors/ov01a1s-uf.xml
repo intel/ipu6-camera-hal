@@ -15,23 +15,23 @@
 -->
 
 <CameraSettings>
-    <Sensor name="ov01a10-uf" description="OV01A10 sensor.">
-        <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1280" outputHeight="798" format="V4L2_PIX_FMT_SGRBG10"><!-- RAW10 BE capture -->
-            <format name="ov01a10 $I2CBUS" pad="0" width="1280" height="800" format="V4L2_MBUS_FMT_SBGGR10_1X10"/>
-            <format name="Intel IPU6 CSI-2 $CSI_PORT" pad="0" width="1280" height="800" format="V4L2_MBUS_FMT_SBGGR10_1X10"/>
+    <Sensor name="ov01a1s-uf" description="OV01A1S sensor.">
+        <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1296" outputHeight="798" format="V4L2_PIX_FMT_SGRBG10"><!-- RAW10 BE capture -->
+            <format name="ov01a1s $I2CBUS" pad="0" width="1296" height="798" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
+            <format name="Intel IPU6 CSI-2 $CSI_PORT" pad="0" width="1296" height="798" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
 
-            <link srcName="ov01a10 $I2CBUS" srcPad="0" sinkName="Intel IPU6 CSI-2 $CSI_PORT" sinkPad="0" enable="true"/>
+            <link srcName="ov01a1s $I2CBUS" srcPad="0" sinkName="Intel IPU6 CSI-2 $CSI_PORT" sinkPad="0" enable="true"/>
 
-            <format name="Intel IPU6 CSI2 BE SOC 0" pad="0" width="1280" height="800" format="V4L2_MBUS_FMT_SBGGR10_1X10"/>
-            <format name="Intel IPU6 CSI2 BE SOC 0" pad="1" width="1280" height="798" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
-            <selection name="Intel IPU6 CSI2 BE SOC 0" pad="1" target="V4L2_SEL_TGT_CROP" left="0" top="1" width="1280" height="798"/>
+            <format name="Intel IPU6 CSI2 BE SOC 0" pad="0" width="1296" height="798" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
+            <format name="Intel IPU6 CSI2 BE SOC 0" pad="1" width="1296" height="798" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
+            <selection name="Intel IPU6 CSI2 BE SOC 0" pad="1" target="V4L2_SEL_TGT_CROP" left="0" top="0" width="1296" height="798"/>
 
             <link srcName="Intel IPU6 CSI-2 $CSI_PORT" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 0" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC 0" srcPad="1" sinkName="Intel IPU6 BE SOC capture 0" sinkPad="0" enable="true"/>
 
             <videonode name="Intel IPU6 BE SOC capture 0" videoNodeType="VIDEO_GENERIC"/>
             <videonode name="Intel IPU6 CSI-2 $CSI_PORT" videoNodeType="VIDEO_ISYS_RECEIVER"/>
-            <videonode name="ov01a10 $I2CBUS" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+            <videonode name="ov01a1s $I2CBUS" videoNodeType="VIDEO_PIXEL_ARRAY"/>
         </MediaCtlConfig>
 
         <StaticMetadata>
@@ -76,8 +76,8 @@
             <sensor.info.exposureTimeRange value="100,100000"/>  <!-- align with supportedAeExposureTimeRange -->
 
             <!-- Blow static metadata are for camera HAL V3 -->
-            <sensor.info.activeArraySize value="0,0,1280,800"/> <!-- 1296,800 -->
-            <sensor.info.pixelArraySize value="1280x800"/>
+            <sensor.info.activeArraySize value="0,0,1296,800"/> <!-- 1296,800 -->
+            <sensor.info.pixelArraySize value="1296x800"/>
             <!-- 4096x1.12um 3072x1.12um -->
             <sensor.info.physicalSize value="3.69,2.77"/>
             <!-- 0: off, 1: solid color, 2: color bars  -->
@@ -112,7 +112,7 @@
             <!-- input fmt, output fmt number, output fmts; fmt: YCbCr_420_888:0x23 (35), IMPLEMENTATION_DEFINED:0x22 (34), Blob:0x21 (33) -->
             <scaler.availableInputOutputFormatsMap value="35,2,33,35,34,2,33,35"/>
             <!-- [width, height, raw-out-size] -->
-            <sensor.opaqueRawSize value="1280,800,100"/>
+            <sensor.opaqueRawSize value="1296,800,100"/>
             <!-- available stream configurations: format: IMPLEMENTATION_DEFINED(34)|YCbCr_420_888:0x23(35)|BLOB(33), widthxheight, type: output(0)|input(1) -->
             <scaler.availableStreamConfigurations value="
                 33,1280x720,0,
@@ -150,13 +150,13 @@
             <sync.maxLatency value="0"/>
         </StaticMetadata>
 
-        <supportedTuningConfig value="NORMAL,VIDEO,ov01a10,STILL_CAPTURE,VIDEO,ov01a10" />
+        <supportedTuningConfig value="NORMAL,VIDEO,ov01a1s,STILL_CAPTURE,VIDEO,ov01a1s" />
 
         <!-- The lard tags configuration. Every tag should be 4-characters. -->
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
         <lardTags value="VIDEO,DFLT,DFLT,DFLT,DFLT"/>
 
-        <supportedISysSizes value="1280x800"/> <!-- ascending order request -->
+        <supportedISysSizes value="1296x798"/> <!-- ascending order request -->
         <supportedISysFormat value="V4L2_PIX_FMT_SGRBG10"/>
         <enableAIQ value="true"/>
         <iSysRawFormat value="V4L2_PIX_FMT_SGRBG10"/>
@@ -168,7 +168,7 @@
         <ltmGainLag value="1"/>
         <yuvColorRangeMode value="full"/> <!-- there are 2 yuv color range mode, like full, reduced. -->
         <pipeSwitchDelayFrame value="60"/>
-        <graphSettingsFile value="graph_settings_ov01a10.xml"/>
+        <graphSettingsFile value="graph_settings_ov01a1s.xml"/>
         <graphSettingsType value="dispersed"/>
         <enablePSysProcessor value="true"/>
         <dvsType value="IMG_TRANS"/>

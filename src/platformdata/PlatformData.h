@@ -169,6 +169,7 @@ class PlatformData {
                       mISYSCompression(false),
                       mPSACompression(false),
                       mOFSCompression(false),
+                      mSchedulerEnabled(false),
                       mFaceAeEnabled(true),
                       mFaceEngineVendor(FACE_ENGINE_INTEL_PVL),
                       mFaceEngineRunningInterval(FACE_ENGINE_DEFAULT_RUNNING_INTERVAL),
@@ -266,6 +267,7 @@ class PlatformData {
             bool mISYSCompression;
             bool mPSACompression;
             bool mOFSCompression;
+            bool mSchedulerEnabled;
             bool mFaceAeEnabled;
             int mFaceEngineVendor;
             int mFaceEngineRunningInterval;
@@ -664,6 +666,14 @@ class PlatformData {
      * \return if ltm thread is enabled or not.
      */
     static bool isEnableLtmThread(int cameraId);
+
+    /**
+     * Check if H-Scheduler is enabled
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return if H-Scheduler is enabled
+     */
+    static bool isSchedulerEnabled(int cameraId);
 
     /**
      * Check face engine is enabled or not

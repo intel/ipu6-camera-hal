@@ -16,10 +16,10 @@
 
 <CameraSettings>
     <Sensor name="ov02c10-uf" description="OV02C10 sensor.">
-        <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1932" outputHeight="1092" format="V4L2_PIX_FMT_SGRBG10"><!-- RAW10 BE capture -->
-            <format name="ov02c10 $I2CBUS" pad="0" width="1932" height="1092" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
-            <format name="Intel IPU6 CSI-2 $CSI_PORT" pad="0" width="1932" height="1092" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
-            <format name="Intel IPU6 CSI2 BE SOC 0" pad="0" width="1932" height="1092" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
+        <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1928" outputHeight="1092" format="V4L2_PIX_FMT_SGRBG10"><!-- RAW10 BE capture -->
+            <format name="ov02c10 $I2CBUS" pad="0" width="1928" height="1092" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
+            <format name="Intel IPU6 CSI-2 $CSI_PORT" pad="0" width="1928" height="1092" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
+            <format name="Intel IPU6 CSI2 BE SOC 0" pad="0" width="1928" height="1092" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
 
             <link srcName="ov02c10 $I2CBUS" srcPad="0" sinkName="Intel IPU6 CSI-2 $CSI_PORT" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI-2 $CSI_PORT" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 0" sinkPad="0" enable="true"/>
@@ -62,7 +62,7 @@
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
         <lardTags value="VIDEO,DFLT,DFLT,DFLT,DFLT"/>
 
-        <supportedISysSizes value="1932x1092"/> <!-- ascending order request -->
+        <supportedISysSizes value="1928x1092"/> <!-- ascending order request -->
         <supportedISysFormat value="V4L2_PIX_FMT_SGRBG10"/>
         <enableAIQ value="true"/>
         <iSysRawFormat value="V4L2_PIX_FMT_SGRBG10"/>

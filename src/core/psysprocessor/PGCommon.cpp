@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2021 Intel Corporation.
+ * Copyright (C) 2019-2022 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,10 +39,7 @@ int PGCommon::getFrameSize(int format, int width, int height, bool needAlignedHe
     int stride = PGUtils::getCssStride(format, width);
     switch (cssFormat) {
         case IA_CSS_DATA_FORMAT_BAYER_LINE_INTERLEAVED:  // CSL6
-            if (needAlignedHeight) {
-                height = ALIGN_64(height);
-            }
-            size = stride * height * 3 / 2;
+            size = stride * height;
             break;
         default:
             break;
@@ -881,12 +878,12 @@ int PGCommon::configureFrameDesc() {
 int PGCommon::iterate(CameraBufferMap& inBufs, CameraBufferMap& outBufs, ia_binary_data* statistics,
                       const ia_binary_data* ipuParameters) {
     PERF_CAMERA_ATRACE();
-    LOG2("%s:%s ++", getName(), __func__);
 
     int64_t sequence = 0;
     if (!inBufs.empty()) {
         sequence = inBufs.begin()->second->getSequence();
     }
+    LOG2("<seq%ld>%s:%s ++", sequence, getName(), __func__);
 
     int ret = prepareTerminalBuffers(ipuParameters, inBufs, outBufs, sequence);
     CheckAndLogError((ret != OK), ret, "%s, prepareTerminalBuffers fail with %d", getName(), ret);
@@ -934,7 +931,7 @@ int PGCommon::iterate(CameraBufferMap& inBufs, CameraBufferMap& outBufs, ia_bina
     }
 
     postTerminalBuffersDone(sequence);
-    LOG2("%s:%s -- ", getName(), __func__);
+    LOG2("<seq%ld>%s:%s -- ", sequence, getName(), __func__);
     return ret;
 }
 
