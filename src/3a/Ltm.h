@@ -57,7 +57,8 @@ class Ltm : public EventListener {
     int start();
     void stop();
 
-    int configure(const std::vector<ConfigMode>& configModes);
+    int configure(const std::vector<ConfigMode>& configModes,
+                  std::shared_ptr<IGraphConfig> graphConfig, int32_t streamId);
 
     /**
      * \brief handle statistics event
@@ -67,6 +68,9 @@ class Ltm : public EventListener {
 
  private:
     DISALLOW_COPY_AND_ASSIGN(Ltm);
+
+    int getPixelCropperResolution(std::shared_ptr<IGraphConfig> graphConfig, int32_t streamId,
+                                  camera_resolution_t* resolution);
 
     int runLtmAsync();
     int runLtm(const LtmInputParams& ltmInputParams);
@@ -105,6 +109,8 @@ class Ltm : public EventListener {
     int mInputParamIndex;
     LtmInputParams* mLtmParams[kMaxLtmParamsNum];
     std::queue<LtmInputParams*> mLtmParamsQ;
+
+    camera_resolution_t mFrameResolution;
 };
 
 } /* namespace icamera */

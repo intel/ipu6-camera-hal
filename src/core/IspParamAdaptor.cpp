@@ -769,6 +769,7 @@ int IspParamAdaptor::runIspAdaptL(ia_isp_bxt_program_group* pgPtr, ia_isp_bxt_gd
                 break;
             case ia_pal_uuid_isp_bxt_blc:
             case ia_pal_uuid_isp_b2i_sie_1_1:
+            case ia_pal_uuid_isp_gammatm_v3:
                 if (aiqResults->mAiqParam.testPatternMode != TEST_PATTERN_OFF) {
                     LOG2("%s: disable kernel(%d) in test pattern mode", __func__,
                          inputParams->program_group.base.run_kernels[i].kernel_uuid);

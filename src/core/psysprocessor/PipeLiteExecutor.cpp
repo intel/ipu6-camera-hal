@@ -48,7 +48,8 @@ static const int32_t sSisKernels[] = {ia_pal_uuid_isp_sis_1_0_a};
 PipeLiteExecutor::PipeLiteExecutor(int cameraId, const ExecutorPolicy& policy,
                                    vector<string> exclusivePGs, PSysDAG* psysDag,
                                    shared_ptr<IGraphConfig> gc)
-        : mCameraId(cameraId),
+        : ISchedulerNode(policy.exeName.c_str()),
+          mCameraId(cameraId),
           mStreamId(-1),
           mName(policy.exeName),
           mPGNames(policy.pgList),
@@ -383,7 +384,8 @@ int PipeLiteExecutor::setInputTerminals(const std::map<ia_uid, Port>& sourceTerm
 
 int PipeLiteExecutor::start() {
     LOG1("%s executor:%s", __func__, mName.c_str());
-    mProcessThread = new ProcessThread(this);
+    // Need thread when PolicyManager takes responsibility. Otherwise Scheduler will handle.
+    if (mPolicyManager) mProcessThread = new ProcessThread(this);
     AutoMutex l(mBufferQueueLock);
 
     allocBuffers();
@@ -391,8 +393,10 @@ int PipeLiteExecutor::start() {
 
     mLastStatsSequence = -1;
 
-    mThreadRunning = true;
-    mProcessThread->run(mName.c_str(), PRIORITY_NORMAL);
+    if (mProcessThread) {
+        mThreadRunning = true;
+        mProcessThread->run(mName.c_str(), PRIORITY_NORMAL);
+    }
 
     return OK;
 }
@@ -400,11 +404,11 @@ int PipeLiteExecutor::start() {
 void PipeLiteExecutor::stop() {
     LOG1("%s executor:%s", __func__, mName.c_str());
 
-    mProcessThread->requestExitAndWait();
+    if (mProcessThread) mProcessThread->requestExitAndWait();
 
     // Thread is not running. It is safe to clear the Queue
     clearBufferQueues();
-    delete mProcessThread;
+    if (mProcessThread) delete mProcessThread;
 
     // Clear the buffer pool of pg Uint
     for (auto& unit : mPGExecutors) {
@@ -415,6 +419,7 @@ void PipeLiteExecutor::stop() {
 
 void PipeLiteExecutor::notifyStop() {
     LOG1("%s executor:%s", __func__, mName.c_str());
+    if (!mProcessThread) return;
 
     mProcessThread->requestExit();
     {
@@ -526,6 +531,34 @@ bool PipeLiteExecutor::hasValidBuffers(const CameraBufferPortMap& buffers) {
     return false;
 }
 
+bool PipeLiteExecutor::fetchBuffersInQueue(map<Port, shared_ptr<CameraBuffer> >& cInBuffer,
+                                           map<Port, shared_ptr<CameraBuffer> >& cOutBuffer) {
+    for (auto& input : mInputQueue) {
+        Port port = input.first;
+        CameraBufQ& inputQueue = input.second;
+        if (inputQueue.empty()) {
+            LOG2("%s: No buffer input port %d", __func__, port);
+            cInBuffer.clear();
+            return false;
+        }
+        cInBuffer[port] = inputQueue.front();
+    }
+
+    for (auto& output : mOutputQueue) {
+        Port port = output.first;
+        CameraBufQ& outputQueue = output.second;
+        if (outputQueue.empty()) {
+            LOG2("%s: No buffer output port %d", __func__, port);
+            cInBuffer.clear();
+            cOutBuffer.clear();
+            return false;
+        }
+
+        cOutBuffer[port] = outputQueue.front();
+    }
+    return true;
+}
+
 int PipeLiteExecutor::processNewFrame() {
     PERF_CAMERA_ATRACE();
 
@@ -534,14 +567,20 @@ int PipeLiteExecutor::processNewFrame() {
     // Wait frame buffers.
     {
         ConditionLock lock(mBufferQueueLock);
-        ret = waitFreeBuffersInQueue(lock, inBuffers, outBuffers);
-        // Already stopped
-        if (!mThreadRunning) return -1;
+        if (mPolicyManager) {
+            // Prepare frames at first, then mPolicyManager decides when to run
+            ret = waitFreeBuffersInQueue(lock, inBuffers, outBuffers);
+            // Already stopped
+            if (!mThreadRunning) return -1;
 
-        if (ret != OK) return OK;  // Wait frame buffer error should not involve thread exit.
+            if (ret != OK) return OK;  // Wait frame buffer error should not involve thread exit.
 
-        CheckAndLogError(inBuffers.empty() || outBuffers.empty(), UNKNOWN_ERROR,
-                         "Failed to get input or output buffers.");
+            CheckAndLogError(inBuffers.empty() || outBuffers.empty(), UNKNOWN_ERROR,
+                             "Failed to get input or output buffers.");
+        } else {
+            // Triggered by scheduler, will run if frames are ready
+            if (!fetchBuffersInQueue(inBuffers, outBuffers)) return OK;
+        }
 
         for (auto& output : mOutputQueue) {
             output.second.pop();

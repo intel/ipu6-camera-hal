@@ -128,7 +128,7 @@ See the License for the specific language governing permissions and
     <tuning_mode value="0" />
   </isa_lb_video_bayer>
   <post_gdc_video_bayer>
-    <display format="YUV422_8_P64" width="640" height="360" peer="video0" />
+    <display format="YUV420_8_SP" width="640" height="360" peer="video0" />
     <tnr_ref_in format="YUV420_8_SP" private="1" width="1280" height="736" />
     <tnr_ref_out format="YUV420_8_SP" private="1" width="1280" height="736" />
     <gdc5>
@@ -212,7 +212,7 @@ See the License for the specific language governing permissions and
     <tuning_mode value="0" />
   </isa_lb_video_bayer>
   <post_gdc_video_bayer>
-    <display format="YUV422_8_P64" width="640" height="480" peer="video0" />
+    <display format="YUV420_8_SP" width="640" height="480" peer="video0" />
     <tnr_ref_in format="YUV420_8_SP" private="1" width="1024" height="768" />
     <tnr_ref_out format="YUV420_8_SP" private="1" width="1024" height="768" />
     <gdc5>
@@ -296,7 +296,7 @@ See the License for the specific language governing permissions and
     <tuning_mode value="0" />
   </isa_lb_video_bayer>
   <post_gdc_video_bayer>
-    <main format="YUV422_8_P64" width="1280" height="720" peer="video0" />
+    <main format="YUV420_8_SP" width="1280" height="720" peer="video0" />
     <tnr_ref_in format="YUV420_8_SP" private="1" width="1280" height="736" />
     <tnr_ref_out format="YUV420_8_SP" private="1" width="1280" height="736" />
     <gdc5>
@@ -376,7 +376,7 @@ See the License for the specific language governing permissions and
     <tuning_mode value="0" />
   </isa_lb_video_bayer>
   <post_gdc_video_bayer>
-    <display format="YUV422_8_P64" width="640" height="360" peer="video0" />
+    <display format="YUV420_8_SP" width="640" height="360" peer="video0" />
     <tnr_ref_in format="YUV420_8_SP" private="1" width="1152" height="640" />
     <tnr_ref_out format="YUV420_8_SP" private="1" width="1152" height="640" />
     <gdc5>
@@ -460,7 +460,7 @@ See the License for the specific language governing permissions and
     <tuning_mode value="0" />
   </isa_lb_video_bayer>
   <post_gdc_video_bayer>
-    <display format="YUV422_8_P64" width="640" height="480" peer="video0" />
+    <display format="YUV420_8_SP" width="640" height="480" peer="video0" />
     <tnr_ref_in format="YUV420_8_SP" private="1" width="896" height="640" />
     <tnr_ref_out format="YUV420_8_SP" private="1" width="896" height="640" />
     <gdc5>
@@ -827,7 +827,7 @@ See the License for the specific language governing permissions and
     <tuning_mode value="0" />
   </isa_lb_video_bayer>
   <post_gdc_video_bayer>
-    <display format="YUV422_8_P64" width="640" height="480" peer="video0" />
+    <display format="YUV420_8_SP" width="640" height="480" peer="video0" />
     <postproc format="YUV420_8_SP" width="640" height="480" peer="video1" />
     <tnr_ref_in format="YUV420_8_SP" private="1" width="1024" height="768" />
     <tnr_ref_out format="YUV420_8_SP" private="1" width="1024" height="768" />
@@ -921,8 +921,8 @@ See the License for the specific language governing permissions and
     <tuning_mode value="0" />
   </isa_lb_video_bayer>
   <post_gdc_video_bayer>
-    <main format="YUV422_8_P64" width="1280" height="720" peer="video0" />
-    <display format="YUV422_8_P64" width="640" height="360" peer="video1" />
+    <main format="YUV420_8_SP" width="1280" height="720" peer="video0" />
+    <display format="YUV420_8_SP" width="640" height="360" peer="video1" />
     <tnr_ref_in format="YUV420_8_SP" private="1" width="1280" height="736" />
     <tnr_ref_out format="YUV420_8_SP" private="1" width="1280" height="736" />
     <gdc5>
@@ -1102,7 +1102,7 @@ See the License for the specific language governing permissions and
   </isa_lb_video_bayer>
   <post_gdc_video_bayer>
     <main format="YUV420_8_SP" width="1280" height="720" peer="video0" />
-    <display format="YUV422_8_P64" width="1280" height="720" peer="video1" />
+    <display format="YUV420_8_SP" width="1280" height="720" peer="video1" />
     <tnr_ref_in format="YUV420_8_SP" private="1" width="1280" height="736" />
     <tnr_ref_out format="YUV420_8_SP" private="1" width="1280" height="736" />
     <gdc5>
