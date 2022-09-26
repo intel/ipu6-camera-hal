@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Intel Corporation.
+ * Copyright (C) 2015-2022 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,30 @@
 #include "PlatformData.h"
 
 namespace icamera {
+
+#define NVM_OS "CrOS"
+/**
+ * Camera Module Information
+ *
+ * Camera Module Information is gotten from the EEPROM, which needs to be programmed with
+ * an identification block located in the last 32 bytes of the EEPROM.
+ */
+struct CameraModuleInfo {
+    char mOsInfo[4];
+    uint16_t mCRC;
+    uint8_t mVersion;
+    uint8_t mLengthOfFields;
+    uint16_t mDataFormat;
+    uint16_t mModuleProduct;
+    char mModuleVendor[2];
+    char mSensorVendor[2];
+    uint16_t mSensorModel;
+    uint8_t mI2cAddress;
+    uint8_t mReserved[13];
+};
+
+#define CAMERA_MODULE_INFO_OFFSET 32
+#define CAMERA_MODULE_INFO_SIZE 32
 
 /**
  * \class CameraParser
@@ -136,6 +160,7 @@ class CameraParser : public ParserBase {
 
     std::string replaceStringInXml(CameraParser* profiles, const char* value);
     void getNVMDirectory(CameraParser* profiles);
+    int getCameraModuleNameFromEEPROM(const std::string& nvmDir, std::string* cameraModule);
 
  private:
     DISALLOW_COPY_AND_ASSIGN(CameraParser);
