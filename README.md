@@ -4,9 +4,9 @@ This repository supports MIPI cameras through the IPU6 on Intel Tiger Lake and
 Alder Lake platforms. There are 4 repositories that provide the complete setup:
 
 - https://github.com/intel/ipu6-drivers - kernel drivers for the IPU and sensors
-- https://github.com/intel/ipu6-camera-hal - HAL for processing of images in userspace
 - https://github.com/intel/ipu6-camera-bins - IPU firmware and proprietary image processing libraries
-- https://github.com/intel/icamerasrc (branch:icamerasrc_slim_api) - Gstreamer src plugin
+- https://github.com/intel/ipu6-camera-hal - HAL for processing of images in userspace
+- https://github.com/intel/icamerasrc/tree/icamerasrc_slim_api (branch:icamerasrc_slim_api) - Gstreamer src plugin
 
 ## Content of this repository:
 - IPU6 HAL
@@ -44,7 +44,7 @@ Alder Lake platforms. There are 4 repositories that provide the complete setup:
     sudo make install
     ```
     
-3. Move user space driver for different platforms:
+3. Move user space driver for different platforms **(if you build for either ipu6-only or ipu6ep-only support, skip this step)**:
     ```shell
     mkdir /usr/lib/${IPU6_VER}
     mkdir /usr/share/defaults/etc/${IPU6_VER}

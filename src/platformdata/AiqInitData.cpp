@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Intel Corporation
+ * Copyright (C) 2015-2022 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -124,7 +124,7 @@ void AiqData::saveDataToFile(const std::string& fileName, const ia_binary_data* 
 
 AiqInitData::AiqInitData(const std::string& sensorName, const std::string& camCfgDir,
                          const std::vector<TuningConfig>& tuningCfg, const std::string& nvmDir,
-                         int maxNvmSize, std::string* camModuleName)
+                         int maxNvmSize, const std::string& camModuleName)
         : mSensorName(sensorName),
           mMaxNvmSize(maxNvmSize),
           mTuningCfg(tuningCfg),
@@ -133,23 +133,14 @@ AiqInitData::AiqInitData(const std::string& sensorName, const std::string& camCf
 
     std::string aiqbNameFromModuleInfo;
     if (nvmDir.length() > 0) {
-        mNvmPath.append(NVM_DATA_PATH);
+        mNvmPath = nvmDir;
 
-        mNvmPath.append(nvmDir);
-        if (mNvmPath.back() != '/') mNvmPath.append("/");
-
-        mNvmPath.append("eeprom");
-        LOG2("NVM data is located in %s", mNvmPath.c_str());
-
-        std::string cameraModule;
-        int ret = getCameraModuleFromEEPROM(mNvmPath, &cameraModule);
-        if (ret == OK) {
-            if (camModuleName) *camModuleName = cameraModule;
+        if (camModuleName.length() > 0) {
             DIR* dir = opendir(camCfgDir.c_str());
             if (dir) {
                 std::string aiqbName("camera_");
                 std::string postfix(".aiqb");
-                aiqbName.append(cameraModule);
+                aiqbName.append(camModuleName);
                 struct dirent* direntPtr = nullptr;
                 while ((direntPtr = readdir(dir)) != nullptr) {
                     if ((strncmp(direntPtr->d_name, aiqbName.c_str(), aiqbName.length()) == 0) &&
@@ -195,48 +186,6 @@ AiqInitData::~AiqInitData() {
     }
 
     delete mNvm;
-}
-
-int AiqInitData::getCameraModuleFromEEPROM(const std::string& nvmPath, std::string* cameraModule) {
-    LOG1("@%s, nvmPath %s", __func__, nvmPath.c_str());
-
-    CheckAndLogError(nvmPath.empty(), NAME_NOT_FOUND, "nvmPath is empty");
-
-    const int moduleInfoSize = CAMERA_MODULE_INFO_SIZE;
-    const int moduleInfoOffset = CAMERA_MODULE_INFO_OFFSET;
-    struct CameraModuleInfo cameraModuleInfo;
-    CLEAR(cameraModuleInfo);
-    FILE* eepromFile = fopen(nvmPath.c_str(), "rb");
-    CheckAndLogError(!eepromFile, UNKNOWN_ERROR, "Failed to open EEPROM file in %s",
-                     nvmPath.c_str());
-
-    // file size should be larger than CAMERA_MODULE_INFO_OFFSET
-    fseek(eepromFile, 0, SEEK_END);
-    int nvmDataSize = static_cast<int>(ftell(eepromFile));
-    if (nvmDataSize < moduleInfoOffset) {
-        LOGE("EEPROM data is too small");
-        fclose(eepromFile);
-        return NOT_ENOUGH_DATA;
-    }
-
-    fseek(eepromFile, -1 * moduleInfoOffset, SEEK_END);
-    int ret = fread(&cameraModuleInfo, moduleInfoSize, 1, eepromFile);
-    fclose(eepromFile);
-    CheckAndLogError(!ret, UNKNOWN_ERROR, "Failed to read module info %d", ret);
-
-    if (strncmp(cameraModuleInfo.mOsInfo, NVM_OS, strlen(NVM_OS)) != 0) {
-        LOG1("NVM OS string doesn't match with module info");
-        return NO_ENTRY;
-    }
-
-    char tmpName[CAMERA_MODULE_INFO_SIZE];
-    snprintf(tmpName, CAMERA_MODULE_INFO_SIZE, "%c%c_%04x", cameraModuleInfo.mModuleVendor[0],
-             cameraModuleInfo.mModuleVendor[1], cameraModuleInfo.mModuleProduct);
-
-    cameraModule->assign(tmpName);
-    LOG1("%s, aiqb name %s", __func__, cameraModule->c_str());
-
-    return OK;
 }
 
 /**

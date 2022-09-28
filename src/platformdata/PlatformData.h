@@ -290,6 +290,8 @@ class PlatformData {
             std::string mNvmDirectory;
             int mNvmOverwrittenFileSize;
             std::string mNvmOverwrittenFile;  // overwrite NVM data
+            std::string mCamModuleName;
+            std::vector<std::string> mSupportModuleNames;
             /* key: camera module name, value: camera module info */
             std::unordered_map<std::string, CameraMetadata> mCameraModuleInfoMap;
             std::vector<IGraphType::ScalerInfo> mScalerInfo;
