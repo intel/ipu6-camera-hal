@@ -227,7 +227,7 @@ void CameraParser::checkField(CameraParser* profiles, const char* name, const ch
                     profiles->pCurrentCam->sensorName = val;
                 } else if (strcmp(key, "description") == 0) {
                     profiles->pCurrentCam->sensorDescription = val;
-                // VIRTUAL_CHANNEL_S
+                    // VIRTUAL_CHANNEL_S
                 } else if (strcmp(key, "virtualChannel") == 0) {
                     profiles->pCurrentCam->mVirtualChannel =
                         strcmp(val, "true") == 0 ? true : false;
@@ -237,7 +237,7 @@ void CameraParser::checkField(CameraParser* profiles, const char* name, const ch
                     profiles->pCurrentCam->mVCSeq = strtoul(val, nullptr, 10);
                 } else if (strcmp(key, "vcGroupId") == 0) {
                     profiles->pCurrentCam->mVCGroupId = strtoul(val, nullptr, 10);
-                // VIRTUAL_CHANNEL_E
+                    // VIRTUAL_CHANNEL_E
                 }
                 idx += 2;
             }
@@ -296,10 +296,12 @@ void CameraParser::handleCommon(CameraParser* profiles, const char* name, const 
         cfg->supportIspTuningUpdate = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "supportHwJpegEncode") == 0) {
         cfg->supportHwJpegEncode = strcmp(atts[1], "true") == 0;
-// ENABLE_EVCP_S
+    } else if (strcmp(name, "maxIsysTimeoutValue") == 0) {
+        cfg->maxIsysTimeoutValue = atoi(atts[1]);
+        // ENABLE_EVCP_S
     } else if (strcmp(name, "useGpuEvcp") == 0) {
         cfg->isGpuEvcpEnabled = strcmp(atts[1], "true") == 0;
-// ENABLE_EVCP_E
+        // ENABLE_EVCP_E
     }
 }
 
@@ -386,10 +388,10 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
         }
     } else if (strcmp(name, "useCrlModule") == 0) {
         pCurrentCam->mUseCrlModule = strcmp(atts[1], "true") == 0;
-    // DOL_FEATURE_S
+        // DOL_FEATURE_S
     } else if (strcmp(name, "dolVbpOffset") == 0) {
         parseXmlConvertStrings(atts[1], pCurrentCam->mDolVbpOffset, atoi);
-    // DOL_FEATURE_E
+        // DOL_FEATURE_E
     } else if (strcmp(name, "skipFrameV4L2Error") == 0) {
         pCurrentCam->mSkipFrameV4L2Error = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "useSensorDigitalGain") == 0) {
@@ -398,10 +400,10 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
         pCurrentCam->mUseIspDigitalGain = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "preRegisterBuffer") == 0) {
         pCurrentCam->mNeedPreRegisterBuffers = strcmp(atts[1], "true") == 0;
-    // FRAME_SYNC_S
+        // FRAME_SYNC_S
     } else if (strcmp(name, "enableFrameSyncCheck") == 0) {
         pCurrentCam->mFrameSyncCheckEnabled = strcmp(atts[1], "true") == 0;
-    // FRAME_SYNC_E
+        // FRAME_SYNC_E
     } else if (strcmp(name, "lensName") == 0) {
         string vcmName = atts[1];
         if (!profiles->mI2CBus.empty()) {
@@ -454,7 +456,7 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
         pCurrentCam->mDigitalGainLag = atoi(atts[1]);
     } else if (strcmp(name, "exposureLag") == 0) {
         pCurrentCam->mExposureLag = atoi(atts[1]);
-    // HDR_FEATURE_S
+        // HDR_FEATURE_S
     } else if (strcmp(name, "hdrExposureType") == 0) {
         if (strcmp(atts[1], "fix-exposure-ratio") == 0) {
             pCurrentCam->mSensorExposureType = SENSOR_FIX_EXPOSURE_RATIO;
@@ -487,7 +489,7 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
             LOGE("unknown sensor gain type %s, set to SENSOR_GAIN_NONE", atts[1]);
             pCurrentCam->mSensorGainType = SENSOR_GAIN_NONE;
         }
-    // HDR_FEATURE_E
+        // HDR_FEATURE_E
     } else if (strcmp(name, "graphSettingsFile") == 0) {
         pCurrentCam->mGraphSettingsFile = atts[1];
     } else if (strcmp(name, "graphSettingsType") == 0) {
@@ -605,12 +607,25 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
 
             tablePtr = strtok_r(nullptr, ",", &savePtr);
         }
+    } else if (strcmp(name, "supportModuleNames") == 0) {
+        int sz = strlen(atts[1]);
+        char src[sz + 1];
+        MEMCPY_S(src, sz, atts[1], sz);
+        src[sz] = '\0';
+        char* savePtr;
+        char* tablePtr = strtok_r(src, ",", &savePtr);
+        while (tablePtr) {
+            pCurrentCam->mSupportModuleNames.push_back(tablePtr);
+            tablePtr = strtok_r(nullptr, ",", &savePtr);
+        }
     } else if (strcmp(name, "isISYSCompression") == 0) {
         pCurrentCam->mISYSCompression = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "isPSACompression") == 0) {
         pCurrentCam->mPSACompression = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "isOFSCompression") == 0) {
         pCurrentCam->mOFSCompression = strcmp(atts[1], "true") == 0;
+    } else if (strcmp(name, "schedulerEnabled") == 0) {
+        pCurrentCam->mSchedulerEnabled = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "faceAeEnabled") == 0) {
         pCurrentCam->mFaceAeEnabled = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "psysAlignWithSof") == 0) {
@@ -621,8 +636,7 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
         pCurrentCam->mSwProcessingAlignWithIsp = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "faceEngineVendor") == 0) {
         int val = atoi(atts[1]);
-        pCurrentCam->mFaceEngineVendor =
-            val >= 0 ? val : FACE_ENGINE_INTEL_PVL;
+        pCurrentCam->mFaceEngineVendor = val >= 0 ? val : FACE_ENGINE_INTEL_PVL;
     } else if (strcmp(name, "faceEngineRunningInterval") == 0) {
         int val = atoi(atts[1]);
         pCurrentCam->mFaceEngineRunningInterval =
@@ -749,10 +763,10 @@ void CameraParser::parseMediaCtlConfigElement(CameraParser* profiles, const char
             mc.outputHeight = strtoul(atts[idx + 1], nullptr, 10);
         } else if (strcmp(key, "format") == 0) {
             mc.format = CameraUtils::string2PixelCode(atts[idx + 1]);
-        // DOL_FEATURE_S
+            // DOL_FEATURE_S
         } else if (strcmp(key, "vbp") == 0) {
             mc.vbp = strtoul(atts[idx + 1], nullptr, 10);
-        // DOL_FEATURE_E
+            // DOL_FEATURE_E
         }
         idx += 2;
     }
@@ -804,11 +818,11 @@ void CameraParser::parseControlElement(CameraParser* profiles, const char* name,
             } else if (!strcmp(val, "V4L2_CID_MIPI_LANES")) {
                 ctl.ctlCmd = V4L2_CID_MIPI_LANES;
 #endif
-            // HDR_FEATURE_S
+                // HDR_FEATURE_S
             } else if (!strcmp(val, "V4L2_CID_WDR_MODE")) {
                 ctl.ctlCmd = V4L2_CID_WDR_MODE;
-            // HDR_FEATURE_E
-            // CRL_MODULE_S
+                // HDR_FEATURE_E
+                // CRL_MODULE_S
             } else if (!strcmp(val, "V4L2_CID_LINE_LENGTH_PIXELS")) {
                 ctl.ctlCmd = V4L2_CID_LINE_LENGTH_PIXELS;
             } else if (!strcmp(val, "V4L2_CID_FRAME_LENGTH_LINES")) {
@@ -819,7 +833,7 @@ void CameraParser::parseControlElement(CameraParser* profiles, const char* name,
                 ctl.ctlCmd = CRL_CID_EXPOSURE_MODE;
             } else if (!strcmp(val, "CRL_CID_EXPOSURE_HDR_RATIO")) {
                 ctl.ctlCmd = CRL_CID_EXPOSURE_HDR_RATIO;
-            // CRL_MODULE_E
+                // CRL_MODULE_E
             } else {
                 LOGE("Unknow ioctl command %s", val);
                 ctl.ctlCmd = -1;
@@ -1825,7 +1839,7 @@ void CameraParser::handleStaticMetaData(CameraParser* profiles, const char* name
         }
         mMetadata.update(CAMERA_AE_AVAILABLE_ANTIBANDING_MODES, antibandingModes,
                          supportedAntibandingMode.size());
-    // ISP_CONTROL_S
+        // ISP_CONTROL_S
     } else if (strcmp(name, "supportedIspControls") == 0) {
         vector<uint32_t> ispCtrlIds;
         parseSupportedIspControls(atts[1], ispCtrlIds);
@@ -1838,7 +1852,7 @@ void CameraParser::handleStaticMetaData(CameraParser* profiles, const char* name
             }
             mMetadata.update(INTEL_CONTROL_ISP_SUPPORTED_CTRL_IDS, data, dataCount);
         }
-    // ISP_CONTROL_E
+        // ISP_CONTROL_E
     } else if (strcmp(name, "sensorMountType") == 0) {
         uint8_t mountType = WALL_MOUNTED;
 
@@ -2033,15 +2047,33 @@ void CameraParser::endParseElement(void* userData, const char* name) {
 
             profiles->mNvmDeviceInfo.clear();
 
-            // Merge the content of mMetadata into mCapability.
-            ParameterHelper::merge(profiles->mMetadata, &profiles->pCurrentCam->mCapability);
+            bool isCameraAvailable = true;
+            // Check if the camera is available
+            if (!profiles->pCurrentCam->mSupportModuleNames.empty()) {
+                isCameraAvailable = false;
+                for (size_t i = 0; i < profiles->pCurrentCam->mSupportModuleNames.size(); i++) {
+                    if (strcmp(pCurrentCam->mSupportModuleNames[i].c_str(),
+                               profiles->pCurrentCam->mCamModuleName.c_str()) == 0) {
+                        isCameraAvailable = true;
+                        break;
+                    }
+                }
+            }
+
+            if (isCameraAvailable) {
+                // Merge the content of mMetadata into mCapability.
+                ParameterHelper::merge(profiles->mMetadata, &profiles->pCurrentCam->mCapability);
+
+                // For non-extended camera, it should be in order by mCurrentSensor
+                profiles->mStaticCfg->mCameras.insert(
+                    profiles->mStaticCfg->mCameras.begin() + profiles->mCurrentSensor,
+                    *(profiles->pCurrentCam));
+            } else {
+                profiles->mSensorNum--;
+                if (profiles->mCurrentSensor > 0) profiles->mCurrentSensor--;
+            }
+
             profiles->mMetadata.clear();
-
-            // For non-extended camera, it should be in order by mCurrentSensor
-            profiles->mStaticCfg->mCameras.insert(
-                profiles->mStaticCfg->mCameras.begin() + profiles->mCurrentSensor,
-                *(profiles->pCurrentCam));
-
             delete profiles->pCurrentCam;
             profiles->pCurrentCam = nullptr;
         }
@@ -2067,6 +2099,46 @@ void CameraParser::endParseElement(void* userData, const char* name) {
     }
 
     if (strcmp(name, "Common") == 0) profiles->mCurrentDataField = FIELD_INVALID;
+}
+
+int CameraParser::getCameraModuleNameFromEEPROM(const std::string& nvmDir,
+                                                std::string* cameraModule) {
+    const int moduleInfoOffset = CAMERA_MODULE_INFO_OFFSET;
+    FILE* eepromFile = fopen(nvmDir.c_str(), "rb");
+    CheckAndLogError(!eepromFile, UNKNOWN_ERROR, "Failed to open EEPROM file in %s",
+                     nvmDir.c_str());
+
+    // file size should be larger than CAMERA_MODULE_INFO_OFFSET
+    fseek(eepromFile, 0, SEEK_END);
+    int nvmDataSize = static_cast<int>(ftell(eepromFile));
+    if (nvmDataSize < moduleInfoOffset) {
+        LOGE("EEPROM data is too small");
+        fclose(eepromFile);
+        return NOT_ENOUGH_DATA;
+    }
+
+    fseek(eepromFile, -1 * moduleInfoOffset, SEEK_END);
+
+    const int moduleInfoSize = CAMERA_MODULE_INFO_SIZE;
+    struct CameraModuleInfo cameraModuleInfo;
+    CLEAR(cameraModuleInfo);
+    int ret = fread(&cameraModuleInfo, moduleInfoSize, 1, eepromFile);
+    fclose(eepromFile);
+    CheckAndLogError(!ret, UNKNOWN_ERROR, "Failed to read module info %d", ret);
+
+    if (strncmp(cameraModuleInfo.mOsInfo, NVM_OS, strlen(NVM_OS)) != 0) {
+        LOG1("NVM OS string doesn't match with module info");
+        return NO_ENTRY;
+    }
+
+    char tmpName[CAMERA_MODULE_INFO_SIZE];
+    snprintf(tmpName, CAMERA_MODULE_INFO_SIZE, "%c%c_%04x", cameraModuleInfo.mModuleVendor[0],
+             cameraModuleInfo.mModuleVendor[1], cameraModuleInfo.mModuleProduct);
+
+    cameraModule->assign(tmpName);
+    LOG1("%s, aiqb name %s", __func__, cameraModule->c_str());
+
+    return OK;
 }
 
 /* the path of NVM device is in /sys/bus/i2c/devices/i2c-'adaptorId'/firmware_node/XXXX/path. */
@@ -2124,15 +2196,28 @@ void CameraParser::getNVMDirectory(CameraParser* profiles) {
             if (found) break;
         }
         closedir(dir);
+    } else {
+        LOGE("Failed to open dir %s", nvmPath.c_str());
     }
 
     for (auto nvm : profiles->mNvmDeviceInfo) {
         if (!nvm.directory.empty()) {
             // The first one in list is prioritized and should be selected.
-            profiles->pCurrentCam->mNvmDirectory = nvm.directory;
+            std::string nvmPath;
+            nvmPath.append(NVM_DATA_PATH);
+            nvmPath.append(nvm.directory);
+            if (nvmPath.back() != '/') nvmPath.append("/");
+
+            nvmPath.append("eeprom");
+            LOG2("NVM data is located in %s", nvmPath.c_str());
+            profiles->pCurrentCam->mNvmDirectory = nvmPath;
             profiles->pCurrentCam->mMaxNvmDataSize = nvm.dataSize;
-            LOG2("NVM dir %s", profiles->pCurrentCam->mNvmDirectory.c_str());
+            int ret = getCameraModuleNameFromEEPROM(profiles->pCurrentCam->mNvmDirectory,
+                                                    &profiles->pCurrentCam->mCamModuleName);
+            LOG2("NVM dir %s, ret %d", profiles->pCurrentCam->mNvmDirectory.c_str(), ret);
             break;
+        } else {
+            LOGE("Failed to find NVM directory");
         }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Intel Corporation.
+ * Copyright (C) 2015-2022 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -149,6 +149,24 @@ void BufferQueue::getFrameInfo(std::map<Port, stream_t>& inputInfo,
                                std::map<Port, stream_t>& outputInfo) const {
     inputInfo = mInputFrameInfo;
     outputInfo = mOutputFrameInfo;
+}
+
+bool BufferQueue::waitBufferQueue(ConditionLock& lock, std::map<Port, CameraBufQ>& queue,
+                                  int64_t timeout) {
+    LOG2("@%s waiting buffers", __func__);
+    for (auto& bufQ : queue) {
+        if (bufQ.second.empty() && timeout > 0) {
+            // Thread was stopped during wait
+            if (!mThreadRunning) {
+                LOG1("@%s: inactive while waiting for buffers", __func__);
+                return false;
+            }
+            mFrameAvailableSignal.waitRelative(lock, timeout * SLOWLY_MULTIPLIER);
+        }
+        if (bufQ.second.empty()) return false;
+    }
+
+    return true;
 }
 
 int BufferQueue::waitFreeBuffersInQueue(ConditionLock& lock,

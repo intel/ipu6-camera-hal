@@ -473,7 +473,7 @@ int CameraUtils::getCompressedFrameSize(int format, int width, int height) {
             break;
         }
         case V4L2_PIX_FMT_NV12:
-        case V4L2_PIX_FMT_P010:  {
+        case V4L2_PIX_FMT_P010: {
             int bpl = 0, heightAlignment = 0, tsBit = 0, tileSize = 0;
             if (format == V4L2_PIX_FMT_NV12) {
                 bpl = width;
@@ -489,8 +489,8 @@ int CameraUtils::getCompressedFrameSize(int format, int width, int height) {
             int alignedBpl = ALIGN(bpl, PSYS_COMPRESSION_TNR_STRIDE_ALIGNMENT);
             int alignedHeight = ALIGN(height, heightAlignment);
             int alignedHeightUV = ALIGN(height / UV_HEIGHT_DIVIDER, heightAlignment);
-            int imageBufferSize = ALIGN(alignedBpl * (alignedHeight + alignedHeightUV),
-                                  PSYS_COMPRESSION_PAGE_SIZE);
+            int imageBufferSize =
+                ALIGN(alignedBpl * (alignedHeight + alignedHeightUV), PSYS_COMPRESSION_PAGE_SIZE);
             int planarYTileStatus =
                 CAMHAL_CEIL_DIV((alignedBpl * alignedHeight / tileSize) * tsBit, 8);
             planarYTileStatus = ALIGN(planarYTileStatus, PSYS_COMPRESSION_PAGE_SIZE);
@@ -499,8 +499,9 @@ int CameraUtils::getCompressedFrameSize(int format, int width, int height) {
             planarUVTileStatus = ALIGN(planarUVTileStatus, PSYS_COMPRESSION_PAGE_SIZE);
 
             LOG1("@%s: format: %s, stride:%d height:%d imageSize:%d, tile_status_Y:%d, "
-                 "tile_status_UV:%d", __func__, pixelCode2String(format), alignedBpl,
-                 alignedHeight, imageBufferSize, planarYTileStatus, planarUVTileStatus);
+                 "tile_status_UV:%d",
+                 __func__, pixelCode2String(format), alignedBpl, alignedHeight, imageBufferSize,
+                 planarYTileStatus, planarUVTileStatus);
             frameSize = imageBufferSize + planarYTileStatus + planarUVTileStatus;
             break;
         }
@@ -556,9 +557,9 @@ int CameraUtils::getFrameSize(int format, int width, int height, bool needAligne
     }
 
     // Extra size should be at least one alignedBpl
-    int extraSize = isPlanarFormat(format)
-                        ? (alignedBpl * getBpp(format) / 8 / getPlanarByte(format))
-                        : alignedBpl;
+    int extraSize = isPlanarFormat(format) ?
+                        (alignedBpl * getBpp(format) / 8 / getPlanarByte(format)) :
+                        alignedBpl;
     extraSize = std::max(extraSize, 1024);
 
     return alignedBpl * bufferHeight + extraSize;

@@ -76,6 +76,7 @@
 #include <vector>
 #include <set>
 #include <stdint.h>
+#include <cstddef>
 
 namespace icamera {
 
@@ -96,94 +97,97 @@ typedef struct {
  *   MUST use int if new member added.
  */
 typedef struct {
-    int format;    /**< stream format refer to v4l2 definition https://linuxtv.org/downloads/v4l-dvb-apis/pixfmt.html */
-    int width;     /**< image width */
-    int height;    /**< image height */
-    int field;     /**< refer to v4l2 definition https://linuxtv.org/downloads/v4l-dvb-apis/field-order.html#v4l2-field */
+    int format; /**< stream format refer to v4l2 definition
+                   https://linuxtv.org/downloads/v4l-dvb-apis/pixfmt.html */
+    int width;  /**< image width */
+    int height; /**< image height */
+    int field;  /**< refer to v4l2 definition
+                   https://linuxtv.org/downloads/v4l-dvb-apis/field-order.html#v4l2-field */
 
-/*
-* The buffer geometry introduction.
-* The YUV image is formed with Y:Luma and UV:Chroma. And there are
-* two kinds of styles for YUV format: planar and packed.
-*
-*   YUV420:NV12
-*
-*            YUV420(720x480) sampling
-*
-*       |<----width+padding=alignedBpl----->|
-*     Y *-------*-------*-------*-------*....-----
-*       |                               |   :  ^
-*       |   # UV            #           |   :  |
-*       |                               |   :  |
-*       *-------*-------*-------*-------*....  |
-*       |                               |   :  |
-*       |   #               #           |   :  |
-*       |                               |   :  |
-*       *-------*-------*-------*-------*.... (height * 3 / 2)
-*       |                               |   :  |
-*       |   #               #           |   :  |
-*       |                               |   :  |
-*       *-------*-------*-------*-------*....  |
-*       |                               |   :  |
-*       |   #               #           |   :  |
-*       |                               |   :  v
-*       *-------*-------*-------*-------*....-----
-*
-*         The data stored in memory
-*          ____________w___________ .....
-*         |Y0|Y1                   |    :
-*         |                        |    :
-*         h                        h    :
-*         |                        |    :
-*         |                        |    :
-*         |________________________|....:
-*         |U|V|U|V                 |    :
-*        h/2                      h/2   :
-*         |____________w___________|....:
-*
-*       bpp = 12
-*       bpl = width;
-*       stride = align64(bpl):
-*
-*   YUV422:YUY2
-*
-*           YUV422(720x480) sampling
-*
-*       |<--(width*2)+padding=alignedBpl-->|
-*   YUV *#----*#-----*#-----*#-----*#....-----
-*       *#----*#-----*#-----*#-----*#....  |
-*       *#----*#-----*#-----*#-----*#....  |
-*       *#----*#-----*#-----*#-----*#....  |
-*       *#----*#-----*#-----*#-----*#.... (height)
-*       *#----*#-----*#-----*#-----*#....  |
-*       *#----*#-----*#-----*#-----*#....  |
-*       *#----*#-----*#-----*#-----*#....  |
-*       *#----*#-----*#-----*#-----*#....  |
-*       *#----*#-----*#-----*#-----*#....-----
-*
-*         The data stored in memory
-*          ____________w___________ .....
-*         |Y0|Cb|Y1|Cr             |    :
-*         |                        |    :
-*         |                        |    :
-*         |                        |    :
-*         h                        h    :
-*         |                        |    :
-*         |                        |    :
-*         |                        |    :
-*         |____________w___________|....:
-*
-*       bpp = 16
-*       bpl = width * bpp / 8 = width * 2;
-*       stride = align64(bpl):
-*
-*       Note: The stride defined in HAL is same as aligned bytes per line.
-*/
-    int stride;    /**< stride = aligned bytes per line */
-    int size;      /**< real buffer size */
+    /*
+     * The buffer geometry introduction.
+     * The YUV image is formed with Y:Luma and UV:Chroma. And there are
+     * two kinds of styles for YUV format: planar and packed.
+     *
+     *   YUV420:NV12
+     *
+     *            YUV420(720x480) sampling
+     *
+     *       |<----width+padding=alignedBpl----->|
+     *     Y *-------*-------*-------*-------*....-----
+     *       |                               |   :  ^
+     *       |   # UV            #           |   :  |
+     *       |                               |   :  |
+     *       *-------*-------*-------*-------*....  |
+     *       |                               |   :  |
+     *       |   #               #           |   :  |
+     *       |                               |   :  |
+     *       *-------*-------*-------*-------*.... (height * 3 / 2)
+     *       |                               |   :  |
+     *       |   #               #           |   :  |
+     *       |                               |   :  |
+     *       *-------*-------*-------*-------*....  |
+     *       |                               |   :  |
+     *       |   #               #           |   :  |
+     *       |                               |   :  v
+     *       *-------*-------*-------*-------*....-----
+     *
+     *         The data stored in memory
+     *          ____________w___________ .....
+     *         |Y0|Y1                   |    :
+     *         |                        |    :
+     *         h                        h    :
+     *         |                        |    :
+     *         |                        |    :
+     *         |________________________|....:
+     *         |U|V|U|V                 |    :
+     *        h/2                      h/2   :
+     *         |____________w___________|....:
+     *
+     *       bpp = 12
+     *       bpl = width;
+     *       stride = align64(bpl):
+     *
+     *   YUV422:YUY2
+     *
+     *           YUV422(720x480) sampling
+     *
+     *       |<--(width*2)+padding=alignedBpl-->|
+     *   YUV *#----*#-----*#-----*#-----*#....-----
+     *       *#----*#-----*#-----*#-----*#....  |
+     *       *#----*#-----*#-----*#-----*#....  |
+     *       *#----*#-----*#-----*#-----*#....  |
+     *       *#----*#-----*#-----*#-----*#.... (height)
+     *       *#----*#-----*#-----*#-----*#....  |
+     *       *#----*#-----*#-----*#-----*#....  |
+     *       *#----*#-----*#-----*#-----*#....  |
+     *       *#----*#-----*#-----*#-----*#....  |
+     *       *#----*#-----*#-----*#-----*#....-----
+     *
+     *         The data stored in memory
+     *          ____________w___________ .....
+     *         |Y0|Cb|Y1|Cr             |    :
+     *         |                        |    :
+     *         |                        |    :
+     *         |                        |    :
+     *         h                        h    :
+     *         |                        |    :
+     *         |                        |    :
+     *         |                        |    :
+     *         |____________w___________|....:
+     *
+     *       bpp = 16
+     *       bpl = width * bpp / 8 = width * 2;
+     *       stride = align64(bpl):
+     *
+     *       Note: The stride defined in HAL is same as aligned bytes per line.
+     */
+    int stride; /**< stride = aligned bytes per line */
+    int size;   /**< real buffer size */
 
-    int id;        /**< Id that is filled by HAL. */
-    int memType;   /**< buffer memory type filled by app, refer to https://linuxtv.org/downloads/v4l-dvb-apis/io.html */
+    int id;      /**< Id that is filled by HAL. */
+    int memType; /**< buffer memory type filled by app, refer to
+                    https://linuxtv.org/downloads/v4l-dvb-apis/io.html */
 
     /**
      * The maximum number of buffers the HAL device may need to have dequeued at
@@ -192,7 +196,7 @@ typedef struct {
      */
     uint32_t max_buffers;
 
-    int usage; /**<The usage of this stream defined in camera_stream_usage_t. */
+    int usage;      /**<The usage of this stream defined in camera_stream_usage_t. */
     int streamType; /**<The stream type of this stream defined in camera_stream_type_t. */
 } stream_t;
 
@@ -204,8 +208,8 @@ typedef std::vector<stream_t> stream_array_t;
  * Contains all streams info in this configuration.
  */
 typedef struct {
-    int num_streams; /**< number of streams in this configuration */
-    stream_t    *streams; /**< streams list */
+    int num_streams;   /**< number of streams in this configuration */
+    stream_t* streams; /**< streams list */
     /**
      * The operation mode of the streams in this configuration. It should be one of the value
      * defined in camera_stream_configuration_mode_t.
@@ -224,10 +228,10 @@ typedef struct {
  * The buffer's properties can be one of them or combined with some of them.
  */
 typedef enum {
-    BUFFER_FLAG_DMA_EXPORT = 1<<0,
-    BUFFER_FLAG_INTERNAL = 1<<1,
-    BUFFER_FLAG_SW_READ = 1<<2,
-    BUFFER_FLAG_SW_WRITE = 1<<3,
+    BUFFER_FLAG_DMA_EXPORT = 1 << 0,
+    BUFFER_FLAG_INTERNAL = 1 << 1,
+    BUFFER_FLAG_SW_READ = 1 << 2,
+    BUFFER_FLAG_SW_WRITE = 1 << 3,
 } camera_buffer_flags_t;
 
 /**
@@ -237,15 +241,17 @@ typedef enum {
  * according to memory type to allocate memory and queue to device.
  */
 typedef struct {
-    stream_t s;   /**< stream info */
-    void *addr;   /**< buffer addr for userptr and mmap memory mode */
-    int index;    /**< buffer index, filled by HAL. it is used for qbuf and dqbuf in order */
-    int64_t sequence; /**< buffer sequence, filled by HAL, to record buffer dqueue sequence from device */
-    int dmafd;    /**< buffer dmafd for DMA import and export mode */
-    int flags;    /**< buffer flags, its type is camera_buffer_flags_t, used to specify buffer properties */
+    stream_t s;         /**< stream info */
+    void* addr;         /**< buffer addr for userptr and mmap memory mode */
+    int index;          /**< buffer index, filled by HAL. it is used for qbuf and dqbuf in order */
+    int64_t sequence;   /**< buffer sequence, filled by HAL, to record buffer dqueue sequence from
+                           device */
+    int dmafd;          /**< buffer dmafd for DMA import and export mode */
+    int flags;          /**< buffer flags, its type is camera_buffer_flags_t, used to specify buffer
+                           properties */
     uint64_t timestamp; /**< buffer timestamp, it's a time reference measured in nanosecond */
     uint32_t requestId; /**< buffer requestId, it's a request id of buffer */
-    int reserved; /**< reserved for future */
+    int reserved;       /**< reserved for future */
 } camera_buffer_t;
 
 /**
@@ -464,14 +470,14 @@ typedef enum {
  * \enum camera_features: camera supported features.
  */
 typedef enum {
-    MANUAL_EXPOSURE,       /**< Allow user to control exposure time and ISO manually */
-    MANUAL_WHITE_BALANCE,  /**< Allow user to control AWB mode, cct range, and gain */
-    IMAGE_ENHANCEMENT,     /**< Sharpness, Brightness, Contrast, Hue, Saturation */
-    NOISE_REDUCTION,       /**< Allow user to control NR mode and NR level */
-    SCENE_MODE,            /**< Allow user to control scene mode */
-    WEIGHT_GRID_MODE,      /**< Allow user to control custom weight grid mode */
-    PER_FRAME_CONTROL,     /**< Allow user to control most of parameters for each frame */
-    ISP_CONTROL,           /**< Allow user to control low level ISP features */
+    MANUAL_EXPOSURE,      /**< Allow user to control exposure time and ISO manually */
+    MANUAL_WHITE_BALANCE, /**< Allow user to control AWB mode, cct range, and gain */
+    IMAGE_ENHANCEMENT,    /**< Sharpness, Brightness, Contrast, Hue, Saturation */
+    NOISE_REDUCTION,      /**< Allow user to control NR mode and NR level */
+    SCENE_MODE,           /**< Allow user to control scene mode */
+    WEIGHT_GRID_MODE,     /**< Allow user to control custom weight grid mode */
+    PER_FRAME_CONTROL,    /**< Allow user to control most of parameters for each frame */
+    ISP_CONTROL,          /**< Allow user to control low level ISP features */
     INVALID_FEATURE
 } camera_features;
 typedef std::vector<camera_features> camera_features_list_t;
@@ -494,10 +500,7 @@ typedef enum {
     AE_MODE_MAX     /**< Invalid AE mode, any new mode should be added before this */
 } camera_ae_mode_t;
 
-typedef enum {
-    AE_STATE_NOT_CONVERGED,
-    AE_STATE_CONVERGED
-} camera_ae_state_t;
+typedef enum { AE_STATE_NOT_CONVERGED, AE_STATE_CONVERGED } camera_ae_state_t;
 
 /**
  * \enum camera_antibanding_mode_t: Used to control antibanding mode.
@@ -528,7 +531,8 @@ typedef enum {
 } camera_scene_mode_t;
 
 /**
- * \struct camera_ae_exposure_time_range_t: Provide supported exposure time range info per scene mode.
+ * \struct camera_ae_exposure_time_range_t: Provide supported exposure time range info per scene
+ * mode.
  */
 typedef struct {
     camera_scene_mode_t scene_mode;
@@ -565,8 +569,8 @@ typedef enum {
  * \enum camera_yuv_color_range_mode_t: Specify which YUV color range will be used.
  */
 typedef enum {
-    CAMERA_FULL_MODE_YUV_COLOR_RANGE,       /*!< Full range (0 - 255) YUV data. */
-    CAMERA_REDUCED_MODE_YUV_COLOR_RANGE     /*!< Reduced range aka. BT.601 (16-235) YUV data range. */
+    CAMERA_FULL_MODE_YUV_COLOR_RANGE,   /*!< Full range (0 - 255) YUV data. */
+    CAMERA_REDUCED_MODE_YUV_COLOR_RANGE /*!< Reduced range aka. BT.601 (16-235) YUV data range. */
 } camera_yuv_color_range_mode_t;
 
 /**
@@ -588,10 +592,7 @@ typedef enum {
     AWB_MODE_MAX
 } camera_awb_mode_t;
 
-typedef enum {
-    AWB_STATE_NOT_CONVERGED,
-    AWB_STATE_CONVERGED
-} camera_awb_state_t;
+typedef enum { AWB_STATE_NOT_CONVERGED, AWB_STATE_CONVERGED } camera_awb_state_t;
 
 /**
  * \enum camera_af_mode_t: Used to control af working mode.
@@ -653,11 +654,11 @@ typedef enum {
  * \enum camera_af_state_t: Used to return af state.
  */
 typedef enum {
-    AF_STATE_IDLE,               /*!< Focus is idle */
-    AF_STATE_LOCAL_SEARCH,       /*!< Focus is in local search state */
-    AF_STATE_EXTENDED_SEARCH,    /*!< Focus is in extended search state */
-    AF_STATE_SUCCESS,            /*!< Focus has succeeded */
-    AF_STATE_FAIL                /*!< Focus has failed */
+    AF_STATE_IDLE,            /*!< Focus is idle */
+    AF_STATE_LOCAL_SEARCH,    /*!< Focus is in local search state */
+    AF_STATE_EXTENDED_SEARCH, /*!< Focus is in extended search state */
+    AF_STATE_SUCCESS,         /*!< Focus has succeeded */
+    AF_STATE_FAIL             /*!< Focus has failed */
 } camera_af_state_t;
 
 /**
@@ -782,7 +783,7 @@ typedef struct {
  * \struct camera_callback_ops_t
  */
 typedef struct camera_callback_ops {
-    void (*notify)(const camera_callback_ops* cb, const camera_msg_data_t &data);
+    void (*notify)(const camera_callback_ops* cb, const camera_msg_data_t& data);
 } camera_callback_ops_t;
 
 /**
@@ -930,12 +931,7 @@ typedef struct {
 /**
  * \enum camera_converge_speed_t: Used to control AE/AWB converge speed.
  */
-typedef enum {
-    CONVERGE_NORMAL,
-    CONVERGE_MID,
-    CONVERGE_LOW,
-    CONVERGE_MAX
-} camera_converge_speed_t;
+typedef enum { CONVERGE_NORMAL, CONVERGE_MID, CONVERGE_LOW, CONVERGE_MAX } camera_converge_speed_t;
 
 /**
  * \enum camera_converge_speed_mode_t: Used to control AE/AWB converge speed mode.
@@ -984,18 +980,12 @@ typedef enum {
 /**
  * \enum camera_ldc_mode_t: Used to toggle lens distortion correction.
  */
-typedef enum {
-    LDC_MODE_OFF,
-    LDC_MODE_ON
-} camera_ldc_mode_t;
+typedef enum { LDC_MODE_OFF, LDC_MODE_ON } camera_ldc_mode_t;
 
 /**
  * \enum camera_rsc_mode_t: Used to toggle rolling shutter correction.
  */
-typedef enum {
-    RSC_MODE_OFF,
-    RSC_MODE_ON
-} camera_rsc_mode_t;
+typedef enum { RSC_MODE_OFF, RSC_MODE_ON } camera_rsc_mode_t;
 
 /**
  * \enum camera_flip_mode_t: Used to set output slip.
@@ -1010,10 +1000,7 @@ typedef enum {
 /**
  * \enum camera_mono_downscale_mode_t: Used to enable/disable MONO Downscale.
  */
-typedef enum {
-    MONO_DS_MODE_OFF,
-    MONO_DS_MODE_ON
-} camera_mono_downscale_mode_t;
+typedef enum { MONO_DS_MODE_OFF, MONO_DS_MODE_ON } camera_mono_downscale_mode_t;
 
 /**
  * \enum camera_video_stabilization_mode_t: Used to control the video stabilization mode.
@@ -1033,8 +1020,8 @@ typedef enum {
 } camera_mount_type_t;
 
 /**
-* \enum camera_shading_mode_t: camera shading mode type
-*/
+ * \enum camera_shading_mode_t: camera shading mode type
+ */
 typedef enum {
     SHADING_MODE_OFF,
     SHADING_MODE_FAST,
@@ -1042,8 +1029,8 @@ typedef enum {
 } camera_shading_mode_t;
 
 /**
-* \enum camera_lens_shading_map_mode_type_t: camera lens shading map mode type
-*/
+ * \enum camera_lens_shading_map_mode_type_t: camera lens shading map mode type
+ */
 typedef enum {
     LENS_SHADING_MAP_MODE_OFF,
     LENS_SHADING_MAP_MODE_ON
@@ -1073,7 +1060,7 @@ typedef struct {
  *
  */
 class Parameters {
-public:
+ public:
     Parameters();
     Parameters(const Parameters& other);
     Parameters& operator=(const Parameters& other);
@@ -1132,7 +1119,8 @@ public:
      * Camera application MUST check if the feature is supported before trying to enable it.
      * Otherwise the behavior is undefined currently, HAL may just ignore the request.
      *
-     * \param[out] camera_features_list_t& features: All supported feature will be filled in "features"
+     * \param[out] camera_features_list_t& features: All supported feature will be filled in
+     * "features"
      *
      * \return: If no feature supported, features will be empty
      */
@@ -1145,7 +1133,8 @@ public:
      * Camera application MUST check if the feature is supported before trying to enable it.
      * Otherwise the behavior is undefined currently, HAL may just ignore the request.
      *
-     * \param[out] vector<uint32_t>& controls: All supported ISP control features will be filled in it.
+     * \param[out] vector<uint32_t>& controls: All supported ISP control features will be filled in
+     * it.
      *
      * \return: If no ISP control supported, the controls will be empty
      */
@@ -1157,7 +1146,8 @@ public:
      *
      * \param[out] camera_range_t& evRange
      *
-     * \return 0 if ae compensation supported, non-0 or evRange equals [0, 0] means ae compensation not supported.
+     * \return 0 if ae compensation supported, non-0 or evRange equals [0, 0] means ae compensation
+     * not supported.
      */
     int getAeCompensationRange(camera_range_t& evRange) const;
 
@@ -1190,7 +1180,8 @@ public:
      *
      * \return 0 if exposure time range is filled by HAL.
      */
-    int getSupportedAeExposureTimeRange(std::vector<camera_ae_exposure_time_range_t>& etRanges) const;
+    int getSupportedAeExposureTimeRange(
+        std::vector<camera_ae_exposure_time_range_t>& etRanges) const;
 
     /**
      * \brief Get supported manual sensor gain range
@@ -1272,11 +1263,12 @@ public:
      * Camera application MUST check if the video stabilization mode is supported before trying
      * to enable it. Otherwise one error occurring, HAL may just ignore the request.
      *
-     * \param[out] supportedModes: All supported video stabilization mode will be filled in "supportedModes"
+     * \param[out] supportedModes: All supported video stabilization mode will be filled in
+     * "supportedModes"
      *
      * \return: If no mode supported, supportedModes will be empty
      */
-    int getSupportedVideoStabilizationMode(camera_video_stabilization_list_t &supportedModes) const;
+    int getSupportedVideoStabilizationMode(camera_video_stabilization_list_t& supportedModes) const;
 
     /**
      * \brief Get supported ae mode
@@ -1288,7 +1280,7 @@ public:
      *
      * \return: If no ae mode supported, supportedAeModes will be empty
      */
-    int getSupportedAeMode(std::vector<camera_ae_mode_t> &supportedAeModes) const;
+    int getSupportedAeMode(std::vector<camera_ae_mode_t>& supportedAeModes) const;
 
     /**
      * \brief Get supported awb mode
@@ -1300,7 +1292,7 @@ public:
      *
      * \return: If no awb mode supported, supportedAwbModes will be empty
      */
-    int getSupportedAwbMode(std::vector<camera_awb_mode_t> &supportedAwbModes) const;
+    int getSupportedAwbMode(std::vector<camera_awb_mode_t>& supportedAwbModes) const;
 
     /**
      * \brief Get supported af mode
@@ -1312,7 +1304,7 @@ public:
      *
      * \return: If no af mode supported, supportedAfModes will be empty
      */
-    int getSupportedAfMode(std::vector<camera_af_mode_t> &supportedAfModes) const;
+    int getSupportedAfMode(std::vector<camera_af_mode_t>& supportedAfModes) const;
 
     /**
      * \brief Get supported scene mode
@@ -1320,23 +1312,26 @@ public:
      * Camera application MUST check if the scene mode is supported before trying to enable it.
      * Otherwise one error occurring, HAL may just ignore the request.
      *
-     * \param[out] supportedSceneModes: All supported scene mode will be filled in "supportedSceneModes"
+     * \param[out] supportedSceneModes: All supported scene mode will be filled in
+     * "supportedSceneModes"
      *
      * \return: If no scene mode supported, supportedSceneModes will be empty
      */
-    int getSupportedSceneMode(std::vector<camera_scene_mode_t> &supportedSceneModes) const;
+    int getSupportedSceneMode(std::vector<camera_scene_mode_t>& supportedSceneModes) const;
 
     /**
      * \brief Get supported antibanding mode
      *
-     * Camera application MUST check if the antibanding mode is supported before trying to enable it.
-     * Otherwise one error occurring, HAL may just ignore the request.
+     * Camera application MUST check if the antibanding mode is supported before trying to enable
+     * it. Otherwise one error occurring, HAL may just ignore the request.
      *
-     * \param[out] supportedAntibindingModes: All supported scene mode will be filled in "supportedAntibindingModes"
+     * \param[out] supportedAntibindingModes: All supported scene mode will be filled in
+     * "supportedAntibindingModes"
      *
      * \return: If no antibanding mode supported, supportedAntibindingModes will be empty
      */
-    int getSupportedAntibandingMode(std::vector<camera_antibanding_mode_t> &supportedAntibindingModes) const;
+    int getSupportedAntibandingMode(
+        std::vector<camera_antibanding_mode_t>& supportedAntibindingModes) const;
 
     /**
      * \brief Get if ae lock is available
@@ -1504,7 +1499,8 @@ public:
     /**
      * \brief Set AE distribution priority.
      *
-     * \param[in] camera_ae_distribution_priority_t priority: the AE distribution priority to be set.
+     * \param[in] camera_ae_distribution_priority_t priority: the AE distribution priority to be
+     * set.
      *
      * \return 0 if set successfully, otherwise non-0 value is returned.
      */
@@ -1598,8 +1594,8 @@ public:
     /**
      * \brief Set white balance mode
      *
-     * White balance mode could be one of totally auto, preset cct range, customized cct range, customized
-     * white area, customize gains.
+     * White balance mode could be one of totally auto, preset cct range, customized cct range,
+     * customized white area, customize gains.
      *
      * \param[in] camera_awb_mode_t awbMode
      *
@@ -1701,7 +1697,8 @@ public:
      *
      * The range of each gain shift is (0, 255).
      *
-     * \param[in] camera_awb_gains_t awb gain shift, which specify r,g,b gains for updating awb result.
+     * \param[in] camera_awb_gains_t awb gain shift, which specify r,g,b gains for updating awb
+     * result.
      *
      * \return 0 if set successfully, otherwise non-0 value is returned.
      */
@@ -1725,7 +1722,7 @@ public:
      *
      * \return 0 if set successfully, otherwise non-0 value is returned.
      */
-    int setAwbResult(void *data);
+    int setAwbResult(void* data);
 
     /**
      * \brief Get awb result currently used.
@@ -1736,7 +1733,7 @@ public:
      *
      * \return 0 if get successfully, otherwise non-0 value is returned.
      */
-    int getAwbResult(void *data) const;
+    int getAwbResult(void* data) const;
 
     /**
      * \brief Set manual white point coordinate.
@@ -1762,7 +1759,8 @@ public:
     /**
      * \brief Set customized color transform which is a 3x3 matrix.
      *
-     *  Manual color transform only takes effect when awb mode set to AWB_MODE_MANUAL_COLOR_TRANSFORM.
+     *  Manual color transform only takes effect when awb mode set to
+     * AWB_MODE_MANUAL_COLOR_TRANSFORM.
      *
      * \param[in] camera_color_transform_t colorTransform: a 3x3 matrix for color convertion.
      *
@@ -1782,7 +1780,8 @@ public:
     /**
      * \brief Set customized color correction gains which is a 4 array.
      *
-     *  Manual color correction gains only takes effect when awb mode set to AWB_MODE_MANUAL_COLOR_TRANSFORM.
+     *  Manual color correction gains only takes effect when awb mode set to
+     * AWB_MODE_MANUAL_COLOR_TRANSFORM.
      *
      * \param[in] camera_color_gains_t colorGains: a 4 array for color correction gains.
      *
@@ -1916,7 +1915,7 @@ public:
      *
      * \return 0 if get successfully, otherwise non-0 value is returned.
      */
-    int getYuvColorRangeMode(camera_yuv_color_range_mode_t & colorRange) const;
+    int getYuvColorRangeMode(camera_yuv_color_range_mode_t& colorRange) const;
 
     /**
      * \brief Set customized effects.
@@ -1946,7 +1945,7 @@ public:
     int setIrisLevel(int level);
     int getIrisLevel(int& level);
 
-// HDR_FEATURE_S
+    // HDR_FEATURE_S
     /**
      * \brief Set WDR mode
      *
@@ -1964,7 +1963,7 @@ public:
      * \return 0 if awb mode was set, non-0 means no awb mode was set.
      */
     int getWdrMode(camera_wdr_mode_t& wdrMode) const;
-// HDR_FEATURE_E
+    // HDR_FEATURE_E
 
     /**
      * \brief Set WDR Level
@@ -2039,7 +2038,7 @@ public:
      *
      * \return 0 if deinterlace mode was set, non-0 means no deinterlace mode was set.
      */
-    int getDeinterlaceMode(camera_deinterlace_mode_t &deinterlaceMode) const;
+    int getDeinterlaceMode(camera_deinterlace_mode_t& deinterlaceMode) const;
 
     /**
      * \brief Set Makernote Data
@@ -2097,7 +2096,7 @@ public:
      *
      * \return 0 if makernote mode was set, otherwise return non-0 value.
      */
-    int getMakernoteMode(camera_makernote_mode_t &mode) const;
+    int getMakernoteMode(camera_makernote_mode_t& mode) const;
 
     // ISP_CONTROL_S
     /**
@@ -2187,7 +2186,7 @@ public:
      *
      * \return 0 if find the corresponding data, otherwise non-0 value is returned.
      */
-    int getLdcMode(camera_ldc_mode_t &mode) const;
+    int getLdcMode(camera_ldc_mode_t& mode) const;
 
     /**
      * \brief Set rolling shutter correction mode
@@ -2205,7 +2204,7 @@ public:
      *
      * \return 0 if find the corresponding data, otherwise non-0 value is returned.
      */
-    int getRscMode(camera_rsc_mode_t &mode) const;
+    int getRscMode(camera_rsc_mode_t& mode) const;
 
     /**
      * \brief flip mode
@@ -2223,7 +2222,7 @@ public:
      *
      * \return 0 if find the corresponding data, otherwise non-0 value is returned.
      */
-    int getFlipMode(camera_flip_mode_t &mode) const;
+    int getFlipMode(camera_flip_mode_t& mode) const;
 
     /**
      * \brief set frame interval to run 3A
@@ -2241,7 +2240,7 @@ public:
      *
      * \return 0 if find the corresponding data, otherwise non-0 value is returned.
      */
-    int getRun3ACadence(int &cadence) const;
+    int getRun3ACadence(int& cadence) const;
 
     /**
      * \brief mono downscale mode
@@ -2259,7 +2258,7 @@ public:
      *
      * \return 0 if find the corresponding data, otherwise non-0 value is returned.
      */
-    int getMonoDsMode(camera_mono_downscale_mode_t &mode) const;
+    int getMonoDsMode(camera_mono_downscale_mode_t& mode) const;
 
     /**
      * \brief Set Fisheye Dewarping Mode
@@ -2280,42 +2279,42 @@ public:
      *
      * \return 0 if dewarping mode was set, non-0 means no dewarping mode was set.
      */
-    int getFisheyeDewarpingMode(camera_fisheye_dewarping_mode_t &dewarpingMode) const;
+    int getFisheyeDewarpingMode(camera_fisheye_dewarping_mode_t& dewarpingMode) const;
 
     // Belows are Jpeg related parameters operations
-    int getJpegQuality(uint8_t *quality) const;
+    int getJpegQuality(uint8_t* quality) const;
     int setJpegQuality(uint8_t quality);
 
-    int getJpegThumbnailQuality(uint8_t *quality) const;
+    int getJpegThumbnailQuality(uint8_t* quality) const;
     int setJpegThumbnailQuality(uint8_t quality);
 
     int setJpegThumbnailSize(const camera_resolution_t& res);
     int getJpegThumbnailSize(camera_resolution_t& res) const;
 
-    int getJpegRotation(int &rotation) const;
-    int setJpegRotation(int  rotation);
+    int getJpegRotation(int& rotation) const;
+    int setJpegRotation(int rotation);
 
-    int setJpegGpsCoordinates(const double *coordinates);
-    int getJpegGpsLatitude(double &latitude) const;
-    int getJpegGpsLongitude(double &longitude) const;
-    int getJpegGpsAltitude(double &altiude) const;
+    int setJpegGpsCoordinates(const double* coordinates);
+    int getJpegGpsLatitude(double& latitude) const;
+    int getJpegGpsLongitude(double& longitude) const;
+    int getJpegGpsAltitude(double& altiude) const;
 
-    int getJpegGpsTimeStamp(int64_t &timestamp) const;
-    int setJpegGpsTimeStamp(int64_t  timestamp);
+    int getJpegGpsTimeStamp(int64_t& timestamp) const;
+    int setJpegGpsTimeStamp(int64_t timestamp);
 
-    int getJpegGpsProcessingMethod(int &processMethod) const;
-    int setJpegGpsProcessingMethod(int  processMethod);
+    int getJpegGpsProcessingMethod(int& processMethod) const;
+    int setJpegGpsProcessingMethod(int processMethod);
 
     int getJpegGpsProcessingMethod(int size, char* processMethod) const;
     int setJpegGpsProcessingMethod(const char* processMethod);
 
-    int getImageEffect(camera_effect_mode_t &effect) const;
-    int setImageEffect(camera_effect_mode_t  effect);
+    int getImageEffect(camera_effect_mode_t& effect) const;
+    int setImageEffect(camera_effect_mode_t effect);
 
-    int getVideoStabilizationMode(camera_video_stabilization_mode_t &mode) const;
+    int getVideoStabilizationMode(camera_video_stabilization_mode_t& mode) const;
     int setVideoStabilizationMode(camera_video_stabilization_mode_t mode);
 
-    int getFocalLength(float &focal) const;
+    int getFocalLength(float& focal) const;
     int setFocalLength(float focal);
 
     /**
@@ -2325,7 +2324,7 @@ public:
      *
      * \return 0 if aperture was set, non=0 means no aperture was set
      */
-    int getAperture(float &aperture) const;
+    int getAperture(float& aperture) const;
     /**
      * \brief Set aperture value
      *
@@ -2342,7 +2341,7 @@ public:
      *
      * \return 0 if distance was set, non-0 means no focus distance was set
      */
-    int getFocusDistance(float &distance) const;
+    int getFocusDistance(float& distance) const;
     /**
      * \brief Set focus distance value
      *
@@ -2448,7 +2447,7 @@ public:
      *
      * \return 0 if set successfully, otherwise non-0 value is returned.
      */
-    int getLensAperture(float &aperture) const;
+    int getLensAperture(float& aperture) const;
 
     /**
      * \brief Get lens filter density.
@@ -2457,7 +2456,7 @@ public:
      *
      * \return 0 if set successfully, otherwise non-0 value is returned.
      */
-    int getLensFilterDensity(float &filterDensity) const;
+    int getLensFilterDensity(float& filterDensity) const;
 
     /**
      * \brief Get lens min focus distance.
@@ -2466,7 +2465,7 @@ public:
      *
      * \return 0 if set successfully, otherwise non-0 value is returned.
      */
-    int getLensMinFocusDistance(float &minFocusDistance) const;
+    int getLensMinFocusDistance(float& minFocusDistance) const;
 
     /**
      * \brief Get lens hyperfocal distance.
@@ -2475,7 +2474,7 @@ public:
      *
      * \return 0 if set successfully, otherwise non-0 value is returned.
      */
-    int getLensHyperfocalDistance(float &hyperfocalDistance) const;
+    int getLensHyperfocalDistance(float& hyperfocalDistance) const;
 
     /**
      * \brief Set af region
@@ -2543,40 +2542,40 @@ public:
     int getCropRegion(camera_crop_region_t& cropRegion) const;
 
     /**
-    * \brief Set control scene mode
-    *
-    * \param[in] sceneModeValue the control scene mode related parameters
-    *
-    * \return 0 if successfully, otherwise non-0 value is returned.
-    */
+     * \brief Set control scene mode
+     *
+     * \param[in] sceneModeValue the control scene mode related parameters
+     *
+     * \return 0 if successfully, otherwise non-0 value is returned.
+     */
     int setControlSceneMode(uint8_t sceneModeValue);
 
     /**
-    * \brief Set face detect mode
-    *
-    * \param[in] faceDetectMode the face detect mode related parameters
-    *
-    * \return 0 if successfully, otherwise non-0 value is returned.
-    */
+     * \brief Set face detect mode
+     *
+     * \param[in] faceDetectMode the face detect mode related parameters
+     *
+     * \return 0 if successfully, otherwise non-0 value is returned.
+     */
     int setFaceDetectMode(uint8_t faceDetectMode);
 
     /**
-    * \brief Get face detect mode
-    *
-    * \param[out] faceDetectMode the face detect mode related parameters, 0:OFF 1:SIMPLE 2:FULL
-    *
-    * \return 0 if successfully, otherwise non-0 value is returned.
-    */
+     * \brief Get face detect mode
+     *
+     * \param[out] faceDetectMode the face detect mode related parameters, 0:OFF 1:SIMPLE 2:FULL
+     *
+     * \return 0 if successfully, otherwise non-0 value is returned.
+     */
     int getFaceDetectMode(uint8_t& faceDetectMode) const;
 
     /**
-    * \brief Set face id
-    *
-    * \param[in] int *faceIds, int faceNum
-    *
-    * \return 0 if successfully, otherwise non-0 value is returned.
-    */
-    int setFaceIds(int *faceIds, int faceNum);
+     * \brief Set face id
+     *
+     * \param[in] int *faceIds, int faceNum
+     *
+     * \return 0 if successfully, otherwise non-0 value is returned.
+     */
+    int setFaceIds(int* faceIds, int faceNum);
 
     /**
      * Get sensor active array size
@@ -2587,158 +2586,158 @@ public:
     int getSensorActiveArraySize(camera_coordinate_system_t& arraySize) const;
 
     /**
-    * \brief Set shading  mode
-    *
-    * \param[in] shadingMode the shading mode related parameters
-    *
-    * \return 0 if successfully, otherwise non-0 value is returned.
-    */
+     * \brief Set shading  mode
+     *
+     * \param[in] shadingMode the shading mode related parameters
+     *
+     * \return 0 if successfully, otherwise non-0 value is returned.
+     */
     int setShadingMode(camera_shading_mode_t shadingMode);
 
     /**
-    * \brief Get shading  mode
-    *
-    * \param[out] shadingMode the shading mode related parameters, 0:OFF 1:FAST 2:HIGH_QUALITY
-    *
-    * \return 0 if successfully, otherwise non-0 value is returned.
-    */
+     * \brief Get shading  mode
+     *
+     * \param[out] shadingMode the shading mode related parameters, 0:OFF 1:FAST 2:HIGH_QUALITY
+     *
+     * \return 0 if successfully, otherwise non-0 value is returned.
+     */
     int getShadingMode(camera_shading_mode_t& shadingMode) const;
 
     /**
-    * \brief Set statistics lens shading map mode
-    *
-    * \param[in] lensShadingMapMode the lens shading map mode related parameters
-    *
-    * \return 0 if successfully, otherwise non-0 value is returned.
-    */
+     * \brief Set statistics lens shading map mode
+     *
+     * \param[in] lensShadingMapMode the lens shading map mode related parameters
+     *
+     * \return 0 if successfully, otherwise non-0 value is returned.
+     */
     int setLensShadingMapMode(camera_lens_shading_map_mode_type_t lensShadingMapMode);
 
     /**
-    * \brief Get statistics lens shading map mode
-    *
-    * \param[out] lensShadingMapMode the lens shading map mode related parameters, 0:OFF 1:ON
-    *
-    * \return 0 if successfully, otherwise non-0 value is returned.
-    */
-    int getLensShadingMapMode(camera_lens_shading_map_mode_type_t &lensShadingMapMode) const;
+     * \brief Get statistics lens shading map mode
+     *
+     * \param[out] lensShadingMapMode the lens shading map mode related parameters, 0:OFF 1:ON
+     *
+     * \return 0 if successfully, otherwise non-0 value is returned.
+     */
+    int getLensShadingMapMode(camera_lens_shading_map_mode_type_t& lensShadingMapMode) const;
 
     /**
-    * \brief Set lens shading map
-    *
-    * \param[in] lensShadingMap the lens shading map
-    * \param[in] lensShadingMapSize lensShadingMap's size
-    *
-    * \return 0 if successfully, otherwise non-0 value is returned.
-    */
-    int setLensShadingMap(const float *lensShadingMap, size_t lensShadingMapSize);
+     * \brief Set lens shading map
+     *
+     * \param[in] lensShadingMap the lens shading map
+     * \param[in] lensShadingMapSize lensShadingMap's size
+     *
+     * \return 0 if successfully, otherwise non-0 value is returned.
+     */
+    int setLensShadingMap(const float* lensShadingMap, size_t lensShadingMapSize);
 
     /**
-    * \brief Get lens shading map
-    *
-    * \param[out] lensShadingMap the lens shading map
-    * \param[out] lensShadingMapSize the lens shading map's size
-    *
-    * \return 0 if successfully, otherwise non-0 value is returned.
-    */
-    int getLensShadingMap(float **lensShadingMap, size_t &lensShadingMapSize) const;
+     * \brief Get lens shading map
+     *
+     * \param[out] lensShadingMap the lens shading map
+     * \param[out] lensShadingMapSize the lens shading map's size
+     *
+     * \return 0 if successfully, otherwise non-0 value is returned.
+     */
+    int getLensShadingMap(float** lensShadingMap, size_t& lensShadingMapSize) const;
 
     /**
-    * \brief Get lens shading map size
-    *
-    * \param[out] arraySize the lens shading map size related parameters
-    *
-    * \return 0 if successfully, otherwise non-0 value is returned.
-    */
-    int getLensInfoShadingMapSize(camera_coordinate_t &shadingMapSize) const;
+     * \brief Get lens shading map size
+     *
+     * \param[out] arraySize the lens shading map size related parameters
+     *
+     * \return 0 if successfully, otherwise non-0 value is returned.
+     */
+    int getLensInfoShadingMapSize(camera_coordinate_t& shadingMapSize) const;
 
     /*
-    * \brief Set tonemap mode
-    *
-    * \param[in] camera_tonemap_mode_t& mode
-    *
-    * \return 0 if successfully, otherwise non-0 value is returned.
-    */
+     * \brief Set tonemap mode
+     *
+     * \param[in] camera_tonemap_mode_t& mode
+     *
+     * \return 0 if successfully, otherwise non-0 value is returned.
+     */
     int setTonemapMode(camera_tonemap_mode_t mode);
 
     /**
-    * \brief Get tonemap mode
-    *
-    * \param[out] camera_tonemap_mode_t& mode
-    *
-    * \return 0 if successfully, otherwise non-0 value is returned.
-    */
+     * \brief Get tonemap mode
+     *
+     * \param[out] camera_tonemap_mode_t& mode
+     *
+     * \return 0 if successfully, otherwise non-0 value is returned.
+     */
     int getTonemapMode(camera_tonemap_mode_t& mode) const;
 
     /**
-    * \brief Get supported tonemap modes
-    *
-    * \param[out] vector<camera_tonemap_mode_t>& tonemapModes
-    *
-    * \return 0 if successfully, otherwise non-0 value is returned.
-    */
+     * \brief Get supported tonemap modes
+     *
+     * \param[out] vector<camera_tonemap_mode_t>& tonemapModes
+     *
+     * \return 0 if successfully, otherwise non-0 value is returned.
+     */
     int getSupportedTonemapMode(std::vector<camera_tonemap_mode_t>& tonemapModes) const;
 
     /**
-    * \brief Set the type of tonemap preset curve
-    *
-    * \param[in] camera_tonemap_preset_curve_t type
-    *
-    * \return 0 if successfully, otherwise non-0 value is returned.
-    */
+     * \brief Set the type of tonemap preset curve
+     *
+     * \param[in] camera_tonemap_preset_curve_t type
+     *
+     * \return 0 if successfully, otherwise non-0 value is returned.
+     */
     int setTonemapPresetCurve(camera_tonemap_preset_curve_t type);
 
     /**
-    * \brief Get tonemap gamma
-    *
-    * \param[out] camera_tonemap_preset_curve_t& type
-    *
-    * \return 0 if successfully, otherwise non-0 value is returned.
-    */
+     * \brief Get tonemap gamma
+     *
+     * \param[out] camera_tonemap_preset_curve_t& type
+     *
+     * \return 0 if successfully, otherwise non-0 value is returned.
+     */
     int getTonemapPresetCurve(camera_tonemap_preset_curve_t& type) const;
 
     /**
-    * \brief Set tonemap gamma
-    *
-    * \param[in] float gamma
-    *
-    * \return 0 if successfully, otherwise non-0 value is returned.
-    */
+     * \brief Set tonemap gamma
+     *
+     * \param[in] float gamma
+     *
+     * \return 0 if successfully, otherwise non-0 value is returned.
+     */
     int setTonemapGamma(float gamma);
 
     /**
-    * \brief Get tonemap gamma
-    *
-    * \param[out] float& gamma
-    *
-    * \return 0 if successfully, otherwise non-0 value is returned.
-    */
+     * \brief Get tonemap gamma
+     *
+     * \param[out] float& gamma
+     *
+     * \return 0 if successfully, otherwise non-0 value is returned.
+     */
     int getTonemapGamma(float& gamma) const;
 
     /**
-    * \brief Get number of tonemap curve points
-    *
-    * \param[out] int32_t& number
-    *
-    * \return 0 if successfully, otherwise non-0 value is returned.
-    */
+     * \brief Get number of tonemap curve points
+     *
+     * \param[out] int32_t& number
+     *
+     * \return 0 if successfully, otherwise non-0 value is returned.
+     */
     int getTonemapMaxCurvePoints(int32_t& number) const;
 
     /**
-    * \brief Set tonemap curves
-    *
-    * \param[in] const camera_tonemap_curves_t& curve
-    *
-    * \return 0 if successfully, otherwise non-0 value is returned.
-    */
+     * \brief Set tonemap curves
+     *
+     * \param[in] const camera_tonemap_curves_t& curve
+     *
+     * \return 0 if successfully, otherwise non-0 value is returned.
+     */
     int setTonemapCurves(const camera_tonemap_curves_t& curves);
 
     /**
-    * \brief Get tonemap curves
-    *
-    * \param[out] camera_tonemap_curves_t& curve
-    *
-    * \return 0 if successfully, otherwise non-0 value is returned.
-    */
+     * \brief Get tonemap curves
+     *
+     * \param[out] camera_tonemap_curves_t& curve
+     *
+     * \return 0 if successfully, otherwise non-0 value is returned.
+     */
     int getTonemapCurves(camera_tonemap_curves_t& curves) const;
 
     /**
@@ -2757,7 +2756,7 @@ public:
      *
      * \return 0 if power mode was set, otherwise non-0 value is returned.
      */
-    int getPowerMode(camera_power_mode_t &mode) const;
+    int getPowerMode(camera_power_mode_t& mode) const;
 
     /**
      * \brief Set raw data output mode.
@@ -2775,7 +2774,7 @@ public:
      *
      * \return 0 if raw data output mode was set, otherwise non-0 value is returned.
      */
-    int getRawDataOutput(raw_data_output_t &mode) const;
+    int getRawDataOutput(raw_data_output_t& mode) const;
 
     /**
      * \brief Set total exposure target
@@ -2793,7 +2792,7 @@ public:
      *
      * \return 0 if total exposure target was set, otherwise non-0 value is returned.
      */
-    int getTotalExposureTarget(int64_t &totalExposureTarget) const;
+    int getTotalExposureTarget(int64_t& totalExposureTarget) const;
 
     /**
      * \brief Set user request id
@@ -2847,7 +2846,7 @@ public:
      *
      * \return 0 if flag was set, otherwise non-0 value is returned.
      */
-    int getCallbackRgbs(bool *enabled) const;
+    int getCallbackRgbs(bool* enabled) const;
 
     /**
      * \brief Set callback tonemap curve flags
@@ -2865,9 +2864,9 @@ public:
      *
      * \return 0 if flag was set, otherwise non-0 value is returned.
      */
-    int getCallbackTmCurve(bool *enabled) const;
+    int getCallbackTmCurve(bool* enabled) const;
 
-// ENABLE_EVCP_S
+    // ENABLE_EVCP_S
     /**
      * \brief Set EVCP ECC status
      *
@@ -2941,7 +2940,7 @@ public:
      * \return 0 if flag was set, otherwise non-0 value is returned.
      */
     int getEvcpFFMode(uint8_t* mode) const;
-// ENABLE_EVCP_E
+    // ENABLE_EVCP_E
 
     /**
      * \brief Set scale & crop region
@@ -2961,10 +2960,10 @@ public:
      */
     int getZoomRegion(camera_zoom_region_t* region) const;
 
-private:
+ private:
     friend class ParameterHelper;
-    void* mData; // The internal data to save the all of the parameters.
-}; // class Parameters
+    void* mData;  // The internal data to save the all of the parameters.
+};                // class Parameters
 /*******************End of Camera Parameters Definition**********************/
 
 }  // namespace icamera

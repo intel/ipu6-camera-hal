@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Intel Corporation.
+ * Copyright (C) 2015-2022 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -144,6 +144,14 @@ class BufferQueue : public BufferConsumer, public BufferProducer, public EventLi
      * \brief Clear and initialize input and output buffer queues.
      */
     void clearBufferQueues();
+    /**
+     * \brief Wait and check if queue is not empty until time out.
+     *
+     * No waiting if timeout value is zero
+     */
+    bool waitBufferQueue(ConditionLock& lock,
+                         std::map<Port, CameraBufQ>& queue,
+                         int64_t timeout);
     /**
      * \brief Wait for available input and output buffers.
      *

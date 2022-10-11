@@ -28,11 +28,7 @@ namespace icamera {
 #define DEFAULT_TONEMAP_CURVE_POINT_NUM 2048
 
 // HDR_FEATURE_S
-typedef enum {
-    AEC_SCENE_NONE,
-    AEC_SCENE_HDR,
-    AEC_SCENE_ULL
-} aec_scene_t;
+typedef enum { AEC_SCENE_NONE, AEC_SCENE_HDR, AEC_SCENE_ULL } aec_scene_t;
 // HDR_FEATURE_E
 
 typedef struct {
@@ -129,30 +125,29 @@ struct aiq_parameter_t {
  * and return some useful status of aiq results
  */
 class AiqSetting {
-
-public:
+ public:
     AiqSetting(int cameraId);
     ~AiqSetting();
 
     int init(void);
     int deinit(void);
-    int configure(const stream_config_t *streamList);
+    int configure(const stream_config_t* streamList);
 
     int setParameters(const Parameters& params);
 
-    int getAiqParameter(aiq_parameter_t &param);
+    int getAiqParameter(aiq_parameter_t& param);
 
     // HDR_FEATURE_S
     void updateTuningMode(aec_scene_t aecScene);
     // HDR_FEATURE_E
 
-private:
-    void updateFrameUsage(const stream_config_t *streamList);
+ private:
+    void updateFrameUsage(const stream_config_t* streamList);
 
-public:
+ public:
     int mCameraId;
 
-private:
+ private:
     std::vector<TuningMode> mTuningModes;
     aiq_parameter_t mAiqParam;
 

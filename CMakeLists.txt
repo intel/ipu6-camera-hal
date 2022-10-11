@@ -32,6 +32,7 @@ set(IIO_DIR             ${SRC_ROOT_DIR}/iio)
 set(ISP_CTRL_DIR        ${SRC_ROOT_DIR}/isp_control)
 # ISP_CONTROL_E
 set(IUTILS_DIR          ${SRC_ROOT_DIR}/iutils)
+set(SCHEDULER_DIR       ${SRC_ROOT_DIR}/scheduler)
 set(METADATA_DIR        ${SRC_ROOT_DIR}/metadata)
 set(PLATFORMDATA_DIR    ${SRC_ROOT_DIR}/platformdata)
 set(V4L2_DIR            ${SRC_ROOT_DIR}/v4l2)
@@ -144,7 +145,7 @@ include_directories(include
                     src/v4l2 src/core src/metadata
                     src/platformdata src/platformdata/gc
                     src/3a src/3a/intel3a src/3a/external
-                    src/fd
+                    src/fd src/scheduler
                     src/core/psysprocessor
                     src/image_process
                     )
@@ -216,6 +217,7 @@ set(LIBCAMHAL_SRCS
     ${IUTILS_SRCS}
     ${METADATA_SRCS}
     ${PLATFORMDATA_SRCS}
+    ${SCHEDULER_SRCS}
     ${V4L2_SRCS}
     ${ALGOWRAPPER_SRCS}
     ${IMAGE_PROCESS_SRCS}

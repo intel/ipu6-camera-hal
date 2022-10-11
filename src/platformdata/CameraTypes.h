@@ -27,13 +27,7 @@ namespace icamera {
 /**
  * Use to link buffer producers and consumers
  */
-enum Port {
-    MAIN_PORT = 0,
-    SECOND_PORT,
-    THIRD_PORT,
-    FORTH_PORT,
-    INVALID_PORT
-};
+enum Port { MAIN_PORT = 0, SECOND_PORT, THIRD_PORT, FORTH_PORT, INVALID_PORT };
 
 enum {
     FACING_BACK = 0,
@@ -47,26 +41,23 @@ enum {
     ORIENTATION_270 = 270,
 };
 
-enum {
-    LENS_VCM_HW = 0,
-    LENS_NONE_HW
-};
+enum { LENS_VCM_HW = 0, LENS_NONE_HW };
 
 enum {
-    SENSOR_EXPOSURE_SINGLE = 0,        /* sensor is single exposure */
-    SENSOR_FIX_EXPOSURE_RATIO,         /* Fix exposure ratio between long and short exposure */
-    SENSOR_RELATIVE_MULTI_EXPOSURES,   /* AE output exposures are converted to Shutter and
-                                          Readout time, then set to sensor driver */
-    SENSOR_MULTI_EXPOSURES,            /* Multi-exposures are set to sensor driver directly */
-    SENSOR_DUAL_EXPOSURES_DCG_AND_VS   /* Dual-exposure and multiple gains, i.e. DCG + VS */
+    SENSOR_EXPOSURE_SINGLE = 0,      /* sensor is single exposure */
+    SENSOR_FIX_EXPOSURE_RATIO,       /* Fix exposure ratio between long and short exposure */
+    SENSOR_RELATIVE_MULTI_EXPOSURES, /* AE output exposures are converted to Shutter and
+                                        Readout time, then set to sensor driver */
+    SENSOR_MULTI_EXPOSURES,          /* Multi-exposures are set to sensor driver directly */
+    SENSOR_DUAL_EXPOSURES_DCG_AND_VS /* Dual-exposure and multiple gains, i.e. DCG + VS */
 };
 
 enum {
     SENSOR_GAIN_NONE = 0,
-    SENSOR_MULTI_DG_AND_CONVERTION_AG,  /* Multi-DigitalGain and convertion AnalogGain are set
-                                           to sensor driver */
-    ISP_DG_AND_SENSOR_DIRECT_AG,        /* All digital gain is passed to ISP */
-    SENSOR_MULTI_DG_AND_DIRECT_AG       /* Multi analog and digital gains, i.e. DCG */
+    SENSOR_MULTI_DG_AND_CONVERTION_AG, /* Multi-DigitalGain and convertion AnalogGain are set
+                                          to sensor driver */
+    ISP_DG_AND_SENSOR_DIRECT_AG,       /* All digital gain is passed to ISP */
+    SENSOR_MULTI_DG_AND_DIRECT_AG      /* Multi analog and digital gains, i.e. DCG */
 };
 
 /**
@@ -93,35 +84,32 @@ typedef enum {
  */
 typedef enum {
     SENSOR_DG_TYPE_NONE,
-    SENSOR_DG_TYPE_X,           //linear relationship, gain = n*value (value: register value, n: ratio)
-    SENSOR_DG_TYPE_2_X,         //exponential relationship, gain = 2 ^ value (value: register value)
+    SENSOR_DG_TYPE_X,    // linear relationship, gain = n*value (value: register value, n: ratio)
+    SENSOR_DG_TYPE_2_X,  // exponential relationship, gain = 2 ^ value (value: register value)
 } SensorDgType;
 
-typedef enum {
-    MORPH_TABLE = 0,
-    IMG_TRANS
-} DvsType;
+typedef enum { MORPH_TABLE = 0, IMG_TRANS } DvsType;
 
 // Imaging algorithms
 typedef enum {
     IMAGING_ALGO_NONE = 0,
-    IMAGING_ALGO_AE   = 1,
-    IMAGING_ALGO_AWB  = 1 << 1,
-    IMAGING_ALGO_AF   = 1 << 2,
+    IMAGING_ALGO_AE = 1,
+    IMAGING_ALGO_AWB = 1 << 1,
+    IMAGING_ALGO_AF = 1 << 2,
     IMAGING_ALGO_GBCE = 1 << 3,
-    IMAGING_ALGO_PA   = 1 << 4,
-    IMAGING_ALGO_SA   = 1 << 5
+    IMAGING_ALGO_PA = 1 << 4,
+    IMAGING_ALGO_SA = 1 << 5
 } imaging_algorithm_t;
 
 // Note AUTO is not real config mode in the HAL.
 typedef camera_stream_configuration_mode_t ConfigMode;
 
 typedef struct TuningConfig {
-    ConfigMode configMode;                 /*!< configMode is internal usage to select AIQ and
-                                                Pipeline. AUTO is not real config mode. */
-    TuningMode tuningMode;                 /*!< tuningMode is used to define user cases,
-                                                like video or still. */
-    std::string aiqbName;                       /*!< special aiqb name corresponding with TuningMode */
+    ConfigMode configMode; /*!< configMode is internal usage to select AIQ and
+                                Pipeline. AUTO is not real config mode. */
+    TuningMode tuningMode; /*!< tuningMode is used to define user cases,
+                                like video or still. */
+    std::string aiqbName;  /*!< special aiqb name corresponding with TuningMode */
 } TuningConfig;
 
 typedef struct {
@@ -148,7 +136,7 @@ typedef struct {
 typedef struct {
     unsigned short width;
     unsigned short height;
-    unsigned char *table;
+    unsigned char* table;
 } WeightGridTable;
 // CUSTOM_WEIGHT_GRID_E
 
@@ -186,7 +174,10 @@ struct PolicyConfig {
     std::vector<ShareReferIdDesc> shareReferPairList;  // i: producer; i+1: consumer
     bool enableBundleInSdv;
 
-    PolicyConfig() { graphId = -1; enableBundleInSdv = true; }
+    PolicyConfig() {
+        graphId = -1;
+        enableBundleInSdv = true;
+    }
 };
 
 #define DEFAULT_VIDEO_STREAM_NUM 2
@@ -203,9 +194,10 @@ struct CommonConfig {
     int videoStreamNum;
     bool supportIspTuningUpdate;
     bool supportHwJpegEncode;
-// ENABLE_EVCP_S
+    int maxIsysTimeoutValue;
+    // ENABLE_EVCP_S
     bool isGpuEvcpEnabled;
-// ENABLE_EVCP_E
+    // ENABLE_EVCP_E
 
     CommonConfig() {
         xmlVersion = 1.0;
@@ -217,9 +209,10 @@ struct CommonConfig {
         videoStreamNum = DEFAULT_VIDEO_STREAM_NUM;
         supportIspTuningUpdate = false;
         supportHwJpegEncode = true;
-// ENABLE_EVCP_S
+        maxIsysTimeoutValue = 0;
+        // ENABLE_EVCP_S
         isGpuEvcpEnabled = false;
-// ENABLE_EVCP_E
+        // ENABLE_EVCP_E
     }
 };
 
@@ -241,7 +234,7 @@ struct ExpRange {
 
 /**
  * Multi exposure range information
-*/
+ */
 struct MultiExpRange {
     camera_resolution_t Resolution;
     ExpRange SHS1;

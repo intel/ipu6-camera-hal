@@ -28,7 +28,7 @@ namespace icamera {
  * automatically based on 3a enabled status
  */
 class I3AControlFactory {
-public:
+ public:
     /**
      * \brief Select the AIQ unit according to config file and compiling option
      *
@@ -39,7 +39,7 @@ public:
      *
      * \return the AIQ unit base class
      */
-    static AiqUnitBase *createI3AControl(int cameraId, SensorHwCtrl *sensorHw, LensHw *lensHw);
+    static AiqUnitBase* createI3AControl(int cameraId, SensorHwCtrl* sensorHw, LensHw* lensHw);
 };
 
 } /* namespace icamera */

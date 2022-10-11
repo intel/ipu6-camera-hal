@@ -263,7 +263,6 @@ void FileSource::fillFrameBuffer(string fileName, shared_ptr<CameraBuffer>& buff
 void FileSource::fillFrameBuffer(shared_ptr<CameraBuffer>& buffer) {
     string fileName;
 
-
     if (mInjectionWay == USING_CONFIG_FILE) {
         FileSourceProfile profile(mInjectedFile);
         fileName = profile.getFrameFile(mCameraId, mSequence);

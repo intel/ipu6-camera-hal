@@ -21,20 +21,20 @@
 namespace icamera {
 
 namespace IspControlUtils {
-    const char* getNameById(uint32_t ctrlId);
+const char* getNameById(uint32_t ctrlId);
 
-    uint32_t getIdByName(const char* name);
+uint32_t getIdByName(const char* name);
 
-    uint32_t getSizeById(uint32_t ctrlId);
+uint32_t getSizeById(uint32_t ctrlId);
 
-    uint32_t getTagById(uint32_t ctrlId);
+uint32_t getTagById(uint32_t ctrlId);
 
-    /**
-     * Find the data pointer which belongs to ctrlId in fullData
-     *
-     * Return NULL if cannot find ctrlId in fullData, otherwise will return the data pointer.
-     */
-    void* findDataById(uint32_t ctrlId, void* fullData, uint32_t size);
-} // end of IspControlUtils
+/**
+ * Find the data pointer which belongs to ctrlId in fullData
+ *
+ * Return NULL if cannot find ctrlId in fullData, otherwise will return the data pointer.
+ */
+void* findDataById(uint32_t ctrlId, void* fullData, uint32_t size);
+}  // namespace IspControlUtils
 
-} // end of icamera
+}  // namespace icamera

@@ -233,7 +233,8 @@ void CameraSharedMemory::openSemLock() {
     // Wait the semaphore lock for 2 seconds
     clock_gettime(CLOCK_REALTIME, &ts);
     ts.tv_sec += CAMERA_SHM_LOCK_TIME;
-    while ((ret = sem_timedwait(mSemLock, &ts)) == -1 && errno == EINTR);
+    while ((ret = sem_timedwait(mSemLock, &ts)) == -1 && errno == EINTR) {
+    }
     if (ret == 0) {
         sem_post(mSemLock);
         return;
@@ -259,7 +260,8 @@ int CameraSharedMemory::lock() {
     // Wait the semaphore lock for 2 seconds
     clock_gettime(CLOCK_REALTIME, &ts);
     ts.tv_sec += CAMERA_SHM_LOCK_TIME;
-    while (((ret = sem_timedwait(mSemLock, &ts)) == -1) && errno == EINTR);
+    while (((ret = sem_timedwait(mSemLock, &ts)) == -1) && errno == EINTR) {
+    }
     CheckAndLogError(ret != 0, UNKNOWN_ERROR, "Lock failed or timed out");
 
     return OK;

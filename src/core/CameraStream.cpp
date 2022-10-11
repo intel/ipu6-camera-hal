@@ -118,8 +118,8 @@ int CameraStream::qbuf(camera_buffer_t* ubuffer, int64_t sequence) {
     shared_ptr<CameraBuffer> camBuffer = userBufferToCameraBuffer(ubuffer);
     if (camBuffer) {
         camBuffer->setSettingSequence(sequence);
-        LOG2("<id%d>@%s, mStreamId:%d, CameraBuffer:%p for port:%d, ubuffer:%p, addr:%p",
-             mCameraId, __func__, mStreamId, camBuffer.get(), mPort, ubuffer, ubuffer->addr);
+        LOG2("<id%d>@%s, mStreamId:%d, CameraBuffer:%p for port:%d, ubuffer:%p, addr:%p", mCameraId,
+             __func__, mStreamId, camBuffer.get(), mPort, ubuffer, ubuffer->addr);
     }
 
     int ret = BAD_VALUE;

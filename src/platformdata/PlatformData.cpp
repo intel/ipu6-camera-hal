@@ -106,7 +106,7 @@ int PlatformData::init() {
         AiqInitData* aiqInitData = new AiqInitData(
             staticCfg->mCameras[i].sensorName, getCameraCfgPath(),
             staticCfg->mCameras[i].mSupportedTuningConfig, staticCfg->mCameras[i].mNvmDirectory,
-            staticCfg->mCameras[i].mMaxNvmDataSize, &camModuleName);
+            staticCfg->mCameras[i].mMaxNvmDataSize, staticCfg->mCameras[i].mCamModuleName);
         getInstance()->mAiqInitData.push_back(aiqInitData);
 
         if (!camModuleName.empty() &&
@@ -262,7 +262,7 @@ bool PlatformData::isEnableLtmThread(int cameraId) {
 }
 
 bool PlatformData::isFaceDetectionSupported(int cameraId) {
-    Parameters *source = &(getInstance()->mStaticCfg.mCameras[cameraId].mCapability);
+    Parameters* source = &(getInstance()->mStaticCfg.mCameras[cameraId].mCapability);
     const icamera::CameraMetadata& meta = icamera::ParameterHelper::getMetadata(*source);
     auto entry = meta.find(CAMERA_STATISTICS_INFO_AVAILABLE_FACE_DETECT_MODES);
     for (size_t i = 0; i < entry.count; i++) {
@@ -270,6 +270,10 @@ bool PlatformData::isFaceDetectionSupported(int cameraId) {
     }
 
     return false;
+}
+
+bool PlatformData::isSchedulerEnabled(int cameraId) {
+    return getInstance()->mStaticCfg.mCameras[cameraId].mSchedulerEnabled;
 }
 
 bool PlatformData::isFaceAeEnabled(int cameraId) {
@@ -1046,10 +1050,9 @@ int PlatformData::calculateFrameParams(int cameraId, SensorFrameParams& sensorFr
                 return BAD_VALUE;
             }
             if (current.width == 0 || current.height == 0) {
-                LOGW(
-                    "%s: Invalid XML configuration for TGT_COMPOSE,"
-                    "0 value detected in width or height",
-                    __func__);
+                LOGW("%s: Invalid XML configuration for TGT_COMPOSE,"
+                     "0 value detected in width or height",
+                     __func__);
                 return BAD_VALUE;
             } else {
                 LOG2("%s: Compose width %d/%d, height %d/%d", __func__, width, current.width,
@@ -1375,8 +1378,8 @@ camera_resolution_t* PlatformData::getPslOutputForRotation(int width, int height
     vector<UserToPslOutputMap>& outputMap = getInstance()->mStaticCfg.mCameras[cameraId].mOutputMap;
     for (auto& map : outputMap) {
         if (width == map.User.width && height == map.User.height) {
-            LOG2("<id%d> find the psl output resoltion(%d, %d) for %dx%d", cameraId,
-                 map.Psl.width, map.Psl.height, map.User.width, map.User.height);
+            LOG2("<id%d> find the psl output resoltion(%d, %d) for %dx%d", cameraId, map.Psl.width,
+                 map.Psl.height, map.User.width, map.User.height);
             return &map.Psl;
         }
     }
@@ -1557,6 +1560,10 @@ bool PlatformData::supportUpdateTuning() {
 
 bool PlatformData::supportHwJpegEncode() {
     return getInstance()->mStaticCfg.mCommonConfig.supportHwJpegEncode;
+}
+
+int PlatformData::getMaxIsysTimeout() {
+    return getInstance()->mStaticCfg.mCommonConfig.maxIsysTimeoutValue;
 }
 
 bool PlatformData::isUsingGpuAlgo() {

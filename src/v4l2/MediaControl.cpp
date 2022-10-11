@@ -381,8 +381,8 @@ int MediaControl::enumInfo() {
     media_device_info info;
     int ret = sc->ioctl(fd, MEDIA_IOC_DEVICE_INFO, &info);
     if (ret < 0) {
-        LOGE("Unable to retrieve media device information for device %s (%s)",
-             mDevName.c_str(), strerror(errno));
+        LOGE("Unable to retrieve media device information for device %s (%s)", mDevName.c_str(),
+             strerror(errno));
         goto done;
     }
 
@@ -652,7 +652,10 @@ const char* MediaControl::entitySubtype2String(unsigned type) {
         "Unknown", "V4L", "FB", "ALSA", "DVB",
     };
     static const char* subdevTypes[] = {
-        "Unknown", "Sensor", "Flash", "Lens",
+        "Unknown",
+        "Sensor",
+        "Flash",
+        "Lens",
     };
 
     uint32_t subtype = type & MEDIA_ENT_SUBTYPE_MASK;
@@ -843,8 +846,8 @@ int MediaControl::mediaCtlSetup(int cameraId, MediaCtlConf* mc, int width, int h
     /* Set routing */
     for (auto& route : mc->routes) {
         LOG1("<id%d> route entity:%s, sinkPad:%d, srcPad:%d, sinkStream:%d, srcStream:%d, flag:%d",
-             cameraId, route.entityName.c_str(), route.sinkPad, route.srcPad,
-             route.sinkStream, route.srcStream, route.flag);
+             cameraId, route.entityName.c_str(), route.sinkPad, route.srcPad, route.sinkStream,
+             route.srcStream, route.flag);
 
         string subDeviceNodeName;
         CameraUtils::getSubDeviceName(route.entityName.c_str(), subDeviceNodeName);
@@ -995,7 +998,8 @@ void MediaControl::dumpTopologyDot() {
                 // to make KW happy.
                 if (devname)
                     printf("\tn%08x [label=\"%s\\n%s\", shape=box, style=filled, "
-                           "fillcolor=yellow]\n", info->id, info->name, devname);
+                           "fillcolor=yellow]\n",
+                           info->id, info->name, devname);
                 break;
 
             case MEDIA_ENT_T_V4L2_SUBDEV:

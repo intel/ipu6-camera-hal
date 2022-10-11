@@ -25,8 +25,7 @@
 
 namespace icamera {
 
-typedef enum
-{
+typedef enum {
     camera_control_isp_ctrl_id_wb_gains = 34710,
     camera_control_isp_ctrl_id_color_correction_matrix = 30009,
     camera_control_isp_ctrl_id_advanced_color_correction_matrix = 51448,
@@ -45,8 +44,7 @@ typedef enum
 /**
  * \struct camera_control_isp_wb_gains_t
  */
-struct camera_control_isp_wb_gains_t
-{
+struct camera_control_isp_wb_gains_t {
     /*!< gr Gr gain.*/
     float gr;
     /*!< r R gain.*/
@@ -55,26 +53,23 @@ struct camera_control_isp_wb_gains_t
     float b;
     /*!< gb Gb gain.*/
     float gb;
-
 };
 
 /**
  * \struct camera_control_isp_color_correction_matrix_t
  */
-struct camera_control_isp_color_correction_matrix_t
-{
-    /*!< ccm_gains[9] Color correction matrix from sensor RGB to sRGB/target color space. Row-major order.*/
+struct camera_control_isp_color_correction_matrix_t {
+    /*!< ccm_gains[9] Color correction matrix from sensor RGB to sRGB/target color space. Row-major
+     * order.*/
     float ccm_gains[9];
     /*!< ccm_gains_media_format colorspace the ccm matrix was calibrated to*/
     int32_t ccm_gains_media_format;
-
 };
 
 /**
  * \struct camera_control_isp_advanced_color_correction_matrix_t
  */
-struct camera_control_isp_advanced_color_correction_matrix_t
-{
+struct camera_control_isp_advanced_color_correction_matrix_t {
     /*!< bypass bypass*/
     int32_t bypass;
     /*!< number_of_sectors number of sectors (CCM matrices)*/
@@ -85,24 +80,20 @@ struct camera_control_isp_advanced_color_correction_matrix_t
     float hue_of_sectors[24];
     /*!< ccm_matrices_media_format colorspace the ccm matrices where calibrated to*/
     int32_t ccm_matrices_media_format;
-
 };
 
 /**
  * \struct camera_control_isp_bxt_csc_t
  */
-struct camera_control_isp_bxt_csc_t
-{
+struct camera_control_isp_bxt_csc_t {
     /*!< rgb2yuv_coef[9] Matrix for RGB to YUV conversion*/
     int32_t rgb2yuv_coef[9];
-
 };
 
 /**
  * \struct camera_control_isp_bxt_demosaic_t
  */
-struct camera_control_isp_bxt_demosaic_t
-{
+struct camera_control_isp_bxt_demosaic_t {
     /*!< high_frequency_denoise_enable High frequency denoise enbale flag*/
     int32_t high_frequency_denoise_enable;
     /*!< false_color_correction_enable False color correction enable flag*/
@@ -117,14 +108,12 @@ struct camera_control_isp_bxt_demosaic_t
     int32_t high_frequency_denoise_power;
     /*!< checkers_removal_w Checkers removal homogeneity weight*/
     int32_t checkers_removal_w;
-
 };
 
 /**
  * \struct camera_control_isp_sc_iefd_t
  */
-struct camera_control_isp_sc_iefd_t
-{
+struct camera_control_isp_sc_iefd_t {
     /*!< sharpening_power[2] base power of sharpening*/
     int32_t sharpening_power[2];
     /*!< sharp_power_edge shapening power for direct edge*/
@@ -183,14 +172,12 @@ struct camera_control_isp_sc_iefd_t
     int32_t vssnlm_y2;
     /*!< vssnlm_y3 Edge denoising LUT y2*/
     int32_t vssnlm_y3;
-
 };
 
 /**
  * \struct camera_control_isp_see_t
  */
-struct camera_control_isp_see_t
-{
+struct camera_control_isp_see_t {
     /*!< bypass bypass*/
     int32_t bypass;
     /*!< edge_max max edge value for clamping*/
@@ -205,47 +192,58 @@ struct camera_control_isp_see_t
     int32_t alpha_width;
     /*!< alpha_bias */
     int32_t alpha_bias;
-
 };
 
 /**
  * \struct camera_control_isp_bnlm_t
  */
-struct camera_control_isp_bnlm_t
-{
+struct camera_control_isp_bnlm_t {
     /*!< nm_offset NR level for noise model adaptation*/
     int32_t nm_offset;
     /*!< nm_th Threshold for noise model adaptation*/
     int32_t nm_th;
     /*!< bypass bypass for the filter*/
     int32_t bypass;
-    /*!< detailix_x_range[2] detailIx noise model - noise input range - tunned automatically from data - set QNN fit range -  [Q14.0]  [0..16383]*/
+    /*!< detailix_x_range[2] detailIx noise model - noise input range - tunned automatically from
+     * data - set QNN fit range -  [Q14.0]  [0..16383]*/
     int32_t detailix_x_range[2];
     /*!< detailix_radgain detailIx Lens shading radial compensation power -  [Q8.16], [0..256%]*/
     int32_t detailix_radgain;
     /*!< detailix_coeffs[3] detailIx SAD noise model - NoiseModel=SQRT(C1*mu^2+C2*mu+C3)*/
     int32_t detailix_coeffs[3];
-    /*!< sad_spatialrad[4] Neighbors spatial (radial) weight - filter radial bias - allowing reduction of effective filter size [Q3.5]   [1:0.25:4]*/
+    /*!< sad_spatialrad[4] Neighbors spatial (radial) weight - filter radial bias - allowing
+     * reduction of effective filter size [Q3.5]   [1:0.25:4]*/
     int32_t sad_spatialrad[4];
-    /*!< sad_mu_x_range[2] detailIx noise model - noise input range - tunned automatically from data - set QNN fit range  [Q14.0]  [0..16383]*/
+    /*!< sad_mu_x_range[2] detailIx noise model - noise input range - tunned automatically from data
+     * - set QNN fit range  [Q14.0]  [0..16383]*/
     int32_t sad_mu_x_range[2];
     /*!< sad_radgain SAD Lens shading radial compensation power  - [Q8.16], [0..256%]*/
     int32_t sad_radgain;
     /*!< sad_mu_coeffs[3] SAD noise model - NoiseModel=SQRT(C1*mu^2+C2*mu+C3)*/
     int32_t sad_mu_coeffs[3];
-    /*!< detailth[3] detailTH - 3 THs classifying content(detail) type to {flat/weak texture/texture/edge} based on detailIx   -  [14.0]  [0..16383]*/
+    /*!< detailth[3] detailTH - 3 THs classifying content(detail) type to {flat/weak
+     * texture/texture/edge} based on detailIx   -  [14.0]  [0..16383]*/
     int32_t detailth[3];
-    /*!< sad_detailixlutx[4] Continuos LUT aligning SAD from different detailIx levels to a common scale before appling exponent scaling - texture to flat & edge discrimination, X axis is currently fixed 0:8:1023  -  [14.0]  [0..16383]*/
+    /*!< sad_detailixlutx[4] Continuos LUT aligning SAD from different detailIx levels to a common
+     * scale before appling exponent scaling - texture to flat & edge discrimination, X axis is
+     * currently fixed 0:8:1023  -  [14.0]  [0..16383]*/
     int32_t sad_detailixlutx[4];
-    /*!< sad_detailixluty[4] Continuos LUT aligning SAD from different detailIx levels to a common scale before appling exponent scaling - texture to flat & edge discrimination - Yaxis is continuos description of (2^10-1)/QNN_o  -  [14.0]  [0..16383]*/
+    /*!< sad_detailixluty[4] Continuos LUT aligning SAD from different detailIx levels to a common
+     * scale before appling exponent scaling - texture to flat & edge discrimination - Yaxis is
+     * continuos description of (2^10-1)/QNN_o  -  [14.0]  [0..16383]*/
     int32_t sad_detailixluty[4];
-    /*!< numcandforavg[4] max num neighbors to average for smoothing per detail type  - [4.0]  [1..16]*/
+    /*!< numcandforavg[4] max num neighbors to average for smoothing per detail type  - [4.0]
+     * [1..16]*/
     int32_t numcandforavg[4];
-    /*!< blend_power[4] blend alpha(alpha0)  - Increase central pixel effect to enhance detail preservation vs smoothing  -  [8.24], [0..256%]*/
+    /*!< blend_power[4] blend alpha(alpha0)  - Increase central pixel effect to enhance detail
+     * preservation vs smoothing  -  [8.24], [0..256%]*/
     int32_t blend_power[4];
-    /*!< blend_th[4] blend alpha(alpha0)  - preserve details based on texture classification of the form alpha0>TH - [0:2^10-1]*/
+    /*!< blend_th[4] blend alpha(alpha0)  - preserve details based on texture classification of the
+     * form alpha0>TH - [0:2^10-1]*/
     int32_t blend_th[4];
-    /*!< blend_texturegain[4] blend alpha(alpha0)  - define steepness of blent_th effect for preserve details - alphaRes=2^10-1;   gainScale=255;  outScale=0.01;    curSlope = outScale*tan(pi/2*((fixGain/(gainScale-1))^2))*alphaRes/(alphaRes-curTH) -   [0..256]*/
+    /*!< blend_texturegain[4] blend alpha(alpha0)  - define steepness of blent_th effect for
+     * preserve details - alphaRes=2^10-1;   gainScale=255;  outScale=0.01;    curSlope =
+     * outScale*tan(pi/2*((fixGain/(gainScale-1))^2))*alphaRes/(alphaRes-curTH) -   [0..256]*/
     int32_t blend_texturegain[4];
     /*!< blend_radgain blend  radial weigh -  [8.16], [0..256%]*/
     int32_t blend_radgain;
@@ -257,14 +255,12 @@ struct camera_control_isp_bnlm_t
     int32_t wmaxminth;
     /*!< rad_enable Radial LSC correction*/
     int32_t rad_enable;
-
 };
 
 /**
  * \struct camera_control_isp_tnr5_21_t
  */
-struct camera_control_isp_tnr5_21_t
-{
+struct camera_control_isp_tnr5_21_t {
     /*!< bypass bypass filter*/
     int32_t bypass;
     /*!< nm_yy_xcu_b[64] base y noise model - y dependency*/
@@ -333,14 +329,12 @@ struct camera_control_isp_tnr5_21_t
     int32_t bypass_g_mv;
     /*!< bypass_NS Bypass Noise Stream*/
     int32_t bypass_NS;
-
 };
 
 /**
  * \struct camera_control_isp_xnr_dss_t
  */
-struct camera_control_isp_xnr_dss_t
-{
+struct camera_control_isp_xnr_dss_t {
     /*!< rad_enable */
     int32_t rad_enable;
     /*!< bypass Bypass all XNR4*/
@@ -413,14 +407,12 @@ struct camera_control_isp_xnr_dss_t
     int32_t blnd_hf_power_y;
     /*!< blnd_hf_power_c New in DSS_XNR*/
     int32_t blnd_hf_power_c;
-
 };
 
 /**
  * \struct camera_control_isp_gamma_tone_map_t
  */
-struct camera_control_isp_gamma_tone_map_t
-{
+struct camera_control_isp_gamma_tone_map_t {
     /*!< gamma[2048] Gamma table for all channels*/
     float gamma[2048];
     /*!< gamma_lut_size Gamma LUT size*/
@@ -429,14 +421,12 @@ struct camera_control_isp_gamma_tone_map_t
     float tone_map[2048];
     /*!< tone_map_lut_size Tone map LUT size*/
     uint32_t tone_map_lut_size;
-
 };
 
 /**
  * \struct camera_control_isp_tnr5_22_t
  */
-struct camera_control_isp_tnr5_22_t
-{
+struct camera_control_isp_tnr5_22_t {
     /*!< bypass bypass filter*/
     int32_t bypass;
     /*!< nm_yy_xcu_b[64] base y noise model - y dependency*/
@@ -505,14 +495,12 @@ struct camera_control_isp_tnr5_22_t
     int32_t bypass_g_mv;
     /*!< bypass_NS Bypass Noise Stream*/
     int32_t bypass_NS;
-
 };
 
 /**
  * \struct camera_control_isp_tnr5_25_t
  */
-struct camera_control_isp_tnr5_25_t
-{
+struct camera_control_isp_tnr5_25_t {
     /*!< bypass bypass filter*/
     int32_t bypass;
     /*!< nm_yy_xcu_b[64] base y noise model - y dependency*/
@@ -555,7 +543,6 @@ struct camera_control_isp_tnr5_25_t
     int32_t tbd_sim_gain;
     /*!< bypass_g_mv Bypass Global Motion Vector*/
     int32_t bypass_g_mv;
-
 };
 
-} // end of icamera
+}  // namespace icamera

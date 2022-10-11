@@ -28,17 +28,17 @@
 
 namespace icamera {
 
-AiqUnit::AiqUnit(int cameraId, SensorHwCtrl *sensorHw, LensHw *lensHw) :
-    mCameraId(cameraId),
-    // LOCAL_TONEMAP_S
-    mLtm(nullptr),
-    // LOCAL_TONEMAP_E
-    mAiqUnitState(AIQ_UNIT_NOT_INIT),
-    // INTEL_DVS_S
-    mDvs(nullptr),
-    // INTEL_DVS_S
-    mCcaInitialized(false),
-    mActiveStreamCount(0) {
+AiqUnit::AiqUnit(int cameraId, SensorHwCtrl* sensorHw, LensHw* lensHw)
+        : mCameraId(cameraId),
+          // LOCAL_TONEMAP_S
+          mLtm(nullptr),
+          // LOCAL_TONEMAP_E
+          mAiqUnitState(AIQ_UNIT_NOT_INIT),
+          // INTEL_DVS_S
+          mDvs(nullptr),
+          // INTEL_DVS_S
+          mCcaInitialized(false),
+          mActiveStreamCount(0) {
     mAiqSetting = new AiqSetting(cameraId);
     mAiqEngine = new AiqEngine(cameraId, sensorHw, lensHw, mAiqSetting);
 
@@ -122,7 +122,7 @@ int AiqUnit::deinit() {
     return OK;
 }
 
-int AiqUnit::configure(const stream_config_t *streamList) {
+int AiqUnit::configure(const stream_config_t* streamList) {
     CheckAndLogError(streamList == nullptr, BAD_VALUE, "streamList is nullptr");
 
     AutoMutex l(mAiqUnitLock);
@@ -135,8 +135,7 @@ int AiqUnit::configure(const stream_config_t *streamList) {
     }
 
     std::vector<ConfigMode> configModes;
-    PlatformData::getConfigModesByOperationMode(mCameraId, streamList->operation_mode,
-                                                configModes);
+    PlatformData::getConfigModesByOperationMode(mCameraId, streamList->operation_mode, configModes);
     int ret = initIntelCcaHandle(configModes);
     CheckAndLogError(ret < 0, BAD_VALUE, "@%s failed to create intel cca handle", __func__);
 
@@ -146,18 +145,11 @@ int AiqUnit::configure(const stream_config_t *streamList) {
     ret = mAiqEngine->configure();
     CheckAndLogError(ret != OK, ret, "configure AIQ engine error: %d", ret);
 
-    // LOCAL_TONEMAP_S
-    if (mLtm) {
-        ret = mLtm->configure(configModes);
-        CheckAndLogError(ret != OK, ret, "configure LTM engine error: %d", ret);
-    }
-    // LOCAL_TONEMAP_E
-
     mAiqUnitState = AIQ_UNIT_CONFIGURED;
     return OK;
 }
 
-int AiqUnit::initIntelCcaHandle(const std::vector<ConfigMode> &configModes) {
+int AiqUnit::initIntelCcaHandle(const std::vector<ConfigMode>& configModes) {
     if (PlatformData::supportUpdateTuning() && !configModes.empty()) {
         std::shared_ptr<IGraphConfig> graphConfig =
             IGraphConfigManager::getInstance(mCameraId)->getGraphConfig(configModes[0]);
@@ -178,7 +170,7 @@ int AiqUnit::initIntelCcaHandle(const std::vector<ConfigMode> &configModes) {
 
     LOG1("<id%d>@%s", mCameraId, __func__);
     mTuningModes.clear();
-    for (auto &cfg : configModes) {
+    for (auto& cfg : configModes) {
         TuningMode tuningMode;
         int ret = PlatformData::getTuningModeByConfigMode(mCameraId, cfg, tuningMode);
         CheckAndLogError(ret != OK, ret, "%s: Failed to get tuningMode, cfg: %d", __func__, cfg);
@@ -191,8 +183,8 @@ int AiqUnit::initIntelCcaHandle(const std::vector<ConfigMode> &configModes) {
         ret = PlatformData::getCpf(mCameraId, tuningMode, &cpfData);
         if (ret == OK && cpfData.data) {
             CheckAndLogError(cpfData.size > cca::MAX_CPF_LEN, UNKNOWN_ERROR,
-                       "%s, AIQB buffer is too small cpfData:%d > MAX_CPF_LEN:%d",
-                       __func__, cpfData.size, cca::MAX_CPF_LEN);
+                             "%s, AIQB buffer is too small cpfData:%d > MAX_CPF_LEN:%d", __func__,
+                             cpfData.size, cca::MAX_CPF_LEN);
             MEMCPY_S(params.aiq_cpf.buf, cca::MAX_CPF_LEN, cpfData.data, cpfData.size);
             params.aiq_cpf.size = cpfData.size;
         }
@@ -200,9 +192,9 @@ int AiqUnit::initIntelCcaHandle(const std::vector<ConfigMode> &configModes) {
         // Initialize cca_nvm data
         ia_binary_data* nvmData = PlatformData::getNvm(mCameraId);
         if (nvmData) {
-            CheckAndLogError(nvmData->size > cca::MAX_NVM_LEN,  UNKNOWN_ERROR,
-                       "%s, NVM buffer is too small: nvmData:%d  MAX_NVM_LEN:%d",
-                       __func__, nvmData->size, cca::MAX_NVM_LEN);
+            CheckAndLogError(nvmData->size > cca::MAX_NVM_LEN, UNKNOWN_ERROR,
+                             "%s, NVM buffer is too small: nvmData:%d  MAX_NVM_LEN:%d", __func__,
+                             nvmData->size, cca::MAX_NVM_LEN);
             MEMCPY_S(params.aiq_nvm.buf, cca::MAX_NVM_LEN, nvmData->data, nvmData->size);
             params.aiq_nvm.size = nvmData->size;
         }
@@ -210,9 +202,9 @@ int AiqUnit::initIntelCcaHandle(const std::vector<ConfigMode> &configModes) {
         // Initialize cca_aiqd data
         ia_binary_data* aiqdData = PlatformData::getAiqd(mCameraId, tuningMode);
         if (aiqdData) {
-            CheckAndLogError(aiqdData->size > cca::MAX_AIQD_LEN,  UNKNOWN_ERROR,
-                       "%s, AIQD buffer is too small aiqdData:%d > MAX_AIQD_LEN:%d",
-                       __func__, aiqdData->size, cca::MAX_AIQD_LEN);
+            CheckAndLogError(aiqdData->size > cca::MAX_AIQD_LEN, UNKNOWN_ERROR,
+                             "%s, AIQD buffer is too small aiqdData:%d > MAX_AIQD_LEN:%d", __func__,
+                             aiqdData->size, cca::MAX_AIQD_LEN);
             MEMCPY_S(params.aiq_aiqd.buf, cca::MAX_AIQD_LEN, aiqdData->data, aiqdData->size);
             params.aiq_aiqd.size = aiqdData->size;
         }
@@ -228,12 +220,14 @@ int AiqUnit::initIntelCcaHandle(const std::vector<ConfigMode> &configModes) {
         params.aecFrameDelay = 0;
 
         // Initialize functions which need to be started
-        params.bitmap = cca::CCA_MODULE_AE | cca::CCA_MODULE_AWB |
-                        cca::CCA_MODULE_PA | cca::CCA_MODULE_SA | cca::CCA_MODULE_GBCE |
-                        cca::CCA_MODULE_LARD;
+        params.bitmap = cca::CCA_MODULE_AE | cca::CCA_MODULE_AWB | cca::CCA_MODULE_PA |
+                        cca::CCA_MODULE_SA | cca::CCA_MODULE_GBCE | cca::CCA_MODULE_LARD;
         if (PlatformData::getLensHwType(mCameraId) == LENS_VCM_HW) {
             params.bitmap |= cca::CCA_MODULE_AF;
         }
+
+        std::shared_ptr<IGraphConfig> graphConfig =
+                IGraphConfigManager::getInstance(mCameraId)->getGraphConfig(cfg);
 
         // LOCAL_TONEMAP_S
         bool hasLtm = PlatformData::isLtmEnabled(mCameraId);
@@ -245,17 +239,26 @@ int AiqUnit::initIntelCcaHandle(const std::vector<ConfigMode> &configModes) {
         // HDR_FEATURE_E
 
         // DOL_FEATURE_S
-        hasLtm |= (PlatformData::isDolShortEnabled(mCameraId)
-                   || PlatformData::isDolMediumEnabled(mCameraId));
+        hasLtm |= (PlatformData::isDolShortEnabled(mCameraId) ||
+                   PlatformData::isDolMediumEnabled(mCameraId));
         // DOL_FEATURE_E
-
-        if (hasLtm) {
+        if (hasLtm && mLtm) {
             params.bitmap |= cca::CCA_MODULE_LTM;
+            ret = mLtm->configure(configModes, graphConfig, VIDEO_STREAM_ID);
+            CheckAndLogError(ret != OK, ret, "configure LTM engine error: %d", ret);
         }
         // LOCAL_TONEMAP_E
 
         // INTEL_DVS_S
         if (mDvs) {
+            std::vector<int32_t> streamIds;
+            if (graphConfig != nullptr) {
+                graphConfig->graphGetStreamIds(streamIds);
+            }
+            params.dvs_ids.count = streamIds.size();
+            for (size_t i = 0; i < streamIds.size(); ++i) {
+                params.dvs_ids.ids[i] = streamIds[i];
+            }
             ret = mDvs->configure(cfg, &params);
             CheckAndLogError(ret != OK, UNKNOWN_ERROR, "%s, configure DVS error", __func__);
             params.bitmap |= cca::CCA_MODULE_DVS;
@@ -265,10 +268,8 @@ int AiqUnit::initIntelCcaHandle(const std::vector<ConfigMode> &configModes) {
         // DOL_FEATURE_S
         // Initialize Bcomp params
         if (PlatformData::isDolShortEnabled(mCameraId) ||
-                PlatformData::isDolMediumEnabled(mCameraId)) {
+            PlatformData::isDolMediumEnabled(mCameraId)) {
             // Parse the DOL mode and CG ratio from sensor mode config
-            std::shared_ptr<IGraphConfig> graphConfig =
-                IGraphConfigManager::getInstance(mCameraId)->getGraphConfig(cfg);
             if (graphConfig != nullptr) {
                 std::string dol_mode_name;
                 graphConfig->getDolInfo(params.conversionGainRatio, dol_mode_name);
@@ -281,35 +282,33 @@ int AiqUnit::initIntelCcaHandle(const std::vector<ConfigMode> &configModes) {
                     params.dolMode = dolModeNameMap[dol_mode_name];
                 }
             }
-            LOG2("conversionGainRatio: %f, dolMode: %d",
-                 params.conversionGainRatio, params.dolMode);
+            LOG2("conversionGainRatio: %f, dolMode: %d", params.conversionGainRatio,
+                 params.dolMode);
             params.bitmap = params.bitmap | cca::CCA_MODULE_BCOM;
         } else if (PlatformData::getSensorAeEnable(mCameraId)) {
             params.conversionGainRatio = 1;
             params.dolMode = ia_bcomp_linear_hdr_mode;
-            LOG2("WA: conversionGainRatio: %f, dolMode: %d",
-                 params.conversionGainRatio, params.dolMode);
+            LOG2("WA: conversionGainRatio: %f, dolMode: %d", params.conversionGainRatio,
+                 params.dolMode);
             params.bitmap = params.bitmap | cca::CCA_MODULE_BCOM;
         }
         // DOL_FEATURE_E
 
         if (PlatformData::supportUpdateTuning()) {
-            std::shared_ptr<IGraphConfig> graphConfig =
-                IGraphConfigManager::getInstance(mCameraId)->getGraphConfig(cfg);
             if (graphConfig != nullptr) {
                 std::vector<int32_t> streamIds;
                 graphConfig->graphGetStreamIds(streamIds);
                 params.aic_stream_ids.count = streamIds.size();
                 CheckAndLogError(streamIds.size() > cca::MAX_STREAM_NUM, UNKNOWN_ERROR,
-                        "%s, Too many streams: %zu in graph", __func__, streamIds.size());
+                                 "%s, Too many streams: %zu in graph", __func__, streamIds.size());
                 for (size_t i = 0; i < streamIds.size(); ++i) {
                     params.aic_stream_ids.ids[i] = streamIds[i];
                 }
             }
         }
-        IntelCca *intelCca = IntelCca::getInstance(mCameraId, tuningMode);
-        CheckAndLogError(!intelCca, UNKNOWN_ERROR,
-                         "Failed to get cca. mode:%d cameraId:%d", tuningMode, mCameraId);
+        IntelCca* intelCca = IntelCca::getInstance(mCameraId, tuningMode);
+        CheckAndLogError(!intelCca, UNKNOWN_ERROR, "Failed to get cca. mode:%d cameraId:%d",
+                         tuningMode, mCameraId);
         ia_err iaErr = intelCca->init(params);
         if (iaErr == ia_err_none) {
             mTuningModes.push_back(tuningMode);
@@ -332,8 +331,8 @@ void AiqUnit::deinitIntelCcaHandle() {
     if (!mCcaInitialized) return;
 
     LOG1("<id%d>@%s", mCameraId, __func__);
-    for (auto &mode : mTuningModes) {
-        IntelCca *intelCca = IntelCca::getInstance(mCameraId, mode);
+    for (auto& mode : mTuningModes) {
+        IntelCca* intelCca = IntelCca::getInstance(mCameraId, mode);
         CheckAndLogError(!intelCca, VOID_VALUE, "%s, Failed to get cca: mode(%d), cameraId(%d)",
                          __func__, mode, mCameraId);
 
@@ -431,15 +430,20 @@ std::vector<EventListener*> AiqUnit::getStatsEventListener() {
         eventListenerList.push_back(mLtm);
     }
     // LOCAL_TONEMAP_E
-    // INTEL_DVS_S
-    if (mDvs) {
-        eventListenerList.push_back(mDvs);
-    }
-    // INTEL_DVS_E
+
     return eventListenerList;
 }
 
-int AiqUnit::setParameters(const Parameters &params) {
+// INTEL_DVS_S
+std::vector<EventListener*> AiqUnit::getDVSEventListener() {
+    AutoMutex l(mAiqUnitLock);
+    std::vector<EventListener*> eventListenerList;
+    if (mDvs) eventListenerList.push_back(mDvs);
+    return eventListenerList;
+}
+// INTEL_DVS_E
+
+int AiqUnit::setParameters(const Parameters& params) {
     AutoMutex l(mAiqUnitLock);
     if (mDvs) {
         mDvs->setParameter(params);

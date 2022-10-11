@@ -27,33 +27,32 @@ using std::vector;
 
 namespace icamera {
 
-SensorManager::SensorManager(int cameraId, SensorHwCtrl *sensorHw) :
-    mCameraId(cameraId),
-    mSensorHwCtrl(sensorHw),
-    // HDR_FEATURE_S
-    mModeSwitched(false),
-    // HDR_FEATURE_E
-    mLastSofSequence(-1),
-    mAnalogGainDelay(0),
-    mDigitalGainDelay(0) {
+SensorManager::SensorManager(int cameraId, SensorHwCtrl* sensorHw)
+        : mCameraId(cameraId),
+          mSensorHwCtrl(sensorHw),
+          // HDR_FEATURE_S
+          mModeSwitched(false),
+          // HDR_FEATURE_E
+          mLastSofSequence(-1),
+          mAnalogGainDelay(0),
+          mDigitalGainDelay(0) {
     // HDR_FEATURE_S
     CLEAR(mWdrModeSetting);
     // HDR_FEATURE_E
 
     if (PlatformData::getAnalogGainLag(mCameraId) > 0) {
-        mAnalogGainDelay = PlatformData::getExposureLag(mCameraId)
-            - PlatformData::getAnalogGainLag(mCameraId);
+        mAnalogGainDelay =
+            PlatformData::getExposureLag(mCameraId) - PlatformData::getAnalogGainLag(mCameraId);
         mDigitalGainDelay = mAnalogGainDelay;
     }
 
     if (PlatformData::getDigitalGainLag(mCameraId) >= 0) {
-        mDigitalGainDelay = PlatformData::getExposureLag(mCameraId)
-            - PlatformData::getDigitalGainLag(mCameraId);
+        mDigitalGainDelay =
+            PlatformData::getExposureLag(mCameraId) - PlatformData::getDigitalGainLag(mCameraId);
     }
 }
 
-SensorManager::~SensorManager() {
-}
+SensorManager::~SensorManager() {}
 
 void SensorManager::reset() {
     LOG1("<id%d>@%s", mCameraId, __func__);
@@ -87,8 +86,8 @@ void SensorManager::handleSofEvent(EventData eventData) {
 
         SofEventInfo info;
         info.sequence = eventData.data.sync.sequence;
-        info.timestamp = ((long)eventData.data.sync.timestamp.tv_sec) * 1000000
-                         + eventData.data.sync.timestamp.tv_usec;
+        info.timestamp = ((long)eventData.data.sync.timestamp.tv_sec) * 1000000 +
+                         eventData.data.sync.timestamp.tv_usec;
         if (mSofEventInfo.size() >= kMaxSofEventInfo) {
             mSofEventInfo.erase(mSofEventInfo.begin());
         }
@@ -109,7 +108,8 @@ uint64_t SensorManager::getSofTimestamp(int64_t sequence) {
 
 // HDR_FEATURE_S
 int SensorManager::convertTuningModeToWdrMode(TuningMode tuningMode) {
-    return ((tuningMode == TUNING_MODE_VIDEO_HDR) || (tuningMode == TUNING_MODE_VIDEO_HDR2)) ? 1 : 0;
+    return ((tuningMode == TUNING_MODE_VIDEO_HDR) || (tuningMode == TUNING_MODE_VIDEO_HDR2)) ? 1 :
+                                                                                               0;
 }
 
 void SensorManager::handleSensorModeSwitch(int64_t sequence) {
@@ -147,7 +147,7 @@ int SensorManager::setWdrMode(TuningMode tuningMode, int64_t sequence) {
 
     if (mWdrModeSetting.tuningMode != tuningMode) {
         // Save WDR mode and update this mode to driver in SOF event handler.
-        //So we know which frame is corrupted and we can skip the corrupted frames.
+        // So we know which frame is corrupted and we can skip the corrupted frames.
         LOG2("<seq%ld>@%s, tuningMode %d", sequence, __func__, tuningMode);
         mWdrModeSetting.tuningMode = tuningMode;
         mWdrModeSetting.sequence = sequence;
@@ -195,8 +195,8 @@ int SensorManager::getCurrentExposureAppliedDelay() {
 uint32_t SensorManager::updateSensorExposure(SensorExpGroup sensorExposures, int64_t applyingSeq) {
     AutoMutex l(mLock);
 
-    int64_t effectSeq = mLastSofSequence < 0 ? 0 : \
-                     mLastSofSequence + PlatformData::getExposureLag(mCameraId);
+    int64_t effectSeq =
+        mLastSofSequence < 0 ? 0 : mLastSofSequence + PlatformData::getExposureLag(mCameraId);
 
     if (sensorExposures.empty()) {
         LOGW("%s: No exposure parameter", __func__);
@@ -250,19 +250,18 @@ uint32_t SensorManager::updateSensorExposure(SensorExpGroup sensorExposures, int
         mSensorHwCtrl->setDigitalGains(digitalGains);
     }
 
-    LOG2("<seq%ld>@%s: effectSeq %ld, applyingSeq %ld", mLastSofSequence, __func__,
-         effectSeq, applyingSeq);
+    LOG2("<seq%ld>@%s: effectSeq %ld, applyingSeq %ld", mLastSofSequence, __func__, effectSeq,
+         applyingSeq);
     return ((uint32_t)effectSeq);
 }
 // CRL_MODULE_S
-int SensorManager::setFrameRate(float fps)
-{
+int SensorManager::setFrameRate(float fps) {
     return mSensorHwCtrl->setFrameRate(fps);
 }
 // CRL_MODULE_E
 
-int SensorManager::getSensorInfo(ia_aiq_frame_params &frameParams,
-                                 ia_aiq_exposure_sensor_descriptor &sensorDescriptor) {
+int SensorManager::getSensorInfo(ia_aiq_frame_params& frameParams,
+                                 ia_aiq_exposure_sensor_descriptor& sensorDescriptor) {
     SensorFrameParams sensorFrameParams;
     CLEAR(sensorFrameParams);
 
@@ -272,37 +271,36 @@ int SensorManager::getSensorInfo(ia_aiq_frame_params &frameParams,
     }
 
     if (!PlatformData::isIsysEnabled(mCameraId)) {
-        vector <camera_resolution_t> res;
+        vector<camera_resolution_t> res;
         PlatformData::getSupportedISysSizes(mCameraId, res);
 
         CheckAndLogError(res.empty(), BAD_VALUE, "Supported ISYS resolutions are not configured.");
         // In none-ISYS cases, only take 30 fps into account.
         int fps = 30;
         float freq = res[0].width * res[0].height * fps / 1000000;
-        sensorDescriptor = {freq, static_cast<unsigned short>(res[0].width),
-                            static_cast<unsigned short>(res[0].height), 24, 0,
-                            static_cast<unsigned short>(res[0].width), 6, 0};
+        sensorDescriptor = {freq,
+                            static_cast<unsigned short>(res[0].width),
+                            static_cast<unsigned short>(res[0].height),
+                            24,
+                            0,
+                            static_cast<unsigned short>(res[0].width),
+                            6,
+                            0};
         LOG2("freq %f, width %d, height %d", freq, res[0].width, res[0].height);
         return OK;
     }
 
     ret |= getSensorModeData(sensorDescriptor);
 
-    LOG3("ia_aiq_frame_params=[%d, %d, %d, %d, %d, %d, %d, %d]",
-         frameParams.horizontal_crop_offset,
-         frameParams.vertical_crop_offset,
-         frameParams.cropped_image_height,
-         frameParams.cropped_image_width,
-         frameParams.horizontal_scaling_numerator,
-         frameParams.horizontal_scaling_denominator,
-         frameParams.vertical_scaling_numerator,
+    LOG3("ia_aiq_frame_params=[%d, %d, %d, %d, %d, %d, %d, %d]", frameParams.horizontal_crop_offset,
+         frameParams.vertical_crop_offset, frameParams.cropped_image_height,
+         frameParams.cropped_image_width, frameParams.horizontal_scaling_numerator,
+         frameParams.horizontal_scaling_denominator, frameParams.vertical_scaling_numerator,
          frameParams.vertical_scaling_denominator);
 
     LOG3("ia_aiq_exposure_sensor_descriptor=[%f, %d, %d, %d, %d, %d, %d, %d]",
-         sensorDescriptor.pixel_clock_freq_mhz,
-         sensorDescriptor.pixel_periods_per_line,
-         sensorDescriptor.line_periods_per_field,
-         sensorDescriptor.line_periods_vertical_blanking,
+         sensorDescriptor.pixel_clock_freq_mhz, sensorDescriptor.pixel_periods_per_line,
+         sensorDescriptor.line_periods_per_field, sensorDescriptor.line_periods_vertical_blanking,
          sensorDescriptor.coarse_integration_time_min,
          sensorDescriptor.coarse_integration_time_max_margin,
          sensorDescriptor.fine_integration_time_min,
@@ -318,7 +316,7 @@ int SensorManager::getSensorInfo(ia_aiq_frame_params &frameParams,
  */
 int SensorManager::getSensorModeData(ia_aiq_exposure_sensor_descriptor& sensorData) {
     int pixel = 0;
-    int status =  mSensorHwCtrl->getPixelRate(pixel);
+    int status = mSensorHwCtrl->getPixelRate(pixel);
     CheckAndLogError(status != OK, status, "Failed to get pixel clock ret:%d", status);
     sensorData.pixel_clock_freq_mhz = (float)pixel / 1000000;
 
@@ -334,7 +332,8 @@ int SensorManager::getSensorModeData(ia_aiq_exposure_sensor_descriptor& sensorDa
     sensorData.line_periods_per_field = CLIP(line_periods_per_field, USHRT_MAX, 0);
 
     int coarse_int_time_min, integration_step = 0, integration_max = 0;
-    status = mSensorHwCtrl->getExposureRange(coarse_int_time_min, integration_max, integration_step);
+    status =
+        mSensorHwCtrl->getExposureRange(coarse_int_time_min, integration_max, integration_step);
     CheckAndLogError(status != OK, status, "Failed to get Exposure Range ret:%d", status);
 
     sensorData.coarse_integration_time_min = CLIP(coarse_int_time_min, USHRT_MAX, 0);

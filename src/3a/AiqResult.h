@@ -34,8 +34,7 @@ namespace icamera {
  * Then we can do deep copy of the results
  */
 class AiqResult {
-
-public:
+ public:
     AiqResult(int cameraId);
     ~AiqResult();
 
@@ -44,7 +43,7 @@ public:
 
     AiqResult& operator=(const AiqResult& other);
 
-public:
+ public:
     int mCameraId;
     unsigned long long mTimestamp;
     int64_t mSequence;
@@ -72,10 +71,9 @@ public:
     int64_t mFrameDuration;   // us
     int64_t mRollingShutter;  // us
 
-private:
+ private:
     /*!< ia_isp_custom_controls pointer content */
     float mCustomControlsParams[MAX_CUSTOM_CONTROLS_PARAM_SIZE];
-
 };
 
 } /* namespace icamera */

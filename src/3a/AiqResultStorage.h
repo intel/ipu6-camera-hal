@@ -43,7 +43,7 @@ namespace icamera {
  * its static methods getInstance and releaseAiqResultStorage.
  */
 class AiqResultStorage {
-public:
+ public:
     /**
      * \brief Get internal instance for cameraId.
      *
@@ -84,7 +84,8 @@ public:
      * param[in] int64_t sequence: specify which aiq result is needed.
      *
      * return 1. when sequence id is -1 or not provided, the lastest result will be returned.
-     *        2. when sequence id is larger than -1, the result with gaven sequence id will be returned.
+     *        2. when sequence id is larger than -1, the result with gaven sequence id will be
+     *           returned.
      *        3. if cannot find in result storage, it means either sequence id is too old and its
      *           result was overrided, or the sequence id is too new, and its result has not been
      *           saved into storage yet. For both cases, nullptr will be returned.
@@ -125,27 +126,27 @@ public:
      */
     void resetAiqStatistics();
 
-private:
+ private:
     AiqResultStorage(int cameraId);
     ~AiqResultStorage();
 
     static AiqResultStorage* getInstanceLocked(int cameraId);
 
-private:
+ private:
     static std::map<int, AiqResultStorage*> sInstances;
     // Guard for singleton creation.
     static Mutex sLock;
 
     int mCameraId;
-    RWLock mDataLock;   // lock for all the data storage below
+    RWLock mDataLock;  // lock for all the data storage below
 
-    static const int kStorageSize = MAX_SETTING_COUNT; // Should > MAX_BUFFER_COUNT + sensorLag
+    static const int kStorageSize = MAX_SETTING_COUNT;  // Should > MAX_BUFFER_COUNT + sensorLag
     int mCurrentIndex = -1;
     AiqResult* mAiqResults[kStorageSize];
 
-    static const int kAiqStatsStorageSize = 3; // Always use the latest, but may hold for long time
+    static const int kAiqStatsStorageSize = 3;  // Always use the latest, but may hold for long time
     int mCurrentAiqStatsIndex = -1;
     AiqStatistics mAiqStatistics[kAiqStatsStorageSize];
 };
 
-} //namespace icamera
+}  // namespace icamera
