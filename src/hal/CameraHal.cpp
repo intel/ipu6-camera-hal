@@ -145,8 +145,10 @@ int CameraHal::deviceOpen(int cameraId) {
     if (mCameraOpenNum == 1) {
         MediaControl* mc = MediaControl::getInstance();
         CheckAndLogError(!mc, UNKNOWN_ERROR, "MediaControl init failed");
-        if (PlatformData::isResetLinkRoute(cameraId))
-            mc->resetAllLinks();
+        if (PlatformData::isResetLinkRoute(cameraId)) {
+            int ret = mc->resetAllLinks();
+            CheckAndLogError(ret != OK, DEV_BUSY, "resetAllLinks failed");
+        }
     }
 
     return mCameraDevices[cameraId]->init();
@@ -188,14 +190,16 @@ int CameraHal::deviceOpen(int cameraId, int vcNum) {
     if (mCameraOpenNum == 1) {
         MediaControl* mc = MediaControl::getInstance();
         CheckAndLogError(!mc, UNKNOWN_ERROR, "MediaControl init failed");
-        if (PlatformData::isResetLinkRoute(cameraId))
-            mc->resetAllLinks();
+
+        if (PlatformData::isResetLinkRoute(cameraId)) {
+            int ret = mc->resetAllLinks();
+            CheckAndLogError(ret != OK, DEV_BUSY, "resetAllLinks failed");
+        }
 
         // VIRTUAL_CHANNEL_S
         if (info.vc.total_num) {
             // when the sensor belongs to virtual channel, reset the routes
-            if (PlatformData::isResetLinkRoute(cameraId))
-                mc->resetAllRoutes(cameraId);
+            if (PlatformData::isResetLinkRoute(cameraId)) mc->resetAllRoutes(cameraId);
         }
         // VIRTUAL_CHANNEL_E
     }

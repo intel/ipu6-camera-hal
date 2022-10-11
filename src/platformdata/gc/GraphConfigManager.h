@@ -61,12 +61,8 @@ class GraphConfigManager : public IGraphConfigManager {
     virtual status_t queryGraphSettings(const stream_config_t* streamList);
     virtual status_t configStreams(const stream_config_t* streamList);
     virtual std::shared_ptr<IGraphConfig> getGraphConfig(ConfigMode configMode);
-    virtual int getSelectedMcId() {
-        return mMcId;
-    }
-    virtual bool isGcConfigured(void) {
-        return mGcConfigured;
-    }
+    virtual int getSelectedMcId() { return mMcId; }
+    virtual bool isGcConfigured(void) { return mGcConfigured; }
 
  private:
     // Disable copy constructor and assignment operator

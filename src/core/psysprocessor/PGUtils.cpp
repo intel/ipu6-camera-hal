@@ -81,7 +81,7 @@ static const FormatMap sFormatMapping[] = {
     {GET_FOURCC_FMT('V', '4', '2', '0'), IA_CSS_DATA_FORMAT_YUV420, 24, 16},
     {GET_FOURCC_FMT('b', 'V', '0', 'K'), IA_CSS_DATA_FORMAT_BAYER_VECTORIZED, 16, 16},
     {GET_FOURCC_FMT('b', 'V', '0', 'G'), IA_CSS_DATA_FORMAT_BAYER_VECTORIZED, 16, 16},
-    {GET_FOURCC_FMT('C', 'S', 'L', '6'), IA_CSS_DATA_FORMAT_BAYER_LINE_INTERLEAVED, 12, 10},
+    {GET_FOURCC_FMT('C', 'S', 'L', '6'), IA_CSS_DATA_FORMAT_BAYER_LINE_INTERLEAVED, 16, 16},
     {GET_FOURCC_FMT('C', 'S', '4', '2'), IA_CSS_DATA_FORMAT_YUV420, 18, 12},
     {GET_FOURCC_FMT('G', 'R', '1', '0'), IA_CSS_DATA_FORMAT_BAYER_GRBG, 16, 16},
     {GET_FOURCC_FMT('R', 'G', '1', '0'), IA_CSS_DATA_FORMAT_BAYER_RGGB, 16, 16},
@@ -244,23 +244,23 @@ int getStride(int cssFmt, int width) {
 #define PG_PSYS_IPU6_ISL 198
 
 // the below terminals belong to PG_PSYS_IPU6_BB
-#define PG_BB_TERMINAL_ID_TNR_REF_IN 4  // data_terminal
-#define PG_BB_TERMINAL_ID_TNR_REF_OUT 6  // data_terminal
-#define PG_BB_TERMINAL_ID_TNR_SIM_REF_IN 5  // spetial_terminal
+#define PG_BB_TERMINAL_ID_TNR_REF_IN 4       // data_terminal
+#define PG_BB_TERMINAL_ID_TNR_REF_OUT 6      // data_terminal
+#define PG_BB_TERMINAL_ID_TNR_SIM_REF_IN 5   // spetial_terminal
 #define PG_BB_TERMINAL_ID_TNR_SIM_REF_OUT 7  // spetial_terminal
 
 // the below terminals belong to PG_PSYS_IPU6_ISA_LB
 #if defined(IPU_SYSVER_ipu6v5) || defined(IPU_SYSVER_ipu6v6)
-#define ISA_LB_TERMINAL_ID_DVS_FE_IN_L0 20  // program_terminal
-#define ISA_LB_TERMINAL_ID_DVS_FE_IN_L1 21  // program_terminal
-#define ISA_LB_TERMINAL_ID_DVS_FE_IN_L2 22  // program_terminal
+#define ISA_LB_TERMINAL_ID_DVS_FE_IN_L0 20   // program_terminal
+#define ISA_LB_TERMINAL_ID_DVS_FE_IN_L1 21   // program_terminal
+#define ISA_LB_TERMINAL_ID_DVS_FE_IN_L2 22   // program_terminal
 #define ISA_LB_TERMINAL_ID_DVS_FE_OUT_L0 23  // param_terminal
 #define ISA_LB_TERMINAL_ID_DVS_FE_OUT_L1 24  // param_terminal
 #define ISA_LB_TERMINAL_ID_DVS_FE_OUT_L2 25  // param_terminal
 #else
-#define ISA_LB_TERMINAL_ID_DVS_FE_IN_L0 21  // program_terminal
-#define ISA_LB_TERMINAL_ID_DVS_FE_IN_L1 22  // program_terminal
-#define ISA_LB_TERMINAL_ID_DVS_FE_IN_L2 23  // program_terminal
+#define ISA_LB_TERMINAL_ID_DVS_FE_IN_L0 21   // program_terminal
+#define ISA_LB_TERMINAL_ID_DVS_FE_IN_L1 22   // program_terminal
+#define ISA_LB_TERMINAL_ID_DVS_FE_IN_L2 23   // program_terminal
 #define ISA_LB_TERMINAL_ID_DVS_FE_OUT_L0 24  // param_terminal
 #define ISA_LB_TERMINAL_ID_DVS_FE_OUT_L1 25  // param_terminal
 #define ISA_LB_TERMINAL_ID_DVS_FE_OUT_L2 26  // param_terminal
@@ -300,12 +300,15 @@ bool getTerminalPairs(int pgId, TERMINAL_PAIR_TYPE type, std::vector<TerminalPai
 
 bool isCompressionTerminal(int terminalId) {
     bool cmp = false;
-    /* only pg 187 terminal 3/7 and pg 189 terminal 0 support compression
-    ** tnr compression 189 terminal 4/6 not enabled in software
-    */
+    /*
+     * pg 187 terminal 3/7 and pg 189 terminal 0 support compression
+     * pg 196 termianl 0 support compression
+     * tnr compression 189 terminal 4/6 not enabled in software
+     */
     if (terminalId == psys_ipu6_isa_lb_input_high_uid ||
         terminalId == psys_ipu6_isa_lb_output_uid || terminalId == psys_ipu6_bb_input_uid ||
-        terminalId == psys_ipu6_bb_tnr_ref_in_uid || terminalId == psys_ipu6_bb_tnr_ref_out_uid) {
+        terminalId == psys_ipu6_bb_gdc_input_uid || terminalId == psys_ipu6_bb_tnr_ref_in_uid ||
+        terminalId == psys_ipu6_bb_tnr_ref_out_uid) {
         cmp = true;
     }
 

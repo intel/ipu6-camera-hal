@@ -21,6 +21,7 @@ add_subdirectory(hal)
 add_subdirectory(isp_control)
 # ISP_CONTROL_E
 add_subdirectory(iutils)
+add_subdirectory(scheduler)
 add_subdirectory(metadata)
 add_subdirectory(platformdata)
 add_subdirectory(v4l2)

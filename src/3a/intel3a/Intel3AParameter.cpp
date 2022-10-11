@@ -429,7 +429,7 @@ void Intel3AParameter::updateAeParameter(const aiq_parameter_t& param) {
     CLEAR(mAeParams.manual_total_target_exposure);
     // Ignore TET in manual exposure case
     if (param.totalExposureTarget > 0 && param.manualExpTimeUs <= 0 && param.manualIso <= 0) {
-        camera_range_t range = { -1, -1 };
+        camera_range_t range = {-1, -1};
         int ret = PlatformData::getSupportAeExposureTimeRange(mCameraId, param.sceneMode, range);
         int64_t tet = param.totalExposureTarget;
         if (ret == OK && mCMC.base_iso > 0) {
@@ -451,10 +451,10 @@ void Intel3AParameter::updatePaResult(cca::cca_pa_params* paResult) {
     if (!mUseManualColorMatrix) return;
 
     if (VALID_COLOR_GAINS(mColorGains.color_gains_rggb)) {
-        paResult->color_gains.r  = mColorGains.color_gains_rggb[0];
+        paResult->color_gains.r = mColorGains.color_gains_rggb[0];
         paResult->color_gains.gr = mColorGains.color_gains_rggb[1];
         paResult->color_gains.gb = mColorGains.color_gains_rggb[2];
-        paResult->color_gains.b  = mColorGains.color_gains_rggb[3];
+        paResult->color_gains.b = mColorGains.color_gains_rggb[3];
     }
 
     // Override color_conversion_matrix and color_gains
@@ -636,6 +636,7 @@ void Intel3AParameter::updateAfParameter(const aiq_parameter_t& param) {
 
     // Region
     mAfParams.focus_rect = {};
+    mAfParams.focus_metering_mode = ia_aiq_af_metering_mode_auto;
     if (!param.afRegions.empty()) {
         // Current only one AF metering window is supported, so use the latest one
         camera_window_t window = param.afRegions.back();
@@ -643,6 +644,7 @@ void Intel3AParameter::updateAfParameter(const aiq_parameter_t& param) {
             camera_coordinate_system_t frameCoord = {0, 0, param.resolution.width,
                                                      param.resolution.height};
             window = AiqUtils::convertToIaWindow(frameCoord, window);
+            mAfParams.focus_metering_mode = ia_aiq_af_metering_mode_touch;
             mAfParams.focus_rect = {window.left, window.top, window.right, window.bottom};
         }
     }

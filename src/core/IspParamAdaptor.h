@@ -65,32 +65,32 @@ namespace icamera {
  * 2. Run isp config
  */
 class IspParamAdaptor {
-public:
+ public:
     explicit IspParamAdaptor(int cameraId);
     virtual ~IspParamAdaptor();
 
     int init();
     int deinit();
-    int configure(const stream_t &stream, ConfigMode configMode, TuningMode tuningMode,
+    int configure(const stream_t& stream, ConfigMode configMode, TuningMode tuningMode,
                   int ipuOutputFormat = -1);
 
-    int decodeStatsData(TuningMode tuningMode,
-                        std::shared_ptr<CameraBuffer> statsBuffer,
+    int decodeStatsData(TuningMode tuningMode, std::shared_ptr<CameraBuffer> statsBuffer,
                         std::shared_ptr<IGraphConfig> graphConfig = nullptr);
 
-    int runIspAdapt(const IspSettings* ispSettings, int64_t settingSequence = -1, int32_t streamId = -1);
-    //Get ISP param from mult-stream ISP param adaptation
+    int runIspAdapt(const IspSettings* ispSettings, int64_t settingSequence = -1,
+                    int32_t streamId = -1);
+    // Get ISP param from mult-stream ISP param adaptation
     ia_binary_data* getIpuParameter(int64_t sequence = -1, int streamId = -1);
     int getPalOutputDataSize(const ia_isp_bxt_program_group* programGroup);
 
-private:
+ private:
     DISALLOW_COPY_AND_ASSIGN(IspParamAdaptor);
 
-    int deepCopyProgramGroup(const ia_isp_bxt_program_group *pgPtr,
-                             cca::cca_program_group *programGroup);
+    int deepCopyProgramGroup(const ia_isp_bxt_program_group* pgPtr,
+                             cca::cca_program_group* programGroup);
     int getDataFromProgramGroup();
     int initProgramGroupForAllStreams(ConfigMode configMode);
-    void initInputParams(cca::cca_pal_input_params *params);
+    void initInputParams(cca::cca_pal_input_params* params);
 
     void updatePalDataForVideoPipe(ia_binary_data dest);
 
@@ -104,27 +104,27 @@ private:
         // map from sequence to ia_binary_data
         std::multimap<int64_t, ia_binary_data> mSequenceToDataMap;
     };
-    void updateIspParameterMap(IspParameter* ispParam, int64_t dataSeq,
-                               int64_t settingSeq, ia_binary_data curIpuParam);
-    int runIspAdaptL(ia_isp_bxt_program_group *pgPtr, ia_isp_bxt_gdc_limits* mbrData,
+    void updateIspParameterMap(IspParameter* ispParam, int64_t dataSeq, int64_t settingSeq,
+                               ia_binary_data curIpuParam);
+    int runIspAdaptL(ia_isp_bxt_program_group* pgPtr, ia_isp_bxt_gdc_limits* mbrData,
                      const IspSettings* ispSettings, int64_t settingSequence,
-                     ia_binary_data *binaryData, int32_t streamId = -1);
+                     ia_binary_data* binaryData, int32_t streamId = -1);
 
-    //Allocate memory for mIspParameters
+    // Allocate memory for mIspParameters
     int allocateIspParamBuffers();
-    //Release memory for mIspParameters
+    // Release memory for mIspParameters
     void releaseIspParamBuffers();
 
     // Dumping methods for debugging purposes.
     void dumpIspParameter(int streamId, int64_t sequence, ia_binary_data binaryData);
     // Enable or disable kernels according to environment variables for debug purpose.
-    void updateKernelToggles(cca::cca_program_group *programGroup);
-    void dumpProgramGroup(ia_isp_bxt_program_group *pgPtr);
-    void applyMediaFormat(const AiqResult* aiqResult,
-                          ia_media_format* mediaFormat, bool* useLinearGamma);
+    void updateKernelToggles(cca::cca_program_group* programGroup);
+    void dumpProgramGroup(ia_isp_bxt_program_group* pgPtr);
+    void applyMediaFormat(const AiqResult* aiqResult, ia_media_format* mediaFormat,
+                          bool* useLinearGamma);
     void dumpCscMatrix(const ia_isp_bxt_csc* cscMatrix);
 #ifdef PAL_DEBUG
-    void loadPalBinFile(ia_binary_data *binaryData);
+    void loadPalBinFile(ia_binary_data* binaryData);
 #endif
     void applyCscMatrix(ia_isp_bxt_csc* cscMatrix);
     void updateResultFromAlgo(ia_binary_data* binaryData, int64_t sequence);
@@ -141,18 +141,18 @@ private:
     TuningMode mTuningMode;
     int mIpuOutputFormat;
 
-    //Guard for IspParamAdaptor public API
+    // Guard for IspParamAdaptor public API
     Mutex mIspAdaptorLock;
     std::map<int, int> mStreamIdToPGOutSizeMap;
     std::map<int, ia_isp_bxt_gdc_limits> mStreamIdToMbrDataMap;
     static const int ISP_PARAM_QUEUE_SIZE = MAX_SETTING_COUNT;
-    std::map<int, IspParameter> mStreamIdToIspParameterMap; // map from stream id to IspParameter
+    std::map<int, IspParameter> mStreamIdToIspParameterMap;  // map from stream id to IspParameter
     ia_binary_data mLastPalDataForVideoPipe;
-    //Guard lock for ipu parameter
+    // Guard lock for ipu parameter
     Mutex mIpuParamLock;
     std::unordered_map<int, cca::cca_pal_input_params*> mStreamIdToPalInputParamsMap;
     std::shared_ptr<IGraphConfig> mGraphConfig;
-    IntelCca *mIntelCca;
+    IntelCca* mIntelCca;
     int mGammaTmOffset;
 
     struct PalRecord {
@@ -161,4 +161,4 @@ private:
     };
     std::vector<PalRecord> mPalRecords;  // Save PAL offset info for overwriting PAL
 };
-} // namespace icamera
+}  // namespace icamera

@@ -357,8 +357,8 @@ int SensorHwCtrl::setAnalogGains(const vector<int>& analogGains) {
     int low, high;
     if (PlatformData::getDisableBLCByAGain(mCameraId, low, high)) {
         // Set V4L2_CID_BLC to 0(disable) if analog gain falls into the given range.
-        status = mPixelArraySubdev->SetControl(V4L2_CID_BLC,
-            (analogGains[0] >= low && analogGains[0] <= high) ? 0 : 1);
+        status = mPixelArraySubdev->SetControl(
+            V4L2_CID_BLC, (analogGains[0] >= low && analogGains[0] <= high) ? 0 : 1);
     }
 #endif
     return status;

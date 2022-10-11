@@ -26,7 +26,7 @@ enum StreamUseCase {
     USE_CASE_STILL_CAPTURE = 1 << 2,  // For HAL_PIXEL_FORMAT_BLOB/HAL_PIXEL_FORMAT_YCbCr_420_888
     USE_CASE_RAW = 1 << 3,            // For HAL_PIXEL_FORMAT_RAW16/HAL_PIXEL_FORMAT_RAW_OPAQUE
     USE_CASE_ZSL = 1 << 4,            // For ZSL stream
-    USE_CASE_INPUT = 1 << 5,           // For input stream
+    USE_CASE_INPUT = 1 << 5,          // For input stream
 };
 
 struct streamProps {
@@ -37,28 +37,26 @@ struct streamProps {
     StreamUseCase useCase;
 };
 
-class HalStream
-{
+class HalStream {
  public:
-    HalStream(struct streamProps &props, void *priv):
-        mWidth(props.width),
-        mHeight(props.height),
-        mFormat(props.format),
-        mStreamId(props.streamId),
-        mUseCase(props.useCase)
-    {
+    HalStream(struct streamProps& props, void* priv)
+            : mWidth(props.width),
+              mHeight(props.height),
+              mFormat(props.format),
+              mStreamId(props.streamId),
+              mUseCase(props.useCase) {
         maxBuffers = 0;
         mPrivate = priv;
     }
 
-    ~HalStream() { }
+    ~HalStream() {}
 
     uint32_t width() const { return mWidth; }
     uint32_t height() const { return mHeight; }
     int format() const { return mFormat; }
     int streamId() const { return mStreamId; }
     StreamUseCase useCase() const { return mUseCase; }
-    void *priv() { return mPrivate; }
+    void* priv() { return mPrivate; }
 
  public:
     uint32_t mWidth;
@@ -68,7 +66,7 @@ class HalStream
     StreamUseCase mUseCase;
 
     int maxBuffers;
-    void *mPrivate;
+    void* mPrivate;
 };
 
 } /* namespace icamera */

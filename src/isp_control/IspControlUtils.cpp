@@ -28,8 +28,7 @@ namespace icamera {
 
 #include "IspControlInfoMap.cpp"
 
-const char* IspControlUtils::getNameById(uint32_t ctrlId)
-{
+const char* IspControlUtils::getNameById(uint32_t ctrlId) {
     int size = ARRAY_SIZE(gIspControlInfoMap);
     for (int i = 0; i < size; i++) {
         if (gIspControlInfoMap[i].ctrlId == ctrlId) {
@@ -40,8 +39,7 @@ const char* IspControlUtils::getNameById(uint32_t ctrlId)
     return nullptr;
 }
 
-uint32_t IspControlUtils::getIdByName(const char* name)
-{
+uint32_t IspControlUtils::getIdByName(const char* name) {
     int size = ARRAY_SIZE(gIspControlInfoMap);
     for (int i = 0; i < size; i++) {
         if (strcmp(gIspControlInfoMap[i].name, name) == 0) {
@@ -52,8 +50,7 @@ uint32_t IspControlUtils::getIdByName(const char* name)
     return 0;
 }
 
-uint32_t IspControlUtils::getSizeById(uint32_t ctrlId)
-{
+uint32_t IspControlUtils::getSizeById(uint32_t ctrlId) {
     int size = ARRAY_SIZE(gIspControlInfoMap);
     for (int i = 0; i < size; i++) {
         if (gIspControlInfoMap[i].ctrlId == ctrlId) {
@@ -64,8 +61,7 @@ uint32_t IspControlUtils::getSizeById(uint32_t ctrlId)
     return 0;
 }
 
-uint32_t IspControlUtils::getTagById(uint32_t ctrlId)
-{
+uint32_t IspControlUtils::getTagById(uint32_t ctrlId) {
     int size = ARRAY_SIZE(gIspControlInfoMap);
     for (int i = 0; i < size; i++) {
         if (gIspControlInfoMap[i].ctrlId == ctrlId) {
@@ -78,8 +74,7 @@ uint32_t IspControlUtils::getTagById(uint32_t ctrlId)
 
 #include "ia_types.h"
 
-void* IspControlUtils::findDataById(uint32_t ctrlId, void* fullData, uint32_t size)
-{
+void* IspControlUtils::findDataById(uint32_t ctrlId, void* fullData, uint32_t size) {
     CheckAndLogError(fullData == nullptr || size == 0, nullptr, "Invalid input parameters");
 
     char* pData = (char*)fullData;
@@ -100,5 +95,4 @@ void* IspControlUtils::findDataById(uint32_t ctrlId, void* fullData, uint32_t si
     return nullptr;
 }
 
-} // end of icamera
-
+}  // namespace icamera

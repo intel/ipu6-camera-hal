@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2021 Intel Corporation
+ * Copyright (C) 2020-2022 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -120,9 +120,9 @@ int IntelTNR7US::runTnrFrame(const void* inBufAddr, void* outBufAddr, uint32_t i
     struct timespec beginTime = {};
     if (Log::isLogTagEnabled(ST_GPU_TNR)) clock_gettime(CLOCK_MONOTONIC, &beginTime);
     /* call Tnr api to run tnr for the inSurface and store the result in outSurface */
-    int ret = run_tnr7us_frame(mWidth, CM_SURFACE_ALIGN_HEIGHT(mHeight), mWidth, inSurface,
-                               outSurface, &tnrParam->scale, &tnrParam->ims, &tnrParam->bc,
-                               &tnrParam->blend, syncUpdate, mTnrType);
+    int ret =
+        run_tnr7us_frame(mWidth, mHeight, mWidth, inSurface, outSurface, &tnrParam->scale,
+                         &tnrParam->ims, &tnrParam->bc, &tnrParam->blend, syncUpdate, mTnrType);
     if (fd >= 0) {
         destroyCMSurface(outSurface);
     }
@@ -185,8 +185,7 @@ CmSurface2DUP* IntelTNR7US::getBufferCMSurface(void* bufAddr) {
 CmSurface2DUP* IntelTNR7US::createCMSurface(void* bufAddr) {
     PERF_CAMERA_ATRACE();
     CmSurface2DUP* cmSurface = nullptr;
-    int32_t ret = createCmSurface2DUP(mWidth, CM_SURFACE_ALIGN_HEIGHT(mHeight),
-                                      CM_SURFACE_FORMAT_NV12, bufAddr, cmSurface);
+    int32_t ret = createCmSurface2DUP(mWidth, mHeight, CM_SURFACE_FORMAT_NV12, bufAddr, cmSurface);
     CheckAndLogError(ret != 0, nullptr, "failed to create CmSurface2DUP object");
     return cmSurface;
 }

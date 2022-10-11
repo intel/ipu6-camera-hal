@@ -61,9 +61,7 @@ uint32_t pppKernel[PPP_KERNEL_SIZE] = {ia_pal_uuid_isp_sc_outputscaler_ppp,
                                        ia_pal_uuid_isp_sc_outputscaler_ppp_1_1};
 uint32_t dsKernel[DS_KERNEL_SIZE] = {ia_pal_uuid_isp_b2i_ds_1_0_0, ia_pal_uuid_isp_b2i_ds_1_0_1};
 
-GraphConfigPipe::GraphConfigPipe(int pipeUseCase)
-        : mSettings(nullptr),
-          mPipeUseCase(pipeUseCase) {
+GraphConfigPipe::GraphConfigPipe(int pipeUseCase) : mSettings(nullptr), mPipeUseCase(pipeUseCase) {
     mCsiOutput = {0, 0};
 }
 
@@ -216,7 +214,7 @@ status_t GraphConfigPipe::getActiveOutputPorts(const StreamToSinkMap& streamToSi
         ret = sink->getValue(GCSS_KEY_STREAM_ID, streamId);
         CheckAndLogError(ret != css_err_none, BAD_VALUE, "%s, Failed to get stream id", __func__);
 
-        Node *outputPort = getOutputPortForSink(sinkName);
+        Node* outputPort = getOutputPortForSink(sinkName);
         CheckAndLogError(!outputPort, BAD_VALUE, "%s, No output port found for sink", __func__);
 
         LOG2("%s, sink name: %s, stream id: %d, output port name: %s", __func__, sinkName.c_str(),
@@ -369,12 +367,12 @@ status_t GraphConfigPipe::getPgRbmValue(string pgName, IGraphType::StageAttr* st
     if (ret != css_err_none) return NAME_NOT_FOUND;
 
     GCSS::GraphCameraUtil mGCSSCameraUtil;
-    void *rbmAddr = mGCSSCameraUtil.numString2binary(rbmString, &stageAttr->rbm_bytes);
+    void* rbmAddr = mGCSSCameraUtil.numString2binary(rbmString, &stageAttr->rbm_bytes);
     CheckAndLogError(!rbmAddr, NO_MEMORY, "%s get rbm value: %s", __func__, rbmString.c_str());
 
     if (stageAttr->rbm_bytes > MAX_RBM_STR_SIZE) {
-        LOGE("%s, memory is too small to save rbm value: %d, %d", __func__,
-             stageAttr->rbm_bytes, MAX_RBM_STR_SIZE);
+        LOGE("%s, memory is too small to save rbm value: %d, %d", __func__, stageAttr->rbm_bytes,
+             MAX_RBM_STR_SIZE);
         stageAttr->rbm_bytes = 0;
         return NO_MEMORY;
     }
@@ -392,7 +390,7 @@ status_t GraphConfigPipe::getScalerKernelResolutionRatio(uint32_t* kenerArray, u
 
     const ia_isp_bxt_resolution_info_t* resolutionInfo;
     resolutionInfo = getScalerKernelResolutionInfo(kenerArray, sizeArray);
-    if (!resolutionInfo) return OK;    // no scaling in current setting
+    if (!resolutionInfo) return OK;  // no scaling in current setting
 
     *widthRatio = 1.0;
     *heightRatio = 1.0;
@@ -586,8 +584,8 @@ status_t GraphConfigPipe::getPgIdForKernel(const uint32_t streamId, const int32_
             if (ret != css_err_none) continue;
 
             ret = ndVec->getValue(GCSS_KEY_PG_ID, *pgId);
-            CheckAndLogError(ret != css_err_none, BAD_VALUE,
-                             "Couldn't get pg id for kernel: %d", kernelId);
+            CheckAndLogError(ret != css_err_none, BAD_VALUE, "Couldn't get pg id for kernel: %d",
+                             kernelId);
 
             LOG2("got the pgid:%d for kernel id:%d in stream:%d", *pgId, kernelId, streamId);
             return OK;
@@ -825,8 +823,8 @@ status_t GraphConfigPipe::getPrivatePortFormat(Node* port,
     }
 
     ia_uid stageId;
-    status_t status = GCSS::GraphCameraUtil::portGetFourCCInfo(port, stageId,
-                                                               format.formatSetting.terminalId);
+    status_t status =
+        GCSS::GraphCameraUtil::portGetFourCCInfo(port, stageId, format.formatSetting.terminalId);
     CheckAndLogError(status != OK, INVALID_OPERATION, "Failed to get port uid", __func__);
     ret = port->getValue(GCSS_KEY_WIDTH, format.formatSetting.width);
     CheckAndLogError(ret != css_err_none, BAD_VALUE, "Failed to get port width", __func__);
@@ -838,8 +836,8 @@ status_t GraphConfigPipe::getPrivatePortFormat(Node* port,
     CheckAndLogError(ret != css_err_none, BAD_VALUE, "Failed to find port fourcc", __func__);
 
     format.formatSetting.fourcc = CameraUtils::string2IaFourccCode(fourccFormat.c_str());
-    format.formatSetting.bpl = CameraUtils::getBpl(format.formatSetting.fourcc,
-                                                   format.formatSetting.width);
+    format.formatSetting.bpl =
+        CameraUtils::getBpl(format.formatSetting.fourcc, format.formatSetting.width);
     format.formatSetting.bpp = CameraUtils::getBpp(format.formatSetting.fourcc);
 
     LOG2("%s, Tnr ref out: streamId: %d, %dx%d, terminalId: %d, fmt: %s, bpp: %d, bpl: %d",
@@ -1112,7 +1110,7 @@ int32_t GraphConfigPipe::getTuningMode(const int32_t streamId) {
 
         ret = result->getValue(GCSS_KEY_STREAM_ID, graphStreamId);
         if (ret == css_err_none && graphStreamId == streamId && graphStreamId != -1) {
-            GraphConfigNode *tuningModeNode = nullptr;
+            GraphConfigNode* tuningModeNode = nullptr;
             ret = result->getDescendant(GCSS_KEY_TUNING_MODE, &tuningModeNode);
             if (ret == css_err_none && tuningModeNode) {
                 string tuningModeStr;
@@ -1215,8 +1213,8 @@ status_t GraphConfigPipe::portGetPeer(Node* port, Node** peer) {
     CheckAndLogError(ret != css_err_none, BAD_VALUE, "%s, Failed to get peer attribute", __func__);
 
     ret = mSettings->getDescendantByString(peerName, peer);
-    CheckAndLogError(ret != css_err_none, BAD_VALUE, "%s, Failed to find peer by name %s",
-                     __func__, peerName.c_str());
+    CheckAndLogError(ret != css_err_none, BAD_VALUE, "%s, Failed to find peer by name %s", __func__,
+                     peerName.c_str());
 
     return OK;
 }
@@ -1263,8 +1261,8 @@ status_t GraphConfigPipe::portGetConnection(Node* port,
         // input port is the sink in a connection
         status = GCSS::GraphCameraUtil::portGetFourCCInfo(port, connectionInfo->mSinkStage,
                                                           connectionInfo->mSinkTerminal);
-        CheckAndLogError(status != OK, BAD_VALUE,
-                         "%s, Failed to create fourcc info for sink port", __func__);
+        CheckAndLogError(status != OK, BAD_VALUE, "%s, Failed to create fourcc info for sink port",
+                         __func__);
 
         if (*peerPort != nullptr && !portIsVirtual(*peerPort)) {
             status = GCSS::GraphCameraUtil::portGetFourCCInfo(
@@ -1279,8 +1277,8 @@ status_t GraphConfigPipe::portGetConnection(Node* port,
         // output port is the source in a connection
         status = GCSS::GraphCameraUtil::portGetFourCCInfo(port, connectionInfo->mSourceStage,
                                                           connectionInfo->mSourceTerminal);
-        CheckAndLogError(status != OK, BAD_VALUE,
-                         "%s, Failed to create fourcc info for sink port", __func__);
+        CheckAndLogError(status != OK, BAD_VALUE, "%s, Failed to create fourcc info for sink port",
+                         __func__);
 
         if (*peerPort != nullptr && !portIsVirtual(*peerPort)) {
             status = GCSS::GraphCameraUtil::portGetFourCCInfo(*peerPort, connectionInfo->mSinkStage,
@@ -1412,15 +1410,15 @@ int32_t GraphConfigPipe::portGetDirection(Node* port) {
  * \return BAD_VALUE if any of the graph queries failed.
  */
 status_t GraphConfigPipe::portGetFullName(Node* port, string* fullName) {
-    CheckAndLogError(!fullName || !port, UNKNOWN_ERROR,
-                     "%s, the fullName or port is nullptr", __func__);
+    CheckAndLogError(!fullName || !port, UNKNOWN_ERROR, "%s, the fullName or port is nullptr",
+                     __func__);
     string portName, ancestorName;
     Node* ancestor;
     css_err_t ret = css_err_none;
 
     ret = port->getAncestor(&ancestor);
-    CheckAndLogError(ret != css_err_none, BAD_VALUE,
-                     "%s, Failed to retrieve port ancestor", __func__);
+    CheckAndLogError(ret != css_err_none, BAD_VALUE, "%s, Failed to retrieve port ancestor",
+                     __func__);
 
     ret = ancestor->getValue(GCSS_KEY_NAME, ancestorName);
     if (ret != css_err_none) {
@@ -1430,8 +1428,7 @@ status_t GraphConfigPipe::portGetFullName(Node* port, string* fullName) {
     }
 
     ret = port->getValue(GCSS_KEY_NAME, portName);
-    CheckAndLogError(ret != css_err_none, BAD_VALUE,
-                     "%s, Failed to retrieve port name", __func__);
+    CheckAndLogError(ret != css_err_none, BAD_VALUE, "%s, Failed to retrieve port name", __func__);
 
     *fullName = ancestorName + ":" + portName;
     return OK;
@@ -1493,8 +1490,8 @@ bool GraphConfigPipe::portIsVirtual(Node* port) {
  */
 status_t GraphConfigPipe::portGetClientStream(Node* port, HalStream** stream) {
     CheckAndLogError(!port || !stream, BAD_VALUE, "%s, Invalid parameters", __func__);
-    CheckAndLogError(!portIsVirtual(port), INVALID_OPERATION,
-                     "%s, port is not a virtual port", __func__);
+    CheckAndLogError(!portIsVirtual(port), INVALID_OPERATION, "%s, port is not a virtual port",
+                     __func__);
 
     string portName;
     css_err_t ret = port->getValue(GCSS_KEY_NAME, portName);
@@ -1532,8 +1529,8 @@ bool GraphConfigPipe::portIsEdgePort(Node* port) {
         LOG2("port is disabled, so it is an edge port");
         return true;
     }
-    CheckAndLogError(status != OK, false,
-                     "%s, Failed to create fourcc info for source port", __func__);
+    CheckAndLogError(status != OK, false, "%s, Failed to create fourcc info for source port",
+                     __func__);
 
     streamId = portGetStreamId(port);
     if (streamId < 0) return false;

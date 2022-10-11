@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2021 Intel Corporation.
+ * Copyright (C) 2019-2022 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@
 #include <math.h>
 #include <stdint.h>
 
+#include <algorithm>
 #include <utility>
 
 #include "iutils/CameraDump.h"
@@ -38,10 +39,7 @@ int PGCommon::getFrameSize(int format, int width, int height, bool needAlignedHe
     int stride = PGUtils::getCssStride(format, width);
     switch (cssFormat) {
         case IA_CSS_DATA_FORMAT_BAYER_LINE_INTERLEAVED:  // CSL6
-            if (needAlignedHeight) {
-                height = ALIGN_64(height);
-            }
-            size = stride * height * 3 / 2;
+            size = stride * height;
             break;
         default:
             break;
@@ -619,14 +617,15 @@ int PGCommon::setTerminalParams(const ia_css_frame_format_type* frameFormatTypes
         terminalParam->index[IA_CSS_ROW_DIMENSION] = 0;
 
         LOG2("%s: %s: index=%d, format=%d, w=%d, h=%d, fw=%d, fh=%d, bpp=%d, bpe=%d, "
-            "stride=%d, offset=%d, col=%d, row=%d",
-            __func__, getName(), i, terminalParam->frame_format_type,
-            terminalParam->dimensions[IA_CSS_COL_DIMENSION],
-            terminalParam->dimensions[IA_CSS_ROW_DIMENSION],
-            terminalParam->fragment_dimensions[IA_CSS_COL_DIMENSION],
-            terminalParam->fragment_dimensions[IA_CSS_ROW_DIMENSION], terminalParam->bpp,
-            terminalParam->bpe, terminalParam->stride, terminalParam->offset,
-            terminalParam->index[IA_CSS_COL_DIMENSION], terminalParam->index[IA_CSS_ROW_DIMENSION]);
+             "stride=%d, offset=%d, col=%d, row=%d",
+             __func__, getName(), i, terminalParam->frame_format_type,
+             terminalParam->dimensions[IA_CSS_COL_DIMENSION],
+             terminalParam->dimensions[IA_CSS_ROW_DIMENSION],
+             terminalParam->fragment_dimensions[IA_CSS_COL_DIMENSION],
+             terminalParam->fragment_dimensions[IA_CSS_ROW_DIMENSION], terminalParam->bpp,
+             terminalParam->bpe, terminalParam->stride, terminalParam->offset,
+             terminalParam->index[IA_CSS_COL_DIMENSION],
+             terminalParam->index[IA_CSS_ROW_DIMENSION]);
     }
 
     return OK;
@@ -879,12 +878,12 @@ int PGCommon::configureFrameDesc() {
 int PGCommon::iterate(CameraBufferMap& inBufs, CameraBufferMap& outBufs, ia_binary_data* statistics,
                       const ia_binary_data* ipuParameters) {
     PERF_CAMERA_ATRACE();
-    LOG2("%s:%s ++", getName(), __func__);
 
     int64_t sequence = 0;
     if (!inBufs.empty()) {
         sequence = inBufs.begin()->second->getSequence();
     }
+    LOG2("<seq%ld>%s:%s ++", sequence, getName(), __func__);
 
     int ret = prepareTerminalBuffers(ipuParameters, inBufs, outBufs, sequence);
     CheckAndLogError((ret != OK), ret, "%s, prepareTerminalBuffers fail with %d", getName(), ret);
@@ -932,7 +931,7 @@ int PGCommon::iterate(CameraBufferMap& inBufs, CameraBufferMap& outBufs, ia_bina
     }
 
     postTerminalBuffersDone(sequence);
-    LOG2("%s:%s -- ", getName(), __func__);
+    LOG2("<seq%ld>%s:%s -- ", sequence, getName(), __func__);
     return ret;
 }
 
@@ -990,14 +989,14 @@ int PGCommon::allocateTnrDataBuffers() {
 
     bool isCompression = PlatformData::getPSACompression(mCameraId) &&
                          PGUtils::isCompressionTerminal(termIndex + mTerminalBaseUid);
-    int size = isCompression
-                   ? CameraUtils::getFrameSize(mTerminalFrameInfos[termIndex].mFormat,
-                                               mTerminalFrameInfos[mInputMainTerminal].mWidth,
-                                               mTerminalFrameInfos[mInputMainTerminal].mHeight,
-                                               false, true, true)
-                   : CameraUtils::getFrameSize(mTerminalFrameInfos[termIndex].mFormat,
-                                               mTerminalFrameInfos[mInputMainTerminal].mWidth,
-                                               mTerminalFrameInfos[mInputMainTerminal].mHeight);
+    int size = isCompression ?
+                   CameraUtils::getFrameSize(mTerminalFrameInfos[termIndex].mFormat,
+                                             mTerminalFrameInfos[mInputMainTerminal].mWidth,
+                                             mTerminalFrameInfos[mInputMainTerminal].mHeight, false,
+                                             true, true) :
+                   CameraUtils::getFrameSize(mTerminalFrameInfos[termIndex].mFormat,
+                                             mTerminalFrameInfos[mInputMainTerminal].mWidth,
+                                             mTerminalFrameInfos[mInputMainTerminal].mHeight);
 
     for (int32_t i = 0; i < bufferCount; i++) {
         uint8_t* buffer = nullptr;
@@ -1097,9 +1096,9 @@ int PGCommon::prepareTerminalBuffers(const ia_binary_data* ipuParameters,
                 flush = false;
             }
             ciprBuf =
-                (buffer->getMemory() == V4L2_MEMORY_DMABUF)
-                    ? registerUserBuffer(buffer->getBufferSize(), buffer->getFd(), flush)
-                    : registerUserBuffer(buffer->getBufferSize(), buffer->getBufferAddr(), flush);
+                (buffer->getMemory() == V4L2_MEMORY_DMABUF) ?
+                    registerUserBuffer(buffer->getBufferSize(), buffer->getFd(), flush) :
+                    registerUserBuffer(buffer->getBufferSize(), buffer->getBufferAddr(), flush);
             CheckAndLogError(!ciprBuf, NO_MEMORY,
                              "%s, register buffer size %d for terminal %d fail", __func__,
                              buffer->getBufferSize(), termIdx);
@@ -1134,7 +1133,6 @@ int PGCommon::prepareTerminalBuffers(const ia_binary_data* ipuParameters,
         mTerminalBuffers[pair.inId]->getMemoryCpuPtr(&mParamPayload[pair.inId].data);
         mTerminalBuffers[pair.outId]->getMemoryCpuPtr(&mParamPayload[pair.outId].data);
     }
-
 
     return mPGParamAdapt->updatePALAndEncode(ipuParameters, mTerminalCount, mParamPayload);
 }
@@ -1328,8 +1326,8 @@ int PGCommon::getManifest(int pgId) {
         kernelBitmap = ia_css_program_group_manifest_get_kernel_bitmap(mf);
 
         LOG1("%s: pgIndex: %d, programGroupId: %d, manifestSize: %d, programCount: %d,"
-             "terminalCount: %d", __func__, i, programGroupId, manifestSize, programCount,
-             terminalCount);
+             "terminalCount: %d",
+             __func__, i, programGroupId, manifestSize, programCount, terminalCount);
 
         if (pgId == programGroupId) {
             mProgramCount = programCount;
@@ -1508,6 +1506,7 @@ void PGCommon::dumpTerminalPyldAndDesc(int pgId, int64_t sequence,
         }
         if (IS_DATA_TERMINAL(terminal->terminal_type)) continue;
 
+        // clang-format off
         void* ptr = getCiprBufferPtr(mTerminalBuffers[terminal->tm_index]);
         int size = getCiprBufferSize(mTerminalBuffers[terminal->tm_index]);
         const char* typeStr =
@@ -1526,6 +1525,7 @@ void PGCommon::dumpTerminalPyldAndDesc(int pgId, int64_t sequence,
             : (terminal->terminal_type == IA_CSS_TERMINAL_TYPE_PROGRAM_CONTROL_INIT)
                 ? "PROGRAM_CONTROL_INIT"
                 : "UNKNOWN";
+        // clang-format on
         printPtr = (const unsigned int*)ptr;
         fprintf(fp, "::terminal %d dump size %d(0x%x), line %d, type %s\n", terminal->tm_index,
                 size, size, PAGE_ALIGN(size) / 4, typeStr);
