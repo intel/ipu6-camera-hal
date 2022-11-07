@@ -227,7 +227,7 @@ int AiqUnit::initIntelCcaHandle(const std::vector<ConfigMode>& configModes) {
         }
 
         std::shared_ptr<IGraphConfig> graphConfig =
-                IGraphConfigManager::getInstance(mCameraId)->getGraphConfig(cfg);
+            IGraphConfigManager::getInstance(mCameraId)->getGraphConfig(cfg);
 
         // LOCAL_TONEMAP_S
         bool hasLtm = PlatformData::isLtmEnabled(mCameraId);
@@ -353,7 +353,9 @@ void AiqUnit::deinitIntelCcaHandle() {
         }
 
         intelCca->deinit();
+#ifndef ENABLE_SANDBOXING
         IntelCca::releaseInstance(mCameraId, mode);
+#endif
     }
 
     mCcaInitialized = false;

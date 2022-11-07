@@ -47,6 +47,7 @@ class PSysProcessor : public BufferQueue, public PSysDagCallback {
     virtual int getParameters(Parameters& param);
 
     virtual int registerUserOutputBufs(Port port, const std::shared_ptr<CameraBuffer>& camBuffer);
+    virtual void stopProcessing();
 
     // Overwrite event source API to delegate related functions
     void registerListener(EventType eventType, EventListener* eventListener);

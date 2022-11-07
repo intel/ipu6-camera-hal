@@ -88,7 +88,13 @@ void FaceSSD::runFaceDetectionBySync(const std::shared_ptr<camera3::Camera3Buffe
 
     nsecs_t startTime = CameraUtils::systemTime();
     std::vector<human_sensing::CrosFace> faces;
-    cros::FaceDetectResult ret = mFaceDetector->Detect(*(ccBuf->getBufferHandle()), &faces);
+    int input_stride = ccBuf->stride();
+    cros::Size input_size = cros::Size(ccBuf->width(), ccBuf->height());
+    const uint8_t* buffer_addr = static_cast<uint8_t*>(ccBuf->data());
+
+    cros::FaceDetectResult ret =
+        mFaceDetector->Detect(buffer_addr, input_stride, input_size, &faces);
+
     printfFDRunRate();
     LOG2("@%s: ret:%d, it takes need %ums", __func__, ret,
          (unsigned)((CameraUtils::systemTime() - startTime) / 1000000));

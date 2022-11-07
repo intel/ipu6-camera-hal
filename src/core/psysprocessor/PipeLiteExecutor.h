@@ -81,9 +81,7 @@ class PipeLiteExecutor : public BufferQueue, public ISchedulerNode {
     bool isOutputEdge() { return mIsOutputEdge; }
 
     // ISchedulerNode
-    virtual bool process(int64_t triggerId) {
-        return processNewFrame() == OK;
-    }
+    virtual bool process(int64_t triggerId) { return processNewFrame() == OK; }
 
  private:
     DISALLOW_COPY_AND_ASSIGN(PipeLiteExecutor);
@@ -141,8 +139,8 @@ class PipeLiteExecutor : public BufferQueue, public ISchedulerNode {
     void dumpPGs() const;
 
  private:
-    bool fetchBuffersInQueue(std::map<Port, std::shared_ptr<CameraBuffer> >& cInBuffer,
-                             std::map<Port, std::shared_ptr<CameraBuffer> >& cOutBuffer);
+    bool fetchBuffersInQueue(std::map<Port, std::shared_ptr<CameraBuffer>>& cInBuffer,
+                             std::map<Port, std::shared_ptr<CameraBuffer>>& cOutBuffer);
 
     int processNewFrame();
     int runPipe(std::map<Port, std::shared_ptr<CameraBuffer>>& inBuffers,
