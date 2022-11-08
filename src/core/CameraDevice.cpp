@@ -72,6 +72,9 @@ CameraDevice::CameraDevice(int cameraId)
     } else {
         mGCM = nullptr;
     }
+    if (PlatformData::getSupportPrivacy(mCameraId)) {
+        mCvfPrivacyChecker = new CvfPrivacyChecker(mCameraId, mStreams);
+    }
 }
 
 CameraDevice::~CameraDevice() {
@@ -79,6 +82,9 @@ CameraDevice::~CameraDevice() {
     LOG1("<id%d>@%s", mCameraId, __func__);
     AutoMutex m(mDeviceLock);
 
+    if (PlatformData::getSupportPrivacy(mCameraId)) {
+        delete mCvfPrivacyChecker;
+    }
     // Clear the media control when close the device.
     MediaControl* mc = MediaControl::getInstance();
     MediaCtlConf* mediaCtl = PlatformData::getMediaCtlConf(mCameraId);
@@ -123,6 +129,12 @@ int CameraDevice::init() {
     ret = mLensCtrl->init();
     CheckAndLogError((ret != OK), ret, "%s: Init Lens falied", __func__);
 
+    if (PlatformData::getSupportPrivacy(mCameraId)) {
+        ret = mCvfPrivacyChecker->init();
+        CheckAndLogError((ret != OK), ret, "%s: Init privacy checker falied", __func__);
+        mCvfPrivacyChecker->run("CvfPrivacyChecker", PRIORITY_NORMAL);
+    }
+
     mRequestThread->run("RequestThread", PRIORITY_NORMAL);
 
     mState = DEVICE_INIT;
@@ -147,6 +159,10 @@ void CameraDevice::deinit() {
         stopLocked();
     }
 
+    if (PlatformData::getSupportPrivacy(mCameraId)) {
+        mCvfPrivacyChecker->requestExit();
+        mCvfPrivacyChecker->join();
+    }
     // stop request thread
     mRequestThread->requestExit();
     mRequestThread->join();
@@ -885,6 +901,10 @@ int CameraDevice::startLocked() {
 int CameraDevice::stopLocked() {
     PERF_CAMERA_ATRACE();
     LOG2("<id%d>%s", mCameraId, __func__);
+
+    for (auto& item : mProcessors) {
+        item->stopProcessing();
+    }
 
     mSofSource->stop();
 

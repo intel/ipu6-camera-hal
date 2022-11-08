@@ -878,12 +878,12 @@ int PGCommon::configureFrameDesc() {
 int PGCommon::iterate(CameraBufferMap& inBufs, CameraBufferMap& outBufs, ia_binary_data* statistics,
                       const ia_binary_data* ipuParameters) {
     PERF_CAMERA_ATRACE();
-    LOG2("%s:%s ++", getName(), __func__);
 
     int64_t sequence = 0;
     if (!inBufs.empty()) {
         sequence = inBufs.begin()->second->getSequence();
     }
+    LOG2("<seq%ld>%s:%s ++", sequence, getName(), __func__);
 
     int ret = prepareTerminalBuffers(ipuParameters, inBufs, outBufs, sequence);
     CheckAndLogError((ret != OK), ret, "%s, prepareTerminalBuffers fail with %d", getName(), ret);
@@ -931,7 +931,7 @@ int PGCommon::iterate(CameraBufferMap& inBufs, CameraBufferMap& outBufs, ia_bina
     }
 
     postTerminalBuffersDone(sequence);
-    LOG2("%s:%s -- ", getName(), __func__);
+    LOG2("<seq%ld>%s:%s -- ", sequence, getName(), __func__);
     return ret;
 }
 

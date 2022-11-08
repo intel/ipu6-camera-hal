@@ -169,6 +169,7 @@ class PlatformData {
                       mISYSCompression(false),
                       mPSACompression(false),
                       mOFSCompression(false),
+                      mSchedulerEnabled(false),
                       mFaceAeEnabled(true),
                       mFaceEngineVendor(FACE_ENGINE_INTEL_PVL),
                       mFaceEngineRunningInterval(FACE_ENGINE_DEFAULT_RUNNING_INTERVAL),
@@ -185,6 +186,7 @@ class PlatformData {
                       mDummyStillSink(false),
                       mRemoveCacheFlushOutputBuffer(false),
                       mPLCEnable(false),
+                      mSupportPrivacy(false),
                       mStillOnlyPipe(false),
                       mDisableBLCByAGain(false),
                       mDisableBLCAGainLow(-1),
@@ -265,6 +267,7 @@ class PlatformData {
             bool mISYSCompression;
             bool mPSACompression;
             bool mOFSCompression;
+            bool mSchedulerEnabled;
             bool mFaceAeEnabled;
             int mFaceEngineVendor;
             int mFaceEngineRunningInterval;
@@ -287,6 +290,8 @@ class PlatformData {
             std::string mNvmDirectory;
             int mNvmOverwrittenFileSize;
             std::string mNvmOverwrittenFile;  // overwrite NVM data
+            std::string mCamModuleName;
+            std::vector<std::string> mSupportModuleNames;
             /* key: camera module name, value: camera module info */
             std::unordered_map<std::string, CameraMetadata> mCameraModuleInfoMap;
             std::vector<IGraphType::ScalerInfo> mScalerInfo;
@@ -294,6 +299,7 @@ class PlatformData {
             bool mDummyStillSink;
             bool mRemoveCacheFlushOutputBuffer;
             bool mPLCEnable;
+            bool mSupportPrivacy;
             bool mStillOnlyPipe;
 
             bool mDisableBLCByAGain;
@@ -662,6 +668,14 @@ class PlatformData {
      * \return if ltm thread is enabled or not.
      */
     static bool isEnableLtmThread(int cameraId);
+
+    /**
+     * Check if H-Scheduler is enabled
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return if H-Scheduler is enabled
+     */
+    static bool isSchedulerEnabled(int cameraId);
 
     /**
      * Check face engine is enabled or not
@@ -1424,6 +1438,13 @@ class PlatformData {
      */
     static bool isGpuEvcpEnabled();
     // ENABLE_EVCP_E
+
+    /**
+     * Check supports privacy or not
+     *
+     * \return true if supports privacy.
+     */
+    static bool getSupportPrivacy(int cameraId);
 
     /**
      * Check support of still-only pipe is enabled or not

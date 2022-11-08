@@ -92,11 +92,11 @@ int PlatformData::init() {
 
     StaticCfg* staticCfg = &(getInstance()->mStaticCfg);
     for (size_t i = 0; i < staticCfg->mCameras.size(); i++) {
-        std::string camModuleName;
+        std::string& camModuleName = staticCfg->mCameras[i].mCamModuleName;
         AiqInitData* aiqInitData = new AiqInitData(
             staticCfg->mCameras[i].sensorName, getCameraCfgPath(),
             staticCfg->mCameras[i].mSupportedTuningConfig, staticCfg->mCameras[i].mNvmDirectory,
-            staticCfg->mCameras[i].mMaxNvmDataSize, &camModuleName);
+            staticCfg->mCameras[i].mMaxNvmDataSize, camModuleName);
         getInstance()->mAiqInitData.push_back(aiqInitData);
 
         if (!camModuleName.empty() &&
@@ -245,6 +245,10 @@ bool PlatformData::isFaceDetectionSupported(int cameraId) {
     }
 
     return false;
+}
+
+bool PlatformData::isSchedulerEnabled(int cameraId) {
+    return getInstance()->mStaticCfg.mCameras[cameraId].mSchedulerEnabled;
 }
 
 bool PlatformData::isFaceAeEnabled(int cameraId) {
@@ -1404,6 +1408,10 @@ bool PlatformData::isGpuEvcpEnabled() {
     return getInstance()->mStaticCfg.mCommonConfig.isGpuEvcpEnabled;
 }
 // ENABLE_EVCP_E
+
+bool PlatformData::getSupportPrivacy(int cameraId) {
+    return getInstance()->mStaticCfg.mCameras[cameraId].mSupportPrivacy;
+}
 
 bool PlatformData::isStillOnlyPipeEnabled(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mStillOnlyPipe;

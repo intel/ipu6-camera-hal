@@ -25,6 +25,7 @@
 #include "SensorHwCtrl.h"
 #include "SofSource.h"
 #include "StreamSource.h"
+#include "CvfPrivacyChecker.h"
 
 #include "ProcessorManager.h"
 #include "gc/IGraphConfigManager.h"
@@ -257,6 +258,7 @@ class CameraDevice : public EventListener {
     camera_callback_ops_t* mCallback;
 
  private:
+    CvfPrivacyChecker* mCvfPrivacyChecker;
     DISALLOW_COPY_AND_ASSIGN(CameraDevice);
 };
 
