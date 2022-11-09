@@ -87,6 +87,7 @@ class PSysDAG {
 
     int registerInternalBufs(std::map<Port, CameraBufVector>& internalBufs);
     int registerUserOutputBufs(Port port, const std::shared_ptr<CameraBuffer>& camBuffer);
+    void stopProcessing();
 
     void addTask(PSysTaskData taskParam);
 

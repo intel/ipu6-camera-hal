@@ -106,7 +106,7 @@ int ParameterGenerator::saveParameters(int64_t sequence, long requestId, const P
 void ParameterGenerator::updateParameters(int64_t sequence, const Parameters* param) {
     CheckAndLogError(!param, VOID_VALUE, "The param is nullptr!");
 
-    LOG2("<seq%ld>%s, sequence %ld", sequence, __func__);
+    LOG2("<seq%ld>%s", sequence, __func__);
 
     AutoMutex l(mParamsLock);
     std::shared_ptr<RequestParam> requestParam = nullptr;
