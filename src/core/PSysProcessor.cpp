@@ -62,8 +62,7 @@ PSysProcessor::PSysProcessor(int cameraId, ParameterGenerator* pGenerator)
     mProcessThread = new ProcessThread(this);
     CLEAR(mSofTimestamp);
 
-    if (PlatformData::isSchedulerEnabled(mCameraId))
-        mScheduler = new CameraScheduler();
+    if (PlatformData::isSchedulerEnabled(mCameraId)) mScheduler = new CameraScheduler();
 }
 
 PSysProcessor::~PSysProcessor() {
@@ -150,6 +149,13 @@ int PSysProcessor::registerUserOutputBufs(Port port, const shared_ptr<CameraBuff
     }
 
     return OK;
+}
+
+// Pre-release some resources when stopping stage
+void PSysProcessor::stopProcessing() {
+    for (auto& psysDAGPair : mPSysDAGs) {
+        if (psysDAGPair.second) psysDAGPair.second->stopProcessing();
+    }
 }
 
 int PSysProcessor::start() {
@@ -433,7 +439,7 @@ int PSysProcessor::processNewFrame() {
     int ret = OK;
     CameraBufferPortMap srcBuffers, dstBuffers;
     if (mScheduler) {
-         {
+        {
             ConditionLock lock(mBufferQueueLock);
             // Wait input buffer, use SOF_EVENT_MAX_MARGIN to ensure Scheduler is triggered in time
             bool bufReady = waitBufferQueue(lock, mInputQueue, SOF_EVENT_MAX_MARGIN);

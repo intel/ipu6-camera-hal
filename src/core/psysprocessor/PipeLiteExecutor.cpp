@@ -531,8 +531,8 @@ bool PipeLiteExecutor::hasValidBuffers(const CameraBufferPortMap& buffers) {
     return false;
 }
 
-bool PipeLiteExecutor::fetchBuffersInQueue(map<Port, shared_ptr<CameraBuffer> >& cInBuffer,
-                                           map<Port, shared_ptr<CameraBuffer> >& cOutBuffer) {
+bool PipeLiteExecutor::fetchBuffersInQueue(map<Port, shared_ptr<CameraBuffer>>& cInBuffer,
+                                           map<Port, shared_ptr<CameraBuffer>>& cOutBuffer) {
     for (auto& input : mInputQueue) {
         Port port = input.first;
         CameraBufQ& inputQueue = input.second;
@@ -981,6 +981,7 @@ int PipeLiteExecutor::allocBuffers() {
         mPGBuffers[termDesc.sourceTerminal] = buf;
     }
 
+    int bufCount = PlatformData::getMaxRequestsInflight(mCameraId);
     for (auto& unit : mPGExecutors) {
         // Assign internal buffers for terminals of PGs according to connection
         for (auto& terminal : unit.inputTerminals) {
@@ -999,7 +1000,7 @@ int PipeLiteExecutor::allocBuffers() {
         if (!statsBufferCount) {
             continue;
         }
-        for (unsigned int i = 0; i < MAX_BUFFER_COUNT * statsBufferCount; i++) {
+        for (unsigned int i = 0; i < bufCount * statsBufferCount; i++) {
             shared_ptr<CameraBuffer> statsBuf = CameraBuffer::create(
                 mCameraId, BUFFER_USAGE_PSYS_STATS, V4L2_MEMORY_USERPTR, sizeof(ia_binary_data), i);
             CheckAndLogError(!statsBuf, NO_MEMORY, "Executor %s: Allocate stats buffer failed",
@@ -1031,7 +1032,7 @@ int PipeLiteExecutor::allocBuffers() {
                            PGCommon::getFrameSize(srcFmt, srcWidth, srcHeight, false, true, true) :
                            PGCommon::getFrameSize(srcFmt, srcWidth, srcHeight, true);
 
-            for (int i = 0; i < MAX_BUFFER_COUNT; i++) {
+            for (int i = 0; i < bufCount; i++) {
                 // Prepare internal frame buffer for its producer.
                 shared_ptr<CameraBuffer> buf =
                     CameraBuffer::create(mCameraId, BUFFER_USAGE_PSYS_INPUT, V4L2_MEMORY_USERPTR,
