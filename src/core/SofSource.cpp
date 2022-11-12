@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Intel Corporation.
+ * Copyright (C) 2015-2022 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -143,8 +143,8 @@ int SofSource::stop() {
 
 int SofSource::poll() {
     int ret = 0;
-    const int pollTimeoutCount = 10;
-    const int pollTimeout = 1000;
+    const int pollTimeoutCount = 100;
+    const int pollTimeout = 100;
 
     std::vector<V4L2Device*> pollDevs;
     pollDevs.push_back(mIsysReceiverSubDev);

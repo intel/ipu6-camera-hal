@@ -129,6 +129,11 @@ class BufferQueue : public BufferConsumer, public BufferProducer, public EventLi
     }
 
     /**
+     * \brief Set stoping status
+     */
+    virtual void stopProcessing() {}
+
+    /**
      * \brief Common Interface
      */
     virtual int start() = 0;
@@ -149,9 +154,7 @@ class BufferQueue : public BufferConsumer, public BufferProducer, public EventLi
      *
      * No waiting if timeout value is zero
      */
-    bool waitBufferQueue(ConditionLock& lock,
-                         std::map<Port, CameraBufQ>& queue,
-                         int64_t timeout);
+    bool waitBufferQueue(ConditionLock& lock, std::map<Port, CameraBufQ>& queue, int64_t timeout);
     /**
      * \brief Wait for available input and output buffers.
      *

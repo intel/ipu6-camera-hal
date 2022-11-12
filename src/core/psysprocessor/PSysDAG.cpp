@@ -412,6 +412,10 @@ int PSysDAG::registerUserOutputBufs(Port port, const std::shared_ptr<CameraBuffe
     return OK;
 }
 
+void PSysDAG::stopProcessing() {
+    mPolicyManager->setActive(false);
+}
+
 int PSysDAG::registerInternalBufs(std::map<Port, CameraBufVector>& internalBufs) {
     for (auto& portToBuffers : internalBufs) {
         for (auto& inputMap : mInputMaps) {
@@ -569,8 +573,6 @@ int PSysDAG::start() {
 
 int PSysDAG::stop() {
     LOG1("<id%d>@%s", mCameraId, __func__);
-
-    mPolicyManager->setActive(false);
 
     for (auto& executors : mExecutorsPool) {
         executors->notifyStop();
