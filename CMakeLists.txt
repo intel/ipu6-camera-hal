@@ -140,6 +140,8 @@ endif()
 
 include_directories(include
                     include/api include/utils
+                    ${CMAKE_INSTALL_PREFIX}/include/ia_camera
+                    ${CMAKE_INSTALL_PREFIX}/include/
                     ${CMAKE_CURRENT_LIST_DIR}
                     src
                     src/v4l2 src/core src/metadata

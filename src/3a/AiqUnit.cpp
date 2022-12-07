@@ -150,7 +150,8 @@ int AiqUnit::configure(const stream_config_t* streamList) {
 }
 
 int AiqUnit::initIntelCcaHandle(const std::vector<ConfigMode>& configModes) {
-    if (PlatformData::supportUpdateTuning() && !configModes.empty()) {
+    if ((PlatformData::supportUpdateTuning() || PlatformData::isDvsSupported(mCameraId)) &&
+        !configModes.empty()) {
         std::shared_ptr<IGraphConfig> graphConfig =
             IGraphConfigManager::getInstance(mCameraId)->getGraphConfig(configModes[0]);
         if (graphConfig != nullptr) {
@@ -447,9 +448,11 @@ std::vector<EventListener*> AiqUnit::getDVSEventListener() {
 
 int AiqUnit::setParameters(const Parameters& params) {
     AutoMutex l(mAiqUnitLock);
+// INTEL_DVS_S
     if (mDvs) {
         mDvs->setParameter(params);
     }
+// INTEL_DVS_E
 
     return mAiqSetting->setParameters(params);
 }

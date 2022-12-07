@@ -56,7 +56,8 @@ CameraParser::CameraParser(MediaControl* mc, PlatformData::StaticCfg* cfg)
           mInMediaCtlCfg(false),
           mInStaticMetadata(false),
           mMC(mc),
-          mMetadataCache(nullptr) {
+          mMetadataCache(nullptr),
+          mIsAvailableSensor(false) {
     LOG1("@%s", __func__);
     CheckAndLogError(cfg == nullptr, VOID_VALUE, "@%s, cfg is nullptr", __func__);
 
@@ -104,6 +105,7 @@ CameraParser::CameraParser(MediaControl* mc, PlatformData::StaticCfg* cfg)
         {"scaler.availableStreamConfigurations", CAMERA_SCALER_AVAILABLE_STREAM_CONFIGURATIONS},
         {"scaler.availableMinFrameDurations", CAMERA_SCALER_AVAILABLE_MIN_FRAME_DURATIONS},
         {"scaler.availableStallDurations", CAMERA_SCALER_AVAILABLE_STALL_DURATIONS},
+        {"scaler.availableMaxDigitalZoom", CAMERA_SCALER_AVAILABLE_MAX_DIGITAL_ZOOM},
         {"reprocess.maxCaptureStall", CAMERA_REPROCESS_MAX_CAPTURE_STALL},
         {"jpeg.maxSize", CAMERA_JPEG_MAX_SIZE},
         {"jpeg.availableThumbnailSizes", CAMERA_JPEG_AVAILABLE_THUMBNAIL_SIZES},
@@ -209,6 +211,12 @@ void CameraParser::checkField(CameraParser* profiles, const char* name, const ch
         profiles->mCurrentDataField = FIELD_INVALID;
         return;
     } else if (strcmp(name, "Sensor") == 0) {
+        // If it already has a available sensor, it doesn't need to parser others
+        if (profiles->mIsAvailableSensor) {
+            profiles->mCurrentDataField = FIELD_INVALID;
+            return;
+        }
+
         profiles->mSensorNum++;
         profiles->mCurrentSensor = profiles->mSensorNum - 1;
         LOG1("@%s, mCurrentSensor %d", __func__, profiles->mCurrentSensor);
@@ -2052,9 +2060,13 @@ void CameraParser::endParseElement(void* userData, const char* name) {
             if (!profiles->pCurrentCam->mSupportModuleNames.empty()) {
                 isCameraAvailable = false;
                 for (size_t i = 0; i < profiles->pCurrentCam->mSupportModuleNames.size(); i++) {
-                    if (strcmp(pCurrentCam->mSupportModuleNames[i].c_str(),
-                               profiles->pCurrentCam->mCamModuleName.c_str()) == 0) {
+                    if ((strcmp(pCurrentCam->mSupportModuleNames[i].c_str(),
+                                profiles->pCurrentCam->mCamModuleName.c_str()) == 0) ||
+                         (strcmp(pCurrentCam->mSupportModuleNames[i].c_str(),
+                                 DEFAULT_MODULE_NAME) == 0)) {
                         isCameraAvailable = true;
+                        // If find an available sensor, it will not search other sensors
+                        profiles->mIsAvailableSensor = true;
                         break;
                     }
                 }
@@ -2099,6 +2111,12 @@ void CameraParser::endParseElement(void* userData, const char* name) {
     }
 
     if (strcmp(name, "Common") == 0) profiles->mCurrentDataField = FIELD_INVALID;
+
+    if (strcmp(name, "CameraSettings") == 0) {
+        profiles->mIsAvailableSensor = false;
+        LOG2("@%s Camera mSensorNum:%d, mCurrentSensor:%d", __func__, profiles->mSensorNum,
+             profiles->mCurrentSensor);
+    }
 }
 
 int CameraParser::getCameraModuleNameFromEEPROM(const std::string& nvmDir,

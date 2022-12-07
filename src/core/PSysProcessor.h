@@ -68,6 +68,7 @@ class PSysProcessor : public BufferQueue, public PSysDagCallback {
     int processNewFrame();
     std::shared_ptr<CameraBuffer> allocStatsBuffer(int index);
 
+    void prepareIpuForNextFrame(int64_t sequence);
     status_t prepareTask(CameraBufferPortMap* srcBuffers, CameraBufferPortMap* dstBuffers);
     void dispatchTask(CameraBufferPortMap& inBuf, CameraBufferPortMap& outBuf,
                       bool fakeTask = false, bool callbackRgbs = false);
@@ -107,6 +108,7 @@ class PSysProcessor : public BufferQueue, public PSysDagCallback {
     static const nsecs_t kWaitDuration = 1000000000;  // 1000ms
     ParameterGenerator* mParameterGenerator;
     CameraScheduler* mScheduler;
+    bool mRunAicAfterQTask;
 
     IspSettings mIspSettings;
     RWLock mIspSettingsLock;

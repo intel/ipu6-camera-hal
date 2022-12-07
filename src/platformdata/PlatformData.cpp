@@ -102,11 +102,11 @@ int PlatformData::init() {
 
     StaticCfg* staticCfg = &(getInstance()->mStaticCfg);
     for (size_t i = 0; i < staticCfg->mCameras.size(); i++) {
-        std::string camModuleName;
+        std::string& camModuleName = staticCfg->mCameras[i].mCamModuleName;
         AiqInitData* aiqInitData = new AiqInitData(
             staticCfg->mCameras[i].sensorName, getCameraCfgPath(),
             staticCfg->mCameras[i].mSupportedTuningConfig, staticCfg->mCameras[i].mNvmDirectory,
-            staticCfg->mCameras[i].mMaxNvmDataSize, staticCfg->mCameras[i].mCamModuleName);
+            staticCfg->mCameras[i].mMaxNvmDataSize, camModuleName);
         getInstance()->mAiqInitData.push_back(aiqInitData);
 
         if (!camModuleName.empty() &&
@@ -314,8 +314,13 @@ bool PlatformData::isDvsSupported(int cameraId) {
     for (auto it : videoStabilizationList) {
         if (it == VIDEO_STABILIZATION_MODE_ON) {
             supported = true;
+            break;
         }
     }
+
+    const icamera::CameraMetadata& meta = icamera::ParameterHelper::getMetadata(*param);
+    auto entry = meta.find(CAMERA_SCALER_AVAILABLE_MAX_DIGITAL_ZOOM);
+    if (entry.count > 0 && *entry.data.f > 1) supported = true;
 
     LOG2("@%s, dvs supported:%d", __func__, supported);
     return supported;

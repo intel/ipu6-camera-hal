@@ -148,7 +148,28 @@ int Dvs::configCcaDvsData(const ConfigMode configMode, cca::cca_init_params* par
 }
 
 void Dvs::setParameter(const Parameters& p) {
-    p.getZoomRegion(&mPtzRegion);
+    camera_zoom_region_t region;
+    if (p.getZoomRegion(&region) == OK) {
+        // Convert active pixel array system to GDC system.
+        camera_coordinate_system_t srcSystem = PlatformData::getActivePixelArray(mCameraId);
+        camera_coordinate_system_t dstSystem = {mGDCRegion.left, mGDCRegion.top, mGDCRegion.right,
+                                                mGDCRegion.bottom};
+        LOG2("%s, dstSystem [%d, %d, %d, %d]", __func__, mGDCRegion.left, mGDCRegion.top,
+             mGDCRegion.right, mGDCRegion.bottom);
+
+        camera_coordinate_t srcCoordinate = {region.left, region.top};
+        camera_coordinate_t dstCoordinate = AiqUtils::convertCoordinateSystem(srcSystem, dstSystem,
+                                                                              srcCoordinate);
+        mPtzRegion.left = dstCoordinate.x;
+        mPtzRegion.top = dstCoordinate.y;
+        srcCoordinate = {region.right, region.bottom};
+        dstCoordinate = AiqUtils::convertCoordinateSystem(srcSystem, dstSystem, srcCoordinate);
+        mPtzRegion.right = dstCoordinate.x;
+        mPtzRegion.bottom = dstCoordinate.y;
+    }
+
+    LOG2("%s, Ptz [%d, %d, %d, %d]", __func__, mPtzRegion.left, mPtzRegion.top, mPtzRegion.right,
+         mPtzRegion.bottom);
 }
 
 void Dvs::handleEvent(EventData eventData) {
