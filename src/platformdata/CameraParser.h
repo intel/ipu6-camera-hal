@@ -42,6 +42,20 @@ namespace icamera {
  *
  * Camera Module Information is gotten from the EEPROM, which needs to be programmed with
  * an identification block located in the last 32 bytes of the EEPROM.
+ *
+ * Support for multiple sensors lookups
+ * 1.Multiple sensors with the same name in XML.
+ * You must add supportModuleNames. If you need a default sensor info,
+ * you must add "default" into supportModuleNames in the last sensor.
+ *
+ * Selection Criteria:
+ *  1)If a module name in NVM matches one of supportModuleNames,
+ *    it will break the loop and don't find others.
+ *  2)If it find "default" in supportModuleNames, it will break the loop and don't find others.
+ *    (Note:the sensor with default module must be last one)
+ *
+ * 2.Multiple sensors with the different name in XML.
+ * You can't add supportModuleNames.
  */
 struct CameraModuleInfo {
     char mOsInfo[4];
@@ -59,7 +73,7 @@ struct CameraModuleInfo {
 
 #define CAMERA_MODULE_INFO_OFFSET 32
 #define CAMERA_MODULE_INFO_SIZE 32
-
+#define DEFAULT_MODULE_NAME "default"
 /**
  * \class CameraParser
  *
@@ -103,6 +117,8 @@ class CameraParser : public ParserBase {
 
     int64_t* mMetadataCache;
     static const int mMetadataCacheSize = 4096;
+
+    bool mIsAvailableSensor;
 
     std::unordered_map<std::string, enum icamera_metadata_tag> mGenericStaticMetadataToTag;
 

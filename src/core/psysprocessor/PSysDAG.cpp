@@ -40,8 +40,7 @@ PSysDAG::PSysDAG(int cameraId, CameraScheduler* scheduler, PSysDagCallback* psys
           mDefaultMainInputPort(MAIN_PORT),
           mVideoTnrExecutor(nullptr),
           mStillTnrExecutor(nullptr),
-          mStillExecutor(nullptr),
-          mRunAicAfterQbuf(false) {
+          mStillExecutor(nullptr) {
     LOG1("<id%d>@%s", mCameraId, __func__);
 
     mPolicyManager = new PolicyManager(mCameraId);
@@ -179,11 +178,6 @@ int PSysDAG::createPipeExecutors(bool useTnrOutBuffer) {
     }
     LOG2("%s, hasVideoPipe: %d, hasStillPipe: %d, enableBundleInSdv: %d", __func__, hasVideoPipe,
          hasStillPipe, cfg->enableBundleInSdv);
-
-    // Only enable psys bundle with aic when has video pipe only
-    if (!hasStillPipe && PlatformData::psysBundleWithAic(mCameraId)) {
-        mRunAicAfterQbuf = true;
-    }
 
     if (hasStillPipe && hasVideoPipe && !cfg->enableBundleInSdv) return OK;
 
@@ -536,7 +530,6 @@ int PSysDAG::configure(ConfigMode configMode, TuningMode tuningMode, bool useTnr
 
     mConfigMode = configMode;
     mTuningMode = tuningMode;
-    mRunAicAfterQbuf = false;
 
     // Configure IspParamAdaptor
     int ret = mIspParamAdaptor->init();
@@ -639,12 +632,6 @@ void PSysDAG::addTask(PSysTaskData taskParam) {
     }
 
     queueBuffers(taskParam);
-
-    if (runIspAdaptor && mRunAicAfterQbuf && taskParam.mNextSeqUsed) {
-        LOG2("%s, <seq%ld> run AIC bundle with execute psys", __func__, sequence + 1);
-        // if running psys bundle with aic, current aic result is for next sequence
-        prepareIpuParams((sequence + 1), false, &task);
-    }
 }
 
 TuningMode PSysDAG::getTuningMode(int64_t sequence) {
@@ -754,8 +741,11 @@ void PSysDAG::onStatsDone(int64_t sequence) {
     }
 }
 
-int PSysDAG::prepareIpuParams(int64_t sequence, bool forceUpdate, TaskInfo* task) {
+int PSysDAG::prepareIpuParams(int64_t sequence, bool forceUpdate, TaskInfo* task, bool runNext) {
     TRACE_LOG_PROCESS("PSysDAG", __func__, MAKE_COLOR(sequence), sequence);
+
+    CheckAndLogError(mOngoingTasks.empty(), UNKNOWN_ERROR, "no ongoing task!");
+    if (runNext) task = &mOngoingTasks[mOngoingTasks.size() - 1];
 
     if (task == nullptr) {
         AutoMutex taskLock(mTaskLock);

@@ -863,6 +863,7 @@ int IspParamAdaptor::runIspAdaptL(ia_isp_bxt_program_group* pgPtr, ia_isp_bxt_gd
              aiqResults->mAeResults.exposures[0].exposure[0].digital_gain);
     }
 
+    inputParams->dvs_id = streamId;
     ia_err iaErr = ia_err_none;
     {
         PERF_CAMERA_ATRACE_PARAM1_IMAGING("ia_isp_bxt_run", 1);
