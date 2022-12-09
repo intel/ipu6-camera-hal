@@ -145,19 +145,13 @@ int AiqUnit::configure(const stream_config_t* streamList) {
     ret = mAiqEngine->configure();
     CheckAndLogError(ret != OK, ret, "configure AIQ engine error: %d", ret);
 
-    // LOCAL_TONEMAP_S
-    if (mLtm) {
-        ret = mLtm->configure(configModes);
-        CheckAndLogError(ret != OK, ret, "configure LTM engine error: %d", ret);
-    }
-    // LOCAL_TONEMAP_E
-
     mAiqUnitState = AIQ_UNIT_CONFIGURED;
     return OK;
 }
 
 int AiqUnit::initIntelCcaHandle(const std::vector<ConfigMode>& configModes) {
-    if (PlatformData::supportUpdateTuning() && !configModes.empty()) {
+    if ((PlatformData::supportUpdateTuning() || PlatformData::isDvsSupported(mCameraId)) &&
+        !configModes.empty()) {
         std::shared_ptr<IGraphConfig> graphConfig =
             IGraphConfigManager::getInstance(mCameraId)->getGraphConfig(configModes[0]);
         if (graphConfig != nullptr) {
@@ -233,20 +227,25 @@ int AiqUnit::initIntelCcaHandle(const std::vector<ConfigMode>& configModes) {
             params.bitmap |= cca::CCA_MODULE_AF;
         }
 
+        std::shared_ptr<IGraphConfig> graphConfig =
+            IGraphConfigManager::getInstance(mCameraId)->getGraphConfig(cfg);
+
         // LOCAL_TONEMAP_S
         bool hasLtm = PlatformData::isLtmEnabled(mCameraId);
 
-        if (hasLtm) {
+        if (hasLtm && mLtm) {
             params.bitmap |= cca::CCA_MODULE_LTM;
+            ret = mLtm->configure(configModes, graphConfig, VIDEO_STREAM_ID);
+            CheckAndLogError(ret != OK, ret, "configure LTM engine error: %d", ret);
         }
         // LOCAL_TONEMAP_E
 
         // INTEL_DVS_S
         if (mDvs) {
-            std::shared_ptr<IGraphConfig> graphConfig =
-                IGraphConfigManager::getInstance(mCameraId)->getGraphConfig(cfg);
             std::vector<int32_t> streamIds;
-            graphConfig->graphGetStreamIds(streamIds);
+            if (graphConfig != nullptr) {
+                graphConfig->graphGetStreamIds(streamIds);
+            }
             params.dvs_ids.count = streamIds.size();
             for (size_t i = 0; i < streamIds.size(); ++i) {
                 params.dvs_ids.ids[i] = streamIds[i];
@@ -258,8 +257,6 @@ int AiqUnit::initIntelCcaHandle(const std::vector<ConfigMode>& configModes) {
         // INTEL_DVS_E
 
         if (PlatformData::supportUpdateTuning()) {
-            std::shared_ptr<IGraphConfig> graphConfig =
-                IGraphConfigManager::getInstance(mCameraId)->getGraphConfig(cfg);
             if (graphConfig != nullptr) {
                 std::vector<int32_t> streamIds;
                 graphConfig->graphGetStreamIds(streamIds);
@@ -318,7 +315,9 @@ void AiqUnit::deinitIntelCcaHandle() {
         }
 
         intelCca->deinit();
+#ifndef ENABLE_SANDBOXING
         IntelCca::releaseInstance(mCameraId, mode);
+#endif
     }
 
     mCcaInitialized = false;
@@ -410,9 +409,11 @@ std::vector<EventListener*> AiqUnit::getDVSEventListener() {
 
 int AiqUnit::setParameters(const Parameters& params) {
     AutoMutex l(mAiqUnitLock);
+// INTEL_DVS_S
     if (mDvs) {
         mDvs->setParameter(params);
     }
+// INTEL_DVS_E
 
     return mAiqSetting->setParameters(params);
 }

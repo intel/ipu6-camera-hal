@@ -95,6 +95,8 @@ FaceDetection::~FaceDetection() {
 }
 
 bool FaceDetection::faceRunningByCondition() {
+    CheckAndLogError(mInitialized == false, false, "mInitialized is false");
+
     /*
      * FD runs 1 frame every mFDRunInterval frames.
      * And the default value of mFDRunInterval is mFDRunDefaultInterval
@@ -156,8 +158,6 @@ void FaceDetection::printfFDRunRate() {
 void FaceDetection::runFaceDetection(const std::shared_ptr<camera3::Camera3Buffer>& ccBuf,
                                      bool forceSync) {
     CheckAndLogError(mInitialized == false, VOID_VALUE, "mInitialized is false");
-
-    if (!faceRunningByCondition()) return;
 
     if (forceSync || PlatformData::isFaceEngineSyncRunning(mCameraId)) {
         runFaceDetectionBySync(ccBuf);

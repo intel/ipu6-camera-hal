@@ -50,7 +50,8 @@ CameraParser::CameraParser(MediaControl* mc, PlatformData::StaticCfg* cfg)
           mInMediaCtlCfg(false),
           mInStaticMetadata(false),
           mMC(mc),
-          mMetadataCache(nullptr) {
+          mMetadataCache(nullptr),
+          mIsAvailableSensor(false) {
     LOG1("@%s", __func__);
     CheckAndLogError(cfg == nullptr, VOID_VALUE, "@%s, cfg is nullptr", __func__);
 
@@ -98,6 +99,7 @@ CameraParser::CameraParser(MediaControl* mc, PlatformData::StaticCfg* cfg)
         {"scaler.availableStreamConfigurations", CAMERA_SCALER_AVAILABLE_STREAM_CONFIGURATIONS},
         {"scaler.availableMinFrameDurations", CAMERA_SCALER_AVAILABLE_MIN_FRAME_DURATIONS},
         {"scaler.availableStallDurations", CAMERA_SCALER_AVAILABLE_STALL_DURATIONS},
+        {"scaler.availableMaxDigitalZoom", CAMERA_SCALER_AVAILABLE_MAX_DIGITAL_ZOOM},
         {"reprocess.maxCaptureStall", CAMERA_REPROCESS_MAX_CAPTURE_STALL},
         {"jpeg.maxSize", CAMERA_JPEG_MAX_SIZE},
         {"jpeg.availableThumbnailSizes", CAMERA_JPEG_AVAILABLE_THUMBNAIL_SIZES},
@@ -203,6 +205,12 @@ void CameraParser::checkField(CameraParser* profiles, const char* name, const ch
         profiles->mCurrentDataField = FIELD_INVALID;
         return;
     } else if (strcmp(name, "Sensor") == 0) {
+        // If it already has a available sensor, it doesn't need to parser others
+        if (profiles->mIsAvailableSensor) {
+            profiles->mCurrentDataField = FIELD_INVALID;
+            return;
+        }
+
         profiles->mSensorNum++;
         profiles->mCurrentSensor = profiles->mSensorNum - 1;
         LOG1("@%s, mCurrentSensor %d", __func__, profiles->mCurrentSensor);
@@ -552,12 +560,25 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
 
             tablePtr = strtok_r(nullptr, ",", &savePtr);
         }
+    } else if (strcmp(name, "supportModuleNames") == 0) {
+        int sz = strlen(atts[1]);
+        char src[sz + 1];
+        MEMCPY_S(src, sz, atts[1], sz);
+        src[sz] = '\0';
+        char* savePtr;
+        char* tablePtr = strtok_r(src, ",", &savePtr);
+        while (tablePtr) {
+            pCurrentCam->mSupportModuleNames.push_back(tablePtr);
+            tablePtr = strtok_r(nullptr, ",", &savePtr);
+        }
     } else if (strcmp(name, "isISYSCompression") == 0) {
         pCurrentCam->mISYSCompression = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "isPSACompression") == 0) {
         pCurrentCam->mPSACompression = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "isOFSCompression") == 0) {
         pCurrentCam->mOFSCompression = strcmp(atts[1], "true") == 0;
+    } else if (strcmp(name, "schedulerEnabled") == 0) {
+        pCurrentCam->mSchedulerEnabled = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "faceAeEnabled") == 0) {
         pCurrentCam->mFaceAeEnabled = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "psysAlignWithSof") == 0) {
@@ -1915,15 +1936,37 @@ void CameraParser::endParseElement(void* userData, const char* name) {
 
             profiles->mNvmDeviceInfo.clear();
 
-            // Merge the content of mMetadata into mCapability.
-            ParameterHelper::merge(profiles->mMetadata, &profiles->pCurrentCam->mCapability);
+            bool isCameraAvailable = true;
+            // Check if the camera is available
+            if (!profiles->pCurrentCam->mSupportModuleNames.empty()) {
+                isCameraAvailable = false;
+                for (size_t i = 0; i < profiles->pCurrentCam->mSupportModuleNames.size(); i++) {
+                    if ((strcmp(pCurrentCam->mSupportModuleNames[i].c_str(),
+                                profiles->pCurrentCam->mCamModuleName.c_str()) == 0) ||
+                         (strcmp(pCurrentCam->mSupportModuleNames[i].c_str(),
+                                 DEFAULT_MODULE_NAME) == 0)) {
+                        isCameraAvailable = true;
+                        // If find an available sensor, it will not search other sensors
+                        profiles->mIsAvailableSensor = true;
+                        break;
+                    }
+                }
+            }
+
+            if (isCameraAvailable) {
+                // Merge the content of mMetadata into mCapability.
+                ParameterHelper::merge(profiles->mMetadata, &profiles->pCurrentCam->mCapability);
+
+                // For non-extended camera, it should be in order by mCurrentSensor
+                profiles->mStaticCfg->mCameras.insert(
+                    profiles->mStaticCfg->mCameras.begin() + profiles->mCurrentSensor,
+                    *(profiles->pCurrentCam));
+            } else {
+                profiles->mSensorNum--;
+                if (profiles->mCurrentSensor > 0) profiles->mCurrentSensor--;
+            }
+
             profiles->mMetadata.clear();
-
-            // For non-extended camera, it should be in order by mCurrentSensor
-            profiles->mStaticCfg->mCameras.insert(
-                profiles->mStaticCfg->mCameras.begin() + profiles->mCurrentSensor,
-                *(profiles->pCurrentCam));
-
             delete profiles->pCurrentCam;
             profiles->pCurrentCam = nullptr;
         }
@@ -1949,6 +1992,52 @@ void CameraParser::endParseElement(void* userData, const char* name) {
     }
 
     if (strcmp(name, "Common") == 0) profiles->mCurrentDataField = FIELD_INVALID;
+
+    if (strcmp(name, "CameraSettings") == 0) {
+        profiles->mIsAvailableSensor = false;
+        LOG2("@%s Camera mSensorNum:%d, mCurrentSensor:%d", __func__, profiles->mSensorNum,
+             profiles->mCurrentSensor);
+    }
+}
+
+int CameraParser::getCameraModuleNameFromEEPROM(const std::string& nvmDir,
+                                                std::string* cameraModule) {
+    const int moduleInfoOffset = CAMERA_MODULE_INFO_OFFSET;
+    FILE* eepromFile = fopen(nvmDir.c_str(), "rb");
+    CheckAndLogError(!eepromFile, UNKNOWN_ERROR, "Failed to open EEPROM file in %s",
+                     nvmDir.c_str());
+
+    // file size should be larger than CAMERA_MODULE_INFO_OFFSET
+    fseek(eepromFile, 0, SEEK_END);
+    int nvmDataSize = static_cast<int>(ftell(eepromFile));
+    if (nvmDataSize < moduleInfoOffset) {
+        LOGE("EEPROM data is too small");
+        fclose(eepromFile);
+        return NOT_ENOUGH_DATA;
+    }
+
+    fseek(eepromFile, -1 * moduleInfoOffset, SEEK_END);
+
+    const int moduleInfoSize = CAMERA_MODULE_INFO_SIZE;
+    struct CameraModuleInfo cameraModuleInfo;
+    CLEAR(cameraModuleInfo);
+    int ret = fread(&cameraModuleInfo, moduleInfoSize, 1, eepromFile);
+    fclose(eepromFile);
+    CheckAndLogError(!ret, UNKNOWN_ERROR, "Failed to read module info %d", ret);
+
+    if (strncmp(cameraModuleInfo.mOsInfo, NVM_OS, strlen(NVM_OS)) != 0) {
+        LOG1("NVM OS string doesn't match with module info");
+        return NO_ENTRY;
+    }
+
+    char tmpName[CAMERA_MODULE_INFO_SIZE];
+    snprintf(tmpName, CAMERA_MODULE_INFO_SIZE, "%c%c_%04x", cameraModuleInfo.mModuleVendor[0],
+             cameraModuleInfo.mModuleVendor[1], cameraModuleInfo.mModuleProduct);
+
+    cameraModule->assign(tmpName);
+    LOG1("%s, aiqb name %s", __func__, cameraModule->c_str());
+
+    return OK;
 }
 
 /* the path of NVM device is in /sys/bus/i2c/devices/i2c-'adaptorId'/firmware_node/XXXX/path. */
@@ -2013,9 +2102,18 @@ void CameraParser::getNVMDirectory(CameraParser* profiles) {
     for (auto nvm : profiles->mNvmDeviceInfo) {
         if (!nvm.directory.empty()) {
             // The first one in list is prioritized and should be selected.
-            profiles->pCurrentCam->mNvmDirectory = nvm.directory;
+            std::string nvmPath;
+            nvmPath.append(NVM_DATA_PATH);
+            nvmPath.append(nvm.directory);
+            if (nvmPath.back() != '/') nvmPath.append("/");
+
+            nvmPath.append("eeprom");
+            LOG2("NVM data is located in %s", nvmPath.c_str());
+            profiles->pCurrentCam->mNvmDirectory = nvmPath;
             profiles->pCurrentCam->mMaxNvmDataSize = nvm.dataSize;
-            LOG2("NVM dir %s", profiles->pCurrentCam->mNvmDirectory.c_str());
+            int ret = getCameraModuleNameFromEEPROM(profiles->pCurrentCam->mNvmDirectory,
+                                                    &profiles->pCurrentCam->mCamModuleName);
+            LOG2("NVM dir %s, ret %d", profiles->pCurrentCam->mNvmDirectory.c_str(), ret);
             break;
         } else {
             LOGE("Failed to find NVM directory");

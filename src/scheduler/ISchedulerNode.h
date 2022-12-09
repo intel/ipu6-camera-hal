@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2022 Intel Corporation.
+ * Copyright (C) 2022 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,24 +16,24 @@
 
 #pragma once
 
-namespace icamera {
-/*
- * This struct is used to envelop AIQ statistics.
- */
-struct AiqStatistics {
-    int64_t mSequence;
-    unsigned long long mTimestamp;
-    TuningMode mTuningMode;
-    bool mInUse;
-    bool mPendingDecode;
-    int32_t mStreamId;
+#include <string>
 
-    AiqStatistics()
-            : mSequence(-1),
-              mTimestamp(0),
-              mTuningMode(TUNING_MODE_MAX),
-              mInUse(false),
-              mPendingDecode(false),
-              mStreamId(-1) {}
+namespace icamera {
+
+/**
+ * \Interface ISchedulerNode
+ */
+class ISchedulerNode {
+ public:
+    explicit ISchedulerNode(const char* name) : mName(name ? name : "unknown") {}
+    virtual ~ISchedulerNode() {}
+
+    virtual bool process(int64_t triggerId) = 0;
+
+    const char* getName() const { return mName.c_str(); }
+
+ private:
+    std::string mName;
 };
-} /* namespace icamera */
+
+}  // namespace icamera

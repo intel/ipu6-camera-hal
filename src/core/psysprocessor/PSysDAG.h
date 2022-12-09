@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2021 Intel Corporation
+ * Copyright (C) 2017-2022 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@
 #include <unordered_map>
 
 #include "CameraBuffer.h"
+#include "CameraScheduler.h"
 #include "IspParamAdaptor.h"
 #include "Parameters.h"
 #include "PlatformData.h"
@@ -41,7 +42,6 @@ struct PSysTaskData {
     TuningMode mTuningMode;
     bool mFakeTask;
     bool mCallbackRgbs;
-    bool mNextSeqUsed;
 
     CameraBufferPortMap mInputBuffers;
     CameraBufferPortMap mOutputBuffers;
@@ -49,7 +49,6 @@ struct PSysTaskData {
         mTuningMode = TUNING_MODE_MAX;
         mFakeTask = false;
         mCallbackRgbs = false;
-        mNextSeqUsed = false;
     }
 };
 
@@ -73,7 +72,7 @@ class PSysDagCallback {
 
 class PSysDAG {
  public:
-    PSysDAG(int cameraId, PSysDagCallback* psysDagCB);
+    PSysDAG(int cameraId, CameraScheduler* scheduler, PSysDagCallback* psysDagCB);
     virtual ~PSysDAG();
     void setFrameInfo(const std::map<Port, stream_t>& inputInfo,
                       const std::map<Port, stream_t>& outputInfo);
@@ -86,6 +85,7 @@ class PSysDAG {
 
     int registerInternalBufs(std::map<Port, CameraBufVector>& internalBufs);
     int registerUserOutputBufs(Port port, const std::shared_ptr<CameraBuffer>& camBuffer);
+    void stopProcessing();
 
     void addTask(PSysTaskData taskParam);
 
@@ -93,7 +93,8 @@ class PSysDAG {
     void removeListener(EventType eventType, EventListener* eventListener);
 
     TuningMode getTuningMode(int64_t sequence);
-    int prepareIpuParams(int64_t sequence, bool forceUpdate = false, TaskInfo* task = nullptr);
+    int prepareIpuParams(int64_t sequence, bool forceUpdate = false, TaskInfo* task = nullptr,
+                         bool runNext = false);
 
     bool fetchTnrOutBuffer(int64_t seq, std::shared_ptr<CameraBuffer> buf);
     bool isBypassStillTnr(int64_t seq);
@@ -123,11 +124,13 @@ class PSysDAG {
     int queueBuffers(const PSysTaskData& task);
     int returnBuffers(PSysTaskData& result);
     bool isInactiveStillStream(int streamId, const PSysTaskData* task, Port port);
+    int getActiveStreamIds(const PSysTaskData& taskData, std::vector<int32_t>* activeStreamIds);
 
     void dumpExternalPortMap();
 
  private:
     int mCameraId;
+    CameraScheduler* mScheduler;
     PSysDagCallback* mPSysDagCB;  // Used to callback notify frame done handling
     PolicyManager* mPolicyManager;
     ConfigMode mConfigMode;  // It is actually real config mode.
@@ -155,7 +158,6 @@ class PSysDAG {
     Mutex mOngoingPalMapLock;
     // first is sequence id, second is a set of stream id
     std::map<int64_t, std::set<int32_t>> mOngoingPalMap;
-    bool mRunAicAfterQbuf;
 
     /**
      * The relationship mapping between DAG's port and executors port.

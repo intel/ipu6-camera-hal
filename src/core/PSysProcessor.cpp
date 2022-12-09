@@ -50,6 +50,8 @@ namespace icamera {
 PSysProcessor::PSysProcessor(int cameraId, ParameterGenerator* pGenerator)
         : mCameraId(cameraId),
           mParameterGenerator(pGenerator),
+          mScheduler(nullptr),
+          mRunAicAfterQTask(false),
           mCurConfigMode(CAMERA_STREAM_CONFIGURATION_MODE_NORMAL),
           mTuningMode(TUNING_MODE_MAX),
           mRawPort(INVALID_PORT),
@@ -60,11 +62,17 @@ PSysProcessor::PSysProcessor(int cameraId, ParameterGenerator* pGenerator)
           mStatus(PIPELINE_UNCREATED) {
     mProcessThread = new ProcessThread(this);
     CLEAR(mSofTimestamp);
+
+    if (PlatformData::isSchedulerEnabled(mCameraId)) mScheduler = new CameraScheduler();
 }
 
 PSysProcessor::~PSysProcessor() {
     mProcessThread->join();
     delete mProcessThread;
+
+    // Delete PSysDAG before Scheduler because ~PSysDAG() needs Scheduler
+    mPSysDAGs.clear();
+    if (mScheduler) delete mScheduler;
 }
 
 int PSysProcessor::configure(const std::vector<ConfigMode>& configModes) {
@@ -78,6 +86,7 @@ int PSysProcessor::configure(const std::vector<ConfigMode>& configModes) {
     mHoldRawBuffers = false;
     mOpaqueRawPort = INVALID_PORT;
     mRawPort = INVALID_PORT;
+    mRunAicAfterQTask = false;
 
     std::map<Port, stream_t> outputFrameInfo;
     stream_t stillStream = {}, videoStream = {};
@@ -103,6 +112,11 @@ int PSysProcessor::configure(const std::vector<ConfigMode>& configModes) {
         mHoldRawBuffers = true;
     }
 
+    // Only enable psys bundle with aic when has video pipe only
+    if (stillStream.width <= 0 && PlatformData::psysBundleWithAic(mCameraId)) {
+        mRunAicAfterQTask = true;
+    }
+
     int ret = OK;
     // Create PSysDAG according to real configure mode
     for (auto& cfg : mConfigModes) {
@@ -115,7 +129,7 @@ int PSysProcessor::configure(const std::vector<ConfigMode>& configModes) {
         CheckAndLogError(ret != OK, ret, "%s: can't get config for mode %d", __func__, cfg);
 
         LOG1("%s, Create PSysDAG for ConfigMode %d", __func__, cfg);
-        unique_ptr<PSysDAG> pSysDAG = unique_ptr<PSysDAG>(new PSysDAG(mCameraId, this));
+        unique_ptr<PSysDAG> pSysDAG = unique_ptr<PSysDAG>(new PSysDAG(mCameraId, mScheduler, this));
 
         pSysDAG->setFrameInfo(mInputFrameInfo, outputFrameInfo);
         bool useTnrOutBuffer = mOpaqueRawPort != INVALID_PORT;
@@ -142,6 +156,13 @@ int PSysProcessor::registerUserOutputBufs(Port port, const shared_ptr<CameraBuff
     }
 
     return OK;
+}
+
+// Pre-release some resources when stopping stage
+void PSysProcessor::stopProcessing() {
+    for (auto& psysDAGPair : mPSysDAGs) {
+        if (psysDAGPair.second) psysDAGPair.second->stopProcessing();
+    }
 }
 
 int PSysProcessor::start() {
@@ -423,8 +444,39 @@ int PSysProcessor::processNewFrame() {
     CheckAndLogError(!mBufferProducer, INVALID_OPERATION, "No available producer");
 
     int ret = OK;
+    int64_t inputSequence = -1;
     CameraBufferPortMap srcBuffers, dstBuffers;
-    if (!PlatformData::psysAlignWithSof(mCameraId)) {
+    if (mScheduler) {
+        {
+            ConditionLock lock(mBufferQueueLock);
+            // Wait input buffer, use SOF_EVENT_MAX_MARGIN to ensure Scheduler is triggered in time
+            bool bufReady = waitBufferQueue(lock, mInputQueue, SOF_EVENT_MAX_MARGIN);
+            // Already stopped
+            if (!mThreadRunning) return -1;
+
+            if (bufReady) {
+                // Fetch inputs and outputs if output buffer ready (no wait)
+                if (waitBufferQueue(lock, mOutputQueue, 0))
+                    ret = waitFreeBuffersInQueue(lock, srcBuffers, dstBuffers);
+            }
+        }
+
+        if (!srcBuffers.empty()) {
+            inputSequence = srcBuffers.begin()->second->getSequence();
+            ret = prepareTask(&srcBuffers, &dstBuffers);
+            CheckAndLogError(ret != OK, UNKNOWN_ERROR, "%s, Failed to process frame", __func__);
+        } else {
+            // Wait frame buffer time out should not involve thread exit.
+            LOG1("<id%d>@%s, timeout happen, wait recovery", mCameraId, __func__);
+        }
+
+        // Trigger when there are tasks (new or existing)
+        if (mScheduler && !mSequencesInflight.empty()) {
+            std::string source;
+            mScheduler->executeNode(source, inputSequence);
+        }
+        prepareIpuForNextFrame(inputSequence);
+    } else if (!PlatformData::psysAlignWithSof(mCameraId)) {
         {
             ConditionLock lock(mBufferQueueLock);
             ret = waitFreeBuffersInQueue(lock, srcBuffers, dstBuffers);
@@ -440,6 +492,8 @@ int PSysProcessor::processNewFrame() {
 
         ret = prepareTask(&srcBuffers, &dstBuffers);
         CheckAndLogError(ret != OK, UNKNOWN_ERROR, "%s, Failed to process frame", __func__);
+        inputSequence = srcBuffers.begin()->second->getSequence();
+        prepareIpuForNextFrame(inputSequence);
     } else {
         timeval curTime;
         int64_t sofInterval = 0;
@@ -482,7 +536,8 @@ int PSysProcessor::processNewFrame() {
 
             {
                 AutoMutex l(mSofLock);
-                if (srcBuffers.begin()->second->getSequence() >= mSofSequence) {
+                inputSequence = srcBuffers.begin()->second->getSequence();
+                if (inputSequence >= mSofSequence) {
                     gettimeofday(&curTime, nullptr);
                     sofInterval = TIMEVAL2NSECS(curTime) - TIMEVAL2NSECS(mSofTimestamp);
 
@@ -497,10 +552,23 @@ int PSysProcessor::processNewFrame() {
 
             ret = prepareTask(&srcBuffers, &dstBuffers);
             CheckAndLogError(ret != OK, UNKNOWN_ERROR, "%s, Failed to process frame", __func__);
+            prepareIpuForNextFrame(inputSequence);
         }
     }
 
     return OK;
+}
+
+void PSysProcessor::prepareIpuForNextFrame(int64_t sequence) {
+    if (sequence < 0 || !mRunAicAfterQTask ||
+        mSequencesInflight.find(sequence) == mSequencesInflight.end()) return;
+
+    int32_t userRequestId = -1;
+    // Check if next sequence is used or not
+    if (mParameterGenerator &&
+        mParameterGenerator->getUserRequestId(sequence + 1, userRequestId) == OK) {
+        mPSysDAGs[mCurConfigMode]->prepareIpuParams((sequence + 1), false, nullptr, true);
+    }
 }
 
 void PSysProcessor::handleRawReprocessing(CameraBufferPortMap* srcBuffers,
@@ -781,7 +849,6 @@ status_t PSysProcessor::prepareTask(CameraBufferPortMap* srcBuffers,
             mBufferProducer->qbuf(src.first, src.second);
         }
     }
-
     return OK;
 }
 
@@ -876,7 +943,6 @@ void PSysProcessor::dispatchTask(CameraBufferPortMap& inBuf, CameraBufferPortMap
     taskParam.mOutputBuffers = outBuf;
     taskParam.mFakeTask = fakeTask;
     taskParam.mCallbackRgbs = callbackRgbs;
-    taskParam.mNextSeqUsed = false;
 
     int64_t settingSequence = getSettingSequence(outBuf);
     // Handle per-frame settings if output buffer requires
@@ -892,11 +958,6 @@ void PSysProcessor::dispatchTask(CameraBufferPortMap& inBuf, CameraBufferPortMap
                 CameraDump::isDumpTypeEnable(DUMP_JPEG_BUFFER)) {
                 CameraDump::dumpImage(mCameraId, inBuf[MAIN_PORT], M_PSYS, MAIN_PORT);
             }
-        }
-
-        // Check if next sequence is used or not
-        if (mParameterGenerator->getUserRequestId(currentSequence + 1, userRequestId) == OK) {
-            taskParam.mNextSeqUsed = true;
         }
     }
     {

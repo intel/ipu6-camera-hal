@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2021 Intel Corporation
+ * Copyright (C) 2017-2022 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@
 
 #include <memory>
 #include <vector>
+#include <unordered_map>
 
 #include "AiqSetting.h"
 #include "CameraEvent.h"
@@ -46,14 +47,20 @@ class Dvs : public EventListener {
     void setParameter(const Parameters& p);
 
  private:
-    int configCcaDvsData(const ConfigMode configMode, cca::cca_init_params* params);
+    int configCcaDvsData(int32_t streamId, const ConfigMode configMode,
+                         cca::cca_init_params* params);
     void dumpDvsConfiguration(const cca::cca_init_params& config);
 
  private:
     int mCameraId;
     TuningMode mTuningMode;
-    camera_zoom_region_t mPtzRegion;
-    camera_zoom_region_t mGDCRegion;
+    struct ZoomParam {
+        camera_zoom_region_t ptzRegion;
+        camera_zoom_region_t gdcRegion;
+    };
+    // first: stream id, second: ZoomParam
+    std::unordered_map<int32_t, ZoomParam> mZoomParamMap;
+    std::mutex mLock;
 
     // prevent copy constructor and assignment operator
     DISALLOW_COPY_AND_ASSIGN(Dvs);
