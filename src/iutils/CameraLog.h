@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Intel Corporation.
+ * Copyright (C) 2015-2022 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -228,11 +228,11 @@ void __camera_hal_log(bool condition, int prio, const char* tag, const char* fmt
 class ScopedTrace {
  public:
     inline ScopedTrace(int level, const char* name) : mLevel(level), mName(name) {
-        if (mLevel <= gLogLevel) LOG1("ENTER-%s", name);
+        if (mLevel & gLogLevel) LOGI("ENTER-%s", name);
     }
 
     inline ~ScopedTrace() {
-        if (mLevel <= gLogLevel) LOG1("EXIT-%s", mName);
+        if (mLevel & gLogLevel) LOGI("EXIT-%s", mName);
     }
 
  private:

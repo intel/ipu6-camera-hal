@@ -210,8 +210,8 @@ int AiqEngine::prepareStatsParams(cca::cca_stats_params* statsParams, AiqStatist
 
             CheckAndLogError(!gc, UNKNOWN_ERROR, "%s, Failed to get graph config", __func__);
             ia_isp_bxt_resolution_info_t resolution;
-            uint32_t gdcKernelId;
-            int status = gc->getGdcKernelSetting(&gdcKernelId, &resolution);
+            uint32_t kernelId;
+            int status = gc->getGdcKernelSetting(&kernelId, &resolution, aiqStatistics->mStreamId);
             CheckWarning(status != OK, UNKNOWN_ERROR, "Failed to get GDC kernel setting");
 
             statsParams->dvs_stats_height = resolution.output_height;

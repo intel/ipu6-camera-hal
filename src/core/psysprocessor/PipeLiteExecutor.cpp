@@ -48,7 +48,8 @@ static const int32_t sSisKernels[] = {ia_pal_uuid_isp_sis_1_0_a};
 PipeLiteExecutor::PipeLiteExecutor(int cameraId, const ExecutorPolicy& policy,
                                    vector<string> exclusivePGs, PSysDAG* psysDag,
                                    shared_ptr<IGraphConfig> gc)
-        : mCameraId(cameraId),
+        : ISchedulerNode(policy.exeName.c_str()),
+          mCameraId(cameraId),
           mStreamId(-1),
           mName(policy.exeName),
           mPGNames(policy.pgList),
@@ -383,7 +384,8 @@ int PipeLiteExecutor::setInputTerminals(const std::map<ia_uid, Port>& sourceTerm
 
 int PipeLiteExecutor::start() {
     LOG1("%s executor:%s", __func__, mName.c_str());
-    mProcessThread = new ProcessThread(this);
+    // Need thread when PolicyManager takes responsibility. Otherwise Scheduler will handle.
+    if (mPolicyManager) mProcessThread = new ProcessThread(this);
     AutoMutex l(mBufferQueueLock);
 
     allocBuffers();
@@ -391,8 +393,10 @@ int PipeLiteExecutor::start() {
 
     mLastStatsSequence = -1;
 
-    mThreadRunning = true;
-    mProcessThread->run(mName.c_str(), PRIORITY_NORMAL);
+    if (mProcessThread) {
+        mThreadRunning = true;
+        mProcessThread->run(mName.c_str(), PRIORITY_NORMAL);
+    }
 
     return OK;
 }
@@ -400,11 +404,11 @@ int PipeLiteExecutor::start() {
 void PipeLiteExecutor::stop() {
     LOG1("%s executor:%s", __func__, mName.c_str());
 
-    mProcessThread->requestExitAndWait();
+    if (mProcessThread) mProcessThread->requestExitAndWait();
 
     // Thread is not running. It is safe to clear the Queue
     clearBufferQueues();
-    delete mProcessThread;
+    if (mProcessThread) delete mProcessThread;
 
     // Clear the buffer pool of pg Uint
     for (auto& unit : mPGExecutors) {
@@ -415,6 +419,7 @@ void PipeLiteExecutor::stop() {
 
 void PipeLiteExecutor::notifyStop() {
     LOG1("%s executor:%s", __func__, mName.c_str());
+    if (!mProcessThread) return;
 
     mProcessThread->requestExit();
     {
@@ -526,6 +531,34 @@ bool PipeLiteExecutor::hasValidBuffers(const CameraBufferPortMap& buffers) {
     return false;
 }
 
+bool PipeLiteExecutor::fetchBuffersInQueue(map<Port, shared_ptr<CameraBuffer>>& cInBuffer,
+                                           map<Port, shared_ptr<CameraBuffer>>& cOutBuffer) {
+    for (auto& input : mInputQueue) {
+        Port port = input.first;
+        CameraBufQ& inputQueue = input.second;
+        if (inputQueue.empty()) {
+            LOG2("%s: No buffer input port %d", __func__, port);
+            cInBuffer.clear();
+            return false;
+        }
+        cInBuffer[port] = inputQueue.front();
+    }
+
+    for (auto& output : mOutputQueue) {
+        Port port = output.first;
+        CameraBufQ& outputQueue = output.second;
+        if (outputQueue.empty()) {
+            LOG2("%s: No buffer output port %d", __func__, port);
+            cInBuffer.clear();
+            cOutBuffer.clear();
+            return false;
+        }
+
+        cOutBuffer[port] = outputQueue.front();
+    }
+    return true;
+}
+
 int PipeLiteExecutor::processNewFrame() {
     PERF_CAMERA_ATRACE();
 
@@ -534,14 +567,20 @@ int PipeLiteExecutor::processNewFrame() {
     // Wait frame buffers.
     {
         ConditionLock lock(mBufferQueueLock);
-        ret = waitFreeBuffersInQueue(lock, inBuffers, outBuffers);
-        // Already stopped
-        if (!mThreadRunning) return -1;
+        if (mPolicyManager) {
+            // Prepare frames at first, then mPolicyManager decides when to run
+            ret = waitFreeBuffersInQueue(lock, inBuffers, outBuffers);
+            // Already stopped
+            if (!mThreadRunning) return -1;
 
-        if (ret != OK) return OK;  // Wait frame buffer error should not involve thread exit.
+            if (ret != OK) return OK;  // Wait frame buffer error should not involve thread exit.
 
-        CheckAndLogError(inBuffers.empty() || outBuffers.empty(), UNKNOWN_ERROR,
-                         "Failed to get input or output buffers.");
+            CheckAndLogError(inBuffers.empty() || outBuffers.empty(), UNKNOWN_ERROR,
+                             "Failed to get input or output buffers.");
+        } else {
+            // Triggered by scheduler, will run if frames are ready
+            if (!fetchBuffersInQueue(inBuffers, outBuffers)) return OK;
+        }
 
         for (auto& output : mOutputQueue) {
             output.second.pop();
@@ -833,18 +872,20 @@ int PipeLiteExecutor::notifyStatsDone(TuningMode tuningMode, const v4l2_buffer_t
     }
 
     int statsIndex = 0;
+    bool runDvs = false;
     for (auto statsBuf : outStatsBuffers) {
         if (!statsBuf) continue;
 
-        if (mStreamId != VIDEO_STREAM_ID) {
+        if (!runDvs) {
             // DVS Zoom without STAT buffer.
-            {
-                EventData eventData;
-                eventData.type = EVENT_DVS_READY;
-                eventData.data.dvsRunReady.streamId = mStreamId;
-                notifyListeners(eventData);
-            }
+            EventData eventData;
+            eventData.type = EVENT_DVS_READY;
+            eventData.data.dvsRunReady.streamId = mStreamId;
+            notifyListeners(eventData);
+            runDvs = true;
+        }
 
+        if (mStreamId != VIDEO_STREAM_ID) {
             if (!PlatformData::isStillOnlyPipeEnabled(mCameraId)) {
                 LOG2("%s: Drop still pipe statistics data", __func__);
                 releaseStatsBuffer(statsBuf);
@@ -869,7 +910,7 @@ int PipeLiteExecutor::notifyStatsDone(TuningMode tuningMode, const v4l2_buffer_t
 
         // Decode the statistics data
         if (eventType[statsIndex] == EVENT_PSYS_STATS_BUF_READY) {
-            mAdaptor->decodeStatsData(tuningMode, statsBuf, mGraphConfig);
+            mAdaptor->decodeStatsData(tuningMode, statsBuf, mStreamId);
             psysStatBufferCount--;
         }
 
@@ -942,6 +983,7 @@ int PipeLiteExecutor::allocBuffers() {
         mPGBuffers[termDesc.sourceTerminal] = buf;
     }
 
+    int bufCount = PlatformData::getMaxRequestsInflight(mCameraId);
     for (auto& unit : mPGExecutors) {
         // Assign internal buffers for terminals of PGs according to connection
         for (auto& terminal : unit.inputTerminals) {
@@ -960,7 +1002,7 @@ int PipeLiteExecutor::allocBuffers() {
         if (!statsBufferCount) {
             continue;
         }
-        for (unsigned int i = 0; i < MAX_BUFFER_COUNT * statsBufferCount; i++) {
+        for (unsigned int i = 0; i < bufCount * statsBufferCount; i++) {
             shared_ptr<CameraBuffer> statsBuf = CameraBuffer::create(
                 mCameraId, BUFFER_USAGE_PSYS_STATS, V4L2_MEMORY_USERPTR, sizeof(ia_binary_data), i);
             CheckAndLogError(!statsBuf, NO_MEMORY, "Executor %s: Allocate stats buffer failed",
@@ -992,7 +1034,7 @@ int PipeLiteExecutor::allocBuffers() {
                            PGCommon::getFrameSize(srcFmt, srcWidth, srcHeight, false, true, true) :
                            PGCommon::getFrameSize(srcFmt, srcWidth, srcHeight, true);
 
-            for (int i = 0; i < MAX_BUFFER_COUNT; i++) {
+            for (int i = 0; i < bufCount; i++) {
                 // Prepare internal frame buffer for its producer.
                 shared_ptr<CameraBuffer> buf =
                     CameraBuffer::create(mCameraId, BUFFER_USAGE_PSYS_INPUT, V4L2_MEMORY_USERPTR,

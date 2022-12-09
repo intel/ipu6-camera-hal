@@ -305,7 +305,7 @@ int IspParamAdaptor::configure(const stream_t& stream, ConfigMode configMode, Tu
 
 int IspParamAdaptor::decodeStatsData(TuningMode tuningMode,
                                      std::shared_ptr<CameraBuffer> statsBuffer,
-                                     std::shared_ptr<IGraphConfig> graphConfig) {
+                                     int32_t streamId) {
     CheckAndLogError(mIspAdaptorState != ISP_ADAPTOR_CONFIGURED, INVALID_OPERATION,
                      "%s, wrong state %d", __func__, mIspAdaptorState);
     CheckAndLogError(!mIntelCca, UNKNOWN_ERROR, "%s, mIntelCca is nullptr", __func__);
@@ -328,6 +328,7 @@ int IspParamAdaptor::decodeStatsData(TuningMode tuningMode,
     aiqStatistics->mTimestamp = TIMEVAL2USECS(statsBuffer->getTimestamp());
     aiqStatistics->mTuningMode = tuningMode;
     aiqStatistics->mPendingDecode = false;
+    aiqStatistics->mStreamId = streamId;
     if (PlatformData::isStatsRunningRateSupport(mCameraId) && !outStats->get_rgbs_stats) {
         aiqStatistics->mPendingDecode = true;
     }
@@ -858,6 +859,7 @@ int IspParamAdaptor::runIspAdaptL(ia_isp_bxt_program_group* pgPtr, ia_isp_bxt_gd
              aiqResults->mAeResults.exposures[0].exposure[0].digital_gain);
     }
 
+    inputParams->dvs_id = streamId;
     ia_err iaErr = ia_err_none;
     {
         PERF_CAMERA_ATRACE_PARAM1_IMAGING("ia_isp_bxt_run", 1);

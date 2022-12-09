@@ -886,6 +886,10 @@ int CameraDevice::stopLocked() {
     PERF_CAMERA_ATRACE();
     LOG2("<id%d>%s", mCameraId, __func__);
 
+    for (auto& item : mProcessors) {
+        item->stopProcessing();
+    }
+
     mSofSource->stop();
 
     // Stop the CaptureUnit for streamon

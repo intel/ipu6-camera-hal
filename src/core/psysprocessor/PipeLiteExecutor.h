@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2021 Intel Corporation
+ * Copyright (C) 2019-2022 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@
 #include "Parameters.h"
 #include "PolicyManager.h"
 #include "ShareReferBufferPool.h"
+#include "ISchedulerNode.h"
 #include "psysprocessor/PGCommon.h"
 
 namespace icamera {
@@ -37,7 +38,7 @@ class PSysDAG;
 
 typedef std::map<Port, std::shared_ptr<CameraBuffer>> CameraBufferPortMap;
 
-class PipeLiteExecutor : public BufferQueue {
+class PipeLiteExecutor : public BufferQueue, public ISchedulerNode {
  public:
     PipeLiteExecutor(int cameraId, const ExecutorPolicy& policy,
                      std::vector<std::string> exclusivePGs, PSysDAG* psysDag,
@@ -79,7 +80,8 @@ class PipeLiteExecutor : public BufferQueue {
     bool isInputEdge() { return mIsInputEdge; }
     bool isOutputEdge() { return mIsOutputEdge; }
 
-    const char* getName() const { return mName.c_str(); }
+    // ISchedulerNode
+    virtual bool process(int64_t triggerId) { return processNewFrame() == OK; }
 
  private:
     DISALLOW_COPY_AND_ASSIGN(PipeLiteExecutor);
@@ -137,6 +139,9 @@ class PipeLiteExecutor : public BufferQueue {
     void dumpPGs() const;
 
  private:
+    bool fetchBuffersInQueue(std::map<Port, std::shared_ptr<CameraBuffer>>& cInBuffer,
+                             std::map<Port, std::shared_ptr<CameraBuffer>>& cOutBuffer);
+
     int processNewFrame();
     int runPipe(std::map<Port, std::shared_ptr<CameraBuffer>>& inBuffers,
                 std::map<Port, std::shared_ptr<CameraBuffer>>& outBuffers,

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2020 Intel Corporation.
+ * Copyright (C) 2017-2022 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@
 
 #include "IspSettings.h"
 #include "psysprocessor/PSysDAG.h"
+#include "CameraScheduler.h"
 
 namespace icamera {
 
@@ -46,6 +47,7 @@ class PSysProcessor : public BufferQueue, public PSysDagCallback {
     virtual int getParameters(Parameters& param);
 
     virtual int registerUserOutputBufs(Port port, const std::shared_ptr<CameraBuffer>& camBuffer);
+    virtual void stopProcessing();
 
     // Overwrite event source API to delegate related functions
     void registerListener(EventType eventType, EventListener* eventListener);
@@ -66,6 +68,7 @@ class PSysProcessor : public BufferQueue, public PSysDagCallback {
     int processNewFrame();
     std::shared_ptr<CameraBuffer> allocStatsBuffer(int index);
 
+    void prepareIpuForNextFrame(int64_t sequence);
     status_t prepareTask(CameraBufferPortMap* srcBuffers, CameraBufferPortMap* dstBuffers);
     void dispatchTask(CameraBufferPortMap& inBuf, CameraBufferPortMap& outBuf,
                       bool fakeTask = false, bool callbackRgbs = false);
@@ -95,6 +98,8 @@ class PSysProcessor : public BufferQueue, public PSysDagCallback {
     int mCameraId;
     static const nsecs_t kWaitDuration = 1000000000;  // 1000ms
     ParameterGenerator* mParameterGenerator;
+    CameraScheduler* mScheduler;
+    bool mRunAicAfterQTask;
 
     IspSettings mIspSettings;
     RWLock mIspSettingsLock;

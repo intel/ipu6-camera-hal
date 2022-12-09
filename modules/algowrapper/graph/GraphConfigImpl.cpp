@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Intel Corporation
+ * Copyright (C) 2015-2022 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -631,7 +631,7 @@ status_t GraphConfigImpl::getGraphConfigData(IGraphType::GraphConfigData* data) 
     mGraphConfigPipe.begin()->second->getCSIOutputResolution(&(data->csiReso));
 
     data->mcId = mMcId;
-    getGdcKernelSetting(&(data->gdcKernelId), &(data->gdcReso));
+    getGdcKernelSetting(&data->gdcInfos);
 
     int ret = getPgNames(&(data->pgNames));
     CheckAndLogError(ret != OK, UNKNOWN_ERROR, "%s, Failed to get pg names", __func__);
@@ -666,27 +666,16 @@ status_t GraphConfigImpl::getGraphConfigData(IGraphType::GraphConfigData* data) 
     return OK;
 }
 
-status_t GraphConfigImpl::getGdcKernelSetting(uint32_t* kernelId,
-                                              ia_isp_bxt_resolution_info_t* resolution) {
+status_t GraphConfigImpl::getGdcKernelSetting(std::vector<IGraphType::GdcInfo> *gdcInfos) {
     CheckAndLogError(mGraphConfigPipe.empty(), UNKNOWN_ERROR, "%s, the mGraphConfigPipe is empty",
                      __func__);
-    CheckAndLogError(!kernelId || !resolution, UNKNOWN_ERROR,
-                     "%s, the kernelId or resolution is nullptr", __func__);
+    CheckAndLogError(!gdcInfos, UNKNOWN_ERROR, "%s, the gdcInfos is nullptr", __func__);
 
-    int ret = OK;
-    if (mGraphConfigPipe.size() == 1) {
-        ret = mGraphConfigPipe.begin()->second->getGdcKernelSetting(kernelId, resolution);
-    } else {
-        // Get the information from video pipe firstly
-        shared_ptr<GraphConfigPipe>& videoGraphPipe = mGraphConfigPipe.at(USE_CASE_VIDEO);
-        ret = videoGraphPipe->getGdcKernelSetting(kernelId, resolution);
-        if (ret != OK) {
-            shared_ptr<GraphConfigPipe>& stillGraphPipe =
-                mGraphConfigPipe.at(USE_CASE_STILL_CAPTURE);
-            ret = stillGraphPipe->getGdcKernelSetting(kernelId, resolution);
-        }
+    for (auto pipe : mGraphConfigPipe) {
+        pipe.second->getGdcKernelResolutionInfo(gdcInfos);
     }
-    LOG2("%s, %s", __func__, ret != OK ? "No gdc resolution" : "Get gdc resolution successfully");
+
+    LOG2("%s, %s resolution", __func__, gdcInfos->empty() ? "No gdc" : "Get gdc");
 
     return OK;
 }

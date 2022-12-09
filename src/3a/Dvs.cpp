@@ -39,18 +39,18 @@ const int DVS_OXDIM_UV = 64;
 const int DVS_OYDIM_UV = 16;
 const int DVS_MIN_ENVELOPE = 12;
 
-Dvs::Dvs(int cameraId) : mCameraId(cameraId), mTuningMode(TUNING_MODE_VIDEO) {
-    CLEAR(mPtzRegion);
-    CLEAR(mGDCRegion);
-}
+Dvs::Dvs(int cameraId) : mCameraId(cameraId), mTuningMode(TUNING_MODE_VIDEO) {}
 
 Dvs::~Dvs() {}
 
 int Dvs::configure(const ConfigMode configMode, cca::cca_init_params* params) {
+    CheckAndLogError(!params, BAD_VALUE, "params is nullptr");
     LOG2("@%s", __func__);
 
-    int ret = configCcaDvsData(configMode, params);
-    CheckAndLogError(ret != OK, UNKNOWN_ERROR, "%s, configure DVS data error", __func__);
+    for (uint8_t i = 0; i < params->dvs_ids.count; i++) {
+        int ret = configCcaDvsData(params->dvs_ids.ids[i], configMode, params);
+        CheckAndLogError(ret != OK, UNKNOWN_ERROR, "%s, configure DVS data error", __func__);
+    }
 
     TuningMode tuningMode;
     if (PlatformData::getTuningModeByConfigMode(mCameraId, configMode, tuningMode) != OK) {
@@ -61,7 +61,8 @@ int Dvs::configure(const ConfigMode configMode, cca::cca_init_params* params) {
     return OK;
 }
 
-int Dvs::configCcaDvsData(const ConfigMode configMode, cca::cca_init_params* params) {
+int Dvs::configCcaDvsData(int32_t streamId, const ConfigMode configMode,
+                          cca::cca_init_params* params) {
     // update GC
     std::shared_ptr<IGraphConfig> gc = nullptr;
     if (PlatformData::getGraphConfigNodes(mCameraId)) {
@@ -74,7 +75,7 @@ int Dvs::configCcaDvsData(const ConfigMode configMode, cca::cca_init_params* par
 
     ia_isp_bxt_resolution_info_t resolution;
     uint32_t gdcKernelId;
-    int status = gc->getGdcKernelSetting(&gdcKernelId, &resolution);
+    int status = gc->getGdcKernelSetting(&gdcKernelId, &resolution, streamId);
     CheckWarning(status != OK, UNKNOWN_ERROR, "Failed to get GDC kernel setting, DVS disabled");
 
     LOG2("%s, GDC kernel setting: id: %u, resolution:src: %dx%d, dst: %dx%d", __func__, gdcKernelId,
@@ -138,17 +139,50 @@ int Dvs::configCcaDvsData(const ConfigMode configMode, cca::cca_init_params* par
 
     gdcConfig->gdc_resolution_history = gdcConfig->gdc_resolution_info;
 
-    mGDCRegion.left = 0;
-    mGDCRegion.top = 0;
-    mGDCRegion.right = resolution.input_width / 2;
-    mGDCRegion.bottom = resolution.input_height / 2;
+    ZoomParam zoomParam;
+    CLEAR(zoomParam);
+    zoomParam.gdcRegion.left = 0;
+    zoomParam.gdcRegion.top = 0;
+    zoomParam.gdcRegion.right = resolution.input_width / 2;
+    zoomParam.gdcRegion.bottom = resolution.input_height / 2;
+
+    {
+        std::lock_guard<std::mutex> l(mLock);
+        mZoomParamMap[streamId] = zoomParam;
+    }
 
     dumpDvsConfiguration(*params);
     return OK;
 }
 
 void Dvs::setParameter(const Parameters& p) {
-    p.getZoomRegion(&mPtzRegion);
+    camera_zoom_region_t region;
+    if (p.getZoomRegion(&region) != OK) return;
+
+    // Convert active pixel array system to GDC system.
+    camera_coordinate_system_t srcSystem = PlatformData::getActivePixelArray(mCameraId);
+    std::lock_guard<std::mutex> l(mLock);
+    for (auto& it : mZoomParamMap) {
+        auto& gdcRegion = it.second.gdcRegion;
+        auto& ptzRegion = it.second.ptzRegion;
+
+        camera_coordinate_system_t dstSystem = {gdcRegion.left, gdcRegion.top, gdcRegion.right,
+                                                gdcRegion.bottom};
+        LOG2("%s, dstSystem [%d, %d, %d, %d]", __func__, gdcRegion.left, gdcRegion.top,
+             gdcRegion.right, gdcRegion.bottom);
+
+        camera_coordinate_t srcCoordinate = {region.left, region.top};
+        camera_coordinate_t dstCoordinate
+            = AiqUtils::convertCoordinateSystem(srcSystem, dstSystem, srcCoordinate);
+        ptzRegion.left = dstCoordinate.x;
+        ptzRegion.top = dstCoordinate.y;
+        srcCoordinate = {region.right, region.bottom};
+        dstCoordinate = AiqUtils::convertCoordinateSystem(srcSystem, dstSystem, srcCoordinate);
+        ptzRegion.right = dstCoordinate.x;
+        ptzRegion.bottom = dstCoordinate.y;
+        LOG2("%s, Ptz [%d, %d, %d, %d]", __func__, ptzRegion.left, ptzRegion.top,
+             ptzRegion.right, ptzRegion.bottom);
+    }
 }
 
 void Dvs::handleEvent(EventData eventData) {
@@ -160,6 +194,16 @@ void Dvs::handleEvent(EventData eventData) {
     IntelCca* intelCcaHandle = IntelCca::getInstance(mCameraId, mTuningMode);
     CheckAndLogError(!intelCcaHandle, VOID_VALUE, "@%s, Failed to get IntelCca instance", __func__);
 
+    camera_zoom_region_t gdcRegion;
+    camera_zoom_region_t ptzRegion;
+    {
+        std::lock_guard<std::mutex> l(mLock);
+        if (mZoomParamMap.find(streamId) == mZoomParamMap.end()) return;
+
+        gdcRegion = mZoomParamMap[streamId].gdcRegion;
+        ptzRegion = mZoomParamMap[streamId].ptzRegion;
+    }
+
     // Run DVS
     LOG2("%s: Ready to run DVS", __func__);
 
@@ -168,8 +212,8 @@ void Dvs::handleEvent(EventData eventData) {
     zp.digital_zoom_ratio = 1.0f;
     zp.digital_zoom_factor = 1.0f;
     zp.zoom_mode = ia_dvs_zoom_mode_region;
-    if (!mPtzRegion.left && !mPtzRegion.top && !mPtzRegion.right && !mPtzRegion.bottom) {
-        zp.zoom_region = {mGDCRegion.left, mGDCRegion.top, mGDCRegion.right, mGDCRegion.bottom};
+    if (!ptzRegion.left && !ptzRegion.top && !ptzRegion.right && !ptzRegion.bottom) {
+        zp.zoom_region = {gdcRegion.left, gdcRegion.top, gdcRegion.right, gdcRegion.bottom};
     } else {
         /*
             SCALER_CROP_REGION can adjust to a small crop region if the aspect of active
@@ -182,24 +226,24 @@ void Dvs::handleEvent(EventData eventData) {
         int wpa = coord.right - coord.left;
         int hpa = coord.bottom - coord.top;
 
-        int width = mPtzRegion.right - mPtzRegion.left;
-        int height = mPtzRegion.bottom - mPtzRegion.top;
+        int width = ptzRegion.right - ptzRegion.left;
+        int height = ptzRegion.bottom - ptzRegion.top;
 
         float aspect0 = static_cast<float>(wpa) / hpa;
         float aspect1 = static_cast<float>(width) / height;
 
         if (std::fabs(aspect0 - aspect1) < 0.00001) {
-            zp.zoom_region = {mPtzRegion.left, mPtzRegion.top, mPtzRegion.right, mPtzRegion.bottom};
+            zp.zoom_region = {ptzRegion.left, ptzRegion.top, ptzRegion.right, ptzRegion.bottom};
         } else if (aspect0 > aspect1) {
             auto croppedHeight = width / aspect0;
             int diff = std::abs(height - croppedHeight) / 2;
-            zp.zoom_region = {mPtzRegion.left, mPtzRegion.top + diff, mPtzRegion.right,
-                              mPtzRegion.bottom - diff};
+            zp.zoom_region = {ptzRegion.left, ptzRegion.top + diff, ptzRegion.right,
+                              ptzRegion.bottom - diff};
         } else {
             auto croppedWidth = height * aspect0;
             int diff = std::abs(width - croppedWidth) / 2;
-            zp.zoom_region = {mPtzRegion.left + diff, mPtzRegion.top, mPtzRegion.right - diff,
-                              mPtzRegion.bottom};
+            zp.zoom_region = {ptzRegion.left + diff, ptzRegion.top, ptzRegion.right - diff,
+                              ptzRegion.bottom};
         }
     }
     intelCcaHandle->updateZoom(streamId, zp);

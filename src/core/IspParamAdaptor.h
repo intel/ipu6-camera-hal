@@ -72,7 +72,7 @@ class IspParamAdaptor {
                   int ipuOutputFormat = -1);
 
     int decodeStatsData(TuningMode tuningMode, std::shared_ptr<CameraBuffer> statsBuffer,
-                        std::shared_ptr<IGraphConfig> graphConfig = nullptr);
+                        int32_t streamId);
 
     int runIspAdapt(const IspSettings* ispSettings, int64_t settingSequence = -1,
                     int32_t streamId = -1);

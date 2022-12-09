@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2021 Intel Corporation
+ * Copyright (C) 2019-2022 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,7 +65,7 @@ icamera::status_t Camera3BufferPool::createBufferPool(int cameraId, uint32_t num
     for (uint32_t i = 0; i < numBufs; i++) {
         std::shared_ptr<Camera3Buffer> buffer =
             MemoryUtils::allocateHandleBuffer(width, height, gfxFmt, usage, cameraId);
-        if (!buffer || buffer->lock() != icamera::OK) {
+        if (!buffer) {
             mBuffers.clear();
             LOGE("failed to alloc %d internal buffers", i);
             return icamera::NO_MEMORY;
@@ -88,7 +88,7 @@ void Camera3BufferPool::destroyBufferPool() {
 std::shared_ptr<Camera3Buffer> Camera3BufferPool::acquireBuffer() {
     std::lock_guard<std::mutex> l(mLock);
     for (auto& buf : mBuffers) {
-        if (!buf.second) {
+        if (!buf.second && (buf.first->isLocked() || buf.first->lock() == icamera::OK)) {
             buf.second = true;
             LOG2("%s addr:%p", __func__, buf.first->data());
             return buf.first;
