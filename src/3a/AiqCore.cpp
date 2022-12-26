@@ -16,50 +16,52 @@
 
 #define LOG_TAG AiqCore
 
-#include "AiqCore.h"
-
 #include <math.h>
 
-#include <algorithm>
 #include <memory>
 #include <string>
 
+#include "PlatformData.h"
 #include "AiqUtils.h"
 #include "Parameters.h"
-#include "PlatformData.h"
+
 #include "iutils/CameraLog.h"
 #include "iutils/Errors.h"
 #include "iutils/Utils.h"
 
+#include "AiqCore.h"
+
 namespace icamera {
-AiqCore::AiqCore(int cameraId)
-        : mCameraId(cameraId),
-          mTimestamp(0),
-          mSensorPixelClock(0.0),
-          mAeForceLock(false),
-          mAwbForceLock(false),
-          mAfForceLock(false),
-          mAeRunTime(0),
-          mAwbRunTime(0),
-          mAiqRunTime(0),
-          mAiqState(AIQ_NOT_INIT),
-          mHyperFocalDistance(0.0f),
-          mTuningMode(TUNING_MODE_MAX),
-          mShadingMode(SHADING_MODE_FAST),
-          mLensShadingMapMode(LENS_SHADING_MAP_MODE_OFF),
-          mLscGridRGGBLen(0),
-          mLastEvShift(0.0f),
-          mAeAndAwbConverged(false),
-          mRgbStatsBypassed(false),
-          mAeBypassed(false),
-          mAfBypassed(false),
-          mAwbBypassed(false),
-          mLockedExposureTimeUs(0),
-          mLockedIso(0) {
+AiqCore::AiqCore(int cameraId) :
+    mCameraId(cameraId),
+    mTimestamp(0),
+    mSensorPixelClock(0.0),
+    mAeForceLock(false),
+    mAwbForceLock(false),
+    mAfForceLock(false),
+    mAeRunTime(0),
+    mAwbRunTime(0),
+    mAiqRunTime(0),
+    mAiqState(AIQ_NOT_INIT),
+    mHyperFocalDistance(0.0f),
+    mTuningMode(TUNING_MODE_MAX),
+    mShadingMode(SHADING_MODE_FAST),
+    mLensShadingMapMode(LENS_SHADING_MAP_MODE_OFF),
+    mLscGridRGGBLen(0),
+    mLastEvShift(0.0f),
+    mAeAndAwbConverged(false),
+    mRgbStatsBypassed(false),
+    mAeBypassed(false),
+    mAfBypassed(false),
+    mAwbBypassed(false),
+    mLockedExposureTimeUs(0),
+    mLockedIso(0) {
+    LOG3A("@%s", __func__);
+
     mIntel3AParameter = std::unique_ptr<Intel3AParameter>(new Intel3AParameter(cameraId));
 
     CLEAR(mFrameParams);
-    CLEAR(mLastAeResult);
+    CLEAR(mLastAeResult),
 
     CLEAR(mGbceParams);
     CLEAR(mPaParams);
@@ -81,9 +83,13 @@ AiqCore::AiqCore(int cameraId)
     mAiqResults = std::unique_ptr<cca::cca_aiq_results>(new cca::cca_aiq_results);
 }
 
-AiqCore::~AiqCore() {}
+AiqCore::~AiqCore() {
+    LOG3A("@%s", __func__);
+}
 
 int AiqCore::initAiqPlusParams() {
+    LOG3A("@%s", __func__);
+
     CLEAR(mGbceParams);
     CLEAR(mPaParams);
     CLEAR(mPaColorGains);
@@ -102,16 +108,24 @@ int AiqCore::initAiqPlusParams() {
     }
     mGbceParams.gbce_on = (tonemapMaxCurvePoints > 0) ? true : false;
     mGbceParams.athena_mode = PlatformData::getPLCEnable(mCameraId);
-    LOG1("%s, gbce_on: %d, plc enable: %d", __func__, mGbceParams.gbce_on, mGbceParams.athena_mode);
+
+    // HDR_FEATURE_S
+    if (PlatformData::getSensorAeEnable(mCameraId)) {
+        LOG3A("@%s, enable_gtm_desaturation for HDR sensor", __func__);
+        mPaParams.enable_gtm_desaturation = true;
+    }
+    // HDR_FEATURE_E
 
     return OK;
 }
 
 int AiqCore::init() {
+    LOG3A("@%s", __func__);
+
     initAiqPlusParams();
 
 #ifndef ENABLE_SANDBOXING
-    ia_env env = {&Log::ccaPrintInfo, &Log::ccaPrintError, &Log::ccaPrintInfo};
+    ia_env env = {&Log::ccaPrintDebug, &Log::ccaPrintError, &Log::ccaPrintInfo};
     ia_log_init(&env);
 #endif
 
@@ -120,7 +134,8 @@ int AiqCore::init() {
     int ret = mIntel3AParameter->init();
     CheckAndLogError(ret != OK, ret, "@%s, Init 3a parameter failed ret: %d", __func__, ret);
 
-    CLEAR(mLastAeResult), mAeRunTime = 0;
+    CLEAR(mLastAeResult),
+    mAeRunTime = 0;
     mAwbRunTime = 0;
     mAiqRunTime = 0;
 
@@ -128,6 +143,8 @@ int AiqCore::init() {
 }
 
 int AiqCore::deinit() {
+    LOG3A("@%s", __func__);
+
 #ifndef ENABLE_SANDBOXING
     ia_log_deinit();
 #endif
@@ -138,6 +155,8 @@ int AiqCore::deinit() {
 }
 
 int AiqCore::configure() {
+    LOG3A("@%s", __func__);
+
     if (mAiqState == AIQ_CONFIGURED) {
         return OK;
     }
@@ -147,13 +166,50 @@ int AiqCore::configure() {
     return OK;
 }
 
-int AiqCore::setSensorInfo(const ia_aiq_frame_params& frameParams,
-                           const ia_aiq_exposure_sensor_descriptor& descriptor) {
-    LOG2("@%s", __func__);
+int AiqCore::setSensorInfo(const ia_aiq_frame_params &frameParams,
+                           const ia_aiq_exposure_sensor_descriptor &descriptor) {
+    LOG3A("@%s", __func__);
 
     mFrameParams = frameParams;
     mSensorPixelClock = descriptor.pixel_clock_freq_mhz;
     mIntel3AParameter->setSensorInfo(descriptor);
+
+    return OK;
+}
+
+/**
+ *  Hyperfocal distance is the closest distance at which a lens can be focused
+ *  while keeping objects at infinity acceptably sharp. When the lens is focused
+ *  at this distance, all objects at distances from half of the hyperfocal
+ *  distance out to infinity will be acceptably sharp.
+ *
+ *  The equation used for this is:
+ *        f*f
+ *  H = -------
+ *        N*c
+ *
+ *  where:
+ *   f is the focal length
+ *   N is the f-number (f/D for aperture diameter D)
+ *   c is the Circle Of Confusion (COC)
+ *
+ *   the COC is calculated as the pixel width of 2 pixels
+ *
+ *  The hyperfocal distance in mm. It is ensured it will never be 0 to
+ *  avoid division by 0. If any of the required CMC items is missing
+ *  it will return the default value 5m
+ */
+int AiqCore::calculateHyperfocalDistance(TuningMode mode) {
+    LOG3A("@%s, tuning mode: %d", __func__, mode);
+
+    IntelCca* intelCca = getIntelCca(mode);
+    CheckAndLogError(!intelCca, BAD_VALUE, "%s, cca is nullptr, mode:%d", __func__, mode);
+
+    cca::cca_cmc cmc;
+    ia_err ret = intelCca->getCMC(&cmc);
+    CheckAndLogError(ret != ia_err_none, BAD_VALUE, "@%s get cmc data failed", __func__);
+
+    mHyperFocalDistance = AiqUtils::calculateHyperfocalDistance(cmc);
 
     return OK;
 }
@@ -179,8 +235,9 @@ int AiqCore::setSensorInfo(const ia_aiq_frame_params& frameParams,
  * \param[in] afResults with current focus distance in mm
  * \param[out] dof info: DOF for near and far limit in diopters
  */
-int AiqCore::calculateDepthOfField(const cca::cca_af_results& afResults,
-                                   camera_range_t* focusRange) {
+int AiqCore::calculateDepthOfField(const cca::cca_af_results &afResults,
+                                   camera_range_t *focusRange) {
+    LOG3A("@%s, focusRange:%p", __func__, focusRange);
     CheckAndLogError(!focusRange, BAD_VALUE, "@%s, Bad input values", __func__);
 
     const float DEFAULT_DOF = 5000.0f;
@@ -193,9 +250,16 @@ int AiqCore::calculateDepthOfField(const cca::cca_af_results& afResults,
         return OK;
     }
 
+    IntelCca* intelCca = getIntelCca(mTuningMode);
+    CheckAndLogError(!intelCca, BAD_VALUE, "%s, cca is nullptr, mTuningMode:%d", __func__,
+                     mTuningMode);
+
+    cca::cca_cmc cmc;
+    int ret = intelCca->getCMC(&cmc);
+    CheckAndLogError(ret != OK, BAD_VALUE, "@%s get cmc data failed", __func__);
+
     // focal length is stored in CMC in hundreds of millimeters
-    float focalLengthMillis =
-        static_cast<float>(mIntel3AParameter->mCMC.optics.effect_focal_length) / 100;
+    float focalLengthMillis = static_cast<float>(cmc.optics.effect_focal_length) / 100;
 
     float num = mHyperFocalDistance * focusDistance;
     float denom = (mHyperFocalDistance + focusDistance - focalLengthMillis);
@@ -214,12 +278,12 @@ int AiqCore::calculateDepthOfField(const cca::cca_af_results& afResults,
     return OK;
 }
 
-int AiqCore::updateParameter(const aiq_parameter_t& param) {
-    if (mTuningMode != param.tuningMode) {
-        int ret = mIntel3AParameter->getCMCInfo(param.tuningMode);
-        CheckAndLogError(ret != OK, ret, "failed to get CMC info");
+int AiqCore::updateParameter(const aiq_parameter_t &param) {
+    LOG3A("@%s", __func__);
 
-        mHyperFocalDistance = AiqUtils::calculateHyperfocalDistance(mIntel3AParameter->mCMC);
+    if (mTuningMode != param.tuningMode) {
+        int ret = calculateHyperfocalDistance(param.tuningMode);
+        CheckAndLogError(ret != OK, ret, "%s calculateHyperfocalDistance fails", __func__);
         mTuningMode = param.tuningMode;
     }
     mShadingMode = param.shadingMode;
@@ -241,21 +305,20 @@ int AiqCore::updateParameter(const aiq_parameter_t& param) {
     mAeBypassed = bypassAe(param);
     mAfBypassed = bypassAf(param);
     mAwbBypassed = bypassAwb(param);
-    LOG2("Ae Bypass: %d, Af Bypass: %d, Awb Bypass: %d", mAeBypassed, mAfBypassed, mAwbBypassed);
+    LOG3A("Ae Bypass: %d, Af Bypass: %d, Awb Bypass: %d", mAeBypassed, mAfBypassed, mAwbBypassed);
 
-    mRgbStatsBypassed = false;
-    if (param.powerMode == CAMERA_LOW_POWER && mAeBypassed && mAwbBypassed && mAfBypassed) {
-        mRgbStatsBypassed = true;
-    }
+    mRgbStatsBypassed = mAeBypassed && mAwbBypassed;
 
     return OK;
 }
 
-int AiqCore::setStatsParams(const cca::cca_stats_params& statsParams, AiqStatistics* aiqStats) {
-    LOG2("<aiq%lu>@%s, frame_timestamp:%lu, mTuningMode:%d", statsParams.frame_id, __func__,
-         statsParams.frame_timestamp, mTuningMode);
-
+int AiqCore::setStatsParams(const cca::cca_stats_params &statsParams,
+                            cca::cca_out_stats *outStats, AiqStatistics* aiqStats) {
+    LOG3A("@%s, frame_id:%lu, frame_timestamp:%lu, mTuningMode:%d", __func__,
+          statsParams.frame_id, statsParams.frame_timestamp, mTuningMode);
+    CheckAndLogError(!outStats, BAD_VALUE, "@%s, outStats is nullptr", __func__);
     int ret = OK;
+
     IntelCca* intelCca = getIntelCca(mTuningMode);
     CheckAndLogError(!intelCca, UNKNOWN_ERROR, "%s, intelCca is nullptr, mode:%d", __func__,
                      mTuningMode);
@@ -263,12 +326,8 @@ int AiqCore::setStatsParams(const cca::cca_stats_params& statsParams, AiqStatist
     if (aiqStats && aiqStats->mPendingDecode) {
         uint32_t bitmap = 0;
         if (!mRgbStatsBypassed) bitmap |= cca::CCA_STATS_RGBS | cca::CCA_STATS_HIST;
-        if (!mAfBypassed) {
-            bitmap |= cca::CCA_STATS_AF;
-
-            if (PlatformData::isPdafEnabled(mCameraId)) bitmap |= cca::CCA_STATS_PDAF;
-        }
-        LOG3("<seq%ld> bypass bitmap %x", aiqStats->mSequence, bitmap);
+        if (!mAfBypassed) bitmap |= cca::CCA_STATS_AF;
+        LOG3A("aiqStats->mSequence %ld, bitmap %x", aiqStats->mSequence, bitmap);
 
         if (!mRgbStatsBypassed && !mAfBypassed) {
             aiqStats->mPendingDecode = false;
@@ -277,8 +336,8 @@ int AiqCore::setStatsParams(const cca::cca_stats_params& statsParams, AiqStatist
         void* pStatsData = intelCca->fetchHwStatsData(aiqStats->mSequence, &byteUsed);
         CheckAndLogError(!pStatsData, UNKNOWN_ERROR, "%s, pStatsData is nullptr", __func__);
         ia_isp_bxt_statistics_query_results_t queryResults = {};
-        ia_err iaErr = intelCca->decodeStats(reinterpret_cast<uint64_t>(pStatsData), byteUsed,
-                                             bitmap, &queryResults);
+        ia_err iaErr = intelCca->decodeStats(reinterpret_cast<uint64_t>(pStatsData),
+                                             byteUsed, bitmap, &queryResults);
         CheckAndLogError(iaErr != ia_err_none, UNKNOWN_ERROR, "%s, Faield convert statistics",
                          __func__);
         LOG2("%s, query results: rgbs_grid(%d), af_grid(%d), dvs_stats(%d)", __func__,
@@ -287,7 +346,7 @@ int AiqCore::setStatsParams(const cca::cca_stats_params& statsParams, AiqStatist
 
     {
         PERF_CAMERA_ATRACE_PARAM1_IMAGING("intelCca->setStatsParams", 1);
-        ia_err iaErr = intelCca->setStatsParams(statsParams);
+        ia_err iaErr = intelCca->setStatsParams(statsParams, outStats);
         ret = AiqUtils::convertError(iaErr);
         CheckAndLogError(ret != OK, ret, "setStatsParams fails, ret: %d", ret);
     }
@@ -298,15 +357,18 @@ int AiqCore::setStatsParams(const cca::cca_stats_params& statsParams, AiqStatist
 }
 
 int AiqCore::runAe(long requestId, AiqResult* aiqResult) {
+    LOG3A("@%s, aiqResult:%p, requestId:%ld", __func__, aiqResult, requestId);
     CheckAndLogError(!aiqResult, BAD_VALUE, "@%s, aiqResult is nullptr", __func__);
-    LOG2("<req%ld>@%s, aiqResult %p", requestId, __func__, aiqResult);
+
 
     // run AE
     return runAEC(requestId, &aiqResult->mAeResults);
 }
 
-int AiqCore::runAiq(long requestId, AiqResult* aiqResult) {
+int AiqCore::runAiq(long requestId, AiqResult *aiqResult) {
+    LOG3A("@%s, aiqResult:%p, requestId:%ld", __func__, aiqResult, requestId);
     CheckAndLogError(!aiqResult, BAD_VALUE, "@%s, aiqResult is nullptr", __func__);
+
 
     int aaaRunType = IMAGING_ALGO_AWB | IMAGING_ALGO_GBCE | IMAGING_ALGO_PA;
     if (PlatformData::getLensHwType(mCameraId) == LENS_VCM_HW) {
@@ -315,7 +377,6 @@ int AiqCore::runAiq(long requestId, AiqResult* aiqResult) {
     if (mShadingMode != SHADING_MODE_OFF) {
         aaaRunType |= IMAGING_ALGO_SA;
     }
-    LOG2("<req%ld>@%s, aiqResult %p, aaaRunType %x", requestId, __func__, aiqResult, aaaRunType);
 
     // get the IntelCca instance
     IntelCca* intelCca = getIntelCca(mTuningMode);
@@ -328,7 +389,7 @@ int AiqCore::runAiq(long requestId, AiqResult* aiqResult) {
     if (aaaRunType & IMAGING_ALGO_AWB) {
         mIntel3AParameter->mAwbParams.is_bypass = mAwbBypassed;
         mAiqParams->awb_input = mIntel3AParameter->mAwbParams;
-        LOG2("AWB bypass %d", mAiqParams->awb_input.is_bypass);
+        LOG3A("AWB bypass %d", mAiqParams->awb_input.is_bypass);
         mAiqParams->bitmap |= cca::CCA_MODULE_AWB;
     }
 
@@ -339,8 +400,8 @@ int AiqCore::runAiq(long requestId, AiqResult* aiqResult) {
 
     if (aaaRunType & IMAGING_ALGO_GBCE) {
         // run gbce with bypass level if AE lock
-        if (mAeForceLock || mIntel3AParameter->mTestPatternMode != TEST_PATTERN_OFF ||
-            mRgbStatsBypassed) {
+        if (mAeForceLock || mIntel3AParameter->mTestPatternMode != TEST_PATTERN_OFF
+            || mRgbStatsBypassed) {
             mGbceParams.is_bypass = true;
         } else {
             mGbceParams.is_bypass = false;
@@ -362,8 +423,8 @@ int AiqCore::runAiq(long requestId, AiqResult* aiqResult) {
             mAiqParams->sa_input = mSaParams;
         }
     }
-    LOG2("bitmap:%d, mAiqRunTime:%lu, mRgbStatsBypassed %d", mAiqParams->bitmap, mAiqRunTime,
-         mRgbStatsBypassed);
+    LOG3A("bitmap:%d, mAiqRunTime:%lu, mRgbStatsBypassed %d", mAiqParams->bitmap,
+          mAiqRunTime, mRgbStatsBypassed);
 
     // runAIQ for awb/af/gbce/pa/sa
     int ret = OK;
@@ -378,7 +439,7 @@ int AiqCore::runAiq(long requestId, AiqResult* aiqResult) {
 
     // handle awb result
     if (aaaRunType & IMAGING_ALGO_AWB) {
-        cca::cca_awb_results* newAwbResults = &mAiqResults->awb_output;
+        cca::cca_awb_results *newAwbResults = &mAiqResults->awb_output;
 
         if (!PlatformData::isIsysEnabled(mCameraId)) {
             // Fix AWB gain to 1 for none-ISYS cases
@@ -426,8 +487,8 @@ int AiqCore::runAiq(long requestId, AiqResult* aiqResult) {
     uint16_t pixelInLine = aiqResult->mAeResults.exposures[0].sensor_exposure->line_length_pixels;
     uint16_t lineInFrame = aiqResult->mAeResults.exposures[0].sensor_exposure->frame_length_lines;
     aiqResult->mFrameDuration = pixelInLine * lineInFrame / mSensorPixelClock;
-    aiqResult->mRollingShutter =
-        pixelInLine * (mFrameParams.cropped_image_height - 1) / mSensorPixelClock;
+    aiqResult->mRollingShutter = pixelInLine * (mFrameParams.cropped_image_height - 1)
+                                 / mSensorPixelClock;
 
     mLastEvShift = mIntel3AParameter->mAeParams.ev_shift;
     aiqResult->mTimestamp = mTimestamp;
@@ -446,21 +507,25 @@ int AiqCore::runAiq(long requestId, AiqResult* aiqResult) {
 }
 
 int AiqCore::runAEC(long requestId, cca::cca_ae_results* aeResults) {
+    LOG3A("@%s, aeResults:%p", __func__, aeResults);
+    CheckAndLogError(!aeResults, BAD_VALUE, "@%s, aeResults is nullptr", __func__);
     PERF_CAMERA_ATRACE();
 
     int ret = OK;
-    cca::cca_ae_results* newAeResults = &mLastAeResult;
+    cca::cca_ae_results *newAeResults = &mLastAeResult;
 
     // Run AEC with setting bypass mode to false
     mIntel3AParameter->mAeParams.is_bypass = mAeBypassed;
 
-    if (mAeForceLock && mIntel3AParameter->mAeMode != AE_MODE_MANUAL && mAeRunTime != 0 &&
-        !mIntel3AParameter->mAeParams.is_bypass) {
+    if (mAeForceLock && mIntel3AParameter->mAeMode != AE_MODE_MANUAL && mAeRunTime != 0
+        && !mIntel3AParameter->mAeParams.is_bypass) {
         // Use manual setttings if AE had been locked
         mIntel3AParameter->mAeParams.manual_exposure_time_us[0] = mLockedExposureTimeUs;
         mIntel3AParameter->mAeParams.manual_iso[0] = mLockedIso;
     }
 
+    LOG3A("AEC frame_use: %d, bypass: %d", mIntel3AParameter->mAeParams.frame_use,
+          mIntel3AParameter->mAeParams.is_bypass);
     IntelCca* intelCca = getIntelCca(mTuningMode);
     CheckAndLogError(!intelCca, UNKNOWN_ERROR, "%s, intelCca is null, m:%d", __func__, mTuningMode);
     {
@@ -484,97 +549,104 @@ int AiqCore::runAEC(long requestId, cca::cca_ae_results* aeResults) {
     return ret;
 }
 
-void AiqCore::focusDistanceResult(const cca::cca_af_results* afResults, float* afDistanceDiopters,
-                                  camera_range_t* focusRange) {
-    LOG2("@%s, afResults:%p, afDistanceDiopters:%p, focusRange:%p", __func__, afResults,
-         afDistanceDiopters, focusRange);
+void AiqCore::focusDistanceResult(const cca::cca_af_results *afResults,
+                                  float *afDistanceDiopters,
+                                  camera_range_t *focusRange) {
+    LOG3A("@%s, afResults:%p, afDistanceDiopters:%p, focusRange:%p", __func__,
+          afResults, afDistanceDiopters, focusRange);
+    CheckAndLogError(!afResults || !afDistanceDiopters || !focusRange, VOID_VALUE,
+                     "@%s, Bad input values", __func__);
 
     *afDistanceDiopters = 1.2f;
     if (mIntel3AParameter->mAfParams.focus_mode == ia_aiq_af_operation_mode_infinity) {
         // infinity mode is special: we need to report 0.0f (1/inf = 0)
         *afDistanceDiopters = 0.0f;
-    } else if (mIntel3AParameter->mAfParams.focus_mode == ia_aiq_af_operation_mode_manual &&
-               (mIntel3AParameter->mAfParams.manual_focus_parameters.manual_focus_action ==
-                ia_aiq_manual_focus_action_set_distance) &&
-               (mIntel3AParameter->mAfParams.manual_focus_parameters.manual_focus_distance ==
-                afResults->current_focus_distance)) {
+    } else if (mIntel3AParameter->mAfParams.focus_mode == ia_aiq_af_operation_mode_manual
+               && (mIntel3AParameter->mAfParams.manual_focus_parameters.manual_focus_action
+                   == ia_aiq_manual_focus_action_set_distance)
+               && (mIntel3AParameter->mAfParams.manual_focus_parameters.manual_focus_distance
+                   == afResults->current_focus_distance)) {
         // Don't need to calculate diopter in manual mode
         *afDistanceDiopters = mIntel3AParameter->mManualFocusDistance;
-    } else if (afResults->next_focus_distance != 0) {
-        // In AIQ, 'next_focus_distance' is in millimeters
+    } else if (afResults->current_focus_distance != 0) {
+        // In AIQ, 'current_focus_distance' is in millimeters
         // For rounding multiply by extra 100.
         // This allows the diopters to have 2 decimal values
-        *afDistanceDiopters = 100 * 1000 * (1.0 / afResults->next_focus_distance);
+        *afDistanceDiopters = 100 * 1000 * (1.0 / afResults->current_focus_distance);
         *afDistanceDiopters = ceil(*afDistanceDiopters);
         // Divide by 100 for final result.
         *afDistanceDiopters = *afDistanceDiopters / 100;
     }
+    LOG3A("%s, Zero focus distance in AF result, reporting %f", __func__, *afDistanceDiopters);
 
     calculateDepthOfField(*afResults, focusRange);
+    LOG3A("%s, focus distance with diopters: %f %f", __func__, focusRange->min, focusRange->max);
 }
 
-int AiqCore::checkColorOrder(cmc_bayer_order bayerOrder, ColorOrder* colorOrder) {
-    LOG2("@%s, bayerOrder = %d, colorOrder:%p", __func__, bayerOrder, colorOrder);
+int AiqCore::checkColorOrder(cmc_bayer_order bayerOrder, ColorOrder *colorOrder) {
+    LOG3A("@%s, bayerOrder = %d, colorOrder:%p", __func__, bayerOrder, colorOrder);
+    CheckAndLogError(!colorOrder, BAD_VALUE, "@%s, colorOrder is nullptr", __func__);
 
     int ret = OK;
     switch (bayerOrder) {
-        case cmc_bayer_order_grbg:
-            /* use gr r b gb constitute 2X2 array
-             * gr    r
-             * b     gb
-             * The four channel use x y coordinate to indicate
-             * gr(0, 0) r(1, 0) b(0, 1) gb(1, 1)
-             */
-            colorOrder->r[0] = 1;
-            colorOrder->r[1] = 0;
-            colorOrder->b[0] = 0;
-            colorOrder->b[1] = 1;
-            colorOrder->gr[0] = 0;
-            colorOrder->gr[1] = 0;
-            colorOrder->gb[0] = 1;
-            colorOrder->gb[1] = 1;
-            break;
-        case cmc_bayer_order_rggb:
-            colorOrder->r[0] = 0;
-            colorOrder->r[1] = 0;
-            colorOrder->b[0] = 1;
-            colorOrder->b[1] = 1;
-            colorOrder->gr[0] = 1;
-            colorOrder->gr[1] = 0;
-            colorOrder->gb[0] = 0;
-            colorOrder->gb[1] = 1;
-            break;
-        case cmc_bayer_order_bggr:
-            colorOrder->r[0] = 1;
-            colorOrder->r[1] = 1;
-            colorOrder->b[0] = 0;
-            colorOrder->b[1] = 0;
-            colorOrder->gr[0] = 0;
-            colorOrder->gr[1] = 1;
-            colorOrder->gb[0] = 1;
-            colorOrder->gb[1] = 0;
-            break;
-        case cmc_bayer_order_gbrg:
-            colorOrder->r[0] = 0;
-            colorOrder->r[1] = 1;
-            colorOrder->b[0] = 1;
-            colorOrder->b[1] = 0;
-            colorOrder->gr[0] = 1;
-            colorOrder->gr[1] = 1;
-            colorOrder->gb[0] = 0;
-            colorOrder->gb[1] = 0;
-            break;
-        default:
-            ret = BAD_VALUE;
-            break;
+    case cmc_bayer_order_grbg:
+    /* use gr r b gb constitute 2X2 array
+     * gr    r
+     * b     gb
+     * The four channel use x y coordinate to indicate
+     * gr(0, 0) r(1, 0) b(0, 1) gb(1, 1)
+    */
+        colorOrder->r[0] = 1;
+        colorOrder->r[1] = 0;
+        colorOrder->b[0] = 0;
+        colorOrder->b[1] = 1;
+        colorOrder->gr[0] = 0;
+        colorOrder->gr[1] = 0;
+        colorOrder->gb[0] = 1;
+        colorOrder->gb[1] = 1;
+        break;
+    case cmc_bayer_order_rggb:
+        colorOrder->r[0] = 0;
+        colorOrder->r[1] = 0;
+        colorOrder->b[0] = 1;
+        colorOrder->b[1] = 1;
+        colorOrder->gr[0] = 1;
+        colorOrder->gr[1] = 0;
+        colorOrder->gb[0] = 0;
+        colorOrder->gb[1] = 1;
+        break;
+    case cmc_bayer_order_bggr:
+        colorOrder->r[0] = 1;
+        colorOrder->r[1] = 1;
+        colorOrder->b[0] = 0;
+        colorOrder->b[1] = 0;
+        colorOrder->gr[0] = 0;
+        colorOrder->gr[1] = 1;
+        colorOrder->gb[0] = 1;
+        colorOrder->gb[1] = 0;
+        break;
+    case cmc_bayer_order_gbrg:
+        colorOrder->r[0] = 0;
+        colorOrder->r[1] = 1;
+        colorOrder->b[0] = 1;
+        colorOrder->b[1] = 0;
+        colorOrder->gr[0] = 1;
+        colorOrder->gr[1] = 1;
+        colorOrder->gb[0] = 0;
+        colorOrder->gb[1] = 0;
+        break;
+    default:
+        ret = BAD_VALUE;
+        break;
     }
     return ret;
 }
 
-int AiqCore::reFormatLensShadingMap(const LSCGrid& inputLscGrid, float* dstLscGridRGGB) {
+int AiqCore::reFormatLensShadingMap(const LSCGrid &inputLscGrid, float *dstLscGridRGGB) {
+    LOG3A("@%s, width %d, height %d", __func__, inputLscGrid.width, inputLscGrid.height);
+
     CheckAndLogError(inputLscGrid.isBad() || !dstLscGridRGGB, BAD_VALUE,
                      "@%s, Bad input values for lens shading map reformatting", __func__);
-    LOG2("@%s, width %d, height %d", __func__, inputLscGrid.width, inputLscGrid.height);
 
     // Metadata spec request order [R, Geven, Godd, B]
     // the lensShading from ISP is 4 width * height block,
@@ -590,8 +662,9 @@ int AiqCore::reFormatLensShadingMap(const LSCGrid& inputLscGrid, float* dstLscGr
     return OK;
 }
 
-int AiqCore::storeLensShadingMap(const LSCGrid& inputLscGrid, const LSCGrid& resizeLscGrid,
-                                 float* dstLscGridRGGB) {
+int AiqCore::storeLensShadingMap(const LSCGrid &inputLscGrid,
+                                 const LSCGrid &resizeLscGrid, float *dstLscGridRGGB) {
+    LOG3A("@%s", __func__);
     CheckAndLogError(inputLscGrid.isBad() || resizeLscGrid.isBad() || !dstLscGridRGGB, BAD_VALUE,
                      "@%s, Bad input values for lens shading map storing", __func__);
 
@@ -606,33 +679,31 @@ int AiqCore::storeLensShadingMap(const LSCGrid& inputLscGrid, const LSCGrid& res
         // Our lensShadingMapSize is dynamic based on the resolution, so need
         // to do resize for 4 channels separately
 
-        AiqUtils::resize2dArray(inputLscGrid.gridR, width, height, resizeLscGrid.gridR, destWidth,
-                                destHeight);
-        AiqUtils::resize2dArray(inputLscGrid.gridGr, width, height, resizeLscGrid.gridGr, destWidth,
-                                destHeight);
-        AiqUtils::resize2dArray(inputLscGrid.gridGb, width, height, resizeLscGrid.gridGb, destWidth,
-                                destHeight);
-        AiqUtils::resize2dArray(inputLscGrid.gridB, width, height, resizeLscGrid.gridB, destWidth,
-                                destHeight);
+        AiqUtils::resize2dArray(inputLscGrid.gridR,  width, height,
+                      resizeLscGrid.gridR,  destWidth, destHeight);
+        AiqUtils::resize2dArray(inputLscGrid.gridGr,  width, height,
+                      resizeLscGrid.gridGr,  destWidth, destHeight);
+        AiqUtils::resize2dArray(inputLscGrid.gridGb,  width, height,
+                      resizeLscGrid.gridGb,  destWidth, destHeight);
+        AiqUtils::resize2dArray(inputLscGrid.gridB,  width, height,
+                      resizeLscGrid.gridB,  destWidth, destHeight);
 
-        LOG2("%s:resize lens shading map from [%d,%d] to [%d,%d]", __func__, width, height,
-             destWidth, destHeight);
+        LOG3A("resize lens shading map from [%d,%d] to [%d,%d]",
+              width, height, destWidth, destHeight);
     } else {
         size_t size = destWidth * destHeight * sizeof(resizeLscGrid.gridR[0]);
-        STDCOPY((int8_t*)resizeLscGrid.gridR, (int8_t*)inputLscGrid.gridR, size);
-        STDCOPY((int8_t*)resizeLscGrid.gridGr, (int8_t*)inputLscGrid.gridGr, size);
-        STDCOPY((int8_t*)resizeLscGrid.gridGb, (int8_t*)inputLscGrid.gridGb, size);
-        STDCOPY((int8_t*)resizeLscGrid.gridB, (int8_t*)inputLscGrid.gridB, size);
+        STDCOPY((int8_t *) resizeLscGrid.gridR,  (int8_t *) inputLscGrid.gridR,  size);
+        STDCOPY((int8_t *) resizeLscGrid.gridGr, (int8_t *) inputLscGrid.gridGr, size);
+        STDCOPY((int8_t *) resizeLscGrid.gridGb, (int8_t *) inputLscGrid.gridGb, size);
+        STDCOPY((int8_t *) resizeLscGrid.gridB,  (int8_t *) inputLscGrid.gridB,  size);
     }
 
     return reFormatLensShadingMap(resizeLscGrid, dstLscGridRGGB);
 }
 
-int AiqCore::processSAResults(cca::cca_sa_results* saResults, float* lensShadingMap) {
-    CheckAndLogError(!saResults || !lensShadingMap, BAD_VALUE,
-                     "@%s, Bad input values, saResults %p, lensShadingMap %p", __func__, saResults,
-                     lensShadingMap);
-    LOG2("@%s, mLensShadingMapMode %d", __func__, mLensShadingMapMode);
+int AiqCore::processSAResults(cca::cca_sa_results *saResults, float *lensShadingMap) {
+    LOG3A("@%s, saResults:%p, lensShadingMap:%p", __func__, saResults, lensShadingMap);
+    CheckAndLogError(!saResults || !lensShadingMap, BAD_VALUE, "@%s, Bad input values", __func__);
 
     if (mLensShadingMapMode == LENS_SHADING_MAP_MODE_OFF) return OK;
 
@@ -673,7 +744,7 @@ int AiqCore::processSAResults(cca::cca_sa_results* saResults, float* lensShading
         }
     }
 
-    float* lsm = (mShadingMode != SHADING_MODE_OFF) ? mLscGridRGGB : mLscOffGrid;
+    float *lsm = (mShadingMode != SHADING_MODE_OFF) ? mLscGridRGGB : mLscOffGrid;
     for (size_t i = 0; i < mLscGridRGGBLen; i++) {
         lensShadingMap[i] = lsm[i];
     }
@@ -681,35 +752,31 @@ int AiqCore::processSAResults(cca::cca_sa_results* saResults, float* lensShading
     return OK;
 }
 
-bool AiqCore::bypassAe(const aiq_parameter_t& param) {
+bool AiqCore::bypassAe(const aiq_parameter_t &param) {
     if (mAeRunTime == 0 || (mIntel3AParameter->mAeParams.ev_shift != mLastEvShift)) return false;
     if (mAeForceLock || mAeRunTime % mIntel3AParameter->mAePerTicks != 0) return true;
 
-    // run AE if manual AE or total exposure target is set
-    if (param.aeMode != AE_MODE_AUTO || param.powerMode != CAMERA_LOW_POWER ||
-        param.totalExposureTarget > 0)
-        return false;
+    if (param.aeMode != AE_MODE_AUTO || param.powerMode != CAMERA_LOW_POWER) return false;
 
     bool converged = mLastAeResult.exposures[0].converged;
 
     return skipAlgoRunning(&mAeRunRateInfo, IMAGING_ALGO_AE, converged);
 }
 
-bool AiqCore::bypassAf(const aiq_parameter_t& param) {
+bool AiqCore::bypassAf(const aiq_parameter_t &param) {
     if (mAfForceLock) return true;
 
     if (param.afMode == AF_MODE_OFF || param.powerMode != CAMERA_LOW_POWER) return false;
 
-    bool converged = mAiqResults->af_output.status == ia_aiq_af_status_success &&
-                     mAiqResults->af_output.final_lens_position_reached;
+    bool converged = mAiqResults->af_output.status == ia_aiq_af_status_success
+                     && mAiqResults->af_output.final_lens_position_reached;
 
     return skipAlgoRunning(&mAfRunRateInfo, IMAGING_ALGO_AF, converged);
 }
 
-bool AiqCore::bypassAwb(const aiq_parameter_t& param) {
-    if (mAwbForceLock || mAwbRunTime % mIntel3AParameter->mAwbPerTicks != 0 ||
-        mIntel3AParameter->mTestPatternMode != TEST_PATTERN_OFF)
-        return true;
+bool AiqCore::bypassAwb(const aiq_parameter_t &param) {
+    if (mAwbForceLock || mAwbRunTime % mIntel3AParameter->mAwbPerTicks != 0
+        || mIntel3AParameter->mTestPatternMode != TEST_PATTERN_OFF) return true;
 
     if (param.awbMode != AWB_MODE_AUTO || param.powerMode != CAMERA_LOW_POWER) return false;
 
@@ -718,10 +785,10 @@ bool AiqCore::bypassAwb(const aiq_parameter_t& param) {
     return skipAlgoRunning(&mAwbRunRateInfo, IMAGING_ALGO_AWB, converged);
 }
 
-bool AiqCore::skipAlgoRunning(RunRateInfo* info, int algo, bool converged) {
+bool AiqCore::skipAlgoRunning(RunRateInfo *info, int algo, bool converged) {
     float configRunningRate = PlatformData::getAlgoRunningRate(algo, mCameraId);
     if (configRunningRate < EPSILON) return false;
-    LOG2("the running rate of type %d is %f", algo, configRunningRate);
+    LOG3A("the running rate of type %d is %f", algo, configRunningRate);
 
     // if converged, skip algo if running rate is reached.
     if (converged) {
@@ -737,9 +804,9 @@ bool AiqCore::skipAlgoRunning(RunRateInfo* info, int algo, bool converged) {
     return false;
 }
 
-bool AiqCore::checkRunRate(float configRunningRate, const RunRateInfo* info) {
-    LOG2("configRunningRate %f, runAlgoTime %d, runCcaTime %d", configRunningRate,
-         info->runAlgoTime, info->runCcaTime);
+bool AiqCore::checkRunRate(float configRunningRate, const RunRateInfo *info) {
+    LOG3A("configRunningRate %f, runAlgoTime %d, runCcaTime %d",
+          configRunningRate, info->runAlgoTime, info->runCcaTime);
     if (info->runCcaTime == 0) return true;
 
     float algoRunningRate = static_cast<float>(info->runAlgoTime) / info->runCcaTime;
@@ -749,8 +816,8 @@ bool AiqCore::checkRunRate(float configRunningRate, const RunRateInfo* info) {
 }
 
 IntelCca* AiqCore::getIntelCca(TuningMode tuningMode) {
-    CheckAndLogError(tuningMode >= TUNING_MODE_MAX, nullptr, "@%s, wrong tuningMode:%d", __func__,
-                     tuningMode);
+    CheckAndLogError(tuningMode >= TUNING_MODE_MAX, nullptr,
+                     "@%s, wrong tuningMode:%d", __func__, tuningMode);
 
     return IntelCca::getInstance(mCameraId, tuningMode);
 }

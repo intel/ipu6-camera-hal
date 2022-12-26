@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2022 Intel Corporation.
+ * Copyright (C) 2015-2020 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,26 +16,27 @@
 
 #pragma once
 
-#include "BufferQueue.h"
-#include "CameraBuffer.h"
 #include "Parameters.h"
+#include "CameraBuffer.h"
+#include "BufferQueue.h"
+
 #include "iutils/Thread.h"
 
 namespace icamera {
 
 /**
- * CameraStream: The HAL represent of the application stream.
- * CameraStream implement the BufferConsumer interface.
- *
- * CameraStream provide the buffer interface to application.
- * It gets buffers from producers and returns to the app
- *
- * Application used the DQ buffer to get the buffers from Camera
- * and Q buffer to return the buffers to camera.
- */
+  * CameraStream: The HAL represent of the application stream.
+  * CameraStream implement the BufferConsumer interface.
+  *
+  * CameraStream provide the buffer interface to application.
+  * It gets buffers from producers and returns to the app
+  *
+  * Application used the DQ buffer to get the buffers from Camera
+  * and Q buffer to return the buffers to camera.
+  */
 
-class CameraStream : public BufferConsumer, public EventSource {
- public:
+class CameraStream: public BufferConsumer, public EventSource {
+public:
     CameraStream(int cameraId, int streamId, const stream_t& stream);
     virtual ~CameraStream();
 
@@ -63,50 +64,55 @@ class CameraStream : public BufferConsumer, public EventSource {
     /**
      * \brief Push one CameraBuffer to bufferProducer
      */
-    int qbuf(camera_buffer_t* ubuffer, int64_t sequence);
+    int qbuf(camera_buffer_t *ubuffer, long sequence);
 
     /**
      * \brief Calling mBufferProducer to allocate memory
      *
      * \return OK if succeed and BAD_VALUE if failed
      */
-    int allocateMemory(camera_buffer_t* buffer);
+    int allocateMemory(camera_buffer_t *buffer);
 
-    std::shared_ptr<CameraBuffer> userBufferToCameraBuffer(camera_buffer_t* ubuffer);
+    std::shared_ptr<CameraBuffer> userBufferToCameraBuffer(camera_buffer_t *ubuffer);
+
+    /**
+     * \brief Wait all user buffers to be returned to user
+     */
+    void waitToReturnAllUserBufffers();
 
     /**
      * \brief Register the mBufferProducer
      */
-    virtual void setBufferProducer(BufferProducer* producer);
+    virtual void setBufferProducer(BufferProducer *producer);
 
     /**
      * \brief The notify when polled or processed one frame buffer
      */
-    virtual int onFrameAvailable(Port port, const std::shared_ptr<CameraBuffer>& camBuffer);
+    virtual int onFrameAvailable(Port port, const std::shared_ptr<CameraBuffer> &camBuffer);
 
-    /**
-     * \brief Return a privacy buffer
-     */
-    virtual std::shared_ptr<CameraBuffer> getPrivacyBuffer();
+private:
+    static const nsecs_t kWaitDuration = 10000000000; //10000ms
 
-    /**
-     * \brief Special function to send last frame after privacy on
-     */
-    virtual int doFrameAvailable(Port port, const std::shared_ptr<CameraBuffer>& camBuffer);
-
- private:
     int mCameraId;
     int mStreamId;
     Port mPort;
-    BufferProducer* mBufferProducer;
 
-    // Guard for member mUserBuffersPool and mBufferInProcessing
+    BufferProducer   *mBufferProducer;
+
+    CameraBufVector    mUserBuffersPool;
+
+    // Guard for member mUserBuffersPool, used in the qbuf which is critical for FPS
+    // Prevent qbuf and dqbuf to share the same lock
     Mutex mBufferPoolLock;
-    CameraBufVector mUserBuffersPool;
+
+    // Siginal for the situation that all buffers returned to user
+    Condition mAllBuffersReturnedSignal;
+
     // How many user buffers are currently processing underhood.
-    int mBufferInProcessing;
-    // An extra queue at the end of pipeline, to store 1 buffer at least when privacy on.
-    CameraBufQ mPrivacyBuffer;
+    int mNumHoldingUserBuffers;
+
+    // Flag to indicate that currently waiting for all user buffers to be returned
+    bool mIsWaitingBufferReturn;
 };
 
-}  // namespace icamera
+} //namespace icamera

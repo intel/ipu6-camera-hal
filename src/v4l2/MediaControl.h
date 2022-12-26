@@ -16,21 +16,21 @@
 
 #pragma once
 
-#include <errno.h>
-#include <expat.h>
-#include <fcntl.h>
-#include <linux/media.h>
-#include <linux/v4l2-subdev.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/ioctl.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
-
-#include <string>
 #include <vector>
+#include <string>
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/ioctl.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <errno.h>
+#include <linux/v4l2-subdev.h>
+#include <linux/media.h>
+#include <expat.h>
 
 #ifdef CAL_BUILD
 #include <cros-camera/v4l2_device.h>
@@ -39,8 +39,9 @@
 #endif
 
 #include "CameraTypes.h"
-#include "NodeInfo.h"
 #include "iutils/Thread.h"
+
+#include "NodeInfo.h"
 
 namespace icamera {
 
@@ -89,8 +90,7 @@ struct McFormat {
         width = 0;
         height = 0;
         type = RESOLUTION_MAX;
-        pixelCode = 0;
-    }
+        pixelCode = 0;}
 };
 
 struct McOutput {
@@ -98,12 +98,7 @@ struct McOutput {
     unsigned int v4l2Format;
     int width;
     int height;
-    McOutput() {
-        port = INVALID_PORT;
-        v4l2Format = 0;
-        width = 0;
-        height = 0;
-    }
+    McOutput() { port = INVALID_PORT; v4l2Format = 0; width = 0; height = 0; }
 };
 
 struct McCtl {
@@ -112,11 +107,7 @@ struct McCtl {
     int ctlValue;
     std::string ctlName;
     std::string entityName;
-    McCtl() {
-        entity = 0;
-        ctlCmd = 0;
-        ctlValue = 0;
-    }
+    McCtl() { entity = 0; ctlCmd = 0; ctlValue= 0; }
 };
 
 struct McLink {
@@ -127,13 +118,7 @@ struct McLink {
     bool enable;
     std::string srcEntityName;
     std::string sinkEntityName;
-    McLink() {
-        srcEntity = 0;
-        srcPad = 0;
-        sinkEntity = 0;
-        sinkPad = 0;
-        enable = false;
-    }
+    McLink() { srcEntity = 0; srcPad = 0; sinkEntity = 0; sinkPad = 0; enable = false; }
 };
 
 struct McRoute {
@@ -144,15 +129,7 @@ struct McRoute {
     uint32_t srcStream;
     uint32_t flag;
     std::string entityName;
-    McRoute() {
-        entity = 0;
-        sinkPad = 0;
-        srcPad = 0;
-        sinkStream = 0;
-        srcStream = 0;
-        flag = 0;
-        entityName.clear();
-    }
+    McRoute() { entity = 0; sinkPad = 0; srcPad = 0; sinkStream = 0; srcStream = 0; flag = 0; entityName.clear(); }
 };
 
 struct McVideoNode {
@@ -162,17 +139,20 @@ struct McVideoNode {
 };
 
 struct MediaCtlConf {
-    std::vector<McCtl> ctls;
-    std::vector<McLink> links;
-    std::vector<McRoute> routes;
-    std::vector<McFormat> formats;
-    std::vector<McOutput> outputs;
-    std::vector<McVideoNode> videoNodes;
+    std::vector <McCtl> ctls;
+    std::vector <McLink> links;
+    std::vector <McRoute> routes;
+    std::vector <McFormat> formats;
+    std::vector <McOutput> outputs;
+    std::vector <McVideoNode> videoNodes;
     int mcId;
     int outputWidth;
     int outputHeight;
-    std::vector<ConfigMode> configMode;
+    std::vector <ConfigMode> configMode;
     int format;
+    // DOL_FEATURE_S
+    int vbp;  //Vertical blanking period
+    // DOL_FEATURE_E
     /*
      * The outputWidth or outputHeight is 0 if there isn't this setting
      * in MediaCtlConf. It means the isys output size is dynamic, and
@@ -183,6 +163,9 @@ struct MediaCtlConf {
         outputWidth = 0;
         outputHeight = 0;
         format = -1;
+        // DOL_FEATURE_S
+        vbp = -1;
+        // DOL_FEATURE_E
     }
 };
 
@@ -199,7 +182,7 @@ struct MediaCtlConf {
  */
 
 class MediaControl {
- public:
+public:
     /**
      * \brief Get the singleton instance of MediaControl
      */
@@ -227,7 +210,7 @@ class MediaControl {
      *
      * \return entity id if succeed or -1 if error
      */
-    int getEntityIdByName(const char* name);
+    int getEntityIdByName(const char *name);
 
     /**
      * \brief Get VCM I2C bus address
@@ -249,22 +232,28 @@ class MediaControl {
      *
      * \return OK if succeed, other value indicates failed
      */
-    int mediaCtlSetup(int cameraId, MediaCtlConf* mc, int width, int height, int field);
+    int mediaCtlSetup(int cameraId, MediaCtlConf *mc, int width, int height, int field);
 
     /**
      * \brief Clear media controller pipe
      *
+     // VIRTUAL_CHANNEL_S
+     * Currently only the virtual channels are cleared.
+     // VIRTUAL_CHANNEL_E
      *
      * \param cameraId: the current camera id
      * \param mc: the MediaCtlConf got from platform data
      */
-    void mediaCtlClear(int cameraId, MediaCtlConf* mc);
+    void mediaCtlClear(int cameraId, MediaCtlConf *mc);
 
     int resetAllLinks();
+    // VIRTUAL_CHANNEL_S
+    int resetAllRoutes(int cameraId);
+    // VIRTUAL_CHANNEL_E
 
-    int getLensName(std::string* lensName);
-    bool checkAvailableSensor(const std::string& sensorEntityName,
-                              const std::string& sinkEntityName);
+    int getLensName(std::string *lensName);
+    bool checkAvailableSensor(const std::string &sensorEntityName,
+                              const std::string &sinkEntityName);
     /**
      * Getting I2C bus address by the name of sensor entity and the name of sensor's sink entity.
      *
@@ -273,61 +262,60 @@ class MediaControl {
      * \i2cBus: I2C bus address.
      * \return OK if succeed, other value indicates failed
      */
-    int getI2CBusAddress(const std::string& sensorEntityName, const std::string& sinkEntityName,
-                         std::string* i2cBus);
-
- private:
+    int getI2CBusAddress(const std::string &sensorEntityName, const std::string &sinkEntityName,
+                         std::string *i2cBus);
+private:
     MediaControl& operator=(const MediaControl&);
-    MediaControl(const char* devName);
+    MediaControl(const char *devName);
     ~MediaControl();
 
     static MediaControl* getMediaControlInstance();
     int openDevice();
     void closeDevice(int fd);
 
-    // enum MediaControl info.
+    //enum MediaControl info.
     int enumInfo();
     int enumLinks(int fd);
     int enumEntities(int fd, media_device_info& devInfo);
 
-    // get entity info.
-    int getDevnameFromSysfs(MediaEntity* entity);
-    MediaEntity* getEntityById(uint32_t id);
-    MediaEntity* getEntityByName(const char* name);
+    //get entity info.
+    int getDevnameFromSysfs(MediaEntity *entity);
+    MediaEntity *getEntityById(uint32_t id);
+    MediaEntity *getEntityByName(const char *name);
 
-    // set up entity link.
+    //set up entity link.
 
-    MediaLink* entityAddLink(MediaEntity* entity);
-    int setupLink(uint32_t srcEntity, uint32_t srcPad, uint32_t sinkEntity, uint32_t sinkPad,
-                  bool enable);
-    int setupLink(MediaPad* source, MediaPad* sink, uint32_t flags);
+    MediaLink *entityAddLink(MediaEntity *entity);
+    int setupLink(uint32_t srcEntity, uint32_t srcPad, uint32_t sinkEntity, uint32_t sinkPad, bool enable);
+    int setupLink(MediaPad *source, MediaPad *sink, uint32_t flags);
 
-    // set up MediaCtlConf info.
-    void setMediaMcCtl(int cameraId, std::vector<McCtl> ctls);
-    int setMediaMcLink(std::vector<McLink> links);
-    int setFormat(int cameraId, const McFormat* format, int targetWidth, int targetHeight,
-                  int field);
-    int setSelection(int cameraId, const McFormat* format, int targetWidth, int targetHeight);
+    //set up MediaCtlConf info.
+    void setMediaMcCtl(int cameraId, std::vector <McCtl> ctls);
+    int setMediaMcLink(std::vector <McLink> links);
+    int setFormat(int cameraId, const McFormat *format,
+            int targetWidth, int targetHeight, int field);
+    int setSelection(int cameraId, const McFormat *format,
+            int targetWidth, int targetHeight);
 
     /* Dump functions */
     void dumpInfo(media_device_info& devInfo);
     void dumpEntityDesc(media_entity_desc& desc, media_device_info& devInfo);
-    void dumpPadDesc(media_pad_desc* pads, const int padsCount = 1, const char* name = nullptr);
-    void dumpLinkDesc(media_link_desc* links, const int linksCount = 1);
-    const char* entitySubtype2String(unsigned type);
-    const char* padType2String(unsigned flag);
-    // DUMP_ENTITY_TOPOLOGY_S
+    void dumpPadDesc(media_pad_desc *pads, const int padsCount = 1, const char *name = nullptr);
+    void dumpLinkDesc(media_link_desc *links, const int linksCount = 1);
+    const char *entitySubtype2String(unsigned type);
+    const char *padType2String(unsigned flag);
     void dumpEntityTopology(bool dot = true);
     void dumpTopologyDot();
     void dumpTopologyText();
-    // DUMP_ENTITY_TOPOLOGY_E
     void setSensorOrientation(int cameraId);
 
+private:
     std::string mDevName;
-    std::vector<MediaEntity> mEntities;
+    std::vector <MediaEntity> mEntities;
 
-    static MediaControl* sInstance;
+private:
+    static MediaControl *sInstance;
     static Mutex sLock;
 };
 
-}  // namespace icamera
+} //namespace icamera

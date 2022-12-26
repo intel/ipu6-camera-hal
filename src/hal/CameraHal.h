@@ -19,6 +19,10 @@
 #include "CameraDevice.h"
 #include "Parameters.h"
 
+#ifdef SUPPORT_MULTI_PROCESS
+#include "iutils/CameraShm.h"
+#endif
+
 namespace icamera {
 
 /**
@@ -26,55 +30,74 @@ namespace icamera {
  * There is only one instance of CameraHal which is created when HAL loading
  * It creates the CameraDevice based on the camera ID to support multi-cameras.
  *
- * The main jobs of the Class are
+ * The main job of the Class is
  * 1. Maintain a list of CameraDevice
  * 2. Pass the Camera HAL API to the correct CameraDevice based on CameraId
  *
  * If open dual cameras in different process, the shared memory must be used to
  * keep the account of the open times.
  *
- * The CameraHal creates and maintains following singleton instances
+ * The CameraHal create and maintains followings singleton instancs
  * 1. MediaControl Instance
  * 2. PlatformData Instance
  */
 
 class CameraHal {
- public:
-    // HAL API
+//HAL API
+public:
     CameraHal();
     virtual ~CameraHal();
     virtual int init();
     virtual int deinit();
 
-    // Device API
+//Device API
+public:
+#ifdef NO_VIRTUAL_CHANNEL
     virtual int deviceOpen(int cameraId);
+#else
+    virtual int deviceOpen(int cameraId, int vcNum = 0);
+#endif
     virtual void deviceClose(int cameraId);
 
     virtual void deviceCallbackRegister(int cameraId, const camera_callback_ops_t* callback);
-    virtual int deviceConfigInput(int cameraId, const stream_t* inputConfig);
-    virtual int deviceConfigStreams(int cameraId, stream_config_t* streamList);
+    virtual int deviceConfigInput(int cameraId, const stream_t *inputConfig);
+    virtual int deviceConfigStreams(int cameraId, stream_config_t *streamList);
     virtual int deviceStart(int cameraId);
     virtual int deviceStop(int cameraId);
-    virtual int deviceAllocateMemory(int cameraId, camera_buffer_t* ubuffer);
-    // Stream API
-    virtual int streamQbuf(int cameraId, camera_buffer_t** ubuffer, int bufferNum = 1,
-                           const Parameters* settings = nullptr);
-    virtual int streamDqbuf(int cameraId, int streamId, camera_buffer_t** ubuffer,
+    virtual int deviceAllocateMemory(int cameraId, camera_buffer_t *ubuffer);
+//Stream API
+    virtual int streamQbuf(int cameraId, camera_buffer_t **ubuffer,
+                           int bufferNum = 1, const Parameters* settings = nullptr);
+    virtual int streamDqbuf(int cameraId, int streamId, camera_buffer_t **ubuffer,
                             Parameters* settings = nullptr);
     virtual int setParameters(int cameraId, const Parameters& param);
-    virtual int getParameters(int cameraId, Parameters& param, int64_t sequence);
+    virtual int getParameters(int cameraId, Parameters& param, long sequence);
 
- private:
+private:
     DISALLOW_COPY_AND_ASSIGN(CameraHal);
 
+private:
     CameraDevice* mCameraDevices[MAX_CAMERA_NUMBER];
     int mInitTimes;
     // Guard for CameraHal public API.
     Mutex mLock;
+    // VIRTUAL_CHANNEL_S
+    int mTotalVirtualChannelCamNum[MAX_VC_GROUP_NUMBER];
+    int mConfigTimes[MAX_VC_GROUP_NUMBER];
+    Condition mVirtualChannelSignal[MAX_VC_GROUP_NUMBER];
+    static const nsecs_t mWaitDuration = 500000000; //500ms
+    // VIRTUAL_CHANNEL_E
 
-    enum { HAL_UNINIT, HAL_INIT } mState;
+    enum {
+        HAL_UNINIT,
+        HAL_INIT
+    } mState;
 
+#ifdef SUPPORT_MULTI_PROCESS
+    // Used to store variables in different process
+    CameraSharedMemory mCameraShm;
+#endif
     int mCameraOpenNum;
 };
 
-}  // namespace icamera
+} // namespace icamera

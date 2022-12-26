@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2021 Intel Corporation.
+ * Copyright (C) 2017-2020 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,26 +28,34 @@ class ParameterGenerator;
  * \brief ProcessorManager helps to create and maintain the post processors.
  */
 class ProcessorManager {
- public:
+public:
     ProcessorManager(int cameraId);
     ~ProcessorManager();
 
-    std::vector<BufferQueue*> createProcessors(const std::map<Port, stream_t>& producerConfigs,
+    std::vector<BufferQueue*> createProcessors(int inputFmt,
+                                               const std::map<Port, stream_t>& producerConfigs,
                                                const std::map<int, Port>& streamIdToPortMap,
-                                               stream_config_t* streamList,
+                                               stream_config_t *streamList, const Parameters& param,
                                                ParameterGenerator* paramGenerator);
     int configureProcessors(const std::vector<ConfigMode>& configModes, BufferProducer* producer,
                             const Parameters& param);
     int deleteProcessors();
 
- private:
+private:
     DISALLOW_COPY_AND_ASSIGN(ProcessorManager);
-
+private:
     int mCameraId;
 
     enum PSysUsage {
         PSYS_NOT_USED = 0,
         PSYS_NORMAL,
+        PSYS_WEAVING,
+        PSYS_SCALE,
+        PSYS_CSC,
+        PSYS_SCALE_CSC,
+        PSYS_WEAVING_SCALE,
+        PSYS_WEAVING_SCALE_CSC,
+        PSYS_MONO_DS,
     } mPsysUsage;
 
     struct ProcessorConfig {
@@ -59,4 +67,4 @@ class ProcessorManager {
     std::vector<ProcessorConfig> mProcessors;
 };
 
-}  // end of namespace icamera
+} // end of namespace icamera

@@ -29,9 +29,6 @@
 #include "iutils/Errors.h"
 #include "iutils/Utils.h"
 
-#include "ia_pal_types_isp_ids_autogen.h"
-#include "ia_pal_types_isp.h"
-
 namespace icamera {
 
 Ltm::Ltm(int cameraId)
@@ -41,24 +38,27 @@ Ltm::Ltm(int cameraId)
           mThreadRunning(false),
           mInputParamIndex(-1) {
     CLEAR(mLtmParams);
-    CLEAR(mFrameResolution);
 
     if (PlatformData::isEnableLtmThread(mCameraId)) {
         mLtmThread = new LtmThread(this);
     } else {
         mLtmThread = nullptr;
     }
+    LOG3A("%s", __func__);
 }
 
 Ltm::~Ltm() {
+    LOG3A("%s", __func__);
+
     if (PlatformData::isEnableLtmThread(mCameraId)) {
         mLtmThread->join();
         delete mLtmThread;
     }
-    LOG2("%s", __func__);
 }
 
 int Ltm::init() {
+    LOG3A("%s", __func__);
+
     AutoMutex l(mLtmLock);
 
     for (int i = 0; i < kMaxLtmParamsNum; i++) {
@@ -74,6 +74,8 @@ int Ltm::init() {
 }
 
 int Ltm::deinit() {
+    LOG3A("%s", __func__);
+
     AutoMutex l(mLtmLock);
 
     for (int i = 0; i < kMaxLtmParamsNum; i++) {
@@ -85,40 +87,27 @@ int Ltm::deinit() {
     return OK;
 }
 
-int Ltm::getPixelCropperResolution(std::shared_ptr<IGraphConfig> graphConfig, int32_t streamId,
-                                   camera_resolution_t* resolution) {
-    ia_isp_bxt_program_group* pgPtr = graphConfig->getProgramGroup(streamId);
-    for (unsigned int i = 0; i < pgPtr->kernel_count; i++) {
-        // The kernel value is for cca_ltm_input_params::frame_width and frame_height.
-        if (pgPtr->run_kernels[i].kernel_uuid == ia_pal_uuid_isp_pxl_crop_yuv_a) {
-            if (pgPtr->run_kernels[i].resolution_info) {
-                resolution->width = pgPtr->run_kernels[i].resolution_info->output_width;
-                resolution->height = pgPtr->run_kernels[i].resolution_info->output_height;
-                return OK;
-            } else {
-                resolution->width = pgPtr->run_kernels[i].resolution_history->output_width;
-                resolution->height = pgPtr->run_kernels[i].resolution_history->output_height;
-            }
-        }
-    }
+int Ltm::configure(const std::vector<ConfigMode>& configModes) {
+    LOG3A("%s", __func__);
 
-    return UNKNOWN_ERROR;
-}
-
-int Ltm::configure(const std::vector<ConfigMode>& configModes,
-                   std::shared_ptr<IGraphConfig> graphConfig, int32_t streamId) {
     TuningMode tMode = TUNING_MODE_MAX;
     for (auto cfg : configModes) {
         // Only support the 1st tuning mode if multiple config mode is configured.
         if (cfg == CAMERA_STREAM_CONFIGURATION_MODE_NORMAL) {
             tMode = TUNING_MODE_VIDEO;
             break;
+            // HDR_FEATURE_S
+        } else if (cfg == CAMERA_STREAM_CONFIGURATION_MODE_HLC) {
+            tMode = TUNING_MODE_VIDEO_HLC;
+            break;
+        } else if (cfg == CAMERA_STREAM_CONFIGURATION_MODE_HDR) {
+            tMode = TUNING_MODE_VIDEO_HDR;
+            break;
+        } else if (cfg == CAMERA_STREAM_CONFIGURATION_MODE_HDR2) {
+            tMode = TUNING_MODE_VIDEO_HDR2;
+            break;
+            // HDR_FEATURE_E
         }
-    }
-
-    if (graphConfig) {
-        int ret = getPixelCropperResolution(graphConfig, streamId, &mFrameResolution);
-        CheckAndLogError(ret != OK, ret, "failed to get sis output resolution");
     }
 
     if (tMode == TUNING_MODE_MAX) {
@@ -132,10 +121,12 @@ int Ltm::configure(const std::vector<ConfigMode>& configModes,
     mTuningMode = tMode;
     mLtmState = LTM_CONFIGURED;
 
+    LOG3A("%s Ltm algo is Configured", __func__);
     return OK;
 }
 
 int Ltm::start() {
+    LOG1("@%s", __func__);
     AutoMutex l(mLtmLock);
 
     if (!PlatformData::isEnableLtmThread(mCameraId)) return OK;
@@ -147,6 +138,8 @@ int Ltm::start() {
 }
 
 void Ltm::stop() {
+    LOG1("@%s", __func__);
+
     if (!PlatformData::isEnableLtmThread(mCameraId)) return;
 
     mLtmThread->requestExit();
@@ -163,22 +156,22 @@ void Ltm::stop() {
 }
 
 void Ltm::handleEvent(EventData eventData) {
-    if ((eventData.type != EVENT_PSYS_STATS_SIS_BUF_READY) ||
-        (eventData.pipeType != VIDEO_STREAM_ID))
+    if ((eventData.type != EVENT_PSYS_STATS_SIS_BUF_READY) &&
+        (eventData.pipeType != STILL_STREAM_ID))
         return;
 
-    LOG2("%s: handle EVENT_PSYS_STATS_SIS_BUF_READY", __func__);
+    LOG3A("%s: handle EVENT_PSYS_STATS_SIS_BUF_READY", __func__);
     handleSisLtm(eventData.buffer);
 }
 
-AiqResult* Ltm::getAiqResult(int64_t sequence) {
-    int64_t ltmSequence = sequence;
+AiqResult* Ltm::getAiqResult(long sequence) {
+    long ltmSequence = sequence;
     AiqResultStorage* resultStorage = AiqResultStorage::getInstance(mCameraId);
     if (ltmSequence > 0) {
         ltmSequence += PlatformData::getLtmGainLag(mCameraId);
     }
 
-    LOG2("<seq%ld>%s, ltmSequence %ld", sequence, __func__, ltmSequence);
+    LOG3A("%s, ltmSequence %ld, sequence %ld", __func__, ltmSequence, sequence);
     AiqResult* feedback = const_cast<AiqResult*>(resultStorage->getAiqResult(ltmSequence));
     if (feedback == nullptr) {
         LOGW("%s: no feed back result for sequence %ld! use the latest instead", __func__,
@@ -190,6 +183,7 @@ AiqResult* Ltm::getAiqResult(int64_t sequence) {
 }
 
 int Ltm::handleSisLtm(const std::shared_ptr<CameraBuffer>& cameraBuffer) {
+    LOG3A("@%s", __func__);
     AutoMutex l(mLtmLock);
 
     ia_binary_data* sisFrame = (ia_binary_data*)cameraBuffer->getBufferAddr();
@@ -207,8 +201,8 @@ int Ltm::handleSisLtm(const std::shared_ptr<CameraBuffer>& cameraBuffer) {
     AiqResult* feedback = getAiqResult(sequence);
     mLtmParams[mInputParamIndex]->ltmParams.ev_shift = feedback->mAiqParam.evShift;
     mLtmParams[mInputParamIndex]->ltmParams.ltm_strength_manual = feedback->mAiqParam.ltmStrength;
-    mLtmParams[mInputParamIndex]->ltmParams.frame_width = mFrameResolution.width;
-    mLtmParams[mInputParamIndex]->ltmParams.frame_height = mFrameResolution.height;
+    mLtmParams[mInputParamIndex]->ltmParams.frame_width = feedback->mAiqParam.resolution.width;
+    mLtmParams[mInputParamIndex]->ltmParams.frame_height = feedback->mAiqParam.resolution.height;
 
     ia_image_full_info* imageInfo = &mLtmParams[mInputParamIndex]->ltmParams.sis.image_info;
     CLEAR(*imageInfo);
@@ -226,14 +220,6 @@ int Ltm::handleSisLtm(const std::shared_ptr<CameraBuffer>& cameraBuffer) {
     cca::cca_ltm_statistics* sis = &mLtmParams[mInputParamIndex]->ltmParams.sis;
     MEMCPY_S(sis->data, sizeof(sis->data), data, size);
     sis->size = sizeof(sis->data) > size ? size : sizeof(sis->data);
-    LOG3(
-        "LTM data_format %d, bayer_order %d, data_format_bpp %d, data_bpp %d, frame_width and "
-        "height(%d, %d), SIS_image_width & height and right padder(%d, %d, %d), image data size %d",
-        imageInfo->raw_image.data_format, imageInfo->raw_image.bayer_order,
-        imageInfo->raw_image.data_format_bpp, imageInfo->raw_image.data_bpp,
-        mLtmParams[mInputParamIndex]->ltmParams.frame_width,
-        mLtmParams[mInputParamIndex]->ltmParams.frame_height, imageInfo->raw_image.width_cols,
-        imageInfo->raw_image.height_lines, imageInfo->extra_cols_right, sis->size);
 
     if ((!PlatformData::isEnableLtmThread(mCameraId)) || sequence == 0) {
         runLtm(*mLtmParams[mInputParamIndex]);
@@ -279,9 +265,10 @@ int Ltm::runLtmAsync() {
 }
 
 int Ltm::runLtm(const LtmInputParams& ltmInputParams) {
-    LOG2("%s", __func__);
+    LOG3A("%s", __func__);
     PERF_CAMERA_ATRACE();
 
+    LOG3A("%s: begin running LTM", __func__);
     ia_err iaErr;
     {
         PERF_CAMERA_ATRACE_PARAM1_IMAGING("ia_ltm_run", 0);

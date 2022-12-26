@@ -21,8 +21,8 @@
 #include <string>
 #include <vector>
 
-#include "IntelCCATypes.h"
 #include "PipeLiteExecutor.h"
+#include "IntelCCATypes.h"
 #ifdef ENABLE_SANDBOXING
 #include "modules/sandboxing/client/IntelTNR7USClient.h"
 #else

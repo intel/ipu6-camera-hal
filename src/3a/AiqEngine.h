@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2022 Intel Corporation.
+ * Copyright (C) 2015-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,15 @@
 
 #pragma once
 
+#include "AiqSetting.h"
 #include "AiqCore.h"
 #include "AiqResult.h"
-#include "AiqResultStorage.h"
-#include "AiqSetting.h"
 #include "AiqStatistics.h"
-#include "CameraEvent.h"
-#include "LensManager.h"
-#include "ParameterGenerator.h"
+#include "AiqResultStorage.h"
 #include "SensorManager.h"
+#include "LensManager.h"
+#include "CameraEvent.h"
+#include "ParameterGenerator.h"
 
 namespace icamera {
 
@@ -36,8 +36,10 @@ namespace icamera {
  * This is sub thread class.
  */
 class AiqEngine : public EventListener {
- public:
-    AiqEngine(int cameraId, SensorHwCtrl* sensorHw, LensHw* lensHw, AiqSetting* setting);
+
+public:
+    AiqEngine(int cameraId, SensorHwCtrl *sensorHw, LensHw *lensHw, AiqSetting *setting,
+              ParameterGenerator* paramGen);
     ~AiqEngine();
 
     /**
@@ -71,7 +73,7 @@ class AiqEngine : public EventListener {
      *
      * Return 0 if the operation succeeds.
      */
-    int run3A(long requestId, int64_t applyingSeq, int64_t* effectSeq);
+    int run3A(long requestId, long applyingSeq, long* effectSeq);
 
     /**
      * \brief Stop 3a thrad and LensManager.
@@ -81,23 +83,25 @@ class AiqEngine : public EventListener {
     /**
      * \brief Get SOF EventListener
      */
-    EventListener* getSofEventListener();
+    EventListener *getSofEventListener();
 
     /**
      * \brief handle event
      */
     void handleEvent(EventData eventData);
 
-    int prepareStatsParams(cca::cca_stats_params* statsParams, AiqStatistics* aiqStatistics,
-                           AiqResult* aiqResult);
+private:
+    DISALLOW_COPY_AND_ASSIGN(AiqEngine);
+
+    int prepareStatsParams(cca::cca_stats_params *statsParams, AiqStatistics *aiqStatistics);
 
     // Handle AIQ results except Exposure results which are handled in setSensorExposure
-    void setAiqResult(AiqResult* aiqResult, bool skip);
-    void setSensorExposure(AiqResult* aiqResult, int64_t applyingSeq = -1);
+    void setAiqResult(AiqResult *aiqResult, bool skip);
+    void setSensorExposure(AiqResult* aiqResult, long applyingSeq = -1);
 
-    int getSkippingNum(AiqResult* aiqResult);
+    int getSkippingNum(AiqResult *aiqResult);
 
-    bool needRun3A(AiqStatistics* aiqStatistics, long requestId);
+    bool needRun3A(AiqStatistics *aiqStatistics, long requestId);
 
     enum AiqState {
         AIQ_STATE_IDLE = 0,
@@ -110,43 +114,44 @@ class AiqEngine : public EventListener {
         AIQ_STATE_MAX
     };
 
-    AiqState prepareInputParam(AiqStatistics* aiqStats, AiqResult* aiqResult);
-    AiqState runAiq(long requestId, int64_t applyingSeq, AiqResult* aiqResult, bool* aiqRun);
-    AiqState handleAiqResult(AiqResult* aiqResult);
-    AiqState done(AiqResult* aiqResult);
+    AiqState prepareInputParam(AiqStatistics* aiqStats, AiqResult *aiqResult);
+    AiqState runAiq(long requestId, long applyingSeq, AiqResult *aiqResult, bool *aiqRun);
+    AiqState handleAiqResult(AiqResult *aiqResult);
+    AiqState done(AiqResult *aiqResult);
 
     int run();
 
     // For manual ISP settings
-    int applyManualTonemaps(AiqResult* aiqResult);
+    int applyManualTonemaps(AiqResult *aiqResult);
 
- private:
+private:
+    static const nsecs_t kWaitDuration = 1000000000; //1000ms
+    static const int kMaxStatisticsDataSize = 3;
     static const int kMaxExposureAppliedDelay = 5;
 
- private:
+private:
     int mCameraId;
     AiqResultStorage* mAiqResultStorage;
-    AiqSetting* mAiqSetting;
-    AiqCore* mAiqCore;
-    SensorManager* mSensorManager;
-    LensManager* mLensManager;
-
-    int mRun3ACadence;
+    AiqSetting *mAiqSetting;
+    ParameterGenerator* mParamGen;
+    AiqCore *mAiqCore;
+    SensorManager *mSensorManager;
+    LensManager *mLensManager;
     bool mFirstAiqRunning;
     bool mAiqRunningForPerframe;
 
     // Guard for public API of AiqEngine.
     Mutex mEngineLock;
 
+    aiq_parameter_t mAiqParam;
+
     struct AiqRunningHistory {
         AiqResult* aiqResult;
         long requestId;
-        int64_t statsSequnce;
+        long statsSequnce;
     };
     AiqRunningHistory mAiqRunningHistory;
-
- private:
-    DISALLOW_COPY_AND_ASSIGN(AiqEngine);
 };
 
 } /* namespace icamera */
+

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Intel Corporation.
+ * Copyright (C) 2020 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 #include "src/iutils/CameraTrace.h"
 
 #include <fcntl.h>
-#include <unistd.h>
 #include <sys/ioctl.h>
 #include <sys/stat.h>
 
@@ -193,9 +192,10 @@ int CameraTrace::cameraTraceLogStructure(const char* structName, size_t structSi
 unsigned int CameraTrace::setColor(uint32_t data) {
 #define COLOR_(r, g, b) (r | (g << 8) | (b << 16))
     static unsigned int sColors[] = {
-        COLOR_(255, 64, 0),  COLOR_(0, 255, 64),  COLOR_(64, 0, 255),  COLOR_(255, 255, 0),
-        COLOR_(255, 0, 255), COLOR_(0, 255, 255), COLOR_(255, 128, 0), COLOR_(128, 0, 255),
-        COLOR_(0, 255, 128), COLOR_(128, 255, 0), COLOR_(255, 0, 128), COLOR_(0, 128, 255),
+        COLOR_(255, 64, 0),  COLOR_(0, 255, 64),  COLOR_(64, 0, 255),
+        COLOR_(255, 255, 0), COLOR_(255, 0, 255), COLOR_(0, 255, 255),
+        COLOR_(255, 128, 0), COLOR_(128, 0, 255), COLOR_(0, 255, 128),
+        COLOR_(128, 255, 0), COLOR_(255, 0, 128), COLOR_(0, 128, 255),
     };
     static unsigned int sColorNum = sizeof(sColors) / sizeof(unsigned int);
     return sColors[data % sColorNum];

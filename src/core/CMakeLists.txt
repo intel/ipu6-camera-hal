@@ -28,16 +28,25 @@ set(CORE_SRCS
     ${CORE_DIR}/LensHw.cpp
     ${CORE_DIR}/SensorHwCtrl.cpp
     ${CORE_DIR}/SofSource.cpp
+    ${CORE_DIR}/SyncManager.cpp
     CACHE INTERNAL "core sources"
     )
 
-# FRAME_SYNC_S
+# CSI_META_S
     set(CORE_SRCS
         ${CORE_SRCS}
-        ${CORE_DIR}/SyncManager.cpp
+        ${CORE_DIR}/CsiMetaDevice.cpp
         CACHE INTERNAL "core sources"
         )
-# FRAME_SYNC_E
+# CSI_META_E
+
+# FILE_SOURCE_S
+    set(CORE_SRCS
+        ${CORE_SRCS}
+        ${CORE_DIR}/FileSource.cpp
+        CACHE INTERNAL "core sources"
+        )
+# FILE_SOURCE_E
 
     set(CORE_SRCS
         ${CORE_SRCS}
@@ -71,5 +80,6 @@ else()
         CACHE INTERNAL "core sources"
        )
 endif()
+
 # IPU_PROCESSING_E
 

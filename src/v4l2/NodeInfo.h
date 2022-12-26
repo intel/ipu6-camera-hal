@@ -23,6 +23,14 @@ enum VideoNodeType {
     VIDEO_GENERIC,
     VIDEO_GENERIC_MEDIUM_EXPO,
     VIDEO_GENERIC_SHORT_EXPO,
+    // USE_ISA_S
+    VIDEO_AA_STATS,
+    VIDEO_ISA_CONFIG,
+    VIDEO_ISA_SCALE,
+    // USE_ISA_E
+    // CSI_META_S
+    VIDEO_CSI_META,
+    // CSI_META_E
 
     // sensor subdevice
     VIDEO_PIXEL_ARRAY,
@@ -30,6 +38,9 @@ enum VideoNodeType {
     VIDEO_PIXEL_SCALER,
 
     // ISP subdevice
+    // USE_ISA_S
+    VIDEO_ISA_DEVICE,
+    // USE_ISA_E
     VIDEO_ISYS_RECEIVER,
     VIDEO_ISYS_RECEIVER_BACKEND,
 };
@@ -41,7 +52,7 @@ struct VideoNodeInfo {
 };
 
 enum EncodeBufferType {
-    ENCODE_ISA_CONFIG = 0,
+    ENCODE_ISA_CONFIG  = 0,
     ENCODE_STATS = 1,
 };
 

@@ -55,16 +55,16 @@ class ShareReferBufferPool {
      * to copy from producer queue in case it can't find refer-in buffer in its own queue.
      */
     int32_t acquireBuffer(int64_t id, CIPR::Buffer** referIn, CIPR::Buffer** referOut,
-                          int64_t outSequence = -1);
+                          long outSequence = -1);
     int32_t releaseBuffer(int64_t owner, CIPR::Buffer* referIn, CIPR::Buffer* referOut,
-                          int64_t outSequence);
+                          long outSequence);
 
  private:
     struct ReferBuffer {
-        int64_t sequence;
+        long sequence;
         CIPR::Buffer* buffer;
 
-        ReferBuffer(int64_t seq = -1, CIPR::Buffer* buf = nullptr) {
+        ReferBuffer(long seq = -1, CIPR::Buffer* buf = nullptr) {
             sequence = seq;
             buffer = buf;
         }
@@ -88,7 +88,7 @@ class ShareReferBufferPool {
 
  private:
     UserPair* findUserPair(int64_t id);
-    int findReferBuffer(std::vector<ReferBuffer>* bufV, int64_t sequence, CIPR::Buffer** out);
+    int findReferBuffer(std::vector<ReferBuffer>* bufV, long sequence, CIPR::Buffer** out);
 
  private:
     static const nsecs_t kWaitDuration = 33000000;  // 33ms

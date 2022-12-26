@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2022 Intel Corporation.
+ * Copyright (C) 2016-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ namespace icamera {
  * its static methods getInstance and releaseAiqResultStorage.
  */
 class AiqResultStorage {
- public:
+public:
     /**
      * \brief Get internal instance for cameraId.
      *
@@ -71,7 +71,7 @@ class AiqResultStorage {
     /**
      * \brief Update mCurrentIndex and set sequence id into internal storage.
      */
-    void updateAiqResult(int64_t sequence);
+    void updateAiqResult(long sequence);
 
     /**
      * \brief Get the pointer of aiq result to internal storage by given sequence id.
@@ -81,16 +81,15 @@ class AiqResultStorage {
      * the caller's responsibility to do a deep-copy, otherwise the data in returned AiqResult
      * may not be consistent.
      *
-     * param[in] int64_t sequence: specify which aiq result is needed.
+     * param[in] long sequence: specify which aiq result is needed.
      *
      * return 1. when sequence id is -1 or not provided, the lastest result will be returned.
-     *        2. when sequence id is larger than -1, the result with gaven sequence id will be
-     *           returned.
+     *        2. when sequence id is larger than -1, the result with gaven sequence id will be returned.
      *        3. if cannot find in result storage, it means either sequence id is too old and its
      *           result was overrided, or the sequence id is too new, and its result has not been
      *           saved into storage yet. For both cases, nullptr will be returned.
      */
-    const AiqResult* getAiqResult(int64_t sequence = -1);
+    const AiqResult* getAiqResult(long sequence = -1);
 
     /**
      * \brief Acquire AIQ statistics.
@@ -105,7 +104,7 @@ class AiqResultStorage {
     /**
      * \brief Update mCurrentAiqStatsIndex and set sequence id in internal storage.
      */
-    void updateAiqStatistics(int64_t sequence);
+    void updateAiqStatistics(long sequence);
 
     /**
      * \brief Get the pointer of AIQ statistics to internal storage.
@@ -121,32 +120,27 @@ class AiqResultStorage {
      */
     void unLockAiqStatistics();
 
-    /**
-     * \brief Reset mCurrentAiqStatsIndex after restart AIQ.
-     */
-    void resetAiqStatistics();
-
- private:
+private:
     AiqResultStorage(int cameraId);
     ~AiqResultStorage();
 
     static AiqResultStorage* getInstanceLocked(int cameraId);
 
- private:
+private:
     static std::map<int, AiqResultStorage*> sInstances;
     // Guard for singleton creation.
     static Mutex sLock;
 
     int mCameraId;
-    RWLock mDataLock;  // lock for all the data storage below
+    RWLock mDataLock;   // lock for all the data storage below
 
-    static const int kStorageSize = MAX_SETTING_COUNT;  // Should > MAX_BUFFER_COUNT + sensorLag
+    static const int kStorageSize = MAX_SETTING_COUNT; // Should > MAX_BUFFER_COUNT + sensorLag
     int mCurrentIndex = -1;
     AiqResult* mAiqResults[kStorageSize];
 
-    static const int kAiqStatsStorageSize = 3;  // Always use the latest, but may hold for long time
+    static const int kAiqStatsStorageSize = 3; // Always use the latest, but may hold for long time
     int mCurrentAiqStatsIndex = -1;
     AiqStatistics mAiqStatistics[kAiqStatsStorageSize];
 };
 
-}  // namespace icamera
+} //namespace icamera

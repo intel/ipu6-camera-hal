@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017-2022 Intel Corporation
+#  Copyright (C) 2017-2021 Intel Corporation
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -28,8 +28,10 @@ set(3A_DIR              ${SRC_ROOT_DIR}/3a)
 set(CORE_DIR            ${SRC_ROOT_DIR}/core)
 set(HAL_DIR             ${SRC_ROOT_DIR}/hal)
 set(IIO_DIR             ${SRC_ROOT_DIR}/iio)
+# ISP_CONTROL_S
+set(ISP_CTRL_DIR        ${SRC_ROOT_DIR}/isp_control)
+# ISP_CONTROL_E
 set(IUTILS_DIR          ${SRC_ROOT_DIR}/iutils)
-set(SCHEDULER_DIR       ${SRC_ROOT_DIR}/scheduler)
 set(METADATA_DIR        ${SRC_ROOT_DIR}/metadata)
 set(PLATFORMDATA_DIR    ${SRC_ROOT_DIR}/platformdata)
 set(V4L2_DIR            ${SRC_ROOT_DIR}/v4l2)
@@ -68,8 +70,6 @@ endif()
 message(STATUS "install prefix: " ${CMAKE_INSTALL_PREFIX})
 
 #------------------------- Compilation settings -------------------------
-
-include(GNUInstallDirs)
 
 # -fPIC in xos way
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -122,29 +122,26 @@ endif()
 # IPU6_FEATURE_E
 
 # IPU6_SE_FEATURE_S
-if ("${IPU_VER}" STREQUAL "ipu6sepla")
+if (IPU_VER MATCHES "ipu6sepla")
     add_definitions(-DIPU_SYSVER_ipu6v3)
 endif()
 # IPU6_SE_FEATURE_E
 
-if ("${IPU_VER}" STREQUAL "ipu6ep")
+if (IPU_VER MATCHES "ipu6ep")
     message(INFO "add definition -DIPU_SYSVER_ipu6v5 for ipu6ep")
     add_definitions(-DIPU_SYSVER_ipu6v5)
 endif()
 
-if ("${IPU_VER}" STREQUAL "ipu6epmtl")
-    message(INFO "add definition -DIPU_SYSVER_ipu6v6 for ipu6ep")
-    add_definitions(-DIPU_SYSVER_ipu6v6)
-endif()
-
 include_directories(include
                     include/api include/utils
+                    ${CMAKE_INSTALL_PREFIX}/include/ia_camera
+                    ${CMAKE_INSTALL_PREFIX}/include/
                     ${CMAKE_CURRENT_LIST_DIR}
                     src
                     src/v4l2 src/core src/metadata
                     src/platformdata src/platformdata/gc
                     src/3a src/3a/intel3a src/3a/external
-                    src/fd src/scheduler
+                    src/fd
                     src/core/psysprocessor
                     src/image_process
                     )
@@ -216,7 +213,6 @@ set(LIBCAMHAL_SRCS
     ${IUTILS_SRCS}
     ${METADATA_SRCS}
     ${PLATFORMDATA_SRCS}
-    ${SCHEDULER_SRCS}
     ${V4L2_SRCS}
     ${ALGOWRAPPER_SRCS}
     ${IMAGE_PROCESS_SRCS}
@@ -244,18 +240,13 @@ endif() #ENABLE_SANDBOXING
     set(LIBCAMHAL_SRCS ${LIBCAMHAL_SRCS} ${IIO_SRCS})
 
 # Add libcamhal using the specified sources
+add_library(camhal SHARED ${LIBCAMHAL_SRCS})
 add_library(camhal_static STATIC ${LIBCAMHAL_SRCS})
 set_target_properties(camhal_static PROPERTIES OUTPUT_NAME "camhal")
-add_library(camhal SHARED $<TARGET_OBJECTS:camhal_static>)
 
 #---------------------------- Link settings ----------------------------
 target_link_libraries(camhal ${CMAKE_DL_LIBS})
 target_link_libraries(camhal_static ${CMAKE_DL_LIBS})
-
-set (THREADS_PREFER_PTHREAD_FLAG ON)
-find_package (Threads REQUIRED)
-target_link_libraries(camhal ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(camhal_static ${CMAKE_THREAD_LIBS_INIT})
 
 target_link_libraries(camhal expat rt)
 target_link_libraries(camhal_static expat rt)
@@ -274,6 +265,13 @@ endif()
     target_link_libraries(camhal_static ${IA_IMAGING_LIBS})
 
 if(USE_PG_LITE_PIPE)
+# USE_ISA_S
+    # for IspParamAdaptor need libiacss/ipu4 function
+    find_package(LIBIACSS)
+    include_directories(${LIBIACSS_INCLUDE_DIRS})
+    target_link_libraries(camhal ${LIBIACSS_LIBS})
+    target_link_libraries(camhal_static ${LIBIACSS_LIBS})
+# USE_ISA_E
     find_package(LIBGCSS)
     include_directories(${LIBGCSS_INCLUDE_DIRS})
     target_link_libraries(camhal ${LIBGCSS_LIBS})
@@ -377,46 +375,38 @@ endif() #SUPPORT_LIVE_TUNING
 # By default ipu4 is used
 if("${IPU_VER}" STREQUAL "ipu6")
     if("${PRODUCTION_NAME}" STREQUAL "Andrews")
-        message("Install TGL Andrews configure files")
-        install(DIRECTORY config/ubuntu/tgl/ DESTINATION share/defaults/etc/camera)
+        message("Install Andrews configure files")
+        install(DIRECTORY config/linux/ubuntu/andrews/ DESTINATION share/defaults/etc/camera)
     else()
-        message("Install TGL IPU6 configure files")
+        message("Install IPU6 configure files")
         install(DIRECTORY config/linux/ipu6/ DESTINATION share/defaults/etc/camera)
     endif()
 elseif("${IPU_VER}" STREQUAL "ipu6ep")
     if("${PRODUCTION_NAME}" STREQUAL "ccg_platform")
-        message("Install ADL Platform configure files")
-        install(DIRECTORY config/ubuntu/adl/ DESTINATION share/defaults/etc/camera)
-    elseif("${PRODUCTION_NAME}" STREQUAL "Tributo")
-        message("Install ADL Tributo configure files")
-        install(DIRECTORY config/ubuntu/adl/ DESTINATION share/defaults/etc/camera)
+        message("Install ccg_platform configure files")
+        install(DIRECTORY config/linux/ccg_platform/ DESTINATION share/defaults/etc/camera)
+    elseif("${PRODUCTION_NAME}" STREQUAL "ccg_cce_tributo")
+        message("Install ccg_cce_tributo configure files")
+        install(DIRECTORY config/linux/ccg_cce_tributo/ DESTINATION share/defaults/etc/camera)
     else()
-        message("Install ADL IPU6EP configure files")
+        message("Install IPU6EP configure files")
         install(DIRECTORY config/linux/ipu6ep/ DESTINATION share/defaults/etc/camera)
     endif()
-elseif("${IPU_VER}" STREQUAL "ipu6epmtl")
-    if("${PRODUCTION_NAME}" STREQUAL "mtl-ubuntu")
-        message("Install MTL ubuntu configure files")
-        install(DIRECTORY config/ubuntu/mtl/ DESTINATION share/defaults/etc/camera)
-    endif()
-elseif("${IPU_VER}" STREQUAL "ipu6sepla")
-    if("${PRODUCTION_NAME}" STREQUAL "penguin_peak")
-        message("Install JSL penguin peak configure files")
-        install(DIRECTORY config/ubuntu/jsl/ DESTINATION share/defaults/etc/camera)
-    endif()
 else()
-    message("Install APL IPU4 configure files")
+    message("Install IPU4 configure files")
     install(DIRECTORY config/linux/ipu4/ DESTINATION share/defaults/etc/camera)
 endif()
 
 # Install libraries
-install(TARGETS camhal camhal_static)
+install(TARGETS camhal camhal_static
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+        )
 
 # Install package config file
 configure_file(${PROJECT_SOURCE_DIR}/cmake/libcamhal.pc.cmakein
                ${PROJECT_SOURCE_DIR}/libcamhal.pc @ONLY)
-install(FILES libcamhal.pc
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+install(FILES libcamhal.pc DESTINATION lib/pkgconfig)
 
 endif() #NOT CAL_BUILD
 

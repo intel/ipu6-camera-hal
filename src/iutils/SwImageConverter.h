@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 Intel Corporation.
+ * Copyright (C) 2016-2018 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,24 +19,24 @@
 namespace icamera {
 
 namespace SwImageConverter {
-void RGB2YUV(unsigned short R, unsigned short G, unsigned short B, unsigned char* Y,
-             unsigned char* U, unsigned char* V);
+    void RGB2YUV(unsigned short R, unsigned short G, unsigned short B,
+         unsigned char *Y, unsigned char *U, unsigned char *V);
 
-void YUV2RGB(unsigned char Y, unsigned char U, unsigned char V, unsigned short* R,
-             unsigned short* G, unsigned short* B);
+    void YUV2RGB(unsigned char Y, unsigned char U, unsigned char V,
+        unsigned short *R, unsigned short *G, unsigned short *B);
 
-void convertBayerBlock(unsigned int x, unsigned int y, unsigned int width, unsigned int height,
-                       unsigned short bayer_data[4], unsigned char* out_buf, unsigned int src_fmt,
-                       unsigned int dst_fmt);
+    void convertBayerBlock(unsigned int x, unsigned int y,
+        unsigned int width, unsigned int height, unsigned short bayer_data[4],
+        unsigned char *out_buf, unsigned int src_fmt, unsigned int dst_fmt);
 
-void convertYuvBlock(unsigned int x, unsigned int y, unsigned int width, unsigned int height,
-                     unsigned char* in_buf, unsigned char* out_buf, unsigned int src_fmt,
-                     unsigned int dst_fmt);
+    void convertYuvBlock(unsigned int x, unsigned int y,
+        unsigned int width, unsigned int height, unsigned char *in_buf,
+        unsigned char *out_buf, unsigned int src_fmt, unsigned int dst_fmt);
 
-// convert the buffer from the src_fmt to the dst_fmt
-int convertFormat(unsigned int width, unsigned int height, unsigned char* inBuf,
-                  unsigned int inLength, unsigned int srcFmt, unsigned char* outBuf,
-                  unsigned int outLength, unsigned int dstFmt);
-}  // namespace SwImageConverter
+    //convert the buffer from the src_fmt to the dst_fmt
+    int convertFormat(unsigned int width, unsigned int height,
+        unsigned char *inBuf, unsigned int inLength, unsigned int srcFmt,
+        unsigned char *outBuf, unsigned int outLength, unsigned int dstFmt);
+}
 
-}  // namespace icamera
+} //namespace icamera

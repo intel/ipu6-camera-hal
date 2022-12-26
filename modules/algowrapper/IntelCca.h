@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Intel Corporation.
+ * Copyright (C) 2020-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ class IntelCca {
 
     ia_err init(const cca::cca_init_params& initParams);
 
-    ia_err setStatsParams(const cca::cca_stats_params& params);
+    ia_err setStatsParams(const cca::cca_stats_params& params, cca::cca_out_stats* outStats);
 
     ia_err runAEC(uint64_t frameId, const cca::cca_ae_input_params& params,
                   cca::cca_ae_results* results);
@@ -48,9 +48,9 @@ class IntelCca {
 
     ia_err runLTM(uint64_t frameId, const cca::cca_ltm_input_params& params);
 
-    ia_err updateZoom(uint32_t streamId, const cca::cca_dvs_zoom& params);
+    ia_err updateZoom(const cca::cca_dvs_zoom& params);
 
-    ia_err runDVS(uint32_t streamId, uint64_t frameId);
+    ia_err runDVS(uint64_t frameId);
 
     ia_err runAIC(uint64_t frameId, const cca::cca_pal_input_params* params, ia_binary_data* pal);
 
@@ -58,7 +58,7 @@ class IntelCca {
     ia_err getMKN(ia_mkn_trg type, cca::cca_mkn* mkn);
     ia_err getAiqd(cca::cca_aiqd* aiqd);
     ia_err updateTuning(uint8_t lardTags, const ia_lard_input_params& lardParams,
-                        const cca::cca_nvm& nvm, int32_t streamId);
+                        const cca::cca_nvm& nvm);
 
     bool allocStatsDataMem(unsigned int size);
     void* getStatsDataBuffer();
@@ -68,8 +68,7 @@ class IntelCca {
     void deinit();
 
     ia_err decodeStats(uint64_t statsPointer, uint32_t statsSize, uint32_t bitmap,
-                       ia_isp_bxt_statistics_query_results_t* results,
-                       cca::cca_out_stats* outStats = nullptr);
+                       ia_isp_bxt_statistics_query_results_t* results);
 
     uint32_t getPalDataSize(const cca::cca_program_group& programGroup);
     void* allocMem(int streamId, const std::string& name, int index, int size);
@@ -81,8 +80,8 @@ class IntelCca {
     void freeStatsDataMem();
 
  private:
-    int mCameraId;
-    TuningMode mTuningMode;
+     int mCameraId;
+     TuningMode mTuningMode;
 
     // Only 3 buffers will be held in AiqResultStorage (kAiqResultStorageSize is 3),
     // So it is safe to use other 3 buffers.

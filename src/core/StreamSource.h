@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2021 Intel Corporation.
+ * Copyright (C) 2019-2020 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ namespace icamera {
  * or external source producer.
  */
 class StreamSource : public BufferProducer {
- public:
+public:
     StreamSource(int memType) : BufferProducer(memType) {}
     virtual ~StreamSource() {}
     /* Initialize stream source */
@@ -45,4 +45,24 @@ class StreamSource : public BufferProducer {
     virtual void removeAllFrameAvailableListener() = 0;
 };
 
-}  // namespace icamera
+// DUMMY_SOURCE_S
+class DummySource : public StreamSource {
+public:
+    DummySource() : StreamSource(V4L2_MEMORY_USERPTR) {}
+
+    int init() { return OK; }
+    void deinit() {}
+    int configure(const std::map<Port, stream_t>& outputFrames,
+                  const std::vector<ConfigMode>& configModes) { return OK; }
+    int start() { return OK; }
+    int stop() { return OK; }
+    void removeAllFrameAvailableListener() {}
+
+    int qbuf(Port port, const std::shared_ptr<CameraBuffer> &camBuffer) { return OK; }
+    int allocateMemory(Port port, const std::shared_ptr<CameraBuffer> &camBuffer) { return OK; }
+
+    void addFrameAvailableListener(BufferConsumer *listener) {}
+    void removeFrameAvailableListener(BufferConsumer *listener) {}
+};
+// DUMMY_SOURCE_E
+} //namespace icamera

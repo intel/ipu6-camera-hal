@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Intel Corporation.
+ * Copyright (C) 2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-#include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <errno.h>
 
 #ifdef CAL_BUILD
 #include <base/logging.h>
@@ -27,57 +27,49 @@
 
 #include <sys/time.h>
 #include <time.h>
-#include "iutils/LogSink.h"
-#include "iutils/Utils.h"
 
-#ifdef CAMERA_SYS_LOG
-#include <stdarg.h>
-#include <syslog.h>
-#include <map>
-#include <iostream>
-#endif
+#include "src/iutils/LogSink.h"
+
 namespace icamera {
 extern const char* cameraDebugLogToString(int level);
-#define CAMERA_DEBUG_LOG_ERR (1 << 5)
-#define CAMERA_DEBUG_LOG_WARNING (1 << 3)
+#define CAMERA_DEBUG_LOG_ERR (1 << 18)
+#define CAMERA_DEBUG_LOG_WARNING (1 << 19)
+#define CAMERA_DEBUG_LOG_VERBOSE (1 << 20)
 
 #ifdef CAL_BUILD
-const char* GLogSink::getName() const {
-    return "Google gLOG";
-}
+const char* gLogSink::getName() const { return "Google gLOG"; }
 
-void GLogSink::sendOffLog(LogItem logItem) {
-    char prefix[32];
-    ::snprintf(prefix, sizeof(prefix),
-               "CamHAL[%s]: ", icamera::cameraDebugLogToString(logItem.level));
-
-    switch (logItem.level) {
+void gLogSink::sendOffLog(const char* prefix, const char* logEntry,
+                               int level, const char* logTags) {
+    switch (level) {
         case CAMERA_DEBUG_LOG_ERR:
-            ::logging::LogMessage(prefix, 0, -::logging::LOGGING_ERROR).stream()
-                << logItem.logTags << ':' << logItem.logEntry;
+            ::logging::LogMessage(prefix, 0, -::logging::LOGGING_ERROR)
+                    .stream()
+                << logTags << ':' << logEntry;
             break;
         case CAMERA_DEBUG_LOG_WARNING:
-            ::logging::LogMessage(prefix, 0, -::logging::LOGGING_WARNING).stream()
-                << logItem.logTags << ':' << logItem.logEntry;
+            ::logging::LogMessage(prefix, 0, -::logging::LOGGING_WARNING)
+                    .stream()
+                << logTags << ':'  << logEntry;
             break;
         default:
-            ::logging::LogMessage(prefix, 0, -::logging::LOGGING_INFO).stream()
-                << logItem.logTags << ':' << logItem.logEntry;
+            ::logging::LogMessage(prefix, 0, -::logging::LOGGING_INFO)
+                    .stream()
+                << logTags << ':'  << logEntry;
             break;
     }
 }
+
 #endif
+const char* StdconLogSink::getName() const { return "Stdcon LOG"; }
 
-const char* StdconLogSink::getName() const {
-    return "Stdcon LOG";
-}
-
-void StdconLogSink::sendOffLog(LogItem logItem) {
+void StdconLogSink::sendOffLog(const char* prefix, const char* logEntry,
+                               int level, const char* logTags) {
 #define TIME_BUF_SIZE 128
     char timeInfo[TIME_BUF_SIZE];
     setLogTime(timeInfo);
-    fprintf(stdout, "[%s] CamHAL[%s] %s\n", timeInfo,
-            icamera::cameraDebugLogToString(logItem.level), logItem.logEntry);
+    fprintf(stdout, "[%s] [%s] %s %s\n", timeInfo,
+            cameraDebugLogToString(level), prefix, logEntry);
 }
 
 void LogOutputSink::setLogTime(char* buf) {
@@ -95,72 +87,23 @@ void LogOutputSink::setLogTime(char* buf) {
     }
 }
 
-#ifdef CAMERA_TRACE
 FtraceLogSink::FtraceLogSink() {
     mFtraceFD = open("/sys/kernel/debug/tracing/trace_marker", O_WRONLY);
     if (mFtraceFD == -1) {
-        fprintf(stderr, "[WAR] Cannot init ftrace sink, [%s] self killing...", strerror(errno));
+        fprintf(stderr, "[WAR] Cannot init ftrace sink, [%s] self killing...",
+                strerror(errno));
         raise(SIGABRT);
     }
 }
-const char* FtraceLogSink::getName() const {
-    return "Ftrace LOG";
-}
+const char* FtraceLogSink::getName() const { return "Ftrace LOG"; }
 
-void FtraceLogSink::sendOffLog(LogItem logItem) {
+void FtraceLogSink::sendOffLog(const char* prefix, const char* logEntry,
+                               int level, const char* logTags) {
 #define TIME_BUF_SIZE 128
     char timeInfo[TIME_BUF_SIZE];
     setLogTime(timeInfo);
-    dprintf(mFtraceFD, "%s CamHAL[%s] %s\n", timeInfo, cameraDebugLogToString(logItem.level),
-            logItem.logEntry);
+    dprintf(mFtraceFD, "[%s] [%s] %s %s\n", timeInfo,
+            cameraDebugLogToString(level), prefix, logEntry);
 }
-#endif
-
-#define DEFALUT_PATH "/run/camera/hal_logs.txt"
-FileLogSink::FileLogSink() {
-    static const char* filePath = ::getenv("FILE_LOG_PATH");
-
-    if (!filePath) filePath = DEFALUT_PATH;
-
-    mFp = fopen(filePath, "w");
-}
-
-const char* FileLogSink::getName() const {
-    return "File LOG";
-}
-
-void FileLogSink::sendOffLog(LogItem logItem) {
-    char timeInfo[TIME_BUF_SIZE];
-    setLogTime(timeInfo);
-    fprintf(mFp, "[%s] CamHAL[%s] %s:%s\n", timeInfo,
-            icamera::cameraDebugLogToString(logItem.level), logItem.logTags, logItem.logEntry);
-    fflush(mFp);
-}
-
-#ifdef CAMERA_SYS_LOG
-SysLogSink::SysLogSink() {}
-
-SysLogSink::~SysLogSink() {}
-
-const char* SysLogSink::getName() const {
-    return "SYS LOG";
-}
-
-void SysLogSink::sendOffLog(LogItem logItem) {
-#define TIME_BUF_SIZE 128
-    char logMsg[500] = {0};
-    char timeInfo[TIME_BUF_SIZE] = {0};
-    setLogTime(timeInfo);
-    const char* levelStr = icamera::cameraDebugLogToString(logItem.level);
-    snprintf(logMsg, sizeof(logMsg), "[%s] CamHAL[%s] %s\n", timeInfo, levelStr, logItem.logEntry);
-    std::map<const char*, int> levelMap{
-        {"LV1", LOG_DEBUG}, {"LV2", LOG_DEBUG},   {"LV3", LOG_DEBUG}, {"INF", LOG_INFO},
-        {"ERR", LOG_ERR},   {"WAR", LOG_WARNING}, {"UKN", LOG_DEBUG}};
-
-    openlog("cameraHal", LOG_PID | LOG_CONS, LOG_USER);
-    syslog(levelMap[levelStr], "%s", logMsg);
-    closelog();
-}
-#endif
 
 };  // namespace icamera

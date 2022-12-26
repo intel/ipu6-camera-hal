@@ -31,7 +31,7 @@ class Parameters;
  * 2. Provide some interface for HAL to access and modify Parameters internal data.
  */
 class ParameterHelper {
- public:
+public:
     /**
      * \brief Merge and update dst parameter buffer with another parameter instance.
      *
@@ -51,16 +51,6 @@ class ParameterHelper {
      * \return void
      */
     static void merge(const CameraMetadata& metadata, Parameters* dst);
-
-    /**
-     * \brief Merge and update dst parameter buffer by entry.
-     *
-     * \param[in] const icamera_metadata_ro_entry& entry: the source entry.
-     * \param[out] Parameters dst: the parameter to be updated.
-     *
-     * \return void
-     */
-    static void mergeTag(const icamera_metadata_ro_entry& entry, Parameters* dst);
 
     /**
      * \brief Copy metadata from parameter buffer.
@@ -93,7 +83,7 @@ class ParameterHelper {
      */
     static const CameraMetadata& getMetadata(const Parameters& source);
 
- private:
+private:
     // The definitions and interfaces in this private section are only for Parameters internal
     // use, HAL other code shouldn't and cannot access them.
     friend class Parameters;
@@ -105,7 +95,7 @@ class ParameterHelper {
      *        details of Parameters.
      */
     class ParameterData {
-     public:
+    public:
         ParameterData() {}
         ~ParameterData() {}
 
@@ -115,26 +105,24 @@ class ParameterHelper {
             return *this;
         }
 
-        CameraMetadata mMetadata;  // The data structure to save all of the parameters.
-        RWLock mRwLock;            // Read-write lock to make Parameters class thread-safe
+        CameraMetadata mMetadata; // The data structure to save all of the parameters.
+        RWLock mRwLock;           // Read-write lock to make Parameters class thread-safe
     };
 
     // Customized wrappers of RWLock to make the implementation of Parameters much cleaner.
     class AutoRLock {
-     public:
+    public:
         AutoRLock(void* data) : mLock(getInternalData(data).mRwLock) { mLock.readLock(); }
         ~AutoRLock() { mLock.unlock(); }
-
-     private:
+    private:
         RWLock& mLock;
     };
 
     class AutoWLock {
-     public:
+    public:
         AutoWLock(void* data) : mLock(getInternalData(data).mRwLock) { mLock.writeLock(); }
         ~AutoWLock() { mLock.unlock(); }
-
-     private:
+    private:
         RWLock& mLock;
     };
 
@@ -142,23 +130,29 @@ class ParameterHelper {
         return *reinterpret_cast<ParameterData*>(data);
     }
 
-    static void* createParameterData() { return new ParameterData(); }
+    static void* createParameterData() {
+        return new ParameterData();
+    }
 
     static void* createParameterData(void* data) {
         return new ParameterData(getInternalData(data));
     }
 
-    static void releaseParameterData(void* data) { delete &getInternalData(data); }
+    static void releaseParameterData(void* data) {
+        delete &getInternalData(data);
+    }
 
     static void deepCopy(void* srcData, void* dstData) {
         getInternalData(dstData) = getInternalData(srcData);
     }
 
-    static CameraMetadata& getMetadata(void* data) { return getInternalData(data).mMetadata; }
+    static CameraMetadata& getMetadata(void* data) {
+        return getInternalData(data).mMetadata;
+    }
 
     static icamera_metadata_ro_entry_t getMetadataEntry(void* data, uint32_t tag) {
         return const_cast<const CameraMetadata*>(&getMetadata(data))->find(tag);
     }
 };
 
-}  // namespace icamera
+} // namespace icamera

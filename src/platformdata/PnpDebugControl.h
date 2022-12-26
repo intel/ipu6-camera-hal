@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Intel Corporation.
+ * Copyright (C) 2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,19 +44,12 @@ namespace icamera {
 class PnpDebugControl {
  public:
     /**
-     * check if using mock AAL layer for PNP test
+     * check if AAL layer is skipped for PNP test
      *
-     * \return true if feature is enabled, otherwise return false.
+     * \return true if feature is skipped, otherwise return false.
      */
-    static bool useMockAAL();
+    static bool isBypassAAL();
 
-    /**
-     * the fake fps of mock AAL layer
-     *
-     * \return fps if set, otherwise return 30.
-     */
-
-    static float pnpMockFps();
     /**
      * check if 3A algo is skipped for PNP test
      *
@@ -79,20 +72,6 @@ class PnpDebugControl {
     static bool isBypassPG();
 
     /**
-     * check if Face Dection Feature is skipped for PNP test
-     *
-     * \return true if feature is skipped, otherwise return false.
-     */
-    static bool isFaceDisabled();
-
-    /**
-     * check if Face AE Feature is skipped for PNP test
-     *
-     * \return true if feature is skipped, otherwise return false.
-     */
-    static bool isFaceAeDisabled();
-
-    /**
      * check if Face Dection Algo is skipped for PNP test
      *
      * \return true if feature is skipped, otherwise return false.
@@ -107,11 +86,11 @@ class PnpDebugControl {
     static bool isBypassISys();
 
     /**
-     * check if using mock camhal for PNP test
+     * check if camhal is skipped for PNP test
      *
-     * \return true if feature is enabled, otherwise return false.
+     * \return true if feature is skipped, otherwise return false.
      */
-    static bool useMockHal();
+    static bool isBypassHal();
 
     /**
      * check if video P2p is skipped for PNP test
@@ -120,36 +99,28 @@ class PnpDebugControl {
      */
     static bool isBypassP2p();
 
-    static void updateConfig();
-
     static void releaseInstance();
 
  public:
     struct StaticCfg {
      public:
         StaticCfg()
-                : useMockAAL(false),
+                : isBypassAAL(false),
                   isBypass3A(false),
                   isBypassPAL(false),
                   isBypassPG(false),
-                  isFaceDisabled(false),
-                  isFaceAeDisabled(false),
                   isBypassFDAlgo(false),
                   isBypassISys(false),
-                  useMockHal(false),
-                  isBypassP2p(false),
-                  pnpMockFps(30.0) {}
-        bool useMockAAL;
+                  isBypassHal(false),
+                  isBypassP2p(false) {}
+        bool isBypassAAL;
         bool isBypass3A;
         bool isBypassPAL;
         bool isBypassPG;
-        bool isFaceDisabled;
-        bool isFaceAeDisabled;
         bool isBypassFDAlgo;
         bool isBypassISys;
-        bool useMockHal;
+        bool isBypassHal;
         bool isBypassP2p;
-        float pnpMockFps;
     };
 
  private:

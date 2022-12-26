@@ -25,8 +25,8 @@
 #include <map>
 #include <string>
 
-#include "iutils/Thread.h"
 #include "iutils/Utils.h"
+#include "iutils/Thread.h"
 
 namespace icamera {
 
@@ -38,25 +38,26 @@ namespace icamera {
  * Currently only sub device is supported.
  */
 class V4l2DeviceFactory {
- public:
+public:
     static void createDeviceFactory(int cameraId);
     static void releaseDeviceFactory(int cameraId);
 
     static V4L2Subdevice* getSubDev(int cameraId, const std::string& devName);
 
- private:
+private:
     V4l2DeviceFactory(int cameraId);
     ~V4l2DeviceFactory();
 
     static V4l2DeviceFactory* getInstance(int cameraId);
     void releaseSubDevices(int cameraId);
 
+private:
     static std::map<int, V4l2DeviceFactory*> sInstances;
-    // Guard for V4l2DeviceFactory public API access
+    //Guard for V4l2DeviceFactory public API access
     static Mutex sLock;
 
     int mCameraId;
     std::map<std::string, V4L2Subdevice*> mDevices;
 };
 
-}  // namespace icamera
+} //namespace icamera

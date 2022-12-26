@@ -18,70 +18,44 @@
 #define LOG_SINK
 
 namespace icamera {
-struct LogItem {
-    const char* logEntry;
-    int level;
-    const char* logTags;
-};
-
 class LogOutputSink {
  public:
     virtual ~LogOutputSink() = default;
 
     virtual const char* getName() const = 0;
-    virtual void sendOffLog(LogItem logItem) = 0;
-
+    virtual void sendOffLog(const char* prefix, const char* logEntry,
+                            int level, const char* logTags) = 0;
  protected:
-    static void setLogTime(char* timeBuf);
+    static void setLogTime(char *timeBuf);
 };
 
 #ifdef CAL_BUILD
-class GLogSink : public LogOutputSink {
+class gLogSink : public LogOutputSink {
  public:
     const char* getName() const override;
-    void sendOffLog(LogItem logItem) override;
+    void sendOffLog(const char* prefix, const char* logEntry,
+                    int level, const char* logTags) override;
 };
 #endif
 
-#ifdef CAMERA_TRACE
 class FtraceLogSink : public LogOutputSink {
  public:
     FtraceLogSink();
 
     const char* getName() const override;
-    void sendOffLog(LogItem logItem) override;
+    void sendOffLog(const char* prefix, const char* logEntry,
+                    int level, const char* logTags) override;
 
  private:
     int mFtraceFD;
 };
-#endif
 
 class StdconLogSink : public LogOutputSink {
  public:
     const char* getName() const override;
-    void sendOffLog(LogItem logItem) override;
+    void sendOffLog(const char* prefix, const char* logEntry,
+                    int level, const char* logTags) override;
 };
-
-#ifdef CAMERA_SYS_LOG
-class SysLogSink : public LogOutputSink {
- public:
-    SysLogSink();
-    ~SysLogSink();
-    const char* getName() const override;
-    void sendOffLog(LogItem logItem) override;
-};
-#endif
-
-class FileLogSink : public LogOutputSink {
- public:
-    FileLogSink();
-    const char* getName() const override;
-    void sendOffLog(LogItem logItem) override;
-
- private:
-    FILE* mFp;
-};
-
 }  // namespace icamera
 
 #endif

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2022 Intel Corporation
+ * Copyright (C) 2019-2020 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,9 @@
 #pragma once
 #include <memory>
 
-#include "FaceType.h"
+#include "FaceBase.h"
 #include "iutils/Errors.h"
 #include "iutils/Utils.h"
-#include "modules/sandboxing/IPCIntelFD.h"
 
 namespace icamera {
 class IntelFaceDetection {
@@ -30,7 +29,7 @@ class IntelFaceDetection {
 
     status_t init(FaceDetectionInitParams* pData, int dataSize);
     status_t deinit(FaceDetectionDeinitParams* pData, int dataSize);
-    status_t run(pvl_image* pImage, FaceDetectionPVLResult* fdResults);
+    status_t run(pvl_image* pImage, FaceDetectionResult* fdResults);
     status_t run(FaceDetectionRunParams* fdRunParams, int dataSize, void* addr = nullptr);
     FaceDetectionRunParams* prepareRunBuffer(unsigned int index);
 
@@ -38,6 +37,7 @@ class IntelFaceDetection {
     pvl_face_detection* mFDHandle;
     unsigned int mMaxFacesNum;
     FaceDetectionRunParams mMemRunBufs[MAX_STORE_FACE_DATA_BUF_NUM];
+    void convertCoordinate(int faceId, int width, int height, const pvl_rect& src, pvl_rect* dst);
 
     DISALLOW_COPY_AND_ASSIGN(IntelFaceDetection);
 };

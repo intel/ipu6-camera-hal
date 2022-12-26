@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2021 Intel Corporation
+ * Copyright (C) 2019 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,30 +15,27 @@
  */
 #pragma once
 
-#include <libyuv.h>
-
 #include <unordered_map>
-
 #include "IImageProcessor.h"
 
 namespace icamera {
 
 class ImageProcessorCore : public IImageProcessor {
- public:
+public:
     ImageProcessorCore();
-    ~ImageProcessorCore() {}
+    ~ImageProcessorCore();
 
-    virtual status_t cropFrame(const std::shared_ptr<camera3::Camera3Buffer>& input,
-                               std::shared_ptr<camera3::Camera3Buffer>& output);
-    virtual status_t scaleFrame(const std::shared_ptr<camera3::Camera3Buffer>& input,
-                                std::shared_ptr<camera3::Camera3Buffer>& output);
-    virtual status_t rotateFrame(const std::shared_ptr<camera3::Camera3Buffer>& input,
-                                 std::shared_ptr<camera3::Camera3Buffer>& output, int angle,
-                                 std::vector<uint8_t>& rotateBuf);
-    virtual status_t convertFrame(const std::shared_ptr<camera3::Camera3Buffer>& input,
-                                  std::shared_ptr<camera3::Camera3Buffer>& output);
+    virtual status_t cropFrame(const std::shared_ptr<camera3::Camera3Buffer> &input,
+                               std::shared_ptr<camera3::Camera3Buffer> &output);
+    virtual status_t scaleFrame(const std::shared_ptr<camera3::Camera3Buffer> &input,
+                                std::shared_ptr<camera3::Camera3Buffer> &output);
+    virtual status_t rotateFrame(const std::shared_ptr<camera3::Camera3Buffer> &input,
+                                 std::shared_ptr<camera3::Camera3Buffer> &output,
+                                 int angle, std::vector<uint8_t> &rotateBuf);
+    virtual status_t convertFrame(const std::shared_ptr<camera3::Camera3Buffer> &input,
+                                  std::shared_ptr<camera3::Camera3Buffer> &output);
 
- private:
+private:
     DISALLOW_COPY_AND_ASSIGN(ImageProcessorCore);
 
     std::unordered_map<int, libyuv::RotationMode> mRotationMode;

@@ -21,41 +21,68 @@
 
 #include "RequestThread.h"
 
-using std::shared_ptr;
 using std::vector;
+using std::shared_ptr;
 
 namespace icamera {
 
-RequestThread::RequestThread(int cameraId, AiqUnitBase* a3AControl, ParameterGenerator* aParamGen)
-        : mCameraId(cameraId),
-          m3AControl(a3AControl),
-          mParamGenerator(aParamGen),
-          mPerframeControlSupport(false),
-          mGet3AStatWithFakeRequest(false),
-          mRequestsInProcessing(0),
-          mFirstRequest(true),
-          mActive(false),
-          mRequestTriggerEvent(NONE_EVENT),
-          mLastRequestId(-1),
-          mLastEffectSeq(-1),
-          mLastAppliedSeq(-1),
-          mLastSofSeq(-1),
-          mBlockRequest(true),
-          mSofEnabled(false) {
+RequestThread::RequestThread(int cameraId, AiqUnitBase *a3AControl, ParameterGenerator* aParamGen) :
+    mCameraId(cameraId),
+    m3AControl(a3AControl),
+    mParamGenerator(aParamGen),
+    mPerframeControlSupport(false),
+    mGet3AStatWithFakeRequest(false),
+    mRequestsInProcessing(0),
+    mFirstRequest(true),
+    mRequestConfigMode(CAMERA_STREAM_CONFIGURATION_MODE_END),
+    mUserConfigMode(CAMERA_STREAM_CONFIGURATION_MODE_END),
+    mNeedReconfigPipe(false),
+    mReconfigPipeScore(0),
+    mActive(false),
+    mRequestTriggerEvent(NONE_EVENT),
+    mLastRequestId(-1),
+    mLastEffectSeq(-1),
+    mLastAppliedSeq(-1),
+    mLastSofSeq(-1),
+    mBlockRequest(true),
+    mSofEnabled(false)
+{
+    CLEAR(mStreamConfig);
+    CLEAR(mConfiguredStreams);
     CLEAR(mFakeReqBuf);
 
+    mStreamConfig.operation_mode = CAMERA_STREAM_CONFIGURATION_MODE_END;
     mPerframeControlSupport = PlatformData::isFeatureSupported(mCameraId, PER_FRAME_CONTROL);
 
     mSofEnabled = PlatformData::isIsysEnabled(cameraId);
+    // FILE_SOURCE_S
+    mSofEnabled = mSofEnabled || PlatformData::isFileSourceEnabled();
+    // FILE_SOURCE_E
+
+    const char *CAMERA_HAL_WAIT_FRAME_DURATION = "cameraFrameDuration";
+    char *frameDurationStr = getenv(CAMERA_HAL_WAIT_FRAME_DURATION);
+    mWaitFrameDurationOverride = 0;
+
+    if (frameDurationStr) {
+        mWaitFrameDurationOverride = atoi(frameDurationStr); // ms
+    }
+
+    if (mWaitFrameDurationOverride > 0) {
+        LOGW("Frame druation is overriden to %d ms", mWaitFrameDurationOverride);
+    } else {
+        mWaitFrameDurationOverride = 0; // override is disabled
+    }
 }
 
-RequestThread::~RequestThread() {
+RequestThread::~RequestThread()
+{
     while (!mReqParamsPool.empty()) {
         mReqParamsPool.pop();
     }
 }
 
-void RequestThread::requestExit() {
+void RequestThread::requestExit()
+{
     clearRequests();
 
     Thread::requestExit();
@@ -63,7 +90,8 @@ void RequestThread::requestExit() {
     mRequestSignal.signal();
 }
 
-void RequestThread::clearRequests() {
+void RequestThread::clearRequests()
+{
     LOG1("%s", __func__);
 
     mActive = false;
@@ -90,47 +118,125 @@ void RequestThread::clearRequests() {
     mBlockRequest = true;
 }
 
-int RequestThread::configure(const stream_config_t* streamList) {
-    int previewIndex = -1, videoIndex = -1, stillIndex = -1;
+void RequestThread::setConfigureModeByParam(camera_scene_mode_t sceneMode)
+{
+    ConfigMode configMode = CameraUtils::getConfigModeBySceneMode(sceneMode);
+    LOG2("@%s, sceneMode %d, configMode %d", __func__, sceneMode, configMode);
+
+    if (configMode == CAMERA_STREAM_CONFIGURATION_MODE_END) {
+        LOG2("%s: no valid config mode, skip setting", __func__);
+        return;
+    }
+
+    /* Reset internal mode related settings if requested mode is same as
+     * the mode currently running for better stability.
+     */
+    if (mStreamConfig.operation_mode == configMode) {
+        LOG2("%s: config mode %d keep unchanged.", __func__, configMode);
+        mNeedReconfigPipe = false;
+        mReconfigPipeScore = 0;
+        mRequestConfigMode = configMode;
+        return;
+    }
+
+    if (mRequestConfigMode != configMode) {
+        if (mRequestConfigMode != CAMERA_STREAM_CONFIGURATION_MODE_END) {
+            mNeedReconfigPipe = true;
+            mReconfigPipeScore = 0;
+            LOG2("%s: request configure mode changed, reset score %d", __func__, mReconfigPipeScore);
+        }
+        LOG2("%s: mRequestConfigMode updated from %d to %d", __func__, mRequestConfigMode, configMode);
+        mRequestConfigMode = configMode;
+    } else if (mReconfigPipeScore < PlatformData::getPipeSwitchDelayFrame(mCameraId)) {
+        mReconfigPipeScore ++;
+        LOG2("%s: request configure mode unchanged, current score %d", __func__, mReconfigPipeScore);
+    }
+}
+
+int RequestThread::configure(const stream_config_t *streamList) {
+    bool hasVideoStream = false;
+
+    mStreamConfig.num_streams = streamList->num_streams;
+    mStreamConfig.operation_mode = streamList->operation_mode;
+    mUserConfigMode = (ConfigMode)streamList->operation_mode;
+    int previewStreamIndex = -1;
     for (int i = 0; i < streamList->num_streams; i++) {
+        mConfiguredStreams[i] = streamList->streams[i];
+        if (previewStreamIndex < 0 && mConfiguredStreams[i].usage == CAMERA_STREAM_PREVIEW) {
+            previewStreamIndex = i;
+        }
+        if (mConfiguredStreams[i].usage == CAMERA_STREAM_PREVIEW ||
+            mConfiguredStreams[i].usage == CAMERA_STREAM_VIDEO_CAPTURE) {
+            hasVideoStream = true;
+        }
+    }
+    LOG1("%s: user specified Configmode: %d, hasVideoStream %d", __func__, mUserConfigMode, hasVideoStream);
+    mStreamConfig.streams = mConfiguredStreams;
+
+    // Use concrete mode in RequestThread
+    if ((ConfigMode)mStreamConfig.operation_mode == CAMERA_STREAM_CONFIGURATION_MODE_AUTO) {
+        vector <ConfigMode> configModes;
+        int ret = PlatformData::getConfigModesByOperationMode(mCameraId,
+                                                              mStreamConfig.operation_mode,
+                                                              configModes);
+        CheckAndLogError((ret != OK || configModes.empty()), ret,
+                         "%s, get real ConfigMode failed %d", __func__, ret);
+
+        mRequestConfigMode = configModes[0];
+        LOG2("%s: use concrete mode %d as default initial mode for auto op mode",
+             __func__, mRequestConfigMode);
+        mStreamConfig.operation_mode = mRequestConfigMode;
+    }
+
+    // Don't block request handling if no 3A stats (from video pipe)
+    mBlockRequest = PlatformData::isEnableAIQ(mCameraId) && hasVideoStream;
+
+    LOG2("%s: mRequestConfigMode initial value: %d", __func__, mRequestConfigMode);
+    return OK;
+}
+
+void RequestThread::postConfigure(const stream_config_t *streamList) {
+    mGet3AStatWithFakeRequest =
+        mPerframeControlSupport ? PlatformData::isPsysContinueStats(mCameraId) : false;
+
+    if (!mGet3AStatWithFakeRequest) return;
+
+    CLEAR(mFakeReqBuf);
+    int fakeStreamIndex = -1, videoIndex = -1, stillIndex = -1;
+    for (int i = 0; i < streamList->num_streams; i++) {
+        // Select preview stream firstly
         if (streamList->streams[i].usage == CAMERA_STREAM_PREVIEW) {
-            previewIndex = i;
+            fakeStreamIndex = i;
+            break;
         } else if (streamList->streams[i].usage == CAMERA_STREAM_VIDEO_CAPTURE) {
             videoIndex = i;
         } else if (streamList->streams[i].usage == CAMERA_STREAM_STILL_CAPTURE) {
             stillIndex = i;
         }
     }
-
-    // Don't block request handling if no 3A stats (from video pipe)
-    mBlockRequest = PlatformData::isEnableAIQ(mCameraId) && (previewIndex >= 0 || videoIndex >= 0);
-    LOG1("%s: user specified Configmode: %d, blockRequest: %d", __func__,
-         static_cast<ConfigMode>(streamList->operation_mode), mBlockRequest);
-
-    mGet3AStatWithFakeRequest =
-        mPerframeControlSupport ? PlatformData::isPsysContinueStats(mCameraId) : false;
-    if (mGet3AStatWithFakeRequest) {
-        int fakeStreamIndex =
-            (previewIndex >= 0) ? previewIndex : ((videoIndex >= 0) ? videoIndex : stillIndex);
-        if (fakeStreamIndex < 0) {
-            LOGW("There isn't valid stream to trigger stats event");
-            mGet3AStatWithFakeRequest = false;
-            return OK;
+    if (fakeStreamIndex < 0) {
+        if (videoIndex >= 0) {
+            fakeStreamIndex = videoIndex;
+        } else if (stillIndex >=0) {
+            fakeStreamIndex = stillIndex;
         }
-
-        CLEAR(mFakeReqBuf);
-        stream_t& fakeStream = streamList->streams[fakeStreamIndex];
-        LOG2("%s: create fake request with stream index %d", __func__, fakeStreamIndex);
-        mFakeBuffer = CameraBuffer::create(mCameraId, BUFFER_USAGE_PSYS_INTERNAL,
-                                           V4L2_MEMORY_USERPTR, fakeStream.size, 0,
-                                           fakeStream.format, fakeStream.width, fakeStream.height);
-
-        mFakeReqBuf.s = fakeStream;
-        mFakeReqBuf.s.memType = V4L2_MEMORY_USERPTR;
-        mFakeReqBuf.addr = mFakeBuffer->getUserBuffer()->addr;
     }
 
-    return OK;
+    if (fakeStreamIndex < 0) {
+        LOGW("There isn't valid stream to trigger stats event");
+        mGet3AStatWithFakeRequest = false;
+        return;
+    }
+
+    stream_t &fakeStream = streamList->streams[fakeStreamIndex];
+    LOG2("%s: create fake request with stream index %d", __func__, fakeStreamIndex);
+    mFakeBuffer = CameraBuffer::create(mCameraId, BUFFER_USAGE_PSYS_INTERNAL, V4L2_MEMORY_USERPTR,
+                                       fakeStream.size, 0, fakeStream.format, fakeStream.width,
+                                       fakeStream.height);
+
+    mFakeReqBuf.s = fakeStream;
+    mFakeReqBuf.s.memType = V4L2_MEMORY_USERPTR;
+    mFakeReqBuf.addr = mFakeBuffer->getUserBuffer()->addr;
 }
 
 bool RequestThread::blockRequest() {
@@ -143,12 +249,12 @@ bool RequestThread::blockRequest() {
      * 3. if no trigger event is available.
      */
     return ((mBlockRequest && (mLastRequestId >= 0)) ||
-            (mRequestsInProcessing >= PlatformData::getMaxRequestsInflight(mCameraId)) ||
-            (mPerframeControlSupport && (mRequestTriggerEvent == NONE_EVENT)));
+        (mRequestsInProcessing >= PlatformData::getMaxRequestsInflight(mCameraId)) ||
+        (mPerframeControlSupport && (mRequestTriggerEvent == NONE_EVENT)));
 }
 
-int RequestThread::processRequest(int bufferNum, camera_buffer_t** ubuffer,
-                                  const Parameters* params) {
+int RequestThread::processRequest(int bufferNum, camera_buffer_t **ubuffer, const Parameters* params)
+{
     AutoMutex l(mPendingReqLock);
     CameraRequest request;
     request.mBufferNum = bufferNum;
@@ -179,8 +285,11 @@ int RequestThread::processRequest(int bufferNum, camera_buffer_t** ubuffer,
     return OK;
 }
 
-shared_ptr<Parameters> RequestThread::copyRequestParams(const Parameters* srcParams) {
-    if (srcParams == nullptr) return nullptr;
+shared_ptr<Parameters>
+RequestThread::copyRequestParams(const Parameters *srcParams)
+{
+    if (srcParams == nullptr)
+        return nullptr;
 
     if (mReqParamsPool.empty()) {
         shared_ptr<Parameters> sParams = std::make_shared<Parameters>();
@@ -194,18 +303,22 @@ shared_ptr<Parameters> RequestThread::copyRequestParams(const Parameters* srcPar
     return sParams;
 }
 
-int RequestThread::waitFrame(int streamId, camera_buffer_t** ubuffer) {
+int RequestThread::waitFrame(int streamId, camera_buffer_t **ubuffer)
+{
     FrameQueue& frameQueue = mOutputFrames[streamId];
     ConditionLock lock(frameQueue.mFrameMutex);
 
     if (!mActive) return NO_INIT;
     while (frameQueue.mFrameQueue.empty()) {
         int ret = frameQueue.mFrameAvailableSignal.waitRelative(
-            lock, kWaitFrameDuration * SLOWLY_MULTIPLIER);
+                      lock,
+                      mWaitFrameDurationOverride ? mWaitFrameDurationOverride * 1000000 : kWaitFrameDuration * SLOWLY_MULTIPLIER);
         if (!mActive) return NO_INIT;
 
-        CheckWarning(ret == TIMED_OUT, ret, "<id%d>@%s, time out happens, wait recovery", mCameraId,
-                     __func__);
+        if (ret == TIMED_OUT) {
+            LOGW("@%s, mCameraId:%d, time out happens, wait recovery", __func__, mCameraId);
+            return ret;
+        }
     }
 
     shared_ptr<CameraBuffer> camBuffer = frameQueue.mFrameQueue.front();
@@ -217,89 +330,108 @@ int RequestThread::waitFrame(int streamId, camera_buffer_t** ubuffer) {
     return OK;
 }
 
-int RequestThread::wait1stRequestDone() {
+int RequestThread::wait1stRequestDone()
+{
+    LOG1("%s", __func__);
     int ret = OK;
     ConditionLock lock(mFirstRequestLock);
     if (mFirstRequest) {
-        LOG2("%s, waiting the first request done", __func__);
-        ret = mFirstRequestSignal.waitRelative(lock,
-                                               kWaitFirstRequestDoneDuration * SLOWLY_MULTIPLIER);
-        if (ret == TIMED_OUT) LOGE("@%s: Wait 1st request timed out", __func__);
+        LOG1("%s, waiting the first request done", __func__);
+        ret = mFirstRequestSignal.waitRelative(
+                  lock,
+                  kWaitFirstRequestDoneDuration * SLOWLY_MULTIPLIER);
+        if (ret == TIMED_OUT)
+            LOGE("@%s: Wait 1st request timed out", __func__);
     }
 
     return ret;
 }
 
-void RequestThread::handleEvent(EventData eventData) {
+void RequestThread::handleEvent(EventData eventData)
+{
     if (!mActive) return;
 
     /* Notes:
-     * There should be only one of EVENT_ISYS_FRAME
-     * and EVENT_PSYS_FRAME registered.
-     * There should be only one of EVENT_xx_STATS_BUF_READY
-     * registered.
-     */
+      * There should be only one of EVENT_ISYS_FRAME
+      * and EVENT_PSYS_FRAME registered.
+      * There should be only one of EVENT_xx_STATS_BUF_READY
+      * registered.
+      */
     switch (eventData.type) {
         case EVENT_ISYS_FRAME:
-        case EVENT_PSYS_FRAME: {
-            AutoMutex l(mPendingReqLock);
-            if (mRequestsInProcessing > 0) {
-                mRequestsInProcessing--;
-            }
-            // Just in case too many requests are pending in mPendingRequests.
-            if (!mPendingRequests.empty()) {
-                mRequestTriggerEvent |= NEW_FRAME;
-                mRequestSignal.signal();
-            }
-        } break;
-        case EVENT_PSYS_STATS_BUF_READY: {
-            TRACE_LOG_POINT("RequestThread", "receive the stat event");
-            AutoMutex l(mPendingReqLock);
-            if (mBlockRequest) {
-                mBlockRequest = false;
-            }
-            mRequestTriggerEvent |= NEW_STATS;
-            mRequestSignal.signal();
-        } break;
-        case EVENT_ISYS_SOF: {
-            AutoMutex l(mPendingReqLock);
-            mLastSofSeq = eventData.data.sync.sequence;
-            mRequestTriggerEvent |= NEW_SOF;
-            mRequestSignal.signal();
-        } break;
-        case EVENT_FRAME_AVAILABLE: {
-            if (eventData.buffer->getUserBuffer() != &mFakeReqBuf) {
-                int streamId = eventData.data.frameDone.streamId;
-                FrameQueue& frameQueue = mOutputFrames[streamId];
-
-                AutoMutex lock(frameQueue.mFrameMutex);
-                bool needSignal = frameQueue.mFrameQueue.empty();
-                frameQueue.mFrameQueue.push(eventData.buffer);
-                if (needSignal) {
-                    frameQueue.mFrameAvailableSignal.signal();
+        case EVENT_PSYS_FRAME:
+            {
+                AutoMutex l(mPendingReqLock);
+                if (mRequestsInProcessing > 0) {
+                    mRequestsInProcessing--;
                 }
-            } else {
-                LOG2("%s: fake request return %u", __func__, eventData.buffer->getSequence());
+                // Just in case too many requests are pending in mPendingRequests.
+                if (!mPendingRequests.empty()) {
+                    mRequestTriggerEvent |= NEW_FRAME;
+                    mRequestSignal.signal();
+                }
             }
-
-            AutoMutex l(mPendingReqLock);
-            // Insert fake request if no any request in the HAL to keep 3A running
-            if (mGet3AStatWithFakeRequest && eventData.buffer->getSequence() >= mLastEffectSeq &&
-                mPendingRequests.empty()) {
-                LOGW("No request, insert fake req after req %ld to keep 3A stats update",
-                     mLastRequestId);
-                CameraRequest fakeRequest;
-                fakeRequest.mBufferNum = 1;
-                fakeRequest.mBuffer[0] = &mFakeReqBuf;
-                mFakeReqBuf.sequence = -1;
-                mPendingRequests.push_back(fakeRequest);
-                mRequestTriggerEvent |= NEW_REQUEST;
+            break;
+        // USE_ISA_S
+        case EVENT_ISA_STATS_BUF_READY:
+        // USE_ISA_E
+        case EVENT_PSYS_STATS_BUF_READY:
+            {
+                TRACE_LOG_POINT("RequestThread", "receive the stat event");
+                AutoMutex l(mPendingReqLock);
+                if (mBlockRequest) {
+                    mBlockRequest = false;
+                }
+                mRequestTriggerEvent |= NEW_STATS;
                 mRequestSignal.signal();
             }
-        } break;
-        default: {
-            LOGW("Unknown event type %d", eventData.type);
-        } break;
+            break;
+        case EVENT_ISYS_SOF:
+            {
+                AutoMutex l(mPendingReqLock);
+                mLastSofSeq = eventData.data.sync.sequence;
+                mRequestTriggerEvent |= NEW_SOF;
+                mRequestSignal.signal();
+            }
+            break;
+        case EVENT_FRAME_AVAILABLE:
+            {
+                if (eventData.buffer->getUserBuffer() != &mFakeReqBuf) {
+                    int streamId = eventData.data.frameDone.streamId;
+                    FrameQueue& frameQueue = mOutputFrames[streamId];
+
+                    AutoMutex lock(frameQueue.mFrameMutex);
+                    bool needSignal = frameQueue.mFrameQueue.empty();
+                    frameQueue.mFrameQueue.push(eventData.buffer);
+                    if (needSignal) {
+                        frameQueue.mFrameAvailableSignal.signal();
+                    }
+                } else {
+                    LOG2("%s: fake request return %u", __func__, eventData.buffer->getSequence());
+                }
+
+                AutoMutex l(mPendingReqLock);
+                // Insert fake request if no any request in the HAL to keep 3A running
+                if (mGet3AStatWithFakeRequest &&
+                    eventData.buffer->getSequence() >= mLastEffectSeq &&
+                    mPendingRequests.empty()) {
+                    LOGW("No request, insert fake req after req %ld to keep 3A stats update",
+                         mLastRequestId);
+                    CameraRequest fakeRequest;
+                    fakeRequest.mBufferNum = 1;
+                    fakeRequest.mBuffer[0] = &mFakeReqBuf;
+                    mFakeReqBuf.sequence = -1;
+                    mPendingRequests.push_back(fakeRequest);
+                    mRequestTriggerEvent |= NEW_REQUEST;
+                    mRequestSignal.signal();
+                }
+            }
+            break;
+        default:
+            {
+                LOGW("Unknown event type %d", eventData.type);
+            }
+            break;
     }
 }
 
@@ -307,8 +439,13 @@ void RequestThread::handleEvent(EventData eventData) {
  * Get the next request for processing.
  * Return false if no pending requests or it is not ready for reconfiguration.
  */
-bool RequestThread::fetchNextRequest(CameraRequest& request) {
+bool RequestThread::fetchNextRequest(CameraRequest& request)
+{
     ConditionLock lock(mPendingReqLock);
+    if (isReconfigurationNeeded() && !isReadyForReconfigure()) {
+        return false;
+    }
+
     if (mPendingRequests.empty()) {
         return false;
     }
@@ -320,16 +457,46 @@ bool RequestThread::fetchNextRequest(CameraRequest& request) {
     return true;
 }
 
-bool RequestThread::threadLoop() {
-    int64_t applyingSeq = -1;
-    {
-        ConditionLock lock(mPendingReqLock);
+/**
+ * Check if ConfigMode is changed or not.
+ * If new ConfigMode is different with previous configured ConfigMode,
+ * return true.
+ */
+bool RequestThread::isReconfigurationNeeded()
+{
+    bool needReconfig = (mUserConfigMode == CAMERA_STREAM_CONFIGURATION_MODE_AUTO &&
+                         PlatformData::getAutoSwitchType(mCameraId) == AUTO_SWITCH_FULL &&
+                         mNeedReconfigPipe &&
+                         (mReconfigPipeScore >= PlatformData::getPipeSwitchDelayFrame(mCameraId)));
+    LOG2("%s: need reconfigure %d, score %d, decision %d",
+         __func__, mNeedReconfigPipe, mReconfigPipeScore, needReconfig);
+    return needReconfig;
+}
 
-        if (blockRequest()) {
+/**
+ * If reconfiguration is needed, there are 2 extra conditions for reconfiguration:
+ * 1, there is no buffer in processing; 2, there is buffer in mPendingRequests.
+ * Return true if reconfiguration is ready.
+ */
+bool RequestThread::isReadyForReconfigure()
+{
+    return (!mPendingRequests.empty() && mRequestsInProcessing == 0);
+}
+
+bool RequestThread::threadLoop()
+{
+    bool restart = false;
+    long applyingSeq = -1;
+    {
+         ConditionLock lock(mPendingReqLock);
+
+         if (blockRequest()) {
             int ret = mRequestSignal.waitRelative(lock, kWaitDuration * SLOWLY_MULTIPLIER);
-            CheckWarning(ret == TIMED_OUT, true,
-                         "wait event time out, %d requests processing, %zu requests in HAL",
-                         mRequestsInProcessing, mPendingRequests.size());
+            if (ret == TIMED_OUT) {
+                LOGW("wait event time out, %d requests processing, %zu requests in HAL",
+                     mRequestsInProcessing, mPendingRequests.size());
+                return true;
+            }
 
             if (blockRequest()) {
                 LOG2("Pending request processing, mBlockRequest %d, Req in processing %d",
@@ -338,6 +505,8 @@ bool RequestThread::threadLoop() {
                 return true;
             }
         }
+
+        restart = isReconfigurationNeeded();
 
         /* for perframe control cases, one request should be processed in one SOF period only.
          * 1, for new SOF, processes request for current sequence if no request processed for it;
@@ -375,7 +544,20 @@ bool RequestThread::threadLoop() {
 
     CameraRequest request;
     if (fetchNextRequest(request)) {
+        // Update for reconfiguration
+        if (request.mParams.get()) {
+            camera_scene_mode_t sceneMode = SCENE_MODE_MAX;
+            if (request.mParams.get()->getSceneMode(sceneMode) == OK) {
+                setConfigureModeByParam(sceneMode);
+            }
+        }
+        // Re-check
+        if (restart && isReconfigurationNeeded()) {
+            handleReconfig();
+        }
+
         handleRequest(request, applyingSeq);
+
         {
             AutoMutex l(mPendingReqLock);
             mRequestTriggerEvent = NONE_EVENT;
@@ -384,16 +566,33 @@ bool RequestThread::threadLoop() {
     return true;
 }
 
-void RequestThread::handleRequest(CameraRequest& request, int64_t applyingSeq) {
-    int64_t effectSeq = mLastEffectSeq + 1;
+void RequestThread::handleReconfig()
+{
+    LOG1("%s, ConfigMode change from %x to %x", __func__,
+            mStreamConfig.operation_mode, mRequestConfigMode);
+    mStreamConfig.operation_mode = mRequestConfigMode;
+    EventConfigData configData;
+    configData.streamList = &mStreamConfig;
+    EventData eventData;
+    eventData.type = EVENT_DEVICE_RECONFIGURE;
+    eventData.data.config = configData;
+    notifyListeners(eventData);
+    mNeedReconfigPipe = false;
+    mReconfigPipeScore = 0;
+    return;
+}
+
+void RequestThread::handleRequest(CameraRequest& request, long applyingSeq)
+{
+    long effectSeq = mLastEffectSeq + 1;
     // Raw reprocessing case, don't run 3A.
     if (request.mBuffer[0]->sequence >= 0 && request.mBuffer[0]->timestamp > 0) {
         effectSeq = request.mBuffer[0]->sequence;
         if (request.mParams.get()) {
             mParamGenerator->updateParameters(effectSeq, request.mParams.get());
         }
-        LOG2("%s: Reprocess request: seq %ld, out buffer %d", __func__, effectSeq,
-             request.mBufferNum);
+        LOG2("%s: Reprocess request: seq %ld, out buffer %d", __func__,
+             effectSeq, request.mBufferNum);
     } else {
         long requestId = -1;
         {
@@ -428,8 +627,9 @@ void RequestThread::handleRequest(CameraRequest& request, int64_t applyingSeq) {
             mParamGenerator->saveParameters(effectSeq, mLastRequestId, request.mParams.get());
             mLastEffectSeq = effectSeq;
 
-            LOG2("%s: Process request: %ld:%ld, out buffer %d, param? %s", __func__, mLastRequestId,
-                 effectSeq, request.mBufferNum, request.mParams.get() ? "true" : "false");
+            LOG2("%s: Process request: %ld:%ld, out buffer %d, param? %s", __func__,
+                 mLastRequestId, effectSeq, request.mBufferNum,
+                 request.mParams.get() ? "true" : "false");
         }
     }
 
@@ -460,4 +660,4 @@ void RequestThread::handleRequest(CameraRequest& request, int64_t applyingSeq) {
     }
 }
 
-}  // namespace icamera
+} //namespace icamera

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<!-- Copyright (C) 2019 Intel Corporation.
+<!-- Copyright (C) 2021 Intel Corporation.
 
      Licensed under the Apache License, Version 2.0 (the "License");
      you may not use this file except in compliance with the License.
@@ -17,8 +17,7 @@
 <CameraSettings>
     <Common>
         <version value="1.0"/>
-        <platform value="IPU6"/>
-        <cameraNumber value="1"/>
-        <availableSensors value="hm11b1-uf-1,ov01a1s-uf-1,tpg_ipu6"/>
+        <platform value="ipu6"/>
+        <availableSensors value="imx390,ar0234,external_source,ar0234_usb,lt6911uxc"/>
     </Common>
 </CameraSettings>

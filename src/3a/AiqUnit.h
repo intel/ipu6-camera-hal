@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2022 Intel Corporation.
+ * Copyright (C) 2015-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,42 +43,42 @@ class LensHw;
  * This class is used for upper layer to control 3a engine.
  */
 
-class AiqUnitBase {
- public:
+class AiqUnitBase{
+
+public:
     AiqUnitBase() {}
     virtual ~AiqUnitBase() {}
 
     virtual int init() { return OK; }
     virtual int deinit() { return OK; }
-    virtual int configure(const stream_config_t* /*streamList*/) { return OK; }
+    virtual int configure(const stream_config_t * /*streamList*/) { return OK; }
     virtual int start() { return OK; }
     virtual int stop() { return OK; }
-    virtual int run3A(long request, int64_t applyingSeq, int64_t* /*effectSeq*/) { return OK; }
+    virtual int run3A(long request, long applyingSeq, long * /*effectSeq*/)  { return OK; }
 
-    virtual std::vector<EventListener*> getSofEventListener() {
+    virtual std::vector<EventListener*> getSofEventListener()
+    {
         std::vector<EventListener*> eventListenerList;
         return eventListenerList;
     }
-    virtual std::vector<EventListener*> getStatsEventListener() {
+    virtual std::vector<EventListener*> getStatsEventListener()
+    {
         std::vector<EventListener*> eventListenerList;
         return eventListenerList;
     }
-    // INTEL_DVS_S
-    virtual std::vector<EventListener*> getDVSEventListener() {
-        std::vector<EventListener*> eventListenerList;
-        return eventListenerList;
-    }
-    // INTEL_DVS_E
 
-    virtual int setParameters(const Parameters& /*params*/) { return OK; }
+    virtual int setParameters(const Parameters & /*params*/) { return OK; }
 
- private:
+private:
     DISALLOW_COPY_AND_ASSIGN(AiqUnitBase);
+
 };
 
 class AiqUnit : public AiqUnitBase {
- public:
-    AiqUnit(int cameraId, SensorHwCtrl* sensorHw, LensHw* lensHw);
+
+public:
+    AiqUnit(int cameraId, SensorHwCtrl *sensorHw, LensHw *lensHw,
+            ParameterGenerator* paramGen);
     ~AiqUnit();
 
     /**
@@ -94,7 +94,7 @@ class AiqUnit : public AiqUnitBase {
     /**
      * \brief configure 3a engine with stream configuration
      */
-    int configure(const stream_config_t* streamList);
+    int configure(const stream_config_t *streamList);
 
     /**
      * \brief Start 3a Engine
@@ -117,7 +117,7 @@ class AiqUnit : public AiqUnitBase {
      *
      * Return 0 if the operation succeeds.
      */
-    int run3A(long requestId, int64_t applyingSeq, int64_t* effectSeq);
+    int run3A(long requestId, long applyingSeq, long* effectSeq);
 
     /**
      * \brief Get software EventListener
@@ -129,32 +129,25 @@ class AiqUnit : public AiqUnitBase {
      */
     std::vector<EventListener*> getStatsEventListener();
 
-    // INTEL_DVS_S
-    /**
-     * \brief Get DVS EventListener
-     */
-    std::vector<EventListener*> getDVSEventListener();
-    // INTEL_DVS_E
-
     /**
      * \brief Set 3A Parameters
      *
      * \param params: the Parameters update to 3A
      */
-    int setParameters(const Parameters& params);
+    int setParameters(const Parameters &params);
 
- private:
+private:
     DISALLOW_COPY_AND_ASSIGN(AiqUnit);
 
- private:
-    int initIntelCcaHandle(const std::vector<ConfigMode>& configModes);
+private:
+    int initIntelCcaHandle(const std::vector<ConfigMode> &configModes);
     void deinitIntelCcaHandle();
     void dumpCcaInitParam(const cca::cca_init_params params);
 
- private:
+private:
     int mCameraId;
     // LOCAL_TONEMAP_S
-    Ltm* mLtm;
+    Ltm *mLtm;
     // LOCAL_TONEMAP_E
     enum AiqUnitState {
         AIQ_UNIT_NOT_INIT = 0,
@@ -166,17 +159,17 @@ class AiqUnit : public AiqUnitBase {
     } mAiqUnitState;
 
     // INTEL_DVS_S
-    Dvs* mDvs;
+    Dvs *mDvs;
     // INTEL_DVS_E
-    AiqEngine* mAiqEngine;
-    AiqSetting* mAiqSetting;
+    AiqEngine *mAiqEngine;
+    AiqSetting *mAiqSetting;
 
     // Guard for AiqUnit public API.
     Mutex mAiqUnitLock;
 
     std::vector<TuningMode> mTuningModes;
     bool mCcaInitialized;
-    size_t mActiveStreamCount;
 };
 
 } /* namespace icamera */
+

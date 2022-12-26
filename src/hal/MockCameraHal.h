@@ -53,7 +53,11 @@ class MockCameraHal : public CameraHal, public Thread {
 
     // Device API
  public:
+#ifdef NO_VIRTUAL_CHANNEL
     virtual int deviceOpen(int cameraId);
+#else
+    virtual int deviceOpen(int cameraId, int vcNum = 0);
+#endif
     virtual void deviceClose(int cameraId);
 
     virtual void deviceCallbackRegister(int cameraId, const camera_callback_ops_t* callback);
@@ -68,7 +72,7 @@ class MockCameraHal : public CameraHal, public Thread {
     virtual int streamDqbuf(int cameraId, int streamId, camera_buffer_t** ubuffer,
                             Parameters* settings = nullptr);
     virtual int setParameters(int cameraId, const Parameters& param);
-    virtual int getParameters(int cameraId, Parameters& param, int64_t sequence);
+    virtual int getParameters(int cameraId, Parameters& param, long sequence);
 
  private:
     virtual bool threadLoop();
@@ -97,7 +101,7 @@ class MockCameraHal : public CameraHal, public Thread {
 
     std::deque<std::shared_ptr<CaptureRequest>> mCaptureRequest[MAX_CAMERA_NUMBER];
     std::deque<camera_buffer_t*> mCaptureResult[MAX_CAMERA_NUMBER][kMaxStreamNum];
-    std::condition_variable mBufferReadyCondition[MAX_CAMERA_NUMBER][kMaxStreamNum];
+    std::condition_variable mBufferReadyCondition[MAX_CAMERA_NUMBER];
     int mCameraOpenNum;
     uint64_t mTimestamp;
 

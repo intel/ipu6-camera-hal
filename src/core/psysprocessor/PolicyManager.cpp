@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2022 Intel Corporation
+ * Copyright (C) 2017-2021 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,17 +22,20 @@
 
 namespace icamera {
 
-PolicyManager::PolicyManager(int cameraId) : mCameraId(cameraId), mIsActive(false) {
+PolicyManager::PolicyManager(int cameraId) : mCameraId(cameraId), mIsActive(false)
+{
     LOG1("@%s: camera id:%d", __func__, mCameraId);
 }
 
-PolicyManager::~PolicyManager() {
+PolicyManager::~PolicyManager()
+{
     LOG1("@%s: camera id:%d", __func__, mCameraId);
 
     releaseBundles();
 }
 
-void PolicyManager::releaseBundles() {
+void PolicyManager::releaseBundles()
+{
     LOG1("@%s: camera id:%d", __func__, mCameraId);
 
     for (const auto& bundle : mBundles) {
@@ -42,13 +45,14 @@ void PolicyManager::releaseBundles() {
     mBundles.clear();
 }
 
-void PolicyManager::setActive(bool isActive) {
+void PolicyManager::setActive(bool isActive)
+{
     AutoMutex lock(mPolicyLock);
 
-    LOG1("@%s: camera id:%d update active mode from %d to %d", __func__, mCameraId, mIsActive,
-         isActive);
+    LOG1("@%s: camera id:%d update active mode from %d to %d",
+          __func__, mCameraId, mIsActive, isActive);
 
-    if (mIsActive == isActive) return;  // No action is needed if the mode unchanged.
+    if (mIsActive == isActive) return; // No action is needed if the mode unchanged.
 
     for (auto& bundle : mBundles) {
         AutoMutex lock(bundle->mLock);
@@ -69,14 +73,14 @@ void PolicyManager::setActive(bool isActive) {
 }
 
 int PolicyManager::addExecutorBundle(const std::vector<std::string>& executors,
-                                     const std::vector<int>& depths, int64_t startSequence) {
+                                     const std::vector<int>& depths) {
     LOG1("@%s: camera id:%d", __func__, mCameraId);
 
     AutoMutex lock(mPolicyLock);
 
     uint8_t size = executors.size();
-    CheckAndLogError(size != depths.size(), BAD_VALUE,
-                     "The size for executor and its depth not match");
+    CheckAndLogError(size != depths.size(),
+                     BAD_VALUE, "The size for executor and its depth not match");
 
     int maxDepth = 0;
     std::map<std::string, ExecutorData> executorData;
@@ -94,7 +98,6 @@ int PolicyManager::addExecutorBundle(const std::vector<std::string>& executors,
     bundle->mExecutorNum = size;
     bundle->mMaxDepth = maxDepth;
     bundle->mWaitingCount = 0;
-    bundle->mStartSequence = startSequence;
     bundle->mIsActive = true;
 
     mBundles.push_back(bundle);
@@ -102,7 +105,8 @@ int PolicyManager::addExecutorBundle(const std::vector<std::string>& executors,
     return OK;
 }
 
-int PolicyManager::wait(std::string executorName, int64_t sequence) {
+int PolicyManager::wait(std::string executorName)
+{
     ExecutorBundle* bundle = nullptr;
     {
         AutoMutex lock(mPolicyLock);
@@ -124,8 +128,6 @@ int PolicyManager::wait(std::string executorName, int64_t sequence) {
 
     // If it's already inactive, there is no need to align the executors anymore.
     if (!bundle->mIsActive) return OK;
-    // start to sync when frame sequence exceed the setting sequence
-    if (sequence <= bundle->mStartSequence) return OK;
 
     ExecutorData& executorData = bundle->mExecutorData[executorName];
     executorData.mRunCount++;
@@ -158,4 +160,5 @@ int PolicyManager::wait(std::string executorName, int64_t sequence) {
     return OK;
 }
 
-}  // end of namespace icamera
+} // end of namespace icamera
+

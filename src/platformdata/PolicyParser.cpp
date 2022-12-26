@@ -15,25 +15,26 @@
  */
 #define LOG_TAG PolicyParser
 
-#include "PolicyParser.h"
-
-#include <expat.h>
 #include <string.h>
+#include <expat.h>
 
 #include "iutils/CameraLog.h"
 
+#include "PolicyParser.h"
+
 namespace icamera {
 #define PSYS_POLICY_FILE_NAME "psys_policy_profiles.xml"
-PolicyParser::PolicyParser(PlatformData::StaticCfg* cfg)
-        : mStaticCfg(cfg),
-          mCurrentDataField(FIELD_INVALID),
-          pCurrentConf(nullptr) {
+PolicyParser::PolicyParser(PlatformData::StaticCfg *cfg) :
+    mStaticCfg(cfg),
+    mCurrentDataField(FIELD_INVALID),
+    pCurrentConf(nullptr) {
+    LOGXML("@%s", __func__);
     CheckAndLogError(!mStaticCfg, VOID_VALUE, "@%s, cfg parameter is wrong", __func__);
     mStaticCfg->mPolicyConfig.clear();
 
     int ret = getDataFromXmlFile(PSYS_POLICY_FILE_NAME);
-    CheckAndLogError(ret != OK, VOID_VALUE, "Failed to get policy profiles data frome %s",
-                     PSYS_POLICY_FILE_NAME);
+    CheckAndLogError(ret != OK, VOID_VALUE,
+                     "Failed to get policy profiles data frome %s", PSYS_POLICY_FILE_NAME);
 }
 
 /**
@@ -46,8 +47,9 @@ PolicyParser::PolicyParser(PlatformData::StaticCfg* cfg)
  * \param name: the element's name.
  * \param atts: the element's attribute.
  */
-void PolicyParser::checkField(PolicyParser* profiles, const char* name, const char** atts) {
-    LOG2("@%s, name:%s", __func__, name);
+void PolicyParser::checkField(PolicyParser *profiles, const char *name, const char **atts)
+{
+    LOGXML("@%s, name:%s", __func__, name);
     if (strcmp(name, "PsysPolicyConfig") == 0) {
         profiles->mCurrentDataField = FIELD_INVALID;
         return;
@@ -58,7 +60,7 @@ void PolicyParser::checkField(PolicyParser* profiles, const char* name, const ch
         while (atts[idx]) {
             const char* key = atts[idx];
             const char* val = atts[idx + 1];
-            LOG2("@%s, name:%s, atts[%d]:%s, atts[%d]:%s", __func__, name, idx, key, idx + 1, val);
+            LOGXML("@%s, name:%s, atts[%d]:%s, atts[%d]:%s", __func__, name, idx, key, idx+1, val);
             if (strcmp(key, "id") == 0) {
                 profiles->pCurrentConf->graphId = atoi(val);
             } else if (strcmp(key, "description") == 0) {
@@ -74,13 +76,14 @@ void PolicyParser::checkField(PolicyParser* profiles, const char* name, const ch
     return;
 }
 
-void PolicyParser::handlePipeExecutor(PolicyParser* profiles, const char* name, const char** atts) {
+void PolicyParser::handlePipeExecutor(PolicyParser *profiles, const char *name, const char **atts)
+{
     int idx = 0;
     ExecutorPolicy policy;
 
     while (atts[idx]) {
-        const char* key = atts[idx];
-        LOG2("%s: name: %s, value: %s", __func__, atts[idx], atts[idx + 1]);
+        const char *key = atts[idx];
+        LOGXML("%s: name: %s, value: %s", __func__, atts[idx], atts[idx + 1]);
         if (strcmp(key, "name") == 0) {
             policy.exeName = atts[idx + 1];
         } else if (strcmp(key, "pgs") == 0) {
@@ -104,70 +107,50 @@ void PolicyParser::handlePipeExecutor(PolicyParser* profiles, const char* name, 
         idx += 2;
     }
 
-    LOG2("@%s, name:%s, atts[0]:%s", __func__, name, atts[0]);
+    LOGXML("@%s, name:%s, atts[0]:%s", __func__, name, atts[0]);
     profiles->pCurrentConf->pipeExecutorVec.push_back(policy);
 }
 
-void PolicyParser::handleExclusivePGs(PolicyParser* profiles, const char* name, const char** atts) {
+void PolicyParser::handleExclusivePGs(PolicyParser *profiles, const char *name, const char **atts)
+{
     int idx = 0;
-    LOG2("%s: name: %s, value: %s", __func__, atts[idx], atts[idx + 1]);
-    const char* key = atts[idx];
+    LOGXML("%s: name: %s, value: %s", __func__, atts[idx], atts[idx + 1]);
+    const char *key = atts[idx];
     if (strcmp(key, "pgs") == 0) {
-        parseXmlConvertStrings(atts[idx + 1], profiles->pCurrentConf->exclusivePgs,
-                               convertCharToString);
+        parseXmlConvertStrings(atts[idx + 1], profiles->pCurrentConf->exclusivePgs, convertCharToString);
     } else {
         LOGE("Invalid policy attribute %s in exclusive label.", key);
     }
 }
 
-int PolicyParser::parseExecutorDepth(const char** atts, struct ExecutorDepth* executorsDepth) {
+void PolicyParser::handleBundles(PolicyParser *profiles, const char *name, const char **atts)
+{
     int idx = 0;
+    LOGXML("%s: name: %s, value: %s", __func__, atts[idx], atts[idx + 1]);
+    const char *key = atts[idx];
 
-    LOG2("%s: name: %s, value: %s", __func__, atts[idx], atts[idx + 1]);
+    CheckAndLogError(strcmp(key, "executors") != 0, VOID_VALUE, "Invalid policy attribute %s in bundle label.", key);
 
     // The structure of a bundle looks like: "proc:0,post:1" which uses ',' to split
     // different executors' names, and uses ':' to specify the executor's depth.
+    std::vector<std::string> bundledExecutors;
+    std::vector<int> depths;
     std::vector<std::string> executors = CameraUtils::splitString(atts[idx + 1], ',');
 
-    for (const auto& item : executors) {
+    for (const auto & item : executors) {
         std::vector<std::string> executorDepth = CameraUtils::splitString(item.c_str(), ':');
-        CheckAndLogError(executorDepth.size() != 2, UNKNOWN_ERROR,
-                         "Invalid executor-depth mapping.");
+        CheckAndLogError(executorDepth.size() != 2, VOID_VALUE, "Invalid executor-depth mapping.");
 
-        executorsDepth->bundledExecutors.push_back(executorDepth[0]);
-        executorsDepth->depths.push_back(std::stoi(executorDepth[1]));
+        bundledExecutors.push_back(executorDepth[0]);
+        depths.push_back(std::stoi(executorDepth[1]));
     }
 
-    return OK;
+    ExecutorDepth executorDepth = {bundledExecutors, depths};
+    profiles->pCurrentConf->bundledExecutorDepths.push_back(executorDepth);
 }
 
-void PolicyParser::handleBundles(PolicyParser* profiles, const char* name, const char** atts) {
-    int idx = 0;
-    int64_t sequence = 0;
-    ExecutorDepth bundle = {};
-
-    /* bundle config format should be: executors="executor_a:0,executor_b:1" sequence="number"
-     * sequence is the start sequence when the executors will start to sync, default is 0
-     */
-    while (atts[idx]) {
-        const char* key = atts[idx];
-        LOG1("%s: name: %s, value: %s", __func__, atts[idx], atts[idx + 1]);
-        if (strcmp(key, "sequence") == 0) {
-            sequence = atol(atts[idx + 1]);
-        } else if (strcmp(key, "executors") == 0) {
-            int ret = parseExecutorDepth(&atts[idx], &bundle);
-            CheckAndLogError(ret != 0, VOID_VALUE, "Invalid policy attribute %s in bundle label.",
-                             key);
-        }
-        idx += 2;
-    }
-
-    bundle.startSequence = sequence;
-    profiles->pCurrentConf->bundledExecutorDepths.push_back(bundle);
-}
-
-void PolicyParser::handleShareReferPair(PolicyParser* profiles, const char* name,
-                                        const char** atts) {
+void PolicyParser::handleShareReferPair(PolicyParser *profiles,
+                                        const char *name, const char **atts) {
     // example: <shareReferPair pair="post_gdc_video_bayer:6,post_gdc_stills:6"/>
     // Consumer can be null to support reprocessing (video pipe needs previous frames),
     // Don't set port or set it as 0 for this case:
@@ -201,8 +184,8 @@ void PolicyParser::handleShareReferPair(PolicyParser* profiles, const char* name
     cPair.first = consumer;
     cPair.second = cPort ? atoi(cPort) : 0;
 
-    LOG2("@%s, pair: %s:%d -> %s:%d", __func__, pPair.first.c_str(), pPair.second,
-         cPair.first.c_str(), cPair.second);
+    LOGXML("@%s, pair: %s:%d -> %s:%d", __func__,
+           pPair.first.c_str(), pPair.second, cPair.first.c_str(), cPair.second);
     profiles->pCurrentConf->shareReferPairList.push_back(pPair);
     profiles->pCurrentConf->shareReferPairList.push_back(cPair);
 }
@@ -216,8 +199,9 @@ void PolicyParser::handleShareReferPair(PolicyParser* profiles, const char* name
  * \param name: the element's name.
  * \param atts: the element's attribute.
  */
-void PolicyParser::handlePolicyConfig(PolicyParser* profiles, const char* name, const char** atts) {
-    LOG2("@%s, name:%s, atts[0]:%s", __func__, name, atts[0]);
+void PolicyParser::handlePolicyConfig(PolicyParser *profiles, const char *name, const char **atts)
+{
+    LOGXML("@%s, name:%s, atts[0]:%s", __func__, name, atts[0]);
     if (strcmp(name, "pipe_executor") == 0) {
         handlePipeExecutor(profiles, name, atts);
     } else if (strcmp(name, "exclusive") == 0) {
@@ -226,7 +210,7 @@ void PolicyParser::handlePolicyConfig(PolicyParser* profiles, const char* name, 
         handleBundles(profiles, name, atts);
     } else if (strcmp(name, "enableBundleInSdv") == 0) {
         profiles->pCurrentConf->enableBundleInSdv = (strcmp(atts[1], "true") == 0) ? true : false;
-        LOG2("%s: enableBundleInSdv: %s", __func__, atts[1]);
+        LOGXML("%s: enableBundleInSdv: %s", __func__, atts[1]);
     } else if (strcmp(name, "shareReferPair") == 0) {
         handleShareReferPair(profiles, name, atts);
     }
@@ -240,8 +224,9 @@ void PolicyParser::handlePolicyConfig(PolicyParser* profiles, const char* name, 
  * \param userData: the pointer we set by the function XML_SetUserData.
  * \param name: the element's name.
  */
-void PolicyParser::startParseElement(void* userData, const char* name, const char** atts) {
-    PolicyParser* profiles = reinterpret_cast<PolicyParser*>(userData);
+void PolicyParser::startParseElement(void *userData, const char *name, const char **atts)
+{
+    PolicyParser *profiles = reinterpret_cast<PolicyParser*>(userData);
 
     if (profiles->mCurrentDataField == FIELD_INVALID) {
         profiles->checkField(profiles, name, atts);
@@ -266,13 +251,14 @@ void PolicyParser::startParseElement(void* userData, const char* name, const cha
  * \param userData: the pointer we set by the function XML_SetUserData.
  * \param name: the element's name.
  */
-void PolicyParser::endParseElement(void* userData, const char* name) {
-    LOG2("@%s %s", __func__, name);
+void PolicyParser::endParseElement(void *userData, const char *name)
+{
+    LOGXML("@%s %s", __func__, name);
 
-    PolicyParser* profiles = reinterpret_cast<PolicyParser*>(userData);
+    PolicyParser *profiles = reinterpret_cast<PolicyParser*>(userData);
 
     if (strcmp(name, "graph") == 0) {
-        LOG2("@%s, add policyConf, graphId: %d", __func__, profiles->pCurrentConf->graphId);
+        LOGXML("@%s, add policyConf, graphId: %d", __func__, profiles->pCurrentConf->graphId);
         profiles->mStaticCfg->mPolicyConfig.push_back(*(profiles->pCurrentConf));
         delete profiles->pCurrentConf;
         profiles->pCurrentConf = nullptr;
@@ -280,4 +266,4 @@ void PolicyParser::endParseElement(void* userData, const char* name) {
     }
 }
 
-}  // namespace icamera
+} //namespace icamera

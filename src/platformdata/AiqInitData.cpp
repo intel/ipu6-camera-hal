@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2022 Intel Corporation
+ * Copyright (C) 2015-2021 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,18 +16,18 @@
 
 #define LOG_TAG AiqInitData
 
+#include <unordered_map>
+#include <dirent.h>
+
 #include "AiqInitData.h"
 
-#include <dirent.h>
 #include <sys/stat.h>
-
-#include <unordered_map>
 
 #include "AiqUtils.h"
 #include "PlatformData.h"
 #include "ia_types.h"
-#include "iutils/CameraDump.h"
 #include "iutils/CameraLog.h"
+#include "iutils/CameraDump.h"
 
 using std::string;
 
@@ -81,8 +81,8 @@ void AiqData::loadFile(const std::string& fileName, ia_binary_data* data, int ma
 
     // Open file
     FILE* fp = fopen(fileName.c_str(), "rb");
-    CheckWarning(fp == nullptr, VOID_VALUE, "Failed to open file %s, error %s", fileName.c_str(),
-                 strerror(errno));
+    CheckWarning(fp == nullptr, VOID_VALUE, "Failed to open file %s, error %s",
+                 fileName.c_str(), strerror(errno));
 
     std::unique_ptr<char[]> dataPtr(new char[usedFileSize]);
 
@@ -93,7 +93,7 @@ void AiqData::loadFile(const std::string& fileName, ia_binary_data* data, int ma
     CheckWarning(readSize != (size_t)usedFileSize, VOID_VALUE, "Failed to read %s, error %s",
                  fileName.c_str(), strerror(errno));
 
-    mDataPtr = std::move(dataPtr);
+    mDataPtr = move(dataPtr);
     data->data = mDataPtr.get();
     data->size = usedFileSize;
     LOG1("%s, file %s, size %d", __func__, fileName.c_str(), data->size);
@@ -105,8 +105,8 @@ void AiqData::saveDataToFile(const std::string& fileName, const ia_binary_data* 
 
     // Open file
     FILE* fp = fopen(fileName.c_str(), "wb");
-    CheckWarning(fp == nullptr, VOID_VALUE, "Failed to open file %s, error %s", fileName.c_str(),
-                 strerror(errno));
+    CheckWarning(fp == nullptr, VOID_VALUE, "Failed to open file %s, error %s",
+                 fileName.c_str(), strerror(errno));
 
     // Write data to file
     size_t writeSize = fwrite(data->data, 1, data->size, fp);
@@ -124,7 +124,7 @@ void AiqData::saveDataToFile(const std::string& fileName, const ia_binary_data* 
 
 AiqInitData::AiqInitData(const std::string& sensorName, const std::string& camCfgDir,
                          const std::vector<TuningConfig>& tuningCfg, const std::string& nvmDir,
-                         int maxNvmSize, const std::string& camModuleName)
+                         int maxNvmSize, std::string* camModuleName)
         : mSensorName(sensorName),
           mMaxNvmSize(maxNvmSize),
           mTuningCfg(tuningCfg),
@@ -133,14 +133,24 @@ AiqInitData::AiqInitData(const std::string& sensorName, const std::string& camCf
 
     std::string aiqbNameFromModuleInfo;
     if (nvmDir.length() > 0) {
-        mNvmPath = nvmDir;
+        mNvmPath.append(NVM_DATA_PATH);
 
-        if (camModuleName.length() > 0) {
+        mNvmPath.append(nvmDir);
+        if (mNvmPath.back() != '/')
+            mNvmPath.append("/");
+
+        mNvmPath.append("eeprom");
+        LOG2("NVM data is located in %s", mNvmPath.c_str());
+
+        std::string cameraModule;
+        int ret = getCameraModuleFromEEPROM(mNvmPath, &cameraModule);
+        if (ret == OK) {
+            if (camModuleName) *camModuleName = cameraModule;
             DIR* dir = opendir(camCfgDir.c_str());
             if (dir) {
                 std::string aiqbName("camera_");
                 std::string postfix(".aiqb");
-                aiqbName.append(camModuleName);
+                aiqbName.append(cameraModule);
                 struct dirent* direntPtr = nullptr;
                 while ((direntPtr = readdir(dir)) != nullptr) {
                     if ((strncmp(direntPtr->d_name, aiqbName.c_str(), aiqbName.length()) == 0) &&
@@ -161,14 +171,15 @@ AiqInitData::AiqInitData(const std::string& sensorName, const std::string& camCf
         if (!aiqbNameFromModuleInfo.empty()) {
             aiqbName.assign(aiqbNameFromModuleInfo);
         }
-        LOGI("aiqb file name %s", aiqbName.c_str());
+        LOG1("aiqb file name %s", aiqbName.c_str());
 
         if (findConfigFile(camCfgDir, &aiqbName) != OK) {
             LOGE("there is no aiqb file:%s", cfg.aiqbName.c_str());
             return;
         }
 
-        if (mCpf.find(cfg.tuningMode) == mCpf.end()) mCpf[cfg.tuningMode] = new AiqData(aiqbName);
+        if (mCpf.find(cfg.tuningMode) == mCpf.end())
+            mCpf[cfg.tuningMode] = new AiqData(aiqbName);
     }
 
     mMkn = std::unique_ptr<MakerNote>(new MakerNote);
@@ -188,14 +199,57 @@ AiqInitData::~AiqInitData() {
     delete mNvm;
 }
 
+int AiqInitData::getCameraModuleFromEEPROM(const std::string& nvmPath, std::string* cameraModule)
+{
+    LOG1("@%s, nvmPath %s", __func__, nvmPath.c_str());
+
+    CheckAndLogError(nvmPath.empty(), NAME_NOT_FOUND, "nvmPath is empty");
+
+    const int moduleInfoSize = CAMERA_MODULE_INFO_SIZE;
+    const int moduleInfoOffset = CAMERA_MODULE_INFO_OFFSET;
+    struct CameraModuleInfo cameraModuleInfo;
+    CLEAR(cameraModuleInfo);
+    FILE* eepromFile = fopen(nvmPath.c_str(), "rb");
+    CheckAndLogError(!eepromFile, UNKNOWN_ERROR, "Failed to open EEPROM file in %s",
+                     nvmPath.c_str());
+
+    // file size should be larger than CAMERA_MODULE_INFO_OFFSET
+    fseek(eepromFile, 0, SEEK_END);
+    int nvmDataSize = static_cast<int>(ftell(eepromFile));
+    if (nvmDataSize < moduleInfoOffset) {
+        LOGE("EEPROM data is too small");
+        fclose(eepromFile);
+        return NOT_ENOUGH_DATA;
+    }
+
+    fseek(eepromFile, -1 * moduleInfoOffset, SEEK_END);
+    int ret = fread(&cameraModuleInfo, moduleInfoSize, 1, eepromFile);
+    fclose(eepromFile);
+    CheckAndLogError(!ret, UNKNOWN_ERROR, "Failed to read module info %d", ret);
+
+    if (strncmp(cameraModuleInfo.mOsInfo, NVM_OS, strlen(NVM_OS)) != 0) {
+        LOG1("NVM OS string doesn't match with module info");
+        return NO_ENTRY;
+    }
+
+    char tmpName[CAMERA_MODULE_INFO_SIZE];
+    snprintf(tmpName, CAMERA_MODULE_INFO_SIZE, "%c%c_%04x", cameraModuleInfo.mModuleVendor[0],
+             cameraModuleInfo.mModuleVendor[1], cameraModuleInfo.mModuleProduct);
+
+    cameraModule->assign(tmpName);
+    LOG1("%s, aiqb name %s", __func__, cameraModule->c_str());
+
+    return OK;
+}
+
 /**
  * findConfigFile
  *
  * Search the path where CPF files are stored
  */
 int AiqInitData::findConfigFile(const std::string& camCfgDir, std::string* cpfPathName) {
+    LOG1("@%s, cpfPathName:%p", __func__, cpfPathName);
     CheckAndLogError(!cpfPathName, BAD_VALUE, "@%s, cpfPathName is nullptr", __func__);
-    LOG1("@%s, cpfPathName:%s", __func__, cpfPathName->c_str());
 
     std::vector<string> configFilePath;
     configFilePath.push_back("./");
@@ -239,19 +293,13 @@ int AiqInitData::getCpf(TuningMode mode, ia_binary_data* cpfData) {
     return OK;
 }
 
-ia_binary_data* AiqInitData::getNvm(int cameraId, const char* overwrittenFile, int fileSize) {
-    const char* nvmFile = mNvmPath.c_str();
-    int size = mMaxNvmSize;
-    if (overwrittenFile && fileSize) {
-        nvmFile = overwrittenFile;
-        size = fileSize;
-    }
-    if (!nvmFile || !size) return nullptr;
+ia_binary_data* AiqInitData::getNvm(int cameraId) {
+    if (mNvmPath.length() == 0) return nullptr;
 
     if (!mNvm) {
-        LOG2("NVM data for %s is located in %s, size %d", mSensorName.c_str(), nvmFile, size);
+        LOG2("NVM data for %s is located in %s", mSensorName.c_str(), mNvmPath.c_str());
 
-        mNvm = new AiqData(nvmFile, size);
+        mNvm = new AiqData(mNvmPath, mMaxNvmSize);
 
         if (CameraDump::isDumpTypeEnable(DUMP_NVM_DATA)) {
             ia_binary_data* nvmData = mNvm->getData();

@@ -39,27 +39,11 @@ static tag_info_t intel_vendor_camera[INTEL_VENDOR_CAMERA_END -
     { "callbackTmCurve",               ICAMERA_TYPE_BYTE   },
     { "toneMapCurve",                  ICAMERA_TYPE_FLOAT  },
     { "powerMode",                     ICAMERA_TYPE_BYTE   },
-// ENABLE_EVCP_S
     { "icCaps",                        ICAMERA_TYPE_INT32  },
-// ENABLE_EVCP_E
-// ENABLE_EVCP_S
-    { "icPeaceFeatures",               ICAMERA_TYPE_INT32  },
-// ENABLE_EVCP_E
-// ENABLE_EVCP_S
     { "icEccMode",                     ICAMERA_TYPE_BYTE   },
-// ENABLE_EVCP_E
-// ENABLE_EVCP_S
     { "icBcMode",                      ICAMERA_TYPE_BYTE   },
-// ENABLE_EVCP_E
-// ENABLE_EVCP_S
     { "icBrParameters",                ICAMERA_TYPE_INT32  },
-// ENABLE_EVCP_E
-// ENABLE_EVCP_S
     { "icFfMode",                      ICAMERA_TYPE_BYTE   },
-// ENABLE_EVCP_E
-    { "totalExposureTarget",           ICAMERA_TYPE_INT64  },
-    { "totalExposureTargetRange",      ICAMERA_TYPE_INT64  },
-    { "rawDataOutput",                 ICAMERA_TYPE_BYTE   },
 };
 
 tag_info_t *vendor_tag_info[INTEL_VENDOR_SECTION_COUNT] = {
@@ -136,24 +120,16 @@ int vendor_metadata_enum_snprint(uint32_t tag,
                     break;
                 case INTEL_VENDOR_CAMERA_POWER_MODE_HIGH_QUALITY:
                     msg = "HIGH_QUALITY";
-                    ret = 0;
                     break;
-                default:
-                    msg = "error: enum value out of range";
             }
             break;
         }
-// ENABLE_EVCP_S
         case INTEL_VENDOR_CAMERA_IC_CAPS: {
             break;
         }
-// ENABLE_EVCP_E
-// ENABLE_EVCP_S
         case INTEL_VENDOR_CAMERA_IC_PEACE_FEATURES: {
             break;
         }
-// ENABLE_EVCP_E
-// ENABLE_EVCP_S
         case INTEL_VENDOR_CAMERA_IC_ECC_MODE: {
             switch (value) {
                 case INTEL_VENDOR_CAMERA_IC_ECC_MODE_OFF:
@@ -169,8 +145,6 @@ int vendor_metadata_enum_snprint(uint32_t tag,
             }
             break;
         }
-// ENABLE_EVCP_E
-// ENABLE_EVCP_S
         case INTEL_VENDOR_CAMERA_IC_BC_MODE: {
             switch (value) {
                 case INTEL_VENDOR_CAMERA_IC_BC_MODE_OFF:
@@ -190,13 +164,9 @@ int vendor_metadata_enum_snprint(uint32_t tag,
             }
             break;
         }
-// ENABLE_EVCP_E
-// ENABLE_EVCP_S
         case INTEL_VENDOR_CAMERA_IC_BR_PARAMETERS: {
             break;
         }
-// ENABLE_EVCP_E
-// ENABLE_EVCP_S
         case INTEL_VENDOR_CAMERA_IC_FF_MODE: {
             switch (value) {
                 case INTEL_VENDOR_CAMERA_IC_FF_MODE_OFF:
@@ -205,28 +175,6 @@ int vendor_metadata_enum_snprint(uint32_t tag,
                     break;
                 case INTEL_VENDOR_CAMERA_IC_FF_MODE_AUTO:
                     msg = "AUTO";
-                    ret = 0;
-                    break;
-                default:
-                    msg = "error: enum value out of range";
-            }
-            break;
-        }
-// ENABLE_EVCP_E
-        case INTEL_VENDOR_CAMERA_TOTAL_EXPOSURE_TARGET: {
-            break;
-        }
-        case INTEL_VENDOR_CAMERA_TOTAL_EXPOSURE_TARGET_RANGE: {
-            break;
-        }
-        case INTEL_VENDOR_CAMERA_RAW_DATA_OUTPUT: {
-            switch (value) {
-                case INTEL_VENDOR_CAMERA_RAW_DATA_OUTPUT_OFF:
-                    msg = "OFF";
-                    ret = 0;
-                    break;
-                case INTEL_VENDOR_CAMERA_RAW_DATA_OUTPUT_ON:
-                    msg = "ON";
                     ret = 0;
                     break;
                 default:

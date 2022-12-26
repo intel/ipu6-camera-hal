@@ -16,50 +16,60 @@
 
 #define LOG_TAG PostProcessorCore
 
-#include "PostProcessorCore.h"
-
-#include "HALv3Utils.h"
 #include "iutils/CameraLog.h"
+#include "PostProcessorCore.h"
 
 using std::shared_ptr;
 
 namespace icamera {
 
-PostProcessorCore::PostProcessorCore(int cameraId) : mCameraId(cameraId) {}
+PostProcessorCore::PostProcessorCore(int cameraId) :
+    mCameraId(cameraId)
+{
+    LOG1("@%s, cameraId: %d", __func__, mCameraId);
+}
 
-bool PostProcessorCore::isPostProcessTypeSupported(PostProcessType type) {
+PostProcessorCore::~PostProcessorCore()
+{
+    LOG1("@%s", __func__);
+}
+
+bool PostProcessorCore::isPostProcessTypeSupported(PostProcessType type)
+{
     return IImageProcessor::isProcessingTypeSupported(type);
 }
 
-status_t PostProcessorCore::createProcessor() {
+status_t PostProcessorCore::createProcessor()
+{
+    LOG2("@%s, cameraId: %d", __func__, mCameraId);
+
     mProcessorVector.clear();
-    for (const auto& order : mProcessorsInfo) {
+    for (const auto &order : mProcessorsInfo) {
         shared_ptr<PostProcessorBase> processor = nullptr;
         switch (order.type) {
-            case POST_PROCESS_SCALING:
-                processor = std::make_shared<ScaleProcess>();
-                break;
-            case POST_PROCESS_ROTATE:
-                processor = std::make_shared<RotateProcess>(order.angle);
-                break;
-            case POST_PROCESS_CROP:
-                processor = std::make_shared<CropProcess>();
-                break;
-            case POST_PROCESS_CONVERT:
-                processor = std::make_shared<ConvertProcess>();
-                break;
-            case POST_PROCESS_JPEG_ENCODING:
-                processor = std::make_shared<JpegProcess>(mCameraId);
-                break;
-            case POST_PROCESS_NONE:
-                break;
-            default:
-                LOGE("%s, Doesn't support this kind of post-processor", __func__);
-                return UNKNOWN_ERROR;
+        case POST_PROCESS_SCALING :
+            processor = std::make_shared<ScaleProcess>();
+            break;
+        case POST_PROCESS_ROTATE :
+            processor = std::make_shared<RotateProcess>(order.angle);
+            break;
+        case POST_PROCESS_CROP :
+            processor = std::make_shared<CropProcess>();
+            break;
+        case POST_PROCESS_CONVERT :
+            processor = std::make_shared<ConvertProcess>();
+            break;
+        case POST_PROCESS_JPEG_ENCODING :
+            processor = std::make_shared<JpegProcess>(mCameraId);
+            break;
+        case POST_PROCESS_NONE:
+            break;
+        default:
+            LOGE("%s, Doesn't support this kind of post-processor", __func__);
+            return UNKNOWN_ERROR;
         }
 
-        CheckAndLogError(!processor, UNKNOWN_ERROR, "%s, Failed to create the post processor: 0x%x",
-                         __func__, order.type);
+        CheckAndLogError(!processor, UNKNOWN_ERROR, "%s, Failed to create the post processor: 0x%x", __func__, order.type);
         mProcessorVector.push_back(processor);
     }
 
@@ -67,33 +77,28 @@ status_t PostProcessorCore::createProcessor() {
     return OK;
 }
 
-status_t PostProcessorCore::allocateBuffers() {
-    LOG1("<id%d>@%s,mProcessorVector.size: %zu", mCameraId, __func__, mProcessorVector.size());
+status_t PostProcessorCore::allocateBuffers()
+{
+    LOG2("@%s,mProcessorVector.size: %zu cameraId: %d", __func__, mProcessorVector.size(), mCameraId);
 
     mInterBuffers.clear();
     for (size_t i = 0; i < mProcessorsInfo.size() - 1; i++) {
-        const stream_t& info = mProcessorsInfo[i].outputInfo;
-        int gfxFormat =
-            camera3::HalV3Utils::V4l2FormatToHALFormat(mProcessorsInfo[i].inputInfo.format);
-        std::shared_ptr<camera3::Camera3Buffer> buf = camera3::MemoryUtils::allocateHandleBuffer(
-            info.width, info.height, gfxFormat,
-            (GRALLOC_USAGE_SW_READ_MASK | GRALLOC_USAGE_SW_WRITE_MASK |
-             GRALLOC_USAGE_HW_CAMERA_MASK),
-            mCameraId);
-        if (!buf || buf->lock() != icamera::OK) {
-            mInterBuffers.clear();
-            LOGE("Failed to allocate internal buffer: processor: %s",
-                 mProcessorVector[i]->getName().c_str());
-            return icamera::NO_MEMORY;
-        }
+        const stream_t &info = mProcessorsInfo[i].outputInfo;
+        shared_ptr<camera3::Camera3Buffer> buf = camera3::MemoryUtils::allocateHeapBuffer(info.width, info.height,
+                                                                                          info.stride, info.format,
+                                                                                          mCameraId, info.size);
+        CheckAndLogError(!buf, NO_MEMORY, "@%s: Failed to allocate internal buffer: processor: %s",
+              __func__, mProcessorVector[i]->getName().c_str());
         mInterBuffers[mProcessorVector[i]] = buf;
     }
 
     return OK;
 }
 
-status_t PostProcessorCore::configure(const std::vector<PostProcessInfo>& processorOrder) {
-    if (processorOrder.empty()) return OK;
+status_t PostProcessorCore::configure(const std::vector<PostProcessInfo> &processorOrder)
+{
+    if (processorOrder.empty())
+        return OK;
 
     mProcessorsInfo = processorOrder;
     int ret = createProcessor();
@@ -105,9 +110,10 @@ status_t PostProcessorCore::configure(const std::vector<PostProcessInfo>& proces
     return OK;
 }
 
-status_t PostProcessorCore::doPostProcessing(const shared_ptr<camera3::Camera3Buffer>& inBuf,
-                                             const Parameters& parameter,
-                                             shared_ptr<camera3::Camera3Buffer> outBuf) {
+status_t PostProcessorCore::doPostProcessing(const shared_ptr<camera3::Camera3Buffer> &inBuf,
+                                             const Parameters &parameter,
+                                             shared_ptr<camera3::Camera3Buffer> outBuf)
+{
     CheckAndLogError(!inBuf, UNKNOWN_ERROR, "%s, the inBuf is nullptr", __func__);
     CheckAndLogError(!outBuf, UNKNOWN_ERROR, "%s, the outBuf is nullptr", __func__);
 
@@ -125,12 +131,11 @@ status_t PostProcessorCore::doPostProcessing(const shared_ptr<camera3::Camera3Bu
             ret = mProcessorVector[i]->doPostProcessing(input, parameter, output);
         else
             ret = mProcessorVector[i]->doPostProcessing(input, output);
-        CheckAndLogError(ret != OK, ret, "%s, Failed to do post processing: %s", __func__,
-                         mProcessorVector[i]->getName().c_str());
+        CheckAndLogError(ret != OK, ret, "%s, Failed to do post processing: %s", __func__, mProcessorVector[i]->getName().c_str());
 
         input = output;
     }
 
     return OK;
 }
-}  // namespace icamera
+} // namespace icamera

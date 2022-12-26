@@ -35,7 +35,8 @@ typedef ::cros::V4L2Subdevice V4L2Subdevice;
  *
  */
 class LensHw {
- public:
+
+public:
     LensHw(int cameraId);
     ~LensHw();
 
@@ -45,22 +46,22 @@ class LensHw {
 
     int setFocusPosition(int position);
     int setFocusStep(int steps);
-    int getFocusPosition(int& position);
+    int getFocusPosition(int &position);
+    int getFocusStatus(int &status);
     int startAutoFocus(void);
     int stopAutoFocus(void);
-    int getAutoFocusStatus(int& status);
+    int getAutoFocusStatus(int &status);
     int setAutoFocusRange(int value);
-    int getAutoFocusRange(int& value);
+    int getAutoFocusRange(int &value);
     int getLatestPosition(int& lensPosition, unsigned long long& time);
     bool isLensSubdevAvailable() { return (mLensSubdev != nullptr); }
 
- private:
+private:
     int mCameraId;
     V4L2Subdevice* mLensSubdev;
     std::string mLensName;
     int mLastLensPosition;
-    // In microseconds
-    unsigned long long mLensMovementStartTime;
+    unsigned long long mLensMovementStartTime; /*!< In microseconds */
 };  // class LensHW
 
-}  // namespace icamera
+} // namespace icamera

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2022 Intel Corporation
+ * Copyright (C) 2019-2021 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,18 +26,22 @@
 #include "iutils/CameraLog.h"
 
 namespace icamera {
-IntelFaceDetection::IntelFaceDetection() : mFDHandle(nullptr), mMaxFacesNum(0) {}
+IntelFaceDetection::IntelFaceDetection() : mFDHandle(nullptr), mMaxFacesNum(0) {
+    LOG1("@%s", __func__);
+}
 
-IntelFaceDetection::~IntelFaceDetection() {}
+IntelFaceDetection::~IntelFaceDetection() {
+    LOG1("@%s", __func__);
+}
 
 status_t IntelFaceDetection::init(FaceDetectionInitParams* pData, int dataSize) {
+    LOG1("@%s, pData:%p, dataSize:%d", __func__, pData, dataSize);
     CheckAndLogError(!pData, UNKNOWN_ERROR, "pData is nullptr");
     CheckAndLogError(dataSize < static_cast<int>(sizeof(FaceDetectionInitParams)), UNKNOWN_ERROR,
                      "buffer is small");
 
     mMaxFacesNum = std::min(pData->max_face_num, static_cast<unsigned int>(MAX_FACES_DETECTABLE));
-    LOG2("<id%d>@%s, mMaxFacesNum:%d, dataSize: %d", pData->cameraId, __func__, mMaxFacesNum,
-         dataSize);
+    LOG2("@%s, mMaxFacesNum:%d, cameraId:%d", __func__, mMaxFacesNum, pData->cameraId);
 
     pvl_err faceRet = pvl_face_detection_create(nullptr, &mFDHandle);
     CheckAndLogError(faceRet != pvl_success, UNKNOWN_ERROR,
@@ -65,8 +69,8 @@ status_t IntelFaceDetection::init(FaceDetectionInitParams* pData, int dataSize) 
 status_t IntelFaceDetection::deinit(FaceDetectionDeinitParams* pData, int dataSize) {
     CheckAndLogError(!pData, UNKNOWN_ERROR, "pData is nullptr");
     CheckAndLogError(dataSize < static_cast<int>(sizeof(FaceDetectionDeinitParams)), UNKNOWN_ERROR,
-                     "buffer is small");
-    LOG1("<id%d>@%s", pData->cameraId, __func__);
+               "buffer is small");
+    LOG1("@%s, cameraId:%d", __func__, pData->cameraId);
 
     if (mFDHandle) {
         pvl_face_detection_destroy(mFDHandle);
@@ -75,7 +79,26 @@ status_t IntelFaceDetection::deinit(FaceDetectionDeinitParams* pData, int dataSi
     return OK;
 }
 
+void IntelFaceDetection::convertCoordinate(int faceId, int width, int height, const pvl_rect& src,
+                                           pvl_rect* dst) {
+    CheckAndLogError(!dst, VOID_VALUE, "dst is nullptr");
+
+    const camera_coordinate_system_t iaCoordinate = {IA_COORDINATE_LEFT, IA_COORDINATE_TOP,
+                                                     IA_COORDINATE_RIGHT, IA_COORDINATE_BOTTOM};
+    const camera_coordinate_system_t faceCoordinate = {0, 0, width, height};
+
+    camera_coordinate_t topLeft =
+        AiqUtils::convertCoordinateSystem(faceCoordinate, iaCoordinate, {src.left, src.top});
+    camera_coordinate_t bottomRight =
+        AiqUtils::convertCoordinateSystem(faceCoordinate, iaCoordinate, {src.right, src.bottom});
+
+    *dst = {topLeft.x, topLeft.y, bottomRight.x, bottomRight.y};
+    LOG2("@%s, face:%d, dst left:%d, top:%d, right:%d, bottom:%d", __func__, faceId, dst->left,
+         dst->top, dst->right, dst->bottom);
+}
+
 FaceDetectionRunParams* IntelFaceDetection::prepareRunBuffer(unsigned int index) {
+    LOG1("@%s", __func__);
     CheckAndLogError(index >= MAX_STORE_FACE_DATA_BUF_NUM, nullptr, "@%s, index is error %d",
                      __func__, index);
     CheckAndLogError(!mFDHandle, nullptr, "mFDHandle is nullptr");
@@ -83,7 +106,8 @@ FaceDetectionRunParams* IntelFaceDetection::prepareRunBuffer(unsigned int index)
     return &mMemRunBufs[index];
 }
 
-status_t IntelFaceDetection::run(pvl_image* pImage, FaceDetectionPVLResult* fdResults) {
+status_t IntelFaceDetection::run(pvl_image* pImage, FaceDetectionResult* fdResults) {
+    LOG1("@%s, pImage:%p", __func__, pImage);
     CheckAndLogError(!pImage, UNKNOWN_ERROR, "pData is nullptr");
     CheckAndLogError(!mFDHandle, UNKNOWN_ERROR, "mFDHandle is nullptr");
 
@@ -100,10 +124,17 @@ status_t IntelFaceDetection::run(pvl_image* pImage, FaceDetectionPVLResult* fdRe
              fdResults->faceResults[i].confidence, fdResults->faceResults[i].rip_angle,
              fdResults->faceResults[i].rop_angle, fdResults->faceResults[i].tracking_id);
     }
+
+    for (int i = 0; i < fdResults->faceNum; i++) {
+        convertCoordinate(i, pImage->width, pImage->height, fdResults->faceResults[i].rect,
+                          &fdResults->faceResults[i].rect);
+    }
+
     return OK;
 }
 
 status_t IntelFaceDetection::run(FaceDetectionRunParams* fdRunParams, int dataSize, void* addr) {
+    LOG1("@%s, fdRunParams:%p, dataSize:%d, addr:%p", __func__, fdRunParams, dataSize, addr);
     CheckAndLogError(!fdRunParams, UNKNOWN_ERROR, "pData is nullptr");
     CheckAndLogError(dataSize < static_cast<int>(sizeof(FaceDetectionRunParams)), UNKNOWN_ERROR,
                      "buffer is small");

@@ -19,24 +19,27 @@
 #include <map>
 #include <vector>
 
+#include "iutils/Thread.h"
+
+#include "StreamSource.h"
 #include "CameraBuffer.h"
 #include "DeviceBase.h"
-#include "StreamSource.h"
-#include "iutils/Thread.h"
+#include "IspParamAdaptor.h"
 
 namespace icamera {
 
 /**
- * CaptureUnit abstract the ISYS function.
- * It implements the BufferProducer Interface and it is the source of any pipeline
- * It hides the v4l2 and media controller to the upper layer.
- */
+  * CaptureUnit abstract the ISYS function.
+  * It implements the BufferProducer Interface and it is the source of any pipeline
+  * It hides the v4l2 and media controller to the upper layer.
+  */
 class CaptureUnit : public StreamSource, public DeviceCallback {
- public:
-    explicit CaptureUnit(int cameraId, int memType = V4L2_MEMORY_MMAP);
+
+public:
+    CaptureUnit(int cameraId, int memType = V4L2_MEMORY_MMAP);
     virtual ~CaptureUnit();
 
- public:
+public:
     /**
      * \brief Queue on buffer to driver
      *
@@ -48,7 +51,7 @@ class CaptureUnit : public StreamSource, public DeviceCallback {
      *
      * \return 0 if succeed, other value indicates failed
      */
-    virtual int qbuf(Port port, const std::shared_ptr<CameraBuffer>& camBuffer);
+    virtual int qbuf(Port port, const std::shared_ptr<CameraBuffer> &camBuffer);
 
     /**
      * \brief allocate memory
@@ -59,21 +62,21 @@ class CaptureUnit : public StreamSource, public DeviceCallback {
      *
      * \return OK if succeed, other value indicates failed
      */
-    virtual int allocateMemory(Port port, const std::shared_ptr<CameraBuffer>& camBuffer);
+    virtual int allocateMemory(Port port, const std::shared_ptr<CameraBuffer> &camBuffer);
 
     /**
      * \brief Add the frame buffer listener
      *
      * \param listener: the listener need to add
      */
-    virtual void addFrameAvailableListener(BufferConsumer* listener);
+    virtual void addFrameAvailableListener(BufferConsumer *listener);
 
     /**
      * \brief Remove the frame buffer listener
      *
      * \param listener: the listener need to remove
      */
-    virtual void removeFrameAvailableListener(BufferConsumer* listener);
+    virtual void removeFrameAvailableListener(BufferConsumer *listener);
 
     /**
      * \brief Remove all the listeners
@@ -132,6 +135,9 @@ class CaptureUnit : public StreamSource, public DeviceCallback {
     // Overwrite DeviceCallback API
     void onDequeueBuffer();
 
+private:
+    DISALLOW_COPY_AND_ASSIGN(CaptureUnit);
+
     int createDevices();
     void destroyDevices();
     DeviceBase* findDeviceByPort(Port port);
@@ -139,26 +145,37 @@ class CaptureUnit : public StreamSource, public DeviceCallback {
 
     int streamOn();
     void streamOff();
+
     int poll();
+
+    // USE_ISA_S
+    int configureIsaAdaptor(const stream_t &stream);
+    // USE_ISA_E
+    bool isNewConfiguration(const std::map<Port, stream_t>& outputFrames);
 
     int processPendingBuffers();
     int queueAllBuffers();
 
- private:
+private:
     /**
      * \brief The pool frame buffer thread
      */
-    class PollThread : public Thread {
-        CaptureUnit* mCaptureU;
+    class PollThread: public Thread {
+        CaptureUnit *mCaptureU;
+        public:
+            PollThread(CaptureUnit *hw) : mCaptureU(hw) { }
 
-     public:
-        explicit PollThread(CaptureUnit* hw) : mCaptureU(hw) {}
-
-        virtual bool threadLoop() { return (mCaptureU->poll() == 0); }
+            virtual bool threadLoop() {
+                return (mCaptureU->poll() == 0);
+            }
     };
 
     PollThread* mPollThread;
-    int mFlushFd[2];  // Flush file descriptor
+    int mFlushFd[2];    // Flush file descriptor
+
+    // USE_ISA_S
+    IspParamAdaptor* mIsaAdaptor;
+    // USE_ISA_E
 
     // Guard for mCaptureUnit public API except dqbuf and qbuf
     Mutex mLock;
@@ -168,7 +185,11 @@ class CaptureUnit : public StreamSource, public DeviceCallback {
 
     std::vector<ConfigMode> mConfigModes;
     std::map<Port, stream_t> mOutputFrameInfo;
+#ifdef HAS_MULTI_INPUT_DEVICE
     std::vector<DeviceBase*> mDevices;
+#else
+    DeviceBase* mDevice;
+#endif
     uint32_t mMaxBufferNum;
 
     enum {
@@ -179,9 +200,7 @@ class CaptureUnit : public StreamSource, public DeviceCallback {
         CAPTURE_STOP,
     } mState;
     bool mExitPending;
-
- private:
-    DISALLOW_COPY_AND_ASSIGN(CaptureUnit);
 };
 
-}  // namespace icamera
+} // namespace icamera
+

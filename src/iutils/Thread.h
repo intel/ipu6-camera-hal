@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2021 Intel Corporation.
+ * Copyright (C) 2017-2018 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,10 @@
 
 #pragma once
 
-#include <condition_variable>
-#include <mutex>
 #include <string>
 #include <thread>
+#include <mutex>
+#include <condition_variable>
 
 namespace icamera {
 
@@ -43,7 +43,7 @@ enum {
 };
 
 class Condition {
- public:
+public:
     Condition() {}
     ~Condition() {}
 
@@ -52,7 +52,9 @@ class Condition {
      *
      * \param[in] lock: An object of type ConditionLock, which must be locked by the current thread.
      */
-    void wait(ConditionLock& lock) { mCondition.wait(lock); }
+    void wait(ConditionLock& lock) {
+        mCondition.wait(lock);
+    }
 
     /**
      * Wait on the condition variable with a period of time.
@@ -74,7 +76,7 @@ class Condition {
      */
     void broadcast() { mCondition.notify_all(); }
 
- private:
+private:
     Condition(const Condition& other) = delete;
     Condition& operator=(const Condition&) = delete;
 
@@ -88,7 +90,7 @@ class Condition {
  * Thread also hides the platform specific implementation details.
  */
 class Thread {
- public:
+public:
     Thread();
     virtual ~Thread();
 
@@ -135,7 +137,8 @@ class Thread {
      */
     bool isExited() const;
 
- private:
+private:
+
     /**
      * threadLoop is the function which is called by the thread.
      * The derived class MUST override this function. The thread starts its life here.
@@ -152,7 +155,7 @@ class Thread {
      */
     virtual bool threadLoop() { return false; }
 
- private:
+private:
     Thread(const Thread& other) = delete;
     Thread& operator=(const Thread&) = delete;
 
@@ -166,7 +169,7 @@ class Thread {
      */
     void setProperty();
 
- private:
+private:
     enum {
         NOT_STARTED,
         RUNNING,
@@ -191,4 +194,5 @@ class Thread {
     Condition mExitedCondition;
 };
 
-}  // namespace icamera
+} // namespace icamera
+

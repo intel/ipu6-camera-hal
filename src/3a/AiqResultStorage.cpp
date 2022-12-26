@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2022 Intel Corporation.
+ * Copyright (C) 2016-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,32 +24,42 @@ namespace icamera {
 std::map<int, AiqResultStorage*> AiqResultStorage::sInstances;
 Mutex AiqResultStorage::sLock;
 
-AiqResultStorage* AiqResultStorage::getInstance(int cameraId) {
+AiqResultStorage* AiqResultStorage::getInstance(int cameraId)
+{
     AutoMutex lock(sLock);
     return getInstanceLocked(cameraId);
 }
 
-void AiqResultStorage::releaseAiqResultStorage(int cameraId) {
+void AiqResultStorage::releaseAiqResultStorage(int cameraId)
+{
     AutoMutex lock(sLock);
     AiqResultStorage* storage = getInstanceLocked(cameraId);
     sInstances.erase(cameraId);
     delete storage;
 }
 
-AiqResultStorage::AiqResultStorage(int cameraId) : mCameraId(cameraId) {
+AiqResultStorage::AiqResultStorage(int cameraId) :
+    mCameraId(cameraId)
+{
+    LOG1("AiqResultStorage created for id:%d", mCameraId);
+
     for (int i = 0; i < kStorageSize; i++) {
         mAiqResults[i] = new AiqResult(mCameraId);
         mAiqResults[i]->init();
     }
 }
 
-AiqResultStorage::~AiqResultStorage() {
+AiqResultStorage::~AiqResultStorage()
+{
+    LOG1("AiqResultStorage released for id:%d", mCameraId);
+
     for (int i = 0; i < kStorageSize; i++) {
         delete mAiqResults[i];
     }
 }
 
-AiqStatistics* AiqResultStorage::acquireAiqStatistics() {
+AiqStatistics* AiqResultStorage::acquireAiqStatistics()
+{
     AutoWMutex rlock(mDataLock);
 
     int index = (mCurrentAiqStatsIndex + 1) % kAiqStatsStorageSize;
@@ -64,7 +74,8 @@ AiqStatistics* AiqResultStorage::acquireAiqStatistics() {
     return &mAiqStatistics[index];
 }
 
-void AiqResultStorage::updateAiqStatistics(int64_t sequence) {
+void AiqResultStorage::updateAiqStatistics(long sequence)
+{
     AutoWMutex wlock(mDataLock);
 
     mCurrentAiqStatsIndex++;
@@ -73,31 +84,30 @@ void AiqResultStorage::updateAiqStatistics(int64_t sequence) {
     mAiqStatistics[mCurrentAiqStatsIndex].mSequence = sequence;
 }
 
-void AiqResultStorage::resetAiqStatistics() {
-    AutoWMutex wlock(mDataLock);
-    mCurrentAiqStatsIndex = -1;
-}
-
-const AiqStatistics* AiqResultStorage::getAndLockAiqStatistics() {
+const AiqStatistics* AiqResultStorage::getAndLockAiqStatistics()
+{
     AutoRMutex rlock(mDataLock);
 
-    if (mCurrentAiqStatsIndex == -1) return nullptr;
+    if (mCurrentAiqStatsIndex == -1)
+        return nullptr;
 
-    CheckAndLogError(mAiqStatistics[mCurrentAiqStatsIndex].mSequence == -1, nullptr,
-                     "Invalid sequence id -1 of stored aiq statistics");
+    CheckAndLogError(mAiqStatistics[mCurrentAiqStatsIndex].mSequence == -1,
+                     nullptr, "Invalid sequence id -1 of stored aiq statistics");
 
     mAiqStatistics[mCurrentAiqStatsIndex].mInUse = true;
     return &mAiqStatistics[mCurrentAiqStatsIndex];
 }
 
-void AiqResultStorage::unLockAiqStatistics() {
+void AiqResultStorage::unLockAiqStatistics()
+{
     AutoRMutex rlock(mDataLock);
     for (int i = 0; i < kAiqStatsStorageSize; i++) {
         mAiqStatistics[i].mInUse = false;
     }
 }
 
-AiqResult* AiqResultStorage::acquireAiqResult() {
+AiqResult* AiqResultStorage::acquireAiqResult()
+{
     AutoWMutex rlock(mDataLock);
 
     int index = mCurrentIndex + 1;
@@ -107,7 +117,8 @@ AiqResult* AiqResultStorage::acquireAiqResult() {
     return mAiqResults[index];
 }
 
-void AiqResultStorage::updateAiqResult(int64_t sequence) {
+void AiqResultStorage::updateAiqResult(long sequence)
+{
     AutoWMutex wlock(mDataLock);
 
     mCurrentIndex++;
@@ -115,7 +126,8 @@ void AiqResultStorage::updateAiqResult(int64_t sequence) {
     mAiqResults[mCurrentIndex]->mSequence = sequence;
 }
 
-const AiqResult* AiqResultStorage::getAiqResult(int64_t sequence) {
+const AiqResult* AiqResultStorage::getAiqResult(long sequence)
+{
     AutoRMutex rlock(mDataLock);
 
     // Sequence id is -1 means user wants get the latest result.
@@ -139,7 +151,8 @@ const AiqResult* AiqResultStorage::getAiqResult(int64_t sequence) {
 /**
  * Private function with no lock in it, must be called with lock protection
  */
-AiqResultStorage* AiqResultStorage::getInstanceLocked(int cameraId) {
+AiqResultStorage* AiqResultStorage::getInstanceLocked(int cameraId)
+{
     if (sInstances.find(cameraId) != sInstances.end()) {
         return sInstances[cameraId];
     }
@@ -148,4 +161,5 @@ AiqResultStorage* AiqResultStorage::getInstanceLocked(int cameraId) {
     return sInstances[cameraId];
 }
 
-}  // namespace icamera
+} //namespace icamera
+

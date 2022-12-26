@@ -16,21 +16,19 @@
 
 #define LOG_TAG SwImageConverter
 
-#include "SwImageConverter.h"
-
-#include "CameraLog.h"
 #include "Errors.h"
 #include "Utils.h"
+#include "CameraLog.h"
+#include "SwImageConverter.h"
 
 namespace icamera {
 
 void SwImageConverter::RGB2YUV(unsigned short R, unsigned short G, unsigned short B,
-                               unsigned char* Y, unsigned char* U, unsigned char* V) {
+     unsigned char *Y, unsigned char *U, unsigned char *V)
+{
     int Rp, Gp, Bp;
     int oY, oU, oV;
-    Rp = R;
-    Gp = G;
-    Bp = B;
+    Rp = R; Gp = G; Bp = B;
     oY = (257 * Rp + 504 * Gp + 98 * Bp) / 4000 + 16;
     oU = (-148 * Rp - 291 * Gp + 439 * Bp) / 4000 + 128;
     oV = (439 * Rp - 368 * Gp - 71 * Bp) / 4000 + 128;
@@ -45,8 +43,9 @@ void SwImageConverter::RGB2YUV(unsigned short R, unsigned short G, unsigned shor
     *V = (unsigned char)oV;
 }
 
-void SwImageConverter::YUV2RGB(unsigned char Y, unsigned char U, unsigned char V, unsigned short* R,
-                               unsigned short* G, unsigned short* B) {
+void SwImageConverter::YUV2RGB(unsigned char Y, unsigned char U, unsigned char V,
+    unsigned short *R, unsigned short *G, unsigned short *B)
+{
     int Yp, Up, Vp, Ypp;
     int oR, oG, oB;
     Yp = Y - 16;
@@ -68,93 +67,33 @@ void SwImageConverter::YUV2RGB(unsigned char Y, unsigned char U, unsigned char V
     *B = (unsigned short)oB;
 }
 
-void SwImageConverter::convertBayerBlock(unsigned int x, unsigned int y, unsigned int width,
-                                         unsigned int height, unsigned short bayer_data[4],
-                                         unsigned char* out_buf, unsigned int src_fmt,
-                                         unsigned int dst_fmt) {
-    unsigned char* Ybase;
-    unsigned char* UVbase;
+void SwImageConverter::convertBayerBlock(unsigned int x, unsigned int y,
+    unsigned int width, unsigned int height,
+    unsigned short bayer_data[4], unsigned char *out_buf,
+    unsigned int src_fmt, unsigned int dst_fmt)
+{
+    unsigned char *Ybase;
+    unsigned char *UVbase;
     unsigned char Y, U, V;
     unsigned short R, Gr, Gb, B;
     switch (src_fmt) {
-        case V4L2_PIX_FMT_SRGGB8:
-            R = bayer_data[0] << 2;
-            Gr = bayer_data[1] << 2;
-            Gb = bayer_data[2] << 2;
-            B = bayer_data[3] << 2;
-            break;
-        case V4L2_PIX_FMT_SGRBG8:
-            Gr = bayer_data[0] << 2;
-            R = bayer_data[1] << 2;
-            B = bayer_data[2] << 2;
-            Gb = bayer_data[3] << 2;
-            break;
-        case V4L2_PIX_FMT_SGBRG8:
-            Gb = bayer_data[0] << 2;
-            B = bayer_data[1] << 2;
-            R = bayer_data[2] << 2;
-            Gr = bayer_data[3] << 2;
-            break;
-        case V4L2_PIX_FMT_SBGGR8:
-            B = bayer_data[0] << 2;
-            Gb = bayer_data[1] << 2;
-            Gr = bayer_data[2] << 2;
-            R = bayer_data[3] << 2;
-            break;
-        case V4L2_PIX_FMT_SRGGB10:
-            R = bayer_data[0];
-            Gr = bayer_data[1];
-            Gb = bayer_data[2];
-            B = bayer_data[3];
-            break;
-        case V4L2_PIX_FMT_SGRBG10:
-            Gr = bayer_data[0];
-            R = bayer_data[1];
-            B = bayer_data[2];
-            Gb = bayer_data[3];
-            break;
-        case V4L2_PIX_FMT_SGBRG10:
-            Gb = bayer_data[0];
-            B = bayer_data[1];
-            R = bayer_data[2];
-            Gr = bayer_data[3];
-            break;
-        case V4L2_PIX_FMT_SBGGR10:
-            B = bayer_data[0];
-            Gb = bayer_data[1];
-            Gr = bayer_data[2];
-            R = bayer_data[3];
-            break;
-        case V4L2_PIX_FMT_SRGGB12:
-            R = bayer_data[0] >> 2;
-            Gr = bayer_data[1] >> 2;
-            Gb = bayer_data[2] >> 2;
-            B = bayer_data[3] >> 2;
-            break;
-        case V4L2_PIX_FMT_SGRBG12:
-            Gr = bayer_data[0] >> 2;
-            R = bayer_data[1] >> 2;
-            B = bayer_data[2] >> 2;
-            Gb = bayer_data[3] >> 2;
-            break;
-        case V4L2_PIX_FMT_SGBRG12:
-            Gb = bayer_data[0] >> 2;
-            B = bayer_data[1] >> 2;
-            R = bayer_data[2] >> 2;
-            Gr = bayer_data[3] >> 2;
-            break;
-        case V4L2_PIX_FMT_SBGGR12:
-            B = bayer_data[0] >> 2;
-            Gb = bayer_data[1] >> 2;
-            Gr = bayer_data[2] >> 2;
-            R = bayer_data[3] >> 2;
-            break;
-        default:
-            return;
+        case V4L2_PIX_FMT_SRGGB8: R = bayer_data[0] << 2; Gr = bayer_data[1] << 2; Gb = bayer_data[2] << 2; B = bayer_data[3] << 2; break;
+        case V4L2_PIX_FMT_SGRBG8: Gr = bayer_data[0] << 2; R = bayer_data[1] << 2; B = bayer_data[2] << 2; Gb = bayer_data[3] << 2; break;
+        case V4L2_PIX_FMT_SGBRG8: Gb = bayer_data[0] << 2; B = bayer_data[1] << 2; R = bayer_data[2] << 2; Gr = bayer_data[3] << 2; break;
+        case V4L2_PIX_FMT_SBGGR8: B = bayer_data[0] << 2; Gb = bayer_data[1] << 2; Gr = bayer_data[2] << 2; R = bayer_data[3] << 2; break;
+        case V4L2_PIX_FMT_SRGGB10: R = bayer_data[0]; Gr = bayer_data[1]; Gb = bayer_data[2]; B = bayer_data[3]; break;
+        case V4L2_PIX_FMT_SGRBG10: Gr = bayer_data[0]; R = bayer_data[1]; B = bayer_data[2]; Gb = bayer_data[3]; break;
+        case V4L2_PIX_FMT_SGBRG10: Gb = bayer_data[0]; B = bayer_data[1]; R = bayer_data[2]; Gr = bayer_data[3]; break;
+        case V4L2_PIX_FMT_SBGGR10: B = bayer_data[0]; Gb = bayer_data[1]; Gr = bayer_data[2]; R = bayer_data[3]; break;
+        case V4L2_PIX_FMT_SRGGB12: R = bayer_data[0] >> 2; Gr = bayer_data[1] >> 2; Gb = bayer_data[2] >> 2; B = bayer_data[3] >> 2; break;
+        case V4L2_PIX_FMT_SGRBG12: Gr = bayer_data[0] >> 2; R = bayer_data[1] >> 2; B = bayer_data[2] >> 2; Gb = bayer_data[3] >> 2; break;
+        case V4L2_PIX_FMT_SGBRG12: Gb = bayer_data[0] >> 2; B = bayer_data[1] >> 2; R = bayer_data[2] >> 2; Gr = bayer_data[3] >> 2; break;
+        case V4L2_PIX_FMT_SBGGR12: B = bayer_data[0] >> 2; Gb = bayer_data[1] >> 2; Gr = bayer_data[2] >> 2; R = bayer_data[3] >> 2; break;
+        default: return;
     }
 
     int dstStride = CameraUtils::getStride(dst_fmt, width);
-    switch (dst_fmt) {
+    switch(dst_fmt) {
         case V4L2_PIX_FMT_SRGGB8:
             out_buf[y * dstStride + x] = (R >> 2);
             out_buf[y * dstStride + x + 1] = (Gr >> 2);
@@ -180,28 +119,28 @@ void SwImageConverter::convertBayerBlock(unsigned int x, unsigned int y, unsigne
             out_buf[(y + 1) * dstStride + x + 1] = (R >> 2);
             break;
         case V4L2_PIX_FMT_SRGGB10:
-            *((unsigned short*)out_buf + y * dstStride + x) = R;
-            *((unsigned short*)out_buf + y * dstStride + x + 1) = Gr;
-            *((unsigned short*)out_buf + (y + 1) * dstStride + x) = Gb;
-            *((unsigned short*)out_buf + (y + 1) * dstStride + x + 1) = B;
+            *((unsigned short *) out_buf + y * dstStride + x) = R;
+            *((unsigned short *) out_buf + y * dstStride + x + 1) = Gr;
+            *((unsigned short *) out_buf + (y + 1) * dstStride + x) = Gb;
+            *((unsigned short *) out_buf + (y + 1) * dstStride + x + 1) = B;
             break;
         case V4L2_PIX_FMT_SGRBG10:
-            *((unsigned short*)out_buf + y * dstStride + x) = Gr;
-            *((unsigned short*)out_buf + y * dstStride + x + 1) = R;
-            *((unsigned short*)out_buf + (y + 1) * dstStride + x) = B;
-            *((unsigned short*)out_buf + (y + 1) * dstStride + x + 1) = Gb;
+            *((unsigned short *) out_buf + y * dstStride + x) = Gr;
+            *((unsigned short *) out_buf + y * dstStride + x + 1) = R;
+            *((unsigned short *) out_buf + (y + 1) * dstStride + x) = B;
+            *((unsigned short *) out_buf + (y + 1) * dstStride + x + 1) = Gb;
             break;
         case V4L2_PIX_FMT_SGBRG10:
-            *((unsigned short*)out_buf + y * dstStride + x) = Gb;
-            *((unsigned short*)out_buf + y * dstStride + x + 1) = B;
-            *((unsigned short*)out_buf + (y + 1) * dstStride + x) = R;
-            *((unsigned short*)out_buf + (y + 1) * dstStride + x + 1) = Gr;
+            *((unsigned short *) out_buf + y * dstStride + x) = Gb;
+            *((unsigned short *) out_buf + y * dstStride + x + 1) = B;
+            *((unsigned short *) out_buf + (y + 1) * dstStride + x) = R;
+            *((unsigned short *) out_buf + (y + 1) * dstStride + x + 1) = Gr;
             break;
         case V4L2_PIX_FMT_SBGGR10:
-            *((unsigned short*)out_buf + y * dstStride + x) = B;
-            *((unsigned short*)out_buf + y * dstStride + x + 1) = Gb;
-            *((unsigned short*)out_buf + (y + 1) * dstStride + x) = Gr;
-            *((unsigned short*)out_buf + (y + 1) * dstStride + x + 1) = R;
+            *((unsigned short *) out_buf + y * dstStride + x) = B;
+            *((unsigned short *) out_buf + y * dstStride + x + 1) = Gb;
+            *((unsigned short *) out_buf + (y + 1) * dstStride + x) = Gr;
+            *((unsigned short *) out_buf + (y + 1) * dstStride + x + 1) = R;
             break;
         case V4L2_PIX_FMT_NV12:
             Ybase = out_buf;
@@ -234,7 +173,8 @@ void SwImageConverter::convertBayerBlock(unsigned int x, unsigned int y, unsigne
             out_buf[(y + 1) * dstStride + x * 2 + 2] = Y;
             out_buf[(y + 1) * dstStride + x * 2 + 3] = V;
             break;
-        case V4L2_PIX_FMT_YUV420: {
+        case V4L2_PIX_FMT_YUV420:
+        {
             RGB2YUV(R, (Gr + Gb) / 2, B, &Y, &U, &V);
             Ybase = out_buf;
             uint8_t* UBase = out_buf + dstStride * height;
@@ -257,19 +197,20 @@ void SwImageConverter::convertBayerBlock(unsigned int x, unsigned int y, unsigne
     }
 }
 
-void SwImageConverter::convertYuvBlock(unsigned int x, unsigned int y, unsigned int width,
-                                       unsigned int height, unsigned char* in_buf,
-                                       unsigned char* out_buf, unsigned int src_fmt,
-                                       unsigned int dst_fmt) {
-    unsigned char* YBase;
-    unsigned char* UVBase;
+void SwImageConverter::convertYuvBlock(unsigned int x, unsigned int y,
+    unsigned int width, unsigned int height,
+    unsigned char *in_buf, unsigned char *out_buf,
+    unsigned int src_fmt, unsigned int dst_fmt)
+{
+    unsigned char *YBase;
+    unsigned char *UVBase;
     unsigned char Y[4];
     unsigned char U[4];
     unsigned char V[4];
     unsigned short R, G, B;
     int srcStride = CameraUtils::getStride(src_fmt, width);
 
-    switch (src_fmt) {
+    switch(src_fmt) {
         case V4L2_PIX_FMT_NV12:
             YBase = in_buf;
             UVBase = in_buf + srcStride * height;
@@ -305,7 +246,7 @@ void SwImageConverter::convertYuvBlock(unsigned int x, unsigned int y, unsigned 
     }
 
     int dstStride = CameraUtils::getStride(dst_fmt, width);
-    switch (dst_fmt) {
+    switch(dst_fmt) {
         case V4L2_PIX_FMT_NV12:
             YBase = out_buf;
             UVBase = out_buf + dstStride * height;
@@ -336,7 +277,8 @@ void SwImageConverter::convertYuvBlock(unsigned int x, unsigned int y, unsigned 
             out_buf[y * dstStride + x * 2 + 3] = V[0];
             out_buf[(y + 1) * dstStride + x * 2 + 3] = V[2];
             break;
-        case V4L2_PIX_FMT_YUV420: {
+        case V4L2_PIX_FMT_YUV420:
+        {
             YBase = out_buf;
             uint8_t* UBase = out_buf + dstStride * height;
             uint8_t* VBase = out_buf + dstStride * (height + height / 4);
@@ -383,48 +325,48 @@ void SwImageConverter::convertYuvBlock(unsigned int x, unsigned int y, unsigned 
             break;
         case V4L2_PIX_FMT_SRGGB10:
             YUV2RGB(Y[0], U[0], V[0], &R, &G, &B);
-            *((unsigned short*)out_buf + y * dstStride + x) = R;
-            *((unsigned short*)out_buf + y * dstStride + x + 1) = G;
-            *((unsigned short*)out_buf + (y + 1) * dstStride + x) = G;
-            *((unsigned short*)out_buf + (y + 1) * dstStride + x + 1) = B;
+            *((unsigned short *) out_buf + y * dstStride + x) = R;
+            *((unsigned short *) out_buf + y * dstStride + x + 1) = G;
+            *((unsigned short *) out_buf + (y + 1) * dstStride + x) = G;
+            *((unsigned short *) out_buf + (y + 1) * dstStride + x + 1) = B;
             break;
         case V4L2_PIX_FMT_SGRBG10:
             YUV2RGB(Y[0], U[0], V[0], &R, &G, &B);
-            *((unsigned short*)out_buf + y * dstStride + x) = G;
-            *((unsigned short*)out_buf + y * dstStride + x + 1) = R;
-            *((unsigned short*)out_buf + (y + 1) * dstStride + x) = B;
-            *((unsigned short*)out_buf + (y + 1) * dstStride + x + 1) = G;
+            *((unsigned short *) out_buf + y * dstStride + x) = G;
+            *((unsigned short *) out_buf + y * dstStride + x + 1) = R;
+            *((unsigned short *) out_buf + (y + 1) * dstStride + x) = B;
+            *((unsigned short *) out_buf + (y + 1) * dstStride + x + 1) = G;
             break;
         case V4L2_PIX_FMT_SGBRG10:
             YUV2RGB(Y[0], U[0], V[0], &R, &G, &B);
-            *((unsigned short*)out_buf + y * dstStride + x) = G;
-            *((unsigned short*)out_buf + y * dstStride + x + 1) = B;
-            *((unsigned short*)out_buf + (y + 1) * dstStride + x) = R;
-            *((unsigned short*)out_buf + (y + 1) * dstStride + x + 1) = G;
+            *((unsigned short *) out_buf + y * dstStride + x) = G;
+            *((unsigned short *) out_buf + y * dstStride + x + 1) = B;
+            *((unsigned short *) out_buf + (y + 1) * dstStride + x) = R;
+            *((unsigned short *) out_buf + (y + 1) * dstStride + x + 1) = G;
             break;
         case V4L2_PIX_FMT_SBGGR10:
             YUV2RGB(Y[0], U[0], V[0], &R, &G, &B);
-            *((unsigned short*)out_buf + y * dstStride + x) = B;
-            *((unsigned short*)out_buf + y * dstStride + x + 1) = G;
-            *((unsigned short*)out_buf + (y + 1) * dstStride + x) = G;
-            *((unsigned short*)out_buf + (y + 1) * dstStride + x + 1) = R;
+            *((unsigned short *) out_buf + y * dstStride + x) = B;
+            *((unsigned short *) out_buf + y * dstStride + x + 1) = G;
+            *((unsigned short *) out_buf + (y + 1) * dstStride + x) = G;
+            *((unsigned short *) out_buf + (y + 1) * dstStride + x + 1) = R;
             break;
         default:
             return;
     }
 }
 
-int SwImageConverter::convertFormat(unsigned int width, unsigned int height, unsigned char* inBuf,
-                                    unsigned int inLength, unsigned int srcFmt,
-                                    unsigned char* outBuf, unsigned int outLength,
-                                    unsigned int dstFmt) {
-    CheckAndLogError((inBuf == nullptr || outBuf == nullptr), BAD_VALUE,
-                     "Invalid input(%p) or output buffer(%p)", inBuf, outBuf);
+int SwImageConverter::convertFormat(unsigned int width, unsigned int height,
+                        unsigned char *inBuf, unsigned int inLength, unsigned int srcFmt,
+                        unsigned char *outBuf, unsigned int outLength, unsigned int dstFmt)
+{
+    CheckAndLogError((inBuf == nullptr || outBuf == nullptr), BAD_VALUE, "Invalid input(%p) or output buffer(%p)", inBuf, outBuf);
 
     unsigned int x, y;
     unsigned short bayer_data[4];
 
-    LOG2("%s srcFmt %s => dstFmt %s %dx%d", __func__, CameraUtils::format2string(srcFmt).c_str(),
+    LOG2("%s srcFmt %s => dstFmt %s %dx%d", __func__,
+         CameraUtils::format2string(srcFmt).c_str(),
          CameraUtils::format2string(dstFmt).c_str(), width, height);
 
     if (dstFmt == srcFmt) {
@@ -436,20 +378,21 @@ int SwImageConverter::convertFormat(unsigned int width, unsigned int height, uns
 
     // for not vector raw
     int srcStride = CameraUtils::getStride(srcFmt, width);
-    for (y = 0; y < height; y += 2) {
-        for (x = 0; x < width; x += 2) {
-            if (CameraUtils::isRaw(srcFmt)) {
-                if (CameraUtils::getBpp(srcFmt) == 8) {
+    for(y = 0; y < height; y += 2) {
+        for(x = 0; x < width; x += 2) {
+            if(CameraUtils::isRaw(srcFmt)) {
+                if(CameraUtils::getBpp(srcFmt) == 8) {
                     bayer_data[0] = inBuf[y * srcStride + x];
                     bayer_data[1] = inBuf[y * srcStride + x + 1];
                     bayer_data[2] = inBuf[(y + 1) * srcStride + x];
                     bayer_data[3] = inBuf[(y + 1) * srcStride + x + 1];
                 } else {
                     int offset = srcStride / (CameraUtils::getBpp(srcFmt) / 8);
-                    bayer_data[0] = *((unsigned short*)inBuf + y * offset + x);
-                    bayer_data[1] = *((unsigned short*)inBuf + y * offset + x + 1);
-                    bayer_data[2] = *((unsigned short*)inBuf + (y + 1) * offset + x);
-                    bayer_data[3] = *((unsigned short*)inBuf + (y + 1) * offset + x + 1);
+                    bayer_data[0] = *((unsigned short *) inBuf + y * offset + x);
+                    bayer_data[1] = *((unsigned short *) inBuf + y * offset + x + 1);
+                    bayer_data[2] = *((unsigned short *) inBuf + (y + 1) * offset + x);
+                    bayer_data[3] =
+                        *((unsigned short *) inBuf + (y + 1) * offset + x + 1);
                 }
                 convertBayerBlock(x, y, width, height, bayer_data, outBuf, srcFmt, dstFmt);
             } else {
@@ -460,4 +403,4 @@ int SwImageConverter::convertFormat(unsigned int width, unsigned int height, uns
     return 0;
 }
 
-}  // namespace icamera
+} //namespace icamera

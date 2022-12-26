@@ -44,7 +44,7 @@ namespace icamera {
 #define GCSS_KEY(key, str) GCSS_KEY_##key,
 enum AndroidGraphConfigKey {
     GCSS_ANDROID_KEY_START = GCSS_KEY_START_CUSTOM_KEYS,
-#include "custom_gcss_keys.h"
+    #include "custom_gcss_keys.h"
 };
 #undef GCSS_KEY
 
@@ -102,35 +102,32 @@ class GraphConfigImpl {
     status_t configStreams(const std::vector<HalStream*>& activeStreams, bool dummyStillSink);
     status_t getGraphConfigData(IGraphType::GraphConfigData* data);
 
+    int getProgramGroup(std::string pgName, ia_isp_bxt_program_group* programGroupForPG);
     status_t getPgIdForKernel(const uint32_t streamId, const int32_t kernelId, int32_t* pgId);
+
     status_t pipelineGetConnections(const std::vector<std::string>& pgList,
                                     std::vector<IGraphType::ScalerInfo>* scalerInfo,
-                                    std::vector<IGraphType::PipelineConnection>* confVector,
-                                    std::vector<IGraphType::PrivPortFormat>* tnrPortFormat);
+                                    std::vector<IGraphType::PipelineConnection>* confVector);
 
  private:
     status_t prepareGraphConfig();
     bool isVideoStream(HalStream* stream);
     status_t selectSetting(int useCase,
-                           std::map<int, std::vector<GCSS::IGraphConfig*>>* queryResults);
+                           std::map<int, std::vector<GCSS::IGraphConfig*> >* queryResults);
     status_t queryGraphs(const std::vector<HalStream*>& activeStreams, bool dummyStillSink);
     status_t createQueryRule(const std::vector<HalStream*>& activeStreams, bool dummyStillSink);
     status_t getRawInputSize(GCSS::IGraphConfig* query, camera_resolution_t* reso);
 
     status_t queryAllMatchedResults(const std::vector<HalStream*>& activeStreams,
-                                    bool dummyStillSink,
-                                    std::map<int, std::vector<GCSS::IGraphConfig*>>* queryResults);
+                bool dummyStillSink, std::map<int, std::vector<GCSS::IGraphConfig*>> *queryResults);
     status_t getGdcKernelSetting(uint32_t* kernelId, ia_isp_bxt_resolution_info_t* resolution);
     status_t graphGetStreamIds(std::vector<int32_t>* streamIds);
     int getStreamIdByPgName(std::string pgName);
     int getPgIdByPgName(std::string pgName);
     ia_isp_bxt_program_group* getProgramGroup(int32_t streamId);
-    int32_t getTuningMode(const int32_t streamId);
     status_t getPgRbmValue(std::string pgName, IGraphType::StageAttr* stageAttr);
     status_t getMBRData(int32_t streamId, ia_isp_bxt_gdc_limits* data);
     status_t getPgNames(std::vector<std::string>* pgNames);
-    std::string format2GraphStr(int format);
-    std::string format2GraphBpp(int format);
 
     // Debug helper
     void dumpQuery(int useCase, const std::map<GCSS::ItemUID, std::string>& query);
@@ -153,7 +150,7 @@ class GraphConfigImpl {
      * - The first item of mQuery is stream useCase(VIDEO or STILL),
      * - and the second is an query rule map(GCSS_KEY_, VALUE).
      */
-    std::map<int, std::map<GCSS::ItemUID, std::string>> mQuery;
+    std::map<int, std::map<GCSS::ItemUID, std::string> > mQuery;
 
     /**
      * Map to get the virtual sink id from a client stream pointer.
@@ -164,7 +161,7 @@ class GraphConfigImpl {
      *  - The first item is streams useCase(VIDEO or STILL)
      *  - and the second is the stream to virtual sink map
      */
-    std::map<int, std::map<HalStream*, uid_t>> mStreamToSinkIdMap;
+    std::map<int, std::map<HalStream*, uid_t> > mStreamToSinkIdMap;
 
     /*
      * This vector is used to store the first query result.
@@ -177,7 +174,7 @@ class GraphConfigImpl {
     std::map<int, GCSS::IGraphConfig*> mQueryResult;
 
     // The stream useCase to GraphConfigPipe map
-    std::map<int, std::shared_ptr<GraphConfigPipe>> mGraphConfigPipe;
+    std::map<int, std::shared_ptr<GraphConfigPipe> > mGraphConfigPipe;
 
     ConfigMode mConfigMode;
     GraphSettingType mType;

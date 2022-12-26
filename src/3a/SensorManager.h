@@ -32,7 +32,7 @@ namespace icamera {
  * This struct is used to control wdr mode switching.
  */
 typedef struct {
-    int64_t sequence;
+    long sequence;
     TuningMode tuningMode;
 } WdrModeSetting;
 
@@ -42,11 +42,11 @@ typedef struct {
 } SensorExposure;
 
 typedef struct {
-    int64_t sequence;
+    long sequence;
     uint64_t timestamp;
 } SofEventInfo;
 
-typedef std::vector<SensorExposure> SensorExpGroup;
+typedef std::vector <SensorExposure> SensorExpGroup;
 /*
  * \class SensorManager
  *
@@ -54,39 +54,54 @@ typedef std::vector<SensorExposure> SensorExpGroup;
  * and get some sensor info.
  */
 class SensorManager {
- public:
-    SensorManager(int cameraId, SensorHwCtrl* sensorHw);
+
+public:
+    SensorManager(int cameraId, SensorHwCtrl *sensorHw);
     ~SensorManager();
     void reset();
 
     void handleSofEvent(EventData eventData);
     /* sensorExposures are exposure results, applyingSeq is the sequence to apply results */
-    uint32_t updateSensorExposure(SensorExpGroup sensorExposures, int64_t applyingSeq);
-    int getSensorInfo(ia_aiq_frame_params& frameParams,
-                      ia_aiq_exposure_sensor_descriptor& sensorDescriptor);
+    uint32_t updateSensorExposure(SensorExpGroup sensorExposures, long applyingSeq);
+    int getSensorInfo(ia_aiq_frame_params &frameParams,
+                      ia_aiq_exposure_sensor_descriptor &sensorDescriptor);
 
+    // HDR_FEATURE_S
+    int setWdrMode(TuningMode tuningMode, long sequence);
+
+    int setAWB(float r_per_g, float b_per_g);
+    // HDR_FEATURE_E
+    // CRL_MODULE_S
+    int setFrameRate(float fps);
+    // CRL_MODULE_E
     int getCurrentExposureAppliedDelay();
-    uint64_t getSofTimestamp(int64_t sequence);
-
- private:
+    uint64_t getSofTimestamp(long sequence);
+private:
     DISALLOW_COPY_AND_ASSIGN(SensorManager);
 
     void handleSensorExposure();
+    // HDR_FEATURE_S
+    void handleSensorModeSwitch(long sequence);
+    int convertTuningModeToWdrMode(TuningMode tuningMode);
+    // HDR_FEATURE_E
     int getSensorModeData(ia_aiq_exposure_sensor_descriptor& sensorData);
 
- private:
+private:
     static const int kMaxSensorExposures = 10;
     static const int kMaxSofEventInfo = 10;
 
     int mCameraId;
-    SensorHwCtrl* mSensorHwCtrl;
+    SensorHwCtrl *mSensorHwCtrl;
 
-    int64_t mLastSofSequence;
+    bool    mModeSwitched;         // Whether the TuningMode get updated
+    WdrModeSetting mWdrModeSetting;
+
+    long mLastSofSequence;
 
     // Guard for SensorManager public API.
     Mutex mLock;
 
-    int mAnalogGainDelay;   // Analog gain delay comparing exposure
+    int mAnalogGainDelay;  // Analog gain delay comparing exposure
     int mDigitalGainDelay;  // Digital gain delay comparing exposure
     // fisrt: sequence id, second: analog gain vector
     std::map<int64_t, std::vector<int>> mAnalogGainMap;

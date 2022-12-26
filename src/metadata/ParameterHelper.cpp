@@ -24,12 +24,14 @@
 
 namespace icamera {
 
-void ParameterHelper::merge(const Parameters& src, Parameters* dst) {
+void ParameterHelper::merge(const Parameters& src, Parameters* dst)
+{
     AutoRLock rl(src.mData);
     merge(getMetadata(src.mData), dst);
 }
 
-void ParameterHelper::merge(const CameraMetadata& metadata, Parameters* dst) {
+void ParameterHelper::merge(const CameraMetadata& metadata, Parameters* dst)
+{
     if (metadata.isEmpty()) {
         // Nothing needs to be merged
         return;
@@ -45,48 +47,6 @@ void ParameterHelper::merge(const CameraMetadata& metadata, Parameters* dst) {
             continue;
         }
         switch (entry.type) {
-            case ICAMERA_TYPE_BYTE:
-                getMetadata(dst->mData).update(entry.tag, entry.data.u8, entry.count);
-                break;
-            case ICAMERA_TYPE_INT32:
-                getMetadata(dst->mData).update(entry.tag, entry.data.i32, entry.count);
-                break;
-            case ICAMERA_TYPE_FLOAT:
-                getMetadata(dst->mData).update(entry.tag, entry.data.f, entry.count);
-                break;
-            case ICAMERA_TYPE_INT64:
-                getMetadata(dst->mData).update(entry.tag, entry.data.i64, entry.count);
-                break;
-            case ICAMERA_TYPE_DOUBLE:
-                getMetadata(dst->mData).update(entry.tag, entry.data.d, entry.count);
-                break;
-            case ICAMERA_TYPE_RATIONAL:
-                getMetadata(dst->mData).update(entry.tag, entry.data.r, entry.count);
-                break;
-            default:
-                LOGW("Invalid entry type, should never happen");
-                break;
-        }
-    }
-    const_cast<CameraMetadata*>(&metadata)->unlock(src);
-}
-
-void ParameterHelper::copyMetadata(const Parameters& source, CameraMetadata* metadata) {
-    CheckAndLogError((!metadata), VOID_VALUE, "null metadata to be updated!");
-
-    AutoRLock rl(source.mData);
-    *metadata = getMetadata(source.mData);
-}
-
-const CameraMetadata& ParameterHelper::getMetadata(const Parameters& source) {
-    return getMetadata(source.mData);
-}
-
-void ParameterHelper::mergeTag(const icamera_metadata_ro_entry& entry, Parameters* dst) {
-    CheckAndLogError(!dst, VOID_VALUE, "dst is nullptr");
-
-    AutoWLock wl(dst->mData);
-    switch (entry.type) {
         case ICAMERA_TYPE_BYTE:
             getMetadata(dst->mData).update(entry.tag, entry.data.u8, entry.count);
             break;
@@ -108,7 +68,21 @@ void ParameterHelper::mergeTag(const icamera_metadata_ro_entry& entry, Parameter
         default:
             LOGW("Invalid entry type, should never happen");
             break;
+        }
     }
+    const_cast<CameraMetadata*>(&metadata)->unlock(src);
 }
 
-}  // end of namespace icamera
+void ParameterHelper::copyMetadata(const Parameters& source, CameraMetadata* metadata)
+{
+    CheckAndLogError((!metadata), VOID_VALUE, "null metadata to be updated!");
+
+    AutoRLock rl(source.mData);
+    *metadata = getMetadata(source.mData);
+}
+
+const CameraMetadata& ParameterHelper::getMetadata(const Parameters& source) {
+    return getMetadata(source.mData);
+}
+
+} // end of namespace icamera

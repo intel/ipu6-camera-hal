@@ -16,98 +16,95 @@
 #define LOG_TAG GraphUtils
 
 #include "GraphUtils.h"
-
 #include "iutils/CameraLog.h"
 #include "iutils/Utils.h"
 
-#define psys_2600_pg_uid(id) ia_fourcc(((id & 0xFF00) >> 8), id, 'G', '0')
+#define psys_2600_pg_uid(id) ia_fourcc(((id & 0xFF00) >> 8),id,'G','0')
 #define psys_2600_pg_id_from_uid(uid) ((uid & 0xFFFF0000) >> 16)
 #define psys_2600_term_idx_from_uid(uid) ((uid & 0x0000FFFF) - 1)
 
 namespace icamera {
 
-void GraphUtils::dumpConnections(const std::vector<IGraphType::PipelineConnection>& connections) {
-    if (!Log::isLogTagEnabled(GET_FILE_SHIFT(GraphUtils), CAMERA_DEBUG_LOG_LEVEL3)) return;
+void GraphUtils::dumpConnections(const std::vector<IGraphType::PipelineConnection>& connections)
+{
+    if (!Log::isDebugLevelEnable(CAMERA_DEBUG_LOG_GRAPH)) {
+        return;
+    }
 
-    LOG3("Graph connections:");
+    LOGG("Graph connections:");
     for (auto& conn : connections) {
-        LOG3("Format settings: enabled === %d ===, terminalIdx %d, width %d, height %d, fourcc %s, "
-             "bpl %d, bpp %d",
-             conn.portFormatSettings.enabled, conn.portFormatSettings.terminalId,
-             conn.portFormatSettings.width, conn.portFormatSettings.height,
-             CameraUtils::fourcc2String(conn.portFormatSettings.fourcc).c_str(),
-             conn.portFormatSettings.bpl, conn.portFormatSettings.bpp);
 
-        LOG3("Connection config: sourceStage %d(%d), sourceTerminal %d(%d), sourceIteration %d, "
-             "sinkStage %d(%d), sinkTerminal %d(%d), sinkIteration %d, connectionType %d",
-             psys_2600_pg_id_from_uid(conn.connectionConfig.mSourceStage),
-             conn.connectionConfig.mSourceStage,
-             conn.connectionConfig.mSourceTerminal - conn.connectionConfig.mSourceStage - 1,
-             conn.connectionConfig.mSourceTerminal, conn.connectionConfig.mSourceIteration,
-             psys_2600_pg_id_from_uid(conn.connectionConfig.mSinkStage),
-             conn.connectionConfig.mSinkStage,
-             conn.connectionConfig.mSinkTerminal - conn.connectionConfig.mSinkStage - 1,
-             conn.connectionConfig.mSinkTerminal, conn.connectionConfig.mSinkIteration,
-             conn.connectionConfig.mConnectionType);
+        LOGG("Format settings: enabled === %d ===, terminalIdx %d, width %d, height %d, fourcc %s, bpl %d, bpp %d",
+                    conn.portFormatSettings.enabled,
+                    conn.portFormatSettings.terminalId,
+                    conn.portFormatSettings.width, conn.portFormatSettings.height,
+                    CameraUtils::fourcc2String(conn.portFormatSettings.fourcc).c_str(),
+                    conn.portFormatSettings.bpl, conn.portFormatSettings.bpp);
 
-        LOG3("Edge port: %d", conn.hasEdgePort);
+        LOGG("Connection config: sourceStage %d(%d), sourceTerminal %d(%d), sourceIteration %d, " \
+                    "sinkStage %d(%d), sinkTerminal %d(%d), sinkIteration %d, connectionType %d",
+                    psys_2600_pg_id_from_uid(conn.connectionConfig.mSourceStage),
+                    conn.connectionConfig.mSourceStage,
+                    conn.connectionConfig.mSourceTerminal - conn.connectionConfig.mSourceStage -1,
+                    conn.connectionConfig.mSourceTerminal,
+                    conn.connectionConfig.mSourceIteration,
+                    psys_2600_pg_id_from_uid(conn.connectionConfig.mSinkStage),
+                    conn.connectionConfig.mSinkStage,
+                    conn.connectionConfig.mSinkTerminal - conn.connectionConfig.mSinkStage -1,
+                    conn.connectionConfig.mSinkTerminal,
+                    conn.connectionConfig.mSinkIteration,
+                    conn.connectionConfig.mConnectionType);
+
+        LOGG("Edge port: %d", conn.hasEdgePort);
     }
 
     return;
 }
 
-void GraphUtils::dumpKernelInfo(const ia_isp_bxt_program_group& programGroup) {
-    if (!Log::isLogTagEnabled(GET_FILE_SHIFT(GraphUtils), CAMERA_DEBUG_LOG_LEVEL3)) return;
+void GraphUtils::dumpKernelInfo(const ia_isp_bxt_program_group& programGroup)
+{
+    if (!Log::isDebugLevelEnable(CAMERA_DEBUG_LOG_GRAPH)) {
+        return;
+    }
 
-    LOG3("Kernel info: count %d, opMode %d", programGroup.kernel_count,
-         programGroup.operation_mode);
+    LOGG("Kernel info: count %d, opMode %d", programGroup.kernel_count, programGroup.operation_mode);
 
-    for (unsigned int i = 0; i < programGroup.kernel_count; i++) {
+    for(unsigned int i = 0; i< programGroup.kernel_count; i++) {
+
         const ia_isp_bxt_run_kernels_t& curRunKernel = programGroup.run_kernels[i];
 
-        LOG3("uid %d, streamId: %d, enabled %d", curRunKernel.kernel_uuid, curRunKernel.stream_id,
-             curRunKernel.enable);
+        LOGG("uid %d, streamId: %d, enabled %d", curRunKernel.kernel_uuid, curRunKernel.stream_id,
+                    curRunKernel.enable);
 
         if (programGroup.run_kernels[i].resolution_info) {
-            LOG3("Resolution: inputWidth %d, inputHeight %d, inputCrop %d %d %d %d,"
-                 "outputWidth %d, outputHeight %d, outputCrop %d %d %d %d,",
-                 curRunKernel.resolution_info->input_width,
-                 curRunKernel.resolution_info->input_height,
-                 curRunKernel.resolution_info->input_crop.left,
-                 curRunKernel.resolution_info->input_crop.top,
-                 curRunKernel.resolution_info->input_crop.right,
-                 curRunKernel.resolution_info->input_crop.bottom,
-                 curRunKernel.resolution_info->output_width,
-                 curRunKernel.resolution_info->output_height,
-                 curRunKernel.resolution_info->output_crop.left,
-                 curRunKernel.resolution_info->output_crop.top,
-                 curRunKernel.resolution_info->output_crop.right,
-                 curRunKernel.resolution_info->output_crop.bottom);
+            LOGG("Resolution: inputWidth %d, inputHeight %d, inputCrop %d %d %d %d," \
+                       "outputWidth %d, outputHeight %d, outputCrop %d %d %d %d,",
+                       curRunKernel.resolution_info->input_width, curRunKernel.resolution_info->input_height,
+                       curRunKernel.resolution_info->input_crop.left, curRunKernel.resolution_info->input_crop.top,
+                       curRunKernel.resolution_info->input_crop.right, curRunKernel.resolution_info->input_crop.bottom,
+                       curRunKernel.resolution_info->output_width, curRunKernel.resolution_info->output_height,
+                       curRunKernel.resolution_info->output_crop.left, curRunKernel.resolution_info->output_crop.top,
+                       curRunKernel.resolution_info->output_crop.right, curRunKernel.resolution_info->output_crop.bottom);
         }
 
         if (programGroup.run_kernels[i].resolution_history) {
-            LOG3("Resolution history: inputWidth %d, inputHeight %d, inputCrop %d %d %d %d,"
-                 "outputWidth %d, outputHeight %d, outputCrop %d %d %d %d,",
-                 curRunKernel.resolution_history->input_width,
-                 curRunKernel.resolution_history->input_height,
-                 curRunKernel.resolution_history->input_crop.left,
-                 curRunKernel.resolution_history->input_crop.top,
-                 curRunKernel.resolution_history->input_crop.right,
-                 curRunKernel.resolution_history->input_crop.bottom,
-                 curRunKernel.resolution_history->output_width,
-                 curRunKernel.resolution_history->output_height,
-                 curRunKernel.resolution_history->output_crop.left,
-                 curRunKernel.resolution_history->output_crop.top,
-                 curRunKernel.resolution_history->output_crop.right,
-                 curRunKernel.resolution_history->output_crop.bottom);
+            LOGG("Resolution history: inputWidth %d, inputHeight %d, inputCrop %d %d %d %d," \
+                       "outputWidth %d, outputHeight %d, outputCrop %d %d %d %d,",
+                       curRunKernel.resolution_history->input_width, curRunKernel.resolution_history->input_height,
+                       curRunKernel.resolution_history->input_crop.left, curRunKernel.resolution_history->input_crop.top,
+                       curRunKernel.resolution_history->input_crop.right, curRunKernel.resolution_history->input_crop.bottom,
+                       curRunKernel.resolution_history->output_width, curRunKernel.resolution_history->output_height,
+                       curRunKernel.resolution_history->output_crop.left, curRunKernel.resolution_history->output_crop.top,
+                       curRunKernel.resolution_history->output_crop.right, curRunKernel.resolution_history->output_crop.bottom);
+
         }
 
-        LOG3("metadata %d %d %d %d, bppInfo: %d %d, outputCount %d", curRunKernel.metadata[0],
-             curRunKernel.metadata[1], curRunKernel.metadata[2], curRunKernel.metadata[3],
-             curRunKernel.bpp_info.input_bpp, curRunKernel.bpp_info.output_bpp,
-             curRunKernel.output_count);
+        LOGG("metadata %d %d %d %d, bppInfo: %d %d, outputCount %d",
+                   curRunKernel.metadata[0], curRunKernel.metadata[1], curRunKernel.metadata[2], curRunKernel.metadata[3],
+                   curRunKernel.bpp_info.input_bpp, curRunKernel.bpp_info.output_bpp,
+                   curRunKernel.output_count);
     }
 
     return;
 }
-}  // namespace icamera
+}

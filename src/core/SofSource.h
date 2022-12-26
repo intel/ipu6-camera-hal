@@ -25,13 +25,14 @@
 #include <vector>
 
 #include "CameraEvent.h"
+
 #include "iutils/Thread.h"
 
 namespace icamera {
 
-// Event source for SOF event polled from subdevice.
+//Event source for SOF event polled from subdevice.
 class SofSource : public EventSource {
- public:
+public:
     SofSource(int cameraId);
     ~SofSource();
     int init();
@@ -39,21 +40,21 @@ class SofSource : public EventSource {
     int configure();
     int start();
     int stop();
-
- private:
+private:
     int initDev();
     int deinitDev();
 
+private:
     class PollThread : public Thread {
-        SofSource* mSofSource;
+        SofSource *mSofSource;
+        public:
+            PollThread(SofSource *sofSource)
+                    : mSofSource(sofSource) { }
 
-     public:
-        PollThread(SofSource* sofSource) : mSofSource(sofSource) {}
-
-        virtual bool threadLoop() {
-            int ret = mSofSource->poll();
-            return (ret == 0) ? true : false;
-        }
+            virtual bool threadLoop() {
+                int ret = mSofSource->poll();
+                return (ret == 0) ? true : false;
+            }
     };
     PollThread* mPollThread;
     int mCameraId;
@@ -63,5 +64,4 @@ class SofSource : public EventSource {
 
     int poll();
 };
-
-}  // namespace icamera
+}

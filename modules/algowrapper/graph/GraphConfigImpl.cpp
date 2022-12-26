@@ -93,11 +93,11 @@ void GraphConfigImpl::addCustomKeyMap() {
      */
 #define GCSS_KEY(key, str) std::make_pair(#str, GCSS_KEY_##key),
     map<string, ia_uid> CUSTOM_GRAPH_KEYS = {
-#include "custom_gcss_keys.h"
+    #include "custom_gcss_keys.h"
     };
 #undef GCSS_KEY
 
-    LOG2("Adding %zu custom specific keys to graph config parser", CUSTOM_GRAPH_KEYS.size());
+    LOG1("Adding %zu custom specific keys to graph config parser", CUSTOM_GRAPH_KEYS.size());
 
     /*
      * add custom specific tags so parser can use them
@@ -122,14 +122,14 @@ status_t GraphConfigImpl::parse(int cameraId, const char* graphDescFile, const c
         AutoMutex lock(sLock);
         auto it = mGraphNode.find(cameraId);
         if (it != mGraphNode.end()) {
-            LOG2("<id%d>, The graph config has been parsed", cameraId);
+            LOG2("The graph config for cameraId: %d has been parsed", cameraId);
             return OK;
         }
     }
 
     GCSSParser parser;
     GraphConfigNodes* nodes = new GraphConfigNodes;
-    LOG2("<id%d>, Start to parse graph config file", cameraId);
+    LOG2("Start to parse graph config file for cameraId: %d", cameraId);
 
     parser.parseGCSSXmlFile(graphDescFile, &nodes->mDesc);
     if (!nodes->mDesc) {
@@ -171,14 +171,14 @@ status_t GraphConfigImpl::parse(int cameraId, char* graphDescData, size_t descDa
         AutoMutex lock(sLock);
         auto it = mGraphNode.find(cameraId);
         if (it != mGraphNode.end()) {
-            LOG2("<id%d>, the graph config has been parsed", cameraId);
+            LOG2("The graph config for cameraId: %d has been parsed", cameraId);
             return OK;
         }
     }
 
     GCSSParser parser;
     GraphConfigNodes* nodes = new GraphConfigNodes;
-    LOG2("<id%d>, Start to parse graph config data", cameraId);
+    LOG2("Start to parse graph config data for cameraId: %d", cameraId);
 
     parser.parseGCSSXmlData(graphDescData, descDataSize, &nodes->mDesc);
     if (!nodes->mDesc) {
@@ -260,7 +260,7 @@ status_t GraphConfigImpl::createQueryRule(const vector<HalStream*>& activeStream
         query[w] = std::to_string(stream->width());
         query[h] = std::to_string(stream->height());
         streamToSinkId[stream] = key;
-        LOG2("Adding stream %p to map %s", stream, ItemUID::key2str(key));
+        LOG1("Adding stream %p to map %s", stream, ItemUID::key2str(key));
     }
 
     if (mType == COUPLED) {
@@ -344,6 +344,9 @@ status_t GraphConfigImpl::getRawInputSize(GCSS::IGraphConfig* query, camera_reso
                      "%s, Failed to create the graph", __func__);
 
     vector<string> isysOutput = {"csi_be:output",
+                                 // DOL_FEATURE_S
+                                 "csi_be_dol:output",
+                                 // DOL_FEATURE_E
                                  "csi_be_soc:output"};
     for (auto& item : isysOutput) {
         GCSS::IGraphConfig* isysNode = graphResult->getDescendantByString(item.c_str());
@@ -357,9 +360,9 @@ status_t GraphConfigImpl::getRawInputSize(GCSS::IGraphConfig* query, camera_reso
     return UNKNOWN_ERROR;
 }
 
-status_t GraphConfigImpl::queryAllMatchedResults(
-    const std::vector<HalStream*>& activeStreams, bool dummyStillSink,
-    std::map<int, std::vector<GCSS::IGraphConfig*>>* queryResults) {
+status_t GraphConfigImpl::queryAllMatchedResults(const std::vector<HalStream*>& activeStreams,
+                                    bool dummyStillSink,
+                                    std::map<int, std::vector<GCSS::IGraphConfig*>> *queryResults) {
     CheckAndLogError(!queryResults, UNKNOWN_ERROR, "%s, The queryResults is nullptr", __func__);
 
     status_t ret = createQueryRule(activeStreams, dummyStillSink);
@@ -392,7 +395,7 @@ status_t GraphConfigImpl::queryAllMatchedResults(
 }
 
 bool GraphConfigImpl::queryGraphSettings(const std::vector<HalStream*>& activeStreams) {
-    std::map<int, std::vector<GCSS::IGraphConfig*>> useCaseToQueryResults;
+    std::map<int, std::vector<GCSS::IGraphConfig*> > useCaseToQueryResults;
     status_t ret = queryAllMatchedResults(activeStreams, false, &useCaseToQueryResults);
     return ret == OK ? true : false;
 }
@@ -404,7 +407,7 @@ status_t GraphConfigImpl::configStreams(const vector<HalStream*>& activeStreams,
                                         bool dummyStillSink) {
     HAL_TRACE_CALL(CAMERA_DEBUG_LOG_LEVEL1);
 
-    map<int, vector<GCSS::IGraphConfig*>> useCaseToQueryResults;
+    map<int, vector<GCSS::IGraphConfig*> > useCaseToQueryResults;
     status_t ret = queryAllMatchedResults(activeStreams, dummyStillSink, &useCaseToQueryResults);
     CheckAndLogError(ret != OK, UNKNOWN_ERROR, "%s, Faild to queryAllMatchedResults", __func__);
     // Filter the results with same isys output if there are
@@ -431,7 +434,7 @@ status_t GraphConfigImpl::configStreams(const vector<HalStream*>& activeStreams,
                 camera_resolution_t stillReso;
                 ret = getRawInputSize(still, &stillReso);
                 CheckAndLogError(ret != OK, UNKNOWN_ERROR,
-                                 "%s, Failed to get csi ouput resolution for still pipe", __func__);
+                           "%s, Failed to get csi ouput resolution for still pipe", __func__);
                 LOG2("Isys output resolution for still pipe: %dx%d", stillReso.width,
                      stillReso.height);
 
@@ -524,39 +527,11 @@ status_t GraphConfigImpl::prepareGraphConfig() {
     return OK;
 }
 
-string GraphConfigImpl::format2GraphStr(int format) {
-    switch (format) {
-        case V4L2_PIX_FMT_NV12:
-        case V4L2_PIX_FMT_P010:
-            return "Linear";
-        case V4L2_PIX_FMT_YUYV:
-            return "YUY2";
-        default:
-            LOGE("%s, unsupport the output format for graph: %s", __func__,
-                 CameraUtils::format2string(format).c_str());
-            return "Linear";
-    }
-}
-
-string GraphConfigImpl::format2GraphBpp(int format) {
-    switch (format) {
-        case V4L2_PIX_FMT_NV12:
-        case V4L2_PIX_FMT_YUYV:
-            return "8";
-        case V4L2_PIX_FMT_P010:
-            return "10";
-        default:
-            LOGE("%s, unsupport the output format for graph: %s", __func__,
-                 CameraUtils::format2string(format).c_str());
-            return "8";
-    }
-}
-
 /*
  * Do the secondary filter: configMode and stream format.
  */
 status_t GraphConfigImpl::selectSetting(
-    int useCase, std::map<int, std::vector<GCSS::IGraphConfig*>>* queryResults) {
+    int useCase, std::map<int, std::vector<GCSS::IGraphConfig*> >* queryResults) {
     CheckAndLogError(!queryResults, UNKNOWN_ERROR, "%s, The queryResults is nullptr", __func__);
     string opMode;
     vector<GCSS::IGraphConfig*> internalQueryResults;
@@ -565,10 +540,10 @@ status_t GraphConfigImpl::selectSetting(
     for (auto& result : mFirstQueryResults) {
         vector<ConfigMode> cfgModes;
         result->getValue(GCSS_KEY_OP_MODE, opMode);
-        LOG2("The operation mode str in xml: %s", opMode.c_str());
+        LOG1("The operation mode str in xml: %s", opMode.c_str());
 
         CameraUtils::getConfigModeFromString(opMode, cfgModes);
-        LOG2("The query results supports configModes size: %zu", cfgModes.size());
+        LOG1("The query results supports configModes size: %zu", cfgModes.size());
 
         for (const auto mode : cfgModes) {
             if (mConfigMode == mode) {
@@ -593,15 +568,9 @@ status_t GraphConfigImpl::selectSetting(
         for (auto const& item : streamToSinkIdMap) {
             HalStream* s = item.first;
             ItemUID formatKey = {(ia_uid)item.second, GCSS_KEY_FORMAT};
-            string fmt = format2GraphStr(s->format());
+            string fmt = CameraUtils::format2string(s->format());
+            LOG2("The stream: %dx%d, format: %s", s->width(), s->height(), fmt.c_str());
             queryItem[formatKey] = fmt;
-
-            ItemUID bppKey = {(ia_uid)item.second, GCSS_KEY_BPP};
-            string bpp = format2GraphBpp(s->format());
-            queryItem[bppKey] = bpp;
-
-            LOG2("The stream: %dx%d, format: %s, graphFmt: %s, bpp: %s", s->width(), s->height(),
-                 CameraUtils::format2string(s->format()).c_str(), fmt.c_str(), bpp.c_str());
         }
 
         LOG1("dumpQuery with format condition");
@@ -629,6 +598,10 @@ status_t GraphConfigImpl::getGraphConfigData(IGraphType::GraphConfigData* data) 
     // The graph id, csi output and sensor mode must be same if there are two graph config pipes
     data->graphId = mGraphConfigPipe.begin()->second->getGraphId();
     mGraphConfigPipe.begin()->second->getCSIOutputResolution(&(data->csiReso));
+    // DOL_FEATURE_S
+    mGraphConfigPipe.begin()->second->getDolInfo(&(data->dolInfo.conversionGain),
+                                                 &(data->dolInfo.dolMode));
+    // DOL_FEATURE_E
 
     data->mcId = mMcId;
     getGdcKernelSetting(&(data->gdcKernelId), &(data->gdcReso));
@@ -656,11 +629,6 @@ status_t GraphConfigImpl::getGraphConfigData(IGraphType::GraphConfigData* data) 
         info.streamId = streamId;
         info.pgPtr = getProgramGroup(streamId);
         data->programGroup.push_back(info);
-
-        IGraphType::TuningModeInfo mode;
-        mode.streamId = streamId;
-        mode.tuningMode = getTuningMode(streamId);
-        data->tuningModes.push_back(mode);
     }
 
     return OK;
@@ -760,6 +728,20 @@ ia_isp_bxt_program_group* GraphConfigImpl::getProgramGroup(int32_t streamId) {
     return stillGraphPipe->getProgramGroup(streamId);
 }
 
+int GraphConfigImpl::getProgramGroup(std::string pgName,
+                                     ia_isp_bxt_program_group* programGroupForPG) {
+    for (auto& graph : mGraphConfigPipe) {
+        vector<string> pgNames;
+        graph.second->getPgNames(&pgNames);
+        if (std::find(pgNames.begin(), pgNames.end(), pgName) != pgNames.end()) {
+            return graph.second->getProgramGroup(pgName, programGroupForPG);
+        }
+    }
+
+    LOGE("There isn't this pg: %s in all graph config pipes", pgName.c_str());
+    return UNKNOWN_ERROR;
+}
+
 status_t GraphConfigImpl::getMBRData(int32_t streamId, ia_isp_bxt_gdc_limits* data) {
     CheckAndLogError(mGraphConfigPipe.empty(), UNKNOWN_ERROR, "%s, the mGraphConfigPipe is empty",
                      __func__);
@@ -808,15 +790,14 @@ status_t GraphConfigImpl::getPgNames(std::vector<std::string>* pgNames) {
 
 status_t GraphConfigImpl::pipelineGetConnections(
     const std::vector<std::string>& pgList, std::vector<IGraphType::ScalerInfo>* scalerInfo,
-    std::vector<IGraphType::PipelineConnection>* confVector,
-    std::vector<IGraphType::PrivPortFormat>* tnrPortFormat) {
+    std::vector<IGraphType::PipelineConnection>* confVector) {
     CheckAndLogError(!confVector, UNKNOWN_ERROR, "%s, the confVector is nullptr", __func__);
     CheckAndLogError(mGraphConfigPipe.empty(), UNKNOWN_ERROR, "%s, the mGraphConfigPipe is empty",
                      __func__);
 
     if (mGraphConfigPipe.size() == 1) {
         return mGraphConfigPipe.begin()->second->pipelineGetConnections(pgList, scalerInfo,
-                                                                        confVector, tnrPortFormat);
+                                                                        confVector);
     }
 
     vector<IGraphType::PipelineConnection> stillConnVector, videoConnVector;
@@ -824,12 +805,9 @@ status_t GraphConfigImpl::pipelineGetConnections(
     shared_ptr<GraphConfigPipe>& stillGraphPipe = mGraphConfigPipe.at(USE_CASE_STILL_CAPTURE);
 
     std::vector<IGraphType::ScalerInfo> stillScalerInfo, videoScalerInfo;
-    std::vector<IGraphType::PrivPortFormat> stillTnrPortFmt, videoTnrPortFmt;
-    int ret = videoGraphPipe->pipelineGetConnections(pgList, &videoScalerInfo, &videoConnVector,
-                                                     &videoTnrPortFmt);
+    int ret = videoGraphPipe->pipelineGetConnections(pgList, &videoScalerInfo, &videoConnVector);
     CheckAndLogError(ret != OK, UNKNOWN_ERROR, "Failed to get the connetction from video pipe");
-    ret = stillGraphPipe->pipelineGetConnections(pgList, &stillScalerInfo, &stillConnVector,
-                                                 &stillTnrPortFmt);
+    ret = stillGraphPipe->pipelineGetConnections(pgList, &stillScalerInfo, &stillConnVector);
     CheckAndLogError(ret != OK, UNKNOWN_ERROR, "Failed to get the connetction from still pipe");
 
     LOG2("The connetction in video: %zu, in still: %zu; the scalera in video: %zu, in still: %zu",
@@ -842,13 +820,6 @@ status_t GraphConfigImpl::pipelineGetConnections(
         }
     }
     *scalerInfo = videoScalerInfo;
-
-    if (tnrPortFormat) {
-        for (auto& stillPort : stillTnrPortFmt) {
-            videoTnrPortFmt.push_back(stillPort);
-        }
-        *tnrPortFormat = videoTnrPortFmt;
-    }
 
     if (videoConnVector.empty()) {
         videoConnVector = stillConnVector;
@@ -911,22 +882,6 @@ status_t GraphConfigImpl::getPgRbmValue(string pgName, IGraphType::StageAttr* st
 
     LOGE("There isn't this pg: %s in all graph config pipes", pgName.c_str());
     return UNKNOWN_ERROR;
-}
-
-int32_t GraphConfigImpl::getTuningMode(const int32_t streamId) {
-    CheckAndLogError(mGraphConfigPipe.empty(), -1, "%s, the mGraphConfigPipe is empty", __func__);
-
-    if (mGraphConfigPipe.size() == 1) {
-        return mGraphConfigPipe.begin()->second->getTuningMode(streamId);
-    }
-
-    // Find the stream id from video graph pipe firstly
-    int32_t tuningMode = mGraphConfigPipe.at(USE_CASE_VIDEO)->getTuningMode(streamId);
-    if (tuningMode == -1) {
-        tuningMode = mGraphConfigPipe.at(USE_CASE_STILL_CAPTURE)->getTuningMode(streamId);
-    }
-
-    return tuningMode;
 }
 
 /******************************************************************************

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2022 Intel Corporation
+ * Copyright (C) 2017-2018 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@
 namespace icamera {
 
 class PolicyManager {
- public:
+public:
     PolicyManager(int cameraId);
     ~PolicyManager();
 
@@ -34,8 +34,7 @@ class PolicyManager {
      * Create a bundle for the given set of executors, and add the bundle into mBundles.
      * These executors are guaranteed running at the same time.
      */
-    int addExecutorBundle(const std::vector<std::string>& executors, const std::vector<int>& depths,
-                          int64_t startSequence);
+    int addExecutorBundle(const std::vector<std::string>& executors, const std::vector<int>& depths);
 
     void setActive(bool isActive);
 
@@ -45,38 +44,36 @@ class PolicyManager {
      * Once all executors are ready to run, then a broadcast will be sent out to wake all
      * executors up and then run together.
      */
-    int wait(std::string executorName, int64_t sequence = 0);
+    int wait(std::string executorName);
 
- private:
+private:
     DISALLOW_COPY_AND_ASSIGN(PolicyManager);
 
     void releaseBundles();
 
- private:
+private:
     struct ExecutorData {
         ExecutorData(int depth = 0) : mRunCount(0), mDepth(depth) {}
-        long mRunCount;  // How many times the executor has run.
-        int mDepth;      // Indicates how many direct dependencies the executor has.
+        long mRunCount; // How many times the executor has run.
+        int mDepth;     // Indicates how many direct dependencies the executor has.
     };
 
     struct ExecutorBundle {
-        std::map<std::string, ExecutorData>
-            mExecutorData;  // The index of the map is executor name.
-        int mMaxDepth;      // The max depth among all executors.
-        int mExecutorNum;   // Indicates how many executors the bundle has.
-        int mWaitingCount;  // How many executors have already waited.
+        std::map<std::string, ExecutorData> mExecutorData; // The index of the map is executor name.
+        int mMaxDepth;     // The max depth among all executors.
+        int mExecutorNum;  // Indicates how many executors the bundle has.
+        int mWaitingCount; // How many executors have already waited.
         bool mIsActive;
-        int64_t mStartSequence;
-        // Guard for the Bundle data
+        //Guard for the Bundle data
         Mutex mLock;
         Condition mCondition;
     };
 
     int mCameraId;
-    // Guard for the PolicyManager public API
+    //Guard for the PolicyManager public API
     Mutex mPolicyLock;
     std::vector<ExecutorBundle*> mBundles;
     bool mIsActive;
 };
 
-}  // namespace icamera
+}

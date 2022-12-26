@@ -23,8 +23,9 @@
 #include "iutils/CameraLog.h"
 #include "iutils/Utils.h"
 
+using icamera::CAMERA_DEBUG_LOG_DBG;
 using icamera::CAMERA_DEBUG_LOG_ERR;
-using icamera::CAMERA_DEBUG_LOG_INFO;
+using icamera::CAMERA_DEBUG_LOG_VERBOSE;
 using icamera::CAMERA_DEBUG_LOG_WARNING;
 
 namespace icamera {
@@ -46,6 +47,14 @@ void* mallocAlignedMemory(size_t sz, size_t alignment) {
 
 void freeMemory(void* p) {
     ::free(p);
+}
+
+void memoryCopy(void* dst, size_t dsz, const void* src, size_t sz) {
+    if (dsz < sz) {
+        LOG2("%s: destination size < source size, potential coding error", __func__);
+    }
+
+    MEMCPY_S(dst, dsz, src, sz);
 }
 
 size_t getPageSize() {

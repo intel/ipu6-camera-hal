@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2022 Intel Corporation.
+ * Copyright (C) 2019-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,11 +24,9 @@ extern "C" {
 }
 
 #include <stdint.h>
-
 #include <vector>
-
-#include "iutils/CameraLog.h"
 #include "iutils/Utils.h"
+#include "iutils/CameraLog.h"
 
 namespace icamera {
 
@@ -38,8 +36,8 @@ namespace PGUtils {
  * Common definitions
  * ***********************************************************/
 
-#define GET_FOURCC_FMT(a, b, c, d) \
-    ((uint32_t)(d) | ((uint32_t)(c) << 8) | ((uint32_t)(b) << 16) | ((uint32_t)(a) << 24))
+#define GET_FOURCC_FMT(a, b, c, d) ((uint32_t)(d) | ((uint32_t)(c) << 8) \
+                                 | ((uint32_t)(b) << 16) | ((uint32_t)(a) << 24))
 
 struct FormatMap {
     int v4l2Fmt;
@@ -50,47 +48,47 @@ struct FormatMap {
 };
 
 static const FormatMap sFormatMapping[] = {
-    {V4L2_PIX_FMT_YUYV, IA_CSS_DATA_FORMAT_YUYV, 16, 8},
-    {V4L2_PIX_FMT_UYVY, IA_CSS_DATA_FORMAT_UYVY, 16, 8},
-    {V4L2_PIX_FMT_YUV420, IA_CSS_DATA_FORMAT_YUV420, 12, 8},
-    {V4L2_PIX_FMT_NV12, IA_CSS_DATA_FORMAT_NV12, 12, 8},
-    {V4L2_PIX_FMT_NV16, IA_CSS_DATA_FORMAT_NV16, 16, 8},
-    {V4L2_PIX_FMT_RGB565, IA_CSS_DATA_FORMAT_RGB565, 16, 16},
-    {V4L2_PIX_FMT_RGB24, IA_CSS_DATA_FORMAT_RGB888, 24, 24},
-    {V4L2_PIX_FMT_RGB32, IA_CSS_DATA_FORMAT_RGBA888, 24, 24},
-    {V4L2_PIX_FMT_SGRBG12, IA_CSS_DATA_FORMAT_RAW, 16, 16},
-    {V4L2_PIX_FMT_SGRBG10, IA_CSS_DATA_FORMAT_RAW, 16, 16},
-    {V4L2_PIX_FMT_SGRBG8, IA_CSS_DATA_FORMAT_RAW, 8, 8},
-    {V4L2_PIX_FMT_P010, IA_CSS_DATA_FORMAT_P010, 24, 16},
+    { V4L2_PIX_FMT_YUYV,    IA_CSS_DATA_FORMAT_YUYV, 16, 8 },
+    { V4L2_PIX_FMT_UYVY,    IA_CSS_DATA_FORMAT_UYVY, 16, 8 },
+    { V4L2_PIX_FMT_YUV420,  IA_CSS_DATA_FORMAT_YUV420, 12, 8 },
+    { V4L2_PIX_FMT_NV12,    IA_CSS_DATA_FORMAT_NV12, 12, 8 },
+    { V4L2_PIX_FMT_NV16,    IA_CSS_DATA_FORMAT_NV16, 16, 8 },
+    { V4L2_PIX_FMT_RGB565,  IA_CSS_DATA_FORMAT_RGB565, 16, 16 },
+    { V4L2_PIX_FMT_RGB24,   IA_CSS_DATA_FORMAT_RGB888, 24, 24 },
+    { V4L2_PIX_FMT_RGB32,   IA_CSS_DATA_FORMAT_RGBA888, 24, 24 },
+    { V4L2_PIX_FMT_SGRBG12, IA_CSS_DATA_FORMAT_RAW, 16, 16 },
+    { V4L2_PIX_FMT_SGRBG10, IA_CSS_DATA_FORMAT_RAW, 16, 16 },
+    { V4L2_PIX_FMT_SGRBG8,  IA_CSS_DATA_FORMAT_RAW, 8, 8 },
+    { V4L2_PIX_FMT_P010,    IA_CSS_DATA_FORMAT_P010, 24, 16 },
 
-    {GET_FOURCC_FMT('Y', 'U', 'Y', 'V'), IA_CSS_DATA_FORMAT_YUYV, 16, 8},
-    {GET_FOURCC_FMT('Y', 'U', 'Y', '2'), IA_CSS_DATA_FORMAT_YUYV, 16, 8},
-    {GET_FOURCC_FMT('U', 'Y', 'V', 'Y'), IA_CSS_DATA_FORMAT_UYVY, 16, 8},
-    {GET_FOURCC_FMT('Y', 'U', '1', '2'), IA_CSS_DATA_FORMAT_YUV420, 12, 8},
-    {GET_FOURCC_FMT('Y', 'V', '1', '2'), IA_CSS_DATA_FORMAT_YUV420, 12, 8},
-    {GET_FOURCC_FMT('N', 'V', '1', '2'), IA_CSS_DATA_FORMAT_NV12, 12, 8},
-    {GET_FOURCC_FMT('N', 'V', '2', '1'), IA_CSS_DATA_FORMAT_NV21, 12, 8},
-    {GET_FOURCC_FMT('T', 'I', 'L', 'E'), IA_CSS_DATA_FORMAT_NV12_TILEY, 12, 8},
-    {GET_FOURCC_FMT('N', 'V', '1', '6'), IA_CSS_DATA_FORMAT_NV16, 16, 8},
-    {GET_FOURCC_FMT('R', 'G', 'B', 'P'), IA_CSS_DATA_FORMAT_RGB565, 16, 16},
-    {GET_FOURCC_FMT('R', 'G', 'B', '3'), IA_CSS_DATA_FORMAT_RGB888, 24, 24},
-    {GET_FOURCC_FMT('R', 'G', 'B', '4'), IA_CSS_DATA_FORMAT_RGBA888, 24, 24},
-    {GET_FOURCC_FMT('B', 'A', '1', '2'), IA_CSS_DATA_FORMAT_RAW, 16, 16},
-    {GET_FOURCC_FMT('B', 'A', '1', '0'), IA_CSS_DATA_FORMAT_RAW, 16, 16},
-    {GET_FOURCC_FMT('y', '0', '3', '2'), IA_CSS_DATA_FORMAT_YYUVYY_VECTORIZED, 24, 16},
-    {GET_FOURCC_FMT('V', '4', '2', '0'), IA_CSS_DATA_FORMAT_YUV420, 24, 16},
-    {GET_FOURCC_FMT('b', 'V', '0', 'K'), IA_CSS_DATA_FORMAT_BAYER_VECTORIZED, 16, 16},
-    {GET_FOURCC_FMT('b', 'V', '0', 'G'), IA_CSS_DATA_FORMAT_BAYER_VECTORIZED, 16, 16},
-    {GET_FOURCC_FMT('C', 'S', 'L', '6'), IA_CSS_DATA_FORMAT_BAYER_LINE_INTERLEAVED, 16, 16},
-    {GET_FOURCC_FMT('C', 'S', '4', '2'), IA_CSS_DATA_FORMAT_YUV420, 18, 12},
-    {GET_FOURCC_FMT('G', 'R', '1', '0'), IA_CSS_DATA_FORMAT_BAYER_GRBG, 16, 16},
-    {GET_FOURCC_FMT('R', 'G', '1', '0'), IA_CSS_DATA_FORMAT_BAYER_RGGB, 16, 16},
-    {GET_FOURCC_FMT('G', 'B', '1', '0'), IA_CSS_DATA_FORMAT_BAYER_GBRG, 16, 16},
-    {GET_FOURCC_FMT('B', 'G', '1', '0'), IA_CSS_DATA_FORMAT_BAYER_BGGR, 16, 16},
-    {GET_FOURCC_FMT('B', 'A', '1', '0'), IA_CSS_DATA_FORMAT_RAW, 16, 16},
-    {GET_FOURCC_FMT('I', 'Y', 'U', 'V'), IA_CSS_DATA_FORMAT_YUV420, 12, 8},
-    {GET_FOURCC_FMT('P', '0', '1', '0'), IA_CSS_DATA_FORMAT_P010, 24, 16},
-    {GET_FOURCC_FMT('P', '4', '1', '2'), IA_CSS_DATA_FORMAT_YUV420, 24, 16},
+    { GET_FOURCC_FMT('Y', 'U', 'Y', 'V'), IA_CSS_DATA_FORMAT_YUYV, 16, 8 },
+    { GET_FOURCC_FMT('Y', 'U', 'Y', '2'), IA_CSS_DATA_FORMAT_YUYV, 16, 8 },
+    { GET_FOURCC_FMT('U', 'Y', 'V', 'Y'), IA_CSS_DATA_FORMAT_UYVY, 16, 8 },
+    { GET_FOURCC_FMT('Y', 'U', '1', '2'), IA_CSS_DATA_FORMAT_YUV420, 12, 8 },
+    { GET_FOURCC_FMT('Y', 'V', '1', '2'), IA_CSS_DATA_FORMAT_YUV420, 12, 8 },
+    { GET_FOURCC_FMT('N', 'V', '1', '2'), IA_CSS_DATA_FORMAT_NV12, 12, 8 },
+    { GET_FOURCC_FMT('N', 'V', '2', '1'), IA_CSS_DATA_FORMAT_NV21, 12, 8 },
+    { GET_FOURCC_FMT('T', 'I', 'L', 'E'), IA_CSS_DATA_FORMAT_NV12_TILEY, 12, 8 },
+    { GET_FOURCC_FMT('N', 'V', '1', '6'), IA_CSS_DATA_FORMAT_NV16, 16, 8 },
+    { GET_FOURCC_FMT('R', 'G', 'B', 'P'), IA_CSS_DATA_FORMAT_RGB565, 16, 16},
+    { GET_FOURCC_FMT('R', 'G', 'B', '3'), IA_CSS_DATA_FORMAT_RGB888, 24, 24},
+    { GET_FOURCC_FMT('R', 'G', 'B', '4'), IA_CSS_DATA_FORMAT_RGBA888, 24, 24 },
+    { GET_FOURCC_FMT('B', 'A', '1', '2'), IA_CSS_DATA_FORMAT_RAW, 16, 16 },
+    { GET_FOURCC_FMT('B', 'A', '1', '0'), IA_CSS_DATA_FORMAT_RAW, 16, 16 },
+    { GET_FOURCC_FMT('y', '0', '3', '2'), IA_CSS_DATA_FORMAT_YYUVYY_VECTORIZED, 24, 16 },
+    { GET_FOURCC_FMT('V', '4', '2', '0'), IA_CSS_DATA_FORMAT_YUV420, 24, 16 },
+    { GET_FOURCC_FMT('b', 'V', '0', 'K'), IA_CSS_DATA_FORMAT_BAYER_VECTORIZED, 16, 16 },
+    { GET_FOURCC_FMT('b', 'V', '0', 'G'), IA_CSS_DATA_FORMAT_BAYER_VECTORIZED, 16, 16 },
+    { GET_FOURCC_FMT('C', 'S', 'L', '6'), IA_CSS_DATA_FORMAT_BAYER_LINE_INTERLEAVED, 12, 10 },
+    { GET_FOURCC_FMT('C', 'S', '4', '2'), IA_CSS_DATA_FORMAT_YUV420, 18, 12 },
+    { GET_FOURCC_FMT('G', 'R', '1', '0'), IA_CSS_DATA_FORMAT_BAYER_GRBG, 16, 16 },
+    { GET_FOURCC_FMT('R', 'G', '1', '0'), IA_CSS_DATA_FORMAT_BAYER_RGGB, 16, 16 },
+    { GET_FOURCC_FMT('G', 'B', '1', '0'), IA_CSS_DATA_FORMAT_BAYER_GBRG, 16, 16 },
+    { GET_FOURCC_FMT('B', 'G', '1', '0'), IA_CSS_DATA_FORMAT_BAYER_BGGR, 16, 16 },
+    { GET_FOURCC_FMT('B', 'A', '1', '0'), IA_CSS_DATA_FORMAT_RAW, 16, 16 },
+    { GET_FOURCC_FMT('I', 'Y', 'U', 'V'), IA_CSS_DATA_FORMAT_YUV420, 12, 8 },
+    { GET_FOURCC_FMT('P', '0', '1', '0'), IA_CSS_DATA_FORMAT_P010, 24, 16 },
+    { GET_FOURCC_FMT('P', '4', '1', '2'), IA_CSS_DATA_FORMAT_YUV420, 24, 16 },
 };
 
 static int getStride(int cssFmt, int width);
@@ -103,7 +101,7 @@ ia_css_frame_format_type getCssFmt(int v4l2Fmt) {
         }
     }
 
-    LOG1("%s: unsupported v4l2 pixel format: %s", __func__,
+    LOG2("%s: unsupported v4l2 pixel format: %s", __func__,
          CameraUtils::format2string(v4l2Fmt).c_str());
     return IA_CSS_N_FRAME_FORMAT_TYPES;
 }
@@ -112,10 +110,10 @@ int getCssStride(int v4l2Fmt, int width) {
     int stride = width;
     ia_css_frame_format_type cssFmt = getCssFmt(v4l2Fmt);
     switch (v4l2Fmt) {
-        case GET_FOURCC_FMT('I', 'Y', 'U', 'V'):
+        case GET_FOURCC_FMT('I','Y','U','V'):
             stride = width;
             break;
-        case GET_FOURCC_FMT('Y', 'U', 'Y', '2'):
+        case GET_FOURCC_FMT('Y','U','Y','2'):
             stride = ALIGN_64(width * 2);
             break;
         default:
@@ -204,15 +202,15 @@ int getCssBpe(int v4l2Fmt, bool compression) {
 int getStride(int cssFmt, int width) {
     int stride = width;
     switch (cssFmt) {
-        case IA_CSS_DATA_FORMAT_BAYER_GRBG:  // GR10
-        case IA_CSS_DATA_FORMAT_RAW:         // BA10
+        case IA_CSS_DATA_FORMAT_BAYER_GRBG: // GR10
+        case IA_CSS_DATA_FORMAT_RAW:        // BA10
             stride = ALIGN_64(width * 2);
             break;
-        case IA_CSS_DATA_FORMAT_YYUVYY_VECTORIZED:  // y032
+        case IA_CSS_DATA_FORMAT_YYUVYY_VECTORIZED: // y032
             stride = width * 6;
             break;
-        case IA_CSS_DATA_FORMAT_BAYER_VECTORIZED:        // bv0k
-        case IA_CSS_DATA_FORMAT_BAYER_LINE_INTERLEAVED:  // css_fourcc_grbg_12_li
+        case IA_CSS_DATA_FORMAT_BAYER_VECTORIZED: // bv0k
+        case IA_CSS_DATA_FORMAT_BAYER_LINE_INTERLEAVED: // css_fourcc_grbg_12_li
             stride = width * 4;
             stride = ALIGN_64(stride);
             break;
@@ -250,24 +248,24 @@ int getStride(int cssFmt, int width) {
 #define PG_BB_TERMINAL_ID_TNR_SIM_REF_OUT 7  // spetial_terminal
 
 // the below terminals belong to PG_PSYS_IPU6_ISA_LB
-#if defined(IPU_SYSVER_ipu6v5) || defined(IPU_SYSVER_ipu6v6)
-#define ISA_LB_TERMINAL_ID_DVS_FE_IN_L0 20   // program_terminal
-#define ISA_LB_TERMINAL_ID_DVS_FE_IN_L1 21   // program_terminal
-#define ISA_LB_TERMINAL_ID_DVS_FE_IN_L2 22   // program_terminal
-#define ISA_LB_TERMINAL_ID_DVS_FE_OUT_L0 23  // param_terminal
-#define ISA_LB_TERMINAL_ID_DVS_FE_OUT_L1 24  // param_terminal
-#define ISA_LB_TERMINAL_ID_DVS_FE_OUT_L2 25  // param_terminal
+#ifdef IPU_SYSVER_ipu6v5
+#define ISA_LB_TERMINAL_ID_DVS_FE_IN_L0 20 // program_terminal
+#define ISA_LB_TERMINAL_ID_DVS_FE_IN_L1 21 // program_terminal
+#define ISA_LB_TERMINAL_ID_DVS_FE_IN_L2 22 // program_terminal
+#define ISA_LB_TERMINAL_ID_DVS_FE_OUT_L0 23 // param_terminal
+#define ISA_LB_TERMINAL_ID_DVS_FE_OUT_L1 24 // param_terminal
+#define ISA_LB_TERMINAL_ID_DVS_FE_OUT_L2 25 // param_terminal
 #else
-#define ISA_LB_TERMINAL_ID_DVS_FE_IN_L0 21   // program_terminal
-#define ISA_LB_TERMINAL_ID_DVS_FE_IN_L1 22   // program_terminal
-#define ISA_LB_TERMINAL_ID_DVS_FE_IN_L2 23   // program_terminal
-#define ISA_LB_TERMINAL_ID_DVS_FE_OUT_L0 24  // param_terminal
-#define ISA_LB_TERMINAL_ID_DVS_FE_OUT_L1 25  // param_terminal
-#define ISA_LB_TERMINAL_ID_DVS_FE_OUT_L2 26  // param_terminal
+#define ISA_LB_TERMINAL_ID_DVS_FE_IN_L0 21 // program_terminal
+#define ISA_LB_TERMINAL_ID_DVS_FE_IN_L1 22 // program_terminal
+#define ISA_LB_TERMINAL_ID_DVS_FE_IN_L2 23 // program_terminal
+#define ISA_LB_TERMINAL_ID_DVS_FE_OUT_L0 24 // param_terminal
+#define ISA_LB_TERMINAL_ID_DVS_FE_OUT_L1 25 // param_terminal
+#define ISA_LB_TERMINAL_ID_DVS_FE_OUT_L2 26 // param_terminal
 #endif
 
 bool getTerminalPairs(int pgId, TERMINAL_PAIR_TYPE type, std::vector<TerminalPair>* pairs) {
-    LOG1("@%s, pgId:%d, type:%d, pairs:%p", __func__, pgId, type, pairs);
+    LOG2("@%s, pgId:%d, type:%d, pairs:%p", __func__, pgId, type, pairs);
     CheckAndLogError(!pairs, false, "@%s, pairs is nullptr", __func__);
 
     struct TerminalPairs {
@@ -276,17 +274,15 @@ bool getTerminalPairs(int pgId, TERMINAL_PAIR_TYPE type, std::vector<TerminalPai
         std::vector<TerminalPair> pairs;
     };
     static const TerminalPairs tps[] = {
-        {PG_PSYS_IPU6_BB,
-         TERMINAL_PAIR_TNR,
-         {{PG_BB_TERMINAL_ID_TNR_REF_IN, PG_BB_TERMINAL_ID_TNR_REF_OUT}}},
-        {PG_PSYS_IPU6_BB,
-         TERMINAL_PAIR_TNR_SIM,
-         {{PG_BB_TERMINAL_ID_TNR_SIM_REF_IN, PG_BB_TERMINAL_ID_TNR_SIM_REF_OUT}}},
-        {PG_PSYS_IPU6_ISA_LB,
-         TERMINAL_PAIR_DVS,
-         {{ISA_LB_TERMINAL_ID_DVS_FE_IN_L0, ISA_LB_TERMINAL_ID_DVS_FE_OUT_L0},
-          {ISA_LB_TERMINAL_ID_DVS_FE_IN_L1, ISA_LB_TERMINAL_ID_DVS_FE_OUT_L1},
-          {ISA_LB_TERMINAL_ID_DVS_FE_IN_L2, ISA_LB_TERMINAL_ID_DVS_FE_OUT_L2}}}};
+        {PG_PSYS_IPU6_BB, TERMINAL_PAIR_TNR,
+            {{PG_BB_TERMINAL_ID_TNR_REF_IN, PG_BB_TERMINAL_ID_TNR_REF_OUT}}},
+        {PG_PSYS_IPU6_BB, TERMINAL_PAIR_TNR_SIM,
+            {{PG_BB_TERMINAL_ID_TNR_SIM_REF_IN, PG_BB_TERMINAL_ID_TNR_SIM_REF_OUT}}},
+        {PG_PSYS_IPU6_ISA_LB, TERMINAL_PAIR_DVS,
+            {{ISA_LB_TERMINAL_ID_DVS_FE_IN_L0, ISA_LB_TERMINAL_ID_DVS_FE_OUT_L0},
+             {ISA_LB_TERMINAL_ID_DVS_FE_IN_L1, ISA_LB_TERMINAL_ID_DVS_FE_OUT_L1},
+             {ISA_LB_TERMINAL_ID_DVS_FE_IN_L2, ISA_LB_TERMINAL_ID_DVS_FE_OUT_L2}}}
+    };
 
     for (unsigned int i = 0; i < ARRAY_SIZE(tps); i++) {
         if (tps[i].pgId == pgId && tps[i].type == type) {
@@ -300,19 +296,18 @@ bool getTerminalPairs(int pgId, TERMINAL_PAIR_TYPE type, std::vector<TerminalPai
 
 bool isCompressionTerminal(int terminalId) {
     bool cmp = false;
-    /*
-     * pg 187 terminal 3/7 and pg 189 terminal 0 support compression
-     * pg 196 termianl 0 support compression
-     * tnr compression 189 terminal 4/6 not enabled in software
-     */
+    /* only pg 187 terminal 3/7 and pg 189 terminal 0 support compression
+    ** tnr compression 189 terminal 4/6 not enabled in software
+    */
     if (terminalId == psys_ipu6_isa_lb_input_high_uid ||
-        terminalId == psys_ipu6_isa_lb_output_uid || terminalId == psys_ipu6_bb_input_uid ||
-        terminalId == psys_ipu6_bb_gdc_input_uid || terminalId == psys_ipu6_bb_tnr_ref_in_uid ||
+        terminalId == psys_ipu6_isa_lb_output_uid ||
+        terminalId == psys_ipu6_bb_input_uid ||
+        terminalId == psys_ipu6_bb_tnr_ref_in_uid ||
         terminalId == psys_ipu6_bb_tnr_ref_out_uid) {
         cmp = true;
     }
 
     return cmp;
 }
-}  // namespace PGUtils
-}  // namespace icamera
+} // name space PGUtils
+} // namespace icamera

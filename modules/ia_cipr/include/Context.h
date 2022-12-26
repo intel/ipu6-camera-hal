@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2021 Intel Corporation.
+ * Copyright (C) 2020 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,6 @@ class Context : public MemoryOper {
  public:
     Context();
     virtual ~Context();
-    bool isInitialized() { return mInitialized; }
 
     Result getCapabilities(PSYSCapability* cap);
     Result getManifest(uint32_t index, uint32_t* mainfestSize, void* manifest);
@@ -42,7 +41,9 @@ class Context : public MemoryOper {
     ContextPoller getPoller(int event, int timeout);
 
  private:
+    enum class Flags { DEBUG, NONE };
     int mFd = -1;
+    Flags mInitFlag = Flags::NONE;
     bool mInitialized;
 
  private:
@@ -64,6 +65,5 @@ class ContextPoller {
 
     friend Context;
 };
-
 }  // namespace CIPR
 }  // namespace icamera

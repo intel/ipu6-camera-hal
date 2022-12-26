@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2022 Intel Corporation
+ * Copyright (C) 2019-2021 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,20 +17,19 @@
 #pragma once
 
 #include <map>
+#include <vector>
 #include <memory>
 #include <string>
-#include <utility>  // For std::pair, std::make_pair
-#include <vector>
+#include <utility> // For std::pair, std::make_pair
 
-#include "BufferQueue.h"
-#include "CameraBuffer.h"
-#include "GraphConfig.h"
-#include "IspParamAdaptor.h"
 #include "Parameters.h"
+#include "CameraBuffer.h"
+#include "BufferQueue.h"
+#include "psysprocessor/PGCommon.h"
 #include "PolicyManager.h"
 #include "ShareReferBufferPool.h"
-#include "ISchedulerNode.h"
-#include "psysprocessor/PGCommon.h"
+#include "IspParamAdaptor.h"
+#include "GraphConfig.h"
 
 namespace icamera {
 
@@ -38,11 +37,11 @@ class PSysDAG;
 
 typedef std::map<Port, std::shared_ptr<CameraBuffer>> CameraBufferPortMap;
 
-class PipeLiteExecutor : public BufferQueue, public ISchedulerNode {
- public:
-    PipeLiteExecutor(int cameraId, const ExecutorPolicy& policy,
-                     std::vector<std::string> exclusivePGs, PSysDAG* psysDag,
-                     std::shared_ptr<IGraphConfig> gc);
+class PipeLiteExecutor : public BufferQueue {
+public:
+    PipeLiteExecutor(int cameraId, const ExecutorPolicy &policy,
+                     std::vector<std::string> exclusivePGs,
+                     PSysDAG *psysDag, std::shared_ptr<IGraphConfig> gc);
     virtual ~PipeLiteExecutor();
     virtual int start();
     virtual void stop();
@@ -52,14 +51,14 @@ class PipeLiteExecutor : public BufferQueue, public ISchedulerNode {
     virtual bool fetchTnrOutBuffer(int64_t seq, std::shared_ptr<CameraBuffer> buf) { return false; }
     virtual bool isBypassStillTnr(int64_t seq) { return true; }
     virtual int getTnrExtraFrameCount(int64_t seq) { return 0; }
-    int releaseStatsBuffer(const std::shared_ptr<CameraBuffer>& statsBuf);
+    int releaseStatsBuffer(const std::shared_ptr<CameraBuffer> &statsBuf);
 
     void setStreamId(int streamId) { mStreamId = streamId; }
     void setIspParamAdaptor(IspParamAdaptor* adaptor) { mAdaptor = adaptor; }
     void setPolicyManager(PolicyManager* policyManager) { mPolicyManager = policyManager; }
     void setNotifyPolicy(ExecutorNotifyPolicy notifyPolicy) { mNotifyPolicy = notifyPolicy; }
     void setShareReferPool(std::shared_ptr<ShareReferBufferPool> referPool) {
-        mShareReferPool = referPool;
+            mShareReferPool = referPool;
     }
 
     void getOutputTerminalPorts(std::map<ia_uid, Port>& outputTerminals) const;
@@ -68,8 +67,8 @@ class PipeLiteExecutor : public BufferQueue, public ISchedulerNode {
 
     // Link output terminals of producer to its input terminals
     int setInputTerminals(const std::map<ia_uid, Port>& sourceTerminals);
-    int registerOutBuffers(Port port, const std::shared_ptr<CameraBuffer>& camBuffer);
-    int registerInBuffers(Port port, const std::shared_ptr<CameraBuffer>& inBuf);
+    int registerOutBuffers(Port port, const std::shared_ptr<CameraBuffer> &camBuffer);
+    int registerInBuffers(Port port, const std::shared_ptr<CameraBuffer> &inBuf);
 
     /**
      * Check if the two given stream configs are the same.
@@ -80,14 +79,13 @@ class PipeLiteExecutor : public BufferQueue, public ISchedulerNode {
     bool isInputEdge() { return mIsInputEdge; }
     bool isOutputEdge() { return mIsOutputEdge; }
 
-    // ISchedulerNode
-    virtual bool process(int64_t triggerId) { return processNewFrame() == OK; }
+    const char* getName() const { return mName.c_str(); }
 
  private:
     DISALLOW_COPY_AND_ASSIGN(PipeLiteExecutor);
 
  protected:
-    struct TerminalDescriptor {
+    struct TerminalDescriptor{
         ia_uid terminal;
         ia_uid stageId;
 
@@ -99,9 +97,9 @@ class PipeLiteExecutor : public BufferQueue, public ISchedulerNode {
         FrameInfo frameDesc;
 
         bool enabled;
-        bool hasConnection;  // has related sink or source
-                             // expection: sis output, sink = source
-        Port assignedPort;   // INVALID_PORT for terminal without connection
+        bool hasConnection; // has related sink or source
+                            // expection: sis output, sink = source
+        Port assignedPort;  // INVALID_PORT for terminal without connection
         int usrStreamId;
     };
 
@@ -114,17 +112,14 @@ class PipeLiteExecutor : public BufferQueue, public ISchedulerNode {
         std::vector<ia_uid> sisKernelUids;
 
         // Initialized during connection analysis
-        std::vector<ia_uid> inputTerminals;  // including disabled terminals
+        std::vector<ia_uid> inputTerminals; // including disabled terminals
         std::vector<ia_uid> outputTerminals;
 
         // Initialized during buffer allocation
         std::map<ia_uid, std::shared_ptr<CameraBuffer>> inputBuffers;
         std::map<ia_uid, std::shared_ptr<CameraBuffer>> outputBuffers;
 
-        ExecutorUnit() {
-            pgId = -1;
-            stageId = 0;
-        }
+        ExecutorUnit() { pgId = -1; stageId = 0; }
     };
 
  protected:
@@ -139,23 +134,20 @@ class PipeLiteExecutor : public BufferQueue, public ISchedulerNode {
     void dumpPGs() const;
 
  private:
-    bool fetchBuffersInQueue(std::map<Port, std::shared_ptr<CameraBuffer>>& cInBuffer,
-                             std::map<Port, std::shared_ptr<CameraBuffer>>& cOutBuffer);
-
     int processNewFrame();
-    int runPipe(std::map<Port, std::shared_ptr<CameraBuffer>>& inBuffers,
-                std::map<Port, std::shared_ptr<CameraBuffer>>& outBuffers,
-                std::vector<std::shared_ptr<CameraBuffer>>& outStatsBuffers,
-                std::vector<EventType>& eventType);
+    int runPipe(std::map<Port, std::shared_ptr<CameraBuffer>> &inBuffers,
+                std::map<Port, std::shared_ptr<CameraBuffer>> &outBuffers,
+                std::vector<std::shared_ptr<CameraBuffer>> &outStatsBuffers,
+                std::vector<EventType> &eventType);
 
     int notifyStatsDone(TuningMode tuningMode, const v4l2_buffer_t& inV4l2Buf,
-                        const std::vector<std::shared_ptr<CameraBuffer>>& outStatsBuffers,
-                        const std::vector<EventType>& eventType);
+                        const std::vector<std::shared_ptr<CameraBuffer>> &outStatsBuffers,
+                        const std::vector<EventType> &eventType);
 
     int createPGs();
+    int configurePGs();
     int allocBuffers();
     void releaseBuffers();
-    int configurePGs(const std::vector<IGraphType::PrivPortFormat>& tnrPortFormat);
     int storeTerminalInfo(const IGraphType::PipelineConnection& connection);
     int getStatKernels(int pgId, std::vector<ia_uid>& kernels);
     int getSisKernels(int pgId, std::vector<ia_uid>& kernels);
@@ -164,14 +156,14 @@ class PipeLiteExecutor : public BufferQueue, public ISchedulerNode {
     void getTerminalFrameInfos(const std::vector<ia_uid>& terminals,
                                std::map<ia_uid, FrameInfo>& infos) const;
     void getTerminalPorts(const std::vector<ia_uid>& terminals,
-                          std::map<ia_uid, Port>& terminalPortMap) const;
+                          std:: map<ia_uid, Port>& terminalPortMap) const;
     void getTerminalBuffersFromExternal(
-        const std::vector<ia_uid>& terminals,
-        const std::map<Port, std::shared_ptr<CameraBuffer>>& externals,
-        std::map<ia_uid, std::shared_ptr<CameraBuffer>>& internals) const;
+                        const std::vector<ia_uid>& terminals,
+                        const std::map<Port, std::shared_ptr<CameraBuffer> >& externals,
+                        std::map<ia_uid, std::shared_ptr<CameraBuffer> >& internals) const;
 
     int handleSisStats(std::map<ia_uid, std::shared_ptr<CameraBuffer>>& frameBuffers,
-                       const std::shared_ptr<CameraBuffer>& outStatsBuffers);
+                       const std::shared_ptr<CameraBuffer> &outStatsBuffers);
 
  protected:
     int mCameraId;
@@ -191,19 +183,19 @@ class PipeLiteExecutor : public BufferQueue, public ISchedulerNode {
     std::shared_ptr<ShareReferBufferPool> mShareReferPool;
 
     // For internal connections (between PGs)
-    std::map<ia_uid, std::shared_ptr<CameraBuffer>> mPGBuffers;  // Buffers between PGs
-    std::map<ia_uid, ia_uid> mConnectionMap;                     // <sink, source>
+    std::map<ia_uid, std::shared_ptr<CameraBuffer> > mPGBuffers; // Buffers between PGs
+    std::map<ia_uid, ia_uid> mConnectionMap; // <sink, source>
     std::map<ia_uid, TerminalDescriptor> mTerminalsDesc;
 
     int64_t mLastStatsSequence;
     CameraBufQ mStatsBuffers;
     Mutex mStatsBuffersLock;
     std::vector<std::string> mExclusivePGs;
-    PSysDAG* mPSysDag;
+    PSysDAG *mPSysDag;
 
     CameraBufferPortMap mInternalOutputBuffers;
     int mkernelsCountWithStats;
 };
 
 typedef PipeLiteExecutor PipeExecutor;
-}  // namespace icamera
+}

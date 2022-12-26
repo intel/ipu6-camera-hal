@@ -22,7 +22,7 @@
 
 namespace icamera {
 
-struct IspImageEnhancement {
+struct IspImageEnhancement{
     char manualSharpness;
     char manualBrightness;
     char manualContrast;
@@ -37,12 +37,13 @@ struct IspSettings {
     bool videoStabilization;
     IspImageEnhancement manualSettings;
     ia_binary_data* palOverride;
+    // DOL_FEATURE_S
+    short vbp; // Used for DOL camera
+    // DOL_FEATURE_E
     float zoom;
     camera_mount_type_t sensorMountType;
-    IspSettings() {
-        CLEAR(*this);
-        zoom = 1.0f;
-    }
+    IspSettings() { CLEAR(*this); zoom = 1.0f; }
 };
 
-}  // namespace icamera
+} // namespace icamera
+

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2022 Intel Corporation.
+ * Copyright (C) 2015-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,40 +24,40 @@
 #include <v4l2_device.h>
 #endif
 
-#include <map>
-#include <string>
-#include <unordered_map>
 #include <vector>
+#include <string>
+#include <map>
+#include <unordered_map>
 
-#include "AiqInitData.h"
-#include "CameraTypes.h"
-#include "FaceType.h"
 #include "ICamera.h"
-#include "IGraphConfig.h"
-#include "MediaControl.h"
-#include "Parameters.h"
 #include "iutils/Errors.h"
 #include "iutils/Utils.h"
+#include "CameraTypes.h"
+#include "Parameters.h"
+#include "AiqInitData.h"
+#include "MediaControl.h"
+#include "IGraphConfig.h"
+#include "FaceBase.h"
 
 namespace icamera {
 
-#define RESOLUTION_1_3MP_WIDTH 1280
+#define RESOLUTION_1_3MP_WIDTH  1280
 #define RESOLUTION_1_3MP_HEIGHT 960
-#define RESOLUTION_1080P_WIDTH 1920
+#define RESOLUTION_1080P_WIDTH  1920
 #define RESOLUTION_1080P_HEIGHT 1080
-#define RESOLUTION_720P_WIDTH 1280
-#define RESOLUTION_720P_HEIGHT 720
-#define RESOLUTION_VGA_WIDTH 640
-#define RESOLUTION_VGA_HEIGHT 480
+#define RESOLUTION_720P_WIDTH   1280
+#define RESOLUTION_720P_HEIGHT  720
+#define RESOLUTION_VGA_WIDTH    640
+#define RESOLUTION_VGA_HEIGHT   480
 
 #define MAX_BUFFER_COUNT (10)
-#define MAX_STREAM_NUMBER 5
+// VIRTUAL_CHANNEL_S
+#define MAX_VC_GROUP_NUMBER 8
+// VIRTUAL_CHANNEL_E
+#define MAX_STREAM_NUMBER   5
 #define MAX_WEIGHT_GRID_SIDE_LEN 1024
 
 #define FACE_ENGINE_DEFAULT_RUNNING_INTERVAL 1
-
-#define FACE_ENGINE_INTEL_PVL 0
-#define FACE_ENGINE_GOOGLE_FACESSD 1
 
 #define DEFAULT_TNR_EXTRA_FRAME_NUM 2
 
@@ -85,7 +85,7 @@ namespace icamera {
 #endif
 
 #ifdef LINUX_BUILD
-#define MAX_CAMERA_NUMBER 100
+#define MAX_CAMERA_NUMBER   100
 // Temporarily using current path to save aiqd file for none CAL platforms.
 #define CAMERA_CACHE_DIR "./"
 #define CAMERA_DEFAULT_CFG_PATH "/usr/share/defaults/etc/camera/"
@@ -93,117 +93,133 @@ namespace icamera {
 #define CAMERA_GRAPH_SETTINGS_DIR "gcss/"
 #endif
 
-#define NVM_DATA_PATH "/sys/bus/i2c/devices/"
-
 #define TNR7US_RESTART_THRESHOLD 5
 
 class GraphConfigNodes;
 class PlatformData {
- private:
-    // Prevent to create multiple instances
+private:
+    //Prevent to create multiple instances
     PlatformData();
     ~PlatformData();
 
- public:
+public:
     class StaticCfg {
-     public:
-        StaticCfg() { mCameras.clear(); }
-        ~StaticCfg() {}  // not release resource by design
+    public:
+        StaticCfg() {
+            mCameras.clear();
+        };
+        ~StaticCfg() {}; // not release resource by design
 
         /**
          * Camera feature info that is specific to camera id
          */
         class CameraInfo {
-         public:
-            CameraInfo()
-                    : sensorName(""),
-                      sensorDescription("unset"),
-                      mLensName(""),
-                      mLensHwType(LENS_NONE_HW),
-                      mEnablePdaf(false),
-                      mSensorAwb(false),
-                      mSensorAe(false),
-                      mRunIspAlways(false),
-                      mLtmEnabled(false),
-                      mSensorExposureNum(2),
-                      mSensorExposureType(SENSOR_EXPOSURE_SINGLE),
-                      mSensorGainType(SENSOR_GAIN_NONE),
-                      mLensCloseCode(0),
-                      mEnableAIQ(false),
-                      mAiqRunningInterval(1),
-                      mStatsRunningRate(false),
-                      mEnableMkn(true),
-                      mSkipFrameV4L2Error(false),
-                      mCITMaxMargin(0),
-                      mYuvColorRangeMode(CAMERA_FULL_MODE_YUV_COLOR_RANGE),
-                      mInitialSkipFrame(0),
-                      mMaxRawDataNum(MAX_BUFFER_COUNT),
-                      mTopBottomReverse(false),
-                      mPsysContinueStats(false),
-                      mMaxRequestsInflight(0),
-                      mPreferredBufQSize(MAX_BUFFER_COUNT),
-                      mDigitalGainLag(-1),
-                      mExposureLag(MAX_BUFFER_COUNT),
-                      mAnalogGainLag(0),
-                      mLtmGainLag(0),
-                      mEnableLtmThread(false),
-                      mEnableLtmDefog(false),
-                      mMaxSensorDigitalGain(0),
-                      mSensorDgType(SENSOR_DG_TYPE_NONE),
-                      mISysFourcc(V4L2_PIX_FMT_SGRBG8),
-                      mISysRawFormat(V4L2_PIX_FMT_SGRBG10),
-                      mUseCrlModule(true),
-                      mFacing(FACING_BACK),
-                      mOrientation(ORIENTATION_0),
-                      mSensorOrientation(ORIENTATION_0),
-                      mUseSensorDigitalGain(false),
-                      mUseIspDigitalGain(false),
-                      mNeedPreRegisterBuffers(false),
-                      // FRAME_SYNC_S
-                      mFrameSyncCheckEnabled(false),
-                      // FRAME_SYNC_E
-                      mEnableAiqd(false),
-                      mCurrentMcConf(nullptr),
-                      mGraphSettingsType(COUPLED),
-                      mDVSType(MORPH_TABLE),
-                      mISYSCompression(false),
-                      mPSACompression(false),
-                      mOFSCompression(false),
-                      mSchedulerEnabled(false),
-                      mFaceAeEnabled(true),
-                      mFaceEngineVendor(FACE_ENGINE_INTEL_PVL),
-                      mFaceEngineRunningInterval(FACE_ENGINE_DEFAULT_RUNNING_INTERVAL),
-                      mFaceEngineRunningIntervalNoFace(FACE_ENGINE_DEFAULT_RUNNING_INTERVAL),
-                      mFaceEngineRunningSync(false),
-                      mFaceEngineByIPU(false),
-                      mMaxFaceDetectionNumber(MAX_FACES_DETECTABLE),
-                      mPsysAlignWithSof(false),
-                      mPsysBundleWithAic(false),
-                      mSwProcessingAlignWithIsp(false),
-                      mMaxNvmDataSize(0),
-                      mNvmOverwrittenFileSize(0),
-                      mTnrExtraFrameNum(DEFAULT_TNR_EXTRA_FRAME_NUM),
-                      mDummyStillSink(false),
-                      mRemoveCacheFlushOutputBuffer(false),
-                      mPLCEnable(false),
-                      mSupportPrivacy(false),
-                      mStillOnlyPipe(false),
-                      mDisableBLCByAGain(false),
-                      mDisableBLCAGainLow(-1),
-                      mDisableBLCAGainHigh(-1),
-                      mResetLinkRoute(true) {
+        public:
+            CameraInfo() :
+                sensorName(""),
+                sensorDescription("unset"),
+                mLensName(""),
+                // VIRTUAL_CHANNEL_S
+                mVirtualChannel(false),
+                mVCNum(0),
+                mVCSeq(0),
+                mVCGroupId(-1),
+                // VIRTUAL_CHANNEL_E
+                mLensHwType(LENS_NONE_HW),
+                mSensorAwb(false),
+                mSensorAe(false),
+                mRunIspAlways(false),
+                mAutoSwitchType(AUTO_SWITCH_PSYS),
+                // HDR_FEATURE_S
+                mHdrStatsInputBitDepth(0),
+                mHdrStatsOutputBitDepth(0),
+                mUseFixedHdrExposureInfo(true),
+                // HDR_FEATURE_E
+                mLtmEnabled(false),
+                mSensorExposureNum(2),
+                mSensorExposureType(SENSOR_EXPOSURE_SINGLE),
+                mSensorGainType(SENSOR_GAIN_NONE),
+                mLensCloseCode(0),
+                mEnableAIQ(false),
+                mAiqRunningInterval(1),
+                mStatsRunningRate(false),
+                mEnableMkn(true),
+                mSkipFrameV4L2Error(false),
+                mCITMaxMargin(0),
+                mYuvColorRangeMode(CAMERA_FULL_MODE_YUV_COLOR_RANGE),
+                mInitialSkipFrame(0),
+                mMaxRawDataNum(MAX_BUFFER_COUNT),
+                mTopBottomReverse(false),
+                mPsysContinueStats(false),
+                mMaxRequestsInflight(0),
+                mPreferredBufQSize(MAX_BUFFER_COUNT),
+                mPipeSwitchDelayFrame(0),
+                mDigitalGainLag(-1),
+                mExposureLag(MAX_BUFFER_COUNT),
+                mAnalogGainLag(0),
+                mLtmGainLag(0),
+                mEnableLtmThread(false),
+                mEnableLtmDefog(false),
+                mMaxSensorDigitalGain(0),
+                mSensorDgType(SENSOR_DG_TYPE_NONE),
+                mISysFourcc(V4L2_PIX_FMT_SGRBG8),
+                mISysRawFormat(V4L2_PIX_FMT_SGRBG10),
+                mUseCrlModule(true),
+                mFacing(FACING_BACK),
+                mOrientation(ORIENTATION_0),
+                mSensorOrientation(ORIENTATION_0),
+                mUseSensorDigitalGain(false),
+                mUseIspDigitalGain(false),
+                mNeedPreRegisterBuffers(false),
+                mFrameSyncCheckEnabled(false),
+                mEnableAiqd(false),
+                mCurrentMcConf(nullptr),
+                mGraphSettingsType(COUPLED),
+                mDVSType(MORPH_TABLE),
+                mISYSCompression(false),
+                mPSACompression(false),
+                mOFSCompression(false),
+                mFaceAeEnabled(false),
+                mFaceEngineRunningInterval(FACE_ENGINE_DEFAULT_RUNNING_INTERVAL),
+                mFaceEngineRunningIntervalNoFace(FACE_ENGINE_DEFAULT_RUNNING_INTERVAL),
+                mFaceEngineRunningSync(false),
+                mFaceEngineByIPU(false),
+                mMaxFaceDetectionNumber(MAX_FACES_DETECTABLE),
+                mPsysAlignWithSof(false),
+                mPsysBundleWithAic(false),
+                mSwProcessingAlignWithIsp(false),
+                mMaxNvmDataSize(0),
+                mTnrExtraFrameNum(DEFAULT_TNR_EXTRA_FRAME_NUM),
+                mDummyStillSink(false),
+                mForceFlushIpuBuffer(false),
+                mPLCEnable(false)
+            {
+                // USE_ISA_S
+                CLEAR(mIsaScaleRawConfig);
+                // USE_ISA_E
             }
 
-            std::vector<MediaCtlConf> mMediaCtlConfs;
+            std::vector <MediaCtlConf> mMediaCtlConfs;
 
             std::string sensorName;
             std::string sensorDescription;
             std::string mLensName;
+            // VIRTUAL_CHANNEL_S
+            bool mVirtualChannel;
+            int mVCNum;
+            int mVCSeq;
+            int mVCGroupId;
+            // VIRTUAL_CHANNEL_E
             int mLensHwType;
-            bool mEnablePdaf;
             bool mSensorAwb;
             bool mSensorAe;
             bool mRunIspAlways;
+            int mAutoSwitchType;
+            // HDR_FEATURE_S
+            int mHdrStatsInputBitDepth;
+            int mHdrStatsOutputBitDepth;
+            bool mUseFixedHdrExposureInfo;
+            // HDR_FEATURE_E
             bool mLtmEnabled;
             int mSensorExposureNum;
             int mSensorExposureType;
@@ -215,6 +231,9 @@ class PlatformData {
             bool mEnableMkn;
             // first: one algo type in imaging_algorithm_t, second: running rate
             std::unordered_map<int, float> mAlgoRunningRateMap;
+            // DOL_FEATURE_S
+            std::vector<int> mDolVbpOffset;
+            // DOL_FEATURE_E
             bool mSkipFrameV4L2Error;
             int mCITMaxMargin;
             camera_yuv_color_range_mode_t mYuvColorRangeMode;
@@ -224,6 +243,7 @@ class PlatformData {
             bool mPsysContinueStats;
             int mMaxRequestsInflight;
             unsigned int mPreferredBufQSize;
+            unsigned int mPipeSwitchDelayFrame;
             int mDigitalGainLag;
             int mExposureLag;
             int mAnalogGainLag;
@@ -234,15 +254,18 @@ class PlatformData {
             SensorDgType mSensorDgType;
             std::string mCustomAicLibraryName;
             std::string mCustom3ALibraryName;
-            std::vector<camera_resolution_t> mSupportedISysSizes;  // ascending order request
-            std::vector<int> mSupportedISysFormat;
-            int mISysFourcc;     // the isys output format
-            int mISysRawFormat;  // the isys raw format if scale enabled
+            std::vector <camera_resolution_t> mSupportedISysSizes; // ascending order request
+            std::vector <int> mSupportedISysFormat;
+            int mISysFourcc; // the isys output format
+            int mISysRawFormat; // the isys raw format if scale enabled
+            // USE_ISA_S
+            stream_t mIsaScaleRawConfig; // The config for ISA raw if scale enabled
+            // USE_ISA_E
 
-            std::vector<int> mPSysFormat;  // the psys output format
-            std::vector<TuningConfig> mSupportedTuningConfig;
-            std::vector<LardTagConfig> mLardTagsConfig;
-            std::vector<ConfigMode> mConfigModesForAuto;
+            std::vector <int> mPSysFormat; // the psys output format
+            std::vector <TuningConfig> mSupportedTuningConfig;
+            std::vector <LardTagConfig> mLardTagsConfig;
+            std::vector <ConfigMode> mConfigModesForAuto;
 
             bool mUseCrlModule;
             int mFacing;
@@ -251,25 +274,24 @@ class PlatformData {
             bool mUseSensorDigitalGain;
             bool mUseIspDigitalGain;
             bool mNeedPreRegisterBuffers;
-            // FRAME_SYNC_S
             bool mFrameSyncCheckEnabled;
-            // FRAME_SYNC_E
             bool mEnableAiqd;
-            MediaCtlConf* mCurrentMcConf;
+            MediaCtlConf *mCurrentMcConf;
             std::map<int, stream_array_t> mStreamToMcMap;
             Parameters mCapability;
 
+            // CUSTOM_WEIGHT_GRID_S
+            std::vector <WeightGridTable> mWGTable;
+            // CUSTOM_WEIGHT_GRID_E
             std::string mGraphSettingsFile;
             GraphSettingType mGraphSettingsType;
-            std::vector<MultiExpRange> mMultiExpRanges;
-            std::vector<uint32_t> mSupportedIspControlFeatures;
+            std::vector <MultiExpRange> mMultiExpRanges;
+            std::vector <uint32_t> mSupportedIspControlFeatures;
             int mDVSType;
             bool mISYSCompression;
             bool mPSACompression;
             bool mOFSCompression;
-            bool mSchedulerEnabled;
             bool mFaceAeEnabled;
-            int mFaceEngineVendor;
             int mFaceEngineRunningInterval;
             int mFaceEngineRunningIntervalNoFace;
             int mFaceEngineRunningSync;
@@ -288,37 +310,24 @@ class PlatformData {
             std::vector<UserToPslOutputMap> mOutputMap;
             int mMaxNvmDataSize;
             std::string mNvmDirectory;
-            int mNvmOverwrittenFileSize;
-            std::string mNvmOverwrittenFile;  // overwrite NVM data
-            std::string mCamModuleName;
-            std::vector<std::string> mSupportModuleNames;
             /* key: camera module name, value: camera module info */
             std::unordered_map<std::string, CameraMetadata> mCameraModuleInfoMap;
             std::vector<IGraphType::ScalerInfo> mScalerInfo;
             int mTnrExtraFrameNum;
             bool mDummyStillSink;
-            bool mRemoveCacheFlushOutputBuffer;
+            bool mForceFlushIpuBuffer;
             bool mPLCEnable;
-            bool mSupportPrivacy;
-            bool mStillOnlyPipe;
-
-            bool mDisableBLCByAGain;
-            int mDisableBLCAGainLow;
-            int mDisableBLCAGainHigh;
-            bool mResetLinkRoute;
         };
 
         std::vector<CameraInfo> mCameras;
         std::vector<PolicyConfig> mPolicyConfig;
         CommonConfig mCommonConfig;
     };
-
- private:
+private:
     StaticCfg mStaticCfg;
 
     std::vector<AiqInitData*> mAiqInitData;
-
- private:
+private:
     /**
      * Get access to the platform singleton.
      *
@@ -327,6 +336,13 @@ class PlatformData {
     static PlatformData* sInstance;
     static Mutex sLock;
     static PlatformData* getInstance();
+
+    // CUSTOM_WEIGHT_GRID_S
+    /**
+     * Deinit and clear weight grid table in camera info
+     */
+    void deinitWeightGridTable();
+    // CUSTOM_WEIGHT_GRID_E
 
     /**
      * Release GraphConfigNodes in StaticCfg::CameraInfo
@@ -355,11 +371,11 @@ class PlatformData {
      */
     static bool isVideoNodeEnabled(int cameraId, VideoNodeType type);
 
- public:
-    /**
-     * releaseInstance
-     * This function must be called when the hal is destroyed.
-     */
+public:
+     /**
+      * releaseInstance
+      * This function must be called when the hal is destroyed.
+      */
     static void releaseInstance();
 
     /**
@@ -377,7 +393,7 @@ class PlatformData {
     /**
      * Query GraphSettings
      */
-    static int queryGraphSettings(int cameraId, const stream_config_t* streamList);
+    static int queryGraphSettings(int cameraId, const stream_config_t *streamList);
 
     /**
      * get the camera numbers
@@ -424,14 +440,6 @@ class PlatformData {
      * \return int: the Lens HW type
      */
     static int getLensHwType(int cameraId);
-
-    /**
-     * check if PDAF is supported or not
-     *
-     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
-     * \return true if PDAF is supported.
-     */
-    static bool isPdafEnabled(int cameraId);
 
     /**
      * get the sensor AWB
@@ -563,6 +571,14 @@ class PlatformData {
     static bool isNeedToPreRegisterBuffer(int cameraId);
 
     /**
+     * Get auto switch type
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return the value of auto switch type
+     */
+    static int getAutoSwitchType(int cameraId);
+
+    /**
      * Check Defog(LTM) is enabled or not
      *
      * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
@@ -570,7 +586,6 @@ class PlatformData {
      */
     static bool isEnableDefog(int cameraId);
 
-    // FRAME_SYNC_S
     /**
      * Check Frame Sync is enabled or not
      *
@@ -578,7 +593,6 @@ class PlatformData {
      * \return if Frame Sync is enabled or not.
      */
     static bool isEnableFrameSyncCheck(int cameraId);
-    // FRAME_SYNC_E
 
     /**
      * Get exposure number
@@ -596,6 +610,40 @@ class PlatformData {
      * \return if LTM is enabled or not.
      */
     static bool isLtmEnabled(int cameraId);
+
+    // HDR_FEATURE_S
+    /**
+     * Check HDR is enabled or not
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return if HDR is enabled or not.
+     */
+    static bool isEnableHDR(int cameraId);
+
+    /**
+     * Get HDR stats input bit depth
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return the value of HDR stats input bit depth
+     */
+    static int getHDRStatsInputBitDepth(int cameraId);
+
+    /**
+     * Get HDR stats output bit depth
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return the value of HDR stats output bit depth
+     */
+    static int getHDRStatsOutputBitDepth(int cameraId);
+
+    /**
+     * Get if HDR exposure info is fixed or not
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return true if HDR exposure info is fixed
+     */
+    static int isUseFixedHDRExposureInfo(int cameraId);
+    // HDR_FEATURE_E
 
     /**
      * Get sensor exposure type
@@ -629,7 +677,7 @@ class PlatformData {
      */
     static unsigned int getMaxRawDataNum(int cameraId);
 
-    /**
+     /**
      * Get sensor's top bottom filed reverse option
      *
      * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
@@ -654,6 +702,14 @@ class PlatformData {
     static unsigned int getPreferredBufQSize(int cameraId);
 
     /**
+     * Get pipe switch delay frame
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return the value of delay frame
+     */
+    static unsigned int getPipeSwitchDelayFrame(int cameraId);
+
+    /**
      * Get Ltm Gain lag
      *
      * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
@@ -670,36 +726,12 @@ class PlatformData {
     static bool isEnableLtmThread(int cameraId);
 
     /**
-     * Check if H-Scheduler is enabled
+     * Check face detection is enabled or not
      *
      * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
-     * \return if H-Scheduler is enabled
-     */
-    static bool isSchedulerEnabled(int cameraId);
-
-    /**
-     * Check face engine is enabled or not
-     *
-     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
-     * \return if face engine is enabled or not.
-     */
-    static bool isFaceDetectionSupported(int cameraId);
-
-    /**
-     * Check face AE is enabled or not, only for debug
-     *
-     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
-     * \return if face ae is enabled or not.
+     * \return if face detection is enabled or not.
      */
     static bool isFaceAeEnabled(int cameraId);
-
-    /**
-     * get face engine's vendor
-     *
-     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
-     * \return the face engine's vendor.
-     */
-    static int faceEngineVendor(int cameraId);
 
     /**
      * get face engine's running interval
@@ -812,6 +844,20 @@ class PlatformData {
      */
     static int getAnalogGainLag(int cameraId);
 
+    // CUSTOM_WEIGHT_GRID_S
+    /**
+     * Get the weight grid table.
+     *
+     * \param[in] cameraId: camera id
+     * \param[in] width: the table width
+     * \param[in] height: the table height
+     * \param[in] index: which one to be gotten in the matching list
+     *
+     * \return mWGTable object if found, otherwise return nullptr.
+     */
+    static WeightGridTable* getWeightGrild(int cameraId, unsigned short width, unsigned short height, int index);
+    // CUSTOM_WEIGHT_GRID_E
+
     /**
      * Get the executor policy config.
      *
@@ -834,13 +880,12 @@ class PlatformData {
 
     /**
      * to get the current MediaCtlConf
-     * after the media controller has been analyzed, the media controller information will be stored
-     * in the mMediaCtlConfs.
+     * after the media controller has been analyzed, the media controller information will be stored in the mMediaCtlConfs.
      *
      * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
      * \return MediaCtlConf*, if it doens't find one, this function will return nullptr.
      */
-    static MediaCtlConf* getMediaCtlConf(int cameraId);
+    static MediaCtlConf *getMediaCtlConf(int cameraId);
 
     /**
      * \brief Fill camera info and capability according to given camera id
@@ -878,7 +923,7 @@ class PlatformData {
      * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
      * \param sizes: the function will fill the isys supported size list to the sizes
      */
-    static void getSupportedISysSizes(int cameraId, std::vector<camera_resolution_t>& resolutions);
+    static void getSupportedISysSizes(int cameraId, std::vector <camera_resolution_t>& resolutions);
 
     /**
      * get the isys supported format list
@@ -887,7 +932,7 @@ class PlatformData {
      * \param formats: the function will fill the isys supported format list to the formats
      * \return true if success, return false if it fails.
      */
-    static bool getSupportedISysFormats(int cameraId, std::vector<int>& formats);
+    static bool getSupportedISysFormats(int cameraId, std::vector <int>& formats);
 
     /**
      * Format for the ISYS output
@@ -944,6 +989,16 @@ class PlatformData {
      */
     static stream_t getISysOutputByPort(int cameraId, Port port);
 
+    // CSI_META_S
+    /**
+     * get CSI meta enabled status
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return true if CSI meta is enabled, otherwise return false
+     */
+    static bool isCsiMetaEnabled(int cameraId);
+    // CSI_META_E
+
     /**
      * get the format by device name
      *
@@ -975,6 +1030,79 @@ class PlatformData {
      */
     static int getDevNameByType(int cameraId, VideoNodeType videoNodeType, std::string& devName);
 
+    // USE_ISA_S
+    /**
+     * if ISYS scale enabled
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return true if isys scale enabled, false if disabled
+     */
+    static bool isISysScaleEnabled(int cameraId);
+
+    /**
+     * Get the config for the ISYS RAW output
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return the RAW config if ISYS scale enabled.
+     */
+    static stream_t getIsaScaleRawConfig(int cameraId);
+
+    static bool isIsaEnabled(int cameraId);
+    // USE_ISA_E
+
+    // DOL_FEATURE_S
+    /**
+     * get fixed VBP from currently selected media configure
+     * VBP is used to parse sensor output frame under DOL mode
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return fixed vbp value
+     */
+    static int getFixedVbp(int cameraId);
+
+    /**
+     * whether need to handle VBP info from meta data
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \param configMode: the real configure mode
+     * \return true if needed, else false
+     */
+    static bool needHandleVbpInMetaData(int cameraId, ConfigMode configMode);
+
+    /**
+     * whether need to pass down VBP info
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \param configMode: the real configure mode
+     * \return true if needed, else false
+     */
+    static bool needSetVbp(int cameraId, ConfigMode configMode);
+
+    /**
+     * Check DOL VBP offset
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \param dolVbpOffset: return vbp offset for low and high bytes
+     */
+    static void getDolVbpOffset(int cameraId, std::vector<int>& dolVbpOffset);
+
+    /**
+     * get CSI BE SOC for Dol short exposure output enabled status
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return true if video node is enabled, otherwise return false
+     */
+    static bool isDolShortEnabled(int cameraId);
+
+    /**
+     * get CSI BE SOC for Dol medium exposure output enabled status
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return true if video node is enabled, otherwise return false
+     */
+    static bool isDolMediumEnabled(int cameraId);
+    // DOL_FEATURE_E
+
     /**
      * Check if ISYS is enabled or not
      *
@@ -995,8 +1123,7 @@ class PlatformData {
      *
      * \return camera_resolution_t: The optimized resolution that used to configure the ISYS.
      */
-    static camera_resolution_t getISysBestResolution(int cameraId, int width, int height,
-                                                     int field);
+    static camera_resolution_t getISysBestResolution(int cameraId, int width, int height, int field);
 
     /**
      * to get if it support the format
@@ -1013,7 +1140,7 @@ class PlatformData {
      * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
      * \param configs: the function will fill supported psys dag config list to the configs
      */
-    static void getSupportedTuningConfig(int cameraId, std::vector<TuningConfig>& configs);
+    static void getSupportedTuningConfig(int cameraId, std::vector <TuningConfig> &configs);
 
     /**
      * to get the ConfigMode by operation Mode
@@ -1024,7 +1151,7 @@ class PlatformData {
      * \return OK if get ConfigMode, otherwise return INVALID_OPERATION
      */
     static int getConfigModesByOperationMode(int cameraId, uint32_t operationMode,
-                                             std::vector<ConfigMode>& configModes);
+                                             std::vector <ConfigMode> &configModes);
 
     /**
      * to get the TuningMode by Config Mode
@@ -1034,8 +1161,7 @@ class PlatformData {
      * \param tuningMode: return related TuningMode
      * \return OK if get TuningMode, otherwise return INVALID_OPERATION
      */
-    static int getTuningModeByConfigMode(int cameraId, ConfigMode configMode,
-                                         TuningMode& tuningMode);
+    static int getTuningModeByConfigMode(int cameraId, ConfigMode configMode, TuningMode& tuningMode);
 
     /**
      * to get tuning config by ConfigMode
@@ -1045,7 +1171,7 @@ class PlatformData {
      * \param config: return related TuningConfig
      * \return OK if get TuningConfig, otherwise return INVALID_OPERATION
      */
-    static int getTuningConfigByConfigMode(int cameraId, ConfigMode mode, TuningConfig& config);
+    static int getTuningConfigByConfigMode(int cameraId, ConfigMode mode, TuningConfig &config);
 
     /*
      * Get stream id by the given configMode
@@ -1169,6 +1295,37 @@ class PlatformData {
      */
     static std::vector<MultiExpRange> getMultiExpRanges(int cameraId);
 
+    // ISP_CONTROL_S
+    static std::vector<uint32_t> getSupportedIspControlFeatures(int cameraId);
+    static bool isIspControlFeatureSupported(int cameraId, uint32_t ctrlId);
+    // ISP_CONTROL_E
+
+    // FILE_SOURCE_S
+    /**
+     * Get the injected file.
+     *
+     * \return the injected file or nullptr if cameraInjectFile isn't set.
+     */
+    static const char* getInjectedFile();
+
+    /**
+     * Check if FileSource is enabled.
+     *
+     * \return true cameraInjectFile is set, otherwise return false.
+     */
+    static bool isFileSourceEnabled();
+    // FILE_SOURCE_E
+
+    // VIRTUAL_CHANNEL_S
+    /**
+     * Get virtual channel sequence
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return sequence if Virtual channel supported, otherwise return -1.
+     */
+    static int getVirtualChannelSequence(int cameraId);
+    // VIRTUAL_CHANNEL_E
+
     /**
      * Get the psl output resolution
      *
@@ -1177,7 +1334,7 @@ class PlatformData {
      * \param height:   The height of user requirement
      * \return the psl output resolution if provides it in xml file, otherwise return nullptr.
      */
-    static camera_resolution_t* getPslOutputForRotation(int width, int height, int cameraId);
+    static camera_resolution_t *getPslOutputForRotation(int width, int height, int cameraId);
 
     /**
      * Check if test pattern is supported or not
@@ -1205,35 +1362,35 @@ class PlatformData {
     static ia_binary_data* getNvm(int cameraId);
 
     /**
-     * Get sensor active array size
-     *
-     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
-     * \return the value of camera_coordinate_system_t.
-     */
+    * Get sensor active array size
+    *
+    * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+    * \return the value of camera_coordinate_system_t.
+    */
     static camera_coordinate_system_t getActivePixelArray(int cameraId);
 
     /**
-     * Get camera cfg path from environment variable
-     *
-     * \param void
-     * \return the value of camera cfg path.
-     */
+    * Get camera cfg path from environment variable
+    *
+    * \param void
+    * \return the value of camera cfg path.
+    */
     static std::string getCameraCfgPath();
 
     /**
-     * Get camera graph descriptor file path
-     *
-     * \param void
-     * \return the value of camera graph descriptor file path.
-     */
+    * Get camera graph descriptor file path
+    *
+    * \param void
+    * \return the value of camera graph descriptor file path.
+    */
     static std::string getGraphDescFilePath();
 
     /**
-     * Get camera graph setting file path.
-     *
-     * \param void
-     * \return the value of camera graph setting file path.
-     */
+    * Get camera graph setting file path.
+    *
+    * \param void
+    * \return the value of camera graph setting file path.
+    */
     static std::string getGraphSettingFilePath();
 
     /*
@@ -1313,7 +1470,7 @@ class PlatformData {
      * \param[out] param: Makernote data will be saved in Parameters as metadata.
      *
      */
-    static void acquireMakernoteData(int cameraId, uint64_t timestamp, Parameters* param);
+    static void acquireMakernoteData(int cameraId, uint64_t timestamp, Parameters *param);
 
     /*
      * Get the scaler info
@@ -1323,8 +1480,8 @@ class PlatformData {
      * \param sclscalerWidth and scalerHeight : return related scaler info
      * \return OK.
      */
-    static int getScalerInfo(int cameraId, int32_t streamId, float* scalerWidth,
-                             float* scalerHeight);
+    static int getScalerInfo(int cameraId, int32_t streamId,
+                             float *scalerWidth, float *scalerHeight);
 
     /*
      * Set the scaler info
@@ -1337,6 +1494,7 @@ class PlatformData {
     /**
      * Check gpu tnr is enabled or not
      *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
      * \return true if tnr is enabled.
      */
     static bool isGpuTnrEnabled();
@@ -1344,24 +1502,10 @@ class PlatformData {
     /**
      * get the video stream number supported
      *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
      * \return HAL video stream number.
      */
-    static int getVideoStreamNum();
-
-    /**
-     * Check if support to update tuning data or not
-     */
-    static bool supportUpdateTuning();
-
-    /**
-     * Check if support hardware jpeg encode or not
-     */
-    static bool supportHwJpegEncode();
-
-    /**
-     * get the max ISYS timeout value
-     */
-    static int getMaxIsysTimeout();
+    static int getVideoStreamNum(int cameraId);
 
     /**
      * Check should connect gpu algo or not
@@ -1384,11 +1528,6 @@ class PlatformData {
      * the extra frame count for still stream
      */
     static int getTnrExtraFrameCount(int cameraId);
-
-    /**
-     * Check if global protection is enabled for tnr7us
-     */
-    static bool useTnrGlobalProtection();
 
     /*
      * Set the orientation Info
@@ -1415,12 +1554,12 @@ class PlatformData {
     static bool isDummyStillSink(int cameraId);
 
     /*
-     * check if removing cache flush output buffer
+     * check if forcing flushing IPU buffer is enabled
      *
      * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
-     * \return true if removing cache flush output buffer.
+     * \return true if forcing flush IPU buffer.
      */
-    static bool removeCacheFlushOutputBuffer(int cameraId);
+    static bool getForceFlushIpuBuffer(int cameraId);
 
     /*
      * Get PLC Enable status
@@ -1429,43 +1568,5 @@ class PlatformData {
      * \return true if supported.
      */
     static bool getPLCEnable(int cameraId);
-
-    // ENABLE_EVCP_S
-    /**
-     * Check GPU EVCP is enabled or not
-     *
-     * \return true if EVCP is enabled.
-     */
-    static bool isGpuEvcpEnabled();
-    // ENABLE_EVCP_E
-
-    /**
-     * Check supports privacy or not
-     *
-     * \return true if supports privacy.
-     */
-    static bool getSupportPrivacy(int cameraId);
-
-    /**
-     * Check support of still-only pipe is enabled or not
-     *
-     * \return true if is enabled.
-     */
-    static bool isStillOnlyPipeEnabled(int cameraId);
-
-    /**
-     * Check if BLC needs to be disabled in specific analog gain range.
-     *
-     * \return true if BLC needs to be disabled by analog gain.
-     */
-    static bool getDisableBLCByAGain(int cameraId, int& low, int& high);
-
-    /**
-     * Check if reset links and routes
-     *
-     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
-     * \return if reset links and routes
-     */
-    static bool isResetLinkRoute(int cameraId);
 };
 } /* namespace icamera */

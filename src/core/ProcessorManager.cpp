@@ -25,16 +25,26 @@
 
 namespace icamera {
 
-ProcessorManager::ProcessorManager(int cameraId) : mCameraId(cameraId), mPsysUsage(PSYS_NOT_USED) {}
+ProcessorManager::ProcessorManager(int cameraId) :
+        mCameraId(cameraId),
+        mPsysUsage(PSYS_NOT_USED)
+{
+    LOG1("@%s, cameraId:%d", __func__, mCameraId);
+}
 
-ProcessorManager::~ProcessorManager() {
+ProcessorManager::~ProcessorManager()
+{
+    LOG1("@%s, cameraId:%d", __func__, mCameraId);
+
     deleteProcessors();
 }
 
-std::vector<BufferQueue*> ProcessorManager::createProcessors(
-    const std::map<Port, stream_t>& producerConfigs, const std::map<int, Port>& streamIdToPortMap,
-    stream_config_t* streamList, ParameterGenerator* paramGenerator) {
-    LOG1("<id%d>@%s", mCameraId, __func__);
+std::vector<BufferQueue*> ProcessorManager::createProcessors(int inputFmt,
+        const std::map<Port, stream_t>& producerConfigs,
+        const std::map<int, Port>& streamIdToPortMap,
+        stream_config_t *streamList, const Parameters& param, ParameterGenerator* paramGenerator)
+{
+    LOG1("@%s, mCameraId:%d", __func__, mCameraId);
 
     ProcessorConfig processorItem;
     processorItem.mInputConfigs = producerConfigs;
@@ -47,8 +57,7 @@ std::vector<BufferQueue*> ProcessorManager::createProcessors(
     mPsysUsage = PSYS_NORMAL;
     for (int i = 0; i < streamList->num_streams; i++) {
         if (streamList->streams[i].streamType == CAMERA_STREAM_INPUT ||
-            streamList->streams[i].usage == CAMERA_STREAM_OPAQUE_RAW)
-            continue;
+            streamList->streams[i].usage == CAMERA_STREAM_OPAQUE_RAW) continue;
 
         if (!PlatformData::usePsys(mCameraId, streamList->streams[i].format)) {
             mPsysUsage = PSYS_NOT_USED;
@@ -57,13 +66,13 @@ std::vector<BufferQueue*> ProcessorManager::createProcessors(
     }
 
     if (mPsysUsage == PSYS_NORMAL) {
-        LOG1("%s, Using normal Psys to do image processing.", __func__);
+        LOG1("Using normal Psys to do image processing.");
         processorItem.mProcessor = new PSysProcessor(mCameraId, paramGenerator);
         mProcessors.push_back(processorItem);
     }
 
     if (mPsysUsage == PSYS_NOT_USED) {
-        LOG1("%s, Using software to do color conversion.", __func__);
+        LOG1("Using software to do color conversion.");
         processorItem.mProcessor = new SwImageProcessor(mCameraId);
         mProcessors.push_back(processorItem);
     }
@@ -76,7 +85,8 @@ std::vector<BufferQueue*> ProcessorManager::createProcessors(
     return processors;
 }
 
-int ProcessorManager::deleteProcessors() {
+int ProcessorManager::deleteProcessors()
+{
     for (auto& item : mProcessors) {
         delete item.mProcessor;
     }
@@ -91,10 +101,12 @@ int ProcessorManager::deleteProcessors() {
  * Configure processor with input and output streams
  */
 int ProcessorManager::configureProcessors(const std::vector<ConfigMode>& configModes,
-                                          BufferProducer* producer, const Parameters& param) {
-    LOG1("<id%d>@%s", mCameraId, __func__);
+                                          BufferProducer* producer,
+                                          const Parameters& param)
+{
+    LOG1("@%s, mCameraId:%d", __func__, mCameraId);
 
-    BufferProducer* preProcess = nullptr;
+    BufferProducer* preProcess =  nullptr;
     for (auto& item : mProcessors) {
         BufferQueue* processor = item.mProcessor;
         processor->setFrameInfo(item.mInputConfigs, item.mOutputConfigs);
@@ -109,4 +121,5 @@ int ProcessorManager::configureProcessors(const std::vector<ConfigMode>& configM
     return OK;
 }
 
-}  // end of namespace icamera
+} // end of namespace icamera
+

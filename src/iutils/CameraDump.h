@@ -16,14 +16,14 @@
 
 #pragma once
 
-#include <linux/v4l2-subdev.h>
 #include <string.h>
-
-#include <string>
 #include <vector>
+#include <string>
+#include <linux/v4l2-subdev.h>
 
-#include "CameraBuffer.h"
+#include "iutils/Thread.h"
 #include "CameraTypes.h"
+#include "CameraBuffer.h"
 
 namespace icamera {
 
@@ -37,50 +37,67 @@ extern char gDumpPath[50];
 
 // Dump bit mask definition
 enum {
-    // IPU Buffer dump (bit[0-3]), export cameraDump=0xf
-    DUMP_ISYS_BUFFER = 1 << 0,
-    DUMP_PSYS_OUTPUT_BUFFER = 1 << 1,
-    DUMP_PSYS_INTERM_BUFFER = 1 << 2,  // dump Psys intermediate buffers like PreGDC output
-    DUMP_EXECUTOR_OUTPUT = 1 << 3,
+    // ISYS Buffer dump (bit[0-3])
+    DUMP_ISYS_BUFFER =          1 << 0,
+    // Reserve bit[1-3] for detailed buffer dump control
 
-    // Other buffer dump (bit[4-7]), export cameraDump=0xf0
-    DUMP_JPEG_BUFFER = 1 << 4,
-    DUMP_UT_BUFFER = 1 << 5,
-    DUMP_SW_IMG_PROC_OUTPUT = 1 << 6,
-    DUMP_GPU_TNR = 1 << 7,
+    DUMP_JPEG_BUFFER =          1 << 3, // JPEG buffer
+    // ISYS PG/PAL/Stats dump (bit[4-7])
+    DUMP_ISYS_PAL =             1 << 4, // ISP param binary
+    DUMP_ISYS_PG =              1 << 5, // ISYS whole PG dump assisted by libiacss
+    DUMP_ISYS_ENCODED_STAT =    1 << 6, // p2p encoded statistics
+    DUMP_ISYS_AIQ_STAT =        1 << 7, // rgbs_grid format stats for AIQ use
 
-    // PG/PAL/Stats dump (bit[8-11]), export cameraDump=0xf00
-    DUMP_PSYS_PAL = 1 << 8,            // ISP param binary
-    DUMP_PSYS_PG = 1 << 9,             // PSYS whole PG dump assisted by libiacss
-    DUMP_PSYS_DECODED_STAT = 1 << 10,  // p2p decoded statistics
+    // PSYS dump (bit[8-11])
+    DUMP_PSYS_OUTPUT_BUFFER =   1 << 8,
+    DUMP_PSYS_INTERM_BUFFER =   1 << 9, // dump Psys intermediate buffers like PreGDC output
+    // Reserve bit[10-11] for detailed buffer dump control
 
-    // AAL dump (bit[12-15]), export cameraDump=0xf000
-    DUMP_AAL_OUTPUT = 1 << 12,
-    DUMP_AAL_INPUT = 1 << 13,
+    DUMP_AIQ_DVS_RESULT =       1 << 10, // dump dvs result
 
-    // Other dump (bit[16-19]), export cameraDump=0xf0000
-    DUMP_NVM_DATA = 1 << 16,
-    DUMP_MAKER_NOTE = 1 << 17,
-    DUMP_EMBEDDED_METADATA = 1 << 18,
+    // PSYS PG/PAL/Stats dump (bit[12-15])
+    DUMP_PSYS_PAL =             1 << 12, // ISP param binary
+    DUMP_PSYS_PG =              1 << 13, // PSYS whole PG dump assisted by libiacss
+    DUMP_PSYS_AIQ_STAT =        1 << 14, // rgbs_grid format stats for AIQ use
+    DUMP_PSYS_DECODED_STAT =    1 << 15, // p2p decoded statistics
+
+    // Other dump
+    DUMP_MIPI_BUFFER =          1 << 16, // e.g. export cameraDump=0x10000
+    DUMP_UT_BUFFER =            1 << 17, // e.g. export cameraDump=0x20000
+    DUMP_EMBEDDED_METADATA =    1 << 18,
+    DUMP_DEINTERLACED_BUFFER =  1 << 19, // 0x80000  Decimal val 524288
+    DUMP_SW_IMG_PROC_OUTPUT =   1 << 20, // 0x100000 Decimal val 1048576
+
+    // Pipe executors' dump
+    DUMP_EXECUTOR_OUTPUT =   1 << 21, // 0x200000 Decimal val 2097152
+
+    // LTM output's dump
+    DUMP_LTM_OUTPUT = 1 << 22, // 0x400000 Decimal val 4194304
+
+    DUMP_AAL_OUTPUT = 1 << 23, // 0x800000 Decimal val 8388608
+    DUMP_AAL_INPUT = 1 << 24, // 0x1000000 Decimal val 16777216
+    DUMP_GPU_TNR = 1 << 25, // 0x2000000 Decimal val 33554432
+    DUMP_NVM_DATA = 1 << 26, // 0x4000000 Decimal val 67108864
+    DUMP_MAKER_NOTE = 1 << 27, // 0x8000000 Decimal val 134217728
 };
 
 enum {
-    DUMP_FORMAT_NORMAL = 1 << 0,    // Normal format
-    DUMP_FORMAT_IQSTUDIO = 1 << 1,  // IQStudio format
+    DUMP_FORMAT_NORMAL =          1 << 0,  // Normal format
+    DUMP_FORMAT_IQSTUDIO =        1 << 1,  // IQStudio format
 };
 
 const int MAX_NAME_LEN = 256;
 
 typedef enum {
     M_NA,
-    M_SENSOR,  // MIPI frame dump
-    M_ISYS,    // ISYS param, payload, frame dump
-    M_PSYS,    // PSYS param, payload, frame dump
-    M_DEINTR,  // De-interlaced frame dump
-    M_SWIPOP,  // Sw Image processor frame dump
-    M_GPUTNR,  // GPU TNR frame dump
-    M_NVM,     // NVM data dump
-    M_MKN,     // Makernote dump
+    M_SENSOR, // MIPI frame dump
+    M_ISYS,   // ISYS param, payload, frame dump
+    M_PSYS,   // PSYS param, payload, frame dump
+    M_DEINTR, // De-interlaced frame dump
+    M_SWIPOP, // Sw Image processor frame dump
+    M_GPUTNR, // GPU TNR frame dump
+    M_NVM,    // NVM data dump
+    M_MKN,    // Makernote dump
 } ModuleType_t;
 
 typedef enum {
@@ -114,14 +131,14 @@ typedef struct {
 } BufferParam_t;
 
 typedef struct {
-    BinType_t bType;
-    ModuleType_t mType;
-    int64_t sequence;
+    BinType_t       bType;
+    ModuleType_t    mType;
+    long sequence;
     union {
-        GeneralParam_t gParam;
-        StatParam_t sParam;
+        GeneralParam_t        gParam;
+        StatParam_t           sParam;
         SensorMetadataParam_t mParam;
-        BufferParam_t bParam;
+        BufferParam_t         bParam;
     };
     int sUsage;
 } BinParam_t;
@@ -138,23 +155,33 @@ typedef struct {
  *      frame(pal/stats/)_sequence_resolution_appendix.suffix
  */
 namespace CameraDump {
-/**
- * File dump control functions.
- */
-void setDumpLevel(void);
-bool isDumpTypeEnable(int dumpType);
-bool isDumpFormatEnable(int dumpFormat);
-void writeData(const void* data, int size, const char* fileName);
-const char* getDumpPath(void);
-/**
- * Dump image according to CameraBuffer properties
- */
-void dumpImage(int cameraId, const std::shared_ptr<CameraBuffer>& camBuffer,
-               ModuleType_t mType = M_NA, Port port = INVALID_PORT, const char* desc = nullptr);
-/**
- * Dump any buffer to binary file
- */
-void dumpBinary(int cameraId, const void* data, int size, BinParam_t* binParam);
-}  // namespace CameraDump
+    /**
+     * File dump control functions.
+     */
+    void setDumpLevel(void);
+    void setDumpThread();
+    bool isDumpTypeEnable(int dumpType);
+    bool isDumpFormatEnable(int dumpFormat);
+    void writeData(const void* data, int size, const char* fileName);
+    const char* getDumpPath(void);
+    /**
+     * Dump image according to CameraBuffer properties
+     */
+    void dumpImage(int cameraId, const std::shared_ptr<CameraBuffer> &camBuffer,
+                   ModuleType_t mType = M_NA, Port port = INVALID_PORT, const char* desc = nullptr);
+    /**
+     * Dump any buffer to binary file
+     */
+    void dumpBinary(int cameraId, const void *data, int size, BinParam_t *binParam);
 
-}  // namespace icamera
+    class DumpThread : public Thread {
+    public:
+        DumpThread();
+        ~DumpThread();
+
+        bool threadLoop();
+};
+
+} // namespace CameraDump
+
+} //namespace icamera

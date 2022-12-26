@@ -27,12 +27,24 @@
 
 namespace icamera {
 
-AiqSetting::AiqSetting(int cameraId) : mCameraId(cameraId) {}
+AiqSetting::AiqSetting(int cameraId) :
+    mCameraId(cameraId),
+    mPipeSwitchFrameCount(0)
+{
+    LOG3A("@%s", __func__);
+}
 
-AiqSetting::~AiqSetting() {}
+AiqSetting::~AiqSetting()
+{
+    LOG3A("@%s", __func__);
+}
 
-int AiqSetting::init(void) {
+int AiqSetting::init(void)
+{
+    LOG3A("@%s", __func__);
     AutoWMutex wlock(mParamLock);
+
+    mPipeSwitchFrameCount = 0;
 
     mAiqParam.reset();
 
@@ -46,11 +58,17 @@ int AiqSetting::init(void) {
     return OK;
 }
 
-int AiqSetting::deinit(void) {
+int AiqSetting::deinit(void)
+{
+    LOG3A("@%s", __func__);
+    AutoWMutex wlock(mParamLock);
+
     return OK;
 }
 
-int AiqSetting::configure(const stream_config_t* streamList) {
+int AiqSetting::configure(const stream_config_t *streamList)
+{
+    LOG3A("@%s", __func__);
     AutoWMutex wlock(mParamLock);
 
     camera_resolution_t resolution = {streamList->streams[0].width, streamList->streams[0].height};
@@ -86,22 +104,21 @@ int AiqSetting::configure(const stream_config_t* streamList) {
     if (!mTuningModes.empty()) {
         mAiqParam.tuningMode = mTuningModes[0];
     }
-    LOG1("%s, tuningMode %d, configMode %x, fame usage %d, res %dx%d", __func__,
-         mAiqParam.tuningMode, configModes[0], mAiqParam.frameUsage, mAiqParam.resolution.width,
-         mAiqParam.resolution.height);
+    LOG3A("%s, tuningMode %d, configMode %x", __func__, mAiqParam.tuningMode, configModes[0]);
 
     return OK;
 }
 
-void AiqSetting::updateFrameUsage(const stream_config_t* streamList) {
+void AiqSetting::updateFrameUsage(const stream_config_t *streamList)
+{
     bool preview = false, still = false, video = false;
     for (int i = 0; i < streamList->num_streams; i++) {
         if (streamList->streams[i].usage == CAMERA_STREAM_VIDEO_CAPTURE) {
             video = true;
         } else if (streamList->streams[i].usage == CAMERA_STREAM_STILL_CAPTURE) {
             still = true;
-        } else if (streamList->streams[i].usage == CAMERA_STREAM_PREVIEW ||
-                   streamList->streams[i].usage == CAMERA_STREAM_APP) {
+        } else if (streamList->streams[i].usage == CAMERA_STREAM_PREVIEW
+                   || streamList->streams[i].usage == CAMERA_STREAM_APP) {
             preview = true;
         }
     }
@@ -116,7 +133,9 @@ void AiqSetting::updateFrameUsage(const stream_config_t* streamList) {
     }
 }
 
-int AiqSetting::setParameters(const Parameters& params) {
+int AiqSetting::setParameters(const Parameters& params)
+{
+    LOG3A("@%s", __func__);
     AutoWMutex wlock(mParamLock);
 
     // Update AE related parameters
@@ -130,10 +149,6 @@ int AiqSetting::setParameters(const Parameters& params) {
     params.getAeConvergeSpeedMode(mAiqParam.aeConvergeSpeedMode);
     params.getAeConvergeSpeed(mAiqParam.aeConvergeSpeed);
     params.getRun3ACadence(mAiqParam.run3ACadence);
-    if (mAiqParam.run3ACadence < 1) {
-        LOGW("Invalid 3A cadence %d, use default 1.", mAiqParam.run3ACadence);
-        mAiqParam.run3ACadence = 1;
-    }
     params.getCallbackRgbs(&mAiqParam.callbackRgbs);
     params.getCallbackTmCurve(&mAiqParam.callbackTmCurve);
 
@@ -143,8 +158,8 @@ int AiqSetting::setParameters(const Parameters& params) {
         mAiqParam.evShift = 0.0;
     } else {
         ev = CLIP(ev, mAiqParam.evRange.max, mAiqParam.evRange.min);
-        mAiqParam.evShift =
-            static_cast<float>(ev) * mAiqParam.evStep.numerator / mAiqParam.evStep.denominator;
+        mAiqParam.evShift = static_cast<float>(ev) *
+            mAiqParam.evStep.numerator / mAiqParam.evStep.denominator;
     }
 
     params.getFrameRate(mAiqParam.fps);
@@ -218,8 +233,8 @@ int AiqSetting::setParameters(const Parameters& params) {
             CheckWarningNoReturn(curves.bSize > DEFAULT_TONEMAP_CURVE_POINT_NUM,
                                  "user v curve size is too big %d", curves.bSize);
             int curveSize = sizeof(float) * DEFAULT_TONEMAP_CURVE_POINT_NUM;
-            MEMCPY_S(&mAiqParam.tonemapCurveMem[0], curveSize, curves.rCurve,
-                     sizeof(float) * curves.rSize);
+            MEMCPY_S(&mAiqParam.tonemapCurveMem[0], curveSize,
+                     curves.rCurve, sizeof(float) * curves.rSize);
             MEMCPY_S(&mAiqParam.tonemapCurveMem[DEFAULT_TONEMAP_CURVE_POINT_NUM], curveSize,
                      curves.gCurve, sizeof(float) * curves.gSize);
             MEMCPY_S(&mAiqParam.tonemapCurveMem[DEFAULT_TONEMAP_CURVE_POINT_NUM * 2], curveSize,
@@ -237,38 +252,89 @@ int AiqSetting::setParameters(const Parameters& params) {
     uint8_t captureIntent = 0;
     if (params.getCaptureIntent(captureIntent) == OK) {
         switch (captureIntent) {
-            case CAMERA_CONTROL_CAPTUREINTENT_STILL_CAPTURE:
-                mAiqParam.frameUsage = FRAME_USAGE_STILL;
-                break;
-            case CAMERA_CONTROL_CAPTUREINTENT_VIDEO_RECORD:
-            case CAMERA_CONTROL_CAPTUREINTENT_VIDEO_SNAPSHOT:
-                mAiqParam.frameUsage = FRAME_USAGE_VIDEO;
-                break;
-            case CAMERA_CONTROL_CAPTUREINTENT_PREVIEW:
-                mAiqParam.frameUsage = FRAME_USAGE_PREVIEW;
-                break;
-            default:
-                mAiqParam.frameUsage = FRAME_USAGE_CONTINUOUS;
-                break;
+        case CAMERA_CONTROL_CAPTUREINTENT_STILL_CAPTURE:
+            mAiqParam.frameUsage = FRAME_USAGE_STILL;
+            break;
+        case CAMERA_CONTROL_CAPTUREINTENT_VIDEO_RECORD:
+        case CAMERA_CONTROL_CAPTUREINTENT_VIDEO_SNAPSHOT:
+            mAiqParam.frameUsage = FRAME_USAGE_VIDEO;
+            break;
+        case CAMERA_CONTROL_CAPTUREINTENT_PREVIEW:
+            mAiqParam.frameUsage = FRAME_USAGE_PREVIEW;
+            break;
+        default:
+            mAiqParam.frameUsage = FRAME_USAGE_CONTINUOUS;
+            break;
         }
     }
 
     params.getPowerMode(mAiqParam.powerMode);
-    params.getTotalExposureTarget(mAiqParam.totalExposureTarget);
 
     mAiqParam.dump();
 
     return OK;
 }
 
-int AiqSetting::getAiqParameter(aiq_parameter_t& param) {
+int AiqSetting::getAiqParameter(aiq_parameter_t &param)
+{
+    LOG3A("@%s", __func__);
     AutoRMutex rlock(mParamLock);
 
     param = mAiqParam;
     return OK;
 }
 
-void aiq_parameter_t::reset() {
+// HDR_FEATURE_S
+/* When multi-TuningModes supported in AUTO ConfigMode, TuningMode may be changed
+   based on AE result. Current it only has HDR and ULL mode switching case,
+   this maybe changed if more cases are supported. */
+void AiqSetting::updateTuningMode(aec_scene_t aecScene)
+{
+    if (!PlatformData::isEnableHDR(mCameraId)
+        || mTuningModes.size() <= 1
+        || mAiqParam.aeMode != AE_MODE_AUTO) {
+        return;
+    }
+
+    TuningMode tuningMode = mAiqParam.tuningMode;
+    if (aecScene == AEC_SCENE_HDR) {
+        tuningMode = TUNING_MODE_VIDEO_HDR;
+    } else if (aecScene == AEC_SCENE_ULL) {
+        tuningMode = TUNING_MODE_VIDEO_ULL;
+    }
+
+    if (tuningMode == mAiqParam.tuningMode) {
+        mPipeSwitchFrameCount = 0;
+        return;
+    }
+
+    bool found = false;
+    for (auto &tMode : mTuningModes) {
+        // Check tuningMode if support or not
+        if (tMode == tuningMode) {
+            found = true;
+            break;
+        }
+    }
+    if (!found) {
+        LOG3A("%s, new tuningMode %d isn't supported", __func__, tuningMode);
+        return;
+    }
+
+    // Pipe switching will cause there is AE flicker in first several frames.
+    // So only when the switching frame count is larger than pipe switch delay frame,
+    // pipe swtiching will be triggered really.
+    mPipeSwitchFrameCount++;
+    if (mPipeSwitchFrameCount >= PlatformData::getPipeSwitchDelayFrame(mCameraId)) {
+        LOG3A("%s, tuningMode switching to %d", __func__, tuningMode);
+        mAiqParam.tuningMode = tuningMode;
+        mPipeSwitchFrameCount = 0;
+    }
+}
+// HDR_FEATURE_E
+
+void aiq_parameter_t::reset()
+{
     frameUsage = FRAME_USAGE_VIDEO;
     aeMode = AE_MODE_AUTO;
     aeForceLock = false;
@@ -284,12 +350,12 @@ void aiq_parameter_t::reset() {
     evStep = {1, 3};
     evRange = {-6, 6};
     fps = 0;
-    aeFpsRange = {0.0, 0.0};
+    aeFpsRange = { 0.0, 0.0 };
     antibandingMode = ANTIBANDING_MODE_AUTO;
-    cctRange = {0, 0};
-    whitePoint = {0, 0};
-    awbManualGain = {0, 0, 0};
-    awbGainShift = {0, 0, 0};
+    cctRange = { 0, 0 };
+    whitePoint = { 0, 0 };
+    awbManualGain = { 0, 0, 0 };
+    awbGainShift = { 0, 0, 0 };
     CLEAR(manualColorMatrix);
     CLEAR(manualColorGains);
     aeRegions.clear();
@@ -337,85 +403,79 @@ void aiq_parameter_t::reset() {
     callbackRgbs = false;
     callbackTmCurve = false;
 
-    powerMode = CAMERA_HIGH_QUALITY;
-    totalExposureTarget = 0;
+    powerMode = CAMERA_LOW_POWER;
 
     CLEAR(resolution);
 }
 
-void aiq_parameter_t::dump() {
-    if (!Log::isLogTagEnabled(GET_FILE_SHIFT(AiqSetting), CAMERA_DEBUG_LOG_LEVEL3)) return;
+void aiq_parameter_t::dump()
+{
+    // Log only printed when 3a log enabled.
+    if (!Log::isDebugLevelEnable(CAMERA_DEBUG_LOG_AIQ)) return;
 
-    LOG3("Application parameters:");
-    LOG3("3A mode: ae %d, awb %d, af %d, scene %d", aeMode, awbMode, afMode, sceneMode);
-    LOG3("lock: ae %d, awb %d, af trigger:%d", aeForceLock, awbForceLock, afTrigger);
-    LOG3("converge speed mode: ae %d, awb %d", aeConvergeSpeedMode, awbConvergeSpeedMode);
-    LOG3("converge speed: ae %d, awb %d", aeConvergeSpeed, awbConvergeSpeed);
-
-    LOG3("EV:%f, range (%f-%f), step %d/%d", evShift, evRange.min, evRange.max, evStep.numerator,
-         evStep.denominator);
-    LOG3("manualExpTimeUs:%ld, time range (%f-%f)", manualExpTimeUs, exposureTimeRange.min,
-         exposureTimeRange.max);
-    LOG3("manualGain %f, manualIso %d, gain range (%f-%f)", manualGain, manualIso,
-         sensitivityGainRange.min, sensitivityGainRange.max);
-    LOG3("FPS %f, range (%f-%f)", fps, aeFpsRange.min, aeFpsRange.max);
-    for (auto& region : aeRegions) {
-        LOG3("ae region (%d, %d, %d, %d, %d)", region.left, region.top, region.right, region.bottom,
-             region.weight);
-    }
-    LOG3("Antibanding mode:%d", antibandingMode);
-    LOG3("AE Distribution Priority:%d", aeDistributionPriority);
-
-    LOG3("cctRange:(%f-%f)", cctRange.min, cctRange.max);
-    LOG3("manual awb: white point:(%d,%d)", whitePoint.x, whitePoint.y);
-    LOG3("manual awb gain:(%d,%d,%d), gain shift:(%d,%d,%d)", awbManualGain.r_gain,
-         awbManualGain.g_gain, awbManualGain.b_gain, awbGainShift.r_gain, awbGainShift.g_gain,
-         awbGainShift.b_gain);
+    LOG3A("Application parameters:");
+    LOG3A("frame usage mode %d", frameUsage);
+    LOG3A("ae mode:%d, awb mode:%d, af mode:%d, scene mode:%d", aeMode, awbMode, afMode, sceneMode);
+    LOG3A("ae lock:%d, awb lock:%d, af trigger:%d", aeForceLock, awbForceLock, afTrigger);
+    LOG3A("EV:%f, manualExpTimeUs:%ld, manualGain:%f, manualIso %d",
+          evShift, manualExpTimeUs, manualGain, manualIso);
+    LOG3A("FPS:%f", fps);
+    LOG3A("FPS range:(%f-%f)", aeFpsRange.min, aeFpsRange.max);
+    LOG3A("Antibanding mode:%d", antibandingMode);
+    LOG3A("cctRange:(%f-%f)", cctRange.min, cctRange.max);
+    LOG3A("manual white point:(%d,%d)", whitePoint.x, whitePoint.y);
+    LOG3A("manual awb gain:(%d,%d,%d)", awbManualGain.r_gain, awbManualGain.g_gain, awbManualGain.b_gain);
+    LOG3A("manual awb gain shift:(%d,%d,%d)", awbGainShift.r_gain, awbGainShift.g_gain, awbGainShift.b_gain);
     for (int i = 0; i < 3; i++) {
-        LOG3("manual color matrix: [%.3f %.3f %.3f]", manualColorMatrix.color_transform[i][0],
-             manualColorMatrix.color_transform[i][1], manualColorMatrix.color_transform[i][2]);
+        LOG3A("manual color matrix:  [%.3f %.3f %.3f]",
+            manualColorMatrix.color_transform[i][0],
+            manualColorMatrix.color_transform[i][1],
+            manualColorMatrix.color_transform[i][2]);
     }
-    LOG3("manual color gains in rggb:(%.3f,%.3f,%.3f,%.3f)", manualColorGains.color_gains_rggb[0],
-         manualColorGains.color_gains_rggb[1], manualColorGains.color_gains_rggb[2],
-         manualColorGains.color_gains_rggb[3]);
-
-    for (auto& region : afRegions) {
-        LOG3("af region (%d, %d, %d, %d, %d)", region.left, region.top, region.right, region.bottom,
-             region.weight);
+    LOG3A("manual color gains in rggb:(%.3f,%.3f,%.3f,%.3f)",
+        manualColorGains.color_gains_rggb[0], manualColorGains.color_gains_rggb[1],
+        manualColorGains.color_gains_rggb[2], manualColorGains.color_gains_rggb[3]);
+    LOG3A("ae region size:%zu, blc area mode:%d", aeRegions.size(), blcAreaMode);
+    for (auto &region : aeRegions) {
+        LOG3A("ae region (%d, %d, %d, %d, %d)",
+            region.left, region.top, region.right, region.bottom, region.weight);
     }
-    LOG3("manual focus distance: %f, min focus distance: %f", focusDistance, minFocusDistance);
-    LOG3("Focus position %d, start timestamp %llu", lensPosition, lensMovementStartTimestamp);
+    LOG3A("af region size:%zu", aeRegions.size());
+    for (auto &region : afRegions) {
+        LOG3A("af region (%d, %d, %d, %d, %d)",
+            region.left, region.top, region.right, region.bottom, region.weight);
+    }
+    LOG3A("manual focus distance: %f, min focus distance: %f", focusDistance, minFocusDistance);
 
-    LOG3("digitalZoomRatio %f", digitalZoomRatio);
-
-    LOG3("custom AIC parameter length:%u", customAicParam.length);
+    LOG3A("ae converge speed mode:(%d) awb converge speed mode:(%d)", aeConvergeSpeedMode, awbConvergeSpeedMode);
+    LOG3A("ae converge speed:(%d) awb converge speed:(%d)", aeConvergeSpeed, awbConvergeSpeed);
+    LOG3A("custom AIC parameter length:%d", customAicParam.length);
     if (customAicParam.length > 0) {
-        LOG3("custom AIC parameter data:%s", customAicParam.data);
+        LOG3A("custom AIC parameter data:%s", customAicParam.data);
     }
     if (tuningMode != TUNING_MODE_MAX) {
-        LOG3("camera mode:%d", tuningMode);
+        LOG3A("camera mode:%d", tuningMode);
     }
-    LOG3("blc area mode:%d", blcAreaMode);
-    LOG3("ltm strength:(%u)", ltmStrength);
-    LOG3("weight grid mode:%d", weightGridMode);
-    LOG3("Yuv Color Range Mode:%d", yuvColorRangeMode);
-    LOG3("DVS mode %d", videoStabilizationMode);
+    LOG3A("ltm strength:(%d)", ltmStrength);
+    LOG3A("weight grid mode:%d", weightGridMode);
+    LOG3A("AE Distribution Priority:%d", aeDistributionPriority);
+    LOG3A("Yuv Color Range Mode:%d", yuvColorRangeMode);
+    LOG3A("AE exposure time range, min %f, max %f", exposureTimeRange.min, exposureTimeRange.max);
+    LOG3A("AE sensitivity gain range, min %.2f, max %.2f", sensitivityGainRange.min, sensitivityGainRange.max);
+    LOG3A("DVS mode %d", videoStabilizationMode);
 
-    LOG3("makernoteMode %d", makernoteMode);
-    LOG3("shadingMode %d, lensShadingMapMode %d, size %dx%d", shadingMode, lensShadingMapMode,
-         lensShadingMapSize.x, lensShadingMapSize.y);
+    LOG3A("Focus position %d, start timestamp %llu", lensPosition, lensMovementStartTimestamp);
+    LOG3A("makernoteMode %d", makernoteMode);
+    LOG3A("shadingMode %d", shadingMode);
+    LOG3A("lensShadingMapMode %d", lensShadingMapMode);
+    LOG3A("lensShadingMapSize x:%d, y:%d", lensShadingMapSize.x, lensShadingMapSize.y);
 
-    LOG3("ldcMode %d, rscMode %d, flipMode %d", ldcMode, ldcMode, flipMode);
-
-    LOG3("run3ACadence %d", run3ACadence);
-    LOG3("tonemap mode %d, preset curve %d, gamma %f, curve points %d", tonemapMode,
-         tonemapPresetCurve, tonemapGamma, tonemapCurves.gSize);
-    LOG3("testPatternMode %d", testPatternMode);
-    LOG3("power mode %d", powerMode);
-    LOG3("totalExposureTarget %ld", totalExposureTarget);
-
-    LOG3("callback RGBS stats %s", callbackRgbs ? "true" : "false");
-    LOG3("callback Tonemap curve: %s", callbackTmCurve ? "true" : "false");
+    LOG3A("tonemap mode %d, preset curve %d, gamma %f, curve points %d",
+          tonemapMode, tonemapPresetCurve, tonemapGamma, tonemapCurves.gSize);
+    LOG3A("testPatternMode %d", testPatternMode);
+    LOG3A("callback RGBS stats %s", callbackRgbs ? "true" : "false");
+    LOG3A("callback Tonemap curve: %s", callbackTmCurve ? "true" : "false");
+    LOG3A("power mode %d", powerMode);
 }
 
 } /* namespace icamera */

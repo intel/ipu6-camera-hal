@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2021 Intel Corporation
+ * Copyright (C) 2019-2020 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,13 @@
 
 #pragma once
 
-#include <map>
 #include <vector>
+#include <map>
 
+#include "iutils/Utils.h"
+#include "iutils/Errors.h"
 #include "PostProcessorBase.h"
 #include "ProcessType.h"
-#include "iutils/Errors.h"
-#include "iutils/Utils.h"
 
 namespace icamera {
 
@@ -31,10 +31,7 @@ struct PostProcessInfo {
     stream_t outputInfo;
     PostProcessType type;
     int angle;
-    PostProcessInfo() : type(POST_PROCESS_NONE), angle(0) {
-        CLEAR(inputInfo);
-        CLEAR(outputInfo);
-    }
+    PostProcessInfo() : type(POST_PROCESS_NONE),angle(0) { CLEAR(inputInfo); CLEAR(outputInfo); }
 };
 
 /**
@@ -44,28 +41,28 @@ struct PostProcessInfo {
  *
  */
 class PostProcessorCore {
- public:
+
+public:
     PostProcessorCore(int cameraId);
-    virtual ~PostProcessorCore() {}
+    virtual ~PostProcessorCore();
 
     bool isPostProcessTypeSupported(PostProcessType type);
-    status_t configure(const std::vector<PostProcessInfo>& processorOrder);
-    status_t doPostProcessing(const std::shared_ptr<camera3::Camera3Buffer>& mainBuf,
-                              const Parameters& parameter,
+    status_t configure(const std::vector<PostProcessInfo> &processorOrder);
+    status_t doPostProcessing(const std::shared_ptr<camera3::Camera3Buffer> &mainBuf,
+                              const Parameters &parameter,
                               std::shared_ptr<camera3::Camera3Buffer> outBuf);
-
- private:
+private:
     status_t createProcessor();
     status_t allocateBuffers();
 
- private:
+private:
     DISALLOW_COPY_AND_ASSIGN(PostProcessorCore);
 
- private:
+private:
     int mCameraId;
     std::map<std::shared_ptr<PostProcessorBase>, std::shared_ptr<camera3::Camera3Buffer>>
-        mInterBuffers;
+            mInterBuffers;
     std::vector<PostProcessInfo> mProcessorsInfo;
     std::vector<std::shared_ptr<PostProcessorBase>> mProcessorVector;
 };
-}  // namespace icamera
+} // namespace icamera
