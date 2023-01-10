@@ -17,12 +17,14 @@
 #define LOG_TAG FaceSSD
 #include "src/fd/facessd/FaceSSD.h"
 
+#include <cros-camera/cros_camera_hal.h>
 #include <algorithm>
 #include <fstream>
 #include <vector>
 
 #include "AiqUtils.h"
 #include "PlatformData.h"
+#include "aal/FaceDetectionResultCallbackManager.h"
 #include "iutils/CameraLog.h"
 #include "iutils/Errors.h"
 #include "iutils/Utils.h"
@@ -87,16 +89,27 @@ void FaceSSD::runFaceDetectionBySync(const std::shared_ptr<camera3::Camera3Buffe
     CheckAndLogError(!ccBuf, VOID_VALUE, "@%s, ccBuf buffer is nullptr", __func__);
 
     nsecs_t startTime = CameraUtils::systemTime();
-    std::vector<human_sensing::CrosFace> faces;
-    int input_stride = ccBuf->stride();
-    cros::Size input_size = cros::Size(ccBuf->width(), ccBuf->height());
-    const uint8_t* buffer_addr = static_cast<uint8_t*>(ccBuf->data());
+    std::optional<cros::FaceDetectionResult> face_detection_result =
+        camera3::FaceDetectionResultCallbackManager::getInstance().
+        getFaceDetectionResult(mCameraId);
 
-    cros::FaceDetectResult ret =
-        mFaceDetector->Detect(buffer_addr, input_stride, input_size, &faces);
+    cros::FaceDetectResult ret = cros::FaceDetectResult::kDetectOk;
+    std::vector<human_sensing::CrosFace> faces;
+    if (!face_detection_result) {
+        int input_stride = ccBuf->stride();
+        cros::Size input_size = cros::Size(ccBuf->width(), ccBuf->height());
+        const uint8_t* buffer_addr = static_cast<uint8_t*>(ccBuf->data());
+
+        ret = mFaceDetector->Detect(buffer_addr, input_stride, input_size, &faces);
+        LOG2("Run with a new cros::FaceDetector instance");
+    } else {
+        faces = face_detection_result->faces;
+        LOG2("FrameNum:%zu, run with the cros::FaceDetector from stream manipulator.",
+             face_detection_result->frame_number);
+    }
 
     printfFDRunRate();
-    LOG2("@%s: ret:%d, it takes need %ums", __func__, ret,
+    LOG2("@%s: It takes need %ums", __func__,
          (unsigned)((CameraUtils::systemTime() - startTime) / 1000000));
 
     {
@@ -108,6 +121,11 @@ void FaceSSD::runFaceDetectionBySync(const std::shared_ptr<camera3::Camera3Buffe
                 if (faceCount >= mMaxFaceNum) break;
                 mResult.faceSsdResults[faceCount] = face;
                 faceCount++;
+                LOG2("@%s, bounding_box: %f,%f,%f,%f", __func__,
+                     face.bounding_box.x1,
+                     face.bounding_box.y1,
+                     face.bounding_box.x2,
+                     face.bounding_box.y2);
             }
             mResult.faceNum = faceCount;
             mResult.faceUpdated = true;

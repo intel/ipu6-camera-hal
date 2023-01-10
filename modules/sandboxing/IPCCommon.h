@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2021 Intel Corporation
+ * Copyright (C) 2019-2022 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,6 +81,11 @@ enum IPC_CMD {
     IPC_EVCP_RUN_FRAME,
     IPC_EVCP_DEINIT,
     // ENABLE_EVCP_E
+    // LEVEL0_ICBM_S
+    IPC_ICBM_INIT,
+    IPC_ICBM_RUN_FRAME,
+    IPC_ICBM_DEINIT,
+    // LEVEL0_ICBM_E
     IPC_GPU_TNR_THREAD2_RUN_FRAME,
     IPC_GPU_TNR_THREAD2_PARAM_UPDATE,
 };
@@ -107,6 +112,9 @@ enum IPC_GROUP {
     // IPC Command group for Evcp using GPU.
     IPC_GROUP_GPU_EVCP,
     // ENABLE_EVCP_E
+    // LEVEL0_ICBM_S
+    IPC_GROUP_GPU_ICBM,
+    // LEVEL0_ICBM_E
     IPC_GROUP_GPU_THREAD2,
 };
 #define IPC_GROUP_NUM (IPC_GROUP_GPU_THREAD2 + 1)

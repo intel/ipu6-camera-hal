@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2021 Intel Corporation
+ * Copyright (C) 2019-2022 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,9 @@ const char* IntelAlgoIpcCmdToString(IPC_CMD cmd) {
         "IPC_EVCP_INIT", "IPC_EVCP_UPDCONF", "IPC_EVCP_SETCONF", "IPC_EVCP_RUN_FRAME",
         "IPC_EVCP_DEINIT",
         // ENABLE_EVCP_E
+        // LEVEL0_ICBM_S
+        "IPC_ICBM_INIT", "IPC_ICBM_RUN_FRAME", "IPC_ICBM_DEINIT",
+        // LEVEL0_ICBM_E
         "IPC_GPU_TNR_THREAD2_RUN_FRAME",
         "IPC_GPU_TNR_THREAD2_PARAM_UPDATE"};
 
@@ -66,6 +69,10 @@ IPC_GROUP IntelAlgoIpcCmdToGroup(IPC_CMD cmd) {
     } else if (cmd >= IPC_EVCP_INIT && cmd <= IPC_EVCP_DEINIT) {
         group = IPC_GROUP_GPU_EVCP;
         // ENABLE_EVCP_E
+        // LEVEL0_ICBM_S
+    } else if (cmd >= IPC_ICBM_INIT && cmd <= IPC_ICBM_DEINIT) {
+        group = IPC_GROUP_GPU_ICBM;
+        // LEVEL0_ICBM_E
     } else {
         group = IPC_GROUP_CPU_OTHER;
     }
@@ -85,6 +92,9 @@ const char* IntelAlgoServerThreadName(int index) {
                                                             // ENABLE_EVCP_S
                                                             "GPUEvcpServer",
                                                             // ENABLE_EVCP_E
+                                                            // LEVEL0_ICBM_S
+                                                            "GPUICBMServer",
+                                                            // LEVEL0_ICBM_E
                                                             "GPUAlgoServer2"};
     count = IPC_GPU_GROUP_NUM;
 #endif
