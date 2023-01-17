@@ -40,6 +40,8 @@ find_library(IA_LARD_LIB        ia_lard)
 endif() #ENABLE_SANDBOXING
 find_library(IA_EXC_LIB         ia_exc)
 find_library(IA_MKN_LIB         ia_mkn)
+# SENSOR_EMD_DECODER
+find_library(IA_EMD_LIB         ia_emd_decoder)
 find_library(IA_NVM_LIB         ia_nvm)
 find_library(IA_LOG_LIB         ia_log)
 find_library(IA_DVS_LIB         ia_dvs)
@@ -59,6 +61,7 @@ set(IA_IMAGING_LIBS
     ${IA_CMC_PARSER_LIB}
     ${IA_EXC_LIB}
     ${IA_MKN_LIB}
+    ${IA_EMD_LIB}
     ${IA_BCOMP_LIB}
     ${IA_NVM_LIB}
     ${IA_LOG_LIB}
