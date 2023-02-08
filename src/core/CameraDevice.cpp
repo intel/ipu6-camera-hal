@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2022 Intel Corporation.
+ * Copyright (C) 2015-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,9 +72,11 @@ CameraDevice::CameraDevice(int cameraId)
     } else {
         mGCM = nullptr;
     }
-    if (PlatformData::getSupportPrivacy(mCameraId)) {
+    // PRIVACY_MODE_S
+    if (PlatformData::getSupportPrivacy(mCameraId) != NO_PRIVACY_MODE) {
         mCvfPrivacyChecker = new CvfPrivacyChecker(mCameraId, mStreams);
     }
+    // PRIVACY_MODE_E
 }
 
 CameraDevice::~CameraDevice() {
@@ -82,9 +84,11 @@ CameraDevice::~CameraDevice() {
     LOG1("<id%d>@%s", mCameraId, __func__);
     AutoMutex m(mDeviceLock);
 
-    if (PlatformData::getSupportPrivacy(mCameraId)) {
+    // PRIVACY_MODE_S
+    if (PlatformData::getSupportPrivacy(mCameraId) != NO_PRIVACY_MODE) {
         delete mCvfPrivacyChecker;
     }
+    // PRIVACY_MODE_E
     // Clear the media control when close the device.
     MediaControl* mc = MediaControl::getInstance();
     MediaCtlConf* mediaCtl = PlatformData::getMediaCtlConf(mCameraId);
@@ -129,11 +133,13 @@ int CameraDevice::init() {
     ret = mLensCtrl->init();
     CheckAndLogError((ret != OK), ret, "%s: Init Lens falied", __func__);
 
-    if (PlatformData::getSupportPrivacy(mCameraId)) {
+    // PRIVACY_MODE_S
+    if (PlatformData::getSupportPrivacy(mCameraId) == CVF_BASED_PRIVACY_MODE) {
         ret = mCvfPrivacyChecker->init();
         CheckAndLogError((ret != OK), ret, "%s: Init privacy checker falied", __func__);
         mCvfPrivacyChecker->run("CvfPrivacyChecker", PRIORITY_NORMAL);
     }
+    // PRIVACY_MODE_E
 
     mRequestThread->run("RequestThread", PRIORITY_NORMAL);
 
@@ -159,10 +165,12 @@ void CameraDevice::deinit() {
         stopLocked();
     }
 
-    if (PlatformData::getSupportPrivacy(mCameraId)) {
+    // PRIVACY_MODE_S
+    if (PlatformData::getSupportPrivacy(mCameraId) == CVF_BASED_PRIVACY_MODE) {
         mCvfPrivacyChecker->requestExit();
         mCvfPrivacyChecker->join();
     }
+    // PRIVACY_MODE_E
     // stop request thread
     mRequestThread->requestExit();
     mRequestThread->join();
@@ -233,6 +241,19 @@ void CameraDevice::bindListeners() {
     for (auto lis : dvsListener)
         for (auto& item : mProcessors) item->registerListener(EVENT_DVS_READY, lis);
     // INTEL_DVS_E
+
+    // PRIVACY_MODE_S
+    if (PlatformData::getSupportPrivacy(mCameraId) == AE_BASED_PRIVACY_MODE) {
+        EventSource* readySource = m3AControl->get3AReadyEventSource();
+        CheckWarningNoReturn(!readySource, "No 3A_READY event source");
+        if (readySource) {
+            readySource->registerListener(EVENT_3A_READY, mCvfPrivacyChecker);
+        }
+        for (int i = 0; i < mStreamNum; i++) {
+            mStreams[i]->registerListener(EVENT_FRAME_AVAILABLE, mCvfPrivacyChecker);
+        }
+    }
+    // PRIVACY_MODE_E
 }
 
 void CameraDevice::unbindListeners() {
@@ -277,6 +298,19 @@ void CameraDevice::unbindListeners() {
     for (auto lis : dvsListener)
         for (auto& item : mProcessors) item->removeListener(EVENT_DVS_READY, lis);
     // INTEL_DVS_E
+
+    // PRIVACY_MODE_S
+    if (PlatformData::getSupportPrivacy(mCameraId) == AE_BASED_PRIVACY_MODE) {
+        EventSource* readySource = m3AControl->get3AReadyEventSource();
+        CheckWarningNoReturn(!readySource, "No 3A_READY event source");
+        if (readySource) {
+            readySource->removeListener(EVENT_3A_READY, mCvfPrivacyChecker);
+        }
+        for (int i = 0; i < mStreamNum; i++) {
+            mStreams[i]->removeListener(EVENT_FRAME_AVAILABLE, mCvfPrivacyChecker);
+        }
+    }
+    // PRIVACY_MODE_E
 }
 
 int CameraDevice::configureInput(const stream_t* inputConfig) {

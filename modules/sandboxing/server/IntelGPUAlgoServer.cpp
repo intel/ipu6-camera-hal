@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2021 Intel Corporation.
+ * Copyright (C) 2020-2022 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -143,6 +143,44 @@ void IntelGPUAlgoServer::handleRequest(const MsgReq& msg) {
             status = mEvcp.deInit();
             break;
             // ENABLE_EVCP_E
+
+            // LEVEL0_ICBM_S
+        case IPC_ICBM_INIT:
+            (void) requestSize;
+            status = mICBMServer.setup(reinterpret_cast<ICBMInitInfo*>(addr));
+            break;
+        case IPC_ICBM_RUN_FRAME: {
+            status = UNKNOWN_ERROR;
+            ICBMRunInfo* runInfo = reinterpret_cast<ICBMRunInfo*>(addr);
+            ShmInfo inBuffer = {};
+            if (runInfo->inHandle < 0) break;
+            ShmInfo outBuffer = {};
+            if (runInfo->inHandle < 0) break;
+
+            status = getIntelAlgoServer()->getShmInfo(runInfo->inHandle, &inBuffer);
+            if (status != OK) {
+                LOGE("%s, the buffer handle for ICBM inBuffer data is invalid", __func__);
+                break;
+            }
+
+            status = getIntelAlgoServer()->getShmInfo(runInfo->outHandle, &outBuffer);
+            if (status != OK) {
+                LOGE("%s, the buffer handle for ICBM outBuffer data is invalid", __func__);
+                break;
+            }
+            runInfo->inII.bufAddr = inBuffer.addr;
+            runInfo->outII.bufAddr = outBuffer.addr;
+
+            status = mICBMServer.processFrame(runInfo->inII, runInfo->outII, runInfo->icbmReqInfo);
+
+            runInfo->inII.bufAddr = nullptr;
+            runInfo->outII.bufAddr = nullptr;
+            break;
+        }
+        case IPC_ICBM_DEINIT:
+            status = mICBMServer.shutdown();
+            break;
+            // LEVEL0_ICBM_E
         default:
             LOGE("@%s, req_id:%d is not defined", __func__, req_id);
             status = UNKNOWN_ERROR;

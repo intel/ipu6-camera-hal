@@ -406,7 +406,7 @@ void IntelCca::decodeHwStatsDone(int64_t sequence, unsigned int byteUsed) {
          mTuningMode, byteUsed);
 
     AutoMutex l(mMemStatsMLock);
-    if (mMemStatsInfoMap.empty()) return;
+    if (mMemStatsInfoMap.empty() || mMemStatsInfoMap.count(sequence) > 0) return;
 
     auto it = mMemStatsInfoMap.begin();
     it->second.usedSize = byteUsed;

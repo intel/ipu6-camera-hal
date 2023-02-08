@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2022 Intel Corporation.
+ * Copyright (C) 2015-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -84,6 +84,7 @@ class CameraStream : public BufferConsumer, public EventSource {
      */
     virtual int onFrameAvailable(Port port, const std::shared_ptr<CameraBuffer>& camBuffer);
 
+    // PRIVACY_MODE_S
     /**
      * \brief Return a privacy buffer
      */
@@ -93,6 +94,7 @@ class CameraStream : public BufferConsumer, public EventSource {
      * \brief Special function to send last frame after privacy on
      */
     virtual int doFrameAvailable(Port port, const std::shared_ptr<CameraBuffer>& camBuffer);
+    // PRIVACY_MODE_E
 
  private:
     int mCameraId;
@@ -105,8 +107,10 @@ class CameraStream : public BufferConsumer, public EventSource {
     CameraBufVector mUserBuffersPool;
     // How many user buffers are currently processing underhood.
     int mBufferInProcessing;
+    // PRIVACY_MODE_S
     // An extra queue at the end of pipeline, to store 1 buffer at least when privacy on.
     CameraBufQ mPrivacyBuffer;
+    // PRIVACY_MODE_E
 };
 
 }  // namespace icamera

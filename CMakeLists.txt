@@ -139,6 +139,8 @@ endif()
 
 include_directories(include
                     include/api include/utils
+                    ${CMAKE_INSTALL_PREFIX}/include/ia_camera
+                    ${CMAKE_INSTALL_PREFIX}/include/
                     ${CMAKE_CURRENT_LIST_DIR}
                     src
                     src/v4l2 src/core src/metadata
@@ -244,9 +246,14 @@ endif() #ENABLE_SANDBOXING
     set(LIBCAMHAL_SRCS ${LIBCAMHAL_SRCS} ${IIO_SRCS})
 
 # Add libcamhal using the specified sources
+if (${CMAKE_VERSION} VERSION_LESS 3.11)
+    add_library(camhal SHARED ${LIBCAMHAL_SRCS})
+else()
+    add_library(camhal SHARED $<TARGET_OBJECTS:camhal_static>)
+endif()
+
 add_library(camhal_static STATIC ${LIBCAMHAL_SRCS})
 set_target_properties(camhal_static PROPERTIES OUTPUT_NAME "camhal")
-add_library(camhal SHARED $<TARGET_OBJECTS:camhal_static>)
 
 #---------------------------- Link settings ----------------------------
 target_link_libraries(camhal ${CMAKE_DL_LIBS})
@@ -398,6 +405,12 @@ elseif("${IPU_VER}" STREQUAL "ipu6epmtl")
     if("${PRODUCTION_NAME}" STREQUAL "mtl-ubuntu")
         message("Install MTL ubuntu configure files")
         install(DIRECTORY config/ubuntu/mtl/ DESTINATION share/defaults/etc/camera)
+    elseif("${PRODUCTION_NAME}" STREQUAL "mtl-iotg")
+        message("Install MTL iotg configure files")
+        install(DIRECTORY config/linux/ipu6ep/ DESTINATION share/defaults/etc/camera)
+    else()
+        message("Install MTL configure files")
+        install(DIRECTORY config/linux/ipu6ep/ DESTINATION share/defaults/etc/camera)
     endif()
 elseif("${IPU_VER}" STREQUAL "ipu6sepla")
     if("${PRODUCTION_NAME}" STREQUAL "penguin_peak")
@@ -410,7 +423,14 @@ else()
 endif()
 
 # Install libraries
+if (${CMAKE_VERSION} VERSION_LESS 3.11)
+install(TARGETS camhal camhal_static
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+        )
+else()
 install(TARGETS camhal camhal_static)
+endif()
 
 # Install package config file
 configure_file(${PROJECT_SOURCE_DIR}/cmake/libcamhal.pc.cmakein

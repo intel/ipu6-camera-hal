@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2022 Intel Corporation
+ * Copyright (C) 2015-2023 Intel Corporation
  * Copyright 2008-2017, The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -50,7 +50,8 @@ CameraParser::CameraParser(MediaControl* mc, PlatformData::StaticCfg* cfg)
           mInMediaCtlCfg(false),
           mInStaticMetadata(false),
           mMC(mc),
-          mMetadataCache(nullptr) {
+          mMetadataCache(nullptr),
+          mIsAvailableSensor(false) {
     LOG1("@%s", __func__);
     CheckAndLogError(cfg == nullptr, VOID_VALUE, "@%s, cfg is nullptr", __func__);
 
@@ -98,6 +99,7 @@ CameraParser::CameraParser(MediaControl* mc, PlatformData::StaticCfg* cfg)
         {"scaler.availableStreamConfigurations", CAMERA_SCALER_AVAILABLE_STREAM_CONFIGURATIONS},
         {"scaler.availableMinFrameDurations", CAMERA_SCALER_AVAILABLE_MIN_FRAME_DURATIONS},
         {"scaler.availableStallDurations", CAMERA_SCALER_AVAILABLE_STALL_DURATIONS},
+        {"scaler.availableMaxDigitalZoom", CAMERA_SCALER_AVAILABLE_MAX_DIGITAL_ZOOM},
         {"reprocess.maxCaptureStall", CAMERA_REPROCESS_MAX_CAPTURE_STALL},
         {"jpeg.maxSize", CAMERA_JPEG_MAX_SIZE},
         {"jpeg.availableThumbnailSizes", CAMERA_JPEG_AVAILABLE_THUMBNAIL_SIZES},
@@ -203,6 +205,12 @@ void CameraParser::checkField(CameraParser* profiles, const char* name, const ch
         profiles->mCurrentDataField = FIELD_INVALID;
         return;
     } else if (strcmp(name, "Sensor") == 0) {
+        // If it already has a available sensor, it doesn't need to parser others
+        if (profiles->mIsAvailableSensor) {
+            profiles->mCurrentDataField = FIELD_INVALID;
+            return;
+        }
+
         profiles->mSensorNum++;
         profiles->mCurrentSensor = profiles->mSensorNum - 1;
         LOG1("@%s, mCurrentSensor %d", __func__, profiles->mCurrentSensor);
@@ -285,6 +293,10 @@ void CameraParser::handleCommon(CameraParser* profiles, const char* name, const 
     } else if (strcmp(name, "useGpuEvcp") == 0) {
         cfg->isGpuEvcpEnabled = strcmp(atts[1], "true") == 0;
         // ENABLE_EVCP_E
+        // LEVEL0_ICBM_S
+    } else if (strcmp(name, "useGPUICBM") == 0) {
+        cfg->isGPUICBMEnabled = strcmp(atts[1], "true") == 0;
+        // LEVEL0_ICBM_E
     }
 }
 
@@ -607,8 +619,23 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
         pCurrentCam->mRemoveCacheFlushOutputBuffer = strcmp(atts[1], "true") == 0;
     } else if (!strcmp(name, "isPLCEnable")) {
         pCurrentCam->mPLCEnable = strcmp(atts[1], "true") == 0;
+    // PRIVACY_MODE_S
     } else if (strcmp(name, "supportPrivacy") == 0) {
-        pCurrentCam->mSupportPrivacy = strcmp(atts[1], "true") == 0;
+        int val = atoi(atts[1]);
+        if (val > 0 && val <= 2) {
+            pCurrentCam->mSupportPrivacy = static_cast<PrivacyModeType>(val);
+        }
+    } else if (strcmp(name, "privacyModeThreshold") == 0) {
+        int val = atoi(atts[1]);
+        if (val > 0 && val < 255) {
+            pCurrentCam->mPrivacyModeThreshold = val;
+        }
+    } else if (strcmp(name, "privacyModeFrameDelay") == 0) {
+        int val = atoi(atts[1]);
+        if (val >= 0) {
+            pCurrentCam->mPrivacyModeFrameDelay = val;
+        }
+    // PRIVACY_MODE_E
     } else if (strcmp(name, "stillOnlyPipe") == 0) {
         pCurrentCam->mStillOnlyPipe = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "disableBLCByAGain") == 0) {
@@ -1935,9 +1962,13 @@ void CameraParser::endParseElement(void* userData, const char* name) {
             if (!profiles->pCurrentCam->mSupportModuleNames.empty()) {
                 isCameraAvailable = false;
                 for (size_t i = 0; i < profiles->pCurrentCam->mSupportModuleNames.size(); i++) {
-                    if (strcmp(pCurrentCam->mSupportModuleNames[i].c_str(),
-                               profiles->pCurrentCam->mCamModuleName.c_str()) == 0) {
+                    if ((strcmp(pCurrentCam->mSupportModuleNames[i].c_str(),
+                                profiles->pCurrentCam->mCamModuleName.c_str()) == 0) ||
+                         (strcmp(pCurrentCam->mSupportModuleNames[i].c_str(),
+                                 DEFAULT_MODULE_NAME) == 0)) {
                         isCameraAvailable = true;
+                        // If find an available sensor, it will not search other sensors
+                        profiles->mIsAvailableSensor = true;
                         break;
                     }
                 }
@@ -1982,6 +2013,12 @@ void CameraParser::endParseElement(void* userData, const char* name) {
     }
 
     if (strcmp(name, "Common") == 0) profiles->mCurrentDataField = FIELD_INVALID;
+
+    if (strcmp(name, "CameraSettings") == 0) {
+        profiles->mIsAvailableSensor = false;
+        LOG2("@%s Camera mSensorNum:%d, mCurrentSensor:%d", __func__, profiles->mSensorNum,
+             profiles->mCurrentSensor);
+    }
 }
 
 int CameraParser::getCameraModuleNameFromEEPROM(const std::string& nvmDir,

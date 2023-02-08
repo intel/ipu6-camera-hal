@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2022 Intel Corporation.
+ * Copyright (C) 2016-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,9 @@
 #include "SensorHwCtrl.h"
 #include "SofSource.h"
 #include "StreamSource.h"
+// PRIVACY_MODE_S
 #include "CvfPrivacyChecker.h"
+// PRIVACY_MODE_E
 
 #include "ProcessorManager.h"
 #include "gc/IGraphConfigManager.h"
@@ -258,7 +260,9 @@ class CameraDevice : public EventListener {
     camera_callback_ops_t* mCallback;
 
  private:
+    // PRIVACY_MODE_S
     CvfPrivacyChecker* mCvfPrivacyChecker;
+    // PRIVACY_MODE_E
     DISALLOW_COPY_AND_ASSIGN(CameraDevice);
 };
 

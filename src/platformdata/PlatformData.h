@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2022 Intel Corporation.
+ * Copyright (C) 2015-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -186,13 +186,16 @@ class PlatformData {
                       mDummyStillSink(false),
                       mRemoveCacheFlushOutputBuffer(false),
                       mPLCEnable(false),
-                      mSupportPrivacy(false),
+                      // PRIVACY_MODE_S
+                      mSupportPrivacy(NO_PRIVACY_MODE),
+                      mPrivacyModeThreshold(10),
+                      mPrivacyModeFrameDelay(5),
+                      // PRIVACY_MODE_E
                       mStillOnlyPipe(false),
                       mDisableBLCByAGain(false),
                       mDisableBLCAGainLow(-1),
                       mDisableBLCAGainHigh(-1),
-                      mResetLinkRoute(true) {
-            }
+                      mResetLinkRoute(true) {}
 
             std::vector<MediaCtlConf> mMediaCtlConfs;
 
@@ -299,7 +302,11 @@ class PlatformData {
             bool mDummyStillSink;
             bool mRemoveCacheFlushOutputBuffer;
             bool mPLCEnable;
-            bool mSupportPrivacy;
+            // PRIVACY_MODE_S
+            PrivacyModeType mSupportPrivacy;
+            uint32_t mPrivacyModeThreshold;
+            uint32_t mPrivacyModeFrameDelay;
+            // PRIVACY_MODE_E
             bool mStillOnlyPipe;
 
             bool mDisableBLCByAGain;
@@ -1439,12 +1446,28 @@ class PlatformData {
     static bool isGpuEvcpEnabled();
     // ENABLE_EVCP_E
 
+    // PRIVACY_MODE_S
     /**
-     * Check supports privacy or not
+     * Check which privacy mode the camera supports
      *
-     * \return true if supports privacy.
+     * \return privacy mode type.
      */
-    static bool getSupportPrivacy(int cameraId);
+    static PrivacyModeType getSupportPrivacy(int cameraId);
+
+    /**
+     * Get the threshold of luminance in AE-based privacy mode.
+     *
+     * \return Threshold
+     */
+    static uint32_t getPrivacyModeThreshold(int cameraId);
+
+    /**
+     * Get the threshold of frame delay in AE-based privacy mode.
+     *
+     * \return Threshold
+     */
+    static uint32_t getPrivacyModeFrameDelay(int cameraId);
+    // PRIVACY_MODE_E
 
     /**
      * Check support of still-only pipe is enabled or not
@@ -1467,5 +1490,14 @@ class PlatformData {
      * \return if reset links and routes
      */
     static bool isResetLinkRoute(int cameraId);
+
+    // LEVEL0_ICBM_S
+    /**
+     * Check GPU ICBM is enabled or not
+     *
+     * \return true if ICBM is enabled.
+     */
+    static bool isGPUICBMEnabled();
+    // LEVEL0_ICBM_E
 };
 } /* namespace icamera */

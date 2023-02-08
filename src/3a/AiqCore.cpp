@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Intel Corporation.
+ * Copyright (C) 2015-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -680,6 +680,21 @@ int AiqCore::processSAResults(cca::cca_sa_results* saResults, float* lensShading
 
     return OK;
 }
+
+// PRIVACY_MODE_S
+int AiqCore::getBrightestIndex(uint32_t& param) {
+    int ret = OK;
+    uint32_t outMaxBin = 0;
+    IntelCca* intelCca = getIntelCca(mTuningMode);
+    CheckAndLogError(!intelCca, UNKNOWN_ERROR, "%s, intelCca is null, m:%d", __func__, mTuningMode);
+    ia_err iaErr = intelCca->getBrightestIndex(&outMaxBin);
+    ret = AiqUtils::convertError(iaErr);
+    CheckAndLogError(ret != OK, ret, "Error getting BrightestIndex, ret: %d", ret);
+    param = outMaxBin;
+
+    return ret;
+}
+// PRIVACY_MODE_E
 
 bool AiqCore::bypassAe(const aiq_parameter_t& param) {
     if (mAeRunTime == 0 || (mIntel3AParameter->mAeParams.ev_shift != mLastEvShift)) return false;

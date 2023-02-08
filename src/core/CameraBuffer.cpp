@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Intel Corporation.
+ * Copyright (C) 2015-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -159,6 +159,8 @@ void CameraBuffer::setUserBufferInfo(camera_buffer_t* ubuffer) {
             break;
         case V4L2_MEMORY_DMABUF:
             setFd(ubuffer->dmafd, 0);
+            // set usr pointer in case it has been mapped
+            setAddr(ubuffer->addr, 0);
             break;
         case V4L2_MEMORY_MMAP:
             /* do nothing */
@@ -272,6 +274,7 @@ void* CameraBuffer::getAddr(int plane) {
 
     switch (mV.Memory()) {
         case V4L2_MEMORY_MMAP:
+        case V4L2_MEMORY_DMABUF:
             return mMmapAddrs[plane];
         case V4L2_MEMORY_USERPTR:
             return reinterpret_cast<void*>(mV.Userptr(plane));
@@ -286,6 +289,7 @@ void CameraBuffer::setAddr(void* addr, int plane) {
 
     switch (mV.Memory()) {
         case V4L2_MEMORY_MMAP:
+        case V4L2_MEMORY_DMABUF:
             mMmapAddrs[plane] = addr;
             return;
         case V4L2_MEMORY_USERPTR:
@@ -313,15 +317,31 @@ void CameraBuffer::freeMmap() {
     }
 }
 
+void* CameraBuffer::mapDmaBufferAddr() {
+    if (getAddr() != nullptr)
+        return getAddr();
+
+    return CameraBuffer::mapDmaBufferAddr(getFd(), getBufferSize());
+}
+
+void CameraBuffer::unmapDmaBufferAddr(void* addr) {
+    if (getAddr() == addr)
+        return;
+
+    return CameraBuffer::unmapDmaBufferAddr(addr, getBufferSize());
+}
+
 void* CameraBuffer::mapDmaBufferAddr(int fd, unsigned int bufferSize) {
     CheckAndLogError(fd < 0 || !bufferSize, nullptr, "%s, fd:0x%x, bufferSize:%u", __func__, fd,
                      bufferSize);
+
     return ::mmap(nullptr, bufferSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 }
 
 void CameraBuffer::unmapDmaBufferAddr(void* addr, unsigned int bufferSize) {
     CheckAndLogError(addr == nullptr || !bufferSize, VOID_VALUE, "%s, addr:%p, bufferSize:%u",
                      __func__, addr, bufferSize);
+
     munmap(addr, bufferSize);
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2022 Intel Corporation
+ * Copyright (C) 2019-2023 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -872,18 +872,20 @@ int PipeLiteExecutor::notifyStatsDone(TuningMode tuningMode, const v4l2_buffer_t
     }
 
     int statsIndex = 0;
+    bool runDvs = false;
     for (auto statsBuf : outStatsBuffers) {
         if (!statsBuf) continue;
 
-        if (mStreamId != VIDEO_STREAM_ID) {
+        if (!runDvs) {
             // DVS Zoom without STAT buffer.
-            {
-                EventData eventData;
-                eventData.type = EVENT_DVS_READY;
-                eventData.data.dvsRunReady.streamId = mStreamId;
-                notifyListeners(eventData);
-            }
+            EventData eventData;
+            eventData.type = EVENT_DVS_READY;
+            eventData.data.dvsRunReady.streamId = mStreamId;
+            notifyListeners(eventData);
+            runDvs = true;
+        }
 
+        if (mStreamId != VIDEO_STREAM_ID) {
             if (!PlatformData::isStillOnlyPipeEnabled(mCameraId)) {
                 LOG2("%s: Drop still pipe statistics data", __func__);
                 releaseStatsBuffer(statsBuf);
@@ -908,7 +910,7 @@ int PipeLiteExecutor::notifyStatsDone(TuningMode tuningMode, const v4l2_buffer_t
 
         // Decode the statistics data
         if (eventType[statsIndex] == EVENT_PSYS_STATS_BUF_READY) {
-            mAdaptor->decodeStatsData(tuningMode, statsBuf, mGraphConfig);
+            mAdaptor->decodeStatsData(tuningMode, statsBuf, mStreamId);
             psysStatBufferCount--;
         }
 

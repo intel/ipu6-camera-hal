@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Intel Corporation
+ * Copyright (C) 2020-2023 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -224,13 +224,12 @@ bool GPUExecutor::fetchTnrOutBuffer(int64_t seq, std::shared_ptr<CameraBuffer> b
     std::unique_lock<std::mutex> lock(mTnrOutBufMapLock);
     if (mTnrOutBufMap.find(seq) != mTnrOutBufMap.end()) {
         void* pSrcBuf = (buf->getMemory() == V4L2_MEMORY_DMABUF) ?
-                            CameraBuffer::mapDmaBufferAddr(buf->getFd(), buf->getBufferSize()) :
-                            buf->getBufferAddr();
+                            buf->mapDmaBufferAddr() : buf->getBufferAddr();
         CheckAndLogError(!pSrcBuf, false, "pSrcBuf is nullptr");
         LOG2("Sequence %ld is used for output", seq);
         MEMCPY_S(pSrcBuf, buf->getBufferSize(), mTnrOutBufMap[seq], mOutBufferSize);
         if (buf->getMemory() == V4L2_MEMORY_DMABUF) {
-            CameraBuffer::unmapDmaBufferAddr(pSrcBuf, buf->getBufferSize());
+            buf->unmapDmaBufferAddr(pSrcBuf);
         }
 
         return true;
@@ -567,15 +566,14 @@ int GPUExecutor::runTnrFrame(const std::shared_ptr<CameraBuffer>& inBuf,
     int memoryType = outBuf->getMemory();
     int bufferSize = outBuf->getBufferSize();
     void* outPtr = (memoryType == V4L2_MEMORY_DMABUF) ?
-                       CameraBuffer::mapDmaBufferAddr(fd, bufferSize) :
-                       outBuf->getBufferAddr();
+                       outBuf->mapDmaBufferAddr() : outBuf->getBufferAddr();
     if (!outPtr) return UNKNOWN_ERROR;
 
     outBuf->setSequence(sequence);
     if (!mIntelTNR) {
         MEMCPY_S(outPtr, bufferSize, inBuf->getBufferAddr(), inBuf->getBufferSize());
         if (memoryType == V4L2_MEMORY_DMABUF) {
-            CameraBuffer::unmapDmaBufferAddr(outPtr, bufferSize);
+            outBuf->unmapDmaBufferAddr(outPtr);
         }
         return OK;
     }
@@ -585,7 +583,7 @@ int GPUExecutor::runTnrFrame(const std::shared_ptr<CameraBuffer>& inBuf,
         if (mStreamId == VIDEO_STREAM_ID && !mGPULock.try_lock()) {
             MEMCPY_S(outPtr, bufferSize, inBuf->getBufferAddr(), inBuf->getBufferSize());
             if (memoryType == V4L2_MEMORY_DMABUF) {
-                CameraBuffer::unmapDmaBufferAddr(outPtr, bufferSize);
+                outBuf->unmapDmaBufferAddr(outPtr);
             }
             mLastSequence = UINT32_MAX;
             LOG2("Executor name:%s, skip frame sequence: %ld", mName.c_str(), inBuf->getSequence());
@@ -647,7 +645,7 @@ int GPUExecutor::runTnrFrame(const std::shared_ptr<CameraBuffer>& inBuf,
     }
 
     if (memoryType == V4L2_MEMORY_DMABUF) {
-        CameraBuffer::unmapDmaBufferAddr(outPtr, bufferSize);
+        outBuf->unmapDmaBufferAddr(outPtr);
     }
     CheckAndLogError(ret != OK, UNKNOWN_ERROR, "tnr7us run frame failed");
     mLastSequence = sequence;

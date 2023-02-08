@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2022 Intel Corporation.
+ * Copyright (C) 2015-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -92,11 +92,11 @@ int PlatformData::init() {
 
     StaticCfg* staticCfg = &(getInstance()->mStaticCfg);
     for (size_t i = 0; i < staticCfg->mCameras.size(); i++) {
-        std::string camModuleName;
+        const std::string& camModuleName = staticCfg->mCameras[i].mCamModuleName;
         AiqInitData* aiqInitData = new AiqInitData(
             staticCfg->mCameras[i].sensorName, getCameraCfgPath(),
             staticCfg->mCameras[i].mSupportedTuningConfig, staticCfg->mCameras[i].mNvmDirectory,
-            staticCfg->mCameras[i].mMaxNvmDataSize, staticCfg->mCameras[i].mCamModuleName);
+            staticCfg->mCameras[i].mMaxNvmDataSize, camModuleName);
         getInstance()->mAiqInitData.push_back(aiqInitData);
 
         if (!camModuleName.empty() &&
@@ -289,8 +289,13 @@ bool PlatformData::isDvsSupported(int cameraId) {
     for (auto it : videoStabilizationList) {
         if (it == VIDEO_STABILIZATION_MODE_ON) {
             supported = true;
+            break;
         }
     }
+
+    const icamera::CameraMetadata& meta = icamera::ParameterHelper::getMetadata(*param);
+    auto entry = meta.find(CAMERA_SCALER_AVAILABLE_MAX_DIGITAL_ZOOM);
+    if (entry.count > 0 && *entry.data.f > 1) supported = true;
 
     LOG2("@%s, dvs supported:%d", __func__, supported);
     return supported;
@@ -1364,6 +1369,9 @@ bool PlatformData::isUsingGpuAlgo() {
     // ENABLE_EVCP_S
     enabled |= isGpuEvcpEnabled();
     // ENABLE_EVCP_E
+    // LEVEL0_ICBM_S
+    enabled |= isGPUICBMEnabled();
+    // LEVEL0_ICBM_E
     return enabled;
 }
 
@@ -1409,9 +1417,19 @@ bool PlatformData::isGpuEvcpEnabled() {
 }
 // ENABLE_EVCP_E
 
-bool PlatformData::getSupportPrivacy(int cameraId) {
+// PRIVACY_MODE_S
+PrivacyModeType PlatformData::getSupportPrivacy(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mSupportPrivacy;
 }
+
+uint32_t PlatformData::getPrivacyModeThreshold(int cameraId) {
+    return getInstance()->mStaticCfg.mCameras[cameraId].mPrivacyModeThreshold;
+}
+
+uint32_t PlatformData::getPrivacyModeFrameDelay(int cameraId) {
+    return getInstance()->mStaticCfg.mCameras[cameraId].mPrivacyModeFrameDelay;
+}
+// PRIVACY_MODE_E
 
 bool PlatformData::isStillOnlyPipeEnabled(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mStillOnlyPipe;
@@ -1426,4 +1444,10 @@ bool PlatformData::getDisableBLCByAGain(int cameraId, int& low, int& high) {
 bool PlatformData::isResetLinkRoute(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mResetLinkRoute;
 }
+
+// LEVEL0_ICBM_S
+bool PlatformData::isGPUICBMEnabled() {
+    return getInstance()->mStaticCfg.mCommonConfig.isGPUICBMEnabled;
+}
+// LEVEL0_ICBM_E
 }  // namespace icamera

@@ -14,6 +14,11 @@ Alder Lake platforms. There are 4 repositories that provide the complete setup:
 ## Build instructions:
 - Dependencies: ipu6-camera-bins
 - Dependencies: libexpat-dev automake libtool libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
+- For cameras supporting privacy mode (ov01a1s, ov02c10, ov2740), add a dummy image for it:
+	```shell
+	cd config/linux/ipu6ep
+	ffmpeg -i <input_file> -pix_fmt nv12 privacy_image_<sensor_name>-uf_<width>_<height>.yuv
+	```
 - Build and install:
 
 1. Set IPU6 version and product name for build
@@ -110,5 +115,6 @@ Alder Lake platforms. There are 4 repositories that provide the complete setup:
     ```
 
 5. Reboot to make udev rules take effect.
+
 ## Tagged for removal:
 The folder icamerasrc contains a gst plugin. This has been moved to https://github.com/intel/icamerasrc and will eventually be removed.

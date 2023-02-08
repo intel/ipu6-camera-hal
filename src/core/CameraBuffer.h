@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Intel Corporation.
+ * Copyright (C) 2015-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -135,6 +135,9 @@ class CameraBuffer {
 
     // Buffers are allocated the buffers by Camera
     int allocateMemory(V4L2VideoNode* vDevice = nullptr);
+
+    void* mapDmaBufferAddr();
+    void unmapDmaBufferAddr(void* addr);
 
  public:
     static void* mapDmaBufferAddr(int fd, unsigned int bufferSize);

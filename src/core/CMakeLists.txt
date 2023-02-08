@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017-2019 Intel Corporation
+#  Copyright (C) 2017-2023 Intel Corporation
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -44,6 +44,13 @@ set(CORE_SRCS
         ${CORE_DIR}/psysprocessor/PolicyManager.cpp
         CACHE INTERNAL "core sources"
         )
+# PRIVACY_MODE_S
+    set(CORE_SRCS
+        ${CORE_SRCS}
+        ${CORE_DIR}/CvfPrivacyChecker.cpp
+        CACHE INTERNAL "core sources"
+        )
+# PRIVACY_MODE_E
 
 # IPU_PROCESSING_S
     set(CORE_SRCS

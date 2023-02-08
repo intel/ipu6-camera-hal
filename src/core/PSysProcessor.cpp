@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2022 Intel Corporation.
+ * Copyright (C) 2017-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,8 +35,8 @@
  * it's based on sensor vblank, psys iterating time
  * and thread scheduling
  */
-#define SOF_EVENT_MARGIN (5000000)       // 5ms
-#define SOF_EVENT_MAX_MARGIN (60000000)  // 60ms
+#define TRIGGER_MARGIN (5000000)       // 5ms
+#define TRIGGER_MAX_MARGIN (60000000)  // 60ms
 
 #define EXTREME_STRENGTH_LEVEL4 (-120)
 #define EXTREME_STRENGTH_LEVEL3 (-60)
@@ -51,6 +51,7 @@ PSysProcessor::PSysProcessor(int cameraId, ParameterGenerator* pGenerator)
         : mCameraId(cameraId),
           mParameterGenerator(pGenerator),
           mScheduler(nullptr),
+          mRunAicAfterQTask(false),
           mCurConfigMode(CAMERA_STREAM_CONFIGURATION_MODE_NORMAL),
           mTuningMode(TUNING_MODE_MAX),
           mRawPort(INVALID_PORT),
@@ -85,6 +86,7 @@ int PSysProcessor::configure(const std::vector<ConfigMode>& configModes) {
     mHoldRawBuffers = false;
     mOpaqueRawPort = INVALID_PORT;
     mRawPort = INVALID_PORT;
+    mRunAicAfterQTask = false;
 
     std::map<Port, stream_t> outputFrameInfo;
     stream_t stillStream = {}, videoStream = {};
@@ -108,6 +110,11 @@ int PSysProcessor::configure(const std::vector<ConfigMode>& configModes) {
     if (PlatformData::isGpuTnrEnabled() && videoStream.width > 0 && stillStream.width > 0) {
         // hold raw buffer for running TNR in still pipe
         mHoldRawBuffers = true;
+    }
+
+    // Only enable psys bundle with aic when has video pipe only
+    if (stillStream.width <= 0 && PlatformData::psysBundleWithAic(mCameraId)) {
+        mRunAicAfterQTask = true;
     }
 
     int ret = OK;
@@ -437,37 +444,41 @@ int PSysProcessor::processNewFrame() {
     CheckAndLogError(!mBufferProducer, INVALID_OPERATION, "No available producer");
 
     int ret = OK;
+    int64_t inputSequence = -1;
     CameraBufferPortMap srcBuffers, dstBuffers;
     if (mScheduler) {
         {
             ConditionLock lock(mBufferQueueLock);
-            // Wait input buffer, use SOF_EVENT_MAX_MARGIN to ensure Scheduler is triggered in time
-            bool bufReady = waitBufferQueue(lock, mInputQueue, SOF_EVENT_MAX_MARGIN);
+            // Wait input buffer, use TRIGGER_MAX_MARGIN to ensure Scheduler is triggered in time
+            bool bufReady = waitBufferQueue(lock, mInputQueue, TRIGGER_MAX_MARGIN);
             // Already stopped
             if (!mThreadRunning) return -1;
 
             if (bufReady) {
-                // Fetch inputs and outputs if output buffer ready (no wait)
-                if (waitBufferQueue(lock, mOutputQueue, 0))
-                    ret = waitFreeBuffersInQueue(lock, srcBuffers, dstBuffers);
+                waitFreeBuffersInQueue(lock, srcBuffers, dstBuffers, TRIGGER_MARGIN);
             }
         }
 
-        int64_t inputSequence = -1;
-        if (!srcBuffers.empty()) {
+        if (!srcBuffers.empty() && !dstBuffers.empty()) {
             inputSequence = srcBuffers.begin()->second->getSequence();
             ret = prepareTask(&srcBuffers, &dstBuffers);
             CheckAndLogError(ret != OK, UNKNOWN_ERROR, "%s, Failed to process frame", __func__);
         } else {
-            // Wait frame buffer time out should not involve thread exit.
-            LOG1("<id%d>@%s, timeout happen, wait recovery", mCameraId, __func__);
+            LOG2("<id%d>@%s, No available buffers, in %u, out %u", mCameraId, __func__,
+                 srcBuffers.size(), dstBuffers.size());
         }
 
         // Trigger when there are tasks (new or existing)
-        if (mScheduler && !mSequencesInflight.empty()) {
+        bool trigger = false;
+        {
+            AutoMutex l(mBufferQueueLock);
+            trigger = !mSequencesInflight.empty();
+        }
+        if (trigger) {
             std::string source;
             mScheduler->executeNode(source, inputSequence);
         }
+        prepareIpuForNextFrame(inputSequence);
     } else if (!PlatformData::psysAlignWithSof(mCameraId)) {
         {
             ConditionLock lock(mBufferQueueLock);
@@ -484,6 +495,8 @@ int PSysProcessor::processNewFrame() {
 
         ret = prepareTask(&srcBuffers, &dstBuffers);
         CheckAndLogError(ret != OK, UNKNOWN_ERROR, "%s, Failed to process frame", __func__);
+        inputSequence = srcBuffers.begin()->second->getSequence();
+        prepareIpuForNextFrame(inputSequence);
     } else {
         timeval curTime;
         int64_t sofInterval = 0;
@@ -493,9 +506,9 @@ int PSysProcessor::processNewFrame() {
             gettimeofday(&curTime, nullptr);
             sofInterval = TIMEVAL2NSECS(curTime) - TIMEVAL2NSECS(mSofTimestamp);
             // Wait next sof event when missing last one for a long time
-            if (sofInterval > SOF_EVENT_MARGIN && sofInterval < SOF_EVENT_MAX_MARGIN) {
+            if (sofInterval > TRIGGER_MARGIN && sofInterval < TRIGGER_MAX_MARGIN) {
                 LOG2("%s, need to wait next sof event. sofInterval: %ld", __func__, sofInterval);
-                ret = mSofCondition.waitRelative(lock, SOF_EVENT_MAX_MARGIN * SLOWLY_MULTIPLIER);
+                ret = mSofCondition.waitRelative(lock, TRIGGER_MAX_MARGIN * SLOWLY_MULTIPLIER);
 
                 // Already stopped
                 if (!mThreadRunning) return -1;
@@ -509,9 +522,9 @@ int PSysProcessor::processNewFrame() {
         }
 
         // push all the pending buffers to task
-        int64_t waitTime = SOF_EVENT_MARGIN;
+        int64_t waitTime = TRIGGER_MARGIN;
         // Don't need to catch sof for 1st frame or sof time out
-        if (TIMEVAL2NSECS(mSofTimestamp) == 0 || sofInterval >= SOF_EVENT_MAX_MARGIN) waitTime = 0;
+        if (TIMEVAL2NSECS(mSofTimestamp) == 0 || sofInterval >= TRIGGER_MAX_MARGIN) waitTime = 0;
         while (true) {
             {
                 ConditionLock lock(mBufferQueueLock);
@@ -526,12 +539,13 @@ int PSysProcessor::processNewFrame() {
 
             {
                 AutoMutex l(mSofLock);
-                if (srcBuffers.begin()->second->getSequence() >= mSofSequence) {
+                inputSequence = srcBuffers.begin()->second->getSequence();
+                if (inputSequence >= mSofSequence) {
                     gettimeofday(&curTime, nullptr);
                     sofInterval = TIMEVAL2NSECS(curTime) - TIMEVAL2NSECS(mSofTimestamp);
 
                     // Handle the frame of sof(N) on sof(N + 1) when the sof event is continuously
-                    if (sofInterval < SOF_EVENT_MAX_MARGIN) {
+                    if (sofInterval < TRIGGER_MAX_MARGIN) {
                         return OK;
                     }
                     LOG1("%s, sof event lost for long time, skip wating. sofInterval: %ld",
@@ -541,10 +555,26 @@ int PSysProcessor::processNewFrame() {
 
             ret = prepareTask(&srcBuffers, &dstBuffers);
             CheckAndLogError(ret != OK, UNKNOWN_ERROR, "%s, Failed to process frame", __func__);
+            prepareIpuForNextFrame(inputSequence);
         }
     }
 
     return OK;
+}
+
+void PSysProcessor::prepareIpuForNextFrame(int64_t sequence) {
+    {
+        AutoMutex l(mBufferQueueLock);
+        if (sequence < 0 || !mRunAicAfterQTask ||
+            mSequencesInflight.find(sequence) == mSequencesInflight.end()) return;
+    }
+
+    int32_t userRequestId = -1;
+    // Check if next sequence is used or not
+    if (mParameterGenerator &&
+        mParameterGenerator->getUserRequestId(sequence + 1, userRequestId) == OK) {
+        mPSysDAGs[mCurConfigMode]->prepareIpuParams((sequence + 1), false, nullptr, true);
+    }
 }
 
 void PSysProcessor::handleRawReprocessing(CameraBufferPortMap* srcBuffers,
@@ -919,7 +949,6 @@ void PSysProcessor::dispatchTask(CameraBufferPortMap& inBuf, CameraBufferPortMap
     taskParam.mOutputBuffers = outBuf;
     taskParam.mFakeTask = fakeTask;
     taskParam.mCallbackRgbs = callbackRgbs;
-    taskParam.mNextSeqUsed = false;
 
     int64_t settingSequence = getSettingSequence(outBuf);
     // Handle per-frame settings if output buffer requires
@@ -928,18 +957,24 @@ void PSysProcessor::dispatchTask(CameraBufferPortMap& inBuf, CameraBufferPortMap
         if (mParameterGenerator->getParameters(currentSequence, &params, true, false) == OK) {
             setParameters(params);
 
-            // Dump raw image if makernote mode is MAKERNOTE_MODE_JPEG or fake task for IQ tune
-            camera_makernote_mode_t makernoteMode = MAKERNOTE_MODE_OFF;
-            int ret = params.getMakernoteMode(makernoteMode);
-            if (((ret == OK && makernoteMode == MAKERNOTE_MODE_JPEG) || fakeTask) &&
-                CameraDump::isDumpTypeEnable(DUMP_JPEG_BUFFER)) {
-                CameraDump::dumpImage(mCameraId, inBuf[MAIN_PORT], M_PSYS, MAIN_PORT);
+            bool hasStill = false;
+            for (const auto& item : outBuf) {
+                if (item.second && item.second->getStreamUsage() == CAMERA_STREAM_STILL_CAPTURE) {
+                    hasStill = true;
+                    break;
+                }
             }
-        }
-
-        // Check if next sequence is used or not
-        if (mParameterGenerator->getUserRequestId(currentSequence + 1, userRequestId) == OK) {
-            taskParam.mNextSeqUsed = true;
+            // Dump raw image if has STILL or fake task for IQ tune
+            if ((hasStill || fakeTask) && CameraDump::isDumpTypeEnable(DUMP_JPEG_BUFFER)) {
+                if (userRequestId >= 0) {
+                    char desc[MAX_NAME_LEN];
+                    int len = snprintf(desc, (MAX_NAME_LEN - 1), "_req#%d", userRequestId);
+                    desc[len] = '\0';
+                    CameraDump::dumpImage(mCameraId, inBuf[MAIN_PORT], M_PSYS, MAIN_PORT, desc);
+                } else {
+                    CameraDump::dumpImage(mCameraId, inBuf[MAIN_PORT], M_PSYS, MAIN_PORT);
+                }
+            }
         }
     }
     {
@@ -1107,22 +1142,20 @@ void PSysProcessor::outputRawImage(shared_ptr<CameraBuffer>& srcBuf,
     int srcBufferSize = srcBuf->getBufferSize();
     int srcMemoryType = srcBuf->getMemory();
     void* pSrcBuf = (srcMemoryType == V4L2_MEMORY_DMABUF) ?
-                        CameraBuffer::mapDmaBufferAddr(srcBuf->getFd(), srcBufferSize) :
-                        srcBuf->getBufferAddr();
+                        srcBuf->mapDmaBufferAddr() : srcBuf->getBufferAddr();
 
     int dstBufferSize = dstBuf->getBufferSize();
     int dstMemoryType = dstBuf->getMemory();
     void* pDstBuf = (dstMemoryType == V4L2_MEMORY_DMABUF) ?
-                        CameraBuffer::mapDmaBufferAddr(dstBuf->getFd(), dstBufferSize) :
-                        dstBuf->getBufferAddr();
+                        dstBuf->mapDmaBufferAddr() : dstBuf->getBufferAddr();
 
     MEMCPY_S(pDstBuf, dstBufferSize, pSrcBuf, srcBufferSize);
 
     if (srcMemoryType == V4L2_MEMORY_DMABUF) {
-        CameraBuffer::unmapDmaBufferAddr(pSrcBuf, srcBufferSize);
+        srcBuf->unmapDmaBufferAddr(pSrcBuf);
     }
     if (dstMemoryType == V4L2_MEMORY_DMABUF) {
-        CameraBuffer::unmapDmaBufferAddr(pDstBuf, dstBufferSize);
+        dstBuf->unmapDmaBufferAddr(pDstBuf);
     }
 
     // Send output buffer to its consumer

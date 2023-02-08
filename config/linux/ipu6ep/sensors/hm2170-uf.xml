@@ -72,6 +72,7 @@
         <initialSkipFrame value="0"/>
         <exposureLag value="2"/>
         <gainLag value="2"/>
+        <digitalGainLag value="3"/>
         <ltmGainLag value="1"/>
         <yuvColorRangeMode value="full"/> <!-- there are 2 yuv color range mode, like full, reduced. -->
         <graphSettingsFile value="graph_settings_HM2170_1SG205N3_ADL.xml"/>
@@ -139,6 +140,7 @@
         <initialSkipFrame value="0"/>
         <exposureLag value="2"/>
         <gainLag value="2"/>
+        <digitalGainLag value="3"/>
         <ltmGainLag value="1"/>
         <yuvColorRangeMode value="full"/> <!-- there are 2 yuv color range mode, like full, reduced. -->
         <graphSettingsFile value="graph_settings_HM2170_CJFME18_ADL.xml"/>

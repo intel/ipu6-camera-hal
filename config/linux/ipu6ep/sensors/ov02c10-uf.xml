@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<!-- Copyright (C) 2022 Intel Corporation.
+<!-- Copyright (C) 2022-2023 Intel Corporation.
 
      Licensed under the Apache License, Version 2.0 (the "License");
      you may not use this file except in compliance with the License.
@@ -80,7 +80,7 @@
         <enableAiqd value = "true"/>
         <useCrlModule value = "false"/>
         <maxRequestsInflight value="5"/>
-        <supportPrivacy value="true"/>
+        <supportPrivacy value="1"/> <!-- privacy mode, 0: off, 1: CVF privacy 2: AE-based privacy -->
     </Sensor>
     <Sensor name="ov02c10-uf" description="OV02C10 sensor.">
         <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1928" outputHeight="1092" format="V4L2_PIX_FMT_SGRBG10"><!-- RAW10 BE capture -->
@@ -147,7 +147,7 @@
         <enableAiqd value = "true"/>
         <useCrlModule value = "false"/>
         <maxRequestsInflight value="5"/>
-        <supportPrivacy value="true"/>
+        <supportPrivacy value="1"/> <!-- privacy mode, 0: off, 1: CVF privacy 2: AE-based privacy -->
     </Sensor>
     <Sensor name="ov02c10-uf" description="OV02C10 sensor.">
         <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1928" outputHeight="1092" format="V4L2_PIX_FMT_SGRBG10"><!-- RAW10 BE capture -->
@@ -214,7 +214,7 @@
         <enableAiqd value = "true"/>
         <useCrlModule value = "false"/>
         <maxRequestsInflight value="5"/>
-        <supportPrivacy value="true"/>
+        <supportPrivacy value="1"/> <!-- privacy mode, 0: off, 1: CVF privacy 2: AE-based privacy -->
     </Sensor>
 </CameraSettings>
 

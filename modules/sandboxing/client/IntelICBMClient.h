@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2022 Intel Corporation.
+ * Copyright (C) 2022 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,24 +16,30 @@
 
 #pragma once
 
-namespace icamera {
-/*
- * This struct is used to envelop AIQ statistics.
- */
-struct AiqStatistics {
-    int64_t mSequence;
-    unsigned long long mTimestamp;
-    TuningMode mTuningMode;
-    bool mInUse;
-    bool mPendingDecode;
-    int32_t mStreamId;
+#include <vector>
 
-    AiqStatistics()
-            : mSequence(-1),
-              mTimestamp(0),
-              mTuningMode(TUNING_MODE_MAX),
-              mInUse(false),
-              mPendingDecode(false),
-              mStreamId(-1) {}
+#include "CameraBuffer.h"
+#include "Parameters.h"
+#include "PlatformData.h"
+#include "src/icbm/ICBMTypes.h"
+
+namespace icamera {
+
+class IntelICBM {
+ public:
+    IntelICBM() {}
+    ~IntelICBM(){};
+
+    Result setup(ICBMInitInfo* initParam);
+    void shutdown();
+    Result processFrame(const ImageInfo& iii, const ImageInfo& iio, const ICBMReqInfo& reqInfo);
+
+ private:
+    Result initRunInfoBuffer();
+
+    IntelAlgoCommon mCommon;
+    ShmMemInfo mRunInfoMem;
+
+    DISALLOW_COPY_AND_ASSIGN(IntelICBM);
 };
-} /* namespace icamera */
+}  // namespace icamera

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<!-- Copyright (C) 2020-2021 Intel Corporation.
+<!-- Copyright (C) 2020-2023 Intel Corporation.
 
      Licensed under the Apache License, Version 2.0 (the "License");
      you may not use this file except in compliance with the License.
@@ -82,5 +82,8 @@
         <enableAiqd value = "true"/>
         <useCrlModule value = "false"/>
         <maxRequestsInflight value="6"/>
+        <supportPrivacy value="2"/> <!-- privacy mode, 0: off, 1: CVF privacy 2: AE-based privacy -->
+        <privacyModeThreshold value="10"/> <!-- AE-based privacy mode luminance threshold -->
+        <privacyModeFrameDelay value="5"/> <!-- AE-based privacy mode frame delay -->
     </Sensor>
 </CameraSettings>

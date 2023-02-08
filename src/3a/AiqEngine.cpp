@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2022 Intel Corporation.
+ * Copyright (C) 2015-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -210,8 +210,8 @@ int AiqEngine::prepareStatsParams(cca::cca_stats_params* statsParams, AiqStatist
 
             CheckAndLogError(!gc, UNKNOWN_ERROR, "%s, Failed to get graph config", __func__);
             ia_isp_bxt_resolution_info_t resolution;
-            uint32_t gdcKernelId;
-            int status = gc->getGdcKernelSetting(&gdcKernelId, &resolution);
+            uint32_t kernelId;
+            int status = gc->getGdcKernelSetting(&kernelId, &resolution, aiqStatistics->mStreamId);
             CheckWarning(status != OK, UNKNOWN_ERROR, "Failed to get GDC kernel setting");
 
             statsParams->dvs_stats_height = resolution.output_height;
@@ -336,6 +336,23 @@ AiqEngine::AiqState AiqEngine::runAiq(long requestId, int64_t applyingSeq, AiqRe
         if (ret != OK) {
             return AIQ_STATE_ERROR;
         }
+
+        // PRIVACY_MODE_S
+        if (PlatformData::getSupportPrivacy(mCameraId) == AE_BASED_PRIVACY_MODE) {
+            uint32_t outMaxBin = 0;
+            ret = mAiqCore->getBrightestIndex(outMaxBin);
+            if (ret == OK) {
+                EventData3AReady data;
+                data.sequence = requestId;
+                data.maxBin = outMaxBin;
+                EventData eventData;
+                eventData.type = EVENT_3A_READY;
+                eventData.buffer = nullptr;
+                eventData.data.run3AReady = data;
+                notifyListeners(eventData);
+            }
+        }
+        // PRIVACY_MODE_E
 
         setSensorExposure(aiqResult, applyingSeq);
 

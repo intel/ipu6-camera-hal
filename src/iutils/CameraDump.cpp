@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Intel Corporation.
+ * Copyright (C) 2015-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -395,13 +395,12 @@ void CameraDump::dumpImage(int cameraId, const shared_ptr<CameraBuffer>& camBuff
     int bufferSize = camBuffer->getBufferSize();
     int memoryType = camBuffer->getMemory();
     void* pBuf = (memoryType == V4L2_MEMORY_DMABUF) ?
-                     CameraBuffer::mapDmaBufferAddr(fd, bufferSize) :
-                     camBuffer->getBufferAddr();
+                     camBuffer->mapDmaBufferAddr() : camBuffer->getBufferAddr();
     LOG1("@%s, fd:%d, buffersize:%d, buf:%p, memoryType:%d, fileName:%s", __func__, fd, bufferSize,
          pBuf, memoryType, fileName.c_str());
     writeData(pBuf, bufferSize, fileName.c_str());
     if (memoryType == V4L2_MEMORY_DMABUF) {
-        CameraBuffer::unmapDmaBufferAddr(pBuf, bufferSize);
+        camBuffer->unmapDmaBufferAddr(pBuf);
     }
 }
 
