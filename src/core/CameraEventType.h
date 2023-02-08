@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2022 Intel Corporation.
+ * Copyright (C) 2015-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,9 @@ enum EventType {
     EVENT_DVS_READY,
     // INTEL_DVS_E
     EVENT_ISYS_ERROR,
+    // PRIVACY_MODE_S
+    EVENT_3A_READY,
+    // PRIVACY_MODE_E
 };
 
 struct EventDataStatsReady {
@@ -89,6 +92,13 @@ struct EventDVSRunReady {
 };
 // INTEL_DVS_E
 
+// PRIVACY_MODE_S
+struct EventData3AReady {
+    int64_t sequence;
+    uint32_t maxBin;
+};
+// PRIVACY_MODE_E
+
 struct EventData {
     EventData() : type(EVENT_ISYS_SOF), pipeType(-1) { CLEAR(data); }
 
@@ -108,6 +118,9 @@ struct EventData {
         // INTEL_DVS_S
         EventDVSRunReady dvsRunReady;
         // INTEL_DVS_E
+        // PRIVACY_MODE_S
+        EventData3AReady run3AReady;
+        // PRIVACY_MODE_E
     } data;
 };
 

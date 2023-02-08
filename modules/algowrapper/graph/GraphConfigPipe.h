@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Intel Corporation
+ * Copyright (C) 2015-2022 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -86,10 +86,10 @@ class GraphConfigPipe {
      */
     const GCSS::IGraphConfig* getInterface(Node* node) const;
     ia_isp_bxt_program_group* getProgramGroup(int32_t streamId);
-    status_t getGdcKernelSetting(uint32_t* kernelId, ia_isp_bxt_resolution_info_t* resolution);
+    void getGdcKernelResolutionInfo(std::vector<IGraphType::GdcInfo>* gdcInfos);
     const ia_isp_bxt_resolution_info_t* getKernelResolutionInfo(uint32_t streamId,
                                                                 uint32_t kernelId);
-    bool isKernelInStream(uint32_t streamId, uint32_t kernelId);
+    bool isKernelInStream(int32_t streamId, uint32_t kernelId);
     status_t getPgIdForKernel(const uint32_t streamId, const int32_t kernelId, int32_t* pgId);
     status_t getMBRData(int32_t streamId, ia_isp_bxt_gdc_limits* data);
     status_t prepare(Node* settings, const StreamToSinkMap& streamToSinkIdMap);
@@ -167,7 +167,7 @@ class GraphConfigPipe {
     bool isVideoRecordPort(Node* sink);
     status_t getProgramGroupsByName(const std::vector<std::string>& pgNames,
                                     NodesPtrVector* programGroups);
-    const ia_isp_bxt_resolution_info_t* getGdcKernelResolutionInfo(uint32_t* kernelId);
+    bool getGdcKernelId(uint32_t* kernelId, int32_t streamId);
     const ia_isp_bxt_resolution_info_t* getScalerKernelResolutionInfo(uint32_t* kenerArray,
                                                                       uint32_t sizeArray);
     status_t getScalerKernelResolutionRatio(uint32_t* kenerArray, uint32_t sizeArray,

@@ -42,7 +42,6 @@ struct PSysTaskData {
     TuningMode mTuningMode;
     bool mFakeTask;
     bool mCallbackRgbs;
-    bool mNextSeqUsed;
 
     CameraBufferPortMap mInputBuffers;
     CameraBufferPortMap mOutputBuffers;
@@ -50,7 +49,6 @@ struct PSysTaskData {
         mTuningMode = TUNING_MODE_MAX;
         mFakeTask = false;
         mCallbackRgbs = false;
-        mNextSeqUsed = false;
     }
 };
 
@@ -95,7 +93,8 @@ class PSysDAG {
     void removeListener(EventType eventType, EventListener* eventListener);
 
     TuningMode getTuningMode(int64_t sequence);
-    int prepareIpuParams(int64_t sequence, bool forceUpdate = false, TaskInfo* task = nullptr);
+    int prepareIpuParams(int64_t sequence, bool forceUpdate = false, TaskInfo* task = nullptr,
+                         bool runNext = false);
 
     bool fetchTnrOutBuffer(int64_t seq, std::shared_ptr<CameraBuffer> buf);
     bool isBypassStillTnr(int64_t seq);
@@ -159,7 +158,6 @@ class PSysDAG {
     Mutex mOngoingPalMapLock;
     // first is sequence id, second is a set of stream id
     std::map<int64_t, std::set<int32_t>> mOngoingPalMap;
-    bool mRunAicAfterQbuf;
 
     /**
      * The relationship mapping between DAG's port and executors port.

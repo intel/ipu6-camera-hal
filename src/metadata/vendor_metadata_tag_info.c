@@ -21,59 +21,55 @@
  * Generated automatically from vendor_metadata_tag_info.mako
  */
 
-const char *vendor_metadata_section_names[INTEL_VENDOR_SECTION_COUNT] = {
+const char* vendor_metadata_section_names[INTEL_VENDOR_SECTION_COUNT] = {
     "intel.vendorCamera", /* [INTEL_VENDOR_CAMERA] */
 };
 
 unsigned int vendor_metadata_section_bounds[INTEL_VENDOR_SECTION_COUNT][2] = {
     /* [INTEL_VENDOR_CAMERA] */
-    { INTEL_VENDOR_CAMERA_START, INTEL_VENDOR_CAMERA_END },
+    {INTEL_VENDOR_CAMERA_START, INTEL_VENDOR_CAMERA_END},
 };
 
-static tag_info_t intel_vendor_camera[INTEL_VENDOR_CAMERA_END -
-        INTEL_VENDOR_CAMERA_START] = {
-    { "callbackRgbs",                  ICAMERA_TYPE_BYTE   },
-    { "rgbsGridSize",                  ICAMERA_TYPE_INT32  },
-    { "shadingCorrection",             ICAMERA_TYPE_BYTE   },
-    { "rgbsStatsBlocks",               ICAMERA_TYPE_BYTE   },
-    { "callbackTmCurve",               ICAMERA_TYPE_BYTE   },
-    { "toneMapCurve",                  ICAMERA_TYPE_FLOAT  },
-    { "powerMode",                     ICAMERA_TYPE_BYTE   },
-// ENABLE_EVCP_S
-    { "icCaps",                        ICAMERA_TYPE_INT32  },
-// ENABLE_EVCP_E
-// ENABLE_EVCP_S
-    { "icPeaceFeatures",               ICAMERA_TYPE_INT32  },
-// ENABLE_EVCP_E
-// ENABLE_EVCP_S
-    { "icEccMode",                     ICAMERA_TYPE_BYTE   },
-// ENABLE_EVCP_E
-// ENABLE_EVCP_S
-    { "icBcMode",                      ICAMERA_TYPE_BYTE   },
-// ENABLE_EVCP_E
-// ENABLE_EVCP_S
-    { "icBrParameters",                ICAMERA_TYPE_INT32  },
-// ENABLE_EVCP_E
-// ENABLE_EVCP_S
-    { "icFfMode",                      ICAMERA_TYPE_BYTE   },
-// ENABLE_EVCP_E
-    { "totalExposureTarget",           ICAMERA_TYPE_INT64  },
-    { "totalExposureTargetRange",      ICAMERA_TYPE_INT64  },
-    { "rawDataOutput",                 ICAMERA_TYPE_BYTE   },
+static tag_info_t intel_vendor_camera[INTEL_VENDOR_CAMERA_END - INTEL_VENDOR_CAMERA_START] = {
+    {"callbackRgbs", ICAMERA_TYPE_BYTE},
+    {"rgbsGridSize", ICAMERA_TYPE_INT32},
+    {"shadingCorrection", ICAMERA_TYPE_BYTE},
+    {"rgbsStatsBlocks", ICAMERA_TYPE_BYTE},
+    {"callbackTmCurve", ICAMERA_TYPE_BYTE},
+    {"toneMapCurve", ICAMERA_TYPE_FLOAT},
+    {"powerMode", ICAMERA_TYPE_BYTE},
+    // ENABLE_EVCP_S
+    {"icCaps", ICAMERA_TYPE_INT32},
+    // ENABLE_EVCP_E
+    // ENABLE_EVCP_S
+    {"icPeaceFeatures", ICAMERA_TYPE_INT32},
+    // ENABLE_EVCP_E
+    // ENABLE_EVCP_S
+    {"icEccMode", ICAMERA_TYPE_BYTE},
+    // ENABLE_EVCP_E
+    // ENABLE_EVCP_S
+    {"icBcMode", ICAMERA_TYPE_BYTE},
+    // ENABLE_EVCP_E
+    // ENABLE_EVCP_S
+    {"icBrParameters", ICAMERA_TYPE_INT32},
+    // ENABLE_EVCP_E
+    // ENABLE_EVCP_S
+    {"icUfMode", ICAMERA_TYPE_BYTE},
+    // ENABLE_EVCP_E
+    {"totalExposureTarget", ICAMERA_TYPE_INT64},
+    {"totalExposureTargetRange", ICAMERA_TYPE_INT64},
+    {"rawDataOutput", ICAMERA_TYPE_BYTE},
 };
 
-tag_info_t *vendor_tag_info[INTEL_VENDOR_SECTION_COUNT] = {
+tag_info_t* vendor_tag_info[INTEL_VENDOR_SECTION_COUNT] = {
     intel_vendor_camera,
 };
 
-int vendor_metadata_enum_snprint(uint32_t tag,
-                                  int32_t value,
-                                  char *dst,
-                                  size_t size) {
-    const char *msg = "error: not an enum";
+int vendor_metadata_enum_snprint(uint32_t tag, int32_t value, char* dst, size_t size) {
+    const char* msg = "error: not an enum";
     int ret = -1;
 
-    switch(tag) {
+    switch (tag) {
         case INTEL_VENDOR_CAMERA_CALLBACK_RGBS: {
             switch (value) {
                 case INTEL_VENDOR_CAMERA_CALLBACK_RGBS_FALSE:
@@ -143,17 +139,17 @@ int vendor_metadata_enum_snprint(uint32_t tag,
             }
             break;
         }
-// ENABLE_EVCP_S
+            // ENABLE_EVCP_S
         case INTEL_VENDOR_CAMERA_IC_CAPS: {
             break;
         }
-// ENABLE_EVCP_E
-// ENABLE_EVCP_S
+            // ENABLE_EVCP_E
+            // ENABLE_EVCP_S
         case INTEL_VENDOR_CAMERA_IC_PEACE_FEATURES: {
             break;
         }
-// ENABLE_EVCP_E
-// ENABLE_EVCP_S
+            // ENABLE_EVCP_E
+            // ENABLE_EVCP_S
         case INTEL_VENDOR_CAMERA_IC_ECC_MODE: {
             switch (value) {
                 case INTEL_VENDOR_CAMERA_IC_ECC_MODE_OFF:
@@ -169,8 +165,8 @@ int vendor_metadata_enum_snprint(uint32_t tag,
             }
             break;
         }
-// ENABLE_EVCP_E
-// ENABLE_EVCP_S
+            // ENABLE_EVCP_E
+            // ENABLE_EVCP_S
         case INTEL_VENDOR_CAMERA_IC_BC_MODE: {
             switch (value) {
                 case INTEL_VENDOR_CAMERA_IC_BC_MODE_OFF:
@@ -190,20 +186,20 @@ int vendor_metadata_enum_snprint(uint32_t tag,
             }
             break;
         }
-// ENABLE_EVCP_E
-// ENABLE_EVCP_S
+            // ENABLE_EVCP_E
+            // ENABLE_EVCP_S
         case INTEL_VENDOR_CAMERA_IC_BR_PARAMETERS: {
             break;
         }
-// ENABLE_EVCP_E
-// ENABLE_EVCP_S
-        case INTEL_VENDOR_CAMERA_IC_FF_MODE: {
+            // ENABLE_EVCP_E
+            // ENABLE_EVCP_S
+        case INTEL_VENDOR_CAMERA_IC_UF_MODE: {
             switch (value) {
-                case INTEL_VENDOR_CAMERA_IC_FF_MODE_OFF:
+                case INTEL_VENDOR_CAMERA_IC_UF_MODE_OFF:
                     msg = "OFF";
                     ret = 0;
                     break;
-                case INTEL_VENDOR_CAMERA_IC_FF_MODE_AUTO:
+                case INTEL_VENDOR_CAMERA_IC_UF_MODE_AUTO:
                     msg = "AUTO";
                     ret = 0;
                     break;
@@ -212,7 +208,7 @@ int vendor_metadata_enum_snprint(uint32_t tag,
             }
             break;
         }
-// ENABLE_EVCP_E
+            // ENABLE_EVCP_E
         case INTEL_VENDOR_CAMERA_TOTAL_EXPOSURE_TARGET: {
             break;
         }
@@ -234,7 +230,6 @@ int vendor_metadata_enum_snprint(uint32_t tag,
             }
             break;
         }
-
     }
 
     snprintf(dst, size, "%s", msg);
@@ -242,4 +237,3 @@ int vendor_metadata_enum_snprint(uint32_t tag,
 
     return ret;
 }
-

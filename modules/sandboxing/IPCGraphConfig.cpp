@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2021 Intel Corporation
+ * Copyright (C) 2019-2022 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -167,13 +167,15 @@ bool IPCGraphConfig::serverFlattenGetGraphData(void* pData, uint32_t size,
 
     params->mcId = graphData.mcId;
     params->graphId = graphData.graphId;
-    params->gdcKernelId = graphData.gdcKernelId;
 
     params->csiReso = graphData.csiReso;
-    params->gdcReso = graphData.gdcReso;
 
-    LOG1("@%s, mcId: %d, graphId: %d, gdcKernelId: %d", __func__, params->mcId, params->graphId,
-         params->gdcKernelId);
+    LOG1("@%s, mcId: %d, graphId: %d", __func__, params->mcId, params->graphId);
+
+    params->gdcInfoNum = graphData.gdcInfos.size();
+    for (size_t i = 0; i < graphData.gdcInfos.size(); ++i) {
+        params->mGdcInfo[i] = graphData.gdcInfos[i];
+    }
 
     params->streamIdNum = graphData.streamIds.size();
     for (size_t i = 0; i < graphData.streamIds.size(); ++i) {
@@ -258,13 +260,14 @@ bool IPCGraphConfig::clientUnflattenGetGraphData(void* pData, uint32_t size,
 
     graphData->mcId = params->mcId;
     graphData->graphId = params->graphId;
-    graphData->gdcKernelId = params->gdcKernelId;
 
     graphData->csiReso = params->csiReso;
-    graphData->gdcReso = params->gdcReso;
 
-    LOG1("@%s, mcId: %d, graphId: %d, gdcKernelId: %d", __func__, params->mcId, params->graphId,
-         params->gdcKernelId);
+    LOG1("@%s, mcId: %d, graphId: %d", __func__, params->mcId, params->graphId);
+
+    for (size_t i = 0; i < params->gdcInfoNum; i++) {
+        graphData->gdcInfos.push_back(params->mGdcInfo[i]);
+    }
 
     for (size_t i = 0; i < params->streamIdNum; ++i) {
         graphData->streamIds.push_back(params->streamIdData[i]);

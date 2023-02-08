@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Intel Corporation.
+ * Copyright (C) 2020-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,6 +59,9 @@ class IntelCca {
     ia_err getAiqd(cca::cca_aiqd* aiqd);
     ia_err updateTuning(uint8_t lardTags, const ia_lard_input_params& lardParams,
                         const cca::cca_nvm& nvm, int32_t streamId);
+    // PRIVACY_MODE_S
+    ia_err getBrightestIndex(uint32_t *outMaxBin);
+    // PRIVACY_MODE_E
 
     bool allocStatsDataMem(unsigned int size);
     void* getStatsDataBuffer();

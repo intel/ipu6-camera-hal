@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Intel Corporation.
+ * Copyright (C) 2015-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -138,6 +138,17 @@ class AiqCore {
 
     int calculateDepthOfField(const cca::cca_af_results& afResults, camera_range_t* focusRange);
     int initAiqPlusParams();
+
+    // PRIVACY_MODE_S
+    /**
+     * \brief Get the brightest index in histogram
+     *
+     * \param param: brightest index
+     *
+     * \return OK if succeed, other value indicates failed
+     */
+    int getBrightestIndex(uint32_t& param);
+    // PRIVACY_MODE_E
 
     struct RunRateInfo {
         int runCcaTime;   // cca (like runAEC, runAIQ) running time after converged

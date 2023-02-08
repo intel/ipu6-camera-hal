@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2022 Intel Corporation.
+ * Copyright (C) 2015-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,6 +70,10 @@ class AiqUnitBase {
     }
     // INTEL_DVS_E
 
+    // PRIVACY_MODE_S
+    virtual EventSource* get3AReadyEventSource() { return nullptr; }
+    // PRIVACY_MODE_E
+
     virtual int setParameters(const Parameters& /*params*/) { return OK; }
 
  private:
@@ -135,6 +139,13 @@ class AiqUnit : public AiqUnitBase {
      */
     std::vector<EventListener*> getDVSEventListener();
     // INTEL_DVS_E
+
+    // PRIVACY_MODE_S
+    /**
+     * \brief Get EVENT_3A_READY EventSource
+     */
+    EventSource* get3AReadyEventSource();
+    // PRIVACY_MODE_E
 
     /**
      * \brief Set 3A Parameters

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2021 Intel Corporation.
+ * Copyright (C) 2019-2022 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -90,10 +90,11 @@ struct GraphGetDataParams {
 
     int mcId;
     int graphId;
-    uint32_t gdcKernelId;
 
     camera_resolution_t csiReso;
-    ia_isp_bxt_resolution_info_t gdcReso;
+
+    uint32_t gdcInfoNum;
+    IGraphType::GdcInfo mGdcInfo[MAX_STREAM];
 
     uint32_t streamIdNum;
     int32_t streamIdData[MAX_STREAM];

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<!-- Copyright (C) 2020-2021 Intel Corporation.
+<!-- Copyright (C) 2020-2023 Intel Corporation.
 
      Licensed under the Apache License, Version 2.0 (the "License");
      you may not use this file except in compliance with the License.
@@ -178,6 +178,7 @@
         <pslOutputMapForRotation value="1280x720@1280x720,640x480@640x480,320x240@640x480"/>
 
         <maxRequestsInflight value="5"/>
+        <supportPrivacy value="1"/> <!-- privacy mode, 0: off, 1: CVF privacy 2: AE-based privacy -->
     </Sensor>
 </CameraSettings>
 

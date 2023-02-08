@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2022 Intel Corporation.
+ * Copyright (C) 2015-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -185,6 +185,9 @@ struct CommonConfig {
     // ENABLE_EVCP_S
     bool isGpuEvcpEnabled;
     // ENABLE_EVCP_E
+    // LEVEL0_ICBM_S
+    bool isGPUICBMEnabled;
+    // LEVEL0_ICBM_E
 
     CommonConfig() {
         xmlVersion = 1.0;
@@ -200,6 +203,9 @@ struct CommonConfig {
         // ENABLE_EVCP_S
         isGpuEvcpEnabled = false;
         // ENABLE_EVCP_E
+        // LEVEL0_ICBM_S
+        isGPUICBMEnabled = false;
+        // LEVEL0_ICBM_E
     }
 };
 
@@ -253,5 +259,16 @@ typedef enum {
     COUPLED,
     DISPERSED,
 } GraphSettingType;
+
+// PRIVACY_MODE_S
+/**
+ * Indicates which privacy mode the camera supports
+ */
+typedef enum {
+    NO_PRIVACY_MODE = 0,
+    CVF_BASED_PRIVACY_MODE = 1,
+    AE_BASED_PRIVACY_MODE = 2,
+} PrivacyModeType;
+// PRIVACY_MODE_E
 
 } /* namespace icamera */

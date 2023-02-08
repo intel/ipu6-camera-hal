@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013-2022 Intel Corporation
+ * Copyright (C) 2013-2023 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -200,7 +200,7 @@ icamera::status_t Camera3Buffer::init(const camera3_stream_t* stream, buffer_han
     mHalBuffer.s.width = stream->width;
     mHalBuffer.s.height = stream->height;
     mFormat = stream->format;
-    mHalBuffer.s.memType = V4L2_MEMORY_USERPTR;
+    mHalBuffer.s.memType = V4L2_MEMORY_DMABUF;
     mHalBuffer.s.format = mGbmBufferManager->GetV4L2PixelFormat(handle);
     // Use actual width from platform native handle for stride
     mHalBuffer.s.stride = mGbmBufferManager->GetPlaneStride(handle, 0);

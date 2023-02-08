@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Intel Corporation
+ * Copyright (C) 2015-2022 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -120,7 +120,7 @@ class GraphConfigImpl {
     status_t queryAllMatchedResults(const std::vector<HalStream*>& activeStreams,
                                     bool dummyStillSink,
                                     std::map<int, std::vector<GCSS::IGraphConfig*>>* queryResults);
-    status_t getGdcKernelSetting(uint32_t* kernelId, ia_isp_bxt_resolution_info_t* resolution);
+    status_t getGdcKernelSetting(std::vector<IGraphType::GdcInfo>* gdcInfos);
     status_t graphGetStreamIds(std::vector<int32_t>* streamIds);
     int getStreamIdByPgName(std::string pgName);
     int getPgIdByPgName(std::string pgName);
