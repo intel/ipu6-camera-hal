@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2021 Intel Corporation
+ * Copyright (C) 2018-2022 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -444,73 +444,62 @@ const ia_isp_bxt_resolution_info_t* GraphConfigPipe::getScalerKernelResolutionIn
     return getKernelResolutionInfo(streamIdTmp, kernelId);
 }
 
-const ia_isp_bxt_resolution_info_t* GraphConfigPipe::getGdcKernelResolutionInfo(
-    uint32_t* kernelId) {
-    CheckAndLogError(!kernelId, nullptr, "%s the kernelId is nullptr", __func__);
+bool GraphConfigPipe::getGdcKernelId(uint32_t* kernelId, int32_t streamId) {
+    if (isKernelInStream(streamId, ia_pal_uuid_isp_gdc3_1)) {
+        LOG2("%s, found gdc3_1 from stream %d", __func__, streamId);
+        *kernelId = ia_pal_uuid_isp_gdc3_1;
+        return true;
+    } else if (isKernelInStream(streamId, ia_pal_uuid_isp_gdc3)) {
+        LOG2("%s, found gdc3 from stream %d", __func__, streamId);
+        *kernelId = ia_pal_uuid_isp_gdc3;
+        return true;
+    } else if (isKernelInStream(streamId, ia_pal_uuid_isp_gdc3_1_1)) {
+        LOG2("%s, found gdc3_1_1 from stream %d", __func__, streamId);
+        *kernelId = ia_pal_uuid_isp_gdc3_1_1;
+        return true;
+    } else if (isKernelInStream(streamId, ia_pal_uuid_isp_gdc5)) {
+        LOG2("%s, found gdc5 from stream %d", __func__, streamId);
+        *kernelId = ia_pal_uuid_isp_gdc5;
+        return true;
+    }
+
+    return false;
+}
+
+void GraphConfigPipe::getGdcKernelResolutionInfo(std::vector<IGraphType::GdcInfo>* gdcInfos) {
+    CheckAndLogError(!gdcInfos, VOID_VALUE, "%s, the gdcInfos is nullptr", __func__);
 
     std::vector<int32_t> streamIds;
     // Get all stream IDs
-    status_t ret = graphGetStreamIds(&streamIds);
-    CheckWarning((ret != OK || streamIds.empty()), nullptr, "Failed to get the PG streamIds");
+    graphGetStreamIds(&streamIds);
+    if (streamIds.empty()) return;
 
-    *kernelId = ia_pal_uuid_isp_gdc3;
-    int32_t gdcStreamId = VIDEO_STREAM_ID;
-    LOG2("%s, initalize gdc video stream as default", __func__);
-
-    // Check video stream for gdc version firstly,
-    // in case more than one stream contain gdc kernel.
-    bool hasVideoGdc = false;
+    uint32_t kernelId = ia_pal_uuid_isp_gdc3;
     for (auto streamId : streamIds) {
-        if (isKernelInStream(streamId, ia_pal_uuid_isp_gdc3_1)) {
-            LOG2("%s, found gdc3_1 from stream %d", __func__, streamId);
-            gdcStreamId = streamId;
-            *kernelId = ia_pal_uuid_isp_gdc3_1;
-            if (streamId == VIDEO_STREAM_ID) hasVideoGdc = true;
-        } else if (isKernelInStream(streamId, ia_pal_uuid_isp_gdc3)) {
-            LOG2("%s, found gdc3 from stream %d", __func__, streamId);
-            gdcStreamId = streamId;
-            *kernelId = ia_pal_uuid_isp_gdc3;
-            if (streamId == VIDEO_STREAM_ID) hasVideoGdc = true;
-        } else if (isKernelInStream(streamId, ia_pal_uuid_isp_gdc3_1_1)) {
-            LOG2("%s, found gdc3_1_1 from stream %d", __func__, streamId);
-            gdcStreamId = streamId;
-            *kernelId = ia_pal_uuid_isp_gdc3_1_1;
-            if (streamId == VIDEO_STREAM_ID) hasVideoGdc = true;
-        } else if (isKernelInStream(streamId, ia_pal_uuid_isp_gdc5)) {
-            LOG2("%s, found gdc5 from stream %d", __func__, streamId);
-            gdcStreamId = streamId;
-            *kernelId = ia_pal_uuid_isp_gdc5;
-            if (streamId == VIDEO_STREAM_ID) hasVideoGdc = true;
+        bool hasGdcKernel = getGdcKernelId(&kernelId, streamId);
+        if (!hasGdcKernel) continue;
+
+        IGraphType::GdcInfo gdcInfo;
+        auto info = getKernelResolutionInfo(streamId, kernelId);
+        if (info) {
+            gdcInfo.streamId = streamId;
+            gdcInfo.gdcKernelId = kernelId;
+            gdcInfo.gdcReso = *info;
+            // push video stream as the first one item
+            if (streamId == VIDEO_STREAM_ID) {
+                gdcInfos->insert(gdcInfos->begin(), gdcInfo);
+            } else {
+                gdcInfos->push_back(gdcInfo);
+            }
+
+            LOG2("%s: kernel %d, inResolution %dx%d, outResolution %dx%d", __func__, kernelId,
+                 info->input_width, info->input_height, info->output_width, info->output_height);
+            LOG2("%s: kernel %d, inCrop %d,%d,%d,%d; outCrop %d,%d,%d,%d", __func__, kernelId,
+                 info->input_crop.left, info->input_crop.top, info->input_crop.right,
+                 info->input_crop.bottom, info->output_crop.left, info->output_crop.top,
+                 info->output_crop.right, info->output_crop.bottom);
         }
-        if (hasVideoGdc) break;
     }
-
-    // Get resolution as per above kernel and stream
-    return getKernelResolutionInfo(gdcStreamId, *kernelId);
-}
-
-status_t GraphConfigPipe::getGdcKernelSetting(uint32_t* kernelId,
-                                              ia_isp_bxt_resolution_info_t* resolution) {
-    CheckAndLogError(!kernelId || !resolution, UNKNOWN_ERROR,
-                     "%s, the kernelId or resolution is nullptr", __func__);
-
-    // Get resolution as per above kernel and stream
-    const ia_isp_bxt_resolution_info_t* gdcResolution = getGdcKernelResolutionInfo(kernelId);
-    CheckWarning(!gdcResolution, NO_ENTRY, "Couldn't get the GDC resolution in current pipe: %d",
-                 mPipeUseCase);
-
-    *resolution = *gdcResolution;
-
-    LOG2("%s: kernel %d, inResolution %dx%d, outResolution %dx%d", __func__, *kernelId,
-         resolution->input_width, resolution->input_height, resolution->output_width,
-         resolution->output_height);
-
-    LOG2("%s: kernel %d, inputCrop %d,%d,%d,%d; outputCrop %d,%d,%d,%d", __func__, *kernelId,
-         resolution->input_crop.left, resolution->input_crop.top, resolution->input_crop.right,
-         resolution->input_crop.bottom, resolution->output_crop.left, resolution->output_crop.top,
-         resolution->output_crop.right, resolution->output_crop.bottom);
-
-    return OK;
 }
 
 const ia_isp_bxt_resolution_info_t* GraphConfigPipe::getKernelResolutionInfo(uint32_t streamId,
@@ -540,7 +529,7 @@ const ia_isp_bxt_resolution_info_t* GraphConfigPipe::getKernelResolutionInfo(uin
  * \return false the kernel isn't in this stream.
  *
  */
-bool GraphConfigPipe::isKernelInStream(uint32_t streamId, uint32_t kernelId) {
+bool GraphConfigPipe::isKernelInStream(int32_t streamId, uint32_t kernelId) {
     ia_isp_bxt_program_group* programGroup = getProgramGroup(streamId);
     if (programGroup == nullptr) {
         return false;
@@ -999,22 +988,25 @@ status_t GraphConfigPipe::getScalerByStreamId(
             LOG2("%s, ppp ratio, osW:%f, osH:%f", __func__, osW, osH);
         }
 
-        uint32_t kernelId;
         float gdcScalerW = 1;
         float gdcScalerH = 1;
-        const ia_isp_bxt_resolution_info_t* gdcResolution = getGdcKernelResolutionInfo(&kernelId);
-        if ((gdcResolution) && ((gdcResolution->input_width != gdcResolution->output_width) ||
-                                (gdcResolution->input_height != gdcResolution->output_height))) {
-            const ia_rectangle* input_crop = &gdcResolution->input_crop;
-            const ia_rectangle* output_crop = &gdcResolution->output_crop;
-            if (((input_crop->left == 0) && (input_crop->top == 0) && (input_crop->right == 0) &&
-                 (input_crop->bottom == 0)) &&
-                ((output_crop->left == 0) && (output_crop->top == 0) && (output_crop->right == 0) &&
-                 (output_crop->bottom == 0))) {
-                gdcScalerW = static_cast<float>(gdcResolution->input_width) /
-                             static_cast<float>(gdcResolution->output_width);
-                gdcScalerH = static_cast<float>(gdcResolution->input_height) /
-                             static_cast<float>(gdcResolution->output_height);
+        std::vector<IGraphType::GdcInfo> gdcInfos;
+        getGdcKernelResolutionInfo(&gdcInfos);
+        if (!gdcInfos.empty()) {
+            auto& gdcResolution = gdcInfos.begin()->gdcReso;
+            if ((gdcResolution.input_width != gdcResolution.output_width) ||
+                (gdcResolution.input_height != gdcResolution.output_height)) {
+                const ia_rectangle* input_crop = &gdcResolution.input_crop;
+                const ia_rectangle* output_crop = &gdcResolution.output_crop;
+                if (((input_crop->left == 0) && (input_crop->top == 0) &&
+                     (input_crop->right == 0) && (input_crop->bottom == 0)) &&
+                    ((output_crop->left == 0) && (output_crop->top == 0) &&
+                     (output_crop->right == 0) &&(output_crop->bottom == 0))) {
+                    gdcScalerW = static_cast<float>(gdcResolution.input_width) /
+                                 static_cast<float>(gdcResolution.output_width);
+                    gdcScalerH = static_cast<float>(gdcResolution.input_height) /
+                                 static_cast<float>(gdcResolution.output_height);
+                }
             }
         }
         LOG2("%s, gdc ratio, gdcScalerW:%f, gdcScalerH:%f", __func__, gdcScalerW, gdcScalerH);

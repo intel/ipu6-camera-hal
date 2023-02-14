@@ -2123,11 +2123,11 @@ int Parameters::getEvcpBRParameters(int* height, int* width, int* fd) const {
 
 int Parameters::setEvcpFFMode(uint8_t mode) {
     ParameterHelper::AutoWLock wl(mData);
-    return ParameterHelper::getMetadata(mData).update(INTEL_VENDOR_CAMERA_IC_FF_MODE, &mode, 1);
+    return ParameterHelper::getMetadata(mData).update(INTEL_VENDOR_CAMERA_IC_UF_MODE, &mode, 1);
 }
 int Parameters::getEvcpFFMode(uint8_t* mode) const {
     ParameterHelper::AutoRLock rl(mData);
-    auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_VENDOR_CAMERA_IC_FF_MODE);
+    auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_VENDOR_CAMERA_IC_UF_MODE);
 
     if (entry.count != 1) {
         return NAME_NOT_FOUND;

@@ -72,6 +72,8 @@ message(STATUS "install prefix: " ${CMAKE_INSTALL_PREFIX})
 
 #------------------------- Compilation settings -------------------------
 
+include(GNUInstallDirs)
+
 # -fPIC in xos way
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
@@ -247,13 +249,23 @@ endif() #ENABLE_SANDBOXING
     set(LIBCAMHAL_SRCS ${LIBCAMHAL_SRCS} ${IIO_SRCS})
 
 # Add libcamhal using the specified sources
-add_library(camhal SHARED ${LIBCAMHAL_SRCS})
+if (${CMAKE_VERSION} VERSION_LESS 3.11)
+    add_library(camhal SHARED ${LIBCAMHAL_SRCS})
+else()
+    add_library(camhal SHARED $<TARGET_OBJECTS:camhal_static>)
+endif()
+
 add_library(camhal_static STATIC ${LIBCAMHAL_SRCS})
 set_target_properties(camhal_static PROPERTIES OUTPUT_NAME "camhal")
 
 #---------------------------- Link settings ----------------------------
 target_link_libraries(camhal ${CMAKE_DL_LIBS})
 target_link_libraries(camhal_static ${CMAKE_DL_LIBS})
+
+set (THREADS_PREFER_PTHREAD_FLAG ON)
+find_package (Threads REQUIRED)
+target_link_libraries(camhal ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(camhal_static ${CMAKE_THREAD_LIBS_INIT})
 
 target_link_libraries(camhal expat rt)
 target_link_libraries(camhal_static expat rt)
@@ -396,6 +408,12 @@ elseif("${IPU_VER}" STREQUAL "ipu6epmtl")
     if("${PRODUCTION_NAME}" STREQUAL "mtl-ubuntu")
         message("Install MTL ubuntu configure files")
         install(DIRECTORY config/ubuntu/mtl/ DESTINATION share/defaults/etc/camera)
+    elseif("${PRODUCTION_NAME}" STREQUAL "mtl-iotg")
+        message("Install MTL iotg configure files")
+        install(DIRECTORY config/linux/ipu6ep/ DESTINATION share/defaults/etc/camera)
+    else()
+        message("Install MTL configure files")
+        install(DIRECTORY config/linux/ipu6ep/ DESTINATION share/defaults/etc/camera)
     endif()
 elseif("${IPU_VER}" STREQUAL "ipu6sepla")
     if("${PRODUCTION_NAME}" STREQUAL "penguin_peak")
@@ -408,15 +426,20 @@ else()
 endif()
 
 # Install libraries
+if (${CMAKE_VERSION} VERSION_LESS 3.11)
 install(TARGETS camhal camhal_static
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib
         )
+else()
+install(TARGETS camhal camhal_static)
+endif()
 
 # Install package config file
 configure_file(${PROJECT_SOURCE_DIR}/cmake/libcamhal.pc.cmakein
                ${PROJECT_SOURCE_DIR}/libcamhal.pc @ONLY)
-install(FILES libcamhal.pc DESTINATION lib/pkgconfig)
+install(FILES libcamhal.pc
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 
 endif() #NOT CAL_BUILD
 

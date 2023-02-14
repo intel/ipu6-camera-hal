@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2022 Intel Corporation.
+ * Copyright (C) 2015-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1639,5 +1639,14 @@ class PlatformData {
      * \return if reset links and routes
      */
     static bool isResetLinkRoute(int cameraId);
+
+    // LEVEL0_ICBM_S
+    /**
+     * Check GPU ICBM is enabled or not
+     *
+     * \return true if ICBM is enabled.
+     */
+    static bool isGPUICBMEnabled();
+    // LEVEL0_ICBM_E
 };
 } /* namespace icamera */

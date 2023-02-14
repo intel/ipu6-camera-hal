@@ -918,7 +918,7 @@ int PipeLiteExecutor::notifyStatsDone(TuningMode tuningMode, const v4l2_buffer_t
 
         // Decode the statistics data
         if (eventType[statsIndex] == EVENT_PSYS_STATS_BUF_READY) {
-            mAdaptor->decodeStatsData(tuningMode, statsBuf, mGraphConfig);
+            mAdaptor->decodeStatsData(tuningMode, statsBuf, mStreamId);
             psysStatBufferCount--;
         }
 

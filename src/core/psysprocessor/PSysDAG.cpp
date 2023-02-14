@@ -744,11 +744,12 @@ void PSysDAG::onStatsDone(int64_t sequence) {
 int PSysDAG::prepareIpuParams(int64_t sequence, bool forceUpdate, TaskInfo* task, bool runNext) {
     TRACE_LOG_PROCESS("PSysDAG", __func__, MAKE_COLOR(sequence), sequence);
 
+    {
+    AutoMutex taskLock(mTaskLock);
     CheckAndLogError(mOngoingTasks.empty(), UNKNOWN_ERROR, "no ongoing task!");
     if (runNext) task = &mOngoingTasks[mOngoingTasks.size() - 1];
 
     if (task == nullptr) {
-        AutoMutex taskLock(mTaskLock);
         for (size_t i = 0; i < mOngoingTasks.size(); i++) {
             if (sequence ==
                 mOngoingTasks[i].mTaskData.mInputBuffers.at(mDefaultMainInputPort)->getSequence()) {
@@ -757,6 +758,8 @@ int PSysDAG::prepareIpuParams(int64_t sequence, bool forceUpdate, TaskInfo* task
             }
         }
     }
+    }
+
     CheckAndLogError(!task, UNKNOWN_ERROR, "%s, <seq%ld> Failed to find the task", __func__,
                      sequence);
 

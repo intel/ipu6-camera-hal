@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2021 Intel Corporation
+ * Copyright (C) 2018-2022 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -166,24 +166,31 @@ struct TuningModeInfo {
     int32_t tuningMode;
 };
 
+struct GdcInfo {
+    int32_t streamId;
+    uint32_t gdcKernelId;
+    ia_isp_bxt_resolution_info_t gdcReso;
+    GdcInfo() : streamId(0), gdcKernelId(-1) {
+        CLEAR(gdcReso);
+    }
+};
+
 struct GraphConfigData {
     int mcId;
     int graphId;
-    uint32_t gdcKernelId;
     // DOL_FEATURE_S
     DolInfo dolInfo;
     // DOL_FEATURE_E
     camera_resolution_t csiReso;
-    ia_isp_bxt_resolution_info_t gdcReso;
+    std::vector<GdcInfo> gdcInfos;
     std::vector<int32_t> streamIds;
     std::vector<PgInfo> pgInfo;
     std::vector<MbrInfo> mbrInfo;
     std::vector<std::string> pgNames;
     std::vector<ProgramGroupInfo> programGroup;
     std::vector<TuningModeInfo> tuningModes;
-    GraphConfigData() : mcId(-1), graphId(-1), gdcKernelId(-1) {
+    GraphConfigData() : mcId(-1), graphId(-1) {
         CLEAR(csiReso);
-        CLEAR(gdcReso);
     }
 };
 
@@ -205,7 +212,8 @@ class IGraphConfig {
 
     virtual void getCSIOutputResolution(camera_resolution_t& reso) = 0;
     virtual status_t getGdcKernelSetting(uint32_t* kernelId,
-                                         ia_isp_bxt_resolution_info_t* resolution) = 0;
+                                         ia_isp_bxt_resolution_info_t* resolution,
+                                         int32_t streamId = VIDEO_STREAM_ID) = 0;
     virtual status_t graphGetStreamIds(std::vector<int32_t>& streamIds) = 0;
     virtual int getGraphId(void) = 0;
     virtual int getStreamIdByPgName(std::string pgName) = 0;

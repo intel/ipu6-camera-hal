@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2021 Intel Corporation
+ * Copyright (C) 2019-2022 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,7 +60,8 @@ class GraphConfig : public IGraphConfig {
     virtual void getCSIOutputResolution(camera_resolution_t& reso) { reso = mGraphData.csiReso; }
 
     virtual status_t getGdcKernelSetting(uint32_t* kernelId,
-                                         ia_isp_bxt_resolution_info_t* resolution);
+                                         ia_isp_bxt_resolution_info_t* resolution,
+                                         int32_t streamId = VIDEO_STREAM_ID);
     virtual status_t graphGetStreamIds(std::vector<int32_t>& streamIds);
     virtual int getStreamIdByPgName(std::string pgName);
     virtual int getPgIdByPgName(std::string pgName);
