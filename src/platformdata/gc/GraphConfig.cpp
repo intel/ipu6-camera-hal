@@ -76,21 +76,26 @@ status_t GraphConfig::configStreams(const vector<HalStream*>& activeStreams) {
 }
 
 status_t GraphConfig::getGdcKernelSetting(uint32_t* kernelId,
-                                          ia_isp_bxt_resolution_info_t* resolution) {
+                                          ia_isp_bxt_resolution_info_t* resolution,
+                                          int32_t streamId) {
     CheckAndLogError(!kernelId || !resolution, UNKNOWN_ERROR, "kernelId or resolution is nullptr");
 
-    if ((mGraphData.gdcReso.input_width == 0) || (mGraphData.gdcReso.input_height == 0) ||
-        (mGraphData.gdcReso.output_width == 0) || (mGraphData.gdcReso.output_height == 0)) {
-        LOG2("%s, Failed to get gdc InReso: w: %d, h: %d; OutReso: w: %d, h: %d; ", __func__,
-             mGraphData.gdcReso.input_width, mGraphData.gdcReso.input_height,
-             mGraphData.gdcReso.output_width, mGraphData.gdcReso.output_height);
-        return NO_ENTRY;
+    for (const auto& item : mGraphData.gdcInfos) {
+        if (item.streamId == streamId) {
+            if ((item.gdcReso.input_width == 0) || (item.gdcReso.input_height == 0) ||
+                (item.gdcReso.output_width == 0) || (item.gdcReso.output_height == 0)) {
+                LOG2("%s, Failed to get gdc InReso: w: %d, h: %d; OutReso: w: %d, h: %d", __func__,
+                     item.gdcReso.input_width, item.gdcReso.input_height,
+                     item.gdcReso.output_width, item.gdcReso.output_height);
+                return NO_ENTRY;
+            }
+            *kernelId = item.gdcKernelId;
+            *resolution = item.gdcReso;
+            return OK;
+        }
     }
 
-    *kernelId = mGraphData.gdcKernelId;
-    *resolution = mGraphData.gdcReso;
-
-    return OK;
+    return INVALID_OPERATION;
 }
 
 status_t GraphConfig::graphGetStreamIds(vector<int32_t>& streamIds) {

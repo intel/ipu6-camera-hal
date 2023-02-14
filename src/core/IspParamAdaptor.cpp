@@ -310,7 +310,7 @@ int IspParamAdaptor::configure(const stream_t& stream, ConfigMode configMode, Tu
 
 int IspParamAdaptor::decodeStatsData(TuningMode tuningMode,
                                      std::shared_ptr<CameraBuffer> statsBuffer,
-                                     std::shared_ptr<IGraphConfig> graphConfig) {
+                                     int32_t streamId) {
     CheckAndLogError(mIspAdaptorState != ISP_ADAPTOR_CONFIGURED, INVALID_OPERATION,
                      "%s, wrong state %d", __func__, mIspAdaptorState);
     CheckAndLogError(!mIntelCca, UNKNOWN_ERROR, "%s, mIntelCca is nullptr", __func__);
@@ -333,6 +333,7 @@ int IspParamAdaptor::decodeStatsData(TuningMode tuningMode,
     aiqStatistics->mTimestamp = TIMEVAL2USECS(statsBuffer->getTimestamp());
     aiqStatistics->mTuningMode = tuningMode;
     aiqStatistics->mPendingDecode = false;
+    aiqStatistics->mStreamId = streamId;
     if (PlatformData::isStatsRunningRateSupport(mCameraId) && !outStats->get_rgbs_stats) {
         aiqStatistics->mPendingDecode = true;
     }

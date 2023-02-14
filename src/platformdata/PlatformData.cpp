@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2022 Intel Corporation.
+ * Copyright (C) 2015-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -102,7 +102,7 @@ int PlatformData::init() {
 
     StaticCfg* staticCfg = &(getInstance()->mStaticCfg);
     for (size_t i = 0; i < staticCfg->mCameras.size(); i++) {
-        std::string& camModuleName = staticCfg->mCameras[i].mCamModuleName;
+        const std::string& camModuleName = staticCfg->mCameras[i].mCamModuleName;
         AiqInitData* aiqInitData = new AiqInitData(
             staticCfg->mCameras[i].sensorName, getCameraCfgPath(),
             staticCfg->mCameras[i].mSupportedTuningConfig, staticCfg->mCameras[i].mNvmDirectory,
@@ -1577,6 +1577,9 @@ bool PlatformData::isUsingGpuAlgo() {
     // ENABLE_EVCP_S
     enabled |= isGpuEvcpEnabled();
     // ENABLE_EVCP_E
+    // LEVEL0_ICBM_S
+    enabled |= isGPUICBMEnabled();
+    // LEVEL0_ICBM_E
     return enabled;
 }
 
@@ -1635,4 +1638,10 @@ bool PlatformData::getDisableBLCByAGain(int cameraId, int& low, int& high) {
 bool PlatformData::isResetLinkRoute(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mResetLinkRoute;
 }
+
+// LEVEL0_ICBM_S
+bool PlatformData::isGPUICBMEnabled() {
+    return getInstance()->mStaticCfg.mCommonConfig.isGPUICBMEnabled;
+}
+// LEVEL0_ICBM_E
 }  // namespace icamera
