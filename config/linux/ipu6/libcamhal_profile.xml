@@ -18,7 +18,7 @@
     <Common>
         <version value="1.0"/>
         <platform value="IPU6"/>
-        <cameraNumber value="1"/>
-        <availableSensors value="hm11b1-uf-1,ov01a1s-uf-1,tpg_ipu6"/>
+        <cameraNumber value="0"/>
+	<availableSensors value="ov13858-uf-1"/>
     </Common>
 </CameraSettings>
