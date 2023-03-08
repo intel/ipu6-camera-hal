@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2022 Intel Corporation
+ * Copyright (C) 2019-2023 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,20 +43,17 @@ enum IPC_CMD {
     IPC_CCA_CONSTRUCT,
     IPC_CCA_DESTRUCT,
     IPC_CCA_INIT,
-    IPC_CCA_SET_STATS,
     IPC_CCA_RUN_AEC,
     IPC_CCA_RUN_AIQ,
     IPC_CCA_RUN_LTM,
     IPC_CCA_UPDATE_ZOOM,
     IPC_CCA_RUN_DVS,
     IPC_CCA_GET_CMC,
-    IPC_CCA_GET_MKN,
     IPC_CCA_GET_AIQD,
     IPC_CCA_UPDATE_TUNING,
     IPC_CCA_DEINIT,
     IPC_CCA_RUN_AIC,
     IPC_CCA_GET_PAL_SIZE,
-    IPC_CCA_DECODE_STATS,
     IPC_PG_PARAM_INIT,
     IPC_PG_PARAM_PREPARE,
     IPC_PG_PARAM_ALLOCATE_PG,
@@ -102,7 +99,6 @@ enum IPC_GROUP {
     // IPC command group for cpu
     IPC_GROUP_AIQ,
     IPC_GROUP_PAL,
-    IPC_GROUP_STATS,
     IPC_GROUP_PSYS,
     IPC_GROUP_FD,
     IPC_GROUP_CPU_OTHER,

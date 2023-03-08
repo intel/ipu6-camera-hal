@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Intel Corporation.
+ * Copyright (C) 2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ ia_css_program_manifest_ext_t *ia_css_program_manifest_get_extension(const ia_cs
 EXIT:
     if (!noerror()) {
         IA_CSS_TRACE_0(PSYSAPI_STATIC, WARNING,
-                       "ia_css_program_manifest_get_extension invalid argument\n");
+            "ia_css_program_manifest_get_extension invalid argument\n");
     }
     return NULL;
 }
@@ -56,8 +56,8 @@ vied_nci_resource_size_t ia_css_program_manifest_get_int_mem_size(
     (void)manifest;
     (void)mem_type_id;
     IA_CSS_TRACE_0(PSYSAPI_STATIC, INFO,
-                   "ia_css_program_manifest_get_int_mem_size always returns 0"
-                   "(internally memory feature not used).\n");
+            "ia_css_program_manifest_get_int_mem_size always returns 0"
+            "(internally memory feature not used).\n");
     return 0;
 }
 
@@ -70,7 +70,7 @@ uint8_t ia_css_program_manifest_get_input_terminal_id(
     ia_css_program_manifest_ext_t *manifest_ext = NULL;
 
     IA_CSS_TRACE_0(PSYSAPI_STATIC, VERBOSE,
-                   "ia_css_program_manifest_get_input_stream_id(): enter:\n");
+               "ia_css_program_manifest_get_input_stream_id(): enter:\n");
     verifexitval(manifest != NULL, EFAULT);
     verifexitval(idx < IA_CSS_MAX_INPUT_DEC_RESOURCES, EFAULT);
     manifest_ext = ia_css_program_manifest_get_extension(manifest);
@@ -98,7 +98,7 @@ uint8_t ia_css_program_manifest_get_output_terminal_id(
     ia_css_program_manifest_ext_t *manifest_ext = NULL;
 
     IA_CSS_TRACE_0(PSYSAPI_STATIC, VERBOSE,
-                   "ia_css_program_manifest_get_output_terminal_id(): enter:\n");
+               "ia_css_program_manifest_get_output_terminal_id(): enter:\n");
     verifexitval(manifest != NULL, EFAULT);
     verifexitval(idx < IA_CSS_MAX_OUTPUT_DEC_RESOURCES, EFAULT);
     manifest_ext = ia_css_program_manifest_get_extension(manifest);
@@ -127,7 +127,7 @@ uint8_t ia_css_program_manifest_get_input_stream_id(
     ia_css_program_manifest_ext_t *manifest_ext = NULL;
 
     IA_CSS_TRACE_0(PSYSAPI_STATIC, VERBOSE,
-                   "ia_css_program_manifest_get_input_stream_id(): enter:\n");
+               "ia_css_program_manifest_get_input_stream_id(): enter:\n");
     verifexitval(manifest != NULL, EFAULT);
     verifexitval(idx < IA_CSS_MAX_INPUT_DEC_RESOURCES, EFAULT);
     manifest_ext = ia_css_program_manifest_get_extension(manifest);
@@ -155,7 +155,7 @@ uint8_t ia_css_program_manifest_get_output_stream_id(
     ia_css_program_manifest_ext_t *manifest_ext = NULL;
 
     IA_CSS_TRACE_0(PSYSAPI_STATIC, VERBOSE,
-                   "ia_css_program_manifest_get_output_stream_id(): enter:\n");
+               "ia_css_program_manifest_get_output_stream_id(): enter:\n");
     verifexitval(manifest != NULL, EFAULT);
     verifexitval(idx < IA_CSS_MAX_OUTPUT_DEC_RESOURCES, EFAULT);
     manifest_ext = ia_css_program_manifest_get_extension(manifest);
@@ -184,7 +184,7 @@ uint8_t ia_css_program_manifest_get_is_dfm_relocatable(
     ia_css_program_manifest_ext_t *manifest_ext = NULL;
 
     IA_CSS_TRACE_0(PSYSAPI_STATIC, VERBOSE,
-                   "ia_css_program_manifest_get_is_dfm_relocatable(): enter:\n");
+        "ia_css_program_manifest_get_is_dfm_relocatable(): enter:\n");
     verifexitval(manifest != NULL, EFAULT);
     verifexitval(dfm_type_id < VIED_NCI_N_DEV_DFM_ID, EFAULT);
     manifest_ext = ia_css_program_manifest_get_extension(manifest);
@@ -194,7 +194,7 @@ uint8_t ia_css_program_manifest_get_is_dfm_relocatable(
 EXIT:
     if (!noerror()) {
         IA_CSS_TRACE_0(PSYSAPI_STATIC, WARNING,
-                       "ia_css_program_manifest_get_is_dfm_relocatable invalid argument\n");
+         "ia_css_program_manifest_get_is_dfm_relocatable invalid argument\n");
         return 0;
     }
     return manifest_ext->is_dfm_relocatable[dfm_type_id];
@@ -209,7 +209,7 @@ vied_nci_resource_bitmap_t ia_css_program_manifest_get_dfm_port_bitmap(
     ia_css_program_manifest_ext_t *manifest_ext = NULL;
 
     IA_CSS_TRACE_0(PSYSAPI_STATIC, VERBOSE,
-                   "ia_css_program_manifest_get_dfm_port_bitmap(): enter:\n");
+        "ia_css_program_manifest_get_dfm_port_bitmap(): enter:\n");
     verifexitval(manifest != NULL, EFAULT);
     verifexitval(dfm_type_id < VIED_NCI_N_DEV_DFM_ID, EFAULT);
     manifest_ext = ia_css_program_manifest_get_extension(manifest);
@@ -219,7 +219,7 @@ vied_nci_resource_bitmap_t ia_css_program_manifest_get_dfm_port_bitmap(
 EXIT:
     if (!noerror()) {
         IA_CSS_TRACE_0(PSYSAPI_STATIC, WARNING,
-                       "ia_css_program_manifest_get_dfm_port_bitmap invalid argument\n");
+         "ia_css_program_manifest_get_dfm_port_bitmap invalid argument\n");
         return 0;
     }
     return manifest_ext->dfm_port_bitmap[dfm_type_id];
@@ -234,7 +234,7 @@ vied_nci_resource_bitmap_t ia_css_program_manifest_get_dfm_active_port_bitmap(
     ia_css_program_manifest_ext_t *manifest_ext = NULL;
 
     IA_CSS_TRACE_0(PSYSAPI_STATIC, VERBOSE,
-                   "ia_css_program_manifest_get_dfm_active_port_bitmap(): enter:\n");
+        "ia_css_program_manifest_get_dfm_active_port_bitmap(): enter:\n");
     verifexitval(manifest != NULL, EFAULT);
     verifexitval(dfm_type_id < VIED_NCI_N_DEV_DFM_ID, EFAULT);
     manifest_ext = ia_css_program_manifest_get_extension(manifest);
@@ -244,7 +244,7 @@ vied_nci_resource_bitmap_t ia_css_program_manifest_get_dfm_active_port_bitmap(
 EXIT:
     if (!noerror()) {
         IA_CSS_TRACE_0(PSYSAPI_STATIC, WARNING,
-                       "ia_css_program_manifest_get_dfm_active_port_bitmap invalid argument\n");
+         "ia_css_program_manifest_get_dfm_active_port_bitmap invalid argument\n");
         return 0;
     }
     return manifest_ext->dfm_active_port_bitmap[dfm_type_id];
@@ -260,7 +260,7 @@ vied_nci_resource_size_t ia_css_program_manifest_get_ext_mem_size(
     ia_css_program_manifest_ext_t *manifest_ext = NULL;
 
     IA_CSS_TRACE_0(PSYSAPI_STATIC, VERBOSE,
-                   "ia_css_program_manifest_get_ext_mem_size(): enter:\n");
+               "ia_css_program_manifest_get_ext_mem_size(): enter:\n");
     verifexitval(manifest != NULL, EFAULT);
     verifexitval(mem_type_id < VIED_NCI_N_DATA_MEM_TYPE_ID, EFAULT);
     manifest_ext = ia_css_program_manifest_get_extension(manifest);
@@ -270,7 +270,7 @@ vied_nci_resource_size_t ia_css_program_manifest_get_ext_mem_size(
 EXIT:
     if (!noerror()) {
         IA_CSS_TRACE_0(PSYSAPI_STATIC, WARNING,
-                       "ia_css_program_manifest_get_ext_mem_size invalid argument\n");
+         "ia_css_program_manifest_get_ext_mem_size invalid argument\n");
         return 0;
     }
     return manifest_ext->ext_mem_size[mem_type_id];
@@ -285,7 +285,7 @@ vied_nci_resource_size_t ia_css_program_manifest_get_ext_mem_offset(
     ia_css_program_manifest_ext_t *manifest_ext = NULL;
 
     IA_CSS_TRACE_0(PSYSAPI_STATIC, VERBOSE,
-                   "ia_css_program_manifest_get_ext_mem_offset(): enter:\n");
+               "ia_css_program_manifest_get_ext_mem_offset(): enter:\n");
     verifexitval(manifest != NULL, EFAULT);
     verifexitval(mem_type_id < VIED_NCI_N_DATA_MEM_TYPE_ID, EFAULT);
     manifest_ext = ia_css_program_manifest_get_extension(manifest);
@@ -295,7 +295,7 @@ vied_nci_resource_size_t ia_css_program_manifest_get_ext_mem_offset(
 EXIT:
     if (!noerror()) {
         IA_CSS_TRACE_0(PSYSAPI_STATIC, WARNING,
-                       "ia_css_program_manifest_get_ext_mem_offset invalid argument\n");
+         "ia_css_program_manifest_get_ext_mem_offset invalid argument\n");
          return 0;
     }
     return manifest_ext->ext_mem_offset[mem_type_id];
@@ -311,7 +311,7 @@ vied_nci_resource_size_t ia_css_program_manifest_get_dev_chn_size(
     ia_css_program_manifest_ext_t *manifest_ext = NULL;
 
     IA_CSS_TRACE_0(PSYSAPI_STATIC, VERBOSE,
-                   "ia_css_program_manifest_get_dev_chn_size(): enter:\n");
+        "ia_css_program_manifest_get_dev_chn_size(): enter:\n");
     verifexitval(manifest != NULL, EFAULT);
     verifexitval(dev_chn_id < VIED_NCI_N_DEV_CHN_ID, EFAULT);
     manifest_ext = ia_css_program_manifest_get_extension(manifest);
@@ -321,7 +321,7 @@ vied_nci_resource_size_t ia_css_program_manifest_get_dev_chn_size(
 EXIT:
     if (!noerror()) {
         IA_CSS_TRACE_0(PSYSAPI_STATIC, WARNING,
-                       "ia_css_program_manifest_get_dev_chn_size invalid argument\n");
+         "ia_css_program_manifest_get_dev_chn_size invalid argument\n");
         return 0;
     }
     return manifest_ext->dev_chn_size[dev_chn_id];
@@ -336,7 +336,7 @@ vied_nci_resource_size_t ia_css_program_manifest_get_dev_chn_offset(
     ia_css_program_manifest_ext_t *manifest_ext = NULL;
 
     IA_CSS_TRACE_0(PSYSAPI_STATIC, VERBOSE,
-                   "ia_css_program_manifest_get_dev_chn_offset(): enter:\n");
+        "ia_css_program_manifest_get_dev_chn_offset(): enter:\n");
     verifexitval(manifest != NULL, EFAULT);
     verifexitval(dev_chn_id < VIED_NCI_N_DEV_CHN_ID, EFAULT);
     manifest_ext = ia_css_program_manifest_get_extension(manifest);
@@ -346,7 +346,7 @@ vied_nci_resource_size_t ia_css_program_manifest_get_dev_chn_offset(
 EXIT:
     if (!noerror()) {
         IA_CSS_TRACE_0(PSYSAPI_STATIC, WARNING,
-                       "ia_css_program_manifest_get_dev_chn_offset invalid argument\n");
+         "ia_css_program_manifest_get_dev_chn_offset invalid argument\n");
          return 0;
     }
     return manifest_ext->dev_chn_offset[dev_chn_id];
@@ -360,12 +360,12 @@ size_t ia_css_program_manifest_get_size(
     DECLARE_ERRVAL
 
     IA_CSS_TRACE_0(PSYSAPI_STATIC, VERBOSE,
-                   "ia_css_program_manifest_get_size(): enter:\n");
+        "ia_css_program_manifest_get_size(): enter:\n");
     verifexitval(manifest != NULL, EFAULT);
 EXIT:
     if (!noerror()) {
         IA_CSS_TRACE_0(PSYSAPI_STATIC, WARNING,
-                       "ia_css_program_manifest_get_size invalid argument\n");
+            "ia_css_program_manifest_get_size invalid argument\n");
         return 0;
     }
 
@@ -379,12 +379,12 @@ ia_css_program_ID_t ia_css_program_manifest_get_program_ID(
     DECLARE_ERRVAL
 
     IA_CSS_TRACE_0(PSYSAPI_STATIC, VERBOSE,
-                   "ia_css_program_manifest_get_program_ID(): enter:\n");
+        "ia_css_program_manifest_get_program_ID(): enter:\n");
     verifexitval(manifest != NULL, EFAULT);
 EXIT:
     if (!noerror()) {
         IA_CSS_TRACE_0(PSYSAPI_STATIC, WARNING,
-                       "ia_css_program_manifest_get_program_ID invalid argument\n");
+          "ia_css_program_manifest_get_program_ID invalid argument\n");
         return IA_CSS_PROGRAM_INVALID_ID;
     }
     return manifest->ID;
@@ -398,14 +398,14 @@ ia_css_program_group_manifest_t *ia_css_program_manifest_get_parent(
     char *base = NULL;
 
     IA_CSS_TRACE_0(PSYSAPI_STATIC, VERBOSE,
-                   "ia_css_program_manifest_get_parent(): enter:\n");
+        "ia_css_program_manifest_get_parent(): enter:\n");
     verifexitval(manifest != NULL, EFAULT);
 
     base = (char *)((char *)manifest + manifest->parent_offset);
 EXIT:
     if (!noerror()) {
         IA_CSS_TRACE_0(PSYSAPI_STATIC, WARNING,
-                       "ia_css_program_manifest_get_parent invalid argument\n");
+          "ia_css_program_manifest_get_parent invalid argument\n");
         return NULL;
     }
     return (ia_css_program_group_manifest_t *)(base);
@@ -418,12 +418,12 @@ vied_nci_cell_type_ID_t ia_css_program_manifest_get_cell_type_ID(
     DECLARE_ERRVAL
 
     IA_CSS_TRACE_0(PSYSAPI_STATIC, VERBOSE,
-                   "ia_css_program_manifest_get_cell_type_ID(): enter:\n");
+        "ia_css_program_manifest_get_cell_type_ID(): enter:\n");
     verifexitval(manifest != NULL, EFAULT);
 EXIT:
     if (!noerror()) {
         IA_CSS_TRACE_0(PSYSAPI_STATIC, WARNING,
-                       "ia_css_program_manifest_get_cell_type_ID invalid argument\n");
+          "ia_css_program_manifest_get_cell_type_ID invalid argument\n");
         return VIED_NCI_N_CELL_TYPE_ID;
     }
     return manifest->cell_type_id;
@@ -436,12 +436,12 @@ ia_css_program_type_t ia_css_program_manifest_get_type(
     DECLARE_ERRVAL
 
     IA_CSS_TRACE_0(PSYSAPI_STATIC, VERBOSE,
-                   "ia_css_program_manifest_get_type(): enter:\n");
+        "ia_css_program_manifest_get_type(): enter:\n");
     verifexitval(manifest != NULL, EFAULT);
 EXIT:
     if (!noerror()) {
         IA_CSS_TRACE_0(PSYSAPI_STATIC, WARNING,
-                       "ia_css_program_manifest_get_type invalid argument\n");
+          "ia_css_program_manifest_get_type invalid argument\n");
         return IA_CSS_N_PROGRAM_TYPES;
     }
     return manifest->program_type;
@@ -454,12 +454,12 @@ uint8_t ia_css_program_manifest_get_terminal_dependency_count(
     DECLARE_ERRVAL
 
     IA_CSS_TRACE_0(PSYSAPI_STATIC, VERBOSE,
-                   "ia_css_program_manifest_get_terminal_dependency_count(): enter:\n");
+        "ia_css_program_manifest_get_terminal_dependency_count(): enter:\n");
     verifexitval(manifest != NULL, EFAULT);
 EXIT:
     if (!noerror()) {
         IA_CSS_TRACE_0(PSYSAPI_STATIC, WARNING,
-                       "ia_css_program_manifest_get_terminal_dependency_count invalid argument\n");
+          "ia_css_program_manifest_get_terminal_dependency_count invalid argument\n");
         return 0;
     }
     return manifest->terminal_dependency_count;
@@ -475,7 +475,7 @@ uint8_t ia_css_program_manifest_get_terminal_dependency(
     uint8_t terminal_dependency_count;
 
     IA_CSS_TRACE_0(PSYSAPI_STATIC, VERBOSE,
-                   "ia_css_program_manifest_get_terminal_dependency(): enter:\n");
+        "ia_css_program_manifest_get_terminal_dependency(): enter:\n");
     verifexitval(manifest != NULL, EFAULT);
     terminal_dependency_count =
         ia_css_program_manifest_get_terminal_dependency_count(manifest);
@@ -486,7 +486,7 @@ uint8_t ia_css_program_manifest_get_terminal_dependency(
 EXIT:
     if (!noerror()) {
         IA_CSS_TRACE_0(PSYSAPI_STATIC, WARNING,
-                       "ia_css_program_manifest_get_terminal_dependency invalid argument\n");
+            "ia_css_program_manifest_get_terminal_dependency invalid argument\n");
         return IA_CSS_PROGRAM_INVALID_DEPENDENCY;
     }
     return *terminal_dep_ptr;
@@ -499,7 +499,7 @@ bool ia_css_is_program_manifest_singular_program_type(
     ia_css_program_type_t        program_type;
 
     IA_CSS_TRACE_0(PSYSAPI_STATIC, VERBOSE,
-                   "ia_css_is_program_manifest_singular_program_type(): enter:\n");
+        "ia_css_is_program_manifest_singular_program_type(): enter:\n");
 
     program_type = ia_css_program_manifest_get_type(manifest);
 
@@ -521,7 +521,7 @@ uint8_t ia_css_program_manifest_get_program_dependency_count(
 EXIT:
     if (!noerror()) {
         IA_CSS_TRACE_0(PSYSAPI_STATIC, WARNING,
-                       "ia_css_program_manifest_get_program_dependency_count invalid argument\n");
+          "ia_css_program_manifest_get_program_dependency_count invalid argument\n");
         return 0;
     }
     return manifest->program_dependency_count;
@@ -537,7 +537,7 @@ uint8_t ia_css_program_manifest_get_program_dependency(
     uint8_t program_dependency_count;
 
     IA_CSS_TRACE_0(PSYSAPI_STATIC, VERBOSE,
-                   "ia_css_program_manifest_get_program_dependency(): enter:\n");
+        "ia_css_program_manifest_get_program_dependency(): enter:\n");
     verifexitval(manifest != NULL, EFAULT);
 
     program_dependency_count =
@@ -550,7 +550,7 @@ uint8_t ia_css_program_manifest_get_program_dependency(
 EXIT:
     if (!noerror()) {
         IA_CSS_TRACE_0(PSYSAPI_STATIC, WARNING,
-                       "ia_css_program_manifest_get_program_dependency invalid argument\n");
+          "ia_css_program_manifest_get_program_dependency invalid argument\n");
         return IA_CSS_PROGRAM_INVALID_DEPENDENCY;
     }
     return *program_dep_ptr;
@@ -563,7 +563,7 @@ ia_css_kernel_bitmap_t ia_css_program_manifest_get_kernel_bitmap(
     DECLARE_ERRVAL
 
     IA_CSS_TRACE_0(PSYSAPI_STATIC, VERBOSE,
-                   "ia_css_program_manifest_get_kernel_bitmap(): enter:\n");
+        "ia_css_program_manifest_get_kernel_bitmap(): enter:\n");
     verifexitval(manifest != NULL, EFAULT);
 EXIT:
     if (!noerror()) {

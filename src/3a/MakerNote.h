@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2021 Intel Corporation.
+ * Copyright (C) 2018-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -94,6 +94,16 @@ class MakerNote {
      */
     int saveMakernoteData(int cameraId, camera_makernote_mode_t makernoteMode, int64_t sequence,
                           TuningMode tuningMode);
+
+    /**
+     * \brief Get makernote buffer
+     *
+     * param[in] camera_makernote_mode_t: makernote mode
+     * param[out] bool: return if in dump case
+     *
+     * return pointer of makernote buffer, otherwise return nullptr.
+     */
+    void* getMakernoteBuf(camera_makernote_mode_t makernoteMode, bool& dump);
 
     /**
      * \brief Update timestamp of frame.

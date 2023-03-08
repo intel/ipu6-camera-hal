@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Intel Corporation.
+ * Copyright (C) 2019-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,9 @@
 
 #include "modules/sandboxing/IPCCommon.h"
 #include "src/core/psysprocessor/PGUtils.h"
+
+#include "CameraTypes.h"
+#include "modules/sandboxing/IPCIntelCca.h"
 
 namespace icamera {
 
@@ -96,11 +99,14 @@ struct pg_param_decode_params {
     uintptr_t client;
     int32_t payloadCount;
     ia_binary_data payloads[IPU_MAX_TERMINAL_COUNT];  // save payloads of client
-    uint32_t clientStatsSize;
     int32_t clientStatsHandle;
 
     // Output
     uint32_t statsSize;
+
+    // For stats decoding together
+    intel_cca_decode_stats_data decodeStatsParams;
+    bool hasStatsDecode;
 };
 
 struct pg_param_deinit_params {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2021 Intel Corporation.
+ * Copyright (C) 2019-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,14 +19,17 @@
 #include <memory>
 #include <vector>
 
+#include "CameraTypes.h"
 #include "IntelAlgoCommonClient.h"
 #include "modules/sandboxing/IPCIntelPGParam.h"
+#include "modules/sandboxing/client/IntelCcaClient.h"
 
 namespace icamera {
 
 class IntelPGParam {
  public:
-    explicit IntelPGParam(int pgId);
+    explicit IntelPGParam(int pgId, int cameraId = 0,
+                          TuningMode tuningMode = TUNING_MODE_VIDEO);
     ~IntelPGParam();
 
     int init(ia_p2p_platform_t platform, const PgConfiguration& Pgconfiguration);
@@ -39,8 +42,12 @@ class IntelPGParam {
     int allocatePayloads(int payloadCount, ia_binary_data* payloads);
     int updatePALAndEncode(const ia_binary_data* ipuParams, int payloadCount,
                            ia_binary_data* payloads);
-    int decode(int payloadCount, ia_binary_data* payload, ia_binary_data* statistics);
+    int decode(int payloadCount, ia_binary_data* payload, ia_binary_data* statistics,
+               int64_t sequence = -1);
     void deinit();
+
+private:
+    cca::cca_out_stats* fetchOutStats(int64_t sequence);
 
  private:
     IPCIntelPGParam mIpc;
@@ -68,6 +75,10 @@ class IntelPGParam {
     ia_binary_data mPayloads[IPU_MAX_TERMINAL_COUNT];  // save sizes
     ia_css_process_group_t* mPGBuffer;
     uint32_t mMaxStatsSize;
+
+    IntelCca* mIntelCca;
+    int mCameraId;
+    TuningMode mTuningMode;
 };
 
 }  // namespace icamera

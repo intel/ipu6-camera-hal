@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2021 Intel Corporation
+ * Copyright (C) 2020-2023 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,7 +59,7 @@ namespace icamera {
 // IntelTNR7US object is for using Intel GPU tnr(tnr7ultraslim) feature.
 class IntelTNR7US {
  public:
-    explicit IntelTNR7US(int cameraId);
+    static IntelTNR7US* createIntelTNR(int cameraId);
     ~IntelTNR7US();
     int init(int width, int height, TnrType type);
     /**
@@ -77,9 +77,10 @@ class IntelTNR7US {
     void freeAllBufs();
     int prepareSurface(void* bufAddr, int size);
     int asyncParamUpdate(int gain, bool forceUpdate);
-    int getSurfaceInfo(int width, int height, uint32_t* size);
+    int getTnrBufferSize(int width, int height, uint32_t* size);
 
  private:
+    explicit IntelTNR7US(int cameraId);
     /* tnr api use CmSurface2DUP object as data buffer, call this api to create
      * CmSurface2DUP object from user data buffer */
     CmSurface2DUP* createCMSurface(void* bufAddr);

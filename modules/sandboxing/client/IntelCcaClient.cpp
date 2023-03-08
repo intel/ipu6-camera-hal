@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Intel Corporation
+ * Copyright (C) 2020-2023 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@
 
 #include <vector>
 
+#include "PlatformData.h"
 #include "iutils/CameraLog.h"
 #include "iutils/Utils.h"
 
@@ -71,14 +72,16 @@ void IntelCca::releaseAllInstances() {
     }
 }
 
-IntelCca::IntelCca(int cameraId, TuningMode mode) : mCameraId(cameraId), mTuningMode(mode) {
+IntelCca::IntelCca(int cameraId, TuningMode mode)
+        : mCameraId(cameraId),
+          mTuningMode(mode),
+          mHasMknData(false) {
     LOG1("<id%d> @%s, tuningMode:%d", cameraId, __func__, mode);
 
     std::string number = std::to_string(cameraId) + std::to_string(mode) +
                          std::to_string(reinterpret_cast<uintptr_t>(this));
     std::string structName = "/ccaStruct" + number + SHM_NAME;
     std::string initName = "/ccaInit" + number + SHM_NAME;
-    std::string statsName = "/ccaStats" + number + SHM_NAME;
     std::string aecName = "/ccaAec" + number + SHM_NAME;
     std::string aiqName = "/ccaAiq" + number + SHM_NAME;
     std::string ltmName = "/ccaLtm" + number + SHM_NAME;
@@ -86,7 +89,6 @@ IntelCca::IntelCca(int cameraId, TuningMode mode) : mCameraId(cameraId), mTuning
     std::string dvsName = "/ccaDvs" + number + SHM_NAME;
     std::string aicName = "/ccaAic" + number + SHM_NAME;
     std::string cmcName = "/ccaCmc" + number + SHM_NAME;
-    std::string mknName = "/ccaMkn" + number + SHM_NAME;
     std::string aiqdName = "/ccaAiqd" + number + SHM_NAME;
     std::string tuningName = "/ccaTuning" + number + SHM_NAME;
     std::string deinitName = "/ccaDeinit" + number + SHM_NAME;
@@ -96,7 +98,6 @@ IntelCca::IntelCca(int cameraId, TuningMode mode) : mCameraId(cameraId), mTuning
     mMems = {
         {structName.c_str(), sizeof(intel_cca_struct_data), &mMemStruct, false},
         {initName.c_str(), sizeof(intel_cca_init_data), &mMemInit, false},
-        {statsName.c_str(), sizeof(intel_cca_set_stats_data), &mMemStats, false},
         {aecName.c_str(), sizeof(intel_cca_run_aec_data), &mMemAEC, false},
         {aiqName.c_str(), sizeof(intel_cca_run_aiq_data), &mMemAIQ, false},
         {ltmName.c_str(), sizeof(intel_cca_run_ltm_data), &mMemLTM, false},
@@ -104,7 +105,6 @@ IntelCca::IntelCca(int cameraId, TuningMode mode) : mCameraId(cameraId), mTuning
         {dvsName.c_str(), sizeof(intel_cca_run_dvs_data), &mMemDVS, false},
         {aicName.c_str(), sizeof(intel_cca_run_aic_data), &mMemAIC, false},
         {cmcName.c_str(), sizeof(intel_cca_get_cmc_data), &mMemCMC, false},
-        {mknName.c_str(), sizeof(intel_cca_mkn_data), &mMemMKN, false},
         {aiqdName.c_str(), sizeof(intel_cca_get_aiqd_data), &mMemAIQD, false},
         {tuningName.c_str(), sizeof(intel_cca_update_tuning_data), &mMemTuning, false},
         {deinitName.c_str(), sizeof(intel_cca_deinit_data), &mMemDeinit, false},
@@ -160,19 +160,39 @@ ia_err IntelCca::init(const cca::cca_init_params& initParams) {
     return ret;
 }
 
+ia_err IntelCca::decodeStats(uint64_t statsPointer, uint32_t statsSize, uint32_t bitmap,
+                             ia_isp_bxt_statistics_query_results_t* results,
+                             cca::cca_out_stats* outStats) {
+    LOG2("<id%d> @%s, tuningMode:%d, statsPointer:0x%lx, statsSize:%d, bitmap:0x%x", mCameraId,
+         __func__, mTuningMode, statsPointer, statsSize, bitmap);
+
+    if (results) return ia_err_none;
+
+    intel_cca_run_aec_data* aecParams = static_cast<intel_cca_run_aec_data*>(mMemAEC.mAddr);
+    intel_cca_decode_stats_data* params = &aecParams->decodeStatsParams;
+
+    params->cameraId = mCameraId;
+    params->tuningMode = mTuningMode;
+    params->statsHandle = mCommon.getShmMemHandle(reinterpret_cast<void*>(statsPointer));
+    params->statsBuffer.data = nullptr;
+    params->statsBuffer.size = statsSize;
+    params->bitmap = bitmap;
+    params->outStats.get_rgbs_stats = false;
+    aecParams->hasDecodeStats = true;
+
+    return ia_err_none;
+}
+
 ia_err IntelCca::setStatsParams(const cca::cca_stats_params& params) {
     LOG2("<id%d> @%s, tuningMode:%d, in params size:%zu", mCameraId, __func__, mTuningMode,
          sizeof(cca::cca_stats_params));
 
-    intel_cca_set_stats_data* statsParams = static_cast<intel_cca_set_stats_data*>(mMemStats.mAddr);
-    statsParams->cameraId = mCameraId;
-    statsParams->tuningMode = mTuningMode;
-    statsParams->inParams = params;
+    // Set stats when running AEC
+    intel_cca_run_aec_data* aecParams = static_cast<intel_cca_run_aec_data*>(mMemAEC.mAddr);
+    aecParams->inStatsParams = params;
+    aecParams->hasStats = true;
 
-    ia_err ret = mCommon.requestSyncCca(IPC_CCA_SET_STATS, mMemStats.mHandle);
-    CheckAndLogError(ret != ia_err_none, ia_err_general, "@%s, requestSyncCca fails", __func__);
-
-    return ret;
+    return ia_err_none;
 }
 
 ia_err IntelCca::runAEC(uint64_t frameId, const cca::cca_ae_input_params& params,
@@ -190,15 +210,24 @@ ia_err IntelCca::runAEC(uint64_t frameId, const cca::cca_ae_input_params& params
     aecParams->inParams = params;
 
     ia_err ret = mCommon.requestSyncCca(IPC_CCA_RUN_AEC, mMemAEC.mHandle);
-    CheckAndLogError(ret != ia_err_none, ia_err_general, "@%s, requestSyncCca fails", __func__);
+    aecParams->hasStats = false;
 
+    if (aecParams->hasDecodeStats) {
+        LOG2("%s, query results: rgbs_grid(%d), af_grid(%d), dvs_stats(%d)", __func__,
+             aecParams->decodeStatsParams.results.rgbs_grid,
+             aecParams->decodeStatsParams.results.af_grid,
+             aecParams->decodeStatsParams.results.dvs_stats);
+        aecParams->hasDecodeStats = false;
+    }
+
+    CheckAndLogError(ret != ia_err_none, ia_err_general, "@%s, requestSyncCca fails", __func__);
     *results = aecParams->results;
 
     return ret;
 }
 
 ia_err IntelCca::runAIQ(uint64_t frameId, const cca::cca_aiq_params& params,
-                        cca::cca_aiq_results* results) {
+                        cca::cca_aiq_results* results, camera_makernote_mode_t mode) {
     LOG2("<id%d:req%ld> @%s, tuningMode:%d, in params size:%zu, results size:%zu", mCameraId,
          frameId, __func__, mTuningMode, sizeof(cca::cca_aiq_params), sizeof(cca::cca_aiq_results));
     CheckAndLogError(!results, ia_err_argument, "@%s, results is nullptr", __func__);
@@ -209,10 +238,21 @@ ia_err IntelCca::runAIQ(uint64_t frameId, const cca::cca_aiq_params& params,
     aiqParams->frameId = frameId;
     aiqParams->inParams = params;
 
+    aiqParams->mknResultsHandle = -1;
+    bool dump = false;
+    void* ptr = PlatformData::getMakernoteBuf(mCameraId, mode, dump);
+    if (ptr) {
+        aiqParams->mknResults = static_cast<cca::cca_mkn*>(ptr);
+        aiqParams->type =
+            ((mode == MAKERNOTE_MODE_JPEG) || dump ? ia_mkn_trg_section_1 : ia_mkn_trg_section_2);
+        aiqParams->mknResultsHandle = mCommon.getShmMemHandle(aiqParams->mknResults);
+    }
+
     ia_err ret = mCommon.requestSyncCca(IPC_CCA_RUN_AIQ, mMemAIQ.mHandle);
     CheckAndLogError(ret != ia_err_none, ia_err_general, "@%s, requestSyncCca fails", __func__);
 
     *results = aiqParams->results;
+    if (aiqParams->mknResultsHandle >= 0) mHasMknData = true;
 
     return ret;
 }
@@ -307,19 +347,14 @@ ia_err IntelCca::getCMC(cca::cca_cmc* cmc) {
 }
 
 ia_err IntelCca::getMKN(ia_mkn_trg type, cca::cca_mkn* mkn) {
-    CheckAndLogError(!mkn, ia_err_argument, "@%s, mkn is nullptr", __func__);
+    UNUSED(type);
+    UNUSED(mkn);
 
-    intel_cca_mkn_data* params = static_cast<intel_cca_mkn_data*>(mMemMKN.mAddr);
-    params->cameraId = mCameraId;
-    params->tuningMode = mTuningMode;
-    params->type = type;
-    params->results = mkn;
-    params->resultsHandle = mCommon.getShmMemHandle(mkn);
+    // get MKN when calling runAIQ API
+    if (!mHasMknData) return ia_err_general;
+    mHasMknData = false;
 
-    ia_err ret = mCommon.requestSyncCca(IPC_CCA_GET_MKN, mMemMKN.mHandle);
-    CheckAndLogError(ret != ia_err_none, ia_err_general, "@%s, requestSyncCca fails", __func__);
-
-    return ret;
+    return ia_err_none;
 }
 
 ia_err IntelCca::getAiqd(cca::cca_aiqd* aiqd) {
@@ -439,39 +474,6 @@ void IntelCca::deinit() {
 
     ia_err ret = mCommon.requestSyncCca(IPC_CCA_DEINIT, mMemDeinit.mHandle);
     CheckAndLogError(ret != ia_err_none, VOID_VALUE, "@%s, requestSyncCca fails", __func__);
-}
-
-ia_err IntelCca::decodeStats(uint64_t statsPointer, uint32_t statsSize, uint32_t bitmap,
-                             ia_isp_bxt_statistics_query_results_t* results,
-                             cca::cca_out_stats* outStats) {
-    LOG2("<id%d> @%s, tuningMode:%d, statsPointer:0x%lx, statsSize:%d, bitmap:0x%x", mCameraId,
-         __func__, mTuningMode, statsPointer, statsSize, bitmap);
-    CheckAndLogError(!results, ia_err_argument, "@%s, results is nullptr", __func__);
-
-    intel_cca_decode_stats_data* params =
-        static_cast<intel_cca_decode_stats_data*>(mMemDecodeStats.mAddr);
-
-    params->cameraId = mCameraId;
-    params->tuningMode = mTuningMode;
-    params->statsHandle = mCommon.getShmMemHandle(reinterpret_cast<void*>(statsPointer));
-    params->statsBuffer.data = nullptr;
-    params->statsBuffer.size = statsSize;
-    params->bitmap = bitmap;
-    params->outStats.get_rgbs_stats = false;
-    if (outStats) {
-        params->outStats.get_rgbs_stats = outStats->get_rgbs_stats;
-    }
-
-    ia_err ret = mCommon.requestSyncCca(IPC_CCA_DECODE_STATS, mMemDecodeStats.mHandle);
-    CheckAndLogError(ret != ia_err_none, ia_err_general, "@%s, requestSyncCca fails", __func__);
-
-    *results = params->results;
-    if (outStats && params->outStats.get_rgbs_stats) {
-        *outStats = params->outStats;
-        outStats->rgbs_grid.blocks_ptr = outStats->rgbs_blocks;
-    }
-
-    return ret;
 }
 
 uint32_t IntelCca::getPalDataSize(const cca::cca_program_group& programGroup) {

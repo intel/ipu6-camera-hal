@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2022 Intel Corporation.
+ * Copyright (C) 2015-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -217,6 +217,7 @@ void CameraDevice::bindListeners() {
     for (auto lis : dvsListener)
         for (auto& item : mProcessors) item->registerListener(EVENT_DVS_READY, lis);
     // INTEL_DVS_E
+
 }
 
 void CameraDevice::unbindListeners() {
@@ -261,6 +262,7 @@ void CameraDevice::unbindListeners() {
     for (auto lis : dvsListener)
         for (auto& item : mProcessors) item->removeListener(EVENT_DVS_READY, lis);
     // INTEL_DVS_E
+
 }
 
 int CameraDevice::configureInput(const stream_t* inputConfig) {

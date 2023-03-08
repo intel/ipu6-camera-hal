@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Intel Corporation.
+ * Copyright (C) 2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@
  *
  * The data objects are separate from the process group terminal,
  * although they are stored by value rather than by reference and
- * make the process group terminal dependendent on its definition
+ * make the process group terminal dependent on its definition
  *
  * This frame definition overloads the current CSS frame definition
  * they are the same object, just a slightly different implementation
@@ -155,14 +155,14 @@ struct ia_css_param_frame_s {
 
 /**
  * Structure defining the frame (size and access) properties for
- * inbuild types only.
+ * inbuilt types only.
  *
- * The inbuild types like FourCC, MIPI and CSS private types are supported
+ * The inbuilt types like FourCC, MIPI and CSS private types are supported
  * by FW all other types are custom types which interpretation must be encoded
  * on the buffer itself or known by the source and sink
  */
 struct ia_css_frame_descriptor_s {
-    /** Indicates if this is a generic type or inbuild with
+    /** Indicates if this is a generic type or inbuilt with
       * variable size descriptor.
       */
     ia_css_frame_format_type_t frame_format_type;
@@ -203,14 +203,14 @@ struct ia_css_frame_descriptor_s {
     + (N_PADDING_UINT8_IN_FRAME_STRUCT * 8))
 
 /**
- * Main frame structure holding the main store and auxilary access properties
+ * Main frame structure holding the main store and auxiliary access properties
  * the "pointer_state" and "access_scope" should be encoded on the
  * "vied_vaddress_t" type
  *
  * @note A number of fields in this structure are either no longer
  * used, or their use is trivialized, in the current code base.  This is
  * due to the Persistent Program Group (PPG) concept which separated the
- * attatchment of frame buffers into a separate structure, the buffer set.
+ * attachment of frame buffers into a separate structure, the buffer set.
  * @par Set all unused fields to zero, unless otherwise noted.
  * @see ia_css_buffer_set_s
  */

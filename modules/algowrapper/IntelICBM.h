@@ -26,10 +26,10 @@ namespace icamera {
 
 class IntelICBM {
  public:
-    Result setup(ICBMInitInfo* initParam);
+    int setup(ICBMInitInfo* initParam);
     void shutdown();
 
-    Result processFrame(const ImageInfo& iii, const ImageInfo& iio, const ICBMReqInfo& reqInfo);
+    int processFrame(const ImageInfo& iii, const ImageInfo& iio, const ICBMReqInfo& reqInfo);
 
  private:
     std::unique_ptr<IIntelICBM> mIIntelICBM;

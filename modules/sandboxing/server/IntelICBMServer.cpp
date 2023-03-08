@@ -26,7 +26,7 @@ namespace icamera {
 int IntelICBMServer::setup(ICBMInitInfo* initParam) {
     mIntelICBM = std::unique_ptr<IntelICBM>(new IntelICBM());
 
-    return mIntelICBM->setup(initParam) == Result::OK ? OK : UNKNOWN_ERROR;
+    return mIntelICBM->setup(initParam);
 }
 
 int IntelICBMServer::shutdown() {
@@ -38,7 +38,7 @@ int IntelICBMServer::shutdown() {
 
 int IntelICBMServer::processFrame(const ImageInfo& iii, const ImageInfo& iio,
                                   const ICBMReqInfo& reqInfo) {
-    return mIntelICBM->processFrame(iii, iio, reqInfo) == Result::OK ? OK : UNKNOWN_ERROR;
+    return mIntelICBM->processFrame(iii, iio, reqInfo);
 }
 
 }  // namespace icamera

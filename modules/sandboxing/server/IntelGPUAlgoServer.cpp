@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Intel Corporation.
+ * Copyright (C) 2020-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,7 +52,7 @@ void IntelGPUAlgoServer::handleRequest(const MsgReq& msg) {
             break;
         case IPC_GPU_TNR_GET_SURFACE_INFO: {
             TnrRequestInfo* requestInfo = static_cast<TnrRequestInfo*>(addr);
-            status = mTNR.getSurfaceInfo(requestInfo);
+            status = mTNR.getTnrBufferSize(requestInfo);
             break;
         }
         case IPC_GPU_TNR_PREPARE_SURFACE: {
@@ -188,7 +188,10 @@ void IntelGPUAlgoServer::handleRequest(const MsgReq& msg) {
     }
     LOG1("@%s, req_id:%d:%s, status:%d", __func__, req_id,
          IntelAlgoIpcCmdToString(static_cast<IPC_CMD>(req_id)), status);
-
+    // LEVEL0_ICBM_S
+    (void)requestSize;
+    (void)addr;
+    // LEVEL0_ICBM_E
     getIntelAlgoServer()->returnCallback(req_id, status, buffer_handle);
 }
 } /* namespace icamera */
