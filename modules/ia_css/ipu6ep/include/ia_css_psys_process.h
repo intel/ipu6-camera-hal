@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Intel Corporation.
+ * Copyright (C) 2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -382,7 +382,7 @@ uint32_t ia_css_process_get_program_idx(
 
 /*! Returns the process extension (ONLY ALLOWED TO BE USED BY FIRMWARE).
  * @param process[in] process object
- * @return process entension, NULL if there is none.
+ * @return process extension, NULL if there is none.
  */
 IA_CSS_PSYS_DYNAMIC_STORAGE_CLASS_H
 ia_css_process_ext_t *ia_css_process_get_extension(

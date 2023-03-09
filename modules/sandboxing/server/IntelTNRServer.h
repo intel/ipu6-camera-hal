@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2021 Intel Corporation.
+ * Copyright (C) 2020-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ class IntelTNRServer {
     int runTnrFrame(const void* inBufAddr, void* outBufAddr, uint32_t inBufSize,
                     uint32_t outBufSize, void* tnrParam, TnrRequestInfo* requestInfo);
     int asyncParamUpdate(TnrRequestInfo* requestInfo);
-    int getSurfaceInfo(TnrRequestInfo* requestInfo);
+    int getTnrBufferSize(TnrRequestInfo* requestInfo);
 
  private:
     // the tnr instance of the id

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2022 Intel Corporation.
+ * Copyright (C) 2017-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -611,12 +611,9 @@ void PSysProcessor::handleRawReprocessing(CameraBufferPortMap* srcBuffers,
             return;
         }
 
-        Parameters params;
+        raw_data_output_t rawDataOutput = CAMERA_RAW_DATA_OUTPUT_OFF;
         if (mParameterGenerator &&
-            mParameterGenerator->getParameters(inputSequence, &params, true, false) == OK) {
-            raw_data_output_t rawDataOutput = CAMERA_RAW_DATA_OUTPUT_OFF;
-            params.getRawDataOutput(rawDataOutput);
-
+            mParameterGenerator->getRawOutputMode(inputSequence, rawDataOutput) == OK) {
             if (rawDataOutput == CAMERA_RAW_DATA_OUTPUT_ON) {
                 uint32_t srcBufferSize = mainBuf->getBufferSize();
 
@@ -992,9 +989,6 @@ void PSysProcessor::registerListener(EventType eventType, EventListener* eventLi
     // Only delegate stats event registration to deeper layer DAG and PipeExecutor
     if ((eventType != EVENT_PSYS_STATS_BUF_READY) &&
         (eventType != EVENT_PSYS_STATS_SIS_BUF_READY)
-        // INTEL_DVS_S
-        && eventType != EVENT_DVS_READY
-        // INTEL_DVS_E
     ) {
         BufferQueue::registerListener(eventType, eventListener);
         return;
@@ -1132,6 +1126,17 @@ void PSysProcessor::onStatsDone(int64_t sequence, const CameraBufferPortMap& out
     sendPsysRequestEvent(&outBuf, sequence, 0, EVENT_REQUEST_METADATA_READY);
 }
 
+// INTEL_DVS_S
+void PSysProcessor::onDvsPrepare(int32_t streamId) {
+    LOG2("%s stream Id %d", __func__, streamId);
+
+    EventData eventData;
+    eventData.type = EVENT_DVS_READY;
+    eventData.data.dvsRunReady.streamId = streamId;
+    notifyListeners(eventData);
+}
+// INTEL_DVS_E
+
 void PSysProcessor::outputRawImage(shared_ptr<CameraBuffer>& srcBuf,
                                    shared_ptr<CameraBuffer>& dstBuf) {
     if ((srcBuf == nullptr) || (dstBuf == nullptr)) {
@@ -1140,25 +1145,14 @@ void PSysProcessor::outputRawImage(shared_ptr<CameraBuffer>& srcBuf,
 
     // Copy from source buffer
     int srcBufferSize = srcBuf->getBufferSize();
-    int srcMemoryType = srcBuf->getMemory();
-    void* pSrcBuf = (srcMemoryType == V4L2_MEMORY_DMABUF) ?
-                        CameraBuffer::mapDmaBufferAddr(srcBuf->getFd(), srcBufferSize) :
-                        srcBuf->getBufferAddr();
+    ScopeMapping mapperSrc(srcBuf);
+    void* pSrcBuf = mapperSrc.getUserPtr();
 
     int dstBufferSize = dstBuf->getBufferSize();
-    int dstMemoryType = dstBuf->getMemory();
-    void* pDstBuf = (dstMemoryType == V4L2_MEMORY_DMABUF) ?
-                        CameraBuffer::mapDmaBufferAddr(dstBuf->getFd(), dstBufferSize) :
-                        dstBuf->getBufferAddr();
+    ScopeMapping mapperDst(dstBuf);
+    void* pDstBuf = mapperDst.getUserPtr();
 
     MEMCPY_S(pDstBuf, dstBufferSize, pSrcBuf, srcBufferSize);
-
-    if (srcMemoryType == V4L2_MEMORY_DMABUF) {
-        CameraBuffer::unmapDmaBufferAddr(pSrcBuf, srcBufferSize);
-    }
-    if (dstMemoryType == V4L2_MEMORY_DMABUF) {
-        CameraBuffer::unmapDmaBufferAddr(pDstBuf, dstBufferSize);
-    }
 
     // Send output buffer to its consumer
     for (auto& it : mBufferConsumerList) {

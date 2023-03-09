@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2022 Intel Corporation.
+ * Copyright (C) 2015-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -434,11 +434,19 @@ MediaCtlConf* PlatformData::getMediaCtlConf(int cameraId) {
 
 int PlatformData::getCameraInfo(int cameraId, camera_info_t& info) {
     info.device_version = 1;
-    info.facing = getInstance()->mStaticCfg.mCameras[cameraId].mFacing;
     info.orientation = getInstance()->mStaticCfg.mCameras[cameraId].mOrientation;
     info.name = getSensorName(cameraId);
     info.description = getSensorDescription(cameraId);
     info.capability = &getInstance()->mStaticCfg.mCameras[cameraId].mCapability;
+
+    const CameraMetadata& meta = icamera::ParameterHelper::getMetadata(*info.capability);
+    auto entry = meta.find(CAMERA_LENS_FACING);
+    info.facing = FACING_BACK;
+    if (entry.count == 1) {
+        info.facing = entry.data.u8[0] == CAMERA_LENS_FACING_BACK ?
+                                          FACING_BACK : FACING_FRONT;
+    }
+
     return OK;
 }
 
@@ -1184,6 +1192,25 @@ camera_resolution_t* PlatformData::getPslOutputForRotation(int width, int height
     return nullptr;
 }
 
+const camera_resolution_t* PlatformData::getPreferStillOutput(int width, int height,
+                                                              int cameraId) {
+    if (getInstance()->mStaticCfg.mCameras[cameraId].mPreferStillOutput.empty()) return nullptr;
+
+    const std::vector<camera_resolution_t>& preferOutput =
+        getInstance()->mStaticCfg.mCameras[cameraId].mPreferStillOutput;
+    for (const auto& output : preferOutput) {
+        // get preferred still output for small size
+        if ((width < output.width || height < output.height)
+            && (width * output.height == height * output.width)) {
+            LOG2("<id%d> the psl output: (%dx%d) for user: %dx%d", cameraId, output.width,
+                 output.height, width, height);
+            return &output;
+        }
+    }
+
+    return nullptr;
+}
+
 bool PlatformData::isTestPatternSupported(int cameraId) {
     return !getInstance()->mStaticCfg.mCameras[cameraId].mTestPatternMap.empty();
 }
@@ -1291,6 +1318,14 @@ int PlatformData::saveMakernoteData(int cameraId, camera_makernote_mode_t makern
                                                                     sequence, tuningMode);
 }
 
+void* PlatformData::getMakernoteBuf(int cameraId, camera_makernote_mode_t makernoteMode,
+                                    bool& dump) {
+    CheckAndLogError(cameraId >= static_cast<int>(getInstance()->mAiqInitData.size()), nullptr,
+                     "@%s, bad cameraId:%d", __func__, cameraId);
+
+    return getInstance()->mAiqInitData[cameraId]->getMakernoteBuf(makernoteMode, dump);
+}
+
 void PlatformData::updateMakernoteTimeStamp(int cameraId, int64_t sequence, uint64_t timestamp) {
     CheckAndLogError(cameraId >= static_cast<int>(getInstance()->mAiqInitData.size()), VOID_VALUE,
                      "@%s, bad cameraId:%d", __func__, cameraId);
@@ -1369,6 +1404,9 @@ bool PlatformData::isUsingGpuAlgo() {
     // ENABLE_EVCP_S
     enabled |= isGpuEvcpEnabled();
     // ENABLE_EVCP_E
+    // LEVEL0_ICBM_S
+    enabled |= isGPUICBMEnabled() || useLevel0Tnr();
+    // LEVEL0_ICBM_E
     return enabled;
 }
 
@@ -1427,4 +1465,14 @@ bool PlatformData::getDisableBLCByAGain(int cameraId, int& low, int& high) {
 bool PlatformData::isResetLinkRoute(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mResetLinkRoute;
 }
+
+// LEVEL0_ICBM_S
+bool PlatformData::isGPUICBMEnabled() {
+    return getInstance()->mStaticCfg.mCommonConfig.isGPUICBMEnabled;
+}
+
+bool PlatformData::useLevel0Tnr() {
+    return getInstance()->mStaticCfg.mCommonConfig.useLevel0Tnr;
+}
+// LEVEL0_ICBM_E
 }  // namespace icamera

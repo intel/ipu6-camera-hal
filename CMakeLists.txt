@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017-2022 Intel Corporation
+#  Copyright (C) 2017-2023 Intel Corporation
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -246,9 +246,14 @@ endif() #ENABLE_SANDBOXING
     set(LIBCAMHAL_SRCS ${LIBCAMHAL_SRCS} ${IIO_SRCS})
 
 # Add libcamhal using the specified sources
+if (${CMAKE_VERSION} VERSION_LESS 3.11)
+    add_library(camhal SHARED ${LIBCAMHAL_SRCS})
+else()
+    add_library(camhal SHARED $<TARGET_OBJECTS:camhal_static>)
+endif()
+
 add_library(camhal_static STATIC ${LIBCAMHAL_SRCS})
 set_target_properties(camhal_static PROPERTIES OUTPUT_NAME "camhal")
-add_library(camhal SHARED $<TARGET_OBJECTS:camhal_static>)
 
 #---------------------------- Link settings ----------------------------
 target_link_libraries(camhal ${CMAKE_DL_LIBS})
@@ -370,9 +375,9 @@ endif() #ENABLE_SANDBOXING
 #--------------------------- Install settings ---------------------------
 if (NOT CAL_BUILD)
 # Install headers
-install(DIRECTORY include/ DESTINATION include/libcamhal)
+install(DIRECTORY include/ DESTINATION include/${CMAKE_INSTALL_SUB_PATH}/libcamhal)
 if (SUPPORT_LIVE_TUNING)
-    install(FILES modules/livetune/LiveTuning.h DESTINATION include/libcamhal/api)
+    install(FILES modules/livetune/LiveTuning.h DESTINATION include/${CMAKE_INSTALL_SUB_PATH}/libcamhal/api)
 endif() #SUPPORT_LIVE_TUNING
 
 # Install configure files
@@ -402,7 +407,7 @@ elseif("${IPU_VER}" STREQUAL "ipu6epmtl")
         install(DIRECTORY config/ubuntu/mtl/ DESTINATION share/defaults/etc/camera)
     elseif("${PRODUCTION_NAME}" STREQUAL "mtl-iotg")
         message("Install MTL iotg configure files")
-        install(DIRECTORY config/linux/ipu6ep/ DESTINATION share/defaults/etc/camera)
+        install(DIRECTORY config/linux/ipu6epmtl/ DESTINATION share/defaults/etc/camera)
     else()
         message("Install MTL configure files")
         install(DIRECTORY config/linux/ipu6ep/ DESTINATION share/defaults/etc/camera)
@@ -418,13 +423,20 @@ else()
 endif()
 
 # Install libraries
-install(TARGETS camhal camhal_static)
+if (${CMAKE_VERSION} VERSION_LESS 3.11)
+install(TARGETS camhal camhal_static
+        LIBRARY DESTINATION lib/${CMAKE_INSTALL_SUB_PATH}
+        ARCHIVE DESTINATION lib/${CMAKE_INSTALL_SUB_PATH}
+        )
+else()
+install(TARGETS camhal camhal_static DESTINATION lib/${CMAKE_INSTALL_SUB_PATH})
+endif()
 
 # Install package config file
 configure_file(${PROJECT_SOURCE_DIR}/cmake/libcamhal.pc.cmakein
                ${PROJECT_SOURCE_DIR}/libcamhal.pc @ONLY)
 install(FILES libcamhal.pc
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/${CMAKE_INSTALL_SUB_PATH}/pkgconfig)
 
 endif() #NOT CAL_BUILD
 

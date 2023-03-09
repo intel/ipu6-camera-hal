@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Intel Corporation.
+ * Copyright (C) 2015-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -276,13 +276,10 @@ int AiqCore::setStatsParams(const cca::cca_stats_params& statsParams, AiqStatist
         unsigned int byteUsed = 0;
         void* pStatsData = intelCca->fetchHwStatsData(aiqStats->mSequence, &byteUsed);
         CheckAndLogError(!pStatsData, UNKNOWN_ERROR, "%s, pStatsData is nullptr", __func__);
-        ia_isp_bxt_statistics_query_results_t queryResults = {};
         ia_err iaErr = intelCca->decodeStats(reinterpret_cast<uint64_t>(pStatsData), byteUsed,
-                                             bitmap, &queryResults);
+                                             bitmap);
         CheckAndLogError(iaErr != ia_err_none, UNKNOWN_ERROR, "%s, Faield convert statistics",
                          __func__);
-        LOG2("%s, query results: rgbs_grid(%d), af_grid(%d), dvs_stats(%d)", __func__,
-             queryResults.rgbs_grid, queryResults.af_grid, queryResults.dvs_stats);
     }
 
     {
@@ -340,7 +337,7 @@ int AiqCore::runAiq(long requestId, AiqResult* aiqResult) {
     if (aaaRunType & IMAGING_ALGO_GBCE) {
         // run gbce with bypass level if AE lock
         if (mAeForceLock || mIntel3AParameter->mTestPatternMode != TEST_PATTERN_OFF ||
-            mRgbStatsBypassed) {
+            mRgbStatsBypassed || mAeBypassed) {
             mGbceParams.is_bypass = true;
         } else {
             mGbceParams.is_bypass = false;
@@ -370,7 +367,8 @@ int AiqCore::runAiq(long requestId, AiqResult* aiqResult) {
     {
         PERF_CAMERA_ATRACE_PARAM1_IMAGING("intelAiq->runAIQ", 1);
 
-        ia_err iaErr = intelCca->runAIQ(requestId, *mAiqParams.get(), mAiqResults.get());
+        ia_err iaErr = intelCca->runAIQ(requestId, *mAiqParams.get(), mAiqResults.get(),
+                                        aiqResult->mAiqParam.makernoteMode);
         mAiqRunTime++;
         ret = AiqUtils::convertError(iaErr);
         CheckAndLogError(ret != OK, ret, "@%s, runAIQ, ret: %d", __func__, ret);

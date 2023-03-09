@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Intel Corporation.
+ * Copyright (C) 2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -208,7 +208,7 @@ int ia_css_data_terminal_set_link_id(
 /*! Set stream2gen buffer size used in stream to GEN connection
  * This function should be called, in case we are in streaming use-case, and
  * we need to configure the stream2gen_buffer_size to be less than full image's height.
- * Note, that the stream2gen_buffer_size is set to a defalut value of full image's height
+ * Note, that the stream2gen_buffer_size is set to a default value of full image's height
  * during terminal_create function.
 
  * @param    terminal[in]            data terminal object
@@ -258,7 +258,7 @@ bool ia_css_is_terminal_valid(
 /* ================= Program Control Init Terminal - START ================= */
 
 /*!
- * Gets the program init terminal descripor size
+ * Gets the program init terminal descriptor size
  * @param manifest[in]        program control init terminal manifest
  * @param pg_manifest[in]    program group manifest
  * @param kernel_bitmap[in]    kernel enable bitmap
@@ -278,7 +278,7 @@ ia_css_program_control_init_terminal_get_descriptor_size(
  * @param manifest[in]        program control init terminal manifest
  * @param pg_manifest[in]    program group manifest
  * @param kernel_bitmap[in]    kernel enable bitmap
- * @return < 0 on erro
+ * @return < 0 on error
  */
 IA_CSS_PSYS_DYNAMIC_STORAGE_CLASS_H
 int
@@ -302,7 +302,7 @@ ia_css_program_control_init_terminal_get_program_desc(
 );
 
 /*!
- * Pretty prints the program control init termnial
+ * Pretty prints the program control init terminal
  * @param terminal[in]        program control init terminal
  */
 IA_CSS_PSYS_DYNAMIC_STORAGE_CLASS_H

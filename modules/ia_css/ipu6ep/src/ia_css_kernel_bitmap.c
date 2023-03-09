@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Intel Corporation.
+ * Copyright (C) 2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,7 +66,7 @@ ia_css_kernel_bitmap_t ia_css_kernel_bitmap_create_from_uint64(
 #ifndef IA_CSS_KERNEL_BITMAP_DO_NOT_USE_ELEMS
     result = ia_css_kernel_bitmap_clear();
     for (i = 0; i < MIN(nof_elems_bits64, IA_CSS_KERNEL_BITMAP_NOF_ELEMS); i++) {
-        /* masking is done implictly, the MSB bits of casting will bel chopped off */
+        /* masking is done implicitly, the MSB bits of casting will be chopped off */
         result.data[i] = (IA_CSS_KERNEL_BITMAP_ELEM_TYPE)
             (value >> (i * IA_CSS_KERNEL_BITMAP_ELEM_BITS));
     }

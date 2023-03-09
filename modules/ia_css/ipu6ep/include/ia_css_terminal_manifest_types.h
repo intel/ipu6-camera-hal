@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Intel Corporation.
+ * Copyright (C) 2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@
  * section belongs to, and the target memory type (usually device registers).
  *
  * A region ID allows specifying multiple sections for a single device when a
- * device's configuration registers are not all contigous.
+ * device's configuration registers are not all contiguous.
  */
 struct ia_css_param_manifest_section_desc_s {
     /** Maximum size of the related parameter region */
@@ -170,7 +170,7 @@ struct ia_css_spatial_param_terminal_manifest_s {
     /** Contains limits for the frame spatial parameters */
     ia_css_frame_grid_manifest_desc_t frame_grid_desc;
     /**
-     * Constains limits for the fragment spatial parameters
+     * Constrains limits for the fragment spatial parameters
      * - COMMON AMONG FRAGMENTS
      */
     ia_css_fragment_grid_manifest_desc_t common_fragment_grid_desc;
@@ -191,7 +191,7 @@ struct ia_css_spatial_param_terminal_manifest_s {
     uint8_t kernel_id;
     /**
      * Groups together compute units in order to achieve alignment
-     * requirements for transfes and to achieve canonical frame
+     * requirements for transfer and to achieve canonical frame
      * representation
      */
     uint8_t compute_units_p_elem;
@@ -247,7 +247,7 @@ struct ia_css_sliced_param_terminal_manifest_s {
     uint16_t sliced_param_section_count;
     /**
      * Points to array of ia_css_sliced_param_manifest_section_desc_s
-     * which constain info for the slicing of the parameters
+     * which contain info for the slicing of the parameters
      */
     uint16_t sliced_param_section_offset;
     /** Kernel identifier */

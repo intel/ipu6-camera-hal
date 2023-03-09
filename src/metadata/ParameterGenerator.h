@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2022 Intel Corporation.
+ * Copyright (C) 2015-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,6 +51,7 @@ class ParameterGenerator {
      * \brief Update parameters per sequence id.
      */
     void updateParameters(int64_t sequence, const Parameters* param);
+    int getRawOutputMode(int64_t sequence, raw_data_output_t& rawOutputMode);
     int getUserRequestId(int64_t sequence, int32_t& userRequestId);
 
     /**
@@ -94,7 +95,6 @@ class ParameterGenerator {
     Mutex mParamsLock;
     // first: sequence id, second: RequestParam data
     std::map<int64_t, std::shared_ptr<RequestParam> > mRequestParamMap;
-    Parameters mLastParam;
 
     std::unique_ptr<float[]> mTonemapCurveRed;
     std::unique_ptr<float[]> mTonemapCurveBlue;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2021 Intel Corporation.
+ * Copyright (C) 2019-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,17 +20,20 @@
 
 #include <string>
 
+#include "AiqResultStorage.h"
 #include "iutils/CameraLog.h"
 #include "iutils/Utils.h"
 
 namespace icamera {
 
-IntelPGParam::IntelPGParam(int pgId)
+IntelPGParam::IntelPGParam(int pgId, int cameraId, TuningMode tuningMode)
         : mInitialized(false),
           mPgId(pgId),
           mClient(reinterpret_cast<uintptr_t>(this)),
           mPayloadCount(0),
-          mPGBuffer(nullptr) {
+          mPGBuffer(nullptr),
+          mCameraId(cameraId),
+          mTuningMode(tuningMode) {
     std::string initName = "/pgParamInit" + std::to_string(mClient) + SHM_NAME;
     std::string prepareName = "/pgParamPrepare" + std::to_string(mClient) + SHM_NAME;
     std::string getFragDescsName = "/pgParamGetFragDescs" + std::to_string(mClient) + SHM_NAME;
@@ -63,6 +66,9 @@ IntelPGParam::IntelPGParam(int pgId)
     mMemStatistics.mName = "/pgParamStats" + std::to_string(mClient) + SHM_NAME;
     mMemStatistics.mSize = 0;
     mMaxStatsSize = 0;
+
+    mIntelCca = IntelCca::getInstance(mCameraId, mTuningMode);
+    CheckAndLogError(!mIntelCca, VOID_VALUE, "%s: Can't get IntelCca", __func__);
 
     mInitialized = true;
     LOG1("@%s, Construct done", __func__);
@@ -266,7 +272,8 @@ int IntelPGParam::updatePALAndEncode(const ia_binary_data* ipuParameters, int pa
     return OK;
 }
 
-int IntelPGParam::decode(int payloadCount, ia_binary_data* payloads, ia_binary_data* statistics) {
+int IntelPGParam::decode(int payloadCount, ia_binary_data* payloads, ia_binary_data* statistics,
+                         int64_t sequence) {
     CheckAndLogError(mInitialized == false, INVALID_OPERATION, "@%s, mInitialized is false",
                      __func__);
     // Check shared memory of payloads
@@ -287,8 +294,27 @@ int IntelPGParam::decode(int payloadCount, ia_binary_data* payloads, ia_binary_d
             CheckAndLogError(ret == false, UNKNOWN_ERROR, "@%s, alloc statsData fails", __func__);
         }
         statsHandle = mCommon.getShmMemHandle(mMemStatistics.mAddr);
+        statistics->data = mMemStatistics.mAddr;
     } else {
         statsHandle = mCommon.getShmMemHandle(statistics->data);
+    }
+
+    cca::cca_out_stats* outStats = fetchOutStats(sequence);
+    pg_param_decode_params* params = static_cast<pg_param_decode_params*>(mMemDecode.mAddr);
+    intel_cca_decode_stats_data& decodeStatsParams = params->decodeStatsParams;
+    if (outStats && mIntelCca) {
+        params->hasStatsDecode = true;
+        decodeStatsParams.cameraId = mCameraId;
+        decodeStatsParams.tuningMode = mTuningMode;
+        decodeStatsParams.statsHandle = statsHandle;
+        decodeStatsParams.statsBuffer.data = nullptr;
+        decodeStatsParams.statsBuffer.size = 0;  // not decode pg yet
+        decodeStatsParams.bitmap = cca::CCA_STATS_RGBS | cca::CCA_STATS_HIST | cca::CCA_STATS_AF |
+                                   cca::CCA_STATS_YV | cca::CCA_STATS_LTM | cca::CCA_STATS_DVS;
+        if (PlatformData::isPdafEnabled(mCameraId)) decodeStatsParams.bitmap |= cca::CCA_STATS_PDAF;
+        decodeStatsParams.outStats.get_rgbs_stats = outStats->get_rgbs_stats;
+    } else {
+        params->hasStatsDecode = false;
     }
 
     ret = mIpc.clientFlattenDecode(mMemDecode.mAddr, mMemDecode.mSize, mClient, payloadCount,
@@ -300,10 +326,18 @@ int IntelPGParam::decode(int payloadCount, ia_binary_data* payloads, ia_binary_d
 
     ret = mIpc.clientUnflattenDecode(mMemDecode.mAddr, mMemDecode.mSize, statistics);
     CheckAndLogError(ret == false, UNKNOWN_ERROR, "@%s, clientUnflattenDecode fails", __func__);
-    if (!statistics->data) {
-        statistics->data = mMemStatistics.mAddr;
-    }
 
+    if (outStats && mIntelCca) {
+        // print query result: params->results
+        if (outStats && decodeStatsParams.outStats.get_rgbs_stats) {
+            *outStats = decodeStatsParams.outStats;
+            outStats->rgbs_grid.blocks_ptr = outStats->rgbs_blocks;
+        }
+        ia_isp_bxt_statistics_query_results_t& queryResults = decodeStatsParams.results;
+        LOG2("%s, query results: rgbs_grid(%d), af_grid(%d), dvs_stats(%d), paf_grid(%d)", __func__,
+             queryResults.rgbs_grid, queryResults.af_grid, queryResults.dvs_stats,
+             queryResults.paf_grid);
+    }
     return OK;
 }
 
@@ -315,6 +349,25 @@ void IntelPGParam::deinit() {
 
     ret = mCommon.requestSync(IPC_PG_PARAM_DEINIT, mMemDeinit.mHandle);
     CheckAndLogError(ret == false, VOID_VALUE, "@%s, requestSync fails", __func__);
+}
+
+cca::cca_out_stats* IntelPGParam::fetchOutStats(int64_t sequence) {
+    if (sequence < 0) return nullptr;
+
+    AiqResult* aiqResult =
+        const_cast<AiqResult*>(AiqResultStorage::getInstance(mCameraId)->getAiqResult(sequence));
+    // Check if the frame needs stats decoding together
+    if (aiqResult && aiqResult->mAiqParam.callbackRgbs) {
+        // Request decodeStats together when rgbCallback is enabled
+        aiqResult->mOutStats.get_rgbs_stats = true;
+        return &aiqResult->mOutStats;
+    } else if (aiqResult && !PlatformData::isStatsRunningRateSupport(mCameraId)) {
+        // Request decodeStats together when running rate is disabled
+        aiqResult->mOutStats.get_rgbs_stats = false;
+        return &aiqResult->mOutStats;
+    }
+
+    return nullptr;
 }
 
 }  // namespace icamera

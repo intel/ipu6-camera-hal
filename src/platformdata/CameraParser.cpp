@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2022 Intel Corporation
+ * Copyright (C) 2015-2023 Intel Corporation
  * Copyright 2008-2017, The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -293,6 +293,12 @@ void CameraParser::handleCommon(CameraParser* profiles, const char* name, const 
     } else if (strcmp(name, "useGpuEvcp") == 0) {
         cfg->isGpuEvcpEnabled = strcmp(atts[1], "true") == 0;
         // ENABLE_EVCP_E
+        // LEVEL0_ICBM_S
+    } else if (strcmp(name, "useGPUICBM") == 0) {
+        cfg->isGPUICBMEnabled = strcmp(atts[1], "true") == 0;
+    }  else if (strcmp(name, "useLevel0Tnr") == 0) {
+        cfg->useLevel0Tnr = strcmp(atts[1], "true") == 0;
+        // LEVEL0_ICBM_E
     }
 }
 
@@ -319,6 +325,8 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
         getSupportedFormat(atts[1], pCurrentCam->mSupportedISysFormat);
     } else if (strcmp(name, "iSysRawFormat") == 0) {
         pCurrentCam->mISysRawFormat = CameraUtils::string2PixelCode(atts[1]);
+    } else if (strcmp(name, "preferredStillOutput") == 0) {
+        parseSizesList(atts[1], pCurrentCam->mPreferStillOutput);
     } else if (strcmp(name, "configModeToStreamId") == 0) {
         char* srcDup = strdup(atts[1]);
         CheckAndLogError(!srcDup, VOID_VALUE, "Create a copy of source string failed.");

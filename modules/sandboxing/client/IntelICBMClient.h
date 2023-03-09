@@ -30,12 +30,12 @@ class IntelICBM {
     IntelICBM() {}
     ~IntelICBM(){};
 
-    Result setup(ICBMInitInfo* initParam);
+    int setup(ICBMInitInfo* initParam);
     void shutdown();
-    Result processFrame(const ImageInfo& iii, const ImageInfo& iio, const ICBMReqInfo& reqInfo);
+    int processFrame(const ImageInfo& iii, const ImageInfo& iio, const ICBMReqInfo& reqInfo);
 
  private:
-    Result initRunInfoBuffer();
+    int initRunInfoBuffer();
 
     IntelAlgoCommon mCommon;
     ShmMemInfo mRunInfoMem;

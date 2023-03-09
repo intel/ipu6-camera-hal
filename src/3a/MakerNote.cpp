@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2021 Intel Corporation.
+ * Copyright (C) 2018-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -115,6 +115,18 @@ int MakerNote::saveMakernoteData(int cameraId, camera_makernote_mode_t makernote
         mMakernoteDataList.push_back(data);
     }
     return OK;
+}
+
+void* MakerNote::getMakernoteBuf(camera_makernote_mode_t makernoteMode, bool& dump) {
+    LOG2("@%s", __func__);
+    dump = CameraDump::isDumpTypeEnable(DUMP_MAKER_NOTE);
+    if ((makernoteMode == MAKERNOTE_MODE_OFF) && !dump) return nullptr;
+
+    AutoMutex lock(mMknLock);
+    CheckAndLogError(mMknState != INIT, nullptr, "@%s, mkn isn't initialized", __func__);
+
+    MakernoteData data = mMakernoteDataList.front();
+    return data.mknData;
 }
 
 void MakerNote::updateTimestamp(int64_t sequence, uint64_t timestamp) {
