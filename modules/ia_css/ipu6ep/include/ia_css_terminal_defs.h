@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Intel Corporation.
+ * Copyright (C) 2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -93,7 +93,7 @@ typedef enum ia_css_connect_buf_type {
  * and ia_css_connect_buf_type_t
  * To stage the changes, this type will remain - for now...
  *
- * Inital type to attribute mapping table for staging:
+ * Initial type to attribute mapping table for staging:
  * ia_css_terminal_type_t                    | ia_css_terminal_cat_t | ia_css_terminal_dir_t | ia_css_terminal_rou_t | ia_css_connect_buf_type_t    | notes
  * ----------------------------------------- | --------------------- | --------------------- | --------------------- | ---------------------------- | -----
  * IA_CSS_TERMINAL_TYPE_DATA_IN              | CAT_CONNECT           | DIR_IN                | ROU_FRAG?             | BUF_TYPE_DATA                | Fragment handling unclear
@@ -143,14 +143,14 @@ typedef enum ia_css_terminal_type {
     IA_CSS_TERMINAL_TYPE_STATE_OUT,
     /** Program parameters, may change per fragment */
     IA_CSS_TERMINAL_TYPE_PROGRAM,
-    /** Program control parameters.  Non-alogrithmic parameters for system devices. */
+    /** Program control parameters.  Non-algorithmic parameters for system devices. */
     IA_CSS_TERMINAL_TYPE_PROGRAM_CONTROL_INIT,
     IA_CSS_N_TERMINAL_TYPES
 } ia_css_terminal_type_t;
 
 #define IA_CSS_TERMINAL_TYPE_BITS                32
 
-/* Temporary redirection needed to facilicate merging with the drivers
+/* Temporary redirection needed to facilitate merging with the drivers
    in a backwards compatible manner */
 #define IA_CSS_TERMINAL_TYPE_PARAM_CACHED IA_CSS_TERMINAL_TYPE_PARAM_CACHED_IN
 

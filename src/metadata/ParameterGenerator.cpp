@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2022 Intel Corporation.
+ * Copyright (C) 2015-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -84,7 +84,7 @@ int ParameterGenerator::saveParameters(int64_t sequence, long requestId, const P
     CHECK_SEQUENCE(sequence);
 
     AutoMutex l(mParamsLock);
-    if (param) mLastParam = *param;
+    if (!param && mRequestParamMap.empty()) return BAD_VALUE;
 
     LOG2("<req%ld:seq%ld>%s", requestId, sequence, __func__);
     std::shared_ptr<RequestParam> requestParam = nullptr;
@@ -97,7 +97,7 @@ int ParameterGenerator::saveParameters(int64_t sequence, long requestId, const P
     }
 
     requestParam->requestId = requestId;
-    requestParam->param = mLastParam;
+    requestParam->param = param ? *param : mRequestParamMap.rbegin()->second->param;
 
     mRequestParamMap[sequence] = requestParam;
     return OK;
@@ -180,16 +180,18 @@ int ParameterGenerator::getParameters(int64_t sequence, Parameters* param, bool 
 
     if (setting) {
         AutoMutex l(mParamsLock);
-        if (sequence < 0) {
-            *param = mLastParam;
-        } else {
-            // Find nearest parameter
-            // The sequence of parameter should <= sequence
-            auto it = mRequestParamMap.upper_bound(sequence);
-            if (it == mRequestParamMap.begin()) {
-                LOGE("Can't find settings for seq %ld", sequence);
+        if (!mRequestParamMap.empty()) {
+            if (sequence < 0) {
+                *param = mRequestParamMap.rbegin()->second->param;
             } else {
-                *param = (--it)->second->param;
+                // Find nearest parameter
+                // The sequence of parameter should <= sequence
+                auto it = mRequestParamMap.upper_bound(sequence);
+                if (it == mRequestParamMap.begin()) {
+                    LOGE("Can't find settings for seq %ld", sequence);
+                } else {
+                    *param = (--it)->second->param;
+                }
             }
         }
     }
@@ -198,6 +200,17 @@ int ParameterGenerator::getParameters(int64_t sequence, Parameters* param, bool 
         generateParametersL(sequence, param);
     }
     return OK;
+}
+
+int ParameterGenerator::getRawOutputMode(int64_t sequence, raw_data_output_t& rawOutputMode) {
+    CHECK_SEQUENCE(sequence);
+
+    AutoMutex l(mParamsLock);
+    if (mRequestParamMap.find(sequence) != mRequestParamMap.end()) {
+        return mRequestParamMap[sequence]->param.getRawDataOutput(rawOutputMode);
+    }
+
+    return UNKNOWN_ERROR;
 }
 
 int ParameterGenerator::getUserRequestId(int64_t sequence, int32_t& userRequestId) {

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Copyright (C) 2022 Intel Corporation.
+<!-- Copyright (C) 2022-2023 Intel Corporation.
 
      Licensed under the Apache License, Version 2.0 (the "License");
      you may not use this file except in compliance with the License.
@@ -17,80 +17,75 @@
   <Sensor name="lt6911uxc" description="lt6911uxc sensor">
     <MediaCtlConfig id="0">
       <!-- FE capture -->
-      <format name="lt6911uxc a" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+      <format name="lt6911uxc b" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
       <format name="Intel IPU6 CSI-2 1" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
       <format name="Intel IPU6 CSI2 BE SOC 0" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-      <link srcName="lt6911uxc a" srcPad="0" sinkName="Intel IPU6 CSI-2 1" sinkPad="0" enable="true"/>
+      <link srcName="lt6911uxc b" srcPad="0" sinkName="Intel IPU6 CSI-2 1" sinkPad="0" enable="true"/>
       <link srcName="Intel IPU6 CSI-2 1" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 0" sinkPad="0" enable="true"/>
       <link srcName="Intel IPU6 CSI2 BE SOC 0" srcPad="1" sinkName="Intel IPU6 BE SOC capture 0" sinkPad="0" enable="true"/>
-      <control name="lt6911uxc a" ctrlId="V4L2_CID_MIPI_LANES" value="4" ctrlName="set mipi lane"/>
       <videonode name="Intel IPU6 BE SOC capture 0" videoNodeType="VIDEO_GENERIC"/>
       <videonode name="Intel IPU6 CSI-2 1" videoNodeType="VIDEO_ISYS_RECEIVER"/>
-      <videonode name="lt6911uxc a" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+      <videonode name="lt6911uxc b" videoNodeType="VIDEO_PIXEL_ARRAY"/>
     </MediaCtlConfig>
     <MediaCtlConfig id="1">
       <!-- FE capture -->
-      <format name="lt6911uxc a" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+      <format name="lt6911uxc b" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
       <format name="Intel IPU6 CSI-2 1" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
       <format name="Intel IPU6 CSI2 BE SOC 0" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-      <link srcName="lt6911uxc a" srcPad="0" sinkName="Intel IPU6 CSI-2 1" sinkPad="0" enable="true"/>
+      <link srcName="lt6911uxc b" srcPad="0" sinkName="Intel IPU6 CSI-2 1" sinkPad="0" enable="true"/>
       <link srcName="Intel IPU6 CSI-2 1" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 0" sinkPad="0" enable="true"/>
       <link srcName="Intel IPU6 CSI2 BE SOC 0" srcPad="1" sinkName="Intel IPU6 BE SOC capture 0" sinkPad="0" enable="true"/>
-      <control name="lt6911uxc a" ctrlId="V4L2_CID_MIPI_LANES" value="4" ctrlName="set mipi lane"/>
       <videonode name="Intel IPU6 BE SOC capture 0" videoNodeType="VIDEO_GENERIC"/>
       <videonode name="Intel IPU6 CSI-2 1" videoNodeType="VIDEO_ISYS_RECEIVER"/>
-      <videonode name="lt6911uxc a" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+      <videonode name="lt6911uxc b" videoNodeType="VIDEO_PIXEL_ARRAY"/>
     </MediaCtlConfig>
     <MediaCtlConfig id="2">
       <!-- FE capture -->
-      <format name="lt6911uxc a" pad="0" width="2048" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+      <format name="lt6911uxc b" pad="0" width="2048" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
       <format name="Intel IPU6 CSI-2 1" pad="0" width="2048" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
       <format name="Intel IPU6 CSI2 BE SOC 0" pad="0" width="2048" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-      <link srcName="lt6911uxc a" srcPad="0" sinkName="Intel IPU6 CSI-2 1" sinkPad="0" enable="true"/>
+      <link srcName="lt6911uxc b" srcPad="0" sinkName="Intel IPU6 CSI-2 1" sinkPad="0" enable="true"/>
       <link srcName="Intel IPU6 CSI-2 1" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 0" sinkPad="0" enable="true"/>
       <link srcName="Intel IPU6 CSI2 BE SOC 0" srcPad="1" sinkName="Intel IPU6 BE SOC capture 0" sinkPad="0" enable="true"/>
-      <control name="lt6911uxc a" ctrlId="V4L2_CID_MIPI_LANES" value="4" ctrlName="set mipi lane"/>
       <videonode name="Intel IPU6 BE SOC capture 0" videoNodeType="VIDEO_GENERIC"/>
       <videonode name="Intel IPU6 CSI-2 1" videoNodeType="VIDEO_ISYS_RECEIVER"/>
-      <videonode name="lt6911uxc a" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+      <videonode name="lt6911uxc b" videoNodeType="VIDEO_PIXEL_ARRAY"/>
     </MediaCtlConfig>
     <MediaCtlConfig id="3">
       <!-- FE capture -->
-      <format name="lt6911uxc a" pad="0" width="2560" height="1440" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+      <format name="lt6911uxc b" pad="0" width="2560" height="1440" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
       <format name="Intel IPU6 CSI-2 1" pad="0" width="2560" height="1440" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
       <format name="Intel IPU6 CSI2 BE SOC 0" pad="0" width="2560" height="1440" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-      <link srcName="lt6911uxc a" srcPad="0" sinkName="Intel IPU6 CSI-2 1" sinkPad="0" enable="true"/>
+      <link srcName="lt6911uxc b" srcPad="0" sinkName="Intel IPU6 CSI-2 1" sinkPad="0" enable="true"/>
       <link srcName="Intel IPU6 CSI-2 1" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 0" sinkPad="0" enable="true"/>
       <link srcName="Intel IPU6 CSI2 BE SOC 0" srcPad="1" sinkName="Intel IPU6 BE SOC capture 0" sinkPad="0" enable="true"/>
-      <control name="lt6911uxc a" ctrlId="V4L2_CID_MIPI_LANES" value="4" ctrlName="set mipi lane"/>
       <videonode name="Intel IPU6 BE SOC capture 0" videoNodeType="VIDEO_GENERIC"/>
       <videonode name="Intel IPU6 CSI-2 1" videoNodeType="VIDEO_ISYS_RECEIVER"/>
-      <videonode name="lt6911uxc a" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+      <videonode name="lt6911uxc b" videoNodeType="VIDEO_PIXEL_ARRAY"/>
     </MediaCtlConfig>
     <MediaCtlConfig id="4">
       <!-- FE capture -->
-      <format name="lt6911uxc a" pad="0" width="1920" height="2160" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+      <format name="lt6911uxc b" pad="0" width="1920" height="2160" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
       <format name="Intel IPU6 CSI-2 1" pad="0" width="1920" height="2160" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
       <format name="Intel IPU6 CSI2 BE SOC 0" pad="0" width="1920" height="2160" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-      <link srcName="lt6911uxc a" srcPad="0" sinkName="Intel IPU6 CSI-2 1" sinkPad="0" enable="true"/>
+      <link srcName="lt6911uxc b" srcPad="0" sinkName="Intel IPU6 CSI-2 1" sinkPad="0" enable="true"/>
       <link srcName="Intel IPU6 CSI-2 1" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 0" sinkPad="0" enable="true"/>
       <link srcName="Intel IPU6 CSI2 BE SOC 0" srcPad="1" sinkName="Intel IPU6 BE SOC capture 0" sinkPad="0" enable="true"/>
-      <control name="lt6911uxc a" ctrlId="V4L2_CID_MIPI_LANES" value="4" ctrlName="set mipi lane"/>
       <videonode name="Intel IPU6 BE SOC capture 0" videoNodeType="VIDEO_GENERIC"/>
       <videonode name="Intel IPU6 CSI-2 1" videoNodeType="VIDEO_ISYS_RECEIVER"/>
-      <videonode name="lt6911uxc a" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+      <videonode name="lt6911uxc b" videoNodeType="VIDEO_PIXEL_ARRAY"/>
     </MediaCtlConfig>
     <MediaCtlConfig id="5">
       <!-- FE capture -->
-      <format name="lt6911uxc a" pad="0" width="3840" height="2160" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+      <format name="lt6911uxc b" pad="0" width="3840" height="2160" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
       <format name="Intel IPU6 CSI-2 1" pad="0" width="3840" height="2160" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
       <format name="Intel IPU6 CSI2 BE SOC 0" pad="0" width="3840" height="2160" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-      <link srcName="lt6911uxc a" srcPad="0" sinkName="Intel IPU6 CSI-2 1" sinkPad="0" enable="true"/>
+      <link srcName="lt6911uxc b" srcPad="0" sinkName="Intel IPU6 CSI-2 1" sinkPad="0" enable="true"/>
       <link srcName="Intel IPU6 CSI-2 1" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 0" sinkPad="0" enable="true"/>
       <link srcName="Intel IPU6 CSI2 BE SOC 0" srcPad="1" sinkName="Intel IPU6 BE SOC capture 0" sinkPad="0" enable="true"/>
       <videonode name="Intel IPU6 BE SOC capture 0" videoNodeType="VIDEO_GENERIC"/>
       <videonode name="Intel IPU6 CSI-2 1" videoNodeType="VIDEO_ISYS_RECEIVER"/>
-      <videonode name="lt6911uxc a" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+      <videonode name="lt6911uxc b" videoNodeType="VIDEO_PIXEL_ARRAY"/>
     </MediaCtlConfig>
     <StaticMetadata>
       <!-- list of stream config info. Meanings of each part is "format,widthxheight,field(0 is none, 7 is alternate),mcId" -->
@@ -113,68 +108,63 @@
 <Sensor name="lt6911uxc-2" description="lt6911uxc sensor">
     <MediaCtlConfig id="0">
       <!-- FE capture -->
-      <format name="lt6911uxc b" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+      <format name="lt6911uxc c" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
       <format name="Intel IPU6 CSI-2 2" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
       <format name="Intel IPU6 CSI2 BE SOC 1" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-      <link srcName="lt6911uxc b" srcPad="0" sinkName="Intel IPU6 CSI-2 2" sinkPad="0" enable="true"/>
+      <link srcName="lt6911uxc c" srcPad="0" sinkName="Intel IPU6 CSI-2 2" sinkPad="0" enable="true"/>
       <link srcName="Intel IPU6 CSI-2 2" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 1" sinkPad="0" enable="true"/>
       <link srcName="Intel IPU6 CSI2 BE SOC 1" srcPad="1" sinkName="Intel IPU6 BE SOC 1 capture 0" sinkPad="0" enable="true"/>
-      <control name="lt6911uxc b" ctrlId="V4L2_CID_MIPI_LANES" value="4" ctrlName="set mipi lane"/>
       <videonode name="Intel IPU6 BE SOC 1 capture 0" videoNodeType="VIDEO_GENERIC"/>
       <videonode name="Intel IPU6 CSI-2 2" videoNodeType="VIDEO_ISYS_RECEIVER"/>
-      <videonode name="lt6911uxc b" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+      <videonode name="lt6911uxc c" videoNodeType="VIDEO_PIXEL_ARRAY"/>
     </MediaCtlConfig>
     <MediaCtlConfig id="1">
       <!-- FE capture -->
-      <format name="lt6911uxc b" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+      <format name="lt6911uxc c" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
       <format name="Intel IPU6 CSI-2 2" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
       <format name="Intel IPU6 CSI2 BE SOC 1" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-      <link srcName="lt6911uxc b" srcPad="0" sinkName="Intel IPU6 CSI-2 2" sinkPad="0" enable="true"/>
+      <link srcName="lt6911uxc c" srcPad="0" sinkName="Intel IPU6 CSI-2 2" sinkPad="0" enable="true"/>
       <link srcName="Intel IPU6 CSI-2 2" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 1" sinkPad="0" enable="true"/>
       <link srcName="Intel IPU6 CSI2 BE SOC 1" srcPad="1" sinkName="Intel IPU6 BE SOC 1 capture 0" sinkPad="0" enable="true"/>
-      <control name="lt6911uxc b" ctrlId="V4L2_CID_MIPI_LANES" value="4" ctrlName="set mipi lane"/>
       <videonode name="Intel IPU6 BE SOC 1 capture 0" videoNodeType="VIDEO_GENERIC"/>
       <videonode name="Intel IPU6 CSI-2 2" videoNodeType="VIDEO_ISYS_RECEIVER"/>
-      <videonode name="lt6911uxc b" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+      <videonode name="lt6911uxc c" videoNodeType="VIDEO_PIXEL_ARRAY"/>
     </MediaCtlConfig>
     <MediaCtlConfig id="2">
       <!-- FE capture -->
-      <format name="lt6911uxc b" pad="0" width="1920" height="2160" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+      <format name="lt6911uxc c" pad="0" width="1920" height="2160" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
       <format name="Intel IPU6 CSI-2 2" pad="0" width="1920" height="2160" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
       <format name="Intel IPU6 CSI2 BE SOC 1" pad="0" width="1920" height="2160" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-      <link srcName="lt6911uxc b" srcPad="0" sinkName="Intel IPU6 CSI-2 2" sinkPad="0" enable="true"/>
+      <link srcName="lt6911uxc c" srcPad="0" sinkName="Intel IPU6 CSI-2 2" sinkPad="0" enable="true"/>
       <link srcName="Intel IPU6 CSI-2 2" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 1" sinkPad="0" enable="true"/>
       <link srcName="Intel IPU6 CSI2 BE SOC 1" srcPad="1" sinkName="Intel IPU6 BE SOC 1 capture 0" sinkPad="0" enable="true"/>
-      <control name="lt6911uxc b" ctrlId="V4L2_CID_MIPI_LANES" value="4" ctrlName="set mipi lane"/>
       <videonode name="Intel IPU6 BE SOC 1 capture 0" videoNodeType="VIDEO_GENERIC"/>
       <videonode name="Intel IPU6 CSI-2 2" videoNodeType="VIDEO_ISYS_RECEIVER"/>
-      <videonode name="lt6911uxc b" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+      <videonode name="lt6911uxc c" videoNodeType="VIDEO_PIXEL_ARRAY"/>
     </MediaCtlConfig>
     <MediaCtlConfig id="3">
       <!-- FE capture -->
-      <format name="lt6911uxc b" pad="0" width="2560" height="1440" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+      <format name="lt6911uxc c" pad="0" width="2560" height="1440" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
       <format name="Intel IPU6 CSI-2 2" pad="0" width="2560" height="1440" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
       <format name="Intel IPU6 CSI2 BE SOC 1" pad="0" width="2560" height="1440" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-      <link srcName="lt6911uxc b" srcPad="0" sinkName="Intel IPU6 CSI-2 2" sinkPad="0" enable="true"/>
+      <link srcName="lt6911uxc c" srcPad="0" sinkName="Intel IPU6 CSI-2 2" sinkPad="0" enable="true"/>
       <link srcName="Intel IPU6 CSI-2 2" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 1" sinkPad="0" enable="true"/>
       <link srcName="Intel IPU6 CSI2 BE SOC 1" srcPad="1" sinkName="Intel IPU6 BE SOC 1 capture 0" sinkPad="0" enable="true"/>
-      <control name="lt6911uxc b" ctrlId="V4L2_CID_MIPI_LANES" value="4" ctrlName="set mipi lane"/>
       <videonode name="Intel IPU6 BE SOC 1 capture 0" videoNodeType="VIDEO_GENERIC"/>
       <videonode name="Intel IPU6 CSI-2 2" videoNodeType="VIDEO_ISYS_RECEIVER"/>
-      <videonode name="lt6911uxc b" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+      <videonode name="lt6911uxc c" videoNodeType="VIDEO_PIXEL_ARRAY"/>
     </MediaCtlConfig>
     <MediaCtlConfig id="4">
       <!-- FE capture -->
-      <format name="lt6911uxc b" pad="0" width="3840" height="2160" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+      <format name="lt6911uxc c" pad="0" width="3840" height="2160" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
       <format name="Intel IPU6 CSI-2 2" pad="0" width="3840" height="2160" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
       <format name="Intel IPU6 CSI2 BE SOC 1" pad="0" width="3840" height="2160" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-      <link srcName="lt6911uxc b" srcPad="0" sinkName="Intel IPU6 CSI-2 2" sinkPad="0" enable="true"/>
+      <link srcName="lt6911uxc c" srcPad="0" sinkName="Intel IPU6 CSI-2 2" sinkPad="0" enable="true"/>
       <link srcName="Intel IPU6 CSI-2 2" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 1" sinkPad="0" enable="true"/>
       <link srcName="Intel IPU6 CSI2 BE SOC 1" srcPad="1" sinkName="Intel IPU6 BE SOC 1 capture 0" sinkPad="0" enable="true"/>
-      <control name="lt6911uxc b" ctrlId="V4L2_CID_MIPI_LANES" value="4" ctrlName="set mipi lane"/>
       <videonode name="Intel IPU6 BE SOC 1 capture 0" videoNodeType="VIDEO_GENERIC"/>
       <videonode name="Intel IPU6 CSI-2 2" videoNodeType="VIDEO_ISYS_RECEIVER"/>
-      <videonode name="lt6911uxc b" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+      <videonode name="lt6911uxc c" videoNodeType="VIDEO_PIXEL_ARRAY"/>
     </MediaCtlConfig>
     <StaticMetadata>
       <!-- list of stream config info. Meanings of each part is "format,widthxheight,field(0 is none, 7 is alternate),mcId" -->

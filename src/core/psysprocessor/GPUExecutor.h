@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2021 Intel Corporation
+ * Copyright (C) 2020-2023 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@
 #include "PipeLiteExecutor.h"
 #ifdef ENABLE_SANDBOXING
 #include "modules/sandboxing/client/IntelTNR7USClient.h"
-#else
+#elif defined(TNR7_CM)
 #include "modules/algowrapper/IntelTNR7US.h"
 #endif
 

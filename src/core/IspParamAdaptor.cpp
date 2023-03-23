@@ -360,9 +360,6 @@ int IspParamAdaptor::decodeStatsData(TuningMode tuningMode,
                                           hwStatsData->size, bitmap, &queryResults, outStats);
     CheckAndLogError(iaErr != ia_err_none, UNKNOWN_ERROR, "%s, Faield convert statistics",
                      __func__);
-    LOG2("%s, query results: rgbs_grid(%d), af_grid(%d), dvs_stats(%d), paf_grid(%d)", __func__,
-         queryResults.rgbs_grid, queryResults.af_grid, queryResults.dvs_stats,
-         queryResults.paf_grid);
 
     return OK;
 }

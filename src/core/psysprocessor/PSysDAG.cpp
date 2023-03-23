@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2022 Intel Corporation.
+ * Copyright (C) 2017-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@
 
 #include "iutils/CameraLog.h"
 #include "iutils/Utils.h"
-#ifdef TNR7_CM
+#if defined(TNR7_CM) || defined(TNR7_LEVEL0)
 #include "GPUExecutor.h"
 #endif
 #include "CameraScheduler.h"
@@ -137,7 +137,7 @@ int PSysDAG::createPipeExecutors(bool useTnrOutBuffer) {
         if (!hasVideoPipe) hasVideoPipe = (streamId == VIDEO_STREAM_ID);
         if (!hasStillPipe)
             hasStillPipe = (streamId == STILL_STREAM_ID || streamId == STILL_TNR_STREAM_ID);
-#ifdef TNR7_CM
+#if defined(TNR7_CM) || defined(TNR7_LEVEL0)
         PipeExecutor* executor;
         if (strstr(item.exeName.c_str(), "gputnr") != nullptr) {
             executor =
@@ -778,6 +778,10 @@ int PSysDAG::prepareIpuParams(int64_t sequence, bool forceUpdate, TaskInfo* task
                 }
             }
         }
+
+// INTEL_DVS_S
+        mPSysDagCB->onDvsPrepare(id);
+// INTEL_DVS_E
 
         int ret = mIspParamAdaptor->runIspAdapt(&task->mTaskData.mIspSettings, sequence, id);
         CheckAndLogError(ret != OK, UNKNOWN_ERROR, "%s, <seq%ld> Failed to run AIC: streamId: %d",

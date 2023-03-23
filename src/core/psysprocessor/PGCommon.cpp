@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2022 Intel Corporation.
+ * Copyright (C) 2019-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -95,7 +95,7 @@ PGCommon::~PGCommon() {}
 
 int PGCommon::init() {
     mDisableDataTermials.clear();
-    mPGParamAdapt = std::unique_ptr<IntelPGParam>(new IntelPGParam(mPGId));
+    mPGParamAdapt = std::unique_ptr<IntelPGParam>(new IntelPGParam(mPGId, mCameraId, mTuningMode));
 
     mCtx = new CIPR::Context();
     CheckAndLogError(!(mCtx->isInitialized()), UNKNOWN_ERROR, "Failed to initialize Context");
@@ -923,7 +923,7 @@ int PGCommon::iterate(CameraBufferMap& inBufs, CameraBufferMap& outBufs, ia_bina
             statistics->data = mIntelCca->getStatsDataBuffer();
             if (statistics->data) useCcaBuf = true;
         }
-        ret = mPGParamAdapt->decode(mTerminalCount, mParamPayload, statistics);
+        ret = mPGParamAdapt->decode(mTerminalCount, mParamPayload, statistics, sequence);
         CheckAndLogError((ret != OK), ret, "%s, decode fail", getName());
         if (mIntelCca && useCcaBuf) {
             mIntelCca->decodeHwStatsDone(sequence, statistics->size);

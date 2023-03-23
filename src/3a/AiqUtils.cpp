@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Intel Corporation.
+ * Copyright (C) 2015-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,6 +57,12 @@ void AiqUtils::dumpAeResults(const cca::cca_ae_results& aeResult) {
     }
     LOG3("AE bracket mode = %d %s", aeResult.multiframe,
          aeResult.multiframe == ia_aiq_bracket_mode_ull ? "ULL" : "none-ULL");
+
+    if (aeResult.flicker_reduction_mode == ia_aiq_ae_flicker_reduction_50hz) {
+        LOG3("AE antiflicker freq 50hz");
+    } else if (aeResult.flicker_reduction_mode == ia_aiq_ae_flicker_reduction_60hz) {
+        LOG3("AE antiflicker freq 60hz");
+    }
 
     const cca::cca_hist_weight_grid& wg = aeResult.weight_grid;
     if (wg.width != 0 && wg.height != 0) {

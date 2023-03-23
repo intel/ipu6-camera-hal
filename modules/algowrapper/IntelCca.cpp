@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Intel Corporation
+ * Copyright (C) 2020-2023 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -122,7 +122,7 @@ ia_err IntelCca::runAEC(uint64_t frameId, const cca::cca_ae_input_params& params
 }
 
 ia_err IntelCca::runAIQ(uint64_t frameId, const cca::cca_aiq_params& params,
-                        cca::cca_aiq_results* results) {
+                        cca::cca_aiq_results* results, camera_makernote_mode_t mode) {
     CheckAndLogError(!results, ia_err_argument, "@%s, results is nullptr", __func__);
 
     ia_err ret = getIntelCCA()->runAIQ(frameId, params, results);
@@ -277,11 +277,15 @@ void IntelCca::deinit() {
 ia_err IntelCca::decodeStats(uint64_t statsPointer, uint32_t statsSize, uint32_t bitmap,
                              ia_isp_bxt_statistics_query_results_t* results,
                              cca::cca_out_stats* outStats) {
-    CheckAndLogError(!results, ia_err_argument, "@%s, results is nullptr", __func__);
+    ia_isp_bxt_statistics_query_results_t resultsTmp = {};
+    ia_isp_bxt_statistics_query_results_t* query = results ? results : &resultsTmp;
 
-    ia_err ret = getIntelCCA()->decodeStats(statsPointer, statsSize, bitmap, results, outStats);
+    ia_err ret = getIntelCCA()->decodeStats(statsPointer, statsSize, bitmap, query, outStats);
     LOG2("@%s, statsPointer: 0x%lu, statsSize:%d, bitmap:%x, ret: %d", __func__, statsPointer,
          statsSize, bitmap, ret);
+
+    LOG2("%s, query results: rgbs_grid(%d), af_grid(%d), dvs_stats(%d), paf_grid(%d)", __func__,
+         query->rgbs_grid, query->af_grid, query->dvs_stats, query->paf_grid);
 
     return ret;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Intel Corporation
+ * Copyright (C) 2020-2023 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@
 
 #include "modules/algowrapper/IntelTNR7US.h"
 
-#include <base/bind.h>
+#include <base/functional/bind.h>
 #include <base/threading/thread.h>
 
 #include <string>
@@ -30,6 +30,10 @@
 #define CM_SURFACE_ALIGN_HEIGHT(val) ALIGN(val, 64)
 
 namespace icamera {
+
+IntelTNR7US* IntelTNR7US::createIntelTNR(int cameraId) {
+    return new IntelTNR7US(cameraId);
+}
 
 IntelTNR7US::IntelTNR7US(int cameraId)
         : mCameraId(cameraId),
@@ -146,7 +150,7 @@ int IntelTNR7US::asyncParamUpdate(int gain, bool forceUpdate) {
     return OK;
 }
 
-int32_t IntelTNR7US::getSurfaceInfo(int width, int height, uint32_t* size) {
+int32_t IntelTNR7US::getTnrBufferSize(int width, int height, uint32_t* size) {
     uint32_t pitch = 0;
     uint32_t physicalSize = 0;
     int ret = getSurface2DInfo(uint32_t(width), uint32_t(CM_SURFACE_ALIGN_HEIGHT(height)),

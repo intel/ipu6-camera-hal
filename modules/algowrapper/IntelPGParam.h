@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Intel Corporation.
+ * Copyright (C) 2018-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ extern "C" {
 #include "iutils/Errors.h"
 #include "iutils/Utils.h"
 #include "modules/ia_cipr/include/Utils.h"
+#include "CameraTypes.h"
 #include "src/core/psysprocessor/PGUtils.h"
 
 namespace icamera {
@@ -69,7 +70,7 @@ namespace icamera {
  */
 class IntelPGParam {
  public:
-    explicit IntelPGParam(int pgId);
+    explicit IntelPGParam(int pgId, int cameraId = 0, TuningMode tuningMode = TUNING_MODE_VIDEO);
     ~IntelPGParam();
 
     /**
@@ -107,7 +108,8 @@ class IntelPGParam {
     /**
      * Decode payload data for all related terminals.
      */
-    int decode(int payloadCount, ia_binary_data* payload, ia_binary_data* statistics);
+    int decode(int payloadCount, ia_binary_data* payload, ia_binary_data* statistics,
+               int64_t sequence = -1);
 
     /**
      * Use to deinit P2P handle.

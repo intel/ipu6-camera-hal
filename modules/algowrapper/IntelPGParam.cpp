@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2021 Intel Corporation.
+ * Copyright (C) 2018-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@
 
 namespace icamera {
 
-IntelPGParam::IntelPGParam(int pgId)
+IntelPGParam::IntelPGParam(int pgId, int cameraId, TuningMode tuningMode)
         : mPgId(pgId),
           mTerminalCount(0),
           mFragmentCount(0),
@@ -35,6 +35,8 @@ IntelPGParam::IntelPGParam(int pgId)
           mProcessGroup(nullptr),
           mProgramControlInitTerminalIndex(-1),
           mProcessGroupMemory(nullptr) {
+    UNUSED(cameraId);
+    UNUSED(tuningMode);
     CLEAR(mP2pCacheBuffer);
 }
 
@@ -657,9 +659,11 @@ int IntelPGParam::encodeTerminal(ia_css_terminal_t* terminal, ia_binary_data pay
     return ret;
 }
 
-int IntelPGParam::decode(int payloadCount, ia_binary_data* payload, ia_binary_data* statistics) {
+int IntelPGParam::decode(int payloadCount, ia_binary_data* payload, ia_binary_data* statistics,
+                         int64_t sequence) {
     CheckAndLogError(!mProcessGroup, INVALID_OPERATION, "Can't decode due to null pg.");
     CheckAndLogError(!payload, INVALID_OPERATION, "nullptr payload.");
+    UNUSED(sequence);
 
     if (statistics && statistics->data) {
         ia_p2p_set_statistics_buffer(mP2pHandle, statistics->data);

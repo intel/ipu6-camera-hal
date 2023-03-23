@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2022 Intel Corporation
+ * Copyright (C) 2015-2023 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -316,6 +316,10 @@ int AiqInitData::deinitMakernote(int cameraId, TuningMode tuningMode) {
 int AiqInitData::saveMakernoteData(int cameraId, camera_makernote_mode_t makernoteMode,
                                    int64_t sequence, TuningMode tuningMode) {
     return mMkn->saveMakernoteData(cameraId, makernoteMode, sequence, tuningMode);
+}
+
+void* AiqInitData::getMakernoteBuf(camera_makernote_mode_t makernoteMode, bool& dump) {
+    return mMkn->getMakernoteBuf(makernoteMode, dump);
 }
 
 void AiqInitData::updateMakernoteTimeStamp(int64_t sequence, uint64_t timestamp) {

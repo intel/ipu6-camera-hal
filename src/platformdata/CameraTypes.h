@@ -200,6 +200,7 @@ struct CommonConfig {
     // ENABLE_EVCP_E
     // LEVEL0_ICBM_S
     bool isGPUICBMEnabled;
+    bool useLevel0Tnr;
     // LEVEL0_ICBM_E
 
     CommonConfig() {
@@ -218,6 +219,7 @@ struct CommonConfig {
         // ENABLE_EVCP_E
         // LEVEL0_ICBM_S
         isGPUICBMEnabled = false;
+        useLevel0Tnr = false;
         // LEVEL0_ICBM_E
     }
 };
