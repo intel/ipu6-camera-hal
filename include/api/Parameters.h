@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2013 The Android Open Source Project
- * Copyright (C) 2015-2022 Intel Corporation.
+ * Copyright (C) 2015-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -2959,6 +2959,26 @@ class Parameters {
      * \return 0 if flag was set, otherwise non-0 value is returned.
      */
     int getZoomRegion(camera_zoom_region_t* region) const;
+
+    // LEVEL0_ICBM_S
+    /**
+     * \brief Set ICBM FF Mode
+     *
+     * \param[in] uint8_t Mode
+     *
+     * \return 0 if set successfully, otherwise non-0 value is returned.
+     */
+    int setICBMUFMode(uint8_t mode);
+
+    /**
+     * \brief Get ICBM UF Mode
+     *
+     * \param[out] uint8_t mode
+     *
+     * \return 0 if flag was set, otherwise non-0 value is returned.
+     */
+    int getICBMUFMode(uint8_t* mode) const;
+    // LEVEL0_ICBM_E
 
  private:
     friend class ParameterHelper;

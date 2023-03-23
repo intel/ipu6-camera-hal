@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2012 The Android Open Source Project
- * Copyright (C) 2021 Intel Corporation
+ * Copyright (C) 2021-2023 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,24 +38,24 @@ static tag_info_t intel_vendor_camera[INTEL_VENDOR_CAMERA_END - INTEL_VENDOR_CAM
     {"callbackTmCurve", ICAMERA_TYPE_BYTE},
     {"toneMapCurve", ICAMERA_TYPE_FLOAT},
     {"powerMode", ICAMERA_TYPE_BYTE},
-    // ENABLE_EVCP_S
+    // LEVEL0_ICBM_S
     {"icCaps", ICAMERA_TYPE_INT32},
-    // ENABLE_EVCP_E
-    // ENABLE_EVCP_S
+    // LEVEL0_ICBM_E
+    // LEVEL0_ICBM_S
     {"icPeaceFeatures", ICAMERA_TYPE_INT32},
-    // ENABLE_EVCP_E
-    // ENABLE_EVCP_S
+    // LEVEL0_ICBM_E
+    // LEVEL0_ICBM_S
     {"icEccMode", ICAMERA_TYPE_BYTE},
-    // ENABLE_EVCP_E
-    // ENABLE_EVCP_S
+    // LEVEL0_ICBM_E
+    // LEVEL0_ICBM_S
     {"icBcMode", ICAMERA_TYPE_BYTE},
-    // ENABLE_EVCP_E
-    // ENABLE_EVCP_S
+    // LEVEL0_ICBM_E
+    // LEVEL0_ICBM_S
     {"icBrParameters", ICAMERA_TYPE_INT32},
-    // ENABLE_EVCP_E
-    // ENABLE_EVCP_S
+    // LEVEL0_ICBM_E
+    // LEVEL0_ICBM_S
     {"icUfMode", ICAMERA_TYPE_BYTE},
-    // ENABLE_EVCP_E
+    // LEVEL0_ICBM_E
     {"totalExposureTarget", ICAMERA_TYPE_INT64},
     {"totalExposureTargetRange", ICAMERA_TYPE_INT64},
     {"rawDataOutput", ICAMERA_TYPE_BYTE},
@@ -139,17 +139,17 @@ int vendor_metadata_enum_snprint(uint32_t tag, int32_t value, char* dst, size_t 
             }
             break;
         }
-            // ENABLE_EVCP_S
+            // LEVEL0_ICBM_S
         case INTEL_VENDOR_CAMERA_IC_CAPS: {
             break;
         }
-            // ENABLE_EVCP_E
-            // ENABLE_EVCP_S
+            // LEVEL0_ICBM_E
+            // LEVEL0_ICBM_S
         case INTEL_VENDOR_CAMERA_IC_PEACE_FEATURES: {
             break;
         }
-            // ENABLE_EVCP_E
-            // ENABLE_EVCP_S
+            // LEVEL0_ICBM_E
+            // LEVEL0_ICBM_S
         case INTEL_VENDOR_CAMERA_IC_ECC_MODE: {
             switch (value) {
                 case INTEL_VENDOR_CAMERA_IC_ECC_MODE_OFF:
@@ -165,8 +165,8 @@ int vendor_metadata_enum_snprint(uint32_t tag, int32_t value, char* dst, size_t 
             }
             break;
         }
-            // ENABLE_EVCP_E
-            // ENABLE_EVCP_S
+            // LEVEL0_ICBM_E
+            // LEVEL0_ICBM_S
         case INTEL_VENDOR_CAMERA_IC_BC_MODE: {
             switch (value) {
                 case INTEL_VENDOR_CAMERA_IC_BC_MODE_OFF:
@@ -186,13 +186,13 @@ int vendor_metadata_enum_snprint(uint32_t tag, int32_t value, char* dst, size_t 
             }
             break;
         }
-            // ENABLE_EVCP_E
-            // ENABLE_EVCP_S
+            // LEVEL0_ICBM_E
+            // LEVEL0_ICBM_S
         case INTEL_VENDOR_CAMERA_IC_BR_PARAMETERS: {
             break;
         }
-            // ENABLE_EVCP_E
-            // ENABLE_EVCP_S
+            // LEVEL0_ICBM_E
+            // LEVEL0_ICBM_S
         case INTEL_VENDOR_CAMERA_IC_UF_MODE: {
             switch (value) {
                 case INTEL_VENDOR_CAMERA_IC_UF_MODE_OFF:
@@ -208,7 +208,7 @@ int vendor_metadata_enum_snprint(uint32_t tag, int32_t value, char* dst, size_t 
             }
             break;
         }
-            // ENABLE_EVCP_E
+            // LEVEL0_ICBM_E
         case INTEL_VENDOR_CAMERA_TOTAL_EXPOSURE_TARGET: {
             break;
         }

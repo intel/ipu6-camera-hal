@@ -17,14 +17,14 @@
 #define LOG_TAG IntelICBM
 
 #include "modules/algowrapper/IntelICBM.h"
-#include "src/icbm/ICBMFactory.h"
+#include "src/icbm/ICBMBuilder.h"
 
 #include "Errors.h"
 #include "iutils/CameraLog.h"
 
 namespace icamera {
 
-Result IntelICBM::setup(ICBMInitInfo* initParam) {
+int IntelICBM::setup(ICBMInitInfo* initParam) {
     mIIntelICBM = std::unique_ptr<IIntelICBM>(createIntelICBM());
 
     return mIIntelICBM->setup(initParam);
@@ -34,8 +34,8 @@ void IntelICBM::shutdown() {
     mIIntelICBM->shutdown();
 }
 
-Result IntelICBM::processFrame(const ImageInfo& iii, const ImageInfo& iio,
-                               const ICBMReqInfo& reqInfo) {
+int IntelICBM::processFrame(const ImageInfo& iii, const ImageInfo& iio,
+                            const ICBMReqInfo& reqInfo) {
     return mIIntelICBM->processFrame(iii, iio, reqInfo);
 }
 

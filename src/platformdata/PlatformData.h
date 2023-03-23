@@ -167,7 +167,6 @@ class PlatformData {
                       mISysFourcc(V4L2_PIX_FMT_SGRBG8),
                       mISysRawFormat(V4L2_PIX_FMT_SGRBG10),
                       mUseCrlModule(true),
-                      mFacing(FACING_BACK),
                       mOrientation(ORIENTATION_0),
                       mSensorOrientation(ORIENTATION_0),
                       mUseSensorDigitalGain(false),
@@ -204,8 +203,7 @@ class PlatformData {
                       mDisableBLCByAGain(false),
                       mDisableBLCAGainLow(-1),
                       mDisableBLCAGainHigh(-1),
-                      mResetLinkRoute(true) {
-            }
+                      mResetLinkRoute(true) {}
 
             std::vector<MediaCtlConf> mMediaCtlConfs;
 
@@ -272,7 +270,6 @@ class PlatformData {
             std::vector<ConfigMode> mConfigModesForAuto;
 
             bool mUseCrlModule;
-            int mFacing;
             int mOrientation;
             int mSensorOrientation;
             bool mUseSensorDigitalGain;
@@ -316,6 +313,7 @@ class PlatformData {
             // a PG might be incorrect. To be removed after stream id mismatch issue fixed.
             std::map<int, int> mConfigModeToStreamId;
             std::vector<UserToPslOutputMap> mOutputMap;
+            std::vector<camera_resolution_t> mPreferStillOutput;
             int mMaxNvmDataSize;
             std::string mNvmDirectory;
             int mNvmOverwrittenFileSize;
@@ -1359,6 +1357,16 @@ class PlatformData {
     static camera_resolution_t* getPslOutputForRotation(int width, int height, int cameraId);
 
     /**
+     * Get preferred output size for still
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \param width:    The width of user requirement
+     * \param height:   The height of user requirement
+     * \return the output resolution if provides it in xml file, otherwise return nullptr.
+     */
+    const static camera_resolution_t* getPreferStillOutput(int width, int height, int cameraId);
+
+    /**
      * Check if test pattern is supported or not
      *
      * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
@@ -1473,6 +1481,18 @@ class PlatformData {
      */
     static int saveMakernoteData(int cameraId, camera_makernote_mode_t makernoteMode,
                                  int64_t sequence, TuningMode tuningMode);
+
+    /**
+     * \brief Get Makernote buffer
+     *
+     * \param[in] cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \param[in] makernoteMode: makernote mode
+     * \param[out] dump: return dump if in dump case
+     *
+     * \return the pointer of makernote buffer
+     */
+    static void* getMakernoteBuf(int cameraId, camera_makernote_mode_t makernoteMode,
+                                 bool& dump);
 
     /**
      * \brief Update Makernote timestamp.
@@ -1647,6 +1667,13 @@ class PlatformData {
      * \return true if ICBM is enabled.
      */
     static bool isGPUICBMEnabled();
+
+    /**
+     * Check Level0 is used or not
+     *
+     * \return true if Level0 is used.
+     */
+    static bool useLevel0Tnr();
     // LEVEL0_ICBM_E
 };
 } /* namespace icamera */

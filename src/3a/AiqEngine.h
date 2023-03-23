@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2022 Intel Corporation.
+ * Copyright (C) 2015-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ namespace icamera {
  * and set result to HW layer.
  * This is sub thread class.
  */
-class AiqEngine : public EventListener {
+class AiqEngine : public EventListener, public EventSource {
  public:
     AiqEngine(int cameraId, SensorHwCtrl* sensorHw, LensHw* lensHw, AiqSetting* setting);
     ~AiqEngine();

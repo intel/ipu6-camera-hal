@@ -1,7 +1,7 @@
-prefix=/usr
-exec_prefix=${prefix}
-libdir=${prefix}/lib
-includedir=${prefix}/include/libcamhal
+prefix=@CMAKE_INSTALL_PREFIX@
+exec_prefix=${prefix}/@CMAKE_INSTALL_SUB_PATH@
+libdir=${prefix}/lib/@CMAKE_INSTALL_SUB_PATH@
+includedir=${prefix}/include/@CMAKE_INSTALL_SUB_PATH@/libcamhal
 
 Name: libcamhal
 Description: Camera HAL Library

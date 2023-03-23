@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Intel Corporation
+ * Copyright (C) 2020-2023 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -122,7 +122,7 @@ int GPUExecutor::start() {
                          "Can't find TerminalDescriptor");
 
         const FrameInfo& frameInfo = mTerminalsDesc[term].frameDesc;
-        mIntelTNR = std::unique_ptr<IntelTNR7US>(new IntelTNR7US(mCameraId));
+        mIntelTNR = std::unique_ptr<IntelTNR7US>(IntelTNR7US::createIntelTNR(mCameraId));
         TnrType type = mStreamId == VIDEO_STREAM_ID ? TNR_INSTANCE0 : TNR_INSTANCE1;
         ret = mIntelTNR->init(frameInfo.mWidth, frameInfo.mHeight, type);
         if (ret) {
@@ -171,7 +171,7 @@ int GPUExecutor::allocBuffers() {
     uint32_t size = 0;
 
     if (mIntelTNR) {
-        int ret = mIntelTNR->getSurfaceInfo(srcWidth, srcHeight, &size);
+        int ret = mIntelTNR->getTnrBufferSize(srcWidth, srcHeight, &size);
         if (ret) size = PGCommon::getFrameSize(srcFmt, srcWidth, srcHeight, true);
     }
     LOG1("@%s, Required GPU TNR buffer size %u", __func__, size);
@@ -223,15 +223,11 @@ bool GPUExecutor::fetchTnrOutBuffer(int64_t seq, std::shared_ptr<CameraBuffer> b
 
     std::unique_lock<std::mutex> lock(mTnrOutBufMapLock);
     if (mTnrOutBufMap.find(seq) != mTnrOutBufMap.end()) {
-        void* pSrcBuf = (buf->getMemory() == V4L2_MEMORY_DMABUF) ?
-                            CameraBuffer::mapDmaBufferAddr(buf->getFd(), buf->getBufferSize()) :
-                            buf->getBufferAddr();
+        ScopeMapping mapper(buf);
+        void* pSrcBuf = mapper.getUserPtr();
         CheckAndLogError(!pSrcBuf, false, "pSrcBuf is nullptr");
         LOG2("Sequence %ld is used for output", seq);
         MEMCPY_S(pSrcBuf, buf->getBufferSize(), mTnrOutBufMap[seq], mOutBufferSize);
-        if (buf->getMemory() == V4L2_MEMORY_DMABUF) {
-            CameraBuffer::unmapDmaBufferAddr(pSrcBuf, buf->getBufferSize());
-        }
 
         return true;
     }
@@ -440,10 +436,10 @@ int GPUExecutor::updateTnrISPConfig(Tnr7Param* pbuffer, uint32_t sequence) {
         ret |= PalOutput.getKernelPublicOutput(ia_pal_uuid_isp_tnr7_ims_1_1, (void*&)pIms);
         CheckAndLogError(ret != ia_err_none, UNKNOWN_ERROR, "Can't read isp tnr7 parameters");
 
-        tnr7_bc_1_0_t* tnr7_bc = &(pbuffer->bc);
-        tnr7_blend_1_0_t* tnr7_blend = &(pbuffer->blend);
-        tnr7_ims_1_0_t* tnr7_ims = &(pbuffer->ims);
-
+#ifdef TNR7_CM
+        tnrBCParam* tnr7_bc = &(pbuffer->bc);
+        tnrBlendParam* tnr7_blend = &(pbuffer->blend);
+        tnrImsParam* tnr7_ims = &(pbuffer->ims);
         // tnr7 ims params
         tnr7_ims->enable = pIms->enable;
         tnr7_ims->update_limit = pIms->update_limit;
@@ -513,6 +509,7 @@ int GPUExecutor::updateTnrISPConfig(Tnr7Param* pbuffer, uint32_t sequence) {
         for (int i = 0; i < sizeof(pBlend->output_cu_x) / sizeof(int32_t); i++) {
             tnr7_blend->output_cu_x[i] = pBlend->output_cu_x[i];
         }
+#endif
     }
 
     return ret;
@@ -566,17 +563,14 @@ int GPUExecutor::runTnrFrame(const std::shared_ptr<CameraBuffer>& inBuf,
     int fd = outBuf->getFd();
     int memoryType = outBuf->getMemory();
     int bufferSize = outBuf->getBufferSize();
-    void* outPtr = (memoryType == V4L2_MEMORY_DMABUF) ?
-                       CameraBuffer::mapDmaBufferAddr(fd, bufferSize) :
-                       outBuf->getBufferAddr();
+
+    ScopeMapping mapper(outBuf);
+    void* outPtr = mapper.getUserPtr();
     if (!outPtr) return UNKNOWN_ERROR;
 
     outBuf->setSequence(sequence);
     if (!mIntelTNR) {
         MEMCPY_S(outPtr, bufferSize, inBuf->getBufferAddr(), inBuf->getBufferSize());
-        if (memoryType == V4L2_MEMORY_DMABUF) {
-            CameraBuffer::unmapDmaBufferAddr(outPtr, bufferSize);
-        }
         return OK;
     }
 
@@ -584,9 +578,6 @@ int GPUExecutor::runTnrFrame(const std::shared_ptr<CameraBuffer>& inBuf,
         // when running still stream tnr, should skip video tnr to decrease still capture duration.
         if (mStreamId == VIDEO_STREAM_ID && !mGPULock.try_lock()) {
             MEMCPY_S(outPtr, bufferSize, inBuf->getBufferAddr(), inBuf->getBufferSize());
-            if (memoryType == V4L2_MEMORY_DMABUF) {
-                CameraBuffer::unmapDmaBufferAddr(outPtr, bufferSize);
-            }
             mLastSequence = UINT32_MAX;
             LOG2("Executor name:%s, skip frame sequence: %ld", mName.c_str(), inBuf->getSequence());
             return OK;
@@ -646,9 +637,6 @@ int GPUExecutor::runTnrFrame(const std::shared_ptr<CameraBuffer>& inBuf,
         LOG2("outBuf->first %ld, outBuf->second %p", tnrOutBuf->first, tnrOutBuf->second);
     }
 
-    if (memoryType == V4L2_MEMORY_DMABUF) {
-        CameraBuffer::unmapDmaBufferAddr(outPtr, bufferSize);
-    }
     CheckAndLogError(ret != OK, UNKNOWN_ERROR, "tnr7us run frame failed");
     mLastSequence = sequence;
 
@@ -662,9 +650,9 @@ int GPUExecutor::dumpTnrParameters(uint32_t sequence) {
         std::string("/home/tnr7-") + std::to_string(sequence) + std::string(".txt");
 
     LOG1("Save tnr7 parameters to file %s", dumpFileName.c_str());
-    tnr7_bc_1_0_t* tnr7_bc = &(mTnr7usParam->bc);
-    tnr7_blend_1_0_t* tnr7_blend = &(mTnr7usParam->blend);
-    tnr7_ims_1_0_t* tnr7_ims = &(mTnr7usParam->ims);
+    tnrBCParam* tnr7_bc = &(mTnr7usParam->bc);
+    tnrBlendParam* tnr7_blend = &(mTnr7usParam->blend);
+    tnrImsParam* tnr7_ims = &(mTnr7usParam->ims);
     char* dumpData = reinterpret_cast<char*>(malloc(DUMP_FILE_SIZE));
     CheckAndLogError(dumpData == nullptr, NO_MEMORY, "failed to allocate memory for dump tnr7");
 
@@ -673,21 +661,21 @@ int GPUExecutor::dumpTnrParameters(uint32_t sequence) {
         int shift = 0;
         size_t length = snprintf(dumpData + shift, DUMP_FILE_SIZE - shift, "%s\n", "tnr7_bc");
         shift += length;
-        for (int i = 0; i < sizeof(tnr7_bc_1_0_t) / sizeof(int32_t); i++) {
+        for (int i = 0; i < sizeof(tnrBCParam) / sizeof(int32_t); i++) {
             length = snprintf(dumpData + shift, DUMP_FILE_SIZE - shift, "%u\n",
                               *(reinterpret_cast<int32_t*>(tnr7_bc) + i));
             shift += length;
         }
         length = snprintf(dumpData + shift, DUMP_FILE_SIZE - shift, "%s\n", "tnr7_blend");
         shift += length;
-        for (int i = 0; i < sizeof(tnr7_blend_1_0_t) / sizeof(int32_t); i++) {
+        for (int i = 0; i < sizeof(tnrBlendParam) / sizeof(int32_t); i++) {
             length = snprintf(dumpData + shift, DUMP_FILE_SIZE - shift, "%u\n",
                               *(reinterpret_cast<int32_t*>(tnr7_blend) + i));
             shift += length;
         }
         length = snprintf(dumpData + shift, DUMP_FILE_SIZE - shift, "%s\n", "tnr7_ims");
         shift += length;
-        for (int i = 0; i < sizeof(tnr7_ims_1_0_t) / sizeof(int32_t); i++) {
+        for (int i = 0; i < sizeof(tnrImsParam) / sizeof(int32_t); i++) {
             length = snprintf(dumpData + shift, DUMP_FILE_SIZE - shift, "%u\n",
                               *(reinterpret_cast<int32_t*>(tnr7_ims) + i));
             shift += length;
@@ -701,4 +689,5 @@ int GPUExecutor::dumpTnrParameters(uint32_t sequence) {
     free(dumpData);
     return OK;
 }
+
 }  // namespace icamera
