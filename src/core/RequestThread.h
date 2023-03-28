@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Intel Corporation.
+ * Copyright (C) 2016-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,14 +77,14 @@ class RequestThread : public Thread, public EventSource, public EventListener {
     std::shared_ptr<CameraBuffer> mFakeBuffer;
 
     struct CameraRequest {
-        CameraRequest() : mBufferNum(0), mParams(nullptr) { CLEAR(mBuffer); }
+        CameraRequest() : mBufferNum(0), mRequestParam(nullptr) { CLEAR(mBuffer); }
 
         int mBufferNum;
         camera_buffer_t* mBuffer[MAX_STREAM_NUMBER];
-        std::shared_ptr<Parameters> mParams;
+        std::shared_ptr<RequestParam> mRequestParam;
     };
 
-    std::shared_ptr<Parameters> copyRequestParams(const Parameters* params);
+    std::shared_ptr<RequestParam> copyRequestParams(const Parameters* params);
 
     /**
      * \Fetch one request from pending request Q for processing.
@@ -104,7 +104,6 @@ class RequestThread : public Thread, public EventSource, public EventListener {
     Mutex mPendingReqLock;
     Condition mRequestSignal;
     std::deque<CameraRequest> mPendingRequests;
-    std::queue<std::shared_ptr<Parameters> > mReqParamsPool;
     int mRequestsInProcessing;
 
     // Guard for the first request.

@@ -335,6 +335,11 @@ class PlatformData {
             bool mResetLinkRoute;
         };
 
+        /**
+         * Overwrite staticCfg with info from CMC
+         */
+        void getModuleInfoFromCmc(int cameraId);
+
         std::vector<CameraInfo> mCameras;
         std::vector<PolicyConfig> mPolicyConfig;
         CommonConfig mCommonConfig;

@@ -109,6 +109,9 @@ int PlatformData::init() {
             staticCfg->mCameras[i].mMaxNvmDataSize, camModuleName);
         getInstance()->mAiqInitData.push_back(aiqInitData);
 
+        staticCfg->getModuleInfoFromCmc(i);
+
+        // Overwrite staticCfg with CameraModuleInfo in sensor xml
         if (!camModuleName.empty() &&
             staticCfg->mCameras[i].mCameraModuleInfoMap.find(camModuleName) !=
                 staticCfg->mCameras[i].mCameraModuleInfoMap.end()) {
@@ -118,6 +121,54 @@ int PlatformData::init() {
     }
 
     return OK;
+}
+
+void PlatformData::StaticCfg::getModuleInfoFromCmc(int cameraId) {
+    CameraInfo& info = mCameras[cameraId];
+
+    if (info.mSupportedTuningConfig.empty()) return;
+
+    // Get default tuning mode and cpf data to update some static capabilities
+    TuningMode tuningMode = info.mSupportedTuningConfig[0].tuningMode;
+    ia_binary_data cpfData;
+    int ret = PlatformData::getCpf(cameraId, tuningMode, &cpfData);
+    CheckWarning(ret != OK || !cpfData.data || cpfData.size > cca::MAX_CPF_LEN, VOID_VALUE,
+                 "%s, AIQB error data %p size %d (max %d), ret %d", __func__, cpfData.data,
+                 cpfData.size, cca::MAX_CPF_LEN, ret);
+
+    cca::cca_cmc cmc;
+    cca::cca_cpf* cpf = new cca::cca_cpf;
+    cpf->size = cpfData.size;
+    MEMCPY_S(cpf->buf, cca::MAX_CPF_LEN, cpfData.data, cpfData.size);
+    ia_err iaRet = IntelCca::getInstance(cameraId, tuningMode)->getCMC(&cmc, cpf);
+    delete cpf;
+    CheckWarning(iaRet != ia_err_none, VOID_VALUE, "Get cmc data failed");
+
+    LOG1("%s: base iso %d, ag [%4.2f, %4.2f], ag [%4.2f, %4.2f], from aiqb", __func__, cmc.base_iso,
+         cmc.min_dg, cmc.max_dg, cmc.min_ag, cmc.max_ag);
+    LOGI("%s: focal_len %d, min_fd %d, ap %d", __func__, cmc.optics.effect_focal_length,
+         cmc.optics.min_focus_distance, cmc.lut_apertures);
+
+    int32_t maxAg = cmc.base_iso * cmc.max_ag;
+    const CameraMetadata caps = ParameterHelper::getMetadata(info.mCapability);
+    CameraMetadata meta;
+    uint32_t tag = CAMERA_SENSOR_MAX_ANALOG_SENSITIVITY;
+    icamera_metadata_ro_entry entry = caps.find(tag);
+    if (!entry.count) {
+        meta.update(tag, &maxAg, 1);
+    }
+
+    tag = CAMERA_SENSOR_INFO_SENSITIVITY_RANGE;
+    entry = caps.find(tag);
+    if (!entry.count) {
+        int32_t maxDg = static_cast<int32_t>(cmc.max_dg);
+        int32_t range[] = {cmc.base_iso, maxAg * maxDg};
+        meta.update(tag, range, ARRAY_SIZE(range));
+    }
+
+    if (!meta.isEmpty()) {
+        ParameterHelper::merge(meta, &info.mCapability);
+    }
 }
 
 /**

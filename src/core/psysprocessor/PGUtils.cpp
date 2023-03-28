@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2022 Intel Corporation.
+ * Copyright (C) 2019-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -108,7 +108,7 @@ ia_css_frame_format_type getCssFmt(int v4l2Fmt) {
     return IA_CSS_N_FRAME_FORMAT_TYPES;
 }
 
-int getCssStride(int v4l2Fmt, int width) {
+int getCssStride(int v4l2Fmt, int width, bool compression) {
     int stride = width;
     ia_css_frame_format_type cssFmt = getCssFmt(v4l2Fmt);
     switch (v4l2Fmt) {
@@ -122,6 +122,33 @@ int getCssStride(int v4l2Fmt, int width) {
             stride = getStride(cssFmt, width);
             break;
     }
+
+    if (compression) {
+        switch (cssFmt) {
+            case IA_CSS_DATA_FORMAT_BAYER_GRBG:
+            case IA_CSS_DATA_FORMAT_BAYER_RGGB:
+            case IA_CSS_DATA_FORMAT_BAYER_BGGR:
+            case IA_CSS_DATA_FORMAT_BAYER_GBRG:
+                stride = ALIGN(width * 2, ISYS_COMPRESSION_STRIDE_ALIGNMENT_BYTES);
+                break;
+            case IA_CSS_DATA_FORMAT_YUV420:
+                if (v4l2Fmt == GET_FOURCC_FMT('I', 'Y', 'U', 'V'))
+                    stride = ALIGN(width, PSYS_COMPRESSION_PSA_Y_STRIDE_ALIGNMENT);
+                else
+                    stride = ALIGN(width * 2, PSYS_COMPRESSION_PSA_Y_STRIDE_ALIGNMENT);
+                break;
+            case IA_CSS_DATA_FORMAT_NV12:
+                stride = ALIGN(width, PSYS_COMPRESSION_TNR_STRIDE_ALIGNMENT);
+                break;
+            case IA_CSS_DATA_FORMAT_P010:
+                stride = ALIGN(width * 2, PSYS_COMPRESSION_TNR_STRIDE_ALIGNMENT);
+                break;
+            default:
+                LOGW("%s format %d compress not supported", __func__, v4l2Fmt);
+                break;
+        }
+    }
+
     return stride;
 }
 

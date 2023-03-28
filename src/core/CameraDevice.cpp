@@ -1026,17 +1026,12 @@ void CameraDevice::handleEvent(EventData eventData) {
     switch (eventData.type) {
         case EVENT_PROCESS_REQUEST: {
             const EventRequestData& request = eventData.data.request;
-            if (request.param) {
-                // Set test pattern mode
-                camera_test_pattern_mode_t testPatternMode = TEST_PATTERN_OFF;
-                if (PlatformData::isTestPatternSupported(mCameraId) &&
-                    request.param->getTestPatternMode(testPatternMode) == OK) {
-                    int32_t sensorTestPattern =
-                        PlatformData::getSensorTestPattern(mCameraId, testPatternMode);
-                    if (sensorTestPattern >= 0) {
-                        if (mSensorCtrl->setTestPatternMode(sensorTestPattern) < 0) {
-                            LOGE("%s, set testPatternMode failed", __func__);
-                        }
+            if (PlatformData::isTestPatternSupported(mCameraId)) {
+                int32_t sensorTestPattern =
+                    PlatformData::getSensorTestPattern(mCameraId, request.testPatternMode);
+                if (sensorTestPattern >= 0) {
+                    if (mSensorCtrl->setTestPatternMode(sensorTestPattern) < 0) {
+                        LOGE("%s, set testPatternMode failed", __func__);
                     }
                 }
             }
