@@ -70,7 +70,7 @@ struct EventDataMeta {
 struct EventRequestData {
     int bufferNum;
     camera_buffer_t** buffer;
-    Parameters* param;
+    camera_test_pattern_mode_t testPatternMode;
 
     int64_t settingSeq;
 };

@@ -18,6 +18,7 @@
 
 #include <math.h>
 
+#include <set>
 #include <memory>
 #include <vector>
 
@@ -79,27 +80,37 @@ int ParameterGenerator::reset() {
     return OK;
 }
 
-int ParameterGenerator::saveParameters(int64_t sequence, long requestId, const Parameters* param) {
+std::shared_ptr<RequestParam> ParameterGenerator::getRequestParamBuf() {
+    AutoMutex l(mParamsLock);
+
+    if (mRequestParamMap.size() < kStorageSize) {
+        return std::make_shared<RequestParam>();
+    }
+
+    auto it = mRequestParamMap.begin();
+    std::shared_ptr<RequestParam> requestParam = it->second;
+    mRequestParamMap.erase(it->first);
+
+    return requestParam;
+}
+
+int ParameterGenerator::saveParameters(int64_t sequence, long requestId,
+                                       std::shared_ptr<RequestParam> requestParam) {
     CHECK_REQUEST_ID(requestId);
     CHECK_SEQUENCE(sequence);
 
     AutoMutex l(mParamsLock);
-    if (!param && mRequestParamMap.empty()) return BAD_VALUE;
+    if (!requestParam && mRequestParamMap.empty()) return BAD_VALUE;
 
-    LOG2("<req%ld:seq%ld>%s", requestId, sequence, __func__);
-    std::shared_ptr<RequestParam> requestParam = nullptr;
-    if (mRequestParamMap.size() < kStorageSize) {
+    if (!requestParam) {
         requestParam = std::make_shared<RequestParam>();
-    } else {
-        auto it = mRequestParamMap.begin();
-        requestParam = it->second;
-        mRequestParamMap.erase(it->first);
+        requestParam->param = mRequestParamMap.rbegin()->second->param;
     }
-
     requestParam->requestId = requestId;
-    requestParam->param = param ? *param : mRequestParamMap.rbegin()->second->param;
-
     mRequestParamMap[sequence] = requestParam;
+
+    LOG2("<req%ld:seq%ld>%s", requestParam->requestId, sequence, __func__);
+
     return OK;
 }
 
@@ -200,6 +211,49 @@ int ParameterGenerator::getParameters(int64_t sequence, Parameters* param, bool 
         generateParametersL(sequence, param);
     }
     return OK;
+}
+
+int ParameterGenerator::getIspParameters(int64_t sequence, Parameters* param) {
+    CheckAndLogError((param == nullptr), UNKNOWN_ERROR, "nullptr to get param!");
+    CHECK_SEQUENCE(sequence);
+
+    AutoMutex l(mParamsLock);
+    if (mRequestParamMap.find(sequence) != mRequestParamMap.end()) {
+        camera_image_enhancement_t enhancement;
+        int ret = mRequestParamMap[sequence]->param.getImageEnhancement(enhancement);
+        if (ret == OK) {
+            param->setImageEnhancement(enhancement);
+        }
+        camera_edge_mode_t edgeMode;
+        ret = mRequestParamMap[sequence]->param.getEdgeMode(edgeMode);
+        if (ret == OK) {
+            param->setEdgeMode(edgeMode);
+        }
+        camera_nr_mode_t nrMode;
+        ret = mRequestParamMap[sequence]->param.getNrMode(nrMode);
+        if (ret == OK) {
+            param->setNrMode(nrMode);
+        }
+        camera_nr_level_t nrLevel;
+        ret = mRequestParamMap[sequence]->param.getNrLevel(nrLevel);
+        if (ret == OK) {
+            param->setNrLevel(nrLevel);
+        }
+        camera_video_stabilization_mode_t stabilizationMode;
+        ret = mRequestParamMap[sequence]->param.getVideoStabilizationMode(stabilizationMode);
+        if (ret == OK) {
+            param->setVideoStabilizationMode(stabilizationMode);
+        }
+        // ISP_CONTROL_S
+        std::set<uint32_t> enabledControls;
+        ret = mRequestParamMap[sequence]->param.getEnabledIspControls(enabledControls);
+        if (ret == OK) {
+            param->setEnabledIspControls(enabledControls);
+        }
+        // ISP_CONTROL_E
+    }
+
+    return UNKNOWN_ERROR;
 }
 
 int ParameterGenerator::getRawOutputMode(int64_t sequence, raw_data_output_t& rawOutputMode) {

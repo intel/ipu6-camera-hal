@@ -169,11 +169,11 @@ int GPUExecutor::allocBuffers() {
     int srcWidth = mTerminalsDesc[term].frameDesc.mWidth;
     int srcHeight = mTerminalsDesc[term].frameDesc.mHeight;
     uint32_t size = 0;
+    int ret = NO_MEMORY;
 
-    if (mIntelTNR) {
-        int ret = mIntelTNR->getTnrBufferSize(srcWidth, srcHeight, &size);
-        if (ret) size = PGCommon::getFrameSize(srcFmt, srcWidth, srcHeight, true);
-    }
+    if (mIntelTNR) ret = mIntelTNR->getTnrBufferSize(srcWidth, srcHeight, &size);
+    if (ret) size = PGCommon::getFrameSize(srcFmt, srcWidth, srcHeight, true);
+
     LOG1("@%s, Required GPU TNR buffer size %u", __func__, size);
 
     for (int i = 0; i < MAX_BUFFER_COUNT; i++) {
@@ -244,6 +244,11 @@ int GPUExecutor::getStillTnrTriggerInfo(TuningMode mode) {
     mStillTnrTriggerInfo = cmc.tnr7us_trigger_info;
     LOG1("%s still tnr trigger gain num: %d threshold: %f", mName.c_str(),
          mStillTnrTriggerInfo.num_gains, mStillTnrTriggerInfo.tnr7us_threshold_gain);
+    for (int i = 0; i < mStillTnrTriggerInfo.num_gains; i++) {
+        LOG1("%s threshold: %f, tnr frame count: %d", mName.c_str(),
+             mStillTnrTriggerInfo.trigger_infos[i].gain,
+             mStillTnrTriggerInfo.trigger_infos[i].frame_count);
+    }
     return OK;
 }
 
