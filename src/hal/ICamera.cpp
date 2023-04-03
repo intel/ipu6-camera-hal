@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Intel Corporation.
+ * Copyright (C) 2015-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -125,16 +125,17 @@ void camera_callback_register(int camera_id, const camera_callback_ops_t* callba
  * Open one camera device
  *
  * \param camera_id camera index
+ * \param vc_num total virtual channel camera number
  *
  * \return error code
  **/
-int camera_device_open(int camera_id) {
+int camera_device_open(int camera_id, int vc_num) {
     HAL_TRACE_CALL(1);
 
     CheckAndLogError(!gCameraHal, INVALID_OPERATION, "camera hal is NULL.");
     CheckCameraId(camera_id, BAD_VALUE);
 
-    return gCameraHal->deviceOpen(camera_id);
+    return gCameraHal->deviceOpen(camera_id, vc_num);
 }
 
 /**

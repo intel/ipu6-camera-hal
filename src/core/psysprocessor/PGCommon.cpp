@@ -762,6 +762,7 @@ int PGCommon::configureFrameDesc() {
         int cssBpp = PGUtils::getCssBpp(v4l2Fmt, true);
         int cssBpe = PGUtils::getCssBpe(v4l2Fmt, true);
 
+        int alignedBpl = PGUtils::getCssStride(v4l2Fmt, width, true);
         switch (dstFrameDesc->frame_format_type) {
             case IA_CSS_DATA_FORMAT_BAYER_GRBG:
             case IA_CSS_DATA_FORMAT_BAYER_RGGB:
@@ -769,8 +770,6 @@ int PGCommon::configureFrameDesc() {
             case IA_CSS_DATA_FORMAT_BAYER_GBRG: {
                 if (!PlatformData::getISYSCompression(mCameraId)) break;
 
-                int alignedBpl = width * 2;
-                alignedBpl = ALIGN(alignedBpl, ISYS_COMPRESSION_STRIDE_ALIGNMENT_BYTES);
                 int alignedHeight = ALIGN(height, ISYS_COMPRESSION_HEIGHT_ALIGNMENT);
                 int imageBufferSize = ALIGN(alignedBpl * alignedHeight, ISYS_COMPRESSION_PAGE_SIZE);
 
@@ -786,8 +785,7 @@ int PGCommon::configureFrameDesc() {
             }
             case IA_CSS_DATA_FORMAT_YUV420: {
                 if (!PlatformData::getPSACompression(mCameraId)) break;
-                // now the bpl of YUV420 format is width * 2
-                int alignedBpl = ALIGN(width * 2, PSYS_COMPRESSION_PSA_Y_STRIDE_ALIGNMENT);
+
                 int alignedHeight = ALIGN(height, PSYS_COMPRESSION_PSA_HEIGHT_ALIGNMENT);
                 int alignWidthUV = alignedBpl / 2;
                 int alignHeightUV = alignedHeight / 2;
@@ -829,20 +827,17 @@ int PGCommon::configureFrameDesc() {
             case IA_CSS_DATA_FORMAT_P010: {
                 if (!PlatformData::getPSACompression(mCameraId)) break;
 
-                unsigned int bpl = 0, heightAlignment = 0, tsBit = 0, tileSize = 0;
+                unsigned int heightAlignment = 0, tsBit = 0, tileSize = 0;
                 if (dstFrameDesc->frame_format_type == IA_CSS_DATA_FORMAT_NV12) {
-                    bpl = width;
                     heightAlignment = PSYS_COMPRESSION_TNR_LINEAR_HEIGHT_ALIGNMENT;
                     tsBit = TILE_STATUS_BITS_TNR_NV12_TILE_Y;
                     tileSize = TILE_SIZE_TNR_NV12_Y;
                 } else {
-                    bpl = width * 2;
                     heightAlignment = PSYS_COMPRESSION_OFS_TILE_HEIGHT_ALIGNMENT;
                     tsBit = TILE_STATUS_BITS_OFS_P010_TILE_Y;
                     tileSize = TILE_SIZE_OFS10_12_TILEY;
                 }
 
-                int alignedBpl = ALIGN(bpl, PSYS_COMPRESSION_TNR_STRIDE_ALIGNMENT);
                 int alignedHeight = ALIGN(height, heightAlignment);
                 int alignedHeightUV = ALIGN(height / UV_HEIGHT_DIVIDER, heightAlignment);
                 int imageBufferSize = ALIGN(alignedBpl * (alignedHeight + alignedHeightUV),

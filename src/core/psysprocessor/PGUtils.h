@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2021 Intel Corporation.
+ * Copyright (C) 2019-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -71,7 +71,7 @@ namespace PGUtils {
 ia_css_frame_format_type getCssFmt(int v4l2Fmt);
 int getCssBpp(int v4l2Fmt, bool compression = false);
 int getCssBpe(int v4l2Fmt, bool compression = false);
-int getCssStride(int v4l2Fmt, int width);
+int getCssStride(int v4l2Fmt, int width, bool compression = false);
 bool isCompressionTerminal(int terminalId);
 
 /* ************************************************************

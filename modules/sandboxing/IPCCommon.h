@@ -70,14 +70,6 @@ enum IPC_CMD {
     IPC_GPU_TNR_RUN_FRAME,
     IPC_GPU_TNR_PARAM_UPDATE,
     IPC_GPU_TNR_DEINIT,
-    // ENABLE_EVCP_S
-    // GPU EVCP COMMANDS
-    IPC_EVCP_INIT,
-    IPC_EVCP_UPDCONF,
-    IPC_EVCP_GETCONF,
-    IPC_EVCP_RUN_FRAME,
-    IPC_EVCP_DEINIT,
-    // ENABLE_EVCP_E
     // LEVEL0_ICBM_S
     IPC_ICBM_INIT,
     IPC_ICBM_RUN_FRAME,
@@ -104,10 +96,6 @@ enum IPC_GROUP {
     IPC_GROUP_CPU_OTHER,
     // IPU command group for gpu
     IPC_GROUP_GPU,
-    // ENABLE_EVCP_S
-    // IPC Command group for Evcp using GPU.
-    IPC_GROUP_GPU_EVCP,
-    // ENABLE_EVCP_E
     // LEVEL0_ICBM_S
     IPC_GROUP_GPU_ICBM,
     // LEVEL0_ICBM_E

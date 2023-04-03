@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Intel Corporation.
+ * Copyright (C) 2015-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,7 @@ class V4l2DeviceFactory {
     static void releaseDeviceFactory(int cameraId);
 
     static V4L2Subdevice* getSubDev(int cameraId, const std::string& devName);
+    static void releaseSubDev(int cameraId, const std::string& devName);
 
  private:
     V4l2DeviceFactory(int cameraId);

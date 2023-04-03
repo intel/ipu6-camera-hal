@@ -53,7 +53,7 @@ class IntelCca {
 
     ia_err runAIC(uint64_t frameId, cca::cca_pal_input_params* params, ia_binary_data* pal);
 
-    ia_err getCMC(cca::cca_cmc* cmc);
+    ia_err getCMC(cca::cca_cmc* cmc, const cca::cca_cpf* cpf = nullptr);
     ia_err getMKN(ia_mkn_trg type, cca::cca_mkn* mkn);
     ia_err getAiqd(cca::cca_aiqd* aiqd);
     ia_err updateTuning(uint8_t lardTags, const ia_lard_input_params& lardParams,

@@ -30,8 +30,8 @@
 #include <iostream>
 #include <sstream>
 
-#include "PlatformData.h"
 #include "iutils/CameraLog.h"
+#include "iutils/Errors.h"
 #include "linux/ipu-isys.h"
 #include "linux/media-bus-format.h"
 
@@ -614,11 +614,6 @@ int CameraUtils::getInterlaceHeight(int field, int height) {
         return height / 2;
     else
         return height;
-}
-
-bool CameraUtils::isMultiExposureCase(int cameraId, TuningMode tuningMode) {
-
-    return false;
 }
 
 bool CameraUtils::isUllPsysPipe(TuningMode tuningMode) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 Intel Corporation
+ * Copyright (C) 2016-2023 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,10 @@
 
 #define LOG_TAG LensHw
 
-#include "LensHw.h"
+#include "src/core/LensHw.h"
+
+#include <string>
+
 #include "iutils/CameraLog.h"
 #include "V4l2DeviceFactory.h"
 #include "PlatformData.h"
@@ -31,7 +34,7 @@ LensHw::LensHw(int cameraId)
 
 LensHw::~LensHw() {}
 
-int LensHw::init() {
+int LensHw::start() {
     std::string lensName = PlatformData::getLensName(mCameraId);
     if (lensName.empty()) {
         LOG1("<id%d>@%s No HW Lens", mCameraId, __func__);
@@ -49,6 +52,18 @@ int LensHw::init() {
 
     LOGW("<id%d>@%s, Failed to init lens. name:%s", mCameraId, __func__, lensName.c_str());
     return OK;
+}
+
+void LensHw::stop() {
+    if (!mLensSubdev) return;
+
+    // close the lens sub device
+    std::string subDevName;
+    CameraUtils::getSubDeviceName(mLensName.c_str(), subDevName);
+    if (!subDevName.empty()) {
+        V4l2DeviceFactory::releaseSubDev(mCameraId, subDevName);
+        mLensSubdev = nullptr;
+    }
 }
 
 /**

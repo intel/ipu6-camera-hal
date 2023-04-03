@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2022 Intel Corporation
+ * Copyright (C) 2018-2023 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,14 +40,21 @@ typedef std::vector<Node*> NodesPtrVector;
 
 namespace icamera {
 
-#ifdef TNR7_CM
 // Stream id associated with video stream.
+#if defined(TNR7_CM) && defined (IPU_SYSVER_ipu6v3)
+// on JSL with tnr7CM
 static const int32_t VIDEO_STREAM_ID = 60006;
 #else
 static const int32_t VIDEO_STREAM_ID = 60001;
 #endif
 // Stream id associated with still capture with gpu tnr.
+#ifdef IPU_SYSVER_ipu6v3
+// on JSL with tnr7CM
 static const int32_t STILL_TNR_STREAM_ID = 60009;
+#else
+// on ADL with tnr7CM or Level0
+static const int32_t STILL_TNR_STREAM_ID = 60013;
+#endif
 // Stream id associated with still capture.
 static const int32_t STILL_STREAM_ID = 60000;
 

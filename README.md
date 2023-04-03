@@ -38,7 +38,6 @@ This repository supports MIPI cameras through the IPU6 on Intel Alder Lake, Rapt
     cmake -DCMAKE_BUILD_TYPE=Release \
     -DIPU_VER=${IPU6_VER} \
     -DPRODUCTION_NAME=${PRODUCTION_NAME} \
-    -DENABLE_VIRTUAL_IPU_PIPE=OFF \
     -DUSE_PG_LITE_PIPE=ON \
     -DUSE_STATIC_GRAPH=OFF \
     -DCMAKE_INSTALL_PREFIX=/usr ..

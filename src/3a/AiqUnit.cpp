@@ -246,9 +246,9 @@ int AiqUnit::initIntelCcaHandle(const std::vector<ConfigMode>& configModes) {
             if (graphConfig != nullptr) {
                 graphConfig->graphGetStreamIds(streamIds);
             }
-            params.dvs_ids.count = streamIds.size();
+            params.gdcConfigs.count = streamIds.size();
             for (size_t i = 0; i < streamIds.size(); ++i) {
-                params.dvs_ids.ids[i] = streamIds[i];
+                params.gdcConfigs.ids[i] = streamIds[i];
             }
             ret = mDvs->configure(cfg, &params);
             CheckAndLogError(ret != OK, UNKNOWN_ERROR, "%s, configure DVS error", __func__);

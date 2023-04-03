@@ -25,7 +25,7 @@
 #include "TNRCommon.h"
 // LEVEL0_ICBM_S
 #include "src/icbm/ICBMTypes.h"
-#include "modules/algowrapper/IntelICBM.h"
+#include "src/icbm/ICBMThread.h"
 // LEVEL0_ICBM_E
 
 namespace icamera {
@@ -87,12 +87,10 @@ class IntelLevel0TNR : public IntelTNR7US {
     virtual int init(int width, int height, TnrType type = TNR_INSTANCE0);
     virtual int runTnrFrame(const void* inBufAddr, void* outBufAddr, uint32_t inBufSize,
                             uint32_t outBufSize, Tnr7Param* tnrParam, bool syncUpdate = true,
-                            int fd = -1) {
-        return OK;
-    }
+                            int fd = -1);
 
  private:
-    std::unique_ptr<IntelICBM> mIntelICBM;
+    std::unique_ptr<ICBMThread> mIntelICBM;
     int mWidth;
     int mHeight;
 

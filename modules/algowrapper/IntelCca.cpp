@@ -167,10 +167,10 @@ ia_err IntelCca::runAIC(uint64_t frameId, const cca::cca_pal_input_params* param
     return ret;
 }
 
-ia_err IntelCca::getCMC(cca::cca_cmc* cmc) {
+ia_err IntelCca::getCMC(cca::cca_cmc* cmc, const cca::cca_cpf* cpf) {
     CheckAndLogError(!cmc, ia_err_argument, "@%s, cmc is nullptr", __func__);
 
-    ia_err ret = getIntelCCA()->getCMC(*cmc);
+    ia_err ret = getIntelCCA()->getCMC(*cmc, cpf);
     LOG2("@%s, ret:%d", __func__, ret);
 
     return ret;

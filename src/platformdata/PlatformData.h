@@ -304,6 +304,11 @@ class PlatformData {
             bool mResetLinkRoute;
         };
 
+        /**
+         * Overwrite staticCfg with info from CMC
+         */
+        void getModuleInfoFromCmc(int cameraId);
+
         std::vector<CameraInfo> mCameras;
         std::vector<PolicyConfig> mPolicyConfig;
         CommonConfig mCommonConfig;
@@ -592,6 +597,15 @@ class PlatformData {
      * \return if LTM is enabled or not.
      */
     static bool isLtmEnabled(int cameraId);
+
+    /**
+     * Get if multi exposure cases or not
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \param[in] TuningMode: tuningMode
+     * \return true if multi exposure case
+     */
+    static bool isMultiExposureCase(int cameraId, TuningMode tuningMode);
 
     /**
      * Get sensor exposure type
@@ -1447,15 +1461,6 @@ class PlatformData {
      * \return true if supported.
      */
     static bool getPLCEnable(int cameraId);
-
-    // ENABLE_EVCP_S
-    /**
-     * Check GPU EVCP is enabled or not
-     *
-     * \return true if EVCP is enabled.
-     */
-    static bool isGpuEvcpEnabled();
-    // ENABLE_EVCP_E
 
     /**
      * Check support of still-only pipe is enabled or not

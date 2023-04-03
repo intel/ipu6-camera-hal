@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Intel Corporation.
+ * Copyright (C) 2015-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -98,8 +98,8 @@ int CameraHal::deinit() {
     return OK;
 }
 
-int CameraHal::deviceOpen(int cameraId) {
-    LOG1("<id%d> @%s", cameraId, __func__);
+int CameraHal::deviceOpen(int cameraId, int vcNum) {
+    LOG1("<id%d> @%s SENSORCTRLINFO: vcNum %d", cameraId, __func__, vcNum);
     AutoMutex l(mLock);
     CheckAndLogError(mState == HAL_UNINIT, NO_INIT, "HAL is not initialized");
 
@@ -116,6 +116,7 @@ int CameraHal::deviceOpen(int cameraId) {
     if (mCameraOpenNum == 1) {
         MediaControl* mc = MediaControl::getInstance();
         CheckAndLogError(!mc, UNKNOWN_ERROR, "MediaControl init failed");
+
         if (PlatformData::isResetLinkRoute(cameraId)) {
             int ret = mc->resetAllLinks();
             CheckAndLogError(ret != OK, DEV_BUSY, "resetAllLinks failed");

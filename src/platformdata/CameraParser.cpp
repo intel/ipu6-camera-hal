@@ -289,10 +289,6 @@ void CameraParser::handleCommon(CameraParser* profiles, const char* name, const 
         cfg->supportHwJpegEncode = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "maxIsysTimeoutValue") == 0) {
         cfg->maxIsysTimeoutValue = atoi(atts[1]);
-        // ENABLE_EVCP_S
-    } else if (strcmp(name, "useGpuEvcp") == 0) {
-        cfg->isGpuEvcpEnabled = strcmp(atts[1], "true") == 0;
-        // ENABLE_EVCP_E
         // LEVEL0_ICBM_S
     } else if (strcmp(name, "useGPUICBM") == 0) {
         cfg->isGPUICBMEnabled = strcmp(atts[1], "true") == 0;

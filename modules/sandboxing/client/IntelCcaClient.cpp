@@ -331,12 +331,18 @@ ia_err IntelCca::runAIC(uint64_t frameId, cca::cca_pal_input_params* params, ia_
     return ret;
 }
 
-ia_err IntelCca::getCMC(cca::cca_cmc* cmc) {
+ia_err IntelCca::getCMC(cca::cca_cmc* cmc, const cca::cca_cpf* cpf) {
     CheckAndLogError(!cmc, ia_err_argument, "@%s, cmc is nullptr", __func__);
 
     intel_cca_get_cmc_data* params = static_cast<intel_cca_get_cmc_data*>(mMemCMC.mAddr);
     params->cameraId = mCameraId;
     params->tuningMode = mTuningMode;
+    if (cpf && cpf->size) {
+        MEMCPY_S(params->cpf.buf, cca::MAX_CPF_LEN, cpf->buf, cpf->size);
+        params->cpf.size = cpf->size;
+    } else {
+        params->cpf.size = 0;
+    }
 
     ia_err ret = mCommon.requestSyncCca(IPC_CCA_GET_CMC, mMemCMC.mHandle);
     CheckAndLogError(ret != ia_err_none, ia_err_general, "@%s, requestSyncCca fails", __func__);
