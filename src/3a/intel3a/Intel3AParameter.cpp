@@ -296,7 +296,7 @@ void Intel3AParameter::updateAeParameter(const aiq_parameter_t& param) {
     mAeMode = param.aeMode;
     mAeParams.frame_use = AiqUtils::convertFrameUsageToIaFrameUsage(param.frameUsage);
     mAeParams.num_exposures = PlatformData::getExposureNum(
-        mCameraId, CameraUtils::isMultiExposureCase(mCameraId, param.tuningMode));
+        mCameraId, PlatformData::isMultiExposureCase(mCameraId, param.tuningMode));
 
     setAeManualLimits(param);
 

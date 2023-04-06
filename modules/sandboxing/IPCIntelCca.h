@@ -114,6 +114,7 @@ struct intel_cca_run_aic_data {
 struct intel_cca_get_cmc_data {
     int cameraId;
     TuningMode tuningMode;
+    cca::cca_cpf cpf;
 
     cca::cca_cmc results;
 };

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2022 Intel Corporation.
+ * Copyright (C) 2017-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,8 +47,8 @@ int Dvs::configure(const ConfigMode configMode, cca::cca_init_params* params) {
     CheckAndLogError(!params, BAD_VALUE, "params is nullptr");
     LOG2("@%s", __func__);
 
-    for (uint8_t i = 0; i < params->dvs_ids.count; i++) {
-        int ret = configCcaDvsData(params->dvs_ids.ids[i], configMode, params);
+    for (uint8_t i = 0; i < params->gdcConfigs.count; i++) {
+        auto ret = configCcaDvsData(params->gdcConfigs.ids[i], configMode, params);
         CheckAndLogError(ret != OK, UNKNOWN_ERROR, "%s, configure DVS data error", __func__);
     }
 
@@ -58,6 +58,7 @@ int Dvs::configure(const ConfigMode configMode, cca::cca_init_params* params) {
     }
     mTuningMode = tuningMode;
 
+    dumpDvsConfiguration(*params);
     return OK;
 }
 
@@ -82,7 +83,16 @@ int Dvs::configCcaDvsData(int32_t streamId, const ConfigMode configMode,
          resolution.input_width, resolution.input_height, resolution.output_width,
          resolution.output_height);
 
-    cca::cca_gdc_configuration* gdcConfig = &params->gdcConfig;
+    cca::cca_gdc_configuration* gdcConfig = nullptr;
+    for (size_t i = 0; i < params->gdcConfigs.count; ++i) {
+        if (params->gdcConfigs.ids[i] == static_cast<uint32_t>(streamId)) {
+            gdcConfig = &params->gdcConfigs.configs[i];
+        }
+    }
+
+    CheckAndLogError(gdcConfig == nullptr, UNKNOWN_ERROR,
+                     "%s, Cannot find correspond DVS GDC Config!", __func__);
+
     CLEAR(*gdcConfig);
     gdcConfig->gdc_filter_width = DVS_MIN_ENVELOPE / 2;
     gdcConfig->gdc_filter_height = DVS_MIN_ENVELOPE / 2;
@@ -151,7 +161,6 @@ int Dvs::configCcaDvsData(int32_t streamId, const ConfigMode configMode,
         mZoomParamMap[streamId] = zoomParam;
     }
 
-    dumpDvsConfiguration(*params);
     return OK;
 }
 
@@ -215,36 +224,7 @@ void Dvs::handleEvent(EventData eventData) {
     if (!ptzRegion.left && !ptzRegion.top && !ptzRegion.right && !ptzRegion.bottom) {
         zp.zoom_region = {gdcRegion.left, gdcRegion.top, gdcRegion.right, gdcRegion.bottom};
     } else {
-        /*
-            SCALER_CROP_REGION can adjust to a small crop region if the aspect of active
-            pixel array is not same as the crop region aspect. Crop can only on either
-            horizontally or veritacl but never both.
-            If active pixel array's aspect ratio is wider than the crop region, the region
-            should be further cropped vertically.
-        */
-        auto coord = PlatformData::getActivePixelArray(mCameraId);
-        int wpa = coord.right - coord.left;
-        int hpa = coord.bottom - coord.top;
-
-        int width = ptzRegion.right - ptzRegion.left;
-        int height = ptzRegion.bottom - ptzRegion.top;
-
-        float aspect0 = static_cast<float>(wpa) / hpa;
-        float aspect1 = static_cast<float>(width) / height;
-
-        if (std::fabs(aspect0 - aspect1) < 0.00001) {
-            zp.zoom_region = {ptzRegion.left, ptzRegion.top, ptzRegion.right, ptzRegion.bottom};
-        } else if (aspect0 > aspect1) {
-            auto croppedHeight = width / aspect0;
-            int diff = std::abs(height - croppedHeight) / 2;
-            zp.zoom_region = {ptzRegion.left, ptzRegion.top + diff, ptzRegion.right,
-                              ptzRegion.bottom - diff};
-        } else {
-            auto croppedWidth = height * aspect0;
-            int diff = std::abs(width - croppedWidth) / 2;
-            zp.zoom_region = {ptzRegion.left + diff, ptzRegion.top, ptzRegion.right - diff,
-                              ptzRegion.bottom};
-        }
+        zp.zoom_region = {ptzRegion.left, ptzRegion.top, ptzRegion.right, ptzRegion.bottom};
     }
     intelCcaHandle->updateZoom(streamId, zp);
 
@@ -257,39 +237,45 @@ void Dvs::handleEvent(EventData eventData) {
 void Dvs::dumpDvsConfiguration(const cca::cca_init_params& config) {
     if (!Log::isLogTagEnabled(GET_FILE_SHIFT(Dvs), CAMERA_DEBUG_LOG_LEVEL3)) return;
 
-    LOG3("config.dvsOutputType %d", config.dvsOutputType);
-    LOG3("config.enableVideoStablization %d", config.enableVideoStablization);
-    LOG3("config.dvsZoomRatio %f", config.dvsZoomRatio);
-    LOG3("config.gdcConfig.pre_gdc_top_padding %d", config.gdcConfig.pre_gdc_top_padding);
-    LOG3("config.gdcConfig.pre_gdc_bottom_padding %d", config.gdcConfig.pre_gdc_bottom_padding);
-    LOG3("config.gdcConfig.gdc_filter_width %d", config.gdcConfig.gdc_filter_width);
-    LOG3("config.gdcConfig.gdc_filter_height %d", config.gdcConfig.gdc_filter_height);
-    LOG3("config.gdcConfig.splitMetadata[0](oydim_uv) %d", config.gdcConfig.splitMetadata[0]);
-    LOG3("config.gdcConfig.splitMetadata[1](oxdim_uv) %d", config.gdcConfig.splitMetadata[1]);
-    LOG3("config.gdcConfig.splitMetadata[2](oydim_y) %d", config.gdcConfig.splitMetadata[2]);
-    LOG3("config.gdcConfig.splitMetadata[3](oxdim_y) %d", config.gdcConfig.splitMetadata[3]);
-    LOG3("config.gdcConfig.gdc_resolution_info.input_width %d, input_height %d",
-         config.gdcConfig.gdc_resolution_info.input_width,
-         config.gdcConfig.gdc_resolution_info.input_height);
-    LOG3("config.gdcConfig.gdc_resolution_info.output_width %d, output_height %d",
-         config.gdcConfig.gdc_resolution_info.output_width,
-         config.gdcConfig.gdc_resolution_info.output_height);
-    LOG3("config.gdcConfig.gdc_resolution_info.input_crop.left %d, top %d, right %d, bottom %d",
-         config.gdcConfig.gdc_resolution_info.input_crop.left,
-         config.gdcConfig.gdc_resolution_info.input_crop.top,
-         config.gdcConfig.gdc_resolution_info.input_crop.right,
-         config.gdcConfig.gdc_resolution_info.input_crop.bottom);
-    LOG3("config.gdcConfig.gdc_resolution_history.input_width %d, input_height %d",
-         config.gdcConfig.gdc_resolution_history.input_width,
-         config.gdcConfig.gdc_resolution_history.input_height);
-    LOG3("config.gdcConfig.gdc_resolution_history.output_width %d, output_height %d",
-         config.gdcConfig.gdc_resolution_history.output_width,
-         config.gdcConfig.gdc_resolution_history.output_height);
-    LOG3("config.gdcConfig.gdc_resolution_history.input_crop.left %d, top %d, right %d, bottom %d",
-         config.gdcConfig.gdc_resolution_history.input_crop.left,
-         config.gdcConfig.gdc_resolution_history.input_crop.top,
-         config.gdcConfig.gdc_resolution_history.input_crop.right,
-         config.gdcConfig.gdc_resolution_history.input_crop.bottom);
+    LOG3("config: config.dvsOutputType %d", config.dvsOutputType);
+    LOG3("config: config.enableVideoStablization %d", config.enableVideoStablization);
+    LOG3("config: config.dvsZoomRatio %f", config.dvsZoomRatio);
+
+    for (size_t i = 0; i < config.gdcConfigs.count; ++i) {
+        LOG3("GDC Config for steeam: %d", config.gdcConfigs.ids[i]);
+
+        auto gdcConfig = config.gdcConfigs.configs[i];
+        LOG3("gdcConfig.pre_gdc_top_padding %d", gdcConfig.pre_gdc_top_padding);
+        LOG3("gdcConfig.pre_gdc_bottom_padding %d", gdcConfig.pre_gdc_bottom_padding);
+        LOG3("gdcConfig.gdc_filter_width %d", gdcConfig.gdc_filter_width);
+        LOG3("gdcConfig.gdc_filter_height %d", gdcConfig.gdc_filter_height);
+        LOG3("gdcConfig.splitMetadata[0](oydim_uv) %d", gdcConfig.splitMetadata[0]);
+        LOG3("gdcConfig.splitMetadata[1](oxdim_uv) %d", gdcConfig.splitMetadata[1]);
+        LOG3("gdcConfig.splitMetadata[2](oydim_y) %d", gdcConfig.splitMetadata[2]);
+        LOG3("gdcConfig.splitMetadata[3](oxdim_y) %d", gdcConfig.splitMetadata[3]);
+        LOG3("gdcConfig.gdc_resolution_info.input_width %d, input_height %d",
+            gdcConfig.gdc_resolution_info.input_width,
+            gdcConfig.gdc_resolution_info.input_height);
+        LOG3("gdcConfig.gdc_resolution_info.output_width %d, output_height %d",
+            gdcConfig.gdc_resolution_info.output_width,
+            gdcConfig.gdc_resolution_info.output_height);
+        LOG3("gdcConfig.gdc_resolution_info.input_crop.left %d, top %d, right %d, bottom %d",
+            gdcConfig.gdc_resolution_info.input_crop.left,
+            gdcConfig.gdc_resolution_info.input_crop.top,
+            gdcConfig.gdc_resolution_info.input_crop.right,
+            gdcConfig.gdc_resolution_info.input_crop.bottom);
+        LOG3("gdcConfig.gdc_resolution_history.input_width %d, input_height %d",
+            gdcConfig.gdc_resolution_history.input_width,
+            gdcConfig.gdc_resolution_history.input_height);
+        LOG3("gdcConfig.gdc_resolution_history.output_width %d, output_height %d",
+            gdcConfig.gdc_resolution_history.output_width,
+            gdcConfig.gdc_resolution_history.output_height);
+        LOG3("gdcConfig.gdc_resolution_history.input_crop.left %d, top %d, right %d, bottom %d",
+            gdcConfig.gdc_resolution_history.input_crop.left,
+            gdcConfig.gdc_resolution_history.input_crop.top,
+            gdcConfig.gdc_resolution_history.input_crop.right,
+            gdcConfig.gdc_resolution_history.input_crop.bottom);
+    }
 }
 
 }  // namespace icamera

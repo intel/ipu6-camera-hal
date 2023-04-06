@@ -42,6 +42,8 @@ class IntelOPIC2 : public IIntelICBM {
 
     static iaic_memory createMemoryDesc(const ImageInfo& param);
     static std::string buildFeatureStr(const ICBMReqInfo& req);
+    void setData(iaic_session uid, void* p, size_t size, const char* featureName,
+                 const char* portName);
 };
 
 }  // namespace icamera

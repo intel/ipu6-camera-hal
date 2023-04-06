@@ -238,11 +238,20 @@ int IntelLevel0TNR::init(int width, int height, TnrType type) {
     LOG1("<id%d> %s  %dx%d", mCameraId, __func__, width, height);
     mWidth = width;
     mHeight = height;
-    mIntelICBM = std::make_unique<IntelICBM>();
+    mIntelICBM = std::make_unique<ICBMThread>();
     int ret = mIntelICBM->setup(nullptr);
     CheckAndLogError(ret != OK, ret, "%s: Init failed", __func__);
 
     return ret;
+}
+
+int IntelLevel0TNR::runTnrFrame(const void* inBufAddr, void* outBufAddr, uint32_t inBufSize,
+                                uint32_t outBufSize, Tnr7Param* tnrParam, bool syncUpdate, int fd) {
+    LOG1("<id%d> Level0 %s", mCameraId, __func__);
+    (void)syncUpdate;
+    (void)fd;
+    MEMCPY_S(outBufAddr, outBufSize, inBufAddr, inBufSize);
+    return OK;
 }
 // LEVEL0_ICBM_E
 }  // namespace icamera

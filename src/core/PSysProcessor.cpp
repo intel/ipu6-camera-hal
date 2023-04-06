@@ -181,6 +181,11 @@ int PSysProcessor::start() {
         CheckAndLogError(ret != OK, NO_MEMORY, "Allocating producer buffer failed:%d", ret);
     }
 
+    {
+        AutoMutex lock(mBufferMapLock);
+        mRawBufferMap.clear();
+    }
+
     mThreadRunning = true;
     CLEAR(mSofTimestamp);
     mProcessThread->run("PsysProcessor", PRIORITY_NORMAL);
@@ -951,7 +956,7 @@ void PSysProcessor::dispatchTask(CameraBufferPortMap& inBuf, CameraBufferPortMap
     // Handle per-frame settings if output buffer requires
     if (settingSequence > -1 && mParameterGenerator) {
         Parameters params;
-        if (mParameterGenerator->getParameters(currentSequence, &params, true, false) == OK) {
+        if (mParameterGenerator->getIspParameters(currentSequence, &params) == OK) {
             setParameters(params);
 
             bool hasStill = false;

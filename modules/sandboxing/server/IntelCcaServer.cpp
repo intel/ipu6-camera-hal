@@ -161,7 +161,7 @@ status_t IntelCcaServer::getCMC(void* pData, int dataSize) {
 
     intel_cca_get_cmc_data* params = static_cast<intel_cca_get_cmc_data*>(pData);
 
-    ia_err ret = mCca->getCMC(&params->results);
+    ia_err ret = mCca->getCMC(&params->results, params->cpf.size ? &params->cpf : nullptr);
     CheckAndLogError(ret != ia_err_none, UNKNOWN_ERROR, "@%s, fails: %d", __func__, ret);
 
     return OK;

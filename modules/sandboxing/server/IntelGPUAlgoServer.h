@@ -33,10 +33,6 @@
 #include "modules/sandboxing/server/IntelTNRServer.h"
 #endif
 
-// ENABLE_EVCP_S
-#include "modules/sandboxing/server/IntelEvcpServer.h"
-// ENABLE_EVCP_E
-
 // LEVEL0_ICBM_S
 #include "modules/sandboxing/server/IntelICBMServer.h"
 // LEVEL0_ICBM_E
@@ -53,11 +49,6 @@ class IntelGPUAlgoServer : public RequestHandler {
  private:
     IntelTNRServer mTNR;
 #endif
-
-    // ENABLE_EVCP_S
- private:
-    IntelEvcpServer mEvcp;
-    // ENABLE_EVCP_E
 
     // LEVEL0_ICBM_S
  private:

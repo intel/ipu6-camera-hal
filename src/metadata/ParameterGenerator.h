@@ -24,6 +24,20 @@
 
 namespace icamera {
 
+class RequestParam {
+ public:
+    RequestParam() : requestId(-1) {}
+
+    ~RequestParam() {}
+
+    long requestId;
+    Parameters param;
+
+ private:
+    RequestParam(const RequestParam& other);
+    RequestParam& operator=(const RequestParam& other);
+};
+
 /*
  * \class ParameterGenerator
  * This class is used to generator parameter results. It updates the parameters
@@ -45,12 +59,15 @@ class ParameterGenerator {
      * \brief Save parameters with sequence id indicating the active frame.
      *           And update the aiq result parameters as well.
      */
-    int saveParameters(int64_t predictSequence, long requestId, const Parameters* param = nullptr);
+    int saveParameters(int64_t sequence, long requestId,
+                       std::shared_ptr<RequestParam> requestParam = nullptr);
+    std::shared_ptr<RequestParam> getRequestParamBuf();
 
     /**
      * \brief Update parameters per sequence id.
      */
     void updateParameters(int64_t sequence, const Parameters* param);
+    int getIspParameters(int64_t sequence, Parameters* param);
     int getRawOutputMode(int64_t sequence, raw_data_output_t& rawOutputMode);
     int getUserRequestId(int64_t sequence, int32_t& userRequestId);
 
@@ -71,21 +88,6 @@ class ParameterGenerator {
     int updateTonemapCurve(int64_t sequence, Parameters* params);
 
     int updateCommonMetadata(Parameters* params, const AiqResult* aiqResult);
-
- private:
-    class RequestParam {
-     public:
-        RequestParam() : requestId(-1) {}
-
-        ~RequestParam() {}
-
-        long requestId;
-        Parameters param;
-
-     private:
-        RequestParam(const RequestParam& other);
-        RequestParam& operator=(const RequestParam& other);
-    };
 
  private:
     int mCameraId;

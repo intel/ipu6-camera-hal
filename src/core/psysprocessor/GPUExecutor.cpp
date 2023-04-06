@@ -124,11 +124,13 @@ int GPUExecutor::start() {
         const FrameInfo& frameInfo = mTerminalsDesc[term].frameDesc;
         mIntelTNR = std::unique_ptr<IntelTNR7US>(IntelTNR7US::createIntelTNR(mCameraId));
         TnrType type = mStreamId == VIDEO_STREAM_ID ? TNR_INSTANCE0 : TNR_INSTANCE1;
-        ret = mIntelTNR->init(frameInfo.mWidth, frameInfo.mHeight, type);
-        if (ret) {
-            mIntelTNR = nullptr;
-            // when failed to init tnr, executor will run without tnr effect
-            LOGW("Executor:%s init tnr failed", mName.c_str());
+        if (mIntelTNR) {
+            ret = mIntelTNR->init(frameInfo.mWidth, frameInfo.mHeight, type);
+            if (ret) {
+                mIntelTNR = nullptr;
+                // when failed to init tnr, executor will run without tnr effect
+                LOGW("Executor:%s init tnr failed", mName.c_str());
+            }
         }
     }
     AutoMutex l(mBufferQueueLock);
@@ -169,11 +171,11 @@ int GPUExecutor::allocBuffers() {
     int srcWidth = mTerminalsDesc[term].frameDesc.mWidth;
     int srcHeight = mTerminalsDesc[term].frameDesc.mHeight;
     uint32_t size = 0;
+    int ret = NO_MEMORY;
 
-    if (mIntelTNR) {
-        int ret = mIntelTNR->getTnrBufferSize(srcWidth, srcHeight, &size);
-        if (ret) size = PGCommon::getFrameSize(srcFmt, srcWidth, srcHeight, true);
-    }
+    if (mIntelTNR) ret = mIntelTNR->getTnrBufferSize(srcWidth, srcHeight, &size);
+    if (ret) size = PGCommon::getFrameSize(srcFmt, srcWidth, srcHeight, true);
+
     LOG1("@%s, Required GPU TNR buffer size %u", __func__, size);
 
     for (int i = 0; i < MAX_BUFFER_COUNT; i++) {
@@ -244,6 +246,11 @@ int GPUExecutor::getStillTnrTriggerInfo(TuningMode mode) {
     mStillTnrTriggerInfo = cmc.tnr7us_trigger_info;
     LOG1("%s still tnr trigger gain num: %d threshold: %f", mName.c_str(),
          mStillTnrTriggerInfo.num_gains, mStillTnrTriggerInfo.tnr7us_threshold_gain);
+    for (int i = 0; i < mStillTnrTriggerInfo.num_gains; i++) {
+        LOG1("%s threshold: %f, tnr frame count: %d", mName.c_str(),
+             mStillTnrTriggerInfo.trigger_infos[i].gain,
+             mStillTnrTriggerInfo.trigger_infos[i].frame_count);
+    }
     return OK;
 }
 
@@ -436,15 +443,14 @@ int GPUExecutor::updateTnrISPConfig(Tnr7Param* pbuffer, uint32_t sequence) {
         ret |= PalOutput.getKernelPublicOutput(ia_pal_uuid_isp_tnr7_ims_1_1, (void*&)pIms);
         CheckAndLogError(ret != ia_err_none, UNKNOWN_ERROR, "Can't read isp tnr7 parameters");
 
-#ifdef TNR7_CM
         tnrBCParam* tnr7_bc = &(pbuffer->bc);
         tnrBlendParam* tnr7_blend = &(pbuffer->blend);
         tnrImsParam* tnr7_ims = &(pbuffer->ims);
+
+        // common params for both c4m tnr and level0 tnr
         // tnr7 ims params
-        tnr7_ims->enable = pIms->enable;
         tnr7_ims->update_limit = pIms->update_limit;
         tnr7_ims->update_coeff = pIms->update_coeff;
-        tnr7_ims->gpu_mode = pIms->gpu_mode;
         for (int i = 0; i < sizeof(pIms->d_ml) / sizeof(int32_t); i++) {
             tnr7_ims->d_ml[i] = pIms->d_ml[i];
             tnr7_ims->d_slopes[i] = pIms->d_slopes[i];
@@ -458,21 +464,17 @@ int GPUExecutor::updateTnrISPConfig(Tnr7Param* pbuffer, uint32_t sequence) {
         tnr7_ims->r_coeff = pIms->r_coeff;
 
         // tnr7 bc params
-        tnr7_bc->enable = pBc->enable;
         tnr7_bc->is_first_frame = pBc->is_first_frame;
         tnr7_bc->do_update = pBc->do_update;
-        tnr7_bc->gpu_mode = pBc->gpu_mode;
         tnr7_bc->tune_sensitivity = pBc->tune_sensitivity;
         for (int i = 0; i < sizeof(pBc->coeffs) / sizeof(int32_t); i++) {
             tnr7_bc->coeffs[i] = pBc->coeffs[i];
         }
-
         if (!icamera::PlatformData::useTnrGlobalProtection()) {
             tnr7_bc->global_protection = 0;
         } else {
             tnr7_bc->global_protection = pBc->global_protection;
             tnr7_bc->global_protection_inv_num_pixels = pBc->global_protection_inv_num_pixels;
-            tnr7_bc->global_protection_motion_level = pBc->global_protection_motion_level;
         }
         for (int i = 0; i < sizeof(pBc->global_protection_sensitivity_lut_values) / sizeof(int32_t);
              i++) {
@@ -484,14 +486,24 @@ int GPUExecutor::updateTnrISPConfig(Tnr7Param* pbuffer, uint32_t sequence) {
             tnr7_bc->global_protection_sensitivity_lut_slopes[i] =
                 pBc->global_protection_sensitivity_lut_slopes[i];
         }
+        tnr7_blend->max_recursive_similarity = pBlend->max_recursive_similarity;
 
-        // tnr7 blend params
+#ifdef TNR7_CM
+        tnr7_ims->enable = pIms->enable;
+        tnr7_ims->gpu_mode = pIms->gpu_mode;
+
+        tnr7_bc->enable = pBc->enable;
+        tnr7_bc->gpu_mode = pBc->gpu_mode;
+
+        if (icamera::PlatformData::useTnrGlobalProtection()) {
+            tnr7_bc->global_protection_motion_level = pBc->global_protection_motion_level;
+        }
+        // c4m tnr7 blend params
         tnr7_blend->enable = pBlend->enable;
         tnr7_blend->enable_main_output = pBlend->enable_main_output;
         tnr7_blend->enable_vision_output = pBlend->enable_vision_output;
         tnr7_blend->single_output_mode = pBlend->single_output_mode;
         tnr7_blend->spatial_weight_coeff = pBlend->spatial_weight_coeff;
-        tnr7_blend->max_recursive_similarity = pBlend->max_recursive_similarity;
         tnr7_blend->spatial_alpha = pBlend->spatial_alpha;
         tnr7_blend->max_recursive_similarity_vsn = pBlend->max_recursive_similarity_vsn;
         for (int i = 0; i < sizeof(pBlend->w_out_prev_LUT) / sizeof(int32_t); i++) {
@@ -548,6 +560,11 @@ int GPUExecutor::runTnrFrame(const std::shared_ptr<CameraBuffer>& inBuf,
     }
 
     bool paramSyncUpdate = (mStreamId == VIDEO_STREAM_ID) ? false : true;
+
+    // LEVEL0_ICBM_S
+    // no async param update in level0 tnr
+    paramSyncUpdate = true;
+    // LEVEL0_ICBM_E
 
     if (!paramSyncUpdate && mIntelTNR) {
         // request update tnr parameters before wait

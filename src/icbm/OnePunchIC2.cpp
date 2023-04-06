@@ -86,6 +86,18 @@ int IntelOPIC2::processFrame(const ImageInfo& iii, const ImageInfo& iio,
     return OK;
 }
 
+void IntelOPIC2::setData(iaic_session uid, void* p, size_t size, const char* featureName,
+                         const char* portName) {
+    iaic_memory setting{};
+    setting.has_gfx = false;
+    setting.feature_name = featureName;
+
+    setting.port_name = portName;
+    setting.p = p;
+    setting.size[0] = size;
+    iaic_set_data(uid, setting);
+}
+
 iaic_memory IntelOPIC2::createMemoryDesc(const ImageInfo& ii) {
     iaic_memory mem = {};
 

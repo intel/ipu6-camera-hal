@@ -182,9 +182,6 @@ struct CommonConfig {
     bool supportIspTuningUpdate;
     bool supportHwJpegEncode;
     int maxIsysTimeoutValue;
-    // ENABLE_EVCP_S
-    bool isGpuEvcpEnabled;
-    // ENABLE_EVCP_E
     // LEVEL0_ICBM_S
     bool isGPUICBMEnabled;
     bool useLevel0Tnr;
@@ -201,9 +198,6 @@ struct CommonConfig {
         supportIspTuningUpdate = false;
         supportHwJpegEncode = true;
         maxIsysTimeoutValue = 0;
-        // ENABLE_EVCP_S
-        isGpuEvcpEnabled = false;
-        // ENABLE_EVCP_E
         // LEVEL0_ICBM_S
         isGPUICBMEnabled = false;
         useLevel0Tnr = false;

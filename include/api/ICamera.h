@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Intel Corporation.
+ * Copyright (C) 2015-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,6 +68,8 @@
  *     Version        0.61       Add API camera_callback_register() to notify event to AAL
  *******************************************************************************
  *     Version        0.62       Add sequence in camera_get_parameters to fetch settings
+ *******************************************************************************
+ *     Version        0.63       Merge camera_device_open API with/without vc_num together
  * ------------------------------------------------------------------------------
  *
  */
@@ -207,7 +209,7 @@ void camera_callback_register(int camera_id, const camera_callback_ops_t* callba
  *   int ret = camera_device_open(camera_id);
  * \endcode
  **/
-int camera_device_open(int camera_id);
+int camera_device_open(int camera_id, int vc_num = 0);
 
 /**
  * \brief

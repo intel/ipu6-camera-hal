@@ -113,36 +113,6 @@ void IntelGPUAlgoServer::handleRequest(const MsgReq& msg) {
             break;
         }
 #endif
-            // ENABLE_EVCP_S
-        case IPC_EVCP_INIT:
-            status = mEvcp.init(addr, requestSize);
-            break;
-        case IPC_EVCP_UPDCONF:
-            status = mEvcp.updateEvcpParam(reinterpret_cast<EvcpParam*>(addr));
-            break;
-        case IPC_EVCP_GETCONF:
-            mEvcp.getEvcpParam(reinterpret_cast<EvcpParam*>(addr));
-            status = OK;
-            break;
-        case IPC_EVCP_RUN_FRAME: {
-            status = UNKNOWN_ERROR;
-            EvcpRunInfo* runInfo = static_cast<EvcpRunInfo*>(addr);
-            ShmInfo inBuffer = {};
-            if (runInfo->inHandle < 0) break;
-
-            status = getIntelAlgoServer()->getShmInfo(runInfo->inHandle, &inBuffer);
-            if (status != OK) {
-                LOGE("%s, the buffer handle for EVCP inBuffer data is invalid", __func__);
-                break;
-            }
-
-            status = mEvcp.runEvcpFrame(inBuffer.addr, inBuffer.size);
-            break;
-        }
-        case IPC_EVCP_DEINIT:
-            status = mEvcp.deInit();
-            break;
-            // ENABLE_EVCP_E
 
             // LEVEL0_ICBM_S
         case IPC_ICBM_INIT:
@@ -188,10 +158,9 @@ void IntelGPUAlgoServer::handleRequest(const MsgReq& msg) {
     }
     LOG1("@%s, req_id:%d:%s, status:%d", __func__, req_id,
          IntelAlgoIpcCmdToString(static_cast<IPC_CMD>(req_id)), status);
-    // LEVEL0_ICBM_S
+
     (void)requestSize;
     (void)addr;
-    // LEVEL0_ICBM_E
     getIntelAlgoServer()->returnCallback(req_id, status, buffer_handle);
 }
 } /* namespace icamera */

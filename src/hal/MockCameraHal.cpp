@@ -82,7 +82,7 @@ int MockCameraHal::deinit() {
     return OK;
 }
 
-int MockCameraHal::deviceOpen(int cameraId)
+int MockCameraHal::deviceOpen(int cameraId, int vcNum)
 {
     LOG1("<id%d>@%s", cameraId, __func__);
 

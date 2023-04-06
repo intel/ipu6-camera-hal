@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 Intel Corporation
+ * Copyright (C) 2016-2023 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,8 @@ class LensHw {
     LensHw(int cameraId);
     ~LensHw();
 
-    int init();
+    int start();
+    void stop();
 
     const char* getLensName(void);
 
