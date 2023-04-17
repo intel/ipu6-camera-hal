@@ -82,11 +82,7 @@ int MockCameraHal::deinit() {
     return OK;
 }
 
-#ifdef NO_VIRTUAL_CHANNEL
-int MockCameraHal::deviceOpen(int cameraId)
-#else
 int MockCameraHal::deviceOpen(int cameraId, int vcNum)
-#endif
 {
     LOG1("<id%d>@%s", cameraId, __func__);
 

@@ -251,6 +251,8 @@ int ParameterGenerator::getIspParameters(int64_t sequence, Parameters* param) {
             param->setEnabledIspControls(enabledControls);
         }
         // ISP_CONTROL_E
+
+        return OK;
     }
 
     return UNKNOWN_ERROR;

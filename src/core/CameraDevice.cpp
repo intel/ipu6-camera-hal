@@ -135,9 +135,6 @@ int CameraDevice::init() {
     ret = m3AControl->init();
     CheckAndLogError((ret != OK), ret, "%s: Init 3A Unit falied", __func__);
 
-    ret = mLensCtrl->init();
-    CheckAndLogError((ret != OK), ret, "%s: Init Lens falied", __func__);
-
     mRequestThread->run("RequestThread", PRIORITY_NORMAL);
 
     mState = DEVICE_INIT;
@@ -753,6 +750,7 @@ int CameraDevice::stop() {
     mRequestThread->clearRequests();
 
     m3AControl->stop();
+    mLensCtrl->stop();
 
     if (mState == DEVICE_START) stopLocked();
 
@@ -873,7 +871,10 @@ int CameraDevice::qbuf(camera_buffer_t** ubuffer, int bufferNum, const Parameter
         AutoMutex m(mDeviceLock);
         if (mState == DEVICE_CONFIGURE || mState == DEVICE_STOP) {
             // Start 3A here then the HAL can run 3A for request
-            int ret = m3AControl->start();
+            int ret = mLensCtrl->start();
+            CheckAndLogError((ret != OK), ret, "%s: Start Lens falied", __func__);
+
+            ret = m3AControl->start();
             CheckAndLogError((ret != OK), BAD_VALUE, "Start 3a unit failed with ret:%d.", ret);
 
             mState = DEVICE_BUFFER_READY;

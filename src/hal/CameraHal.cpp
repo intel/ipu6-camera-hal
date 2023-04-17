@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Intel Corporation.
+ * Copyright (C) 2015-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -116,44 +116,6 @@ int CameraHal::deinit() {
     return OK;
 }
 
-#ifdef NO_VIRTUAL_CHANNEL
-int CameraHal::deviceOpen(int cameraId) {
-    LOG1("<id%d> @%s", cameraId, __func__);
-    AutoMutex l(mLock);
-    CheckAndLogError(mState == HAL_UNINIT, NO_INIT, "HAL is not initialized");
-
-    // Create the camera device that will be freed in close
-    if (mCameraDevices[cameraId]) {
-        LOGI("<id%d> has already opened", cameraId);
-        return INVALID_OPERATION;
-    }
-
-#ifdef SUPPORT_MULTI_PROCESS
-    if (mCameraShm.CameraDeviceOpen(cameraId) != OK) return INVALID_OPERATION;
-#endif
-
-    mCameraDevices[cameraId] = new CameraDevice(cameraId);
-
-#ifdef SUPPORT_MULTI_PROCESS
-    // The if check is to handle dual camera cases
-    mCameraOpenNum = mCameraShm.cameraDeviceOpenNum();
-    CheckAndLogError(mCameraOpenNum == 0, INVALID_OPERATION, "camera open num couldn't be 0");
-#else
-    mCameraOpenNum++;
-#endif
-
-    if (mCameraOpenNum == 1) {
-        MediaControl* mc = MediaControl::getInstance();
-        CheckAndLogError(!mc, UNKNOWN_ERROR, "MediaControl init failed");
-        if (PlatformData::isResetLinkRoute(cameraId)) {
-            int ret = mc->resetAllLinks();
-            CheckAndLogError(ret != OK, DEV_BUSY, "resetAllLinks failed");
-        }
-    }
-
-    return mCameraDevices[cameraId]->init();
-}
-#else
 int CameraHal::deviceOpen(int cameraId, int vcNum) {
     LOG1("<id%d> @%s SENSORCTRLINFO: vcNum %d", cameraId, __func__, vcNum);
     AutoMutex l(mLock);
@@ -195,7 +157,6 @@ int CameraHal::deviceOpen(int cameraId, int vcNum) {
             int ret = mc->resetAllLinks();
             CheckAndLogError(ret != OK, DEV_BUSY, "resetAllLinks failed");
         }
-
         // VIRTUAL_CHANNEL_S
         if (info.vc.total_num) {
             // when the sensor belongs to virtual channel, reset the routes
@@ -206,7 +167,6 @@ int CameraHal::deviceOpen(int cameraId, int vcNum) {
 
     return mCameraDevices[cameraId]->init();
 }
-#endif
 
 void CameraHal::deviceClose(int cameraId) {
     LOG1("<id%d> @%s", cameraId, __func__);

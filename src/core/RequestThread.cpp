@@ -320,9 +320,11 @@ bool RequestThread::threadLoop() {
 
         if (blockRequest()) {
             int ret = mRequestSignal.waitRelative(lock, kWaitDuration * SLOWLY_MULTIPLIER);
-            CheckWarning(ret == TIMED_OUT, true,
-                         "wait event time out, %d requests processing, %zu requests in HAL",
-                         mRequestsInProcessing, mPendingRequests.size());
+            if (ret == TIMED_OUT) {
+                LOG2("wait event time out, %d requests processing, %zu requests in HAL",
+                     mRequestsInProcessing, mPendingRequests.size());
+                return true;
+            }
 
             if (blockRequest()) {
                 LOG2("Pending request processing, mBlockRequest %d, Req in processing %d",
