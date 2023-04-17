@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Intel Corporation.
+ * Copyright (C) 2015-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,11 +51,7 @@ class CameraHal {
     virtual int deinit();
 
     // Device API
-#ifdef NO_VIRTUAL_CHANNEL
-    virtual int deviceOpen(int cameraId);
-#else
     virtual int deviceOpen(int cameraId, int vcNum = 0);
-#endif
     virtual void deviceClose(int cameraId);
 
     virtual void deviceCallbackRegister(int cameraId, const camera_callback_ops_t* callback);

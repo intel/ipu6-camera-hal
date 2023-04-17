@@ -149,7 +149,10 @@ int PolicyManager::wait(std::string executorName, int64_t sequence) {
         LOG2("%s: need wait for other executors.", executorName.c_str());
         const int64_t kWaitDuration = 66000000;  // 66ms
         int ret = bundle->mCondition.waitRelative(lock, kWaitDuration * SLOWLY_MULTIPLIER);
-        CheckWarning(ret == TIMED_OUT, ret, "%s: wait executors timeout", executorName.c_str());
+        if (ret == TIMED_OUT) {
+            LOG2("%s: wait executors timeout", executorName.c_str());
+            return ret;
+        }
     } else {
         bundle->mWaitingCount = 0;
         bundle->mCondition.broadcast();

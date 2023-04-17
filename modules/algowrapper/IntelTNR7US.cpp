@@ -145,7 +145,8 @@ int IntelTNR7US::asyncParamUpdate(int gain, bool forceUpdate) {
     if (mThread->task_runner()) {
         mThread->task_runner()->PostTask(
             FROM_HERE,
-            base::Bind(&IntelTNR7US::handleParamUpdate, base::Unretained(this), gain, forceUpdate));
+            base::BindOnce(&IntelTNR7US::handleParamUpdate,
+                           base::Unretained(this), gain, forceUpdate));
     }
     return OK;
 }
