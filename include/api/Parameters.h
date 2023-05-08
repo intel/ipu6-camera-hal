@@ -726,6 +726,7 @@ typedef enum {
     CAMERA_METADATA_READY,
     CAMERA_DEVICE_ERROR,
     CAMERA_IPC_ERROR,
+    CAMERA_METADATA_ENTRY,
 } camera_msg_type_t;
 
 /**
@@ -769,6 +770,22 @@ typedef struct {
 } metadata_ready_t;
 
 /**
+ * \struct metadata_entry_t: Use to set metadata entry.
+ */
+typedef struct {
+    uint32_t tag;
+    uint32_t frameNumber;
+    size_t count;
+    union {
+        const uint8_t* u8;
+        const int32_t* i32;
+        const float* f;
+        const int64_t* i64;
+        const double* d;
+    } data;
+} metadata_entry_t;
+
+/**
  * \struct camera_msg_data_t: Use to specify msg data.
  */
 typedef struct {
@@ -776,6 +793,7 @@ typedef struct {
     union {
         isp_buffer_ready_t buffer_ready;
         metadata_ready_t metadata_ready;
+        metadata_entry_t metadata_entry;
     } data;
 } camera_msg_data_t;
 
@@ -2865,82 +2883,6 @@ class Parameters {
      * \return 0 if flag was set, otherwise non-0 value is returned.
      */
     int getCallbackTmCurve(bool* enabled) const;
-
-    // ENABLE_EVCP_S
-    /**
-     * \brief Set EVCP ECC status
-     *
-     * \param[in] int enabled
-     *
-     * \return 0 if set successfully, otherwise non-0 value is returned.
-     */
-    int setEvcpEccMode(uint8_t enabled);
-    /**
-     * \brief Get EVCP ECC enable status
-     *
-     * \param[out] int enabled
-     *
-     * \return 0 if flag was set, otherwise non-0 value is returned.
-     */
-    int getEvcpEccMode(uint8_t* enabled) const;
-
-    /**
-     * \brief Set EVCP BC Mode
-     *
-     * \param[in] uint8_t Mode
-     *
-     * \return 0 if set successfully, otherwise non-0 value is returned.
-     */
-    int setEvcpBCMode(uint8_t mode);
-
-    /**
-     * \brief Get EVCP BC Mode
-     *
-     * \param[out] uint8_t mode
-     *
-     * \return 0 if flag was set, otherwise non-0 value is returned.
-     */
-    int getEvcpBCMode(uint8_t* mode) const;
-
-    /**
-     * \brief Set EVCP BR Parameters
-     *
-     * \param[in] int height
-     * \param[in] int width
-     * \param[in] int fd
-     *
-     * \return 0 if set successfully, otherwise non-0 value is returned.
-     */
-    int setEvcpBRParameters(int height, int width, int fd);
-    /**
-     * \brief Get EVCP BR Parameters
-     *
-     * \param[out] int height
-     * \param[out] int width
-     * \param[out] int fd
-     *
-     * \return 0 if flag was set, otherwise non-0 value is returned.
-     */
-    int getEvcpBRParameters(int* height, int* width, int* fd) const;
-
-    /**
-     * \brief Set EVCP FF Mode
-     *
-     * \param[in] uint8_t Mode
-     *
-     * \return 0 if set successfully, otherwise non-0 value is returned.
-     */
-    int setEvcpFFMode(uint8_t mode);
-
-    /**
-     * \brief Get EVCP FF Mode
-     *
-     * \param[out] uint8_t mode
-     *
-     * \return 0 if flag was set, otherwise non-0 value is returned.
-     */
-    int getEvcpFFMode(uint8_t* mode) const;
-    // ENABLE_EVCP_E
 
     /**
      * \brief Set scale & crop region

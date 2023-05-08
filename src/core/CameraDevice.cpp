@@ -79,6 +79,15 @@ CameraDevice::CameraDevice(int cameraId)
     } else {
         mGCM = nullptr;
     }
+
+    const char *CAMERA_HAL_DQBUF_TIMEDOUT = "cameraDqbufTimedout";
+    char *dqbufTimedoutStr = getenv(CAMERA_HAL_DQBUF_TIMEDOUT);
+    if (dqbufTimedoutStr == nullptr)
+        mDqbufTimedout = false;
+    else if (strncmp(dqbufTimedoutStr, "true", 4) || strncmp(dqbufTimedoutStr, "TRUE", 4))
+        mDqbufTimedout = true;
+    else
+        mDqbufTimedout = false;
 }
 
 CameraDevice::~CameraDevice() {
@@ -182,6 +191,7 @@ void CameraDevice::deinit() {
 
 void CameraDevice::callbackRegister(const camera_callback_ops_t* callback) {
     mCallback = const_cast<camera_callback_ops_t*>(callback);
+    mParamGenerator->callbackRegister(mCallback);
 }
 
 StreamSource* CameraDevice::createBufferProducer() {
@@ -784,7 +794,14 @@ int CameraDevice::dqbuf(int streamId, camera_buffer_t** ubuffer, Parameters* set
     LOG2("<id%d>@%s, stream id:%d", mCameraId, __func__, streamId);
 
     int ret = mRequestThread->waitFrame(streamId, ubuffer);
-    while (ret == TIMED_OUT) ret = mRequestThread->waitFrame(streamId, ubuffer);
+
+    if (mDqbufTimedout) {
+        if (ret == TIMED_OUT)
+            return ret;
+    } else {
+        while (ret == TIMED_OUT)
+            ret = mRequestThread->waitFrame(streamId, ubuffer);
+    }
 
     if (ret == NO_INIT) return ret;
 

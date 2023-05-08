@@ -234,7 +234,7 @@ int AiqUnit::initIntelCcaHandle(const std::vector<ConfigMode>& configModes) {
         bool hasLtm = PlatformData::isLtmEnabled(mCameraId);
         // HDR_FEATURE_S
         if (PlatformData::isEnableHDR(mCameraId) &&
-            !CameraUtils::isMultiExposureCase(mCameraId, tuningMode)) {
+            !PlatformData::isMultiExposureCase(mCameraId, tuningMode)) {
             hasLtm = false;
         }
         // HDR_FEATURE_E

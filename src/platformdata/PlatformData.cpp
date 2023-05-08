@@ -455,6 +455,19 @@ int PlatformData::isUseFixedHDRExposureInfo(int cameraId) {
 }
 // HDR_FEATURE_E
 
+bool PlatformData::isMultiExposureCase(int cameraId, TuningMode tuningMode) {
+    // HDR_FEATURE_S
+    if (tuningMode == TUNING_MODE_VIDEO_HDR || tuningMode == TUNING_MODE_VIDEO_HDR2 ||
+        tuningMode == TUNING_MODE_VIDEO_HLC) {
+        return true;
+    } else if (getSensorAeEnable(cameraId)) {
+        return true;
+    }
+    // HDR_FEATURE_E
+
+    return false;
+}
+
 int PlatformData::getSensorExposureType(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mSensorExposureType;
 }
@@ -1432,6 +1445,14 @@ int PlatformData::getVirtualChannelSequence(int cameraId) {
 
     return -1;
 }
+
+int PlatformData::getVcAggregator(int cameraId, struct VcAggregator& aggregator) {
+    if (getInstance()->mStaticCfg.mCameras[cameraId].mVcAggregator.mIndex >= 0) {
+        aggregator = getInstance()->mStaticCfg.mCameras[cameraId].mVcAggregator;
+        return OK;
+    }
+    return NO_ENTRY;
+}
 // VIRTUAL_CHANNEL_E
 
 camera_resolution_t* PlatformData::getPslOutputForRotation(int width, int height, int cameraId) {
@@ -1509,9 +1530,14 @@ camera_coordinate_system_t PlatformData::getActivePixelArray(int cameraId) {
 }
 
 string PlatformData::getCameraCfgPath() {
-    char* p = getenv("CAMERA_CFG_PATH");
+    string cfgPath = string(CAMERA_DEFAULT_CFG_PATH);
+#ifdef SUB_CONFIG_PATH
+    cfgPath += string(SUB_CONFIG_PATH);
+    cfgPath.append("/");
+#endif
 
-    return p ? string(p) : string(CAMERA_DEFAULT_CFG_PATH);
+    char* p = getenv("CAMERA_CFG_PATH");
+    return p ? string(p) : cfgPath;
 }
 
 string PlatformData::getGraphDescFilePath() {
@@ -1660,9 +1686,6 @@ int PlatformData::getMaxIsysTimeout() {
 bool PlatformData::isUsingGpuAlgo() {
     bool enabled = false;
     enabled |= isGpuTnrEnabled();
-    // ENABLE_EVCP_S
-    enabled |= isGpuEvcpEnabled();
-    // ENABLE_EVCP_E
     // LEVEL0_ICBM_S
     enabled |= isGPUICBMEnabled() || useLevel0Tnr();
     // LEVEL0_ICBM_E
@@ -1704,12 +1727,6 @@ bool PlatformData::removeCacheFlushOutputBuffer(int cameraId) {
 bool PlatformData::getPLCEnable(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mPLCEnable;
 }
-
-// ENABLE_EVCP_S
-bool PlatformData::isGpuEvcpEnabled() {
-    return getInstance()->mStaticCfg.mCommonConfig.isGpuEvcpEnabled;
-}
-// ENABLE_EVCP_E
 
 bool PlatformData::isStillOnlyPipeEnabled(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mStillOnlyPipe;

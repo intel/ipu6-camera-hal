@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2022 Intel Corporation.
+ * Copyright (C) 2015-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@
 #include "CameraLog.h"
 #include "Trace.h"
 #include "iutils/Utils.h"
+#include "CameraDump.h"
 
 icamera::LogOutputSink* globalLogSink;
 extern const char* tagNames[];
@@ -274,6 +275,11 @@ void setDebugLevel(void) {
     if (dbgLevel) {
         gLogLevel = strtoul(dbgLevel, nullptr, 0);
         LOG1("Debug level is 0x%x", gLogLevel);
+    }
+
+    if (gLogLevel & CAMERA_DEBUG_LOG_DYNAMIC_DUMP) {
+        CameraDump::setDumpThread();
+        LOGI("Dynamic dump is enabled.");
     }
 
     for (size_t i = 0; i < TAGS_MAX_NUM; ++i) {

@@ -256,6 +256,13 @@ else()
 endif()
 
 add_library(camhal_static STATIC ${LIBCAMHAL_SRCS})
+
+if (NOT CAL_BUILD AND (NOT "${CMAKE_INSTALL_SUB_PATH}" STREQUAL ""))
+    set(CMAKE_SKIP_RPATH TRUE)
+    set_target_properties(camhal PROPERTIES LINK_FLAGS
+                          "-Wl,-rpath,/usr/lib/${CMAKE_INSTALL_SUB_PATH}")
+    add_compile_definitions(SUB_CONFIG_PATH="${CMAKE_INSTALL_SUB_PATH}")
+endif()
 set_target_properties(camhal_static PROPERTIES OUTPUT_NAME "camhal")
 
 #---------------------------- Link settings ----------------------------
@@ -378,10 +385,12 @@ endif() #ENABLE_SANDBOXING
 #--------------------------- Install settings ---------------------------
 if (NOT CAL_BUILD)
 # Install headers
-install(DIRECTORY include/ DESTINATION include/${CMAKE_INSTALL_SUB_PATH}/libcamhal)
-if (SUPPORT_LIVE_TUNING)
-    install(FILES modules/livetune/LiveTuning.h DESTINATION include/${CMAKE_INSTALL_SUB_PATH}/libcamhal/api)
-endif() #SUPPORT_LIVE_TUNING
+if ("${CMAKE_INSTALL_SUB_PATH}" STREQUAL "")
+    install(DIRECTORY include/ DESTINATION include/libcamhal)
+    if (SUPPORT_LIVE_TUNING)
+        install(FILES modules/livetune/LiveTuning.h DESTINATION include/libcamhal/api)
+    endif() #SUPPORT_LIVE_TUNING
+endif()
 
 # Install configure files
 # By default ipu4 is used

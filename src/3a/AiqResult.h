@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Intel Corporation.
+ * Copyright (C) 2015-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,8 +41,6 @@ class AiqResult {
     int init();
     int deinit();
 
-    AiqResult& operator=(const AiqResult& other);
-
  public:
     int mCameraId;
     unsigned long long mTimestamp;
@@ -61,6 +59,7 @@ class AiqResult {
     cca::cca_gbce_params mGbceResults;
     cca::cca_pa_params mPaResults;
     cca::cca_out_stats mOutStats;
+    bool mLscUpdate;
 
     ia_isp_custom_controls mCustomControls;
 

@@ -215,6 +215,7 @@ class PlatformData {
             int mVCNum;
             int mVCSeq;
             int mVCGroupId;
+            VcAggregator mVcAggregator;
             // VIRTUAL_CHANNEL_E
             int mLensHwType;
             bool mEnablePdaf;
@@ -669,6 +670,15 @@ class PlatformData {
      */
     static int isUseFixedHDRExposureInfo(int cameraId);
     // HDR_FEATURE_E
+
+    /**
+     * Get if multi exposure cases or not
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \param[in] TuningMode: tuningMode
+     * \return true if multi exposure case
+     */
+    static bool isMultiExposureCase(int cameraId, TuningMode tuningMode);
 
     /**
      * Get sensor exposure type
@@ -1349,6 +1359,15 @@ class PlatformData {
      * \return sequence if Virtual channel supported, otherwise return -1.
      */
     static int getVirtualChannelSequence(int cameraId);
+
+    /**
+     * Get aggregator info
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \param aggregator: Struct VcAggregator
+     * \return OK if found, otherwise return NO_ENTRY.
+     */
+    static int getVcAggregator(int cameraId, struct VcAggregator& aggregator);
     // VIRTUAL_CHANNEL_E
 
     /**
@@ -1633,15 +1652,6 @@ class PlatformData {
      * \return true if supported.
      */
     static bool getPLCEnable(int cameraId);
-
-    // ENABLE_EVCP_S
-    /**
-     * Check GPU EVCP is enabled or not
-     *
-     * \return true if EVCP is enabled.
-     */
-    static bool isGpuEvcpEnabled();
-    // ENABLE_EVCP_E
 
     /**
      * Check support of still-only pipe is enabled or not

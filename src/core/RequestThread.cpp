@@ -50,6 +50,20 @@ RequestThread::RequestThread(int cameraId, AiqUnitBase* a3AControl, ParameterGen
     // FILE_SOURCE_S
     mSofEnabled = mSofEnabled || PlatformData::isFileSourceEnabled();
     // FILE_SOURCE_E
+
+    const char *CAMERA_HAL_WAIT_FRAME_DURATION = "cameraFrameDuration";
+    char *frameDurationStr = getenv(CAMERA_HAL_WAIT_FRAME_DURATION);
+    mWaitFrameDurationOverride = 0;
+
+    if (frameDurationStr) {
+        mWaitFrameDurationOverride = atoi(frameDurationStr); // ms
+    }
+
+    if (mWaitFrameDurationOverride > 0) {
+        LOGW("Frame duration is overriden to %d ms", mWaitFrameDurationOverride);
+    } else {
+        mWaitFrameDurationOverride = 0; // override is disabled
+    }
 }
 
 RequestThread::~RequestThread() {}
@@ -194,7 +208,8 @@ int RequestThread::waitFrame(int streamId, camera_buffer_t** ubuffer) {
     if (!mActive) return NO_INIT;
     while (frameQueue.mFrameQueue.empty()) {
         int ret = frameQueue.mFrameAvailableSignal.waitRelative(
-            lock, kWaitFrameDuration * SLOWLY_MULTIPLIER);
+                      lock,
+                      mWaitFrameDurationOverride ? mWaitFrameDurationOverride * 1000000 : kWaitFrameDuration * SLOWLY_MULTIPLIER);
         if (!mActive) return NO_INIT;
 
         CheckWarning(ret == TIMED_OUT, ret, "<id%d>@%s, time out happens, wait recovery", mCameraId,

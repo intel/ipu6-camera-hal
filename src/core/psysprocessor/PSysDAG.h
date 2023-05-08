@@ -86,6 +86,8 @@ class PSysDAG {
     int resume();
     int pause();
 
+    void unregisterNode();
+
     int registerInternalBufs(std::map<Port, CameraBufVector>& internalBufs);
     int registerUserOutputBufs(Port port, const std::shared_ptr<CameraBuffer>& camBuffer);
     void stopProcessing();

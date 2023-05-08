@@ -21,33 +21,47 @@
 
 namespace icamera {
 
-constexpr static uint32_t UF_MODE_OFF = 0;
-constexpr static uint32_t UF_MODE_ON = 1;
-
 struct ImageInfo {
-    uint32_t gfxHandle;
+    int32_t gfxHandle;
     void* bufAddr;
     uint32_t width;
     uint32_t height;
     uint32_t stride;
     uint32_t size;
+    ImageInfo() : gfxHandle(-1), bufAddr(nullptr), width(0), height(0), stride(0), size(0) {}
 };
 
-struct ICBMReqInfo {
-    uint32_t usrFrmEnabled;
+#define ICBM_REQUEST_MAX_SHIFT 15
+enum ICBMReqType {
+    REQUEST_NONE = 0,
+    USER_FRAMING = 1 << 0,
+    LEVEL0_TNR = 1 << 1,
+    REQUEST_MAX = 1 << ICBM_REQUEST_MAX_SHIFT
 };
 
 struct ICBMInitInfo {
+    int cameraId;
+    uint32_t reqType;
     uint32_t height;
     uint32_t width;
 };
 
-struct ICBMRunInfo {
+struct ICBMReqInfo {
+    int cameraId;
+    uint32_t reqType;
     ImageInfo inII;
     ImageInfo outII;
-    uint32_t inHandle;
-    uint32_t outHandle;
-    ICBMReqInfo icbmReqInfo;
+    int32_t inHandle;
+    int32_t outHandle;
+    int32_t paramHandle;
+    void* paramAddr;
+    ICBMReqInfo()
+            : cameraId(-1),
+              reqType(REQUEST_NONE),
+              inHandle(-1),
+              outHandle(-1),
+              paramHandle(-1),
+              paramAddr(nullptr) {}
 };
 
 }  // namespace icamera

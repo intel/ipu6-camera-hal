@@ -200,9 +200,11 @@ class AiqCore {
     float mLastEvShift;
 
     cca::cca_ae_results mLastAeResult;
+    cca::cca_af_results mLastAfResult;
+    cca::cca_awb_results mLastAwbResult;
 
     std::unique_ptr<cca::cca_aiq_params> mAiqParams;
-    std::unique_ptr<cca::cca_aiq_results> mAiqResults;
+    cca::cca_aiq_results* mAiqResults;
 
     bool mAeAndAwbConverged;
     bool mRgbStatsBypassed;

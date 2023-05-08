@@ -25,7 +25,7 @@
 #include "PipeLiteExecutor.h"
 #ifdef ENABLE_SANDBOXING
 #include "modules/sandboxing/client/IntelTNR7USClient.h"
-#elif defined(TNR7_CM)
+#else
 #include "modules/algowrapper/IntelTNR7US.h"
 #endif
 
