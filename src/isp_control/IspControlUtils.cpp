@@ -72,7 +72,11 @@ uint32_t IspControlUtils::getTagById(uint32_t ctrlId) {
     return 0;
 }
 
-#include "ia_types.h"
+// This struct must be same with ia_record_header in ia_types.h
+typedef struct {
+    unsigned int uuid;
+    unsigned int size;
+} ia_header;
 
 void* IspControlUtils::findDataById(uint32_t ctrlId, void* fullData, uint32_t size) {
     CheckAndLogError(fullData == nullptr || size == 0, nullptr, "Invalid input parameters");
@@ -82,11 +86,11 @@ void* IspControlUtils::findDataById(uint32_t ctrlId, void* fullData, uint32_t si
 
     // Find the corresponding data from ISP output data.
     while (offset < size) {
-        ia_record_header* headerPtr = (ia_record_header*)(pData + offset);
+        ia_header* headerPtr = (ia_header*)(pData + offset);
         LOG2("ISP output UUID:%d, size:%d", headerPtr->uuid, headerPtr->size);
         if (headerPtr->uuid == 0 || headerPtr->size == 0) break;
         if (ctrlId == headerPtr->uuid) {
-            char* offsetPtr = pData + (offset + sizeof(ia_record_header));
+            char* offsetPtr = pData + (offset + sizeof(ia_header));
             return offsetPtr;
         }
         offset += headerPtr->size;

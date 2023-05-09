@@ -148,6 +148,11 @@ int CameraStream::onFrameAvailable(Port port, const shared_ptr<CameraBuffer>& ca
     LOG2("<id%d>@%s: mStreamId:%d, CameraBuffer:%p for port:%d", mCameraId, __func__, mStreamId,
          camBuffer.get(), port);
 
+    std::shared_ptr<CameraBuffer> buf = camBuffer;
+    return doFrameAvailable(port, buf);
+}
+
+int CameraStream::doFrameAvailable(Port port, const shared_ptr<CameraBuffer>& camBuffer) {
     // Update the user buffer info before return back
     camBuffer->updateUserBuffer();
 
@@ -175,5 +180,4 @@ int CameraStream::onFrameAvailable(Port port, const shared_ptr<CameraBuffer>& ca
 
     return OK;
 }
-
 }  // namespace icamera

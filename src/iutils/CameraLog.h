@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2022 Intel Corporation.
+ * Copyright (C) 2015-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -86,6 +86,8 @@ enum {
     CAMERA_DEBUG_LOG_CCA = 1 << 8,
     CAMERA_DEBUG_LOG_METADATA = 1 << 9,
     CAMERA_DEBUG_LOG_KERNEL_TOGGLE = 1 << 10,
+    // [12 - 15] bits
+    CAMERA_DEBUG_LOG_DYNAMIC_DUMP = 1 << 12,
 };
 
 enum {
@@ -128,7 +130,7 @@ namespace Log {
 void setDebugLevel(void);
 void print_log(bool enable, const char* module, const int level, const char* format, ...);
 bool isDebugLevelEnable(int level);
-bool isLogTagEnabled(int tag, int level = 0);
+bool isLogTagEnabled(int tag, int level);
 // DUMP_ENTITY_TOPOLOGY_S
 bool isDumpMediaTopo(void);
 // DUMP_ENTITY_TOPOLOGY_E

@@ -334,7 +334,8 @@ AiqEngine::AiqState AiqEngine::prepareInputParam(AiqStatistics* aiqStats, AiqRes
     // update lens related parameters
     mLensManager->getLensInfo(aiqResult->mAiqParam);
 
-    mAiqCore->updateParameter(aiqResult->mAiqParam);
+    ret = mAiqCore->updateParameter(aiqResult->mAiqParam);
+    if (ret != OK) return AIQ_STATE_ERROR;
 
     if (aiqStats == nullptr) {
         LOG2("%s: run aiq without stats data", __func__);

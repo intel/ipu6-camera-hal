@@ -126,6 +126,7 @@ class CsiMetaDevice : public EventSource {
 
  private:
     DISALLOW_COPY_AND_ASSIGN(CsiMetaDevice);
+    bool mDqbufTimedout;
 };
 
 } /* namespace icamera */

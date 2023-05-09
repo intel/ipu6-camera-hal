@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2022 Intel Corporation.
+ * Copyright (C) 2015-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -92,7 +92,7 @@ class IspParamAdaptor {
     int initProgramGroupForAllStreams(ConfigMode configMode);
     void initInputParams(cca::cca_pal_input_params* params);
 
-    void updatePalDataForVideoPipe(ia_binary_data dest);
+    void updatePalDataForVideoPipe(ia_binary_data dest, int64_t bufSeq, int64_t settingSeq);
 
     struct IspParameter {
         /*
@@ -130,6 +130,9 @@ class IspParamAdaptor {
     void updateResultFromAlgo(ia_binary_data* binaryData, int64_t sequence);
     uint32_t getRequestedStats();
 
+    bool isLscCopy(int64_t bufSeq, int64_t settingSeq);
+    void updateLscSeqMap(int64_t settingSeq);
+
  private:
     enum IspAdaptorState {
         ISP_ADAPTOR_NOT_INIT,
@@ -148,6 +151,10 @@ class IspParamAdaptor {
     static const int ISP_PARAM_QUEUE_SIZE = MAX_SETTING_COUNT;
     std::map<int, IspParameter> mStreamIdToIspParameterMap;  // map from stream id to IspParameter
     ia_binary_data mLastPalDataForVideoPipe;
+
+    int64_t mLastLscSequece;
+    std::map<int64_t, int64_t> mSeqIdToLscSeqIdMap;
+
     // Guard lock for ipu parameter
     Mutex mIpuParamLock;
     std::unordered_map<int, cca::cca_pal_input_params*> mStreamIdToPalInputParamsMap;

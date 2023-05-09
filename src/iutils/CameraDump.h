@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Intel Corporation.
+ * Copyright (C) 2015-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@
 #include <string>
 #include <vector>
 
+#include "iutils/Thread.h"
 #include "CameraBuffer.h"
 #include "CameraTypes.h"
 
@@ -142,6 +143,7 @@ namespace CameraDump {
  * File dump control functions.
  */
 void setDumpLevel(void);
+void setDumpThread(void);
 bool isDumpTypeEnable(int dumpType);
 bool isDumpFormatEnable(int dumpFormat);
 void writeData(const void* data, int size, const char* fileName);
@@ -155,6 +157,15 @@ void dumpImage(int cameraId, const std::shared_ptr<CameraBuffer>& camBuffer,
  * Dump any buffer to binary file
  */
 void dumpBinary(int cameraId, const void* data, int size, BinParam_t* binParam);
+
+class DumpThread : public Thread {
+public:
+    DumpThread();
+    ~DumpThread();
+
+    bool threadLoop();
+};
+
 }  // namespace CameraDump
 
 }  // namespace icamera

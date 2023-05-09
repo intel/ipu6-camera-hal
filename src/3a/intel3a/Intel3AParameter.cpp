@@ -325,7 +325,7 @@ void Intel3AParameter::updateAeParameter(const aiq_parameter_t& param) {
     mAeMode = param.aeMode;
     mAeParams.frame_use = AiqUtils::convertFrameUsageToIaFrameUsage(param.frameUsage);
     mAeParams.num_exposures = PlatformData::getExposureNum(
-        mCameraId, CameraUtils::isMultiExposureCase(mCameraId, param.tuningMode));
+        mCameraId, PlatformData::isMultiExposureCase(mCameraId, param.tuningMode));
 
     setAeManualLimits(param);
 
@@ -379,7 +379,7 @@ void Intel3AParameter::updateAeParameter(const aiq_parameter_t& param) {
 
         mAeParams.manual_convergence_time = AiqUtils::convertSpeedModeToTime(param.aeConvergeSpeed);
         // HDR_FEATURE_S
-        if (CameraUtils::isMultiExposureCase(mCameraId, param.tuningMode)) {
+        if (PlatformData::isMultiExposureCase(mCameraId, param.tuningMode)) {
             mAeParams.manual_convergence_time =
                 AiqUtils::convertSpeedModeToTimeForHDR(param.aeConvergeSpeed);
         }

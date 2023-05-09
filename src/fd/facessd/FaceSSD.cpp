@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Intel Corporation
+ * Copyright (C) 2021-2023 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,52 +35,37 @@ FaceSSD::FaceSSD(int cameraId, unsigned int maxFaceNum, int32_t halStreamId, int
                  int gfxFmt, int usage)
         : FaceDetection(cameraId, maxFaceNum, halStreamId, width, height) {
     CLEAR(mResult);
-    int ret = initFaceDetection(width, height, gfxFmt, usage);
-    CheckAndLogError(ret != OK, VOID_VALUE, "failed to init face detection, ret %d", ret);
+
+    mFaceDetector = cros::FaceDetector::Create();
+    CheckAndLogError(!mFaceDetector, VOID_VALUE, "mFaceDetector is nullptr");
+
+    mInitialized = true;
 }
 
 FaceSSD::~FaceSSD() {
-    LOG1("<id%d> @%s", mCameraId, __func__);
-
-    if (!PlatformData::isFaceEngineSyncRunning(mCameraId)) {
-        requestExit();
-        AutoMutex l(mRunBufQueueLock);
-        mRunCondition.notify_one();
-    }
-
-    if (mBufferPool) {
-        mBufferPool->destroyBufferPool();
-    }
+    mFaceDetector = nullptr;
 }
 
-int FaceSSD::initFaceDetection(int width, int height, int gfxFmt, int usage) {
-    mBufferPool = std::unique_ptr<camera3::Camera3BufferPool>(new camera3::Camera3BufferPool());
-    // Create the buffer pool with DMA handle buffer
-    int ret = mBufferPool->createBufferPool(mCameraId, MAX_STORE_FACE_DATA_BUF_NUM, width, height,
-                                            gfxFmt, usage);
-    CheckAndLogError(ret != icamera::OK, NO_MEMORY, "[%p]@%s Failed to createBufferPool.", this,
-                     __func__);
-    mFaceDetector = cros::FaceDetector::Create();
+void FaceSSD::faceDetectResult(cros::FaceDetectResult ret,
+                               std::vector<human_sensing::CrosFace> faces) {
+    AutoMutex l(mFaceResultLock);
+    CLEAR(mResult);
 
-    if (!PlatformData::isFaceEngineSyncRunning(mCameraId)) {
-        /* start face engine pthread */
-        ret = run("fdSSD" + std::to_string(mCameraId), PRIORITY_NORMAL);
-        CheckAndLogError(ret != OK, NO_INIT, "Camera thread failed to start, ret %d", ret);
+    if (ret == cros::FaceDetectResult::kDetectOk) {
+        int faceCount = 0;
+        for (auto& face : faces) {
+            if (faceCount >= mMaxFaceNum) break;
+            mResult.faceSsdResults[faceCount] = face;
+            faceCount++;
+            LOG2("face result: box: %f,%f,%f,%f", face.bounding_box.x1, face.bounding_box.y1,
+                 face.bounding_box.x2, face.bounding_box.y2);
+        }
+        mResult.faceNum = faceCount;
+        mResult.faceUpdated = true;
+        LOG2("@%s, faceNum:%d", __func__, mResult.faceNum);
+    } else {
+        LOGE("@%s, Faile to detect face", __func__);
     }
-
-    mInitialized = true;
-    return OK;
-}
-
-std::shared_ptr<camera3::Camera3Buffer> FaceSSD::acquireRunCCBuf() {
-    std::shared_ptr<camera3::Camera3Buffer> buf = mBufferPool->acquireBuffer();
-    CheckAndLogError(buf == nullptr, nullptr, "@%s no available internal buffer", __func__);
-
-    return buf;
-}
-
-void FaceSSD::returnRunBuf(std::shared_ptr<camera3::Camera3Buffer> gbmRunBuf) {
-    mBufferPool->returnBuffer(gbmRunBuf);
 }
 
 void FaceSSD::runFaceDetectionBySync(const std::shared_ptr<camera3::Camera3Buffer>& ccBuf) {
@@ -88,85 +73,33 @@ void FaceSSD::runFaceDetectionBySync(const std::shared_ptr<camera3::Camera3Buffe
     CheckAndLogError(mInitialized == false, VOID_VALUE, "@%s, mInitialized is false", __func__);
     CheckAndLogError(!ccBuf, VOID_VALUE, "@%s, ccBuf buffer is nullptr", __func__);
 
-    nsecs_t startTime = CameraUtils::systemTime();
+    printfFDRunRate();
+
     std::optional<cros::FaceDetectionResult> face_detection_result =
         camera3::FaceDetectionResultCallbackManager::getInstance().
         getFaceDetectionResult(mCameraId);
 
-    cros::FaceDetectResult ret = cros::FaceDetectResult::kDetectOk;
-    std::vector<human_sensing::CrosFace> faces;
-    if (!face_detection_result) {
-        int input_stride = ccBuf->stride();
-        cros::Size input_size = cros::Size(ccBuf->width(), ccBuf->height());
-        const uint8_t* buffer_addr = static_cast<uint8_t*>(ccBuf->data());
-
-        ret = mFaceDetector->Detect(buffer_addr, input_stride, input_size, &faces);
-        LOG2("Run with a new cros::FaceDetector instance");
-    } else {
-        faces = face_detection_result->faces;
+    if (face_detection_result) {
         LOG2("FrameNum:%zu, run with the cros::FaceDetector from stream manipulator.",
              face_detection_result->frame_number);
+        faceDetectResult(cros::FaceDetectResult::kDetectOk, face_detection_result->faces);
+        return;
     }
 
-    printfFDRunRate();
-    LOG2("@%s: It takes need %ums", __func__,
-         (unsigned)((CameraUtils::systemTime() - startTime) / 1000000));
+    int input_stride = ccBuf->stride();
+    cros::Size input_size = cros::Size(ccBuf->width(), ccBuf->height());
+    const uint8_t* buffer_addr = static_cast<uint8_t*>(ccBuf->data());
 
-    {
-        AutoMutex l(mFaceResultLock);
-        CLEAR(mResult);
-        if (ret == cros::FaceDetectResult::kDetectOk) {
-            int faceCount = 0;
-            for (auto& face : faces) {
-                if (faceCount >= mMaxFaceNum) break;
-                mResult.faceSsdResults[faceCount] = face;
-                faceCount++;
-                LOG2("@%s, bounding_box: %f,%f,%f,%f", __func__,
-                     face.bounding_box.x1,
-                     face.bounding_box.y1,
-                     face.bounding_box.x2,
-                     face.bounding_box.y2);
-            }
-            mResult.faceNum = faceCount;
-            mResult.faceUpdated = true;
-            LOG2("@%s, faceNum:%d", __func__, mResult.faceNum);
-        } else {
-            LOGE("@%s, Faile to detect face", __func__);
-        }
-    }
+    // base::Unretained is safe since 'this' joins 'face thread' in the destructor.
+    mFaceDetector->DetectAsync(buffer_addr, input_stride, input_size, std::nullopt,
+                               base::BindOnce(&FaceSSD::faceDetectResult, base::Unretained(this)));
 }
 
 void FaceSSD::runFaceDetectionByAsync(const std::shared_ptr<camera3::Camera3Buffer>& ccBuf) {
     LOG2("@%s", __func__);
     CheckAndLogError(mInitialized == false, VOID_VALUE, "@%s, mInitialized is false", __func__);
 
-    std::shared_ptr<camera3::Camera3Buffer> bufferTmp = acquireRunCCBuf();
-    CheckAndLogError(!bufferTmp || !bufferTmp->data(), VOID_VALUE, "No avalible buffer");
-    MEMCPY_S(bufferTmp->data(), bufferTmp->size(), ccBuf->data(), ccBuf->size());
-
-    AutoMutex l(mRunBufQueueLock);
-    mRunGoogleBufQueue.push(bufferTmp);
-    mRunCondition.notify_one();
-}
-
-bool FaceSSD::threadLoop() {
-    std::shared_ptr<camera3::Camera3Buffer> faceParams = nullptr;
-
-    {
-        ConditionLock lock(mRunBufQueueLock);
-        if (mRunGoogleBufQueue.empty()) {
-            mRunCondition.wait_for(lock,
-                                   std::chrono::nanoseconds(kMaxDuration * SLOWLY_MULTIPLIER));
-            return true;
-        }
-        faceParams = mRunGoogleBufQueue.front();
-        mRunGoogleBufQueue.pop();
-    }
-    CheckAndLogError(!faceParams, false, "@%s, faceParams buffer is nullptr", __func__);
-
-    runFaceDetectionBySync(faceParams);
-    returnRunBuf(faceParams);
-    return true;
+    runFaceDetectionBySync(ccBuf);
 }
 
 int FaceSSD::getFaceNum() {

@@ -306,10 +306,6 @@ void CameraParser::handleCommon(CameraParser* profiles, const char* name, const 
         cfg->supportHwJpegEncode = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "maxIsysTimeoutValue") == 0) {
         cfg->maxIsysTimeoutValue = atoi(atts[1]);
-        // ENABLE_EVCP_S
-    } else if (strcmp(name, "useGpuEvcp") == 0) {
-        cfg->isGpuEvcpEnabled = strcmp(atts[1], "true") == 0;
-        // ENABLE_EVCP_E
         // LEVEL0_ICBM_S
     } else if (strcmp(name, "useGPUICBM") == 0) {
         cfg->isGPUICBMEnabled = strcmp(atts[1], "true") == 0;
@@ -680,6 +676,18 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
         pCurrentCam->mPLCEnable = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "stillOnlyPipe") == 0) {
         pCurrentCam->mStillOnlyPipe = strcmp(atts[1], "true") == 0;
+    // VIRTUAL_CHANNEL_S
+    } else if (strcmp(name, "vcAggregator") == 0) {
+        int size = strlen(atts[1]);
+       char src[size + 1];
+       MEMCPY_S(src, size, atts[1], size);
+       src[size] = '\0';
+       char* savePtr = nullptr;
+       char* tablePtr = strtok_r(src, ",", &savePtr);
+       if (tablePtr) pCurrentCam->mVcAggregator.mName = tablePtr;
+       tablePtr = strtok_r(nullptr, ",", &savePtr);
+       if (tablePtr) pCurrentCam->mVcAggregator.mIndex = atoi(tablePtr);
+    // VIRTUAL_CHANNEL_E
     } else if (strcmp(name, "disableBLCByAGain") == 0) {
         int size = strlen(atts[1]);
         char src[size + 1];
