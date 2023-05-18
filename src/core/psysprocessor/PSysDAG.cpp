@@ -72,10 +72,16 @@ void PSysDAG::setFrameInfo(const std::map<Port, stream_t>& inputInfo,
         }
     }
 }
+void PSysDAG::unregisterNode() {
+    if (!mScheduler) return;
+
+    for (auto& executor : mExecutorsPool) {
+        mScheduler->unregisterNode(executor);
+    }
+}
 
 void PSysDAG::releasePipeExecutors() {
     for (auto& executor : mExecutorsPool) {
-        if (mScheduler) mScheduler->unregisterNode(executor);
         delete executor;
     }
     mExecutorsPool.clear();
@@ -834,7 +840,7 @@ void PSysDAG::tuningReconfig(TuningMode newTuningMode) {
 }
 
 void PSysDAG::dumpExternalPortMap() {
-    if (!Log::isLogTagEnabled(GET_FILE_SHIFT(PSysDAG))) return;
+    if (!Log::isLogTagEnabled(GET_FILE_SHIFT(PSysDAG), CAMERA_DEBUG_LOG_LEVEL2)) return;
 
     for (auto& inputMap : mInputMaps) {
         if (inputMap.mExecutor) {

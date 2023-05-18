@@ -190,9 +190,9 @@ struct CommonConfig {
     CommonConfig() {
         xmlVersion = 1.0;
         isGpuTnrEnabled = false;
-        isStillTnrPrior = true;
+        isStillTnrPrior = false;
         isTnrParamForceUpdate = false;
-        useTnrGlobalProtection = false;
+        useTnrGlobalProtection = true;
         cameraNumber = -1;
         videoStreamNum = DEFAULT_VIDEO_STREAM_NUM;
         supportIspTuningUpdate = false;

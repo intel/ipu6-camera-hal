@@ -35,31 +35,30 @@ int ICBMThread::setup(ICBMInitInfo* initParams) {
     return OK;
 }
 
-void ICBMThread::shutdown() {
+void ICBMThread::shutdown(const ICBMReqInfo& request) {
     LOG1("%s, Shuting down...", __func__);
-    mIntelICBM->shutdown();
+    mIntelICBM->shutdown(request);
 }
 
 int ICBMThread::processFrame(const camera_buffer_t& inBuffer, const camera_buffer_t& outBuffer,
-                             ICBMReqInfo* param) {
+                             ICBMReqInfo& request) {
     LOG2("%s, Processing frame", __func__);
-    ImageInfo iii = {};
-    iii.width = inBuffer.s.width;
-    iii.height = inBuffer.s.height;
-    iii.size = inBuffer.s.size;
-    iii.stride = inBuffer.s.stride;
 
-    ImageInfo iio = {};
-    iio.width = outBuffer.s.width;
-    iio.height = outBuffer.s.height;
-    iio.size = outBuffer.s.size;
-    iio.stride = outBuffer.s.stride;
+    request.inII.width = inBuffer.s.width;
+    request.inII.height = inBuffer.s.height;
+    request.inII.size = inBuffer.s.size;
+    request.inII.stride = inBuffer.s.stride;
+
+    request.outII.width = outBuffer.s.width;
+    request.outII.height = outBuffer.s.height;
+    request.outII.size = outBuffer.s.size;
+    request.outII.stride = outBuffer.s.stride;
 
 #ifdef ENABLE_SANDBOXING
-    iii.gfxHandle = inBuffer.dmafd;
-    iio.gfxHandle = outBuffer.dmafd;
+    request.inII.gfxHandle = inBuffer.dmafd;
+    request.outII.gfxHandle = outBuffer.dmafd;
 
-    auto ret = mIntelICBM->processFrame(iii, iio, *param);
+    auto ret = mIntelICBM->processFrame(request);
 #else
     void* pInBuf = (inBuffer.s.memType == V4L2_MEMORY_DMABUF) ?
                        CameraBuffer::mapDmaBufferAddr(inBuffer.dmafd, inBuffer.s.size) :
@@ -69,9 +68,9 @@ int ICBMThread::processFrame(const camera_buffer_t& inBuffer, const camera_buffe
                         CameraBuffer::mapDmaBufferAddr(outBuffer.dmafd, outBuffer.s.size) :
                         outBuffer.addr;
 
-    iii.bufAddr = pInBuf;
-    iio.bufAddr = pOutBuf;
-    auto ret = mIntelICBM->processFrame(iii, iio, *param);
+    request.inII.bufAddr = pInBuf;
+    request.outII.bufAddr = pOutBuf;
+    auto ret = mIntelICBM->processFrame(request);
 
     if (inBuffer.s.memType == V4L2_MEMORY_DMABUF) {
         CameraBuffer::unmapDmaBufferAddr(pInBuf, inBuffer.s.size);

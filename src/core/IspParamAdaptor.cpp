@@ -42,6 +42,7 @@ IspParamAdaptor::IspParamAdaptor(int cameraId)
           mCameraId(cameraId),
           mTuningMode(TUNING_MODE_VIDEO),
           mIpuOutputFormat(V4L2_PIX_FMT_NV12),
+          mLastLscSequece(-1),
           mGraphConfig(nullptr),
           mIntelCca(nullptr),
           mGammaTmOffset(-1) {
@@ -208,6 +209,7 @@ int IspParamAdaptor::configure(const stream_t& stream, ConfigMode configMode, Tu
     LOG2("%s, configMode: %x, PSys output format 0x%x", __func__, configMode, mIpuOutputFormat);
     mTuningMode = tuningMode;
     CLEAR(mLastPalDataForVideoPipe);
+    mLastLscSequece = -1;
     for (uint32_t i = 0; i < mPalRecords.size(); i++) {
         mPalRecords[i].offset = -1;
     }
@@ -403,7 +405,8 @@ void IspParamAdaptor::updateKernelToggles(cca::cca_program_group* programGroup) 
  * but currently a ring buffer is used in HAL, which caused logic mismatching issue.
  * So temporarily copy latest PAL data into PAL output buffer.
  */
-void IspParamAdaptor::updatePalDataForVideoPipe(ia_binary_data dest) {
+void IspParamAdaptor::updatePalDataForVideoPipe(ia_binary_data dest, int64_t bufSeq,
+                                                int64_t settingSeq) {
     if (mLastPalDataForVideoPipe.data == nullptr || mLastPalDataForVideoPipe.size == 0) return;
 
     if (mPalRecords.empty()) return;
@@ -439,6 +442,16 @@ void IspParamAdaptor::updatePalDataForVideoPipe(ia_binary_data dest) {
                 headerSrc = header;
             }
 
+            if (ia_pal_uuid_isp_lsc_1_1 == header->uuid) {
+                if (isLscCopy(bufSeq, settingSeq)) {
+                    LOG2("settingSeq %ld, copy LSC for buf %ld", settingSeq, bufSeq);
+                    updateLscSeqMap(bufSeq);
+                } else {
+                    LOG2("settingSeq %ld, not copy LSC for buf %ld", settingSeq, bufSeq);
+                    continue;
+                }
+            }
+
             if (!headerSrc) {
                 LOGW("Failed to find PAL recorder header %d", mPalRecords[i].uuid);
                 continue;
@@ -465,6 +478,34 @@ void IspParamAdaptor::updateIspParameterMap(IspParameter* ispParam, int64_t data
         ispParam->mSequenceToDataId.erase(ispParam->mSequenceToDataId.begin());
     }
     ispParam->mSequenceToDataId[settingSeq] = dataSeq;
+}
+
+bool IspParamAdaptor::isLscCopy(int64_t bufSeq, int64_t settingSeq) {
+    AiqResult* aiqResults = const_cast<AiqResult*>(
+        AiqResultStorage::getInstance(mCameraId)->getAiqResult(settingSeq));
+    if (aiqResults == nullptr) return true;
+
+    if (aiqResults->mLscUpdate) {
+        mLastLscSequece = settingSeq;
+        LOG2("%s, LSC update %ld", __func__, settingSeq);
+        return false;
+    } else {
+        if (mSeqIdToLscSeqIdMap.find(bufSeq) != mSeqIdToLscSeqIdMap.end()) {
+            if (mLastLscSequece >= 0 && mSeqIdToLscSeqIdMap[bufSeq] == mLastLscSequece) {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+void IspParamAdaptor::updateLscSeqMap(int64_t settingSeq) {
+    mSeqIdToLscSeqIdMap[settingSeq] = mLastLscSequece;
+
+    if (mSeqIdToLscSeqIdMap.size() > ISP_PARAM_QUEUE_SIZE) {
+        mSeqIdToLscSeqIdMap.erase(mSeqIdToLscSeqIdMap.begin());
+    }
 }
 
 /**
@@ -512,7 +553,7 @@ int IspParamAdaptor::runIspAdapt(const IspSettings* ispSettings, int64_t setting
 
         // Update some PAL data to latest PAL result
         if (it.first == VIDEO_STREAM_ID) {
-            updatePalDataForVideoPipe(binaryData);
+            updatePalDataForVideoPipe(binaryData, dataIt->first, settingSequence);
         }
 
         ia_isp_bxt_program_group* pgPtr = mGraphConfig->getProgramGroup(it.first);
@@ -539,6 +580,7 @@ int IspParamAdaptor::runIspAdapt(const IspSettings* ispSettings, int64_t setting
                 if (it.first == VIDEO_STREAM_ID) {
                     mLastPalDataForVideoPipe = binaryData;
                     updateResultFromAlgo(&binaryData, settingSequence);
+                    updateLscSeqMap(settingSequence);
                 }
             }
         }

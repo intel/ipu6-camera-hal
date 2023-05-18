@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Intel Corporation
+ * Copyright (C) 2021-2023 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,10 +19,7 @@
 #include <ia_types.h>
 
 #include <memory>
-#include <queue>
-#include <unordered_map>
 
-#include "Camera3BufferPool.h"
 #include "FaceDetection.h"
 #include "IntelCCATypes.h"
 
@@ -41,7 +38,6 @@ class FaceSSD : public FaceDetection {
 
     virtual void runFaceDetectionBySync(const std::shared_ptr<camera3::Camera3Buffer>& ccBuf);
     virtual void runFaceDetectionByAsync(const std::shared_ptr<camera3::Camera3Buffer>& ccBuf);
-    virtual bool threadLoop();
 
  protected:
     virtual int getFaceNum();
@@ -49,18 +45,10 @@ class FaceSSD : public FaceDetection {
     virtual void getResultForApp(CVFaceDetectionAbstractResult* result);
 
  private:
-    int initFaceDetection(int width, int height, int gfxFmt, int usage);
-    std::shared_ptr<camera3::Camera3Buffer> acquireRunCCBuf();
-    void returnRunBuf(std::shared_ptr<camera3::Camera3Buffer> gbmRunBuf);
+    void faceDetectResult(cros::FaceDetectResult ret, std::vector<human_sensing::CrosFace> faces);
 
-    // Guard for running buffer queue of thread
-    std::queue<std::shared_ptr<camera3::Camera3Buffer>> mRunGoogleBufQueue;
-
-    std::unique_ptr<camera3::Camera3BufferPool> mBufferPool;
     std::unique_ptr<cros::FaceDetector> mFaceDetector;
-
     FaceSSDResult mResult;
-
     DISALLOW_COPY_AND_ASSIGN(FaceSSD);
 };
 

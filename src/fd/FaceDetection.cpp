@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2022 Intel Corporation
+ * Copyright (C) 2019-2023 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -141,7 +141,7 @@ bool FaceDetection::faceRunningByCondition() {
 }
 
 void FaceDetection::printfFDRunRate() {
-    if (!Log::isLogTagEnabled(ST_FPS)) return;
+    if (!Log::isLogTagEnabled(ST_FPS, CAMERA_DEBUG_LOG_LEVEL2)) return;
 
     mRunCount++;
     if (mRunCount % FPS_FD_COUNT != 0) return;

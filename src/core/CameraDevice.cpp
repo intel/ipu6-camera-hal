@@ -163,6 +163,7 @@ void CameraDevice::deinit() {
 
 void CameraDevice::callbackRegister(const camera_callback_ops_t* callback) {
     mCallback = const_cast<camera_callback_ops_t*>(callback);
+    mParamGenerator->callbackRegister(mCallback);
 }
 
 StreamSource* CameraDevice::createBufferProducer() {

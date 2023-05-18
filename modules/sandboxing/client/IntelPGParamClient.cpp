@@ -331,7 +331,9 @@ int IntelPGParam::decode(int payloadCount, ia_binary_data* payloads, ia_binary_d
         // print query result: params->results
         if (outStats && decodeStatsParams.outStats.get_rgbs_stats) {
             *outStats = decodeStatsParams.outStats;
-            outStats->rgbs_grid.blocks_ptr = outStats->rgbs_blocks;
+            for (unsigned int i = 0; i < cca::MAX_NUM_EXPOSURE; ++i) {
+                outStats->rgbs_grid[i].blocks_ptr = outStats->rgbs_blocks[i];
+            }
         }
         ia_isp_bxt_statistics_query_results_t& queryResults = decodeStatsParams.results;
         LOG2("%s, query results: rgbs_grid(%d), af_grid(%d), dvs_stats(%d), paf_grid(%d)", __func__,

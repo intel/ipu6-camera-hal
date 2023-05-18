@@ -114,14 +114,14 @@ void IntelGPUAlgoServer::handleRequest(const MsgReq& msg) {
         }
 #endif
 
-            // LEVEL0_ICBM_S
+        // LEVEL0_ICBM_S
         case IPC_ICBM_INIT:
             (void) requestSize;
             status = mICBMServer.setup(reinterpret_cast<ICBMInitInfo*>(addr));
             break;
         case IPC_ICBM_RUN_FRAME: {
             status = UNKNOWN_ERROR;
-            ICBMRunInfo* runInfo = reinterpret_cast<ICBMRunInfo*>(addr);
+            ICBMReqInfo* runInfo = reinterpret_cast<ICBMReqInfo*>(addr);
             ShmInfo inBuffer = {};
             if (runInfo->inHandle < 0) break;
             ShmInfo outBuffer = {};
@@ -138,19 +138,31 @@ void IntelGPUAlgoServer::handleRequest(const MsgReq& msg) {
                 LOGE("%s, the buffer handle for ICBM outBuffer data is invalid", __func__);
                 break;
             }
+            if (runInfo->paramHandle >= 0) {
+                ShmInfo paramBuffer = {};
+                status = getIntelAlgoServer()->getShmInfo(runInfo->paramHandle, &paramBuffer);
+                if (status != OK) {
+                    LOGE("%s, the buffer handle for parameter is invalid", __func__);
+                    break;
+                }
+                runInfo->paramAddr = paramBuffer.addr;
+            }
             runInfo->inII.bufAddr = inBuffer.addr;
             runInfo->outII.bufAddr = outBuffer.addr;
 
-            status = mICBMServer.processFrame(runInfo->inII, runInfo->outII, runInfo->icbmReqInfo);
+            status = mICBMServer.processFrame(*runInfo);
 
             runInfo->inII.bufAddr = nullptr;
             runInfo->outII.bufAddr = nullptr;
+            runInfo->paramAddr = nullptr;
             break;
         }
-        case IPC_ICBM_DEINIT:
-            status = mICBMServer.shutdown();
+        case IPC_ICBM_DEINIT: {
+            ICBMReqInfo* shutInfo = static_cast<ICBMReqInfo*>(addr);
+            status = mICBMServer.shutdown(*shutInfo);
             break;
-            // LEVEL0_ICBM_E
+        }
+        // LEVEL0_ICBM_E
         default:
             LOGE("@%s, req_id:%d is not defined", __func__, req_id);
             status = UNKNOWN_ERROR;

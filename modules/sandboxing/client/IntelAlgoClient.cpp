@@ -77,10 +77,10 @@ int IntelAlgoClient::initialize() {
     CheckAndLogError(!mMojoManagerToken, UNKNOWN_ERROR, "@%s, mMojoManagerToken is nullptr",
                      __func__);
 
-    mCallback = base::Bind(&IntelAlgoClient::callbackHandler, base::Unretained(this));
+    mCallback = base::BindRepeating(&IntelAlgoClient::callbackHandler, base::Unretained(this));
     IntelAlgoClient::return_callback = returnCallback;
 
-    mNotifyCallback = base::Bind(&IntelAlgoClient::notifyHandler, base::Unretained(this));
+    mNotifyCallback = base::BindRepeating(&IntelAlgoClient::notifyHandler, base::Unretained(this));
     IntelAlgoClient::notify = notifyCallback;
 
     mBridge = cros::CameraAlgorithmBridge::CreateInstance(cros::CameraAlgorithmBackend::kVendorCpu,

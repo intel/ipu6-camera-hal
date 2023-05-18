@@ -726,6 +726,7 @@ typedef enum {
     CAMERA_METADATA_READY,
     CAMERA_DEVICE_ERROR,
     CAMERA_IPC_ERROR,
+    CAMERA_METADATA_ENTRY,
 } camera_msg_type_t;
 
 /**
@@ -769,6 +770,22 @@ typedef struct {
 } metadata_ready_t;
 
 /**
+ * \struct metadata_entry_t: Use to set metadata entry.
+ */
+typedef struct {
+    uint32_t tag;
+    uint32_t frameNumber;
+    size_t count;
+    union {
+        const uint8_t* u8;
+        const int32_t* i32;
+        const float* f;
+        const int64_t* i64;
+        const double* d;
+    } data;
+} metadata_entry_t;
+
+/**
  * \struct camera_msg_data_t: Use to specify msg data.
  */
 typedef struct {
@@ -776,6 +793,7 @@ typedef struct {
     union {
         isp_buffer_ready_t buffer_ready;
         metadata_ready_t metadata_ready;
+        metadata_entry_t metadata_entry;
     } data;
 } camera_msg_data_t;
 

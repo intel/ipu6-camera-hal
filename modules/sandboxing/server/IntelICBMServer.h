@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Intel Corporation.
+ * Copyright (C) 2022-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,9 +30,9 @@ class IntelICBMServer {
     ~IntelICBMServer(){};
 
     int setup(ICBMInitInfo* initParam);
-    int shutdown();
+    int shutdown(const ICBMReqInfo& reqInfo);
 
-    int processFrame(const ImageInfo& iii, const ImageInfo& iio, const ICBMReqInfo& reqInfo);
+    int processFrame(const ICBMReqInfo& reqInfo);
 
  private:
     std::unique_ptr<IntelICBM> mIntelICBM;
