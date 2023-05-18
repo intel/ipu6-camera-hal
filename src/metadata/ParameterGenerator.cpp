@@ -40,6 +40,7 @@ namespace icamera {
 
 ParameterGenerator::ParameterGenerator(int cameraId)
         : mCameraId(cameraId),
+          mCallback(nullptr),
           mTonemapMaxCurvePoints(0) {
     reset();
 
@@ -288,7 +289,6 @@ int ParameterGenerator::getRequestId(int64_t sequence, long& requestId) {
 int ParameterGenerator::generateParametersL(int64_t sequence, Parameters* params) {
     if (PlatformData::isEnableAIQ(mCameraId)) {
         updateWithAiqResultsL(sequence, params);
-        updateTonemapCurve(sequence, params);
     }
     return OK;
 }
@@ -433,32 +433,6 @@ int ParameterGenerator::updateCcmL(Parameters* params, const AiqResult* aiqResul
     return OK;
 }
 
-int ParameterGenerator::updateTonemapCurve(int64_t sequence, Parameters* params) {
-    if (!mTonemapMaxCurvePoints) return OK;
-
-    const AiqResult* aiqResult = AiqResultStorage::getInstance(mCameraId)->getAiqResult(sequence);
-    CheckAndLogError((aiqResult == nullptr), UNKNOWN_ERROR,
-                     "%s Aiq result of sequence %ld does not exist", __func__, sequence);
-    const cca::cca_gbce_params& gbceResults = aiqResult->mGbceResults;
-
-    int multiplier = gbceResults.gamma_lut_size / mTonemapMaxCurvePoints;
-    for (int32_t i = 0; i < mTonemapMaxCurvePoints; i++) {
-        mTonemapCurveRed[i * 2 + 1] = gbceResults.r_gamma_lut[i * multiplier];
-        mTonemapCurveBlue[i * 2 + 1] = gbceResults.g_gamma_lut[i * multiplier];
-        mTonemapCurveGreen[i * 2 + 1] = gbceResults.b_gamma_lut[i * multiplier];
-    }
-
-    int count = mTonemapMaxCurvePoints * 2;
-    camera_tonemap_curves_t curves = {count,
-                                      count,
-                                      count,
-                                      mTonemapCurveRed.get(),
-                                      mTonemapCurveBlue.get(),
-                                      mTonemapCurveGreen.get()};
-    params->setTonemapCurves(curves);
-    return OK;
-}
-
 int ParameterGenerator::updateCommonMetadata(Parameters* params, const AiqResult* aiqResult) {
     icamera_metadata_ro_entry entry;
     CLEAR(entry);
@@ -476,12 +450,17 @@ int ParameterGenerator::updateCommonMetadata(Parameters* params, const AiqResult
     entry.data.i64 = &frameDuration;
     ParameterHelper::mergeTag(entry, params);
 
+    int32_t userRequestId = 0;
+    params->getUserRequestId(userRequestId);
+    camera_msg_data_t data = {CAMERA_METADATA_ENTRY, {}};
+    data.data.metadata_entry.frameNumber = userRequestId;
+
     bool callbackRgbs = false;
     params->getCallbackRgbs(&callbackRgbs);
 
     if (callbackRgbs) {
-        int32_t width = aiqResult->mOutStats.rgbs_grid.grid_width;
-        int32_t height = aiqResult->mOutStats.rgbs_grid.grid_height;
+        int32_t width = aiqResult->mOutStats.rgbs_grid[0].grid_width;
+        int32_t height = aiqResult->mOutStats.rgbs_grid[0].grid_height;
         int32_t gridSize[] = {width, height};
         entry.tag = INTEL_VENDOR_CAMERA_RGBS_GRID_SIZE;
         entry.type = ICAMERA_TYPE_INT32;
@@ -489,17 +468,17 @@ int ParameterGenerator::updateCommonMetadata(Parameters* params, const AiqResult
         entry.data.i32 = gridSize;
         ParameterHelper::mergeTag(entry, params);
 
-        uint8_t lscFlags = aiqResult->mOutStats.rgbs_grid.shading_correction;
+        uint8_t lscFlags = aiqResult->mOutStats.rgbs_grid[0].shading_correction;
         entry.tag = INTEL_VENDOR_CAMERA_SHADING_CORRECTION;
         entry.type = ICAMERA_TYPE_BYTE;
         entry.count = 1;
         entry.data.u8 = &lscFlags;
         ParameterHelper::mergeTag(entry, params);
 
-        if (Log::isLogTagEnabled(ST_STATS)) {
+        if (Log::isLogTagEnabled(ST_STATS, CAMERA_DEBUG_LOG_LEVEL2)) {
             const cca::cca_out_stats* outStats = &aiqResult->mOutStats;
-            const rgbs_grid_block* rgbsPtr = aiqResult->mOutStats.rgbs_blocks;
-            int size = outStats->rgbs_grid.grid_width * outStats->rgbs_grid.grid_height;
+            const rgbs_grid_block* rgbsPtr = aiqResult->mOutStats.rgbs_blocks[0];
+            int size = outStats->rgbs_grid[0].grid_width * outStats->rgbs_grid[0].grid_height;
 
             int sumLuma = 0;
             for (int j = 0; j < size; j++) {
@@ -509,15 +488,23 @@ int ParameterGenerator::updateCommonMetadata(Parameters* params, const AiqResult
             }
 
             LOG2(ST_STATS, "RGB stat %dx%d, sequence %lld, y_mean %d",
-                 outStats->rgbs_grid.grid_width, outStats->rgbs_grid.grid_height,
+                 outStats->rgbs_grid[0].grid_width, outStats->rgbs_grid[0].grid_height,
                  aiqResult->mSequence, size > 0 ? sumLuma / size : 0);
         }
 
-        entry.tag = INTEL_VENDOR_CAMERA_RGBS_STATS_BLOCKS;
-        entry.type = ICAMERA_TYPE_BYTE;
-        entry.count = width * height * 5;
-        entry.data.u8 = reinterpret_cast<const uint8_t*>(aiqResult->mOutStats.rgbs_blocks);
-        ParameterHelper::mergeTag(entry, params);
+        if (mCallback) {
+            data.data.metadata_entry.tag = INTEL_VENDOR_CAMERA_RGBS_STATS_BLOCKS;
+            data.data.metadata_entry.count =  width * height * 5;
+            data.data.metadata_entry.data.u8 =
+                reinterpret_cast<const uint8_t*>(aiqResult->mOutStats.rgbs_blocks[0]);
+            mCallback->notify(mCallback, data);
+        } else {
+            entry.tag = INTEL_VENDOR_CAMERA_RGBS_STATS_BLOCKS;
+            entry.type = ICAMERA_TYPE_BYTE;
+            entry.count = width * height * 5;
+            entry.data.u8 = reinterpret_cast<const uint8_t*>(aiqResult->mOutStats.rgbs_blocks[0]);
+            ParameterHelper::mergeTag(entry, params);
+        }
     }
 
     if (aiqResult->mAiqParam.manualExpTimeUs <= 0 && aiqResult->mAiqParam.manualIso <= 0) {
@@ -543,11 +530,53 @@ int ParameterGenerator::updateCommonMetadata(Parameters* params, const AiqResult
             tmCurve[i * 2] = static_cast<float>(i) / (mTonemapMaxCurvePoints - 1);
             tmCurve[i * 2 + 1] = gbceResults.tone_map_lut[i * multiplier];
         }
-        entry.tag = INTEL_VENDOR_CAMERA_TONE_MAP_CURVE;
-        entry.type = ICAMERA_TYPE_FLOAT;
-        entry.count = tmCurve.size();
-        entry.data.f = tmCurve.data();
-        ParameterHelper::mergeTag(entry, params);
+
+        if (mCallback) {
+            data.data.metadata_entry.tag = INTEL_VENDOR_CAMERA_TONE_MAP_CURVE;
+            data.data.metadata_entry.count =  tmCurve.size();
+            data.data.metadata_entry.data.f = tmCurve.data();
+            mCallback->notify(mCallback, data);
+        } else {
+            entry.tag = INTEL_VENDOR_CAMERA_TONE_MAP_CURVE;
+            entry.type = ICAMERA_TYPE_FLOAT;
+            entry.count = tmCurve.size();
+            entry.data.f = tmCurve.data();
+            ParameterHelper::mergeTag(entry, params);
+        }
+    }
+
+    if (mTonemapMaxCurvePoints) {
+        const cca::cca_gbce_params& gbceResults = aiqResult->mGbceResults;
+
+        int multiplier = gbceResults.gamma_lut_size / mTonemapMaxCurvePoints;
+        for (int32_t i = 0; i < mTonemapMaxCurvePoints; i++) {
+            mTonemapCurveRed[i * 2 + 1] = gbceResults.r_gamma_lut[i * multiplier];
+            mTonemapCurveBlue[i * 2 + 1] = gbceResults.g_gamma_lut[i * multiplier];
+            mTonemapCurveGreen[i * 2 + 1] = gbceResults.b_gamma_lut[i * multiplier];
+        }
+
+        int count = mTonemapMaxCurvePoints * 2;
+        camera_tonemap_curves_t curves = {count, count, count, mTonemapCurveRed.get(),
+                                          mTonemapCurveBlue.get(), mTonemapCurveGreen.get()};
+
+        if (mCallback) {
+            data.data.metadata_entry.tag = CAMERA_TONEMAP_CURVE_RED;
+            data.data.metadata_entry.count =  count;
+            data.data.metadata_entry.data.f = mTonemapCurveRed.get();
+            mCallback->notify(mCallback, data);
+
+            data.data.metadata_entry.tag = CAMERA_TONEMAP_CURVE_BLUE;
+            data.data.metadata_entry.count =  count;
+            data.data.metadata_entry.data.f = mTonemapCurveBlue.get();
+            mCallback->notify(mCallback, data);
+
+            data.data.metadata_entry.tag = CAMERA_TONEMAP_CURVE_GREEN;
+            data.data.metadata_entry.count =  count;
+            data.data.metadata_entry.data.f = mTonemapCurveGreen.get();
+            mCallback->notify(mCallback, data);
+        } else {
+            params->setTonemapCurves(curves);
+        }
     }
 
     return OK;

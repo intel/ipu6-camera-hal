@@ -19,7 +19,6 @@
 #include <memory>
 
 #include "ICBMTypes.h"
-#include "IntelICBM.h"
 
 #include "core/CameraBuffer.h"
 #include "iutils/Utils.h"
@@ -39,10 +38,10 @@ class ICBMThread {
     ~ICBMThread() {}
 
     int setup(ICBMInitInfo* initParams);
-    void shutdown();
+    void shutdown(const ICBMReqInfo& request);
 
     int processFrame(const camera_buffer_t& inBuffer, const camera_buffer_t& outBuffer,
-                            ICBMReqInfo* param);
+                     ICBMReqInfo& request);
 
  private:
     std::unique_ptr<IntelICBM> mIntelICBM;

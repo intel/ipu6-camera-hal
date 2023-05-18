@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Intel Corporation
+ * Copyright (C) 2022-2023 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,11 +25,15 @@
 
 namespace icamera {
 
-void IntelICBM::shutdown() {
-    bool ret = mCommon.requestSync(IPC_ICBM_DEINIT);
+int IntelICBM::shutdown(const ICBMReqInfo& reqInfo) {
+    ICBMReqInfo* runInfo = reinterpret_cast<ICBMReqInfo*>(mRunInfoMem.mAddr);
+    *runInfo = reqInfo;
+
+    bool ret = mCommon.requestSync(IPC_ICBM_DEINIT, mRunInfoMem.mHandle);
     if (!ret) LOGE("%s, Intel ICBM shutdown failed", __func__);
 
     mCommon.freeShmMem(mRunInfoMem, GPU_ALGO_SHM);
+    return ret;
 }
 
 int IntelICBM::setup(ICBMInitInfo* initParam) {
@@ -61,7 +65,7 @@ int IntelICBM::initRunInfoBuffer() {
     std::string name =
         "/IntelICBMRuninfo" + std::to_string(reinterpret_cast<uintptr_t>(this)) + SHM_NAME;
     mRunInfoMem.mName = name.c_str();
-    mRunInfoMem.mSize = sizeof(ICBMRunInfo);
+    mRunInfoMem.mSize = sizeof(ICBMReqInfo);
 
     auto ret =
         mCommon.allocShmMem(mRunInfoMem.mName, mRunInfoMem.mSize, &mRunInfoMem, GPU_ALGO_SHM);
@@ -71,22 +75,17 @@ int IntelICBM::initRunInfoBuffer() {
     return OK;
 }
 
-int IntelICBM::processFrame(const ImageInfo& iii, const ImageInfo& iio,
-                            const ICBMReqInfo& reqInfo) {
-    ICBMRunInfo* runInfo = reinterpret_cast<ICBMRunInfo*>(mRunInfoMem.mAddr);
+int IntelICBM::processFrame(const ICBMReqInfo& reqInfo) {
+    ICBMReqInfo* runInfo = reinterpret_cast<ICBMReqInfo*>(mRunInfoMem.mAddr);
 
-    runInfo->inHandle = mCommon.registerGbmBuffer(iii.gfxHandle, GPU_ALGO_SHM);
+    *runInfo = reqInfo;
+    runInfo->inHandle = mCommon.registerGbmBuffer(reqInfo.inII.gfxHandle, GPU_ALGO_SHM);
     CheckAndLogError(runInfo->inHandle < 0, UNKNOWN_ERROR, "%s, Cannot register in GBM buffers.",
                      __func__);
 
-    runInfo->outHandle = mCommon.registerGbmBuffer(iio.gfxHandle, GPU_ALGO_SHM);
+    runInfo->outHandle = mCommon.registerGbmBuffer(reqInfo.outII.gfxHandle, GPU_ALGO_SHM);
     CheckAndLogError(runInfo->outHandle < 0, UNKNOWN_ERROR, "%s, Cannot register out GBM buffers.",
                      __func__);
-
-    runInfo->icbmReqInfo = reqInfo;
-
-    runInfo->inII = iii;
-    runInfo->outII = iio;
 
     auto runInfoHandle = mCommon.getShmMemHandle(reinterpret_cast<void*>(runInfo), GPU_ALGO_SHM);
     if (runInfoHandle < 0) {
@@ -102,6 +101,15 @@ int IntelICBM::processFrame(const ImageInfo& iii, const ImageInfo& iio,
 
     CheckAndLogError(!ret, UNKNOWN_ERROR, "%s, Run frame IPC error!", __func__);
     return OK;
+}
+
+int IntelICBM::runTnrFrame(const ICBMReqInfo& reqInfo) {
+    ICBMReqInfo* runInfo = reinterpret_cast<ICBMReqInfo*>(mRunInfoMem.mAddr);
+    *runInfo = reqInfo;
+
+    runInfo->inHandle = reqInfo.inII.gfxHandle;
+    runInfo->outHandle = reqInfo.outII.gfxHandle;
+    return mCommon.requestSync(IPC_ICBM_RUN_FRAME, mRunInfoMem.mHandle);
 }
 
 }  // namespace icamera

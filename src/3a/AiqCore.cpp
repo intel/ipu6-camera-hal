@@ -49,6 +49,7 @@ AiqCore::AiqCore(int cameraId)
           mLensShadingMapMode(LENS_SHADING_MAP_MODE_OFF),
           mLscGridRGGBLen(0),
           mLastEvShift(0.0f),
+          mAiqResults(nullptr),
           mAeAndAwbConverged(false),
           mRgbStatsBypassed(false),
           mAeBypassed(false),
@@ -60,6 +61,8 @@ AiqCore::AiqCore(int cameraId)
 
     CLEAR(mFrameParams);
     CLEAR(mLastAeResult);
+    CLEAR(mLastAfResult);
+    CLEAR(mLastAwbResult);
 
     CLEAR(mGbceParams);
     CLEAR(mPaParams);
@@ -78,7 +81,6 @@ AiqCore::AiqCore(int cameraId)
     std::fill(std::begin(mLscOffGrid), std::end(mLscOffGrid), 1.0f);
 
     mAiqParams = std::unique_ptr<cca::cca_aiq_params>(new cca::cca_aiq_params);
-    mAiqResults = std::unique_ptr<cca::cca_aiq_results>(new cca::cca_aiq_results);
 }
 
 AiqCore::~AiqCore() {}
@@ -133,6 +135,13 @@ int AiqCore::deinit() {
 #endif
 
     mAiqState = AIQ_NOT_INIT;
+
+    if (mAiqResults) {
+        IntelCca* intelCca = IntelCca::getInstance(mCameraId, mTuningMode);
+        CheckAndLogError(!intelCca, UNKNOWN_ERROR, "Failed to get intelCca instance");
+
+        intelCca->freeMem(mAiqResults);
+    }
 
     return OK;
 }
@@ -246,6 +255,16 @@ int AiqCore::updateParameter(const aiq_parameter_t& param) {
     mRgbStatsBypassed = false;
     if (param.powerMode == CAMERA_LOW_POWER && mAeBypassed && mAwbBypassed && mAfBypassed) {
         mRgbStatsBypassed = true;
+    }
+
+    if (!mAiqResults) {
+        IntelCca* intelCca = IntelCca::getInstance(mCameraId, mTuningMode);
+        CheckAndLogError(!intelCca, UNKNOWN_ERROR, "Failed to get intelCca instance");
+
+        mAiqResults =
+            static_cast<cca::cca_aiq_results*>(intelCca->allocMem(0, "aiqResults", 0,
+                                                                  sizeof(cca::cca_aiq_results)));
+        CheckAndLogError(!mAiqResults, NO_MEMORY, "allocMem failed");
     }
 
     return OK;
@@ -367,7 +386,7 @@ int AiqCore::runAiq(long requestId, AiqResult* aiqResult) {
     {
         PERF_CAMERA_ATRACE_PARAM1_IMAGING("intelAiq->runAIQ", 1);
 
-        ia_err iaErr = intelCca->runAIQ(requestId, *mAiqParams.get(), mAiqResults.get(),
+        ia_err iaErr = intelCca->runAIQ(requestId, *mAiqParams.get(), mAiqResults,
                                         aiqResult->mAiqParam.makernoteMode);
         mAiqRunTime++;
         ret = AiqUtils::convertError(iaErr);
@@ -376,6 +395,7 @@ int AiqCore::runAiq(long requestId, AiqResult* aiqResult) {
 
     // handle awb result
     if (aaaRunType & IMAGING_ALGO_AWB) {
+        mLastAwbResult = mAiqResults->awb_output;
         cca::cca_awb_results* newAwbResults = &mAiqResults->awb_output;
 
         if (!PlatformData::isIsysEnabled(mCameraId)) {
@@ -392,6 +412,7 @@ int AiqCore::runAiq(long requestId, AiqResult* aiqResult) {
 
     // handle af result
     if (aaaRunType & IMAGING_ALGO_AF) {
+        mLastAfResult = mAiqResults->af_output;
         focusDistanceResult(&mAiqResults->af_output, &aiqResult->mAfDistanceDiopters,
                             &aiqResult->mFocusRange);
         aiqResult->mAfResults = mAiqResults->af_output;
@@ -418,6 +439,7 @@ int AiqCore::runAiq(long requestId, AiqResult* aiqResult) {
     if (aaaRunType & IMAGING_ALGO_SA) {
         AiqUtils::dumpSaResults(mAiqResults->sa_output);
         ret |= processSAResults(&mAiqResults->sa_output, aiqResult->mLensShadingMap);
+        aiqResult->mLscUpdate = mAiqResults->sa_output.lsc_update;
     }
     CheckAndLogError(ret != OK, ret, "run3A failed, ret: %d", ret);
 
@@ -432,7 +454,7 @@ int AiqCore::runAiq(long requestId, AiqResult* aiqResult) {
 
     if (PlatformData::isStatsRunningRateSupport(mCameraId)) {
         bool bothConverged = (mLastAeResult.exposures[0].converged &&
-                              mAiqResults->awb_output.distance_from_convergence < EPSILON);
+                              mLastAwbResult.distance_from_convergence < EPSILON);
         if (!mAeAndAwbConverged && bothConverged) {
             mAeRunRateInfo.reset();
             mAwbRunRateInfo.reset();
@@ -698,8 +720,8 @@ bool AiqCore::bypassAf(const aiq_parameter_t& param) {
 
     if (param.afMode == AF_MODE_OFF || param.powerMode != CAMERA_LOW_POWER) return false;
 
-    bool converged = mAiqResults->af_output.status == ia_aiq_af_status_success &&
-                     mAiqResults->af_output.final_lens_position_reached;
+    bool converged = mLastAfResult.status == ia_aiq_af_status_success &&
+                     mLastAfResult.final_lens_position_reached;
 
     return skipAlgoRunning(&mAfRunRateInfo, IMAGING_ALGO_AF, converged);
 }
@@ -711,7 +733,7 @@ bool AiqCore::bypassAwb(const aiq_parameter_t& param) {
 
     if (param.awbMode != AWB_MODE_AUTO || param.powerMode != CAMERA_LOW_POWER) return false;
 
-    bool converged = mAiqResults->awb_output.distance_from_convergence < EPSILON;
+    bool converged = mLastAwbResult.distance_from_convergence < EPSILON;
 
     return skipAlgoRunning(&mAwbRunRateInfo, IMAGING_ALGO_AWB, converged);
 }

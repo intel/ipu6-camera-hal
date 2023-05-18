@@ -163,11 +163,22 @@ void IntelCPUAlgoServer::handleRequest(const MsgReq& msg) {
                 ShmInfo paramsInfo = {};
                 status = getIntelAlgoServer()->getShmInfo(p->mknResultsHandle, &paramsInfo);
                 if (status != OK) {
-                    LOGE("%s, the buffer handle for resultsHandle is invalid", __func__);
+                    LOGE("%s, the buffer handle for mknResultsHandle is invalid", __func__);
                     break;
                 }
                 p->mknResults = static_cast<cca::cca_mkn*>(paramsInfo.addr);
             }
+
+            if (p->aiqResultHandle >= 0) {
+                ShmInfo paramsInfo = {};
+                status = getIntelAlgoServer()->getShmInfo(p->aiqResultHandle, &paramsInfo);
+                if (status != OK) {
+                    LOGE("%s, the buffer handle for aiqResultsHandle is invalid", __func__);
+                    break;
+                }
+                p->results = static_cast<cca::cca_aiq_results*>(paramsInfo.addr);
+            }
+
             status = mCcas[key]->runAIQ(addr, requestSize);
             break;
         }

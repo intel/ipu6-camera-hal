@@ -19,31 +19,90 @@
 #include <string>
 #include <memory>
 #include <mutex>
+#include <unordered_map>
+
+#include "src/iutils/Utils.h"
 
 #include "src/icbm/ICBMTypes.h"
-#include "src/icbm/IntelICBM.h"
 #include "src/icbm/OPIC2Api.h"
+#include "src/icbm/MemoryChain.h"
 
 namespace icamera {
 
-class IntelOPIC2 : public IIntelICBM {
+struct IOPIC2Algorithm {
+    virtual ~IOPIC2Algorithm() = default;
+    virtual void linkToMemoryChain(MemoryChainDescription& memoryChain) = 0;
+};
+
+class UserFramingBuilder : public IOPIC2Algorithm {
  public:
-    IntelOPIC2();
-    ~IntelOPIC2() {}
+    UserFramingBuilder() = default;
+    ~UserFramingBuilder() = default;
 
-    int setup(void* initParam);
-    void shutdown();
+    void linkToMemoryChain(MemoryChainDescription& memoryChain) override;
+};
 
-    int processFrame(const ImageInfo& iii, const ImageInfo& iio, const ICBMReqInfo& reqInfo);
+class BackgroundBlurBuilder : public IOPIC2Algorithm {
+ public:
+    BackgroundBlurBuilder() = default;
+    ~BackgroundBlurBuilder() = default;
+
+    void linkToMemoryChain(MemoryChainDescription& memoryChain) override;
+};
+
+class IntelOPIC2 {
+ public:
+    static IntelOPIC2* getInstance();
+    static void releaseInstance();
+
+    /**
+     * \brief create level0 session according to the cameraID and request type
+     *
+     * \return 0 if succeed.
+     */
+    int setup(ICBMInitInfo* initParam);
+
+    /**
+     * \brief shundown level0 session according to the cameraID and request type
+     *
+     * \return active session count(>=0) if succeed. <0 if failed
+     */
+    int shutdown(const ICBMReqInfo& reqInfo);
+
+    int processFrame(const ICBMReqInfo& reqInfo);
+
+    /**
+     * \brief process tnr frame
+     *
+     * \return 0 if succeed
+     */
+    int runTnrFrame(const ICBMReqInfo& reqInfo);
 
  private:
-    iaic_session mCtxSession;
-    std::mutex mCritObject;
+    static IntelOPIC2* sInstance;
+    static std::mutex sLock;
 
-    static iaic_memory createMemoryDesc(const ImageInfo& param);
-    static std::string buildFeatureStr(const ICBMReqInfo& req);
+    IntelOPIC2();
+    ~IntelOPIC2(){};
+    // lock for each session, key is from getIndexKey()
+    std::unordered_map<int, std::unique_ptr<std::mutex>> mLockMap;
+    // session map, key is from getIndexKey()
+    std::unordered_map<int, iaic_session> mSessionMap;
+    // feature vector of each session
+    std::unordered_map<iaic_session, std::vector<const char*>> mFeatureMap;
+
+    // transfer cameraId and type to index of the mSessionMap and mLockMap
+    int getIndexKey(int cameraId, uint32_t type) {
+        return (cameraId << ICBM_REQUEST_MAX_SHIFT) + type;
+    }
+
+    static MemoryChainDescription createMemoryChain(const ICBMReqInfo& reqInfo);
+
+    // set parameters to the session before process
     void setData(iaic_session uid, void* p, size_t size, const char* featureName,
                  const char* portName);
+
+    DISALLOW_COPY_AND_ASSIGN(IntelOPIC2);
 };
 
 }  // namespace icamera

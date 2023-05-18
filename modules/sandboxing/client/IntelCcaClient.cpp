@@ -248,10 +248,12 @@ ia_err IntelCca::runAIQ(uint64_t frameId, const cca::cca_aiq_params& params,
         aiqParams->mknResultsHandle = mCommon.getShmMemHandle(aiqParams->mknResults);
     }
 
+    aiqParams->aiqResultHandle = mCommon.getShmMemHandle(results);
+    CheckAndLogError(aiqParams->aiqResultHandle < 0, ia_err_nomemory, "Failed to get result buf");
+
     ia_err ret = mCommon.requestSyncCca(IPC_CCA_RUN_AIQ, mMemAIQ.mHandle);
     CheckAndLogError(ret != ia_err_none, ia_err_general, "@%s, requestSyncCca fails", __func__);
 
-    *results = aiqParams->results;
     if (aiqParams->mknResultsHandle >= 0) mHasMknData = true;
 
     return ret;

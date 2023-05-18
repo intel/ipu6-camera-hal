@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2022 Intel Corporation.
+ * Copyright (C) 2015-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 
 #include "SofSource.h"
 
+#include <string>
 #include <poll.h>
 
 #include "PlatformData.h"
@@ -79,6 +80,7 @@ int SofSource::initDev() {
     LOG1("%s: Using SOF event id 0 for sync", __func__);
 #else
     int id = 0;
+
     int status = mIsysReceiverSubDev->SubscribeEvent(V4L2_EVENT_FRAME_SYNC, id);
     CheckAndLogError(status != OK, status, "Failed to subscribe sync event %d", id);
     LOG1("%s: Using SOF event id %d for sync", __func__, id);

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2022 Intel Corporation.
+ * Copyright (C) 2015-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -291,6 +291,9 @@ void setDebugLevel(void) {
     // performance
     char* perfLevel = getenv(PROP_CAMERA_HAL_PERF);
     if (perfLevel) {
+#ifdef CAL_BUILD
+        initPerfettoTrace();
+#else
         gPerfLevel = strtoul(perfLevel, nullptr, 0);
         LOGI("Performance level is 0x%x", gPerfLevel);
 
@@ -316,6 +319,7 @@ void setDebugLevel(void) {
             gIsDumpMediaInfo = true;
         }
         ScopedAtrace::setTraceLevel(gPerfLevel);
+#endif
     }
 }
 

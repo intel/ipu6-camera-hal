@@ -1120,7 +1120,7 @@ void PipeLiteExecutor::getTerminalBuffersFromExternal(
 }
 
 void PipeLiteExecutor::dumpPGs() const {
-    if (!Log::isLogTagEnabled(GET_FILE_SHIFT(PipeLiteExecutor))) return;
+    if (!Log::isLogTagEnabled(GET_FILE_SHIFT(PipeLiteExecutor), CAMERA_DEBUG_LOG_LEVEL3)) return;
 
     LOG3("============= dump PGs for executor %s =================", getName());
     if (mIsInputEdge) {

@@ -54,6 +54,9 @@ class ParameterGenerator {
      * \brief reset the parameters data.
      */
     int reset();
+    void callbackRegister(const camera_callback_ops_t* callback) {
+        mCallback = const_cast<camera_callback_ops_t*>(callback);
+    }
 
     /**
      * \brief Save parameters with sequence id indicating the active frame.
@@ -85,12 +88,12 @@ class ParameterGenerator {
     int updateWithAiqResultsL(int64_t sequence, Parameters* params);
     int updateAwbGainsL(Parameters* params, const cca::cca_awb_results& result);
     int updateCcmL(Parameters* params, const AiqResult* aiqResult);
-    int updateTonemapCurve(int64_t sequence, Parameters* params);
 
     int updateCommonMetadata(Parameters* params, const AiqResult* aiqResult);
 
  private:
     int mCameraId;
+    camera_callback_ops_t* mCallback;
     static const int kStorageSize = MAX_SETTING_COUNT;
 
     // Guard for ParameterGenerator public API.

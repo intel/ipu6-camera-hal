@@ -132,7 +132,6 @@ const char* tagNames[] = {
     "IntelFaceDetection",
     "IntelFaceDetectionClient",
     "IntelGPUAlgoServer",
-    "IntelIC2",
     "IntelICBM",
     "IntelICBMClient",
     "IntelICBMServer",

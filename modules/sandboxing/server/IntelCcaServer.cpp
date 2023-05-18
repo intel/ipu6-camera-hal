@@ -83,7 +83,7 @@ status_t IntelCcaServer::runAIQ(void* pData, int dataSize) {
 
     intel_cca_run_aiq_data* params = static_cast<intel_cca_run_aiq_data*>(pData);
 
-    ia_err ret = mCca->runAIQ(params->frameId, params->inParams, &params->results);
+    ia_err ret = mCca->runAIQ(params->frameId, params->inParams, params->results);
     CheckAndLogError(ret != ia_err_none, UNKNOWN_ERROR, "@%s, fails: %d", __func__, ret);
 
     if (params->mknResultsHandle >= 0) {

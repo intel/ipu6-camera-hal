@@ -67,7 +67,8 @@ struct intel_cca_run_aiq_data {
     uint64_t frameId;
     cca::cca_aiq_params inParams;
 
-    cca::cca_aiq_results results;
+    cca::cca_aiq_results* results;
+    int32_t aiqResultHandle;
 
     ia_mkn_trg type;
 

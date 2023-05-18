@@ -99,8 +99,8 @@ class IntelAlgoClient : public camera_algorithm_callback_ops_t {
     std::unique_ptr<cros::CameraAlgorithmBridge> mBridge;
     std::unique_ptr<cros::CameraAlgorithmBridge> mGpuBridge;
 
-    base::Callback<void(uint32_t, uint32_t, int32_t)> mCallback;
-    base::Callback<void(uint32_t)> mNotifyCallback;
+    base::RepeatingCallback<void(uint32_t, uint32_t, int32_t)> mCallback;
+    base::RepeatingCallback<void(uint32_t)> mNotifyCallback;
     bool mIPCStatus;             // true: no error happens, false: error happens
     std::mutex mIPCStatusMutex;  // the mutex for mIPCStatus
 

@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (C) 2019 Intel Corporation.
+ * Copyright (C) 2019-2023 Intel Corporation.
  ****************************************************************************
  ***
  ***   This header was automatically generated from a Linux kernel header
@@ -24,6 +24,7 @@
 /* WARNING: DO NOT EDIT, AUTO-GENERATED CODE - SEE TOP FOR INSTRUCTIONS */
 #define V4L2_CID_IPU_STORE_CSI2_HEADER (V4L2_CID_IPU_BASE + 2)
 #define V4L2_CID_IPU_ISYS_COMPRESSION  (V4L2_CID_IPU_BASE + 3)
+#define V4L2_CID_IPU_QUERY_SUB_STREAM  (V4L2_CID_IPU_BASE + 4)
 #define V4L2_IPU_ISA_EN_BLC (1 << 0)
 #define V4L2_IPU_ISA_EN_LSC (1 << 1)
 #define V4L2_IPU_ISA_EN_DPC (1 << 2)
