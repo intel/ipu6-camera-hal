@@ -2047,82 +2047,16 @@ int CameraParser::getCameraModuleNameFromEEPROM(const std::string& nvmDir,
 /* the path of NVM device is in /sys/bus/i2c/devices/i2c-'adaptorId'/firmware_node/XXXX/path. */
 void CameraParser::getNVMDirectory(CameraParser* profiles) {
     LOG2("@%s", __func__);
-
-    std::string nvmPath("/sys/bus/i2c/devices/i2c-");
-    // attach i2c adaptor id, like 18-0010
-    std::size_t found = profiles->mI2CBus.find("-");
-    CheckAndLogError(found == std::string::npos, VOID_VALUE, "Failed to get adaptor id");
-    nvmPath += profiles->mI2CBus.substr(0, found);
-    nvmPath += "/firmware_node/";
-    DIR* dir = opendir(nvmPath.c_str());
-    if (dir) {
-        struct dirent* direntPtr = nullptr;
-        while ((direntPtr = readdir(dir)) != nullptr) {
-            if (direntPtr->d_type != DT_DIR) continue;
-
-            std::string fwNodePath(nvmPath.c_str());
-            fwNodePath += direntPtr->d_name;
-            fwNodePath += "/path";
-
-            bool found = false;
-            FILE* fp = fopen(fwNodePath.c_str(), "rb");
-            if (fp) {
-                fseek(fp, 0, SEEK_END);
-                int size = static_cast<int>(ftell(fp));
-                fseek(fp, 0, SEEK_SET);
-                std::unique_ptr<char[]> ptr(new char[size + 1]);
-                ptr[size] = 0;
-                size_t readSize = fread(ptr.get(), sizeof(char), size, fp);
-                fclose(fp);
-
-                if (readSize > 0) {
-                    for (auto& nvm : profiles->mNvmDeviceInfo) {
-                        if (strstr(ptr.get(), nvm.nodeName.c_str()) != nullptr) {
-                            std::string nvmPath(NVM_DATA_PATH);
-                            nvmPath.append("i2c-");
-                            nvmPath.append(direntPtr->d_name);
-                            nvmPath.append("/eeprom");
-                            // Check if eeprom file exists
-                            struct stat buf;
-                            int ret = stat(nvmPath.c_str(), &buf);
-                            LOG1("%s, nvmPath %s, ret %d", __func__, nvmPath.c_str(), ret);
-                            if (ret == 0) {
-                                nvm.directory = "i2c-";
-                                nvm.directory += direntPtr->d_name;
-                                found = true;
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-            if (found) break;
-        }
-        closedir(dir);
-    } else {
-        LOGE("Failed to open dir %s", nvmPath.c_str());
-    }
-
-    for (auto nvm : profiles->mNvmDeviceInfo) {
-        if (!nvm.directory.empty()) {
-            // The first one in list is prioritized and should be selected.
-            std::string nvmPath;
-            nvmPath.append(NVM_DATA_PATH);
-            nvmPath.append(nvm.directory);
-            if (nvmPath.back() != '/') nvmPath.append("/");
-
-            nvmPath.append("eeprom");
-            LOG2("NVM data is located in %s", nvmPath.c_str());
-            profiles->pCurrentCam->mNvmDirectory = nvmPath;
-            profiles->pCurrentCam->mMaxNvmDataSize = nvm.dataSize;
-            int ret = getCameraModuleNameFromEEPROM(profiles->pCurrentCam->mNvmDirectory,
-                                                    &profiles->pCurrentCam->mCamModuleName);
-            LOG2("NVM dir %s, ret %d", profiles->pCurrentCam->mNvmDirectory.c_str(), ret);
-            break;
-        } else {
-            LOGE("Failed to find NVM directory");
-        }
-    }
+    // The first one in list is prioritized and should be selected.
+    std::string nvmPath("/sys/bus/i2c/devices/i2c-3/i2c-S5K3L6:00-NVM");
+    if (nvmPath.back() != '/') nvmPath.append("/");
+    nvmPath.append("eeprom");
+    LOG2("NVM data is located in %s", nvmPath.c_str());
+    profiles->pCurrentCam->mNvmDirectory = nvmPath;
+    profiles->pCurrentCam->mMaxNvmDataSize = 1680;
+    int ret = getCameraModuleNameFromEEPROM(profiles->pCurrentCam->mNvmDirectory,
+                                             &profiles->pCurrentCam->mCamModuleName);
+    LOG2("NVM dir %s, ret %d", profiles->pCurrentCam->mNvmDirectory.c_str(), ret);
 }
 
 /**

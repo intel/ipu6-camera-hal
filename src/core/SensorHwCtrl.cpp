@@ -150,7 +150,9 @@ int SensorHwCtrl::setDigitalGains(const vector<int>& digitalGains) {
     CheckAndLogError(digitalGains.empty(), BAD_VALUE, "No digital gain data!");
 
     LOG2("%s digitalGain=%d", __func__, digitalGains[0]);
-    return mPixelArraySubdev->SetControl(V4L2_CID_DIGITAL_GAIN, digitalGains[0]);
+    // Some sensor doesn't support digital gain, but directly invoking will cause err logs.
+    if(digitalGains[0] != 0) return mPixelArraySubdev->SetControl(V4L2_CID_DIGITAL_GAIN, digitalGains[0]);
+    return 0;
 }
 
 int SensorHwCtrl::setLineLengthPixels(int llp) {

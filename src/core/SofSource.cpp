@@ -146,7 +146,7 @@ int SofSource::stop() {
 int SofSource::poll() {
     int ret = 0;
     const int pollTimeoutCount = 100;
-    const int pollTimeout = 100;
+    const int pollTimeout = 200;
 
     std::vector<V4L2Device*> pollDevs;
     pollDevs.push_back(mIsysReceiverSubDev);
