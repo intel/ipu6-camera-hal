@@ -140,6 +140,11 @@ typedef struct {
 } WeightGridTable;
 // CUSTOM_WEIGHT_GRID_E
 
+typedef struct {
+    int8_t edgeStrength;
+    int8_t nrStrength;
+} EdgeNrSetting;
+
 enum ExecutorNotifyPolicy {
     POLICY_FRAME_FIRST = 0,
     POLICY_STATS_FIRST,
@@ -203,9 +208,9 @@ struct CommonConfig {
     CommonConfig() {
         xmlVersion = 1.0;
         isGpuTnrEnabled = false;
-        isStillTnrPrior = true;
+        isStillTnrPrior = false;
         isTnrParamForceUpdate = false;
-        useTnrGlobalProtection = false;
+        useTnrGlobalProtection = true;
         cameraNumber = -1;
         videoStreamNum = DEFAULT_VIDEO_STREAM_NUM;
         supportIspTuningUpdate = false;

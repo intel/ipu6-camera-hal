@@ -63,6 +63,9 @@ enum {
     DUMP_NVM_DATA = 1 << 16,
     DUMP_MAKER_NOTE = 1 << 17,
     DUMP_EMBEDDED_METADATA = 1 << 18,
+
+    // Enable dump thread for dynamic control, export cameraDump=0x100000
+    DUMP_THREAD = 1 << 20,
 };
 
 enum {

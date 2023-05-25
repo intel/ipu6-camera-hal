@@ -52,8 +52,18 @@ void FaceSSD::faceDetectResult(cros::FaceDetectResult ret,
     CLEAR(mResult);
 
     if (ret == cros::FaceDetectResult::kDetectOk) {
+        std::vector<human_sensing::CrosFace> sortFaces = faces;
+        std::sort(sortFaces.begin(), sortFaces.end(),
+                  [](const human_sensing::CrosFace& a, const human_sensing::CrosFace& b) {
+                      auto area1 = (a.bounding_box.x2 - a.bounding_box.x1) *
+                                   (a.bounding_box.y2 - a.bounding_box.y1);
+                      auto area2 = (b.bounding_box.x2 - b.bounding_box.x1) *
+                                   (b.bounding_box.y2 - b.bounding_box.y1);
+                      return area1 > area2;
+                  });
+
         int faceCount = 0;
-        for (auto& face : faces) {
+        for (auto& face : sortFaces) {
             if (faceCount >= mMaxFaceNum) break;
             mResult.faceSsdResults[faceCount] = face;
             faceCount++;
@@ -76,8 +86,8 @@ void FaceSSD::runFaceDetectionBySync(const std::shared_ptr<camera3::Camera3Buffe
     printfFDRunRate();
 
     std::optional<cros::FaceDetectionResult> face_detection_result =
-        camera3::FaceDetectionResultCallbackManager::getInstance().
-        getFaceDetectionResult(mCameraId);
+        camera3::FaceDetectionResultCallbackManager::getInstance().getFaceDetectionResult(
+            mCameraId);
 
     if (face_detection_result) {
         LOG2("FrameNum:%zu, run with the cros::FaceDetector from stream manipulator.",

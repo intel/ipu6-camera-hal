@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 Intel Corporation.
+ * Copyright (C) 2016-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,16 +50,23 @@ class TunningParser : public ParserBase {
  private:
     PlatformData::StaticCfg* mStaticCfg;
 
-    enum DataField { FIELD_INVALID = 0, FIELD_SENSOR, FIELD_COMMON } mCurrentDataField;
+    enum DataField {
+        FIELD_INVALID = 0,
+        FIELD_SENSOR,
+        FIELD_MODULE,
+        FIELD_COMMON
+    } mCurrentDataField;
     PlatformData::StaticCfg::CameraInfo* mCurrentCam;
 
     void getCameraInfoByName(TunningParser* profiles, const char* name);
     void checkField(TunningParser* profiles, const char* name, const char** atts);
 
     void handleSensor(TunningParser* profiles, const char* name, const char** atts);
+    void handleModule(TunningParser* profiles, const char* name, const char** atts);
     void handleCommon(TunningParser* profiles, const char* name, const char** atts);
-
+// CUSTOM_WEIGHT_GRID_S
     void handleWeightGrid(TunningParser* profiles, const char* name, const char** atts);
+// CUSTOM_WEIGHT_GRID_E
 
  private:
     // prevent copy constructor and assignment operator

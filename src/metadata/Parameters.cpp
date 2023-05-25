@@ -2102,6 +2102,23 @@ int Parameters::getICBMUFMode(uint8_t* mode) const {
     *mode = entry.data.u8[0];
     return OK;
 }
+
+int Parameters::setICBMBBMode(uint8_t mode) {
+    ParameterHelper::AutoWLock wl(mData);
+    return ParameterHelper::getMetadata(mData).update(INTEL_VENDOR_CAMERA_IC_BC_MODE, &mode, 1);
+}
+
+int Parameters::getICBMBBMode(uint8_t* mode) const {
+    ParameterHelper::AutoRLock rl(mData);
+    auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_VENDOR_CAMERA_IC_BC_MODE);
+
+    if (entry.count != 1) {
+        return NAME_NOT_FOUND;
+    }
+
+    *mode = entry.data.u8[0];
+    return OK;
+}
 // LEVEL0_ICBM_E
 
 }  // end of namespace icamera

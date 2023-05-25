@@ -338,6 +338,12 @@ int get_frame_size(int camera_id, int format, int width, int height, int field, 
 __attribute__((constructor)) void initCameraHAL() {
     Log::setDebugLevel();
     CameraDump::setDumpLevel();
+
+    if (CameraDump::isDumpTypeEnable(DUMP_THREAD)) {
+        CameraDump::setDumpThread();
+        LOGI("Dynamic dump is enabled.");
+    }
+
     gCameraHal = new CameraHal();
 }
 

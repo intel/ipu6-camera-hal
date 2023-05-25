@@ -36,7 +36,6 @@
 #include "CameraLog.h"
 #include "Trace.h"
 #include "iutils/Utils.h"
-#include "CameraDump.h"
 
 icamera::LogOutputSink* globalLogSink;
 extern const char* tagNames[];
@@ -277,11 +276,6 @@ void setDebugLevel(void) {
         LOG1("Debug level is 0x%x", gLogLevel);
     }
 
-    if (gLogLevel & CAMERA_DEBUG_LOG_DYNAMIC_DUMP) {
-        CameraDump::setDumpThread();
-        LOGI("Dynamic dump is enabled.");
-    }
-
     for (size_t i = 0; i < TAGS_MAX_NUM; ++i) {
         globalGroupsDescp[i].level = gLogLevel;
     }
@@ -297,6 +291,9 @@ void setDebugLevel(void) {
     // performance
     char* perfLevel = getenv(PROP_CAMERA_HAL_PERF);
     if (perfLevel) {
+#ifdef CAL_BUILD
+        initPerfettoTrace();
+#else
         gPerfLevel = strtoul(perfLevel, nullptr, 0);
         LOGI("Performance level is 0x%x", gPerfLevel);
 
@@ -322,6 +319,7 @@ void setDebugLevel(void) {
             gIsDumpMediaInfo = true;
         }
         ScopedAtrace::setTraceLevel(gPerfLevel);
+#endif
     }
 }
 

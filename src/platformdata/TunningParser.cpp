@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 Intel Corporation.
+ * Copyright (C) 2016-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,8 +33,7 @@ TunningParser::TunningParser(PlatformData::StaticCfg* cfg)
     CheckAndLogError(!mStaticCfg, VOID_VALUE, "@%s, cfg parameter is wrong", __func__);
 
     int ret = getDataFromXmlFile(TUNNING_PROFILE_NAME);
-    CheckWarning(ret != OK, VOID_VALUE, "Failed to get tunning data frome %s",
-                 TUNNING_PROFILE_NAME);
+    if (ret != OK) LOGI("No tunning data from %s", TUNNING_PROFILE_NAME);
 }
 
 // According sensorName to find the CameraInfo in mStaticCfg
@@ -81,6 +80,9 @@ void TunningParser::checkField(TunningParser* profiles, const char* name, const 
         }
         profiles->mCurrentDataField = FIELD_SENSOR;
         return;
+    } else if (strcmp(name, "Modules") == 0) {
+        profiles->mCurrentDataField = FIELD_MODULE;
+        return;
     } else if (strcmp(name, "Common") == 0) {
         profiles->mCurrentDataField = FIELD_COMMON;
         return;
@@ -108,6 +110,7 @@ void TunningParser::handleCommon(TunningParser* /*profiles*/, const char* name, 
     }
 }
 
+// CUSTOM_WEIGHT_GRID_S
 void TunningParser::handleWeightGrid(TunningParser* profiles, const char* name, const char** atts) {
     WeightGridTable wg;
     int idx = 0;
@@ -138,6 +141,57 @@ void TunningParser::handleWeightGrid(TunningParser* profiles, const char* name, 
     LOG2("@%s, name:%s, atts[0]:%s", __func__, name, atts[0]);
     profiles->mCurrentCam->mWGTable.push_back(wg);
 }
+// CUSTOM_WEIGHT_GRID_E
+
+#define CAMERA_MODULE_STR "CameraModuleInfo_"
+void TunningParser::handleModule(TunningParser* profiles, const char* name, const char** atts) {
+    if (strncmp(name, CAMERA_MODULE_STR, strlen(CAMERA_MODULE_STR)) == 0) {
+        // tag name like this: CameraModuleInfo_xxx
+        std::string tagName(name);
+        std::string moduleName = tagName.substr(strlen(CAMERA_MODULE_STR));
+        for (size_t i = 0; i < profiles->mStaticCfg->mCameras.size(); i++) {
+            if (!profiles->mStaticCfg->mCameras[i].mCamModuleName.empty() &&
+                (strcmp(profiles->mStaticCfg->mCameras[i].mCamModuleName.c_str(),
+                        moduleName.c_str()) == 0)) {
+                profiles->mCurrentCam = &profiles->mStaticCfg->mCameras[i];
+                break;
+            }
+        }
+    }
+    if (!profiles->mCurrentCam) return;
+
+    LOG2("@%s, name:%s, atts[0]:%s, sensor:%s", __func__, name, atts[0],
+         profiles->mCurrentCam->sensorName.c_str());
+
+    if (strcmp(name, "edgeNrTable") == 0) {
+        EdgeNrSetting setting;
+
+        int size = strlen(atts[1]);
+        char src[size+1];
+        MEMCPY_S(src, size, atts[1], size);
+        src[size] = '\0';
+        char* savePtr;
+        char* totalGain = strtok_r(src, ",", &savePtr);
+
+        while (totalGain) {
+            float tg = atof(totalGain);
+            char* hdrRatio = strtok_r(nullptr, ",", &savePtr);
+            char* edge = strtok_r(nullptr, ",", &savePtr);
+            char* nr = strtok_r(nullptr, ",", &savePtr);
+            CheckWarning(!hdrRatio || !edge || !nr, VOID_VALUE, "wrong str %s", atts[1]);
+
+            float hr = atof(hdrRatio);
+            setting.edgeStrength = atoi(edge);
+            setting.nrStrength = atoi(nr);
+            LOG3("Edge and Nr table: totalGain %f, hdrRatio %f, edge %d, nr %d", tg, hr,
+                 setting.edgeStrength, setting.nrStrength);
+            auto& tmpMap = profiles->mCurrentCam->mTotalGainHdrRatioToEdgeNrMap[tg];
+            tmpMap[hr] = setting;
+
+            totalGain = strtok_r(nullptr, ",", &savePtr);
+        }
+    }
+}
 
 /**
  * This function will handle all the sensor related elements.
@@ -156,9 +210,11 @@ void TunningParser::handleSensor(TunningParser* profiles, const char* name, cons
 
     LOG2("@%s, name:%s, atts[0]:%s, sensor:%s", __func__, name, atts[0],
          profiles->mCurrentCam->sensorName.c_str());
+// CUSTOM_WEIGHT_GRID_S
     if (strcmp(name, "WeightGrid") == 0) {
         handleWeightGrid(profiles, name, atts);
     }
+// CUSTOM_WEIGHT_GRID_E
 }
 
 /**
@@ -180,6 +236,9 @@ void TunningParser::startParseElement(void* userData, const char* name, const ch
     switch (profiles->mCurrentDataField) {
         case FIELD_SENSOR:
             profiles->handleSensor(profiles, name, atts);
+            break;
+        case FIELD_MODULE:
+            profiles->handleModule(profiles, name, atts);
             break;
         case FIELD_COMMON:
             profiles->handleCommon(profiles, name, atts);
@@ -203,8 +262,11 @@ void TunningParser::endParseElement(void* userData, const char* name) {
 
     TunningParser* profiles = reinterpret_cast<TunningParser*>(userData);
 
-    if (strcmp(name, "Sensor") == 0 || strcmp(name, "Common") == 0) {
+    if (strcmp(name, "Sensor") == 0 || strcmp(name, "Common") == 0 ||
+        strcmp(name, "Modules") == 0) {
         profiles->mCurrentDataField = FIELD_INVALID;
+    } else if (strncmp(name, CAMERA_MODULE_STR, strlen(CAMERA_MODULE_STR)) == 0) {
+        profiles->mCurrentCam = nullptr;
     }
 }
 

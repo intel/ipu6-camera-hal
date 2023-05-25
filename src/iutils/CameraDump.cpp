@@ -93,7 +93,7 @@ void CameraDump::setDumpLevel(void) {
         LOGI("User defined dump path %s", gDumpPath);
     } else {
         snprintf(gDumpPath, sizeof(gDumpPath), "%s", "./");
-        LOGI("Default dump path %s", gDumpPath);
+        LOG1("Default dump path %s", gDumpPath);
     }
 
     char* cameraDumpSkipNum = getenv(PROP_CAMERA_HAL_DUMP_SKIP_NUM);
