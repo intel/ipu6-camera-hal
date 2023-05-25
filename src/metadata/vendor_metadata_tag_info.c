@@ -59,6 +59,7 @@ static tag_info_t intel_vendor_camera[INTEL_VENDOR_CAMERA_END - INTEL_VENDOR_CAM
     {"totalExposureTarget", ICAMERA_TYPE_INT64},
     {"totalExposureTargetRange", ICAMERA_TYPE_INT64},
     {"rawDataOutput", ICAMERA_TYPE_BYTE},
+    {"hdrRatio", ICAMERA_TYPE_FLOAT},
 };
 
 tag_info_t* vendor_tag_info[INTEL_VENDOR_SECTION_COUNT] = {
@@ -228,6 +229,9 @@ int vendor_metadata_enum_snprint(uint32_t tag, int32_t value, char* dst, size_t 
                 default:
                     msg = "error: enum value out of range";
             }
+            break;
+        }
+        case INTEL_VENDOR_CAMERA_HDR_RATIO: {
             break;
         }
     }

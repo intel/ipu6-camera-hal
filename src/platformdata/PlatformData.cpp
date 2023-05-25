@@ -25,9 +25,9 @@
 
 #include "CameraParser.h"
 #include "iutils/CameraLog.h"
-// CUSTOM_WEIGHT_GRID_S
+// ALGO_TUNING_S
 #include "TunningParser.h"
-// CUSTOM_WEIGHT_GRID_E
+// ALGO_TUNING_E
 #include "ParameterHelper.h"
 #include "PolicyParser.h"
 
@@ -67,9 +67,9 @@ PlatformData::PlatformData() {
     }
 
     CameraParser CameraParser(mc, &mStaticCfg);
-    // CUSTOM_WEIGHT_GRID_S
+// ALGO_TUNING_S
     TunningParser TunningParser(&mStaticCfg);
-    // CUSTOM_WEIGHT_GRID_E
+// ALGO_TUNING_E
     PolicyParser PolicyParser(&mStaticCfg);
 }
 
@@ -140,8 +140,10 @@ void PlatformData::StaticCfg::getModuleInfoFromCmc(int cameraId) {
     cca::cca_cpf* cpf = new cca::cca_cpf;
     cpf->size = cpfData.size;
     MEMCPY_S(cpf->buf, cca::MAX_CPF_LEN, cpfData.data, cpfData.size);
+
     ia_err iaRet = IntelCca::getInstance(cameraId, tuningMode)->getCMC(&cmc, cpf);
     delete cpf;
+    IntelCca::releaseInstance(cameraId, tuningMode);
     CheckWarning(iaRet != ia_err_none, VOID_VALUE, "Get cmc data failed");
 
     LOG1("%s: base iso %d, ag [%4.2f, %4.2f], ag [%4.2f, %4.2f], from aiqb", __func__, cmc.base_iso,

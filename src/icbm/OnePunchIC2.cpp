@@ -19,6 +19,7 @@
 #include "src/icbm/OnePunchIC2.h"
 
 #include <string>
+#include <vector>
 #include <unordered_map>
 
 #include "iutils/CameraLog.h"
@@ -30,9 +31,18 @@ namespace icamera {
 IntelOPIC2* IntelOPIC2::sInstance = nullptr;
 std::mutex IntelOPIC2::sLock;
 
-static const std::unordered_map<ICBMReqType, const char*> gFeatureStrMapping = {
-    {ICBMReqType::USER_FRAMING, "user_framing"},
-    {ICBMReqType::LEVEL0_TNR, "tnr7us_l0"},
+void UserFramingBuilder::linkToMemoryChain(MemoryChainDescription& memoryChain) {
+    memoryChain.linkIn("user_framing", "source:source", "drain:drain");
+}
+
+void BackgroundBlurBuilder::linkToMemoryChain(MemoryChainDescription& memoryChain) {
+    memoryChain.linkIn("background_concealment", "release/source:source", "release/drain:drain");
+}
+
+static const std::unordered_map<ICBMFeatureType, const char*> gFeatureStrMapping = {
+    {ICBMFeatureType::USER_FRAMING, "user_framing"},
+    {ICBMFeatureType::BC_MODE_BB, "background_blur"},
+    {ICBMFeatureType::LEVEL0_TNR, "tnr7us_l0"},
 };
 
 IntelOPIC2* IntelOPIC2::getInstance() {
@@ -56,12 +66,16 @@ IntelOPIC2::IntelOPIC2() {
     mFeatureMap.clear();
 }
 
-int IntelOPIC2::setup(ICBMInitInfo* initParams) {
-    LOG1("@%s, Going to setup up IC2...", __func__);
+IntelOPIC2::~IntelOPIC2() {
+    mLockMap.clear();
+    mSessionMap.clear();
+    mFeatureMap.clear();
+}
 
+int IntelOPIC2::setup(ICBMInitInfo* initParams) {
     int ver[3];
     ::iaic_query_version(&ver[0], &ver[1], &ver[2]);
-    LOG1("@%s, IC Version %d.%d.%d", __func__, ver[0], ver[1], ver[2]);
+    LOG1("@%s, IC2 Version %d.%d.%d", __func__, ver[0], ver[1], ver[2]);
 
     size_t featureLen;
     std::string supportedFeatures;
@@ -70,39 +84,50 @@ int IntelOPIC2::setup(ICBMInitInfo* initParams) {
     ::iaic_query_features(supportedFeatures.data(), &featureLen);
     LOG1("@%s, IC supported features: %s", __func__, supportedFeatures.c_str());
 
-    LOG1("<%d>@%s type %d", initParams->cameraId, __func__, initParams->reqType);
-    int key = getIndexKey(initParams->cameraId, initParams->reqType);
+    LOG1("<%d>@%s type %d", initParams->cameraId, __func__, initParams->sessionType);
+    int key = getIndexKey(initParams->cameraId, initParams->sessionType);
+
     CheckWarning((mSessionMap.find(key) != mSessionMap.end()), OK,
                  "<id%d> @%s, request type: %d is already exist", initParams->cameraId, __func__,
-                 initParams->reqType);
+                 initParams->sessionType);
 
-    const char* fratureStr = gFeatureStrMapping.at(static_cast<ICBMReqType>(initParams->reqType));
-    if (strstr(supportedFeatures.c_str(), fratureStr) == nullptr) {
-        LOG1("<%d>@%s type %d not supported", initParams->cameraId, __func__, initParams->reqType);
-        return 0;
+    for (int feature = USER_FRAMING; feature < REQUEST_MAX; feature <<= 1) {
+        if (!(initParams->sessionType & feature)) continue;
+        const char* fratureStr = gFeatureStrMapping.at(static_cast<ICBMFeatureType>(feature));
+        if (strstr(supportedFeatures.c_str(), fratureStr) == nullptr) {
+            LOG1("<%d>@%s type %d not supported", initParams->cameraId, __func__, feature);
+            return OK;
+        }
     }
 
     mLockMap[key] = std::unique_ptr<std::mutex>(new std::mutex);
     std::unique_lock<std::mutex> lock(*mLockMap[key]);
 
-    mFeatureMap[key].clear();
+    mFeatureMap[key] = std::vector<const char*>();
     // we use the key value as the unique session id
     mSessionMap[key] = static_cast<iaic_session>(key);
-    if ((initParams->reqType & ICBMReqType::USER_FRAMING) &&
-        (strstr(supportedFeatures.c_str(), fratureStr) != nullptr)) {
+    if (initParams->sessionType & ICBMFeatureType::USER_FRAMING) {
         iaic_options option{};
         option.profiling = false;
         option.blocked_init = false;
+        const char* fratureStr = gFeatureStrMapping.at(ICBMFeatureType::USER_FRAMING);
         ::iaic_create_session(mSessionMap[key], fratureStr, option);
         mFeatureMap[key].push_back(fratureStr);
     }
 
-    fratureStr = gFeatureStrMapping.at(ICBMReqType::LEVEL0_TNR);
-    if ((initParams->reqType & ICBMReqType::LEVEL0_TNR) &&
-        (strstr(supportedFeatures.c_str(), fratureStr) != nullptr)) {
+    if (initParams->sessionType & ICBMFeatureType::BC_MODE_BB) {
+        iaic_options option{};
+        option.profiling = false;
+        option.blocked_init = false;
+        const char* fratureStr = gFeatureStrMapping.at(ICBMFeatureType::BC_MODE_BB);
+        ::iaic_create_session(mSessionMap[key], fratureStr, option);
+        mFeatureMap[key].push_back(fratureStr);
+    }
+    if (initParams->sessionType & ICBMFeatureType::LEVEL0_TNR) {
         iaic_options option{};
         option.profiling = true;
         option.blocked_init = true;
+        const char* fratureStr = gFeatureStrMapping.at(ICBMFeatureType::LEVEL0_TNR);
         ::iaic_create_session(mSessionMap[key], fratureStr, option);
         mFeatureMap[key].push_back(fratureStr);
     }
@@ -111,13 +136,12 @@ int IntelOPIC2::setup(ICBMInitInfo* initParams) {
 }
 
 int IntelOPIC2::shutdown(const ICBMReqInfo& reqInfo) {
-    LOG1("<%d>@%s type %d", reqInfo.cameraId, __func__, reqInfo.reqType);
-    int key = getIndexKey(reqInfo.cameraId, reqInfo.reqType);
+    LOG1("<%d>@%s type %d", reqInfo.cameraId, __func__, reqInfo.sessionType);
+    int key = getIndexKey(reqInfo.cameraId, reqInfo.sessionType);
 
     CheckAndLogError((mSessionMap.find(key) == mSessionMap.end()), NAME_NOT_FOUND,
                      "<id%d> @%s, request type: %d is not exist", reqInfo.cameraId, __func__,
-                     reqInfo.reqType);
-
+                     reqInfo.sessionType);
     int ret = -1;
     {
         std::unique_lock<std::mutex> lock(*mLockMap[key]);
@@ -132,11 +156,11 @@ int IntelOPIC2::shutdown(const ICBMReqInfo& reqInfo) {
 }
 
 int IntelOPIC2::processFrame(const ICBMReqInfo& reqInfo) {
-    int key = getIndexKey(reqInfo.cameraId, reqInfo.reqType);
+    int key = getIndexKey(reqInfo.cameraId, reqInfo.sessionType);
 
     CheckAndLogError((mSessionMap.find(key) == mSessionMap.end()), BAD_VALUE,
                      "<id%d> @%s, request type: %d is not exist", reqInfo.cameraId, __func__,
-                     reqInfo.reqType);
+                     reqInfo.sessionType);
     auto mcd = createMemoryChain(reqInfo);
     auto mem = mcd.getIOPort();
     if (mem.first == nullptr) return OK;
@@ -151,13 +175,13 @@ int IntelOPIC2::processFrame(const ICBMReqInfo& reqInfo) {
 
 int IntelOPIC2::runTnrFrame(const ICBMReqInfo& reqInfo) {
     LOG2("%s, ", __func__);
-    int key = getIndexKey(reqInfo.cameraId, reqInfo.reqType);
+    int key = getIndexKey(reqInfo.cameraId, reqInfo.sessionType);
 
     CheckAndLogError((mSessionMap.find(key) == mSessionMap.end()), BAD_VALUE,
                      "<id%d> @%s, request type: %d is not exist", reqInfo.cameraId, __func__,
-                     reqInfo.reqType);
+                     reqInfo.sessionType);
 
-    const char* featureName = gFeatureStrMapping.at(ICBMReqType::LEVEL0_TNR);
+    const char* featureName = gFeatureStrMapping.at(ICBMFeatureType::LEVEL0_TNR);
     iaic_memory inMem, outMem;
     inMem.has_gfx = true;
     inMem.size[0] = reqInfo.inII.size;
@@ -165,7 +189,7 @@ int IntelOPIC2::runTnrFrame(const ICBMReqInfo& reqInfo) {
     inMem.size[2] = reqInfo.inII.height;
     inMem.size[3] = reqInfo.inII.stride;
     inMem.media_type = iaic_nv12;
-    inMem.r = reqInfo.inII.bufAddr;
+    inMem.p = reqInfo.inII.bufAddr;
     inMem.feature_name = featureName;
     inMem.port_name = "in:source";
     inMem.next = nullptr;
@@ -175,9 +199,8 @@ int IntelOPIC2::runTnrFrame(const ICBMReqInfo& reqInfo) {
     outMem.size[2] = reqInfo.outII.height;
     outMem.size[3] = reqInfo.outII.stride;
     outMem = inMem;
-    outMem.port_name = "out:source";
-    outMem.r = reqInfo.outII.bufAddr;
-    outMem.next = &inMem;
+    outMem.port_name = "out:drain";
+    outMem.p = reqInfo.outII.bufAddr;
 
     Tnr7Param* tnrParam = static_cast<Tnr7Param*>(reqInfo.paramAddr);
     LOG2("%s,  is first %d", __func__, tnrParam->bc.is_first_frame);
@@ -229,12 +252,7 @@ int IntelOPIC2::runTnrFrame(const ICBMReqInfo& reqInfo) {
             sizeof(tnrParam->blend.max_recursive_similarity), featureName,
             "tnr7us/pal:max_recursive_similarity");
 
-    iaic_memory dummyOut;
-    dummyOut = inMem;
-    dummyOut.port_name = nullptr;
-    dummyOut.r = nullptr;
-
-    return ::iaic_execute(mSessionMap[key], outMem, dummyOut);
+    return ::iaic_execute(mSessionMap[key], inMem, outMem);
 }
 
 void IntelOPIC2::setData(iaic_session uid, void* p, size_t size, const char* featureName,
@@ -252,13 +270,15 @@ void IntelOPIC2::setData(iaic_session uid, void* p, size_t size, const char* fea
 MemoryChainDescription IntelOPIC2::createMemoryChain(const ICBMReqInfo& reqInfo) {
     MemoryChainDescription mCD(reqInfo.inII, reqInfo.outII);
 
-    if (reqInfo.reqType & ICBMReqType::USER_FRAMING) {
-        mCD.linkIn(gFeatureStrMapping.at(ICBMReqType::USER_FRAMING), "source:source",
-                   "drain:drain");
+    if (reqInfo.reqType & ICBMFeatureType::USER_FRAMING) {
+        UserFramingBuilder().linkToMemoryChain(mCD);
     }
 
-    if (reqInfo.reqType & ICBMReqType::LEVEL0_TNR) {
-        mCD.linkIn(gFeatureStrMapping.at(ICBMReqType::LEVEL0_TNR), "in:source", "out:source");
+    if (reqInfo.reqType & ICBMFeatureType::BC_MODE_BB) {
+        BackgroundBlurBuilder().linkToMemoryChain(mCD);
+    }
+    if (reqInfo.reqType & ICBMFeatureType::LEVEL0_TNR) {
+        mCD.linkIn(gFeatureStrMapping.at(ICBMFeatureType::LEVEL0_TNR), "in:source", "out:drain");
     }
 
     return mCD;

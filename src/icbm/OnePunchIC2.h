@@ -21,11 +21,34 @@
 #include <mutex>
 #include <unordered_map>
 
+#include "src/iutils/Utils.h"
+
 #include "src/icbm/ICBMTypes.h"
 #include "src/icbm/OPIC2Api.h"
 #include "src/icbm/MemoryChain.h"
 
 namespace icamera {
+
+struct IOPIC2Algorithm {
+    virtual ~IOPIC2Algorithm() = default;
+    virtual void linkToMemoryChain(MemoryChainDescription& memoryChain) = 0;
+};
+
+class UserFramingBuilder : public IOPIC2Algorithm {
+ public:
+    UserFramingBuilder() = default;
+    ~UserFramingBuilder() = default;
+
+    void linkToMemoryChain(MemoryChainDescription& memoryChain) override;
+};
+
+class BackgroundBlurBuilder : public IOPIC2Algorithm {
+ public:
+    BackgroundBlurBuilder() = default;
+    ~BackgroundBlurBuilder() = default;
+
+    void linkToMemoryChain(MemoryChainDescription& memoryChain) override;
+};
 
 class IntelOPIC2 {
  public:
@@ -60,7 +83,7 @@ class IntelOPIC2 {
     static std::mutex sLock;
 
     IntelOPIC2();
-    ~IntelOPIC2(){};
+    ~IntelOPIC2();
     // lock for each session, key is from getIndexKey()
     std::unordered_map<int, std::unique_ptr<std::mutex>> mLockMap;
     // session map, key is from getIndexKey()
@@ -78,6 +101,8 @@ class IntelOPIC2 {
     // set parameters to the session before process
     void setData(iaic_session uid, void* p, size_t size, const char* featureName,
                  const char* portName);
+
+    DISALLOW_COPY_AND_ASSIGN(IntelOPIC2);
 };
 
 }  // namespace icamera

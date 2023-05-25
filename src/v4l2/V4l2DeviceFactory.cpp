@@ -21,6 +21,7 @@
 #include <fcntl.h>
 
 #include <string>
+
 #include "iutils/CameraLog.h"
 
 namespace icamera {

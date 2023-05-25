@@ -2920,6 +2920,23 @@ class Parameters {
      * \return 0 if flag was set, otherwise non-0 value is returned.
      */
     int getICBMUFMode(uint8_t* mode) const;
+    /**
+     * \brief Set ICBM FF Mode
+     *
+     * \param[in] uint8_t Mode
+     *
+     * \return 0 if set successfully, otherwise non-0 value is returned.
+     */
+    int setICBMBBMode(uint8_t mode);
+
+    /**
+     * \brief Get ICBM BB Mode
+     *
+     * \param[out] uint8_t mode
+     *
+     * \return 0 if flag was set, otherwise non-0 value is returned.
+     */
+    int getICBMBBMode(uint8_t* mode) const;
     // LEVEL0_ICBM_E
 
  private:

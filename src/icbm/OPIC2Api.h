@@ -16,8 +16,10 @@
 
 #ifndef IC2API_FOR_CHROME_H
 #define IC2API_FOR_CHROME_H
+#include "subway_autogen.h"
 
 extern "C" {
+
 #define KEYPOINTSCOUNT 40
 struct FaceResult {
   int x;
@@ -27,49 +29,6 @@ struct FaceResult {
   float keypoints[KEYPOINTSCOUNT][2];
   bool valid;
 };
-
-enum iaic_media_format { iaic_nv12 };
-enum iaic_log_level { trace = 0, debug, info, warning, error, fatal };
-
-enum class iaic_session_status {
-  uninitialized,
-  opening,
-  opened,
-  shutdown,
-  critical
-};
-
-struct iaic_memory {
-  const char* port_name;
-  const char* feature_name;
-
-  union {
-    void* p;
-    void* r;
-  };
-
-  unsigned long long size[4];
-  iaic_media_format media_type;
-  bool has_gfx;
-  struct iaic_memory* next;
-};
-
-struct iaic_options {
-  bool profiling = false;
-  bool blocked_init = false;
-  unsigned int threads = 1;
-  void* external_device = nullptr;
-};
-
-struct iaic_join_desc {
-  iaic_join_desc* next = nullptr;
-  const char* src_feature_name = nullptr;
-  const char* src_port_name = nullptr;
-  const char* dst_feature_name = nullptr;
-  const char* dst_port_name = nullptr;
-};
-
-typedef unsigned int iaic_session;
 
 extern void iaic_query_version(int* major, int* minor, int* patch);
 extern void iaic_startup();

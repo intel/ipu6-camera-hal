@@ -287,6 +287,8 @@ class PlatformData {
             // CUSTOM_WEIGHT_GRID_S
             std::vector<WeightGridTable> mWGTable;
             // CUSTOM_WEIGHT_GRID_E
+            /* key: total gain, value: a map (key: hdr ratio, value: edge and noise settings) */
+            std::map<float, std::map<float, EdgeNrSetting>> mTotalGainHdrRatioToEdgeNrMap;
             std::string mGraphSettingsFile;
             GraphSettingType mGraphSettingsType;
             std::vector<MultiExpRange> mMultiExpRanges;

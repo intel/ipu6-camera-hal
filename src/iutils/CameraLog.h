@@ -18,9 +18,14 @@
 
 #include <stdarg.h>
 
-#include "utils/ScopedAtrace.h"
 #ifdef HAVE_ANDROID_OS
 #include <log/log.h>
+#endif
+
+#ifdef CAL_BUILD
+#include "src/iutils/PerfettoTrace.h"
+#else
+#include "utils/ScopedAtrace.h"
 #endif
 
 #ifdef CAMERA_TRACE
@@ -86,8 +91,6 @@ enum {
     CAMERA_DEBUG_LOG_CCA = 1 << 8,
     CAMERA_DEBUG_LOG_METADATA = 1 << 9,
     CAMERA_DEBUG_LOG_KERNEL_TOGGLE = 1 << 10,
-    // [12 - 15] bits
-    CAMERA_DEBUG_LOG_DYNAMIC_DUMP = 1 << 12,
 };
 
 enum {
