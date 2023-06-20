@@ -264,6 +264,7 @@ class CameraDevice : public EventListener {
     IGraphConfigManager* mGCM;
     stream_t mInputConfig;
     camera_callback_ops_t* mCallback;
+    bool mDqbufTimedout;
 
  private:
     DISALLOW_COPY_AND_ASSIGN(CameraDevice);
