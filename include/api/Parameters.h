@@ -1144,21 +1144,6 @@ class Parameters {
      */
     int getSupportedFeatures(camera_features_list_t& features) const;
 
-    // ISP_CONTROL_S
-    /**
-     * \brief Get supported ISP control feature list.
-     *
-     * Camera application MUST check if the feature is supported before trying to enable it.
-     * Otherwise the behavior is undefined currently, HAL may just ignore the request.
-     *
-     * \param[out] vector<uint32_t>& controls: All supported ISP control features will be filled in
-     * it.
-     *
-     * \return: If no ISP control supported, the controls will be empty
-     */
-    int getSupportedIspControlFeatures(std::vector<uint32_t>& controls) const;
-    // ISP_CONTROL_E
-
     /**
      * \brief Get ae compensation range supported by camera device
      *
@@ -2116,60 +2101,6 @@ class Parameters {
      */
     int getMakernoteMode(camera_makernote_mode_t& mode) const;
 
-    // ISP_CONTROL_S
-    /**
-     * \brief Set ISP control data for ctrlId
-     *
-     * \param[in] ctrlId: Indicates which ISP feature will be controlled.
-     * \param[in] data: The data used to control ISP feature.
-     *
-     * Note: data is null indicates disable control and roll back to use default control.
-     *       This function only sets the data for ctrlId to HAL, the ctrl will not take effect
-     *       until add the ctrlId into a set and call function setEnabledIspControls.
-     *
-     * \return 0 if set successfully, otherwise non-0 value is returned.
-     */
-    int setIspControl(uint32_t ctrlId, void* data);
-
-    /**
-     * \brief Get ISP control data for ctrlId
-     *
-     * \param[in] ctrlId: Indicates which ISP feature will be controlled.
-     * \param[out] data: The data used to control ISP feature.
-     *
-     * Note: data is allocated by the caller and it can be NULL when the caller only wants to
-     *       check if ctrlId was set or not.
-     *
-     * \return 0 if find the corresponding data, otherwise non-0 value is returned.
-     */
-    int getIspControl(uint32_t ctrlId, void* data) const;
-
-    /**
-     * \brief Set enabled ISP control feature IDs
-     *
-     * \param[in] ctrlIds: A list of ISP features user wants to enable.
-     *
-     * Note: Only call setIspControl doesn't mean the feature will be enabled, user MUST
-     *       add the ctrlId into ctrlIds and call setEnabledIspControls to enable the features.
-     *       Without calling this function, the feature will be ignored by HAL.
-     *       User no need to call this function if he has no new ISP control feature to enable.
-     *
-     * \return 0 if set successfully, otherwise non-0 value is returned.
-     */
-    int setEnabledIspControls(const std::set<uint32_t>& ctrlIds);
-
-    /**
-     * \brief Get enabled ISP control feature IDs
-     *
-     * \param[in] ctrlIds: A list of ISP features user wants to enable.
-     *
-     * Note: HAL uses this function to check what ISP control features user really enabled.
-     *
-     * \return 0 if find the corresponding data, otherwise non-0 value is returned.
-     */
-    int getEnabledIspControls(std::set<uint32_t>& ctrlIds) const;
-    // ISP_CONTROL_E
-
     /**
      * \brief Set digital zoom ratio
      *
@@ -2793,6 +2724,24 @@ class Parameters {
      * \return 0 if raw data output mode was set, otherwise non-0 value is returned.
      */
     int getRawDataOutput(raw_data_output_t& mode) const;
+
+    /**
+     * \brief Set HDR ratio
+     *
+     * \param[in] float
+     *
+     * \return 0 if set successfully, otherwise non-0 value is returned.
+     */
+    int setHdrRatio(float hdrRatio);
+
+    /**
+     * \brief Get HDR ratio
+     *
+     * \param[out] float
+     *
+     * \return 0 if HDR ratio was set, otherwise non-0 value is returned.
+     */
+    int getHdrRatio(float& hdrRatio) const;
 
     /**
      * \brief Set total exposure target

@@ -21,13 +21,6 @@ set(PLATFORMDATA_SRCS
     ${PLATFORMDATA_DIR}/PolicyParser.cpp
     CACHE INTERNAL "platformdata sources"
    )
-# CUSTOM_WEIGHT_GRID_S
-    set(PLATFORMDATA_SRCS
-        ${PLATFORMDATA_SRCS}
-        ${PLATFORMDATA_DIR}/TunningParser.cpp
-        CACHE INTERNAL "platformdata sources"
-        )
-# CUSTOM_WEIGHT_GRID_E
 
     set(PLATFORMDATA_SRCS
         ${PLATFORMDATA_SRCS}

@@ -134,16 +134,16 @@ int AiqUnit::configure(const stream_config_t* streamList) {
         return BAD_VALUE;
     }
 
-    std::vector<ConfigMode> configModes;
-    PlatformData::getConfigModesByOperationMode(mCameraId, streamList->operation_mode, configModes);
-    int ret = initIntelCcaHandle(configModes);
-    CheckAndLogError(ret < 0, BAD_VALUE, "@%s failed to create intel cca handle", __func__);
-
-    ret = mAiqSetting->configure(streamList);
+    int ret = mAiqSetting->configure(streamList);
     CheckAndLogError(ret != OK, ret, "configure AIQ settings error: %d", ret);
 
     ret = mAiqEngine->configure();
     CheckAndLogError(ret != OK, ret, "configure AIQ engine error: %d", ret);
+
+    std::vector<ConfigMode> configModes;
+    PlatformData::getConfigModesByOperationMode(mCameraId, streamList->operation_mode, configModes);
+    ret = initIntelCcaHandle(configModes);
+    CheckAndLogError(ret < 0, BAD_VALUE, "@%s failed to create intel cca handle", __func__);
 
     mAiqUnitState = AIQ_UNIT_CONFIGURED;
     return OK;
@@ -446,13 +446,16 @@ std::vector<EventListener*> AiqUnit::getDVSEventListener() {
 }
 // INTEL_DVS_E
 
+// PRIVACY_MODE_S
+EventSource* AiqUnit::get3AReadyEventSource() {
+    AutoMutex l(mAiqUnitLock);
+    return PlatformData::getSupportPrivacy(mCameraId) == AE_BASED_PRIVACY_MODE ? mAiqEngine :
+                                                                                 nullptr;
+}
+// PRIVACY_MODE_E
+
 int AiqUnit::setParameters(const Parameters& params) {
     AutoMutex l(mAiqUnitLock);
-// INTEL_DVS_S
-    if (mDvs) {
-        mDvs->setParameter(params);
-    }
-// INTEL_DVS_E
 
     return mAiqSetting->setParameters(params);
 }

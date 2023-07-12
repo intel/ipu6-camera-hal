@@ -17,9 +17,6 @@
 add_subdirectory(3a)
 add_subdirectory(core)
 add_subdirectory(hal)
-# ISP_CONTROL_S
-add_subdirectory(isp_control)
-# ISP_CONTROL_E
 add_subdirectory(iutils)
 add_subdirectory(scheduler)
 add_subdirectory(metadata)

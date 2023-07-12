@@ -79,6 +79,11 @@ CameraDevice::CameraDevice(int cameraId)
     } else {
         mGCM = nullptr;
     }
+    // PRIVACY_MODE_S
+    if (PlatformData::getSupportPrivacy(mCameraId) != NO_PRIVACY_MODE) {
+        mCvfPrivacyChecker = new CvfPrivacyChecker(mCameraId, mStreams);
+    }
+    // PRIVACY_MODE_E
 }
 
 CameraDevice::~CameraDevice() {
@@ -86,6 +91,11 @@ CameraDevice::~CameraDevice() {
     LOG1("<id%d>@%s", mCameraId, __func__);
     AutoMutex m(mDeviceLock);
 
+    // PRIVACY_MODE_S
+    if (PlatformData::getSupportPrivacy(mCameraId) != NO_PRIVACY_MODE) {
+        delete mCvfPrivacyChecker;
+    }
+    // PRIVACY_MODE_E
     // Clear the media control when close the device.
     MediaControl* mc = MediaControl::getInstance();
     MediaCtlConf* mediaCtl = PlatformData::getMediaCtlConf(mCameraId);
@@ -135,6 +145,14 @@ int CameraDevice::init() {
     ret = m3AControl->init();
     CheckAndLogError((ret != OK), ret, "%s: Init 3A Unit falied", __func__);
 
+    // PRIVACY_MODE_S
+    if (PlatformData::getSupportPrivacy(mCameraId) == CVF_BASED_PRIVACY_MODE) {
+        ret = mCvfPrivacyChecker->init();
+        CheckAndLogError((ret != OK), ret, "%s: Init privacy checker falied", __func__);
+        mCvfPrivacyChecker->run("CvfPrivacyChecker", PRIORITY_NORMAL);
+    }
+    // PRIVACY_MODE_E
+
     mRequestThread->run("RequestThread", PRIORITY_NORMAL);
 
     mState = DEVICE_INIT;
@@ -159,6 +177,12 @@ void CameraDevice::deinit() {
         stopLocked();
     }
 
+    // PRIVACY_MODE_S
+    if (PlatformData::getSupportPrivacy(mCameraId) == CVF_BASED_PRIVACY_MODE) {
+        mCvfPrivacyChecker->requestExit();
+        mCvfPrivacyChecker->join();
+    }
+    // PRIVACY_MODE_E
     // stop request thread
     mRequestThread->requestExit();
     mRequestThread->join();
@@ -273,6 +297,18 @@ void CameraDevice::bindListeners() {
         for (auto& item : mProcessors) item->registerListener(EVENT_DVS_READY, lis);
     // INTEL_DVS_E
 
+    // PRIVACY_MODE_S
+    if (PlatformData::getSupportPrivacy(mCameraId) == AE_BASED_PRIVACY_MODE) {
+        EventSource* readySource = m3AControl->get3AReadyEventSource();
+        CheckWarningNoReturn(!readySource, "No 3A_READY event source");
+        if (readySource) {
+            readySource->registerListener(EVENT_3A_READY, mCvfPrivacyChecker);
+        }
+        for (int i = 0; i < mStreamNum; i++) {
+            mStreams[i]->registerListener(EVENT_FRAME_AVAILABLE, mCvfPrivacyChecker);
+        }
+    }
+    // PRIVACY_MODE_E
 }
 
 void CameraDevice::unbindListeners() {
@@ -342,6 +378,18 @@ void CameraDevice::unbindListeners() {
         for (auto& item : mProcessors) item->removeListener(EVENT_DVS_READY, lis);
     // INTEL_DVS_E
 
+    // PRIVACY_MODE_S
+    if (PlatformData::getSupportPrivacy(mCameraId) == AE_BASED_PRIVACY_MODE) {
+        EventSource* readySource = m3AControl->get3AReadyEventSource();
+        CheckWarningNoReturn(!readySource, "No 3A_READY event source");
+        if (readySource) {
+            readySource->removeListener(EVENT_3A_READY, mCvfPrivacyChecker);
+        }
+        for (int i = 0; i < mStreamNum; i++) {
+            mStreams[i]->removeListener(EVENT_FRAME_AVAILABLE, mCvfPrivacyChecker);
+        }
+    }
+    // PRIVACY_MODE_E
 }
 
 int CameraDevice::configureInput(const stream_t* inputConfig) {
@@ -401,6 +449,10 @@ int CameraDevice::configure(stream_config_t* streamList) {
 
     vector<ConfigMode> configModes;
     PlatformData::getConfigModesByOperationMode(mCameraId, streamList->operation_mode, configModes);
+
+    for (auto cfg : configModes) {
+        PlatformData::reorderSupportedTuningConfig(mCameraId, cfg);
+    }
 
     ret = mProducer->configure(producerConfigs, configModes);
     CheckAndLogError(ret < 0, BAD_VALUE, "@%s Device Configure failed", __func__);
@@ -785,6 +837,13 @@ int CameraDevice::dqbuf(int streamId, camera_buffer_t** ubuffer, Parameters* set
     LOG2("<id%d>@%s, stream id:%d", mCameraId, __func__, streamId);
 
     int ret = mRequestThread->waitFrame(streamId, ubuffer);
+
+    if ((ret == TIMED_OUT) && (PlatformData::getReqWaitTimeout(mCameraId) > 0)) {
+        LOG1("<id%d>@%s, reqWaitTimeoutNs (%lld).", mCameraId, __func__,
+             PlatformData::getReqWaitTimeout(mCameraId));
+        return ret;
+    }
+
     while (ret == TIMED_OUT) ret = mRequestThread->waitFrame(streamId, ubuffer);
 
     if (ret == NO_INIT) return ret;

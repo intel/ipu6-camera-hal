@@ -100,6 +100,7 @@
         <hdrGainType value="multi-dg-and-direct-ag"/>
         <runIspAlways value="true"/>
         <vcAggregator value="TI960 a,0"/>
+        <reqWaitTimeoutNs value="2000000000"/>
     </Sensor>
 
     <Sensor name="imx390-2" description="imx390 sensor">
@@ -187,6 +188,7 @@
         <hdrGainType value="multi-dg-and-direct-ag"/>
         <runIspAlways value="true"/>
         <vcAggregator value="TI960 a,1"/>
+        <reqWaitTimeoutNs value="2000000000"/>
     </Sensor>
 
     <Sensor name="imx390-3" description="imx390 sensor">
@@ -274,6 +276,7 @@
         <hdrGainType value="multi-dg-and-direct-ag"/>
         <runIspAlways value="true"/>
         <vcAggregator value="TI960 a,2"/>
+        <reqWaitTimeoutNs value="2000000000"/>
     </Sensor>
 
     <Sensor name="imx390-4" description="imx390 sensor">
@@ -361,6 +364,7 @@
         <hdrGainType value="multi-dg-and-direct-ag"/>
         <runIspAlways value="true"/>
         <vcAggregator value="TI960 a,3"/>
+        <reqWaitTimeoutNs value="2000000000"/>
     </Sensor>
 
     <Sensor name="imx390-5" description="imx390 sensor">
@@ -448,6 +452,7 @@
         <hdrGainType value="multi-dg-and-direct-ag"/>
         <runIspAlways value="true"/>
         <vcAggregator value="TI960 b,0"/>
+        <reqWaitTimeoutNs value="2000000000"/>
     </Sensor>
 
     <Sensor name="imx390-6" description="imx390 sensor">
@@ -535,6 +540,7 @@
         <hdrGainType value="multi-dg-and-direct-ag"/>
         <runIspAlways value="true"/>
         <vcAggregator value="TI960 b,1"/>
+        <reqWaitTimeoutNs value="2000000000"/>
     </Sensor>
 
     <Sensor name="imx390-7" description="imx390 sensor">
@@ -624,6 +630,7 @@
         <hdrGainType value="multi-dg-and-direct-ag"/>
         <runIspAlways value="true"/>
         <vcAggregator value="TI960 a,0"/>
+        <reqWaitTimeoutNs value="2000000000"/>
     </Sensor>
 
     <Sensor name="imx390-8" description="imx390 sensor">
@@ -713,6 +720,7 @@
         <hdrGainType value="multi-dg-and-direct-ag"/>
         <runIspAlways value="true"/>
         <vcAggregator value="TI960 a,1"/>
+        <reqWaitTimeoutNs value="2000000000"/>
     </Sensor>
 
     <Sensor name="imx390-9" description="imx390 sensor">
@@ -802,6 +810,7 @@
         <hdrGainType value="multi-dg-and-direct-ag"/>
         <runIspAlways value="true"/>
         <vcAggregator value="TI960 a,2"/>
+        <reqWaitTimeoutNs value="2000000000"/>
     </Sensor>
 
     <Sensor name="imx390-10" description="imx390 sensor">
@@ -891,6 +900,7 @@
         <hdrGainType value="multi-dg-and-direct-ag"/>
         <runIspAlways value="true"/>
         <vcAggregator value="TI960 a,3"/>
+        <reqWaitTimeoutNs value="2000000000"/>
     </Sensor>
 
     <Sensor name="imx390-11" description="imx390 sensor">
@@ -980,6 +990,7 @@
         <hdrGainType value="multi-dg-and-direct-ag"/>
         <runIspAlways value="true"/>
         <vcAggregator value="TI960 b,0"/>
+        <reqWaitTimeoutNs value="2000000000"/>
     </Sensor>
 
     <Sensor name="imx390-12" description="imx390 sensor">
@@ -1069,5 +1080,6 @@
         <hdrGainType value="multi-dg-and-direct-ag"/>
         <runIspAlways value="true"/>
         <vcAggregator value="TI960 b,1"/>
+        <reqWaitTimeoutNs value="2000000000"/>
     </Sensor>
 </CameraSettings>

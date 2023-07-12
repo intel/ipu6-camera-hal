@@ -33,6 +33,7 @@
 #include "CameraTypes.h"
 #include "FaceType.h"
 #include "ICamera.h"
+#include "ia_types.h"
 #include "IGraphConfig.h"
 #include "MediaControl.h"
 #include "Parameters.h"
@@ -172,6 +173,7 @@ class PlatformData {
                       mUseSensorDigitalGain(false),
                       mUseIspDigitalGain(false),
                       mNeedPreRegisterBuffers(false),
+                      mMediaFormat(media_format_legacy),
                       // FRAME_SYNC_S
                       mFrameSyncCheckEnabled(false),
                       // FRAME_SYNC_E
@@ -197,13 +199,20 @@ class PlatformData {
                       mNvmOverwrittenFileSize(0),
                       mTnrExtraFrameNum(DEFAULT_TNR_EXTRA_FRAME_NUM),
                       mDummyStillSink(false),
+                      mGpuTnrEnabled(false),
                       mRemoveCacheFlushOutputBuffer(false),
                       mPLCEnable(false),
+                      // PRIVACY_MODE_S
+                      mSupportPrivacy(NO_PRIVACY_MODE),
+                      mPrivacyModeThreshold(10),
+                      mPrivacyModeFrameDelay(5),
+                      // PRIVACY_MODE_E
                       mStillOnlyPipe(false),
                       mDisableBLCByAGain(false),
                       mDisableBLCAGainLow(-1),
                       mDisableBLCAGainHigh(-1),
-                      mResetLinkRoute(true) {}
+                      mResetLinkRoute(true),
+                      mReqWaitTimeout(0) {}
 
             std::vector<MediaCtlConf> mMediaCtlConfs;
 
@@ -276,6 +285,7 @@ class PlatformData {
             bool mUseSensorDigitalGain;
             bool mUseIspDigitalGain;
             bool mNeedPreRegisterBuffers;
+            ia_media_format mMediaFormat;
             // FRAME_SYNC_S
             bool mFrameSyncCheckEnabled;
             // FRAME_SYNC_E
@@ -284,9 +294,6 @@ class PlatformData {
             std::map<int, stream_array_t> mStreamToMcMap;
             Parameters mCapability;
 
-            // CUSTOM_WEIGHT_GRID_S
-            std::vector<WeightGridTable> mWGTable;
-            // CUSTOM_WEIGHT_GRID_E
             /* key: total gain, value: a map (key: hdr ratio, value: edge and noise settings) */
             std::map<float, std::map<float, EdgeNrSetting>> mTotalGainHdrRatioToEdgeNrMap;
             std::string mGraphSettingsFile;
@@ -328,14 +335,22 @@ class PlatformData {
             std::vector<IGraphType::ScalerInfo> mScalerInfo;
             int mTnrExtraFrameNum;
             bool mDummyStillSink;
+            bool mGpuTnrEnabled;
             bool mRemoveCacheFlushOutputBuffer;
             bool mPLCEnable;
+            // PRIVACY_MODE_S
+            PrivacyModeType mSupportPrivacy;
+            uint32_t mPrivacyModeThreshold;
+            uint32_t mPrivacyModeFrameDelay;
+            // PRIVACY_MODE_E
             bool mStillOnlyPipe;
 
             bool mDisableBLCByAGain;
             int mDisableBLCAGainLow;
             int mDisableBLCAGainHigh;
             bool mResetLinkRoute;
+            /* mReqWaitTimeout is used to override dqbuf timeout (ns) */
+            int64_t mReqWaitTimeout;
         };
 
         /**
@@ -362,13 +377,6 @@ class PlatformData {
     static PlatformData* sInstance;
     static Mutex sLock;
     static PlatformData* getInstance();
-
-    // CUSTOM_WEIGHT_GRID_S
-    /**
-     * Deinit and clear weight grid table in camera info
-     */
-    void deinitWeightGridTable();
-    // CUSTOM_WEIGHT_GRID_E
 
     /**
      * Release GraphConfigNodes in StaticCfg::CameraInfo
@@ -639,7 +647,24 @@ class PlatformData {
      */
     static bool isLtmEnabled(int cameraId);
 
-    // HDR_FEATURE_S
+    /**
+     * Get media format
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return the value of media format.
+     */
+    static ia_media_format getMediaFormat(int cameraId);
+
+  // HDR_FEATURE_S
+    /**
+     * Update media format using isNarrow indicator
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \param isNarrow: if the media format is narrow or not
+     * \return if update sucessfully or not.
+     */
+    static bool updateMediaFormat(int cameraId, bool isNarrow);
+
     /**
      * Check HDR is enabled or not
      *
@@ -897,20 +922,18 @@ class PlatformData {
      */
     static int getAnalogGainLag(int cameraId);
 
-    // CUSTOM_WEIGHT_GRID_S
     /**
-     * Get the weight grid table.
+     * Get EdgeNrSetting based on total gain and hdr ratio
      *
-     * \param[in] cameraId: camera id
-     * \param[in] width: the table width
-     * \param[in] height: the table height
-     * \param[in] index: which one to be gotten in the matching list
+     * \param[in] cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \param[in] totalGain: total gain
+     * \param[in] hdrRatio: hdr ratio
+     * \param[out] setting: EdgeNrSetting setting
      *
-     * \return mWGTable object if found, otherwise return nullptr.
+     * \return OK if setting is available, otherwise return NAME_NOT_FOUND.
      */
-    static WeightGridTable* getWeightGrild(int cameraId, unsigned short width,
-                                           unsigned short height, int index);
-    // CUSTOM_WEIGHT_GRID_E
+    static int getEdgeNrSetting(int cameraId, float totalGain, float hdrRatio,
+                                EdgeNrSetting& setting);
 
     /**
      * Get the executor policy config.
@@ -1190,6 +1213,14 @@ class PlatformData {
                                              std::vector<ConfigMode>& configModes);
 
     /**
+     * to reorder tuning config
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \param configMode: type of ConfigMode
+     */
+    static void reorderSupportedTuningConfig(int cameraId, ConfigMode configMode);
+
+    /**
      * to get the TuningMode by Config Mode
      *
      * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
@@ -1331,11 +1362,6 @@ class PlatformData {
      * \return the MultiExpRange for current camera id.
      */
     static std::vector<MultiExpRange> getMultiExpRanges(int cameraId);
-
-    // ISP_CONTROL_S
-    static std::vector<uint32_t> getSupportedIspControlFeatures(int cameraId);
-    static bool isIspControlFeatureSupported(int cameraId, uint32_t ctrlId);
-    // ISP_CONTROL_E
 
     // FILE_SOURCE_S
     /**
@@ -1564,7 +1590,7 @@ class PlatformData {
      *
      * \return true if tnr is enabled.
      */
-    static bool isGpuTnrEnabled();
+    static bool isGpuTnrEnabled(int cameraId);
 
     /**
      * get the video stream number supported
@@ -1655,6 +1681,29 @@ class PlatformData {
      */
     static bool getPLCEnable(int cameraId);
 
+    // PRIVACY_MODE_S
+    /**
+     * Check which privacy mode the camera supports
+     *
+     * \return privacy mode type.
+     */
+    static PrivacyModeType getSupportPrivacy(int cameraId);
+
+    /**
+     * Get the threshold of luminance in AE-based privacy mode.
+     *
+     * \return Threshold
+     */
+    static uint32_t getPrivacyModeThreshold(int cameraId);
+
+    /**
+     * Get the threshold of frame delay in AE-based privacy mode.
+     *
+     * \return Threshold
+     */
+    static uint32_t getPrivacyModeFrameDelay(int cameraId);
+    // PRIVACY_MODE_E
+
     /**
      * Check support of still-only pipe is enabled or not
      *
@@ -1677,6 +1726,14 @@ class PlatformData {
      */
     static bool isResetLinkRoute(int cameraId);
 
+  /**
+     * Get use defined timeout val for dqbuf
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return timeout interval for dqbuf in ns (2000000000 for 2s)
+     */
+    static int64_t getReqWaitTimeout(int cameraId);
+
     // LEVEL0_ICBM_S
     /**
      * Check GPU ICBM is enabled or not
@@ -1684,13 +1741,6 @@ class PlatformData {
      * \return true if ICBM is enabled.
      */
     static bool isGPUICBMEnabled();
-
-    /**
-     * Check Level0 is used or not
-     *
-     * \return true if Level0 is used.
-     */
-    static bool useLevel0Tnr();
     // LEVEL0_ICBM_E
 };
 } /* namespace icamera */

@@ -38,16 +38,32 @@ This repository supports MIPI cameras through the IPU6 on Intel Alder Lake, Rapt
     -DENABLE_VIRTUAL_IPU_PIPE=OFF \
     -DUSE_PG_LITE_PIPE=ON \
     -DUSE_STATIC_GRAPH=OFF \
-    -DCMAKE_INSTALL_PREFIX=/usr ..
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_INSTALL_SUB_PATH=$target ..
     # if don't want install to /usr, use:
     # -DCMAKE_INSTALL_PREFIX=./out/install/usr and
     # export PKG_CONFIG_PATH="$workdir/build/out/install/usr/lib/pkgconfig"
+    # $target: "ipu_tgl", "ipu_adl", "ipu_mtl"
 
     make -j`nproc`
-    
+
+    # build one target at a time
+    # for multi target, set target in cmake and make again
+
     # Install when compile
     sudo make install
     ##  Copy ipu6 binary to build environment
     # Or Install use rpm
     make package
     rpm -ivh --force --nodeps libcamhal-xxx.rpm
+
+    # build hal_adaptor
+    cd src/hal/hal_adaptor
+    rm -fr build && mkdir -p build && cd build
+
+    cmake -DCMAKE_INSTALL_PREFIX=/usr ../ 
+
+    # make and install
+    make -j`nproc`
+    make install
+

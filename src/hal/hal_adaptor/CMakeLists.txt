@@ -22,9 +22,6 @@ set(ROOT_DIR        ${CMAKE_CURRENT_LIST_DIR}/../../../)
 set(METADATA_DIR    ${ROOT_DIR}/src/metadata)
 set(IUTILS_DIR      ${ROOT_DIR}/src/iutils)
 set(HAL_ADAPTOR_DIR ${ROOT_DIR}/src/hal/hal_adaptor)
-# ISP_CONTROL_S
-set(ISP_CTRL_DIR    ${ROOT_DIR}/src/isp_control)
-# ISP_CONTROL_E
 
 include_directories(${ROOT_DIR}/include
                     ${ROOT_DIR}/include/api
@@ -88,14 +85,6 @@ set(HAL_ADAPTOR_SRCS
     ${HAL_ADAPTOR_DIR}/HalAdaptor.cpp
     CACHE INTERNAL "hal adaptor sources"
 )
-
-# ISP_CONTROL_S
-set(HAL_ADAPTOR_SRCS
-    ${HAL_ADAPTOR_SRCS}
-    ${ISP_CTRL_DIR}/IspControlUtils.cpp
-    CACHE INTERNAL "isp control sources"
-)
-# ISP_CONTROL_E
 
 add_library(hal_adaptor SHARED ${HAL_ADAPTOR_SRCS})
 

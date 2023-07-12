@@ -92,6 +92,31 @@ void FaceSSD::runFaceDetectionBySync(const std::shared_ptr<camera3::Camera3Buffe
     if (face_detection_result) {
         LOG2("FrameNum:%zu, run with the cros::FaceDetector from stream manipulator.",
              face_detection_result->frame_number);
+
+        auto array = PlatformData::getActivePixelArray(mCameraId);
+        camera_coordinate_system_t dst = {0, 0, mWidth, mHeight};
+        int vCrop = 0;
+        int hCrop = 0;
+        int gap = (mWidth * (array.bottom - array.top) / (array.right - array.left)) - mHeight;
+        if (gap > 0) {
+            vCrop = gap;
+        } else if (gap < 0) {
+            hCrop = (mHeight * (array.right - array.left) / (array.bottom - array.top)) - mWidth;
+        }
+
+        for (auto& face : face_detection_result->faces) {
+            camera_coordinate_t leftTop = {static_cast<int>(face.bounding_box.x1) + hCrop / 2,
+                                           static_cast<int>(face.bounding_box.y1) + vCrop / 2};
+            leftTop = AiqUtils::convertCoordinateSystem(array, dst, leftTop);
+            face.bounding_box.x1 = leftTop.x;
+            face.bounding_box.y1 = leftTop.y;
+            camera_coordinate_t rightBottom = {static_cast<int>(face.bounding_box.x2) + hCrop / 2,
+                                               static_cast<int>(face.bounding_box.y2) + vCrop / 2};
+            rightBottom = AiqUtils::convertCoordinateSystem(array, dst, rightBottom);
+            face.bounding_box.x2 = rightBottom.x;
+            face.bounding_box.y2 = rightBottom.y;
+        }
+
         faceDetectResult(cros::FaceDetectResult::kDetectOk, face_detection_result->faces);
         return;
     }

@@ -22,10 +22,12 @@
 #include <log/log.h>
 #endif
 
+#ifndef GPU_ALGO_SERVER
 #ifdef CAL_BUILD
 #include "src/iutils/PerfettoTrace.h"
 #else
 #include "utils/ScopedAtrace.h"
+#endif
 #endif
 
 #ifdef CAMERA_TRACE

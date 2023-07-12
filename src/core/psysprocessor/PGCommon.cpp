@@ -168,6 +168,10 @@ void PGCommon::deInit() {
 
     mPGParamAdapt->deinit();
     mRoutingBitmap.reset();
+
+    if (mIntelCca) {
+        mIntelCca->freeStatsDataMem();
+    }
 }
 
 void PGCommon::setInputInfo(const TerminalFrameInfoMap& inputInfos, FrameInfo tnrFrameInfo) {

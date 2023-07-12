@@ -170,11 +170,6 @@ int Intel3AParameter::updateParameter(aiq_parameter_t param) {
     updateAwbParameter(param);
     updateAfParameter(param);
     mTestPatternMode = param.testPatternMode;
-    // CUSTOM_WEIGHT_GRID_S
-    if (PlatformData::isFeatureSupported(mCameraId, WEIGHT_GRID_MODE)) {
-        mWeightGridMode = param.weightGridMode;
-    }
-    // CUSTOM_WEIGHT_GRID_E
 
     dumpParameter();
 
@@ -187,22 +182,6 @@ int Intel3AParameter::updateParameter(aiq_parameter_t param) {
 void Intel3AParameter::updateAeResult(cca::cca_ae_results* aeResult) {
     CheckAndLogError(!aeResult, VOID_VALUE, "Invalid aeResult");
 
-    // CUSTOM_WEIGHT_GRID_S
-    // override weight grid if customized weight supported
-    if (PlatformData::isFeatureSupported(mCameraId, WEIGHT_GRID_MODE) &&
-        mWeightGridMode != WEIGHT_GRID_AUTO && mWeightGridMode < CUSTOM_WEIGHT_GRID_MAX) {
-        cca::cca_hist_weight_grid* wg = &aeResult->weight_grid;
-        unsigned short width = wg->width;
-        unsigned short height = wg->height;
-        int index = mWeightGridMode - WEIGHT_GRID_AUTO;
-
-        const WeightGridTable* wgt = PlatformData::getWeightGrild(mCameraId, width, height, index);
-        if (wgt) {
-            int weightSize = wgt->width * wgt->height;
-            MEMCPY_S(wg->weights, weightSize, wgt->table, weightSize);
-        }
-    }
-    // CUSTOM_WEIGHT_GRID_E
 }
 
 float Intel3AParameter::convertdBGainToISO(float sensitivityGain, int baseIso) {

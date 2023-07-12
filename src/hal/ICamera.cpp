@@ -69,13 +69,6 @@ int get_camera_info(int camera_id, camera_info_t& info) {
 
     int ret = PlatformData::getCameraInfo(camera_id, info);
 
-    // VIRTUAL_CHANNEL_S
-    // For backward compatibility
-    info.vc_total_num = info.vc.total_num;
-    info.vc_sequence = info.vc.sequence;
-    info.vc_group = info.vc.group;
-    // VIRTUAL_CHANNEL_E
-
     return ret;
 }
 

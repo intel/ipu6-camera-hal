@@ -71,6 +71,9 @@
  *******************************************************************************
  *     Version        0.63       Merge camera_device_open API with/without vc_num together
  * ------------------------------------------------------------------------------
+ *******************************************************************************
+ *     Version        0.64       Remove deprecated VC API
+ * ------------------------------------------------------------------------------
  *
  */
 
@@ -107,11 +110,6 @@ typedef struct {
     const Parameters* capability; /**< camera capability */
     // VIRTUAL_CHANNEL_S
     vc_info_t vc; /**< Virtual Channel information */
-
-    /** The following three field are replaced by the vc_info_t, please don't use them */
-    int vc_total_num; /**deprecated */
-    int vc_sequence;  /**deprecated */
-    int vc_group;     /** deprecated */
     // VIRTUAL_CHANNEL_E
 } camera_info_t;
 

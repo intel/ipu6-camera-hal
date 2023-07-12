@@ -1001,7 +1001,7 @@ status_t GraphConfigPipe::getScalerByStreamId(
                 if (((input_crop->left == 0) && (input_crop->top == 0) &&
                      (input_crop->right == 0) && (input_crop->bottom == 0)) &&
                     ((output_crop->left == 0) && (output_crop->top == 0) &&
-                     (output_crop->right == 0) &&(output_crop->bottom == 0))) {
+                     (output_crop->right == 0) && (output_crop->bottom == 0))) {
                     gdcScalerW = static_cast<float>(gdcResolution.input_width) /
                                  static_cast<float>(gdcResolution.output_width);
                     gdcScalerH = static_cast<float>(gdcResolution.input_height) /
@@ -1491,6 +1491,15 @@ status_t GraphConfigPipe::portGetClientStream(Node* port, HalStream** stream) {
         LOGE("Failed to get name for port");
         port->dumpNodeTree(port, 1);
         return BAD_VALUE;
+    }
+
+    /* When using the still tnr mode, both still(x) and stilltnr(x) port eventually mapped to the
+     * same Hal stream. stilltnr(x) is dummy port and will not appear in mStreamToSinkIdMap, so need
+     * use still(x) to find the corresponding Hal stream
+     */
+    string::size_type pos = 0;
+    if ((pos = portName.find("tnr")) != string::npos) {
+        portName = portName.erase(pos, 3);
     }
 
     uid_t vPortId = GCSS::ItemUID::str2key(portName);

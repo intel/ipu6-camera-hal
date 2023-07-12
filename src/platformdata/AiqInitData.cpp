@@ -21,6 +21,7 @@
 #include <dirent.h>
 #include <sys/stat.h>
 
+#include <set>
 #include <unordered_map>
 
 #include "AiqUtils.h"
@@ -131,7 +132,7 @@ AiqInitData::AiqInitData(const std::string& sensorName, const std::string& camCf
           mNvm(nullptr) {
     LOG1("@%s, mMaxNvmSize:%d", __func__, mMaxNvmSize);
 
-    std::string aiqbNameFromModuleInfo;
+    std::set<std::string> aiqbNameFromModuleInfo;
     if (nvmDir.length() > 0) {
         mNvmPath = nvmDir;
 
@@ -145,8 +146,7 @@ AiqInitData::AiqInitData(const std::string& sensorName, const std::string& camCf
                 while ((direntPtr = readdir(dir)) != nullptr) {
                     if ((strncmp(direntPtr->d_name, aiqbName.c_str(), aiqbName.length()) == 0) &&
                         (strstr(direntPtr->d_name, postfix.c_str()) != nullptr)) {
-                        aiqbNameFromModuleInfo.assign(direntPtr->d_name);
-                        break;
+                        aiqbNameFromModuleInfo.insert(direntPtr->d_name);
                     }
                 }
                 closedir(dir);
@@ -159,8 +159,14 @@ AiqInitData::AiqInitData(const std::string& sensorName, const std::string& camCf
         aiqbName.append(".aiqb");
 
         if (!aiqbNameFromModuleInfo.empty()) {
-            aiqbName.assign(aiqbNameFromModuleInfo);
+            for (auto name : aiqbNameFromModuleInfo) {
+                if (strstr(name.c_str(), cfg.aiqbName.c_str()) != nullptr) {
+                    aiqbName.assign(name);
+                    break;
+                }
+            }
         }
+
         LOGI("aiqb file name %s", aiqbName.c_str());
 
         if (findConfigFile(camCfgDir, &aiqbName) != OK) {

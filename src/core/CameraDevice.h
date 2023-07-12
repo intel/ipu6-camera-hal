@@ -28,6 +28,9 @@
 // CSI_META_S
 #include "CsiMetaDevice.h"
 // CSI_META_E
+// PRIVACY_MODE_S
+#include "CvfPrivacyChecker.h"
+// PRIVACY_MODE_E
 
 #include "ProcessorManager.h"
 #include "gc/IGraphConfigManager.h"
@@ -264,9 +267,11 @@ class CameraDevice : public EventListener {
     IGraphConfigManager* mGCM;
     stream_t mInputConfig;
     camera_callback_ops_t* mCallback;
-    bool mDqbufTimedout;
 
  private:
+    // PRIVACY_MODE_S
+    CvfPrivacyChecker* mCvfPrivacyChecker;
+    // PRIVACY_MODE_E
     DISALLOW_COPY_AND_ASSIGN(CameraDevice);
 };
 

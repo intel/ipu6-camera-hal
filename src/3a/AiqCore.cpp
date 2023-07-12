@@ -143,17 +143,36 @@ int AiqCore::deinit() {
 
     mAiqState = AIQ_NOT_INIT;
 
-    if (mAiqResults) {
-        IntelCca* intelCca = IntelCca::getInstance(mCameraId, mTuningMode);
-        CheckAndLogError(!intelCca, UNKNOWN_ERROR, "Failed to get intelCca instance");
-
-        intelCca->freeMem(mAiqResults);
-    }
+    freeAiqResultMem();
 
     return OK;
 }
 
+int AiqCore::allocAiqResultMem() {
+    IntelCca* intelCca = IntelCca::getInstance(mCameraId, mTuningMode);
+    CheckAndLogError(!intelCca, UNKNOWN_ERROR, "Failed to get intelCca instance");
+
+    mAiqResults =
+        static_cast<cca::cca_aiq_results*>(intelCca->allocMem(0, "aiqResults", 0,
+                                                              sizeof(cca::cca_aiq_results)));
+    CheckAndLogError(!mAiqResults, NO_MEMORY, "allocMem failed");
+
+    return OK;
+}
+
+void AiqCore::freeAiqResultMem() {
+    if (mTuningMode == TUNING_MODE_MAX || !mAiqResults) return;
+
+    IntelCca* intelCca = IntelCca::getInstance(mCameraId, mTuningMode);
+    CheckAndLogError(!intelCca, VOID_VALUE, "Failed to get intelCca instance");
+
+    intelCca->freeMem(mAiqResults);
+    mAiqResults = nullptr;
+}
+
 int AiqCore::configure() {
+    freeAiqResultMem();
+
     if (mAiqState == AIQ_CONFIGURED) {
         return OK;
     }
@@ -265,13 +284,8 @@ int AiqCore::updateParameter(const aiq_parameter_t& param) {
     }
 
     if (!mAiqResults) {
-        IntelCca* intelCca = IntelCca::getInstance(mCameraId, mTuningMode);
-        CheckAndLogError(!intelCca, UNKNOWN_ERROR, "Failed to get intelCca instance");
-
-        mAiqResults =
-            static_cast<cca::cca_aiq_results*>(intelCca->allocMem(0, "aiqResults", 0,
-                                                                  sizeof(cca::cca_aiq_results)));
-        CheckAndLogError(!mAiqResults, NO_MEMORY, "allocMem failed");
+        int ret = allocAiqResultMem();
+        CheckAndLogError(ret != OK, NO_MEMORY, "alloc aiq result failed");
     }
 
     return OK;
@@ -707,6 +721,21 @@ int AiqCore::processSAResults(cca::cca_sa_results* saResults, float* lensShading
 
     return OK;
 }
+
+// PRIVACY_MODE_S
+int AiqCore::getBrightestIndex(uint32_t& param) {
+    int ret = OK;
+    uint32_t outMaxBin = 0;
+    IntelCca* intelCca = getIntelCca(mTuningMode);
+    CheckAndLogError(!intelCca, UNKNOWN_ERROR, "%s, intelCca is null, m:%d", __func__, mTuningMode);
+    ia_err iaErr = intelCca->getBrightestIndex(&outMaxBin);
+    ret = AiqUtils::convertError(iaErr);
+    CheckAndLogError(ret != OK, ret, "Error getting BrightestIndex, ret: %d", ret);
+    param = outMaxBin;
+
+    return ret;
+}
+// PRIVACY_MODE_E
 
 bool AiqCore::bypassAe(const aiq_parameter_t& param) {
     if (mAeRunTime == 0 || (mIntel3AParameter->mAeParams.ev_shift != mLastEvShift)) return false;

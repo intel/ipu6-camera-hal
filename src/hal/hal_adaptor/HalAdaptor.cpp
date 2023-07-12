@@ -29,31 +29,60 @@ namespace icamera {
 static void* gCameraHalLib = nullptr;
 static HalApiHandle gCameraHalAdaptor = {};
 
-#define CheckFuncCall(function)                                   \
-    do {                                                          \
-        if (((function) == nullptr)) {                            \
-            LOGE("%s, function call is nullptr", __func__);       \
-            return -1;                                            \
-        }                                                         \
+#define CheckFuncCall(function)                             \
+    do {                                                    \
+        if (((function) == nullptr)) {                      \
+            LOGE("%s, function call is nullptr", __func__); \
+            return -1;                                      \
+        }                                                   \
     } while (0)
 
-#define GET_FUNC_CALL(member, fnName)                                                  \
-    do {                                                                               \
-        gCameraHalAdaptor.member =                                                     \
-            (HalApiHandle::pFn##member)dlsym(gCameraHalLib, #fnName);                  \
-        if (gCameraHalAdaptor.member == nullptr) {                                     \
-            LOGE("@%s: LOADING: " #fnName "failed: %s", __func__, dlerror());          \
-            return;                                                                    \
-        }                                                                              \
-        LOG2("@%s: LOADING: " #fnName "= %x", __func__, gCameraHalAdaptor.member);     \
+#define GET_FUNC_CALL(member, fnName)                                                        \
+    do {                                                                                     \
+        gCameraHalAdaptor.member = (HalApiHandle::pFn##member)dlsym(gCameraHalLib, #fnName); \
+        if (gCameraHalAdaptor.member == nullptr) {                                           \
+            LOGE("@%s: LOADING: " #fnName "failed: %s", __func__, dlerror());                \
+            return;                                                                          \
+        }                                                                                    \
+        LOG2("@%s: LOADING: " #fnName "= %x", __func__, gCameraHalAdaptor.member);           \
     } while (0)
 
-static void load_camera_hal_library(const char* libName) {
-    CheckAndLogError(!libName, VOID_VALUE, "%s, invalid library name", __func__);
+static void load_camera_hal_library() {
+    FILE* pciDevice = fopen("/sys/bus/pci/drivers/intel-ipu6/0000:00:05.0/device", "rt");
+    CheckAndLogError(!pciDevice, VOID_VALUE, "%s, failed to open PCI device. error: %s", __func__,
+                     dlerror());
 
-    gCameraHalLib = dlopen(libName, RTLD_NOW);
+    fseek(pciDevice, 0, SEEK_END);
+    int idSize = static_cast<int>(ftell(pciDevice));
+    fseek(pciDevice, 0, SEEK_SET);
+
+    char pciID[idSize] = {0};
+    int ret = fread(pciID, idSize, 1, pciDevice);
+    fclose(pciDevice);
+    CheckAndLogError((strlen(pciID) == 0), VOID_VALUE, "%s, Failed to read PCI id. %d", __func__,
+                     ret);
+
+    std::string libName = "/usr/lib/";
+    if (strstr(pciID, "0xa75d") != nullptr /* RPL */ ||
+        strstr(pciID, "0x462e") != nullptr /* ADLN */ ||
+        strstr(pciID, "0x465d") != nullptr /* ADLP */) {
+        libName += "ipu_adl";
+    } else if (strstr(pciID, "0x7d19") != nullptr /* MTL */) {
+        libName += "ipu_mtl";
+    } else if (strstr(pciID, "0x9a19") != nullptr /* TGL */) {
+        libName += "ipu_tgl";
+    } else if (strstr(pciID, "0x4e19") != nullptr /* JSL */) {
+        libName += "ipu_jsl";
+    } else {
+        LOGE("%s, Not support the PCI device %s for hal adaptor API", __func__, pciID);
+        return VOID_VALUE;
+    }
+    libName += "/libcamhal.so";
+    LOGI("%s, the library name: %s", __func__, libName.c_str());
+
+    gCameraHalLib = dlopen(libName.c_str(), RTLD_NOW);
     CheckAndLogError(!gCameraHalLib, VOID_VALUE, "%s, failed to open library: %s, error: %s",
-                     __func__, libName, dlerror());
+                     __func__, libName.c_str(), dlerror());
 
     GET_FUNC_CALL(getNumberOfCameras, get_number_of_cameras);
     GET_FUNC_CALL(getCameraInfo, get_camera_info);
@@ -101,7 +130,7 @@ int camera_hal_deinit() {
 }
 
 void camera_callback_register(int camera_id, const camera_callback_ops_t* callback) {
-    if (gCameraHalAdaptor.cameraCallbackRegister) {
+    if (!gCameraHalAdaptor.cameraCallbackRegister) {
         LOGE("%s, function call is nullptr", __func__);
         return VOID_VALUE;
     }
@@ -114,7 +143,7 @@ int camera_device_open(int camera_id, int vc_num) {
 }
 
 void camera_device_close(int camera_id) {
-    if (gCameraHalAdaptor.cameraDeviceClose) {
+    if (!gCameraHalAdaptor.cameraDeviceClose) {
         LOGE("%s, function call is nullptr", __func__);
         return VOID_VALUE;
     }
@@ -175,7 +204,7 @@ int get_frame_size(int camera_id, int format, int width, int height, int field, 
 
 __attribute__((constructor)) void initHalAdaptor() {
     Log::setDebugLevel();
-    load_camera_hal_library("/usr/lib/libcamhal.so");
+    load_camera_hal_library();
 }
 
 __attribute__((destructor)) void deinitHalAdaptor() {

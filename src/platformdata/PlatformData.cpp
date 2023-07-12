@@ -25,9 +25,6 @@
 
 #include "CameraParser.h"
 #include "iutils/CameraLog.h"
-// ALGO_TUNING_S
-#include "TunningParser.h"
-// ALGO_TUNING_E
 #include "ParameterHelper.h"
 #include "PolicyParser.h"
 
@@ -67,18 +64,11 @@ PlatformData::PlatformData() {
     }
 
     CameraParser CameraParser(mc, &mStaticCfg);
-// ALGO_TUNING_S
-    TunningParser TunningParser(&mStaticCfg);
-// ALGO_TUNING_E
     PolicyParser PolicyParser(&mStaticCfg);
 }
 
 PlatformData::~PlatformData() {
     LOG1("@%s", __func__);
-
-    // CUSTOM_WEIGHT_GRID_S
-    deinitWeightGridTable();
-    // CUSTOM_WEIGHT_GRID_E
 
     releaseGraphConfigNodes();
 
@@ -118,6 +108,23 @@ int PlatformData::init() {
             ParameterHelper::merge(staticCfg->mCameras[i].mCameraModuleInfoMap[camModuleName],
                                    &staticCfg->mCameras[i].mCapability);
         }
+
+        // HDR_FEATURE_S
+        if (isEnableHDR(i)) {
+            /* If sensor enable HDR replace media format to full range*/
+            bool ret = updateMediaFormat(i, false);
+            if (ret) {
+                LOG1("%s, Using full range media format for HDR sensor %s", __func__,
+                     getSensorName(i));
+            }
+        } else {
+            bool ret = updateMediaFormat(i, true);
+            if (ret) {
+                LOG1("%s, Using narrow mode media format for sensor %s", __func__,
+                     getSensorName(i));
+            }
+        }
+        // HDR_FEATURE_E
     }
 
     return OK;
@@ -148,9 +155,12 @@ void PlatformData::StaticCfg::getModuleInfoFromCmc(int cameraId) {
 
     LOG1("%s: base iso %d, ag [%4.2f, %4.2f], ag [%4.2f, %4.2f], from aiqb", __func__, cmc.base_iso,
          cmc.min_dg, cmc.max_dg, cmc.min_ag, cmc.max_ag);
-    LOGI("%s: focal_len %d, min_fd %d, ap %d", __func__, cmc.optics.effect_focal_length,
+    LOG1("%s: focal_len %d, min_fd %d, ap %d", __func__, cmc.optics.effect_focal_length,
          cmc.optics.min_focus_distance, cmc.lut_apertures);
-
+    // HDR_FEATURE_S
+    mCameras[cameraId].mMediaFormat = static_cast<ia_media_format>(cmc.media_format);
+    LOG1("%s: media_format %d", __func__, cmc.media_format);
+    // HDR_FEATURE_E
     int32_t maxAg = cmc.base_iso * cmc.max_ag;
     const CameraMetadata caps = ParameterHelper::getMetadata(info.mCapability);
     CameraMetadata meta;
@@ -209,20 +219,26 @@ int PlatformData::queryGraphSettings(int cameraId, const stream_config_t* stream
     return OK;
 }
 
-// CUSTOM_WEIGHT_GRID_S
-void PlatformData::deinitWeightGridTable() {
-    int cameraNum = mStaticCfg.mCameras.size();
-    for (int i = 0; i < cameraNum; i++) {
-        PlatformData::StaticCfg::CameraInfo* pCam = &(mStaticCfg.mCameras[i]);
-        for (auto& wg : pCam->mWGTable) {
-            if (wg.table) {
-                delete[] wg.table;
-                wg.table = nullptr;
+int PlatformData::getEdgeNrSetting(int cameraId, float totalGain, float hdrRatio,
+                                   EdgeNrSetting& setting) {
+    const StaticCfg::CameraInfo& pCam = getInstance()->mStaticCfg.mCameras[cameraId];
+    LOG2("%s, totalGain %f, hdrRatio %f", __func__, totalGain, hdrRatio);
+
+    if (!pCam.mTotalGainHdrRatioToEdgeNrMap.empty()) {
+        // found the lower value in map
+        auto subMap = pCam.mTotalGainHdrRatioToEdgeNrMap.upper_bound(hdrRatio);
+        if (subMap != pCam.mTotalGainHdrRatioToEdgeNrMap.begin()) {
+            auto sub = (--subMap)->second;
+            auto it = sub.upper_bound(totalGain);
+            if (it != sub.begin()) {
+                setting = (--it)->second;
+                return OK;
             }
         }
     }
+
+    return NAME_NOT_FOUND;
 }
-// CUSTOM_WEIGHT_GRID_E
 
 void PlatformData::releaseGraphConfigNodes() {
     std::shared_ptr<GraphConfig> graphConfig = std::make_shared<GraphConfig>();
@@ -438,7 +454,66 @@ bool PlatformData::isLtmEnabled(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mLtmEnabled;
 }
 
+ia_media_format PlatformData::getMediaFormat(int cameraId) {
+    return getInstance()->mStaticCfg.mCameras[cameraId].mMediaFormat;
+}
+
 // HDR_FEATURE_S
+bool PlatformData::updateMediaFormat(int cameraId, bool isNarrow) {
+    ia_media_format tuning_media_format =
+        getInstance()->mStaticCfg.mCameras[cameraId].mMediaFormat;
+    ia_media_format media_format = tuning_media_format;
+    switch (tuning_media_format) {
+    case media_format_legacy:
+        media_format = media_format_legacy;
+        break;
+    case media_format_srgb_jpeg:
+        media_format = media_format_srgb_jpeg;
+        break;
+    case media_format_linear_mono:
+        media_format = media_format_linear_mono;
+        break;
+    case media_format_custom:
+        media_format = media_format_custom;
+        break;
+    case media_format_bt601_8b:
+        media_format = isNarrow ? media_format_bt601_8b_narrow : media_format_bt601_8b;
+        break;
+    case media_format_bt709_8b:
+        media_format = isNarrow ? media_format_bt709_8b_narrow : media_format_bt709_8b;
+        break;
+    case media_format_bt709_10b:
+        media_format = isNarrow ? media_format_bt709_10b_narrow : media_format_bt709_10b;
+        break;
+    case media_format_bt2020_10b:
+        media_format = isNarrow ? media_format_bt2020_10b_narrow : media_format_bt2020_10b;
+        break;
+    case media_format_bt2100_10b:
+        media_format = isNarrow ? media_format_bt2100_10b_narrow : media_format_bt2100_10b;
+        break;
+    case media_format_bt2100_10b_cl:
+        media_format = isNarrow ? media_format_bt2100_10b_cl_narrow : media_format_bt2100_10b_cl;
+        break;
+    case media_format_bt2020_12b:
+        media_format = isNarrow ? media_format_bt2020_12b_narrow : media_format_bt2020_12b;
+        break;
+    case media_format_bt2100_12b:
+        media_format = isNarrow ? media_format_bt2100_12b_narrow : media_format_bt2100_12b;
+        break;
+    case media_format_bt2100_12b_cl:
+        media_format = isNarrow ? media_format_bt2100_12b_cl_narrow : media_format_bt2100_12b_cl;
+        break;
+    default:
+        LOGE("invalid media format, default value used.");
+        return false;
+        break;
+    }
+    LOGI("%s, media format in tuning: %d, media format for aic %d.", tuning_media_format,
+         media_format);
+    getInstance()->mStaticCfg.mCameras[cameraId].mMediaFormat = media_format;
+    return true;
+}
+
 bool PlatformData::isEnableHDR(int cameraId) {
     return (getInstance()->mStaticCfg.mCameras[cameraId].mSensorExposureType !=
             SENSOR_EXPOSURE_SINGLE);
@@ -525,31 +600,6 @@ int PlatformData::getExposureLag(int cameraId) {
 int PlatformData::getAnalogGainLag(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mAnalogGainLag;
 }
-
-// CUSTOM_WEIGHT_GRID_S
-/*
- * According the cameraid, width and height to get the weight grid table.
- * Use index to get the corresponding one in the matching list.
- */
-WeightGridTable* PlatformData::getWeightGrild(int cameraId, unsigned short width,
-                                              unsigned short height, int index) {
-    int matchingCount = 0;
-    PlatformData::StaticCfg::CameraInfo* pCam = &getInstance()->mStaticCfg.mCameras[cameraId];
-
-    for (size_t i = 0; i < pCam->mWGTable.size(); i++) {
-        if (pCam->mWGTable[i].width == width && pCam->mWGTable[i].height == height) {
-            matchingCount++;
-            if (matchingCount == index) {
-                return &(pCam->mWGTable[i]);
-            }
-        }
-    }
-
-    LOGW("Required index(%d) exceeds the count of matching tables (%d). Size %dx%d, camera %d",
-         index, matchingCount, width, height, cameraId);
-    return nullptr;
-}
-// CUSTOM_WEIGHT_GRID_E
 
 PolicyConfig* PlatformData::getExecutorPolicyConfig(int graphId) {
     size_t i = 0;
@@ -1230,6 +1280,54 @@ int PlatformData::getConfigModesByOperationMode(int cameraId, uint32_t operation
     return INVALID_OPERATION;
 }
 
+/*
+ * This function adds for binning mode tuning support, and there are 2 tuning modes for configMode.
+ * The first tuning mode will be used when selecting tuning mode.
+ * When selecting small ISYS output, the binning mode should be moved to first, otherwise full size
+ * mode should be the first tuning mode.
+ */
+void PlatformData::reorderSupportedTuningConfig(int cameraId, ConfigMode configMode) {
+    auto pCam = &getInstance()->mStaticCfg.mCameras[cameraId];
+    int binningIdx = -1;
+    int fullIdx = -1;
+    int idx = -1;
+    for (auto& cfg : pCam->mSupportedTuningConfig) {
+        idx++;
+        LOG1("%s, tuningMode %d, configMode %x, idx %d", __func__, cfg.tuningMode, cfg.configMode,
+             idx);
+        if (cfg.configMode == configMode) {
+            if (cfg.tuningMode == TUNING_MODE_VIDEO_BINNING) {
+                binningIdx = idx;
+            } else {
+                fullIdx = idx;
+            }
+        }
+    }
+
+    if (binningIdx < 0 || fullIdx < 0) return;
+
+    bool smallSize = false;
+    MediaCtlConf* mc = PlatformData::getMediaCtlConf(cameraId);
+    vector<camera_resolution_t> res;
+    // The supported resolutions are saved in res with ascending order(small -> bigger)
+    getSupportedISysSizes(cameraId, res);
+    if (!res.empty() && mc) {
+        for (const auto& output : mc->outputs) {
+            if (res.back().width > output.width || res.back().height > output.height) {
+                smallSize = true;
+                break;
+            }
+        }
+    }
+
+    if ((smallSize && binningIdx > fullIdx) || (!smallSize && binningIdx < fullIdx)) {
+        // Switch binning mode and full mode
+        auto config = pCam->mSupportedTuningConfig[fullIdx];
+        pCam->mSupportedTuningConfig[fullIdx] = pCam->mSupportedTuningConfig[binningIdx];
+        pCam->mSupportedTuningConfig[binningIdx] = config;
+    }
+}
+
 int PlatformData::getTuningModeByConfigMode(int cameraId, ConfigMode configMode,
                                             TuningMode& tuningMode) {
     CheckAndLogError(getInstance()->mStaticCfg.mCameras[cameraId].mSupportedTuningConfig.empty(),
@@ -1405,28 +1503,6 @@ bool PlatformData::isUsingCrlModule(int cameraId) {
 vector<MultiExpRange> PlatformData::getMultiExpRanges(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mMultiExpRanges;
 }
-
-// ISP_CONTROL_S
-vector<uint32_t> PlatformData::getSupportedIspControlFeatures(int cameraId) {
-    vector<uint32_t> features;
-    getInstance()->mStaticCfg.mCameras[cameraId].mCapability.getSupportedIspControlFeatures(
-        features);
-    return features;
-}
-
-bool PlatformData::isIspControlFeatureSupported(int cameraId, uint32_t ctrlId) {
-    vector<uint32_t> features;
-    getInstance()->mStaticCfg.mCameras[cameraId].mCapability.getSupportedIspControlFeatures(
-        features);
-    for (auto& id : features) {
-        if (id == ctrlId) {
-            return true;
-        }
-    }
-
-    return false;
-}
-// ISP_CONTROL_E
 
 // FILE_SOURCE_S
 const char* PlatformData::getInjectedFile() {
@@ -1665,10 +1741,6 @@ void PlatformData::setScalerInfo(int cameraId, std::vector<IGraphType::ScalerInf
     }
 }
 
-bool PlatformData::isGpuTnrEnabled() {
-    return getInstance()->mStaticCfg.mCommonConfig.isGpuTnrEnabled;
-}
-
 int PlatformData::getVideoStreamNum() {
     return getInstance()->mStaticCfg.mCommonConfig.videoStreamNum;
 }
@@ -1687,9 +1759,11 @@ int PlatformData::getMaxIsysTimeout() {
 
 bool PlatformData::isUsingGpuAlgo() {
     bool enabled = false;
-    enabled |= isGpuTnrEnabled();
+    for (int cameraId = static_cast<int>(getInstance()->mStaticCfg.mCameras.size()) - 1;
+         cameraId >= 0; cameraId--)
+        enabled |= isGpuTnrEnabled(cameraId);
     // LEVEL0_ICBM_S
-    enabled |= isGPUICBMEnabled() || useLevel0Tnr();
+    enabled |= isGPUICBMEnabled();
     // LEVEL0_ICBM_E
     return enabled;
 }
@@ -1722,6 +1796,10 @@ bool PlatformData::isDummyStillSink(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mDummyStillSink;
 }
 
+bool PlatformData::isGpuTnrEnabled(int cameraId) {
+    return getInstance()->mStaticCfg.mCameras[cameraId].mGpuTnrEnabled;
+}
+
 bool PlatformData::removeCacheFlushOutputBuffer(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mRemoveCacheFlushOutputBuffer;
 }
@@ -1729,6 +1807,20 @@ bool PlatformData::removeCacheFlushOutputBuffer(int cameraId) {
 bool PlatformData::getPLCEnable(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mPLCEnable;
 }
+
+// PRIVACY_MODE_S
+PrivacyModeType PlatformData::getSupportPrivacy(int cameraId) {
+    return getInstance()->mStaticCfg.mCameras[cameraId].mSupportPrivacy;
+}
+
+uint32_t PlatformData::getPrivacyModeThreshold(int cameraId) {
+    return getInstance()->mStaticCfg.mCameras[cameraId].mPrivacyModeThreshold;
+}
+
+uint32_t PlatformData::getPrivacyModeFrameDelay(int cameraId) {
+    return getInstance()->mStaticCfg.mCameras[cameraId].mPrivacyModeFrameDelay;
+}
+// PRIVACY_MODE_E
 
 bool PlatformData::isStillOnlyPipeEnabled(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mStillOnlyPipe;
@@ -1744,13 +1836,13 @@ bool PlatformData::isResetLinkRoute(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mResetLinkRoute;
 }
 
+int64_t PlatformData::getReqWaitTimeout(int cameraId) {
+    return getInstance()->mStaticCfg.mCameras[cameraId].mReqWaitTimeout;
+}
+
 // LEVEL0_ICBM_S
 bool PlatformData::isGPUICBMEnabled() {
     return getInstance()->mStaticCfg.mCommonConfig.isGPUICBMEnabled;
-}
-
-bool PlatformData::useLevel0Tnr() {
-    return getInstance()->mStaticCfg.mCommonConfig.useLevel0Tnr;
 }
 // LEVEL0_ICBM_E
 }  // namespace icamera
