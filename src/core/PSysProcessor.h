@@ -61,7 +61,7 @@ class PSysProcessor : public BufferQueue, public PSysDagCallback {
     void onBufferDone(int64_t sequence, Port port, const std::shared_ptr<CameraBuffer>& camBuffer);
     void onStatsDone(int64_t sequence, const CameraBufferPortMap& outBuf);
 // INTEL_DVS_S
-    void onDvsPrepare(int32_t streamId);
+    void onDvsPrepare(int64_t sequence, int32_t streamId);
 // INTEL_DVS_E
 
  private:
@@ -87,12 +87,6 @@ class PSysProcessor : public BufferQueue, public PSysDagCallback {
     bool needHoldOnInputFrame(int64_t settingSequence, int64_t inputSequence);
     bool needSwitchPipe(int64_t sequence);
 
-    // ISP_CONTROL_S
-    int allocPalControlBuffers();
-    size_t getRequiredPalBufferSize();
-    int fillPalOverrideData(const Parameters& param);
-    int fillDefaultAcmData(uint8_t* overrideData);
-    // ISP_CONTROL_E
     void outputRawImage(std::shared_ptr<CameraBuffer>& srcBuf,
                         std::shared_ptr<CameraBuffer>& dstBuf);
 
@@ -119,14 +113,6 @@ class PSysProcessor : public BufferQueue, public PSysDagCallback {
     // Since the isp settings may be re-used in all modes, so the buffer size of
     // isp settings should be equal to frame buffer size.
     static const int IA_PAL_CONTROL_BUFFER_SIZE = 10;
-
-    // ISP_CONTROL_S
-    // Use mUpdatedIspIndex to select the buffer to store the updated param
-    // and use mUsedIspIndex to select the buffer to set isp control.
-    int mUpdatedIspIndex;
-    int mUsedIspIndex;
-    ia_binary_data mPalCtrlBuffers[IA_PAL_CONTROL_BUFFER_SIZE];
-    // ISP_CONTROL_E
 
     Condition mFrameDoneSignal;
     // Save the sequences which are being processed.

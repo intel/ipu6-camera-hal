@@ -36,12 +36,12 @@ void UserFramingBuilder::linkToMemoryChain(MemoryChainDescription& memoryChain) 
 }
 
 void BackgroundBlurBuilder::linkToMemoryChain(MemoryChainDescription& memoryChain) {
-    memoryChain.linkIn("background_concealment", "release/source:source", "release/drain:drain");
+    memoryChain.linkIn("background_concealment", "in:source", "out:drain");
 }
 
 static const std::unordered_map<ICBMFeatureType, const char*> gFeatureStrMapping = {
     {ICBMFeatureType::USER_FRAMING, "user_framing"},
-    {ICBMFeatureType::BC_MODE_BB, "background_blur"},
+    {ICBMFeatureType::BC_MODE_BB, "background_concealment"},
     {ICBMFeatureType::LEVEL0_TNR, "tnr7us_l0"},
 };
 
@@ -93,8 +93,8 @@ int IntelOPIC2::setup(ICBMInitInfo* initParams) {
 
     for (int feature = USER_FRAMING; feature < REQUEST_MAX; feature <<= 1) {
         if (!(initParams->sessionType & feature)) continue;
-        const char* fratureStr = gFeatureStrMapping.at(static_cast<ICBMFeatureType>(feature));
-        if (strstr(supportedFeatures.c_str(), fratureStr) == nullptr) {
+        const char* featureStr = gFeatureStrMapping.at(static_cast<ICBMFeatureType>(feature));
+        if (strstr(supportedFeatures.c_str(), featureStr) == nullptr) {
             LOG1("<%d>@%s type %d not supported", initParams->cameraId, __func__, feature);
             return OK;
         }
@@ -110,26 +110,26 @@ int IntelOPIC2::setup(ICBMInitInfo* initParams) {
         iaic_options option{};
         option.profiling = false;
         option.blocked_init = false;
-        const char* fratureStr = gFeatureStrMapping.at(ICBMFeatureType::USER_FRAMING);
-        ::iaic_create_session(mSessionMap[key], fratureStr, option);
-        mFeatureMap[key].push_back(fratureStr);
+        const char* featureStr = gFeatureStrMapping.at(ICBMFeatureType::USER_FRAMING);
+        ::iaic_create_session(mSessionMap[key], featureStr, option);
+        mFeatureMap[key].push_back(featureStr);
     }
 
     if (initParams->sessionType & ICBMFeatureType::BC_MODE_BB) {
         iaic_options option{};
         option.profiling = false;
         option.blocked_init = false;
-        const char* fratureStr = gFeatureStrMapping.at(ICBMFeatureType::BC_MODE_BB);
-        ::iaic_create_session(mSessionMap[key], fratureStr, option);
-        mFeatureMap[key].push_back(fratureStr);
+        const char* featureStr = gFeatureStrMapping.at(ICBMFeatureType::BC_MODE_BB);
+        ::iaic_create_session(mSessionMap[key], featureStr, option);
+        mFeatureMap[key].push_back(featureStr);
     }
     if (initParams->sessionType & ICBMFeatureType::LEVEL0_TNR) {
         iaic_options option{};
         option.profiling = true;
         option.blocked_init = true;
-        const char* fratureStr = gFeatureStrMapping.at(ICBMFeatureType::LEVEL0_TNR);
-        ::iaic_create_session(mSessionMap[key], fratureStr, option);
-        mFeatureMap[key].push_back(fratureStr);
+        const char* featureStr = gFeatureStrMapping.at(ICBMFeatureType::LEVEL0_TNR);
+        ::iaic_create_session(mSessionMap[key], featureStr, option);
+        mFeatureMap[key].push_back(featureStr);
     }
 
     return OK;
@@ -167,6 +167,7 @@ int IntelOPIC2::processFrame(const ICBMReqInfo& reqInfo) {
 
     std::unique_lock<std::mutex> lock(*mLockMap[key]);
     bool res = ::iaic_execute(mSessionMap[key], *mem.first, *mem.second);
+    ::iaic_get_data(mSessionMap[key], *mem.second);
     CheckAndLogError(res != true, UNKNOWN_ERROR, "%s, IC2 Internal Error on processing frame",
                      __func__);
 
@@ -183,7 +184,7 @@ int IntelOPIC2::runTnrFrame(const ICBMReqInfo& reqInfo) {
 
     const char* featureName = gFeatureStrMapping.at(ICBMFeatureType::LEVEL0_TNR);
     iaic_memory inMem, outMem;
-    inMem.has_gfx = true;
+    inMem.has_gfx = false;
     inMem.size[0] = reqInfo.inII.size;
     inMem.size[1] = reqInfo.inII.width;
     inMem.size[2] = reqInfo.inII.height;
@@ -194,16 +195,16 @@ int IntelOPIC2::runTnrFrame(const ICBMReqInfo& reqInfo) {
     inMem.port_name = "in:source";
     inMem.next = nullptr;
 
+    outMem = inMem;
     outMem.size[0] = reqInfo.outII.size;
     outMem.size[1] = reqInfo.outII.width;
     outMem.size[2] = reqInfo.outII.height;
     outMem.size[3] = reqInfo.outII.stride;
-    outMem = inMem;
     outMem.port_name = "out:drain";
     outMem.p = reqInfo.outII.bufAddr;
 
     Tnr7Param* tnrParam = static_cast<Tnr7Param*>(reqInfo.paramAddr);
-    LOG2("%s,  is first %d", __func__, tnrParam->bc.is_first_frame);
+    LOG2("%s,  is first %f", __func__, tnrParam->bc.is_first_frame);
     std::unique_lock<std::mutex> lock(*mLockMap[key]);
     setData(mSessionMap[key], &tnrParam->bc.is_first_frame, sizeof(tnrParam->bc.is_first_frame),
             featureName, "tnr7us/pal:is_first_frame");
@@ -252,7 +253,10 @@ int IntelOPIC2::runTnrFrame(const ICBMReqInfo& reqInfo) {
             sizeof(tnrParam->blend.max_recursive_similarity), featureName,
             "tnr7us/pal:max_recursive_similarity");
 
-    return ::iaic_execute(mSessionMap[key], inMem, outMem);
+    int ret = ::iaic_execute(mSessionMap[key], inMem, outMem);
+    ::iaic_get_data(mSessionMap[key], outMem);
+
+    return ret;
 }
 
 void IntelOPIC2::setData(iaic_session uid, void* p, size_t size, const char* featureName,

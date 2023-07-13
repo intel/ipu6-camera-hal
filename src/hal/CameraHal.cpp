@@ -127,9 +127,7 @@ int CameraHal::deviceOpen(int cameraId, int vcNum) {
         return INVALID_OPERATION;
     }
 
-#ifdef SUPPORT_MULTI_PROCESS
     if (mCameraShm.CameraDeviceOpen(cameraId) != OK) return INVALID_OPERATION;
-#endif
 
     mCameraDevices[cameraId] = new CameraDevice(cameraId);
 
@@ -141,13 +139,9 @@ int CameraHal::deviceOpen(int cameraId, int vcNum) {
     mTotalVirtualChannelCamNum[groupId] = vcNum;
     // VIRTUAL_CHANNEL_E
 
-#ifdef SUPPORT_MULTI_PROCESS
     // The check is to handle dual camera cases
     mCameraOpenNum = mCameraShm.cameraDeviceOpenNum();
     CheckAndLogError(mCameraOpenNum == 0, INVALID_OPERATION, "camera open num couldn't be 0");
-#else
-    mCameraOpenNum++;
-#endif
 
     if (mCameraOpenNum == 1) {
         MediaControl* mc = MediaControl::getInstance();
@@ -177,11 +171,7 @@ void CameraHal::deviceClose(int cameraId) {
         delete mCameraDevices[cameraId];
         mCameraDevices[cameraId] = nullptr;
 
-#ifdef SUPPORT_MULTI_PROCESS
         mCameraShm.CameraDeviceClose(cameraId);
-#else
-        mCameraOpenNum--;
-#endif
     }
 }
 

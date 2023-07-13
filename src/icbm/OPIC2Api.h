@@ -35,9 +35,6 @@ extern void iaic_startup();
 extern void iaic_shutdown();
 
 extern void iaic_query_features(char* future_d, size_t* fsize);
-extern void iaic_startup();
-extern void iaic_shutdown();
-
 extern void iaic_set_loglevel(iaic_log_level level);
 extern void iaic_create_session(iaic_session uid, const char* feature, iaic_options opt);
 extern void iaic_close_session(iaic_session uid, const char* feature);

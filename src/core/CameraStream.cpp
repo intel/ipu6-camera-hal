@@ -140,6 +140,18 @@ void CameraStream::setBufferProducer(BufferProducer* producer) {
     if (producer != nullptr) producer->addFrameAvailableListener(this);
 }
 
+// PRIVACY_MODE_S
+shared_ptr<CameraBuffer> CameraStream::getPrivacyBuffer() {
+    AutoMutex l(mBufferPoolLock);
+    shared_ptr<CameraBuffer> buf = nullptr;
+    if (!mPrivacyBuffer.empty()) {
+        buf = mPrivacyBuffer.front();
+        mPrivacyBuffer.pop();
+    }
+    return buf;
+}
+// PRIVACY_MODE_E
+
 int CameraStream::onFrameAvailable(Port port, const shared_ptr<CameraBuffer>& camBuffer) {
     // Ignore if the buffer is not for this stream.
     if (mPort != port) return OK;
@@ -149,6 +161,16 @@ int CameraStream::onFrameAvailable(Port port, const shared_ptr<CameraBuffer>& ca
          camBuffer.get(), port);
 
     std::shared_ptr<CameraBuffer> buf = camBuffer;
+    // PRIVACY_MODE_S
+    if (PlatformData::getSupportPrivacy(mCameraId) != NO_PRIVACY_MODE) {
+        AutoMutex l(mBufferPoolLock);
+        mPrivacyBuffer.push(camBuffer);
+        if (mPrivacyBuffer.size() <= 1) return OK;
+
+        buf = mPrivacyBuffer.front();
+        mPrivacyBuffer.pop();
+    }
+    // PRIVACY_MODE_E
     return doFrameAvailable(port, buf);
 }
 

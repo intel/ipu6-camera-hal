@@ -32,9 +32,6 @@
 #include <utility>
 #include <vector>
 
-// ISP_CONTROL_S
-#include "isp_control/IspControlUtils.h"
-// ISP_CONTROL_E
 #include "PlatformData.h"
 #include "iutils/CameraLog.h"
 #include "iutils/Utils.h"
@@ -287,8 +284,6 @@ void CameraParser::handleCommon(CameraParser* profiles, const char* name, const 
         cfg->ipuName = atts[1];
     } else if (strcmp(name, "availableSensors") == 0) {
         parseXmlConvertStrings(atts[1], cfg->availableSensors, convertCharToString);
-    } else if (strcmp(name, "useGpuTnr") == 0) {
-        cfg->isGpuTnrEnabled = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "cameraNumber") == 0) {
         cfg->cameraNumber = atoi(atts[1]);
     } else if (strcmp(name, "stillTnrPrior") == 0) {
@@ -306,12 +301,10 @@ void CameraParser::handleCommon(CameraParser* profiles, const char* name, const 
         cfg->supportHwJpegEncode = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "maxIsysTimeoutValue") == 0) {
         cfg->maxIsysTimeoutValue = atoi(atts[1]);
-        // LEVEL0_ICBM_S
+    // LEVEL0_ICBM_S
     } else if (strcmp(name, "useGPUICBM") == 0) {
         cfg->isGPUICBMEnabled = strcmp(atts[1], "true") == 0;
-    }  else if (strcmp(name, "useLevel0Tnr") == 0) {
-        cfg->useLevel0Tnr = strcmp(atts[1], "true") == 0;
-        // LEVEL0_ICBM_E
+    // LEVEL0_ICBM_E
     }
 }
 
@@ -670,23 +663,42 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
         pCurrentCam->mTnrExtraFrameNum = val > 0 ? val : DEFAULT_TNR_EXTRA_FRAME_NUM;
     } else if (strcmp(name, "dummyStillSink") == 0) {
         pCurrentCam->mDummyStillSink = strcmp(atts[1], "true") == 0;
+    } else if (strcmp(name, "useGpuTnr") == 0) {
+        pCurrentCam->mGpuTnrEnabled = strcmp(atts[1], "true") == 0;
     } else if (!strcmp(name, "removeCacheFlushOutputBuffer")) {
         pCurrentCam->mRemoveCacheFlushOutputBuffer = strcmp(atts[1], "true") == 0;
     } else if (!strcmp(name, "isPLCEnable")) {
         pCurrentCam->mPLCEnable = strcmp(atts[1], "true") == 0;
+    // PRIVACY_MODE_S
+    } else if (strcmp(name, "supportPrivacy") == 0) {
+        int val = atoi(atts[1]);
+        if (val > 0 && val <= 2) {
+            pCurrentCam->mSupportPrivacy = static_cast<PrivacyModeType>(val);
+        }
+    } else if (strcmp(name, "privacyModeThreshold") == 0) {
+        int val = atoi(atts[1]);
+        if (val > 0 && val < 255) {
+            pCurrentCam->mPrivacyModeThreshold = val;
+        }
+    } else if (strcmp(name, "privacyModeFrameDelay") == 0) {
+        int val = atoi(atts[1]);
+        if (val >= 0) {
+            pCurrentCam->mPrivacyModeFrameDelay = val;
+        }
+    // PRIVACY_MODE_E
     } else if (strcmp(name, "stillOnlyPipe") == 0) {
         pCurrentCam->mStillOnlyPipe = strcmp(atts[1], "true") == 0;
     // VIRTUAL_CHANNEL_S
     } else if (strcmp(name, "vcAggregator") == 0) {
         int size = strlen(atts[1]);
-       char src[size + 1];
-       MEMCPY_S(src, size, atts[1], size);
-       src[size] = '\0';
-       char* savePtr = nullptr;
-       char* tablePtr = strtok_r(src, ",", &savePtr);
-       if (tablePtr) pCurrentCam->mVcAggregator.mName = tablePtr;
-       tablePtr = strtok_r(nullptr, ",", &savePtr);
-       if (tablePtr) pCurrentCam->mVcAggregator.mIndex = atoi(tablePtr);
+        char src[size + 1];
+        MEMCPY_S(src, size, atts[1], size);
+        src[size] = '\0';
+        char* savePtr = nullptr;
+        char* tablePtr = strtok_r(src, ",", &savePtr);
+        if (tablePtr) pCurrentCam->mVcAggregator.mName = tablePtr;
+        tablePtr = strtok_r(nullptr, ",", &savePtr);
+        if (tablePtr) pCurrentCam->mVcAggregator.mIndex = atoi(tablePtr);
     // VIRTUAL_CHANNEL_E
     } else if (strcmp(name, "disableBLCByAGain") == 0) {
         int size = strlen(atts[1]);
@@ -701,6 +713,9 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
         profiles->pCurrentCam->mDisableBLCByAGain = true;
     } else if (strcmp(name, "resetLinkRoute") == 0) {
         pCurrentCam->mResetLinkRoute = strcmp(atts[1], "true") == 0;
+    } else if (strcmp(name, "reqWaitTimeoutNs") == 0) {
+        int64_t val = atoi(atts[1]);
+        pCurrentCam->mReqWaitTimeout = (val >= 0) ? val : 0;
     }
 }
 
@@ -1067,36 +1082,6 @@ void CameraParser::parseSupportedFeatures(const char* src, camera_features_list_
         }
     } while (endPtr);
 }
-
-// ISP_CONTROL_S
-void CameraParser::parseSupportedIspControls(const char* src, vector<uint32_t>& ctrlIds) {
-    HAL_TRACE_CALL(1);
-
-    char* srcDup = strdup(src);
-    CheckAndLogError((srcDup == nullptr), VOID_VALUE, "Create a copy of source string failed.");
-
-    char* srcTmp = srcDup;
-    char* endPtr = nullptr;
-    do {
-        endPtr = const_cast<char*>(strchr(srcTmp, ','));
-        if (endPtr) {
-            *endPtr = 0;
-        }
-
-        uint32_t ctrlId = IspControlUtils::getIdByName(srcTmp);
-        if (ctrlId != 0) {
-            ctrlIds.push_back(ctrlId);
-        }
-
-        if (endPtr) {
-            srcTmp = endPtr + 1;
-            srcTmp = const_cast<char*>(skipWhiteSpace(srcTmp));
-        }
-    } while (endPtr);
-
-    free(srcDup);
-}
-// ISP_CONTROL_E
 
 int CameraParser::parseSupportedVideoStabilizationMode(
     const char* str, camera_video_stabilization_list_t& supportedModes) {
@@ -1863,20 +1848,6 @@ void CameraParser::handleStaticMetaData(CameraParser* profiles, const char* name
         }
         mMetadata.update(CAMERA_AE_AVAILABLE_ANTIBANDING_MODES, antibandingModes,
                          supportedAntibandingMode.size());
-        // ISP_CONTROL_S
-    } else if (strcmp(name, "supportedIspControls") == 0) {
-        vector<uint32_t> ispCtrlIds;
-        parseSupportedIspControls(atts[1], ispCtrlIds);
-        size_t dataCount = ispCtrlIds.size();
-        if (dataCount != 0) {
-            int32_t data[dataCount];
-            CLEAR(data);
-            for (size_t i = 0; i < dataCount; i++) {
-                data[i] = ispCtrlIds[i];
-            }
-            mMetadata.update(INTEL_CONTROL_ISP_SUPPORTED_CTRL_IDS, data, dataCount);
-        }
-        // ISP_CONTROL_E
     } else if (strcmp(name, "sensorMountType") == 0) {
         uint8_t mountType = WALL_MOUNTED;
 

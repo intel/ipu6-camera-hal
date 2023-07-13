@@ -103,6 +103,17 @@ class AiqCore {
      */
     int runAiq(long requestId, AiqResult* aiqResult);
 
+    // PRIVACY_MODE_S
+    /**
+     * \brief Get the brightest index in histogram
+     *
+     * \param param: brightest index
+     *
+     * \return OK if succeed, other value indicates failed
+     */
+    int getBrightestIndex(uint32_t& param);
+    // PRIVACY_MODE_E
+ private:
     // LSC data
     typedef struct ColorOrder {
         uint8_t r[2];
@@ -157,6 +168,9 @@ class AiqCore {
     bool checkRunRate(float configRunningRate, const RunRateInfo* info);
 
     IntelCca* getIntelCca(TuningMode tuningMode);
+
+    int allocAiqResultMem();
+    void freeAiqResultMem();
 
  private:
     int mCameraId;

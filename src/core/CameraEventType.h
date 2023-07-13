@@ -42,6 +42,9 @@ enum EventType {
     EVENT_DVS_READY,
     // INTEL_DVS_E
     EVENT_ISYS_ERROR,
+    // PRIVACY_MODE_S
+    EVENT_3A_READY,
+    // PRIVACY_MODE_E
 };
 
 struct EventDataStatsReady {
@@ -92,8 +95,17 @@ struct EventRequestReady {
 // INTEL_DVS_S
 struct EventDVSRunReady {
     int streamId;
+    int64_t sequence;
+    camera_zoom_region_t region;
 };
 // INTEL_DVS_E
+
+// PRIVACY_MODE_S
+struct EventData3AReady {
+    int64_t sequence;
+    uint32_t maxBin;
+};
+// PRIVACY_MODE_E
 
 struct EventData {
     EventData() : type(EVENT_ISYS_SOF), pipeType(-1) { CLEAR(data); }
@@ -114,6 +126,9 @@ struct EventData {
         // INTEL_DVS_S
         EventDVSRunReady dvsRunReady;
         // INTEL_DVS_E
+        // PRIVACY_MODE_S
+        EventData3AReady run3AReady;
+        // PRIVACY_MODE_E
     } data;
 };
 

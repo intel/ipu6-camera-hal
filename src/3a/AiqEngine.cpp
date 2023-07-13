@@ -368,6 +368,23 @@ AiqEngine::AiqState AiqEngine::runAiq(long requestId, int64_t applyingSeq, AiqRe
             return AIQ_STATE_ERROR;
         }
 
+        // PRIVACY_MODE_S
+        if (PlatformData::getSupportPrivacy(mCameraId) == AE_BASED_PRIVACY_MODE) {
+            uint32_t outMaxBin = 0;
+            ret = mAiqCore->getBrightestIndex(outMaxBin);
+            if (ret == OK) {
+                EventData3AReady data;
+                data.sequence = requestId;
+                data.maxBin = outMaxBin;
+                EventData eventData;
+                eventData.type = EVENT_3A_READY;
+                eventData.buffer = nullptr;
+                eventData.data.run3AReady = data;
+                notifyListeners(eventData);
+            }
+        }
+        // PRIVACY_MODE_E
+
         setSensorExposure(aiqResult, applyingSeq);
 
         ret = mAiqCore->runAiq(requestId, aiqResult);

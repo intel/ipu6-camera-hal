@@ -123,15 +123,15 @@ class IspParamAdaptor {
     void applyMediaFormat(const AiqResult* aiqResult, ia_media_format* mediaFormat,
                           bool* useLinearGamma);
     void dumpCscMatrix(const ia_isp_bxt_csc* cscMatrix);
-#ifdef PAL_DEBUG
-    void loadPalBinFile(ia_binary_data* binaryData);
-#endif
     void applyCscMatrix(ia_isp_bxt_csc* cscMatrix);
     void updateResultFromAlgo(ia_binary_data* binaryData, int64_t sequence);
     uint32_t getRequestedStats();
 
     bool isLscCopy(int64_t bufSeq, int64_t settingSeq);
     void updateLscSeqMap(int64_t settingSeq);
+
+    bool isGdcCopy(int64_t bufSeq, int64_t settingSeq);
+    void updateGdcSeqMap(int64_t settingSeq);
 
  private:
     enum IspAdaptorState {
@@ -154,6 +154,9 @@ class IspParamAdaptor {
 
     int64_t mLastLscSequece;
     std::map<int64_t, int64_t> mSeqIdToLscSeqIdMap;
+
+    int64_t mLastGdcSequence;
+    std::map<int64_t, int64_t> mSeqIdToGdcSeqIdMap;
 
     // Guard lock for ipu parameter
     Mutex mIpuParamLock;

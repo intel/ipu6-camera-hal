@@ -299,24 +299,11 @@ status_t JpegProcess::doPostProcessing(const shared_ptr<camera3::Camera3Buffer>&
     EncodePackage finalEncodePackage;
     fillEncodeInfo(inBuf, outBuf, finalEncodePackage);
     finalEncodePackage.quality = exifMetadata.mJpegSetting.jpegQuality;
-#ifdef SW_JPEG_ENCODE
     finalEncodePackage.exifData = finalExifDataPtr;
     finalEncodePackage.exifDataSize = finalExifDataSize;
     isEncoded = mJpegEncoder->doJpegEncode(&finalEncodePackage);
     CheckAndLogError(!isEncoded, UNKNOWN_ERROR, "@%s, Failed to encode main image", __func__);
     mJpegMaker->writeExifData(&finalEncodePackage);
-#else
-    finalEncodePackage.exifData = nullptr;
-    finalEncodePackage.exifDataSize = 0;
-    isEncoded = mJpegEncoder->doJpegEncode(&finalEncodePackage);
-    CheckAndLogError(!isEncoded, UNKNOWN_ERROR, "@%s, Failed to encode main image", __func__);
-    finalEncodePackage.outputData = outBuf->data();
-    finalEncodePackage.exifData = finalExifDataPtr;
-    finalEncodePackage.exifDataSize = finalExifDataSize;
-    memmove(reinterpret_cast<uint8_t*>(finalEncodePackage.outputData) + finalExifDataSize,
-            finalEncodePackage.outputData, finalEncodePackage.encodedDataSize);
-    mJpegMaker->writeExifData(&finalEncodePackage);
-#endif
     attachJpegBlob(finalEncodePackage);
 
     return OK;

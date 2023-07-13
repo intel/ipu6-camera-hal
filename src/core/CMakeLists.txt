@@ -60,6 +60,13 @@ set(CORE_SRCS
         ${CORE_DIR}/psysprocessor/PolicyManager.cpp
         CACHE INTERNAL "core sources"
         )
+# PRIVACY_MODE_S
+    set(CORE_SRCS
+        ${CORE_SRCS}
+        ${CORE_DIR}/CvfPrivacyChecker.cpp
+        CACHE INTERNAL "core sources"
+        )
+# PRIVACY_MODE_E
 
 # IPU_PROCESSING_S
     set(CORE_SRCS

@@ -245,15 +245,24 @@ int ParameterGenerator::getIspParameters(int64_t sequence, Parameters* param) {
         if (ret == OK) {
             param->setVideoStabilizationMode(stabilizationMode);
         }
-        // ISP_CONTROL_S
-        std::set<uint32_t> enabledControls;
-        ret = mRequestParamMap[sequence]->param.getEnabledIspControls(enabledControls);
+        float hdrRatio;
+        ret = mRequestParamMap[sequence]->param.getHdrRatio(hdrRatio);
         if (ret == OK) {
-            param->setEnabledIspControls(enabledControls);
+            param->setHdrRatio(hdrRatio);
         }
-        // ISP_CONTROL_E
 
         return OK;
+    }
+
+    return UNKNOWN_ERROR;
+}
+
+int ParameterGenerator::getZoomRegion(int64_t sequence, camera_zoom_region_t& region) {
+    CHECK_SEQUENCE(sequence);
+
+    AutoMutex l(mParamsLock);
+    if (mRequestParamMap.find(sequence) != mRequestParamMap.end()) {
+        return mRequestParamMap[sequence]->param.getZoomRegion(&region);
     }
 
     return UNKNOWN_ERROR;

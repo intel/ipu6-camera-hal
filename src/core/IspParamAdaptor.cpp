@@ -31,11 +31,6 @@
 #include "PlatformData.h"
 #include "IGraphConfig.h"
 
-// ISP_CONTROL_S
-#include "IspControl.h"
-#include "isp_control/IspControlUtils.h"
-// ISP_CONTROL_E
-
 #include "ia_pal_types_isp_ids_autogen.h"
 #include "ia_pal_types_isp_parameters_autogen.h"
 #include "ia_pal_types_isp.h"
@@ -48,6 +43,7 @@ IspParamAdaptor::IspParamAdaptor(int cameraId)
           mTuningMode(TUNING_MODE_VIDEO),
           mIpuOutputFormat(V4L2_PIX_FMT_NV12),
           mLastLscSequece(-1),
+          mLastGdcSequence(-1),
           mGraphConfig(nullptr),
           mIntelCca(nullptr),
           mGammaTmOffset(-1) {
@@ -56,7 +52,8 @@ IspParamAdaptor::IspParamAdaptor(int cameraId)
 
     PalRecord palRecordArray[] = {{ia_pal_uuid_isp_call_info, -1},
                                   {ia_pal_uuid_isp_bnlm_3_2, -1},
-                                  {ia_pal_uuid_isp_lsc_1_1, -1}};
+                                  {ia_pal_uuid_isp_lsc_1_1, -1},
+                                  {ia_pal_uuid_isp_gdc5, -1}};
     for (uint32_t i = 0; i < sizeof(palRecordArray) / sizeof(PalRecord); i++) {
         mPalRecords.push_back(palRecordArray[i]);
     }
@@ -215,6 +212,7 @@ int IspParamAdaptor::configure(const stream_t& stream, ConfigMode configMode, Tu
     mTuningMode = tuningMode;
     CLEAR(mLastPalDataForVideoPipe);
     mLastLscSequece = -1;
+    mLastGdcSequence = -1;
     for (uint32_t i = 0; i < mPalRecords.size(); i++) {
         mPalRecords[i].offset = -1;
     }
@@ -412,7 +410,10 @@ void IspParamAdaptor::updateKernelToggles(cca::cca_program_group* programGroup) 
  */
 void IspParamAdaptor::updatePalDataForVideoPipe(ia_binary_data dest, int64_t bufSeq,
                                                 int64_t settingSeq) {
-    if (mLastPalDataForVideoPipe.data == nullptr || mLastPalDataForVideoPipe.size == 0) return;
+    if (mLastPalDataForVideoPipe.data == nullptr || mLastPalDataForVideoPipe.size == 0) {
+        mLastGdcSequence = settingSeq;
+        return;
+    }
 
     if (mPalRecords.empty()) return;
 
@@ -453,6 +454,16 @@ void IspParamAdaptor::updatePalDataForVideoPipe(ia_binary_data dest, int64_t buf
                     updateLscSeqMap(bufSeq);
                 } else {
                     LOG2("settingSeq %ld, not copy LSC for buf %ld", settingSeq, bufSeq);
+                    continue;
+                }
+            }
+
+            if (ia_pal_uuid_isp_gdc5 == header->uuid) {
+                if (isGdcCopy(bufSeq, settingSeq)) {
+                    LOG2("settingSeq %ld, copy GDC for buf %ld", settingSeq, bufSeq);
+                    updateGdcSeqMap(bufSeq);
+                } else {
+                    LOG2("settingSeq %ld, not copy GDC for buf %ld", settingSeq, bufSeq);
                     continue;
                 }
             }
@@ -510,6 +521,32 @@ void IspParamAdaptor::updateLscSeqMap(int64_t settingSeq) {
 
     if (mSeqIdToLscSeqIdMap.size() > ISP_PARAM_QUEUE_SIZE) {
         mSeqIdToLscSeqIdMap.erase(mSeqIdToLscSeqIdMap.begin());
+    }
+}
+
+bool IspParamAdaptor::isGdcCopy(int64_t bufSeq, int64_t settingSeq) {
+    if (!PlatformData::isDvsSupported(mCameraId)) return false;
+
+    if (AiqResultStorage::getInstance(mCameraId)->isDvsRun(settingSeq)) {
+        mLastGdcSequence = settingSeq;
+        LOG2("%s, GDC update %ld", __func__, settingSeq);
+        return false;
+    } else {
+        if (mSeqIdToGdcSeqIdMap.find(bufSeq) != mSeqIdToGdcSeqIdMap.end()) {
+            if (mLastGdcSequence >= 0 && mSeqIdToGdcSeqIdMap[bufSeq] == mLastGdcSequence) {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+void IspParamAdaptor::updateGdcSeqMap(int64_t settingSeq) {
+    mSeqIdToGdcSeqIdMap[settingSeq] = mLastGdcSequence;
+
+    if (mSeqIdToGdcSeqIdMap.size() > ISP_PARAM_QUEUE_SIZE) {
+        mSeqIdToGdcSeqIdMap.erase(mSeqIdToGdcSeqIdMap.begin());
     }
 }
 
@@ -586,6 +623,7 @@ int IspParamAdaptor::runIspAdapt(const IspSettings* ispSettings, int64_t setting
                     mLastPalDataForVideoPipe = binaryData;
                     updateResultFromAlgo(&binaryData, settingSequence);
                     updateLscSeqMap(settingSequence);
+                    updateGdcSeqMap(settingSequence);
                 }
             }
         }
@@ -692,7 +730,6 @@ void IspParamAdaptor::applyMediaFormat(const AiqResult* aiqResult, ia_media_form
                                        bool* useLinearGamma) {
     CheckAndLogError(!mediaFormat || !aiqResult, VOID_VALUE, "mediaFormat or aiqResult is nullptr");
 
-    *mediaFormat = media_format_legacy;
     if (aiqResult->mAiqParam.tonemapMode == TONEMAP_MODE_GAMMA_VALUE) {
         if (aiqResult->mAiqParam.tonemapGamma == 1.0) {
             *useLinearGamma = true;
@@ -762,6 +799,7 @@ int IspParamAdaptor::runIspAdaptL(ia_isp_bxt_program_group* pgPtr, ia_isp_bxt_gd
     inputParams->seq_id = settingSequence;
 
     bool useLinearGamma = false;
+    inputParams->media_format = PlatformData::getMediaFormat(mCameraId);
     applyMediaFormat(aiqResults, &inputParams->media_format, &useLinearGamma);
     LOG2("%s, media format: 0x%x, gamma lut size: %d", __func__, inputParams->media_format,
          aiqResults->mGbceResults.gamma_lut_size);
@@ -1034,87 +1072,6 @@ void IspParamAdaptor::dumpCscMatrix(const ia_isp_bxt_csc* cscMatrix) {
          cscMatrix->rgb2yuv_coef[3], cscMatrix->rgb2yuv_coef[4], cscMatrix->rgb2yuv_coef[5],
          cscMatrix->rgb2yuv_coef[6], cscMatrix->rgb2yuv_coef[7], cscMatrix->rgb2yuv_coef[8]);
 }
-
-#ifdef PAL_DEBUG
-/*
- * How to use:
- * 1, copy pal.bin file to local directory;
- * 2, define pal uuid in palRecordArray which are expected to be replaced.
- */
-void IspParamAdaptor::loadPalBinFile(ia_binary_data* binaryData) {
-    // Get file size
-    struct stat fileStat;
-    CLEAR(fileStat);
-    const char* fileName = "./pal.bin";
-    int ret = stat(fileName, &fileStat);
-    CheckWarning(ret != 0, VOID_VALUE, "no pal bin %s", fileName);
-
-    FILE* fp = fopen(fileName, "rb");
-    CheckWarning(fp == nullptr, VOID_VALUE, "Failed to open %s, err %s", fileName, strerror(errno));
-
-    std::unique_ptr<char[]> dataPtr(new char[fileStat.st_size]);
-    size_t readSize = fread(dataPtr.get(), sizeof(char), fileStat.st_size, fp);
-    fclose(fp);
-
-    CheckWarning(readSize != (size_t)fileStat.st_size, VOID_VALUE, "Failed to read %s, err %s",
-                 fileName, strerror(errno));
-
-    static PalRecord palRecordArray[] = {
-        {ia_pal_uuid_isp_bnlm_3_2, -1},
-        {ia_pal_uuid_isp_tnr_6_0, -1},
-    };
-
-    ia_pal_record_header* header = nullptr;
-    char* src = static_cast<char*>(dataPtr.get());
-    // find uuid offset in PAL bin
-    if (palRecordArray[0].offset < 0) {
-        uint32_t offset = 0;
-        while (offset < readSize) {
-            ia_pal_record_header* header = reinterpret_cast<ia_pal_record_header*>(src + offset);
-            for (uint32_t i = 0; i < sizeof(palRecordArray) / sizeof(PalRecord); i++) {
-                if (palRecordArray[i].offset < 0 && palRecordArray[i].uuid == header->uuid) {
-                    palRecordArray[i].offset = offset;
-                    LOG2("src uuid %d, offset %d, size %d", header->uuid, offset, header->size);
-                    break;
-                }
-            }
-            offset += header->size;
-        }
-    }
-
-    char* dest = static_cast<char*>(binaryData->data);
-    ia_pal_record_header* headerSrc = nullptr;
-    for (uint32_t i = 0; i < sizeof(palRecordArray) / sizeof(PalRecord); i++) {
-        if (palRecordArray[i].offset >= 0) {
-            // find source record header
-            header = reinterpret_cast<ia_pal_record_header*>(src + palRecordArray[i].offset);
-            if (header->uuid == palRecordArray[i].uuid) {
-                headerSrc = header;
-            }
-            if (!headerSrc) {
-                LOGW("Failed to find PAL recorder header %d", palRecordArray[i].uuid);
-                continue;
-            }
-
-            uint32_t offset = 0;
-            // find uuid offset in PAL buffer
-            while (offset < readSize) {
-                header = reinterpret_cast<ia_pal_record_header*>(dest + offset);
-                if (header->uuid == palRecordArray[i].uuid) {
-                    LOG2("%s, dst uuid %d, size %d", __func__, header->uuid, header->size);
-                    break;
-                }
-                offset += header->size;
-            }
-
-            if (header->uuid == palRecordArray[i].uuid) {
-                MEMCPY_S(header, header->size, headerSrc, headerSrc->size);
-                LOG2("%s, PAL data of kernel uuid %d has been updated", __func__, header->uuid);
-            }
-        }
-    }
-}
-#endif
 
 uint32_t IspParamAdaptor::getRequestedStats() {
     uint32_t bitmap = cca::CCA_STATS_RGBS | cca::CCA_STATS_HIST | cca::CCA_STATS_AF |

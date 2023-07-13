@@ -19,9 +19,7 @@
 #include "CameraDevice.h"
 #include "Parameters.h"
 
-#ifdef SUPPORT_MULTI_PROCESS
 #include "iutils/CameraShm.h"
-#endif
 
 namespace icamera {
 
@@ -84,10 +82,8 @@ class CameraHal {
 
     enum { HAL_UNINIT, HAL_INIT } mState;
 
-#ifdef SUPPORT_MULTI_PROCESS
     // Used to store variables in different process
     CameraSharedMemory mCameraShm;
-#endif
     int mCameraOpenNum;
 };
 

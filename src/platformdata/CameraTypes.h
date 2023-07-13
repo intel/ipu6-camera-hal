@@ -76,6 +76,7 @@ typedef enum {
     TUNING_MODE_VIDEO_REAR_VIEW,
     TUNING_MODE_VIDEO_HITCH_VIEW,
     TUNING_MODE_STILL_CAPTURE,
+    TUNING_MODE_VIDEO_BINNING,
     TUNING_MODE_MAX
 } TuningMode;
 
@@ -132,14 +133,6 @@ typedef struct {
     uint32_t vertical_scaling_denominator;
 } SensorFrameParams;
 
-// CUSTOM_WEIGHT_GRID_S
-typedef struct {
-    unsigned short width;
-    unsigned short height;
-    unsigned char* table;
-} WeightGridTable;
-// CUSTOM_WEIGHT_GRID_E
-
 typedef struct {
     int8_t edgeStrength;
     int8_t nrStrength;
@@ -191,7 +184,6 @@ struct CommonConfig {
     float xmlVersion;
     std::string ipuName;
     std::vector<std::string> availableSensors;
-    bool isGpuTnrEnabled;
     bool isStillTnrPrior;
     bool isTnrParamForceUpdate;
     bool useTnrGlobalProtection;
@@ -202,12 +194,10 @@ struct CommonConfig {
     int maxIsysTimeoutValue;
     // LEVEL0_ICBM_S
     bool isGPUICBMEnabled;
-    bool useLevel0Tnr;
     // LEVEL0_ICBM_E
 
     CommonConfig() {
         xmlVersion = 1.0;
-        isGpuTnrEnabled = false;
         isStillTnrPrior = false;
         isTnrParamForceUpdate = false;
         useTnrGlobalProtection = true;
@@ -218,7 +208,6 @@ struct CommonConfig {
         maxIsysTimeoutValue = 0;
         // LEVEL0_ICBM_S
         isGPUICBMEnabled = false;
-        useLevel0Tnr = false;
         // LEVEL0_ICBM_E
     }
 };
@@ -273,6 +262,17 @@ typedef enum {
     COUPLED,
     DISPERSED,
 } GraphSettingType;
+
+// PRIVACY_MODE_S
+/**
+ * Indicates which privacy mode the camera supports
+ */
+typedef enum {
+    NO_PRIVACY_MODE = 0,
+    CVF_BASED_PRIVACY_MODE = 1,
+    AE_BASED_PRIVACY_MODE = 2,
+} PrivacyModeType;
+// PRIVACY_MODE_E
 
 // VIRTUAL_CHANNEL_S
 struct VcAggregator {

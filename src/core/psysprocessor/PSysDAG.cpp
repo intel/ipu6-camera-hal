@@ -786,7 +786,7 @@ int PSysDAG::prepareIpuParams(int64_t sequence, bool forceUpdate, TaskInfo* task
         }
 
 // INTEL_DVS_S
-        mPSysDagCB->onDvsPrepare(id);
+        mPSysDagCB->onDvsPrepare(sequence, id);
 // INTEL_DVS_E
 
         int ret = mIspParamAdaptor->runIspAdapt(&task->mTaskData.mIspSettings, sequence, id);
