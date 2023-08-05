@@ -46,6 +46,10 @@ CameraHal::CameraHal() : mInitTimes(0), mState(HAL_UNINIT), mCameraOpenNum(0) {
     LOG1("@%s", __func__);
 
     CLEAR(mCameraDevices);
+    // VIRTUAL_CHANNEL_S
+    CLEAR(mTotalVirtualChannelCamNum);
+    CLEAR(mConfigTimes);
+    // VIRTUAL_CHANNEL_E
 }
 
 CameraHal::~CameraHal() {
@@ -65,6 +69,13 @@ int CameraHal::init() {
     int ret = PlatformData::init();
     CheckAndLogError(ret != OK, NO_INIT, "PlatformData init failed");
 
+    // VIRTUAL_CHANNEL_S
+    for (int i = 0; i < MAX_VC_GROUP_NUMBER; i++) {
+        mTotalVirtualChannelCamNum[i] = 0;
+        mConfigTimes[i] = 0;
+    }
+    // VIRTUAL_CHANNEL_E
+
     mState = HAL_INIT;
 
     return OK;
@@ -79,6 +90,13 @@ int CameraHal::deinit() {
         LOGI("CameraHal still running, mInitTimes:%d", mInitTimes);
         return OK;
     }
+
+    // VIRTUAL_CHANNEL_S
+    for (int i = 0; i < MAX_VC_GROUP_NUMBER; i++) {
+        mTotalVirtualChannelCamNum[i] = 0;
+        mConfigTimes[i] = 0;
+    }
+    // VIRTUAL_CHANNEL_E
 
     // FRAME_SYNC_S
     // SyncManager is used to do synchronization with multi-devices.
@@ -109,9 +127,21 @@ int CameraHal::deviceOpen(int cameraId, int vcNum) {
         return INVALID_OPERATION;
     }
 
+    if (mCameraShm.CameraDeviceOpen(cameraId) != OK) return INVALID_OPERATION;
+
     mCameraDevices[cameraId] = new CameraDevice(cameraId);
 
-    mCameraOpenNum++;
+    // VIRTUAL_CHANNEL_S
+    camera_info_t info;
+    CLEAR(info);
+    PlatformData::getCameraInfo(cameraId, info);
+    int groupId = info.vc.group >= 0 ? info.vc.group : 0;
+    mTotalVirtualChannelCamNum[groupId] = vcNum;
+    // VIRTUAL_CHANNEL_E
+
+    // The check is to handle dual camera cases
+    mCameraOpenNum = mCameraShm.cameraDeviceOpenNum();
+    CheckAndLogError(mCameraOpenNum == 0, INVALID_OPERATION, "camera open num couldn't be 0");
 
     if (mCameraOpenNum == 1) {
         MediaControl* mc = MediaControl::getInstance();
@@ -121,6 +151,12 @@ int CameraHal::deviceOpen(int cameraId, int vcNum) {
             int ret = mc->resetAllLinks();
             CheckAndLogError(ret != OK, DEV_BUSY, "resetAllLinks failed");
         }
+        // VIRTUAL_CHANNEL_S
+        if (info.vc.total_num) {
+            // when the sensor belongs to virtual channel, reset the routes
+            if (PlatformData::isResetLinkRoute(cameraId)) mc->resetAllRoutes(cameraId);
+        }
+        // VIRTUAL_CHANNEL_E
     }
 
     return mCameraDevices[cameraId]->init();
@@ -135,7 +171,7 @@ void CameraHal::deviceClose(int cameraId) {
         delete mCameraDevices[cameraId];
         mCameraDevices[cameraId] = nullptr;
 
-        mCameraOpenNum--;
+        mCameraShm.CameraDeviceClose(cameraId);
     }
 }
 
@@ -178,6 +214,19 @@ int CameraHal::deviceConfigStreams(int cameraId, stream_config_t* streamList) {
         return INVALID_OPERATION;
     }
 
+    // VIRTUAL_CHANNEL_S
+    camera_info_t info;
+    CLEAR(info);
+    PlatformData::getCameraInfo(cameraId, info);
+    int groupId = info.vc.group >= 0 ? info.vc.group : 0;
+    if (mTotalVirtualChannelCamNum[groupId] > 0) {
+        mConfigTimes[groupId]++;
+        LOG1("<id%d> @%s, mConfigTimes:%d, before signal", cameraId, __func__,
+             mConfigTimes[groupId]);
+        mVirtualChannelSignal[groupId].signal();
+    }
+    // VIRTUAL_CHANNEL_E
+
     return ret;
 }
 
@@ -187,6 +236,27 @@ int CameraHal::deviceStart(int cameraId) {
 
     CameraDevice* device = mCameraDevices[cameraId];
     checkCameraDevice(device, BAD_VALUE);
+
+    // VIRTUAL_CHANNEL_S
+    camera_info_t info;
+    CLEAR(info);
+    PlatformData::getCameraInfo(cameraId, info);
+    int groupId = info.vc.group >= 0 ? info.vc.group : 0;
+    LOG1("<id%d> @%s, mConfigTimes:%d, mTotalVirtualChannelCamNum:%d", cameraId, __func__,
+         mConfigTimes[groupId], mTotalVirtualChannelCamNum[groupId]);
+
+    if (mTotalVirtualChannelCamNum[groupId] > 0) {
+        int timeoutCnt = 10;
+        while (mConfigTimes[groupId] < mTotalVirtualChannelCamNum[groupId]) {
+            mVirtualChannelSignal[groupId].waitRelative(lock, mWaitDuration * SLOWLY_MULTIPLIER);
+            LOG1("<id%d> @%s, mConfigTimes:%d, timeoutCnt:%d", cameraId, __func__,
+                 mConfigTimes[groupId], timeoutCnt);
+            --timeoutCnt;
+            CheckAndLogError(!timeoutCnt, TIMED_OUT, "<id%d> mConfigTimes:%d, wait time out",
+                             cameraId, mConfigTimes[groupId]);
+        }
+    }
+    // VIRTUAL_CHANNEL_E
 
     return device->start();
 }

@@ -33,6 +33,7 @@
 #include "CameraTypes.h"
 #include "FaceType.h"
 #include "ICamera.h"
+#include "ia_types.h"
 #include "IGraphConfig.h"
 #include "MediaControl.h"
 #include "Parameters.h"
@@ -51,6 +52,9 @@ namespace icamera {
 #define RESOLUTION_VGA_HEIGHT 480
 
 #define MAX_BUFFER_COUNT (10)
+// VIRTUAL_CHANNEL_S
+#define MAX_VC_GROUP_NUMBER 8
+// VIRTUAL_CHANNEL_E
 #define MAX_STREAM_NUMBER 5
 #define MAX_WEIGHT_GRID_SIDE_LEN 1024
 
@@ -119,11 +123,22 @@ class PlatformData {
                     : sensorName(""),
                       sensorDescription("unset"),
                       mLensName(""),
+                      // VIRTUAL_CHANNEL_S
+                      mVirtualChannel(false),
+                      mVCNum(0),
+                      mVCSeq(0),
+                      mVCGroupId(-1),
+                      // VIRTUAL_CHANNEL_E
                       mLensHwType(LENS_NONE_HW),
                       mEnablePdaf(false),
                       mSensorAwb(false),
                       mSensorAe(false),
                       mRunIspAlways(false),
+                      // HDR_FEATURE_S
+                      mHdrStatsInputBitDepth(0),
+                      mHdrStatsOutputBitDepth(0),
+                      mUseFixedHdrExposureInfo(true),
+                      // HDR_FEATURE_E
                       mLtmEnabled(false),
                       mSensorExposureNum(2),
                       mSensorExposureType(SENSOR_EXPOSURE_SINGLE),
@@ -158,6 +173,7 @@ class PlatformData {
                       mUseSensorDigitalGain(false),
                       mUseIspDigitalGain(false),
                       mNeedPreRegisterBuffers(false),
+                      mMediaFormat(media_format_legacy),
                       // FRAME_SYNC_S
                       mFrameSyncCheckEnabled(false),
                       // FRAME_SYNC_E
@@ -183,24 +199,43 @@ class PlatformData {
                       mNvmOverwrittenFileSize(0),
                       mTnrExtraFrameNum(DEFAULT_TNR_EXTRA_FRAME_NUM),
                       mDummyStillSink(false),
+                      mGpuTnrEnabled(false),
                       mRemoveCacheFlushOutputBuffer(false),
                       mPLCEnable(false),
+                      // PRIVACY_MODE_S
+                      mSupportPrivacy(NO_PRIVACY_MODE),
+                      mPrivacyModeThreshold(10),
+                      mPrivacyModeFrameDelay(5),
+                      // PRIVACY_MODE_E
                       mStillOnlyPipe(false),
                       mDisableBLCByAGain(false),
                       mDisableBLCAGainLow(-1),
                       mDisableBLCAGainHigh(-1),
-                      mResetLinkRoute(true) {}
+                      mResetLinkRoute(true),
+                      mReqWaitTimeout(0) {}
 
             std::vector<MediaCtlConf> mMediaCtlConfs;
 
             std::string sensorName;
             std::string sensorDescription;
             std::string mLensName;
+            // VIRTUAL_CHANNEL_S
+            bool mVirtualChannel;
+            int mVCNum;
+            int mVCSeq;
+            int mVCGroupId;
+            VcAggregator mVcAggregator;
+            // VIRTUAL_CHANNEL_E
             int mLensHwType;
             bool mEnablePdaf;
             bool mSensorAwb;
             bool mSensorAe;
             bool mRunIspAlways;
+            // HDR_FEATURE_S
+            int mHdrStatsInputBitDepth;
+            int mHdrStatsOutputBitDepth;
+            bool mUseFixedHdrExposureInfo;
+            // HDR_FEATURE_E
             bool mLtmEnabled;
             int mSensorExposureNum;
             int mSensorExposureType;
@@ -212,6 +247,9 @@ class PlatformData {
             bool mEnableMkn;
             // first: one algo type in imaging_algorithm_t, second: running rate
             std::unordered_map<int, float> mAlgoRunningRateMap;
+            // DOL_FEATURE_S
+            std::vector<int> mDolVbpOffset;
+            // DOL_FEATURE_E
             bool mSkipFrameV4L2Error;
             int mCITMaxMargin;
             camera_yuv_color_range_mode_t mYuvColorRangeMode;
@@ -247,6 +285,7 @@ class PlatformData {
             bool mUseSensorDigitalGain;
             bool mUseIspDigitalGain;
             bool mNeedPreRegisterBuffers;
+            ia_media_format mMediaFormat;
             // FRAME_SYNC_S
             bool mFrameSyncCheckEnabled;
             // FRAME_SYNC_E
@@ -255,6 +294,8 @@ class PlatformData {
             std::map<int, stream_array_t> mStreamToMcMap;
             Parameters mCapability;
 
+            /* key: total gain, value: a map (key: hdr ratio, value: edge and noise settings) */
+            std::map<float, std::map<float, EdgeNrSetting>> mTotalGainHdrRatioToEdgeNrMap;
             std::string mGraphSettingsFile;
             GraphSettingType mGraphSettingsType;
             std::vector<MultiExpRange> mMultiExpRanges;
@@ -294,14 +335,22 @@ class PlatformData {
             std::vector<IGraphType::ScalerInfo> mScalerInfo;
             int mTnrExtraFrameNum;
             bool mDummyStillSink;
+            bool mGpuTnrEnabled;
             bool mRemoveCacheFlushOutputBuffer;
             bool mPLCEnable;
+            // PRIVACY_MODE_S
+            PrivacyModeType mSupportPrivacy;
+            uint32_t mPrivacyModeThreshold;
+            uint32_t mPrivacyModeFrameDelay;
+            // PRIVACY_MODE_E
             bool mStillOnlyPipe;
 
             bool mDisableBLCByAGain;
             int mDisableBLCAGainLow;
             int mDisableBLCAGainHigh;
             bool mResetLinkRoute;
+            /* mReqWaitTimeout is used to override dqbuf timeout (ns) */
+            int64_t mReqWaitTimeout;
         };
 
         /**
@@ -599,6 +648,57 @@ class PlatformData {
     static bool isLtmEnabled(int cameraId);
 
     /**
+     * Get media format
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return the value of media format.
+     */
+    static ia_media_format getMediaFormat(int cameraId);
+
+  // HDR_FEATURE_S
+    /**
+     * Update media format using isNarrow indicator
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \param isNarrow: if the media format is narrow or not
+     * \return if update sucessfully or not.
+     */
+    static bool updateMediaFormat(int cameraId, bool isNarrow);
+
+    /**
+     * Check HDR is enabled or not
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return if HDR is enabled or not.
+     */
+    static bool isEnableHDR(int cameraId);
+
+    /**
+     * Get HDR stats input bit depth
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return the value of HDR stats input bit depth
+     */
+    static int getHDRStatsInputBitDepth(int cameraId);
+
+    /**
+     * Get HDR stats output bit depth
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return the value of HDR stats output bit depth
+     */
+    static int getHDRStatsOutputBitDepth(int cameraId);
+
+    /**
+     * Get if HDR exposure info is fixed or not
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return true if HDR exposure info is fixed
+     */
+    static int isUseFixedHDRExposureInfo(int cameraId);
+    // HDR_FEATURE_E
+
+    /**
      * Get if multi exposure cases or not
      *
      * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
@@ -823,6 +923,19 @@ class PlatformData {
     static int getAnalogGainLag(int cameraId);
 
     /**
+     * Get EdgeNrSetting based on total gain and hdr ratio
+     *
+     * \param[in] cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \param[in] totalGain: total gain
+     * \param[in] hdrRatio: hdr ratio
+     * \param[out] setting: EdgeNrSetting setting
+     *
+     * \return OK if setting is available, otherwise return NAME_NOT_FOUND.
+     */
+    static int getEdgeNrSetting(int cameraId, float totalGain, float hdrRatio,
+                                EdgeNrSetting& setting);
+
+    /**
      * Get the executor policy config.
      *
      * \param[in] graphId: the graph id
@@ -954,6 +1067,16 @@ class PlatformData {
      */
     static stream_t getISysOutputByPort(int cameraId, Port port);
 
+    // CSI_META_S
+    /**
+     * get CSI meta enabled status
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return true if CSI meta is enabled, otherwise return false
+     */
+    static bool isCsiMetaEnabled(int cameraId);
+    // CSI_META_E
+
     /**
      * get the format by device name
      *
@@ -984,6 +1107,59 @@ class PlatformData {
      * \return the status
      */
     static int getDevNameByType(int cameraId, VideoNodeType videoNodeType, std::string& devName);
+
+    // DOL_FEATURE_S
+    /**
+     * get fixed VBP from currently selected media configure
+     * VBP is used to parse sensor output frame under DOL mode
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return fixed vbp value
+     */
+    static int getFixedVbp(int cameraId);
+
+    /**
+     * whether need to handle VBP info from meta data
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \param configMode: the real configure mode
+     * \return true if needed, else false
+     */
+    static bool needHandleVbpInMetaData(int cameraId, ConfigMode configMode);
+
+    /**
+     * whether need to pass down VBP info
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \param configMode: the real configure mode
+     * \return true if needed, else false
+     */
+    static bool needSetVbp(int cameraId, ConfigMode configMode);
+
+    /**
+     * Check DOL VBP offset
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \param dolVbpOffset: return vbp offset for low and high bytes
+     */
+    static void getDolVbpOffset(int cameraId, std::vector<int>& dolVbpOffset);
+
+    /**
+     * get CSI BE SOC for Dol short exposure output enabled status
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return true if video node is enabled, otherwise return false
+     */
+    static bool isDolShortEnabled(int cameraId);
+
+    /**
+     * get CSI BE SOC for Dol medium exposure output enabled status
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return true if video node is enabled, otherwise return false
+     */
+    static bool isDolMediumEnabled(int cameraId);
+    // DOL_FEATURE_E
 
     /**
      * Check if ISYS is enabled or not
@@ -1035,6 +1211,14 @@ class PlatformData {
      */
     static int getConfigModesByOperationMode(int cameraId, uint32_t operationMode,
                                              std::vector<ConfigMode>& configModes);
+
+    /**
+     * to reorder tuning config
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \param configMode: type of ConfigMode
+     */
+    static void reorderSupportedTuningConfig(int cameraId, ConfigMode configMode);
 
     /**
      * to get the TuningMode by Config Mode
@@ -1178,6 +1362,41 @@ class PlatformData {
      * \return the MultiExpRange for current camera id.
      */
     static std::vector<MultiExpRange> getMultiExpRanges(int cameraId);
+
+    // FILE_SOURCE_S
+    /**
+     * Get the injected file.
+     *
+     * \return the injected file or nullptr if cameraInjectFile isn't set.
+     */
+    static const char* getInjectedFile();
+
+    /**
+     * Check if FileSource is enabled.
+     *
+     * \return true cameraInjectFile is set, otherwise return false.
+     */
+    static bool isFileSourceEnabled();
+    // FILE_SOURCE_E
+
+    // VIRTUAL_CHANNEL_S
+    /**
+     * Get virtual channel sequence
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return sequence if Virtual channel supported, otherwise return -1.
+     */
+    static int getVirtualChannelSequence(int cameraId);
+
+    /**
+     * Get aggregator info
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \param aggregator: Struct VcAggregator
+     * \return OK if found, otherwise return NO_ENTRY.
+     */
+    static int getVcAggregator(int cameraId, struct VcAggregator& aggregator);
+    // VIRTUAL_CHANNEL_E
 
     /**
      * Get the psl output resolution
@@ -1371,7 +1590,7 @@ class PlatformData {
      *
      * \return true if tnr is enabled.
      */
-    static bool isGpuTnrEnabled();
+    static bool isGpuTnrEnabled(int cameraId);
 
     /**
      * get the video stream number supported
@@ -1462,6 +1681,29 @@ class PlatformData {
      */
     static bool getPLCEnable(int cameraId);
 
+    // PRIVACY_MODE_S
+    /**
+     * Check which privacy mode the camera supports
+     *
+     * \return privacy mode type.
+     */
+    static PrivacyModeType getSupportPrivacy(int cameraId);
+
+    /**
+     * Get the threshold of luminance in AE-based privacy mode.
+     *
+     * \return Threshold
+     */
+    static uint32_t getPrivacyModeThreshold(int cameraId);
+
+    /**
+     * Get the threshold of frame delay in AE-based privacy mode.
+     *
+     * \return Threshold
+     */
+    static uint32_t getPrivacyModeFrameDelay(int cameraId);
+    // PRIVACY_MODE_E
+
     /**
      * Check support of still-only pipe is enabled or not
      *
@@ -1484,6 +1726,14 @@ class PlatformData {
      */
     static bool isResetLinkRoute(int cameraId);
 
+  /**
+     * Get use defined timeout val for dqbuf
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return timeout interval for dqbuf in ns (2000000000 for 2s)
+     */
+    static int64_t getReqWaitTimeout(int cameraId);
+
     // LEVEL0_ICBM_S
     /**
      * Check GPU ICBM is enabled or not
@@ -1491,13 +1741,6 @@ class PlatformData {
      * \return true if ICBM is enabled.
      */
     static bool isGPUICBMEnabled();
-
-    /**
-     * Check Level0 is used or not
-     *
-     * \return true if Level0 is used.
-     */
-    static bool useLevel0Tnr();
     // LEVEL0_ICBM_E
 };
 } /* namespace icamera */

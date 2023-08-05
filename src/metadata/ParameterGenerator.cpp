@@ -245,8 +245,24 @@ int ParameterGenerator::getIspParameters(int64_t sequence, Parameters* param) {
         if (ret == OK) {
             param->setVideoStabilizationMode(stabilizationMode);
         }
+        float hdrRatio;
+        ret = mRequestParamMap[sequence]->param.getHdrRatio(hdrRatio);
+        if (ret == OK) {
+            param->setHdrRatio(hdrRatio);
+        }
 
         return OK;
+    }
+
+    return UNKNOWN_ERROR;
+}
+
+int ParameterGenerator::getZoomRegion(int64_t sequence, camera_zoom_region_t& region) {
+    CHECK_SEQUENCE(sequence);
+
+    AutoMutex l(mParamsLock);
+    if (mRequestParamMap.find(sequence) != mRequestParamMap.end()) {
+        return mRequestParamMap[sequence]->param.getZoomRegion(&region);
     }
 
     return UNKNOWN_ERROR;

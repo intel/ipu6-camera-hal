@@ -113,6 +113,17 @@ int Ltm::configure(const std::vector<ConfigMode>& configModes,
         if (cfg == CAMERA_STREAM_CONFIGURATION_MODE_NORMAL) {
             tMode = TUNING_MODE_VIDEO;
             break;
+            // HDR_FEATURE_S
+        } else if (cfg == CAMERA_STREAM_CONFIGURATION_MODE_HLC) {
+            tMode = TUNING_MODE_VIDEO_HLC;
+            break;
+        } else if (cfg == CAMERA_STREAM_CONFIGURATION_MODE_HDR) {
+            tMode = TUNING_MODE_VIDEO_HDR;
+            break;
+        } else if (cfg == CAMERA_STREAM_CONFIGURATION_MODE_HDR2) {
+            tMode = TUNING_MODE_VIDEO_HDR2;
+            break;
+            // HDR_FEATURE_E
         }
     }
 

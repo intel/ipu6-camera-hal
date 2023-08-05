@@ -72,6 +72,7 @@ class ParameterGenerator {
     void updateParameters(int64_t sequence, const Parameters* param);
     int getIspParameters(int64_t sequence, Parameters* param);
     int getRawOutputMode(int64_t sequence, raw_data_output_t& rawOutputMode);
+    int getZoomRegion(int64_t sequence, camera_zoom_region_t& region);
     int getUserRequestId(int64_t sequence, int32_t& userRequestId);
 
     /**

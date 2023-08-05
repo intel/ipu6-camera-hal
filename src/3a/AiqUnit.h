@@ -70,6 +70,10 @@ class AiqUnitBase {
     }
     // INTEL_DVS_E
 
+    // PRIVACY_MODE_S
+    virtual EventSource* get3AReadyEventSource() { return nullptr; }
+    // PRIVACY_MODE_E
+
     virtual int setParameters(const Parameters& /*params*/) { return OK; }
 
  private:
@@ -136,6 +140,13 @@ class AiqUnit : public AiqUnitBase {
     std::vector<EventListener*> getDVSEventListener();
     // INTEL_DVS_E
 
+    // PRIVACY_MODE_S
+    /**
+     * \brief Get EVENT_3A_READY EventSource
+     */
+    EventSource* get3AReadyEventSource();
+    // PRIVACY_MODE_E
+
     /**
      * \brief Set 3A Parameters
      *
@@ -147,6 +158,7 @@ class AiqUnit : public AiqUnitBase {
     DISALLOW_COPY_AND_ASSIGN(AiqUnit);
 
  private:
+    void resetIntelCcaHandle(const std::vector<ConfigMode>& configModes);
     int initIntelCcaHandle(const std::vector<ConfigMode>& configModes);
     void deinitIntelCcaHandle();
     void dumpCcaInitParam(const cca::cca_init_params params);

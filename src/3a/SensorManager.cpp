@@ -30,9 +30,15 @@ namespace icamera {
 SensorManager::SensorManager(int cameraId, SensorHwCtrl* sensorHw)
         : mCameraId(cameraId),
           mSensorHwCtrl(sensorHw),
+          // HDR_FEATURE_S
+          mModeSwitched(false),
+          // HDR_FEATURE_E
           mLastSofSequence(-1),
           mAnalogGainDelay(0),
           mDigitalGainDelay(0) {
+    // HDR_FEATURE_S
+    CLEAR(mWdrModeSetting);
+    // HDR_FEATURE_E
 
     if (PlatformData::getAnalogGainLag(mCameraId) > 0) {
         mAnalogGainDelay =
@@ -57,6 +63,12 @@ void SensorManager::reset() {
     mAnalogGainMap.clear();
     mDigitalGainMap.clear();
 
+    // HDR_FEATURE_S
+    mModeSwitched = false;
+    CLEAR(mWdrModeSetting);
+    mWdrModeSetting.tuningMode = TUNING_MODE_MAX;
+    // HDR_FEATURE_E
+
     mSofEventInfo.clear();
 }
 
@@ -67,6 +79,10 @@ void SensorManager::handleSofEvent(EventData eventData) {
              TIMEVAL2USECS(eventData.data.sync.timestamp));
         mLastSofSequence = eventData.data.sync.sequence;
         handleSensorExposure();
+
+        // HDR_FEATURE_S
+        handleSensorModeSwitch(eventData.data.sync.sequence);
+        // HDR_FEATURE_E
 
         SofEventInfo info;
         info.sequence = eventData.data.sync.sequence;
@@ -89,6 +105,66 @@ uint64_t SensorManager::getSofTimestamp(int64_t sequence) {
     }
     return 0;
 }
+
+// HDR_FEATURE_S
+int SensorManager::convertTuningModeToWdrMode(TuningMode tuningMode) {
+    return ((tuningMode == TUNING_MODE_VIDEO_HDR) || (tuningMode == TUNING_MODE_VIDEO_HDR2)) ? 1 :
+                                                                                               0;
+}
+
+void SensorManager::handleSensorModeSwitch(int64_t sequence) {
+    if (!PlatformData::isEnableHDR(mCameraId) || !mModeSwitched) {
+        return;
+    }
+
+    if (mWdrModeSetting.sequence <= sequence) {
+        int wdrMode = convertTuningModeToWdrMode(mWdrModeSetting.tuningMode);
+        LOG2("<seq%ld>@%s, tunning mode %d, set wdrMode %d sequence %ld", sequence, __func__,
+             wdrMode, mWdrModeSetting.sequence);
+
+        if (mSensorHwCtrl->setWdrMode(wdrMode) == OK) {
+            mModeSwitched = false;
+        }
+    }
+}
+
+int SensorManager::setWdrMode(TuningMode tuningMode, int64_t sequence) {
+    if (!PlatformData::isEnableHDR(mCameraId)) {
+        return OK;
+    }
+
+    AutoMutex l(mLock);
+    LOG2("@%s, tuningMode %d, sequence %ld", __func__, tuningMode, sequence);
+    int ret = OK;
+
+    // Set Wdr Mode after running AIQ first time.
+    if (mWdrModeSetting.tuningMode == TUNING_MODE_MAX) {
+        int wdrMode = convertTuningModeToWdrMode(tuningMode);
+        ret = mSensorHwCtrl->setWdrMode(wdrMode);
+        mWdrModeSetting.tuningMode = tuningMode;
+        return ret;
+    }
+
+    if (mWdrModeSetting.tuningMode != tuningMode) {
+        // Save WDR mode and update this mode to driver in SOF event handler.
+        // So we know which frame is corrupted and we can skip the corrupted frames.
+        LOG2("<seq%ld>@%s, tuningMode %d", sequence, __func__, tuningMode);
+        mWdrModeSetting.tuningMode = tuningMode;
+        mWdrModeSetting.sequence = sequence;
+        mModeSwitched = true;
+    }
+
+    return ret;
+}
+
+int SensorManager::setAWB(float r_per_g, float b_per_g) {
+    AutoMutex l(mLock);
+    LOG2("@%s, r_per_g %f, b_per_g %f", __func__, r_per_g, b_per_g);
+
+    int ret = mSensorHwCtrl->setAWB(r_per_g, b_per_g);
+    return ret;
+}
+// HDR_FEATURE_E
 
 void SensorManager::handleSensorExposure() {
     if (mExposureDataMap.find(mLastSofSequence) != mExposureDataMap.end()) {
@@ -178,6 +254,11 @@ uint32_t SensorManager::updateSensorExposure(SensorExpGroup sensorExposures, int
          applyingSeq);
     return ((uint32_t)effectSeq);
 }
+// CRL_MODULE_S
+int SensorManager::setFrameRate(float fps) {
+    return mSensorHwCtrl->setFrameRate(fps);
+}
+// CRL_MODULE_E
 
 int SensorManager::getSensorInfo(ia_aiq_frame_params& frameParams,
                                  ia_aiq_exposure_sensor_descriptor& sensorDescriptor) {

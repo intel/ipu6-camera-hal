@@ -100,7 +100,6 @@ int IntelC4mTNR::prepareSurface(void* bufAddr, int size) {
 
 int IntelC4mTNR::runTnrFrame(const void* inBufAddr, void* outBufAddr, uint32_t inBufSize,
                              uint32_t outBufSize, Tnr7Param* tnrParam, bool syncUpdate, int fd) {
-    PERF_CAMERA_ATRACE();
     TRACE_LOG_PROCESS("IntelC4mTNR", "runTnrFrame");
     LOG2("<%d>@%s type %d", mCameraId, __func__, mTnrType);
     CheckAndLogError(inBufAddr == nullptr || outBufAddr == nullptr || tnrParam == nullptr,
@@ -160,7 +159,6 @@ int32_t IntelC4mTNR::getTnrBufferSize(int width, int height, uint32_t* size) {
 }
 
 void IntelC4mTNR::handleParamUpdate(int gain, bool forceUpdate) {
-    PERF_CAMERA_ATRACE();
     LOG2("@%s gain: %d", __func__, gain);
     // gain value is from AE expore analog_gain * digital_gain
     struct timespec beginTime = {};
@@ -187,7 +185,6 @@ CmSurface2DUP* IntelC4mTNR::getBufferCMSurface(void* bufAddr) {
 }
 
 CmSurface2DUP* IntelC4mTNR::createCMSurface(void* bufAddr) {
-    PERF_CAMERA_ATRACE();
     CmSurface2DUP* cmSurface = nullptr;
     int32_t ret = createCmSurface2DUP(mWidth, mHeight, CM_SURFACE_FORMAT_NV12, bufAddr, cmSurface);
     CheckAndLogError(ret != 0, nullptr, "failed to create CmSurface2DUP object");

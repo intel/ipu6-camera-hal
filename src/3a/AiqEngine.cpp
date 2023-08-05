@@ -190,6 +190,20 @@ int AiqEngine::prepareStatsParams(cca::cca_stats_params* statsParams, AiqStatist
 
     int ret = OK;
     do {
+        // HDR_FEATURE_S
+        // Run 3A without statistics when switching pipe.
+        if (aiqResult->mAiqParam.tuningMode == TUNING_MODE_VIDEO_ULL &&
+            aiqStatistics->mTuningMode == TUNING_MODE_VIDEO_HDR) {
+            LOG2("Switching from HDR to ULL pipe");
+            ret = INVALID_OPERATION;
+            break;
+        } else if (aiqResult->mAiqParam.tuningMode == TUNING_MODE_VIDEO_HDR &&
+                   aiqStatistics->mTuningMode == TUNING_MODE_VIDEO_ULL) {
+            LOG2("Switching from ULL to HDR pipe");
+            ret = INVALID_OPERATION;
+            break;
+        }
+        // HDR_FEATURE_E
 
         // The statistics timestamp is incorrect. If possible, use SOF timestamp instead.
         unsigned long long timestamp = mSensorManager->getSofTimestamp(aiqStatistics->mSequence);
@@ -231,6 +245,19 @@ void AiqEngine::setAiqResult(AiqResult* aiqResult, bool skip) {
     if (skip) {
         LOG2("<seq%ld>%s, skipping the frame", aiqResult->mSequence, __func__);
     }
+
+    // HDR_FEATURE_S
+    int64_t sequence = aiqResult->mSequence - PlatformData::getExposureLag(mCameraId);
+    mSensorManager->setWdrMode(aiqResult->mTuningMode, sequence);
+
+    if (PlatformData::getSensorAwbEnable(mCameraId)) {
+        LOG2("%s, Set sensor awb %f %f", __func__, aiqResult->mAwbResults.accurate_r_per_g,
+             aiqResult->mAwbResults.accurate_b_per_g);
+
+        mSensorManager->setAWB(aiqResult->mAwbResults.accurate_r_per_g,
+                               aiqResult->mAwbResults.accurate_b_per_g);
+    }
+    // HDR_FEATURE_E
 
     mLensManager->setLensResult(aiqResult->mAfResults, aiqResult->mSequence, aiqResult->mAiqParam);
 }
@@ -293,6 +320,9 @@ AiqEngine::AiqState AiqEngine::prepareInputParam(AiqStatistics* aiqStats, AiqRes
 
     // Update sensor info for the first-run of AIQ
     if (mFirstAiqRunning) {
+        // CRL_MODULE_S
+        mSensorManager->setFrameRate(aiqResult->mAiqParam.fps);
+        // CRL_MODULE_E
         // set sensor info if needed
         ia_aiq_exposure_sensor_descriptor sensorDescriptor = {};
         ia_aiq_frame_params frameParams = {};
@@ -338,6 +368,23 @@ AiqEngine::AiqState AiqEngine::runAiq(long requestId, int64_t applyingSeq, AiqRe
             return AIQ_STATE_ERROR;
         }
 
+        // PRIVACY_MODE_S
+        if (PlatformData::getSupportPrivacy(mCameraId) == AE_BASED_PRIVACY_MODE) {
+            uint32_t outMaxBin = 0;
+            ret = mAiqCore->getBrightestIndex(outMaxBin);
+            if (ret == OK) {
+                EventData3AReady data;
+                data.sequence = requestId;
+                data.maxBin = outMaxBin;
+                EventData eventData;
+                eventData.type = EVENT_3A_READY;
+                eventData.buffer = nullptr;
+                eventData.data.run3AReady = data;
+                notifyListeners(eventData);
+            }
+        }
+        // PRIVACY_MODE_E
+
         setSensorExposure(aiqResult, applyingSeq);
 
         ret = mAiqCore->runAiq(requestId, aiqResult);
@@ -367,6 +414,13 @@ void AiqEngine::setSensorExposure(AiqResult* aiqResult, int64_t applyingSeq) {
 
 AiqEngine::AiqState AiqEngine::handleAiqResult(AiqResult* aiqResult) {
     LOG2("%s: aiqResult->mTuningMode = %d", __func__, aiqResult->mTuningMode);
+
+    // HDR_FEATURE_S
+    aec_scene_t aecScene = (aiqResult->mAeResults.multiframe == ia_aiq_bracket_mode_ull) ?
+                               AEC_SCENE_ULL :
+                               AEC_SCENE_HDR;
+    mAiqSetting->updateTuningMode(aecScene);
+    // HDR_FEATURE_E
 
     aiqResult->mSceneMode = SCENE_MODE_AUTO;
     /* Use direct AE result to update sceneMode to reflect the actual mode AE want to have,

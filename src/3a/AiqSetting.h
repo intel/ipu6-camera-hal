@@ -27,6 +27,10 @@ namespace icamera {
 #define DEFAULT_LSC_GRID_SIZE (64 * 64)
 #define DEFAULT_TONEMAP_CURVE_POINT_NUM 2048
 
+// HDR_FEATURE_S
+typedef enum { AEC_SCENE_NONE, AEC_SCENE_HDR, AEC_SCENE_ULL } aec_scene_t;
+// HDR_FEATURE_E
+
 typedef struct {
     char data[MAX_CUSTOM_CONTROLS_PARAM_SIZE];
     unsigned int length;
@@ -132,6 +136,10 @@ class AiqSetting {
     int setParameters(const Parameters& params);
 
     int getAiqParameter(aiq_parameter_t& param);
+
+    // HDR_FEATURE_S
+    void updateTuningMode(aec_scene_t aecScene);
+    // HDR_FEATURE_E
 
  private:
     void updateFrameUsage(const stream_config_t* streamList);

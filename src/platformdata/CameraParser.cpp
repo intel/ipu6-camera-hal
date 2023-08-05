@@ -23,6 +23,9 @@
 #include <string.h>
 #include <sys/stat.h>
 
+// CRL_MODULE_S
+#include <linux/crlmodule.h>
+// CRL_MODULE_E
 #include <algorithm>
 #include <memory>
 #include <string>
@@ -229,6 +232,17 @@ void CameraParser::checkField(CameraParser* profiles, const char* name, const ch
                     profiles->pCurrentCam->sensorName = val;
                 } else if (strcmp(key, "description") == 0) {
                     profiles->pCurrentCam->sensorDescription = val;
+                    // VIRTUAL_CHANNEL_S
+                } else if (strcmp(key, "virtualChannel") == 0) {
+                    profiles->pCurrentCam->mVirtualChannel =
+                        strcmp(val, "true") == 0 ? true : false;
+                } else if (strcmp(key, "vcNum") == 0) {
+                    profiles->pCurrentCam->mVCNum = strtoul(val, nullptr, 10);
+                } else if (strcmp(key, "vcSeq") == 0) {
+                    profiles->pCurrentCam->mVCSeq = strtoul(val, nullptr, 10);
+                } else if (strcmp(key, "vcGroupId") == 0) {
+                    profiles->pCurrentCam->mVCGroupId = strtoul(val, nullptr, 10);
+                    // VIRTUAL_CHANNEL_E
                 }
                 idx += 2;
             }
@@ -270,8 +284,6 @@ void CameraParser::handleCommon(CameraParser* profiles, const char* name, const 
         cfg->ipuName = atts[1];
     } else if (strcmp(name, "availableSensors") == 0) {
         parseXmlConvertStrings(atts[1], cfg->availableSensors, convertCharToString);
-    } else if (strcmp(name, "useGpuTnr") == 0) {
-        cfg->isGpuTnrEnabled = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "cameraNumber") == 0) {
         cfg->cameraNumber = atoi(atts[1]);
     } else if (strcmp(name, "stillTnrPrior") == 0) {
@@ -289,12 +301,10 @@ void CameraParser::handleCommon(CameraParser* profiles, const char* name, const 
         cfg->supportHwJpegEncode = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "maxIsysTimeoutValue") == 0) {
         cfg->maxIsysTimeoutValue = atoi(atts[1]);
-        // LEVEL0_ICBM_S
+    // LEVEL0_ICBM_S
     } else if (strcmp(name, "useGPUICBM") == 0) {
         cfg->isGPUICBMEnabled = strcmp(atts[1], "true") == 0;
-    }  else if (strcmp(name, "useLevel0Tnr") == 0) {
-        cfg->useLevel0Tnr = strcmp(atts[1], "true") == 0;
-        // LEVEL0_ICBM_E
+    // LEVEL0_ICBM_E
     }
 }
 
@@ -383,6 +393,10 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
         }
     } else if (strcmp(name, "useCrlModule") == 0) {
         pCurrentCam->mUseCrlModule = strcmp(atts[1], "true") == 0;
+        // DOL_FEATURE_S
+    } else if (strcmp(name, "dolVbpOffset") == 0) {
+        parseXmlConvertStrings(atts[1], pCurrentCam->mDolVbpOffset, atoi);
+        // DOL_FEATURE_E
     } else if (strcmp(name, "skipFrameV4L2Error") == 0) {
         pCurrentCam->mSkipFrameV4L2Error = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "useSensorDigitalGain") == 0) {
@@ -447,6 +461,40 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
         pCurrentCam->mDigitalGainLag = atoi(atts[1]);
     } else if (strcmp(name, "exposureLag") == 0) {
         pCurrentCam->mExposureLag = atoi(atts[1]);
+        // HDR_FEATURE_S
+    } else if (strcmp(name, "hdrExposureType") == 0) {
+        if (strcmp(atts[1], "fix-exposure-ratio") == 0) {
+            pCurrentCam->mSensorExposureType = SENSOR_FIX_EXPOSURE_RATIO;
+        } else if (strcmp(atts[1], "relative-multi-exposures") == 0) {
+            pCurrentCam->mSensorExposureType = SENSOR_RELATIVE_MULTI_EXPOSURES;
+        } else if (strcmp(atts[1], "multi-exposures") == 0) {
+            pCurrentCam->mSensorExposureType = SENSOR_MULTI_EXPOSURES;
+        } else if (strcmp(atts[1], "dual-exposures-dcg-and-vs") == 0) {
+            pCurrentCam->mSensorExposureType = SENSOR_DUAL_EXPOSURES_DCG_AND_VS;
+        } else {
+            LOGE("unknown SENSOR exposure type %s, set to SENSOR_EXPOSURE_SINGLE", atts[1]);
+            pCurrentCam->mSensorExposureType = SENSOR_EXPOSURE_SINGLE;
+        }
+    } else if (strcmp(name, "hdrExposureNum") == 0) {
+        pCurrentCam->mSensorExposureNum = atoi(atts[1]);
+    } else if (strcmp(name, "hdrStatsInputBitDepth") == 0) {
+        pCurrentCam->mHdrStatsInputBitDepth = atoi(atts[1]);
+    } else if (strcmp(name, "hdrStatsOutputBitDepth") == 0) {
+        pCurrentCam->mHdrStatsOutputBitDepth = atoi(atts[1]);
+    } else if (strcmp(name, "useFixedHdrExposureInfo") == 0) {
+        pCurrentCam->mUseFixedHdrExposureInfo = strcmp(atts[1], "true") == 0;
+    } else if (strcmp(name, "hdrGainType") == 0) {
+        if (strcmp(atts[1], "multi-dg-and-convertion-ag") == 0) {
+            pCurrentCam->mSensorGainType = SENSOR_MULTI_DG_AND_CONVERTION_AG;
+        } else if (strcmp(atts[1], "isp-dg-and-sensor-direct-ag") == 0) {
+            pCurrentCam->mSensorGainType = ISP_DG_AND_SENSOR_DIRECT_AG;
+        } else if (strcmp(atts[1], "multi-dg-and-direct-ag") == 0) {
+            pCurrentCam->mSensorGainType = SENSOR_MULTI_DG_AND_DIRECT_AG;
+        } else {
+            LOGE("unknown sensor gain type %s, set to SENSOR_GAIN_NONE", atts[1]);
+            pCurrentCam->mSensorGainType = SENSOR_GAIN_NONE;
+        }
+        // HDR_FEATURE_E
     } else if (strcmp(name, "graphSettingsFile") == 0) {
         pCurrentCam->mGraphSettingsFile = atts[1];
     } else if (strcmp(name, "graphSettingsType") == 0) {
@@ -615,12 +663,43 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
         pCurrentCam->mTnrExtraFrameNum = val > 0 ? val : DEFAULT_TNR_EXTRA_FRAME_NUM;
     } else if (strcmp(name, "dummyStillSink") == 0) {
         pCurrentCam->mDummyStillSink = strcmp(atts[1], "true") == 0;
+    } else if (strcmp(name, "useGpuTnr") == 0) {
+        pCurrentCam->mGpuTnrEnabled = strcmp(atts[1], "true") == 0;
     } else if (!strcmp(name, "removeCacheFlushOutputBuffer")) {
         pCurrentCam->mRemoveCacheFlushOutputBuffer = strcmp(atts[1], "true") == 0;
     } else if (!strcmp(name, "isPLCEnable")) {
         pCurrentCam->mPLCEnable = strcmp(atts[1], "true") == 0;
+    // PRIVACY_MODE_S
+    } else if (strcmp(name, "supportPrivacy") == 0) {
+        int val = atoi(atts[1]);
+        if (val > 0 && val <= 2) {
+            pCurrentCam->mSupportPrivacy = static_cast<PrivacyModeType>(val);
+        }
+    } else if (strcmp(name, "privacyModeThreshold") == 0) {
+        int val = atoi(atts[1]);
+        if (val > 0 && val < 255) {
+            pCurrentCam->mPrivacyModeThreshold = val;
+        }
+    } else if (strcmp(name, "privacyModeFrameDelay") == 0) {
+        int val = atoi(atts[1]);
+        if (val >= 0) {
+            pCurrentCam->mPrivacyModeFrameDelay = val;
+        }
+    // PRIVACY_MODE_E
     } else if (strcmp(name, "stillOnlyPipe") == 0) {
         pCurrentCam->mStillOnlyPipe = strcmp(atts[1], "true") == 0;
+    // VIRTUAL_CHANNEL_S
+    } else if (strcmp(name, "vcAggregator") == 0) {
+        int size = strlen(atts[1]);
+        char src[size + 1];
+        MEMCPY_S(src, size, atts[1], size);
+        src[size] = '\0';
+        char* savePtr = nullptr;
+        char* tablePtr = strtok_r(src, ",", &savePtr);
+        if (tablePtr) pCurrentCam->mVcAggregator.mName = tablePtr;
+        tablePtr = strtok_r(nullptr, ",", &savePtr);
+        if (tablePtr) pCurrentCam->mVcAggregator.mIndex = atoi(tablePtr);
+    // VIRTUAL_CHANNEL_E
     } else if (strcmp(name, "disableBLCByAGain") == 0) {
         int size = strlen(atts[1]);
         char src[size + 1];
@@ -634,6 +713,9 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
         profiles->pCurrentCam->mDisableBLCByAGain = true;
     } else if (strcmp(name, "resetLinkRoute") == 0) {
         pCurrentCam->mResetLinkRoute = strcmp(atts[1], "true") == 0;
+    } else if (strcmp(name, "reqWaitTimeoutNs") == 0) {
+        int64_t val = atoi(atts[1]);
+        pCurrentCam->mReqWaitTimeout = (val >= 0) ? val : 0;
     }
 }
 
@@ -720,6 +802,10 @@ void CameraParser::parseMediaCtlConfigElement(CameraParser* profiles, const char
             mc.outputHeight = strtoul(atts[idx + 1], nullptr, 10);
         } else if (strcmp(key, "format") == 0) {
             mc.format = CameraUtils::string2PixelCode(atts[idx + 1]);
+            // DOL_FEATURE_S
+        } else if (strcmp(key, "vbp") == 0) {
+            mc.vbp = strtoul(atts[idx + 1], nullptr, 10);
+            // DOL_FEATURE_E
         }
         idx += 2;
     }
@@ -771,6 +857,22 @@ void CameraParser::parseControlElement(CameraParser* profiles, const char* name,
             } else if (!strcmp(val, "V4L2_CID_MIPI_LANES")) {
                 ctl.ctlCmd = V4L2_CID_MIPI_LANES;
 #endif
+                // HDR_FEATURE_S
+            } else if (!strcmp(val, "V4L2_CID_WDR_MODE")) {
+                ctl.ctlCmd = V4L2_CID_WDR_MODE;
+                // HDR_FEATURE_E
+                // CRL_MODULE_S
+            } else if (!strcmp(val, "V4L2_CID_LINE_LENGTH_PIXELS")) {
+                ctl.ctlCmd = V4L2_CID_LINE_LENGTH_PIXELS;
+            } else if (!strcmp(val, "V4L2_CID_FRAME_LENGTH_LINES")) {
+                ctl.ctlCmd = V4L2_CID_FRAME_LENGTH_LINES;
+            } else if (!strcmp(val, "CRL_CID_SENSOR_MODE")) {
+                ctl.ctlCmd = CRL_CID_SENSOR_MODE;
+            } else if (!strcmp(val, "CRL_CID_EXPOSURE_MODE")) {
+                ctl.ctlCmd = CRL_CID_EXPOSURE_MODE;
+            } else if (!strcmp(val, "CRL_CID_EXPOSURE_HDR_RATIO")) {
+                ctl.ctlCmd = CRL_CID_EXPOSURE_HDR_RATIO;
+                // CRL_MODULE_E
             } else {
                 LOGE("Unknow ioctl command %s", val);
                 ctl.ctlCmd = -1;

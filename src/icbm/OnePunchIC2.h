@@ -60,7 +60,7 @@ class IntelOPIC2 {
      *
      * \return 0 if succeed.
      */
-    int setup(ICBMInitInfo* initParam);
+    int setup(ICBMInitInfo* initParam, std::shared_ptr<IC2ApiHandle> handle);
 
     /**
      * \brief shundown level0 session according to the cameraID and request type
@@ -81,9 +81,11 @@ class IntelOPIC2 {
  private:
     static IntelOPIC2* sInstance;
     static std::mutex sLock;
+    std::shared_ptr<IC2ApiHandle> mIC2Api;
 
     IntelOPIC2();
-    ~IntelOPIC2(){};
+    ~IntelOPIC2();
+    int loadIC2Library();
     // lock for each session, key is from getIndexKey()
     std::unordered_map<int, std::unique_ptr<std::mutex>> mLockMap;
     // session map, key is from getIndexKey()

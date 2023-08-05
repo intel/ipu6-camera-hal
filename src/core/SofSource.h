@@ -57,6 +57,10 @@ class SofSource : public EventSource {
     };
     PollThread* mPollThread;
     int mCameraId;
+    // VIRTUAL_CHANNEL_S
+    V4L2Subdevice* mAggregatorSubDev;
+    int mFrameSyncId;
+    // VIRTUAL_CHANNEL_E
 
     V4L2Subdevice* mIsysReceiverSubDev;
     bool mExitPending;

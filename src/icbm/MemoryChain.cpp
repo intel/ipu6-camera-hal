@@ -36,6 +36,9 @@ void MemoryChainDescription::linkIn(const char* featureName, const char* inPortN
     outMemory.feature_name = featureName;
     outMemory.port_name = outPortName;
 
+    inMemory.media_type = iaic_nv12;
+    outMemory.media_type = iaic_nv12;
+
     mInChain.push_back(inMemory);
     mOutChain.push_back(outMemory);
 

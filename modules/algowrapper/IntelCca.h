@@ -48,6 +48,9 @@ class IntelCca {
 
     ia_err runLTM(uint64_t frameId, const cca::cca_ltm_input_params& params);
 
+    ia_err reconfigDvs(const cca::cca_dvs_init_param& dvsInitParam,
+                       const cca::cca_gdc_configurations& gdcConfigs);
+
     ia_err updateZoom(uint32_t streamId, const cca::cca_dvs_zoom& params);
 
     ia_err runDVS(uint32_t streamId, uint64_t frameId);
@@ -59,8 +62,12 @@ class IntelCca {
     ia_err getAiqd(cca::cca_aiqd* aiqd);
     ia_err updateTuning(uint8_t lardTags, const ia_lard_input_params& lardParams,
                         const cca::cca_nvm& nvm, int32_t streamId);
+    // PRIVACY_MODE_S
+    ia_err getBrightestIndex(uint32_t *outMaxBin);
+    // PRIVACY_MODE_E
 
     bool allocStatsDataMem(unsigned int size);
+    void freeStatsDataMem();
     void* getStatsDataBuffer();
     void decodeHwStatsDone(int64_t sequence, unsigned int byteUsed);
     void* fetchHwStatsData(int64_t sequence, unsigned int* byteUsed);
@@ -79,7 +86,6 @@ class IntelCca {
  private:
     cca::IntelCCA* getIntelCCA();
     void releaseIntelCCA();
-    void freeStatsDataMem();
 
  private:
     int mCameraId;

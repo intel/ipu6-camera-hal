@@ -19,6 +19,8 @@
 #include "CameraDevice.h"
 #include "Parameters.h"
 
+#include "iutils/CameraShm.h"
+
 namespace icamera {
 
 /**
@@ -71,9 +73,17 @@ class CameraHal {
     int mInitTimes;
     // Guard for CameraHal public API.
     Mutex mLock;
+    // VIRTUAL_CHANNEL_S
+    int mTotalVirtualChannelCamNum[MAX_VC_GROUP_NUMBER];
+    int mConfigTimes[MAX_VC_GROUP_NUMBER];
+    Condition mVirtualChannelSignal[MAX_VC_GROUP_NUMBER];
+    static const nsecs_t mWaitDuration = 500000000;  // 500ms
+    // VIRTUAL_CHANNEL_E
 
     enum { HAL_UNINIT, HAL_INIT } mState;
 
+    // Used to store variables in different process
+    CameraSharedMemory mCameraShm;
     int mCameraOpenNum;
 };
 
