@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2021 Intel Corporation
+ * Copyright (C) 2020-2023 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,20 +19,66 @@
 #include "modules/sandboxing/client/IntelTNR7USClient.h"
 
 #include <string>
+#include <memory>
 
 #include "iutils/CameraLog.h"
 #include "iutils/Utils.h"
-
 namespace icamera {
 
-IntelTNR7US::IntelTNR7US(int cameraId)
-        : mCameraId(cameraId),
+IntelTNR7US* IntelTNR7US::createIntelTNR(int cameraId) {
+    if (!PlatformData::isGpuTnrEnabled()) return nullptr;
+#ifdef TNR7_CM
+    return new IntelC4mTNR(cameraId);
+#else
+    return new IntelLevel0TNR(cameraId);
+#endif
+}
+
+Tnr7Param* IntelTNR7US::allocTnr7ParamBuf() {
+    uintptr_t personal = reinterpret_cast<uintptr_t>(this);
+    std::string initName = "/TnrParam" + std::to_string(personal) + "Shm";
+
+    mParamMems.mName = initName.c_str();
+    mParamMems.mSize = sizeof(Tnr7Param);
+    bool ret = mCommon.allocShmMem(mParamMems.mName, mParamMems.mSize, &mParamMems, GPU_ALGO_SHM);
+    CheckAndLogError(!ret, nullptr, "@%s, allocShmMem fails", __func__);
+
+    return reinterpret_cast<Tnr7Param*>(mParamMems.mAddr);
+}
+
+void* IntelTNR7US::allocCamBuf(uint32_t bufSize, int id) {
+    uintptr_t personal = reinterpret_cast<uintptr_t>(this);
+    std::string initName = "/TnrCam" + std::to_string(personal) + std::to_string(id) + "Shm";
+    ShmMemInfo shm;
+    shm.mName = initName.c_str();
+    shm.mSize = bufSize;
+    bool ret = mCommon.allocShmMem(shm.mName, shm.mSize, &shm, GPU_ALGO_SHM);
+    CheckAndLogError(!ret, nullptr, "@%s, allocShmMem fails", __func__);
+
+    mCamBufMems.push_back(shm);
+    return shm.mAddr;
+}
+
+void IntelTNR7US::freeAllBufs() {
+    if (mParamMems.mAddr) {
+        mCommon.freeShmMem(mParamMems, GPU_ALGO_SHM);
+    }
+    for (auto& camBuf : mCamBufMems) {
+        if (camBuf.mAddr) {
+            mCommon.freeShmMem(camBuf, GPU_ALGO_SHM);
+        }
+    }
+}
+
+#ifdef TNR7_CM
+IntelC4mTNR::IntelC4mTNR(int cameraId)
+        : IntelTNR7US(cameraId),
           mTnrType(TNR_INSTANCE_MAX),
           mTnrRequestInfo(nullptr) {
     LOG1("<id%d> %s, Construct", cameraId, __func__);
 }
 
-IntelTNR7US::~IntelTNR7US() {
+IntelC4mTNR::~IntelC4mTNR() {
     // the instance not initialized, don't need to free
     if (mTnrType != TNR_INSTANCE_MAX) {
         mTnrRequestInfo->type = mTnrType;
@@ -47,7 +93,7 @@ IntelTNR7US::~IntelTNR7US() {
     LOG1("<id%d> %s, Destroy", mCameraId, __func__);
 }
 
-int IntelTNR7US::init(int width, int height, TnrType type) {
+int IntelC4mTNR::init(int width, int height, TnrType type) {
     uintptr_t personal = reinterpret_cast<uintptr_t>(this);
     std::string initName = "/TnrRun" + std::to_string(personal) + "Shm";
     mTnrRequestInfoMem.mName = initName.c_str();
@@ -83,7 +129,7 @@ int IntelTNR7US::init(int width, int height, TnrType type) {
     return ret ? OK : UNKNOWN_ERROR;
 }
 
-int IntelTNR7US::runTnrFrame(const void* inBufAddr, void* outBufAddr, uint32_t inBufSize,
+int IntelC4mTNR::runTnrFrame(const void* inBufAddr, void* outBufAddr, uint32_t inBufSize,
                              uint32_t outBufSize, Tnr7Param* tnrParam, bool syncUpdate, int fd) {
     LOG2("%s, type: %d, syncUpdate: %d, fd: %d", __func__, mTnrType, syncUpdate, fd);
     CheckAndLogError(!inBufAddr || !outBufAddr || !tnrParam, UNKNOWN_ERROR,
@@ -124,7 +170,7 @@ int IntelTNR7US::runTnrFrame(const void* inBufAddr, void* outBufAddr, uint32_t i
     return OK;
 }
 
-void* IntelTNR7US::allocCamBuf(uint32_t bufSize, int id) {
+void* IntelC4mTNR::allocCamBuf(uint32_t bufSize, int id) {
     uintptr_t personal = reinterpret_cast<uintptr_t>(this);
     std::string initName = "/TnrCam" + std::to_string(personal) + std::to_string(id) + "Shm";
     ShmMemInfo shm;
@@ -148,30 +194,7 @@ void* IntelTNR7US::allocCamBuf(uint32_t bufSize, int id) {
     return shm.mAddr;
 }
 
-void IntelTNR7US::freeAllBufs() {
-    if (mParamMems.mAddr) {
-        mCommon.freeShmMem(mParamMems, GPU_ALGO_SHM);
-    }
-    for (auto& camBuf : mCamBufMems) {
-        if (camBuf.mAddr) {
-            mCommon.freeShmMem(camBuf, GPU_ALGO_SHM);
-        }
-    }
-}
-
-Tnr7Param* IntelTNR7US::allocTnr7ParamBuf() {
-    uintptr_t personal = reinterpret_cast<uintptr_t>(this);
-    std::string initName = "/TnrParam" + std::to_string(personal) + "Shm";
-
-    mParamMems.mName = initName.c_str();
-    mParamMems.mSize = sizeof(Tnr7Param);
-    bool ret = mCommon.allocShmMem(mParamMems.mName, mParamMems.mSize, &mParamMems, GPU_ALGO_SHM);
-    CheckAndLogError(!ret, nullptr, "@%s, allocShmMem fails", __func__);
-
-    return reinterpret_cast<Tnr7Param*>(mParamMems.mAddr);
-}
-
-int IntelTNR7US::asyncParamUpdate(int gain, bool forceUpdate) {
+int IntelC4mTNR::asyncParamUpdate(int gain, bool forceUpdate) {
     LOG2("%s, type: %d, gain: %d, forceUpdate: %d", __func__, mTnrType, gain, forceUpdate);
     mTnrRequestInfo->gain = gain;
     mTnrRequestInfo->type = mTnrType;
@@ -189,7 +212,7 @@ int IntelTNR7US::asyncParamUpdate(int gain, bool forceUpdate) {
     return OK;
 }
 
-int IntelTNR7US::getSurfaceInfo(int width, int height, uint32_t* size) {
+int IntelC4mTNR::getTnrBufferSize(int width, int height, uint32_t* size) {
     mTnrRequestInfo->width = width;
     mTnrRequestInfo->height = height;
     mTnrRequestInfo->type = mTnrType;
@@ -204,4 +227,67 @@ int IntelTNR7US::getSurfaceInfo(int width, int height, uint32_t* size) {
     if (size) *size = mTnrRequestInfo->surfaceSize;
     return OK;
 }
+#elif defined(TNR7_LEVEL0)
+IntelLevel0TNR::~IntelLevel0TNR() {
+    LOG1("<id%d> %s", mCameraId, __func__);
+    if (mIntelICBM) {
+        icamera::ICBMReqInfo reqInfo;
+        reqInfo.cameraId = mCameraId;
+        reqInfo.reqType = icamera::ICBMReqType::LEVEL0_TNR;
+        mIntelICBM->shutdown(reqInfo);
+        mIntelICBM = nullptr;
+    }
+}
+
+int IntelLevel0TNR::init(int width, int height, TnrType type) {
+    LOG1("<id%d> %s  %dx%d", mCameraId, __func__, width, height);
+    mWidth = width;
+    mHeight = height;
+    mIntelICBM = std::make_unique<IntelICBM>();
+    icamera::ICBMInitInfo initParam = {.cameraId = mCameraId,
+                                       .reqType = icamera::ICBMReqType::LEVEL0_TNR};
+    int ret = mIntelICBM->setup(&initParam);
+    CheckAndLogError(ret != OK, ret, "%s: Init failed", __func__);
+
+    return ret;
+}
+
+int IntelLevel0TNR::runTnrFrame(const void* inBufAddr, void* outBufAddr, uint32_t inBufSize,
+                                uint32_t outBufSize, Tnr7Param* tnrParam, bool syncUpdate, int fd) {
+    (void)syncUpdate;
+    ImageInfo input = {};
+    input.width = mWidth;
+    input.height = mHeight;
+    input.size = inBufSize;
+    input.stride = mWidth;
+    input.gfxHandle = mCommon.getShmMemHandle(const_cast<void*>(inBufAddr), GPU_ALGO_SHM);
+
+    ImageInfo output = {};
+    output.width = mWidth;
+    output.height = mHeight;
+    output.size = outBufSize;
+    output.stride = mWidth;
+
+    if (fd >= 0) {
+        output.gfxHandle = mCommon.registerGbmBuffer(fd, GPU_ALGO_SHM);
+    } else {
+        output.gfxHandle = mCommon.getShmMemHandle(static_cast<void*>(outBufAddr), GPU_ALGO_SHM);
+    }
+
+    ICBMReqInfo reqInfo;
+    reqInfo.cameraId = mCameraId;
+    reqInfo.reqType = ICBMReqType::LEVEL0_TNR;
+    reqInfo.paramHandle = mParamMems.mHandle;
+    reqInfo.inII = input;
+    reqInfo.outII = output;
+
+    int ret = mIntelICBM->runTnrFrame(reqInfo);
+
+    if (fd >= 0) {
+        mCommon.deregisterGbmBuffer(output.gfxHandle, GPU_ALGO_SHM);
+    }
+
+    return ret;
+}
+#endif
 }  // namespace icamera

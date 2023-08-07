@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Intel Corporation.
+ * Copyright (C) 2015-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@
 
 #include "CameraDevice.h"
 #include "Parameters.h"
+
+#include "iutils/CameraShm.h"
 
 namespace icamera {
 
@@ -47,7 +49,7 @@ class CameraHal {
     virtual int deinit();
 
     // Device API
-    virtual int deviceOpen(int cameraId);
+    virtual int deviceOpen(int cameraId, int vcNum = 0);
     virtual void deviceClose(int cameraId);
 
     virtual void deviceCallbackRegister(int cameraId, const camera_callback_ops_t* callback);
@@ -71,9 +73,17 @@ class CameraHal {
     int mInitTimes;
     // Guard for CameraHal public API.
     Mutex mLock;
+    // VIRTUAL_CHANNEL_S
+    int mTotalVirtualChannelCamNum[MAX_VC_GROUP_NUMBER];
+    int mConfigTimes[MAX_VC_GROUP_NUMBER];
+    Condition mVirtualChannelSignal[MAX_VC_GROUP_NUMBER];
+    static const nsecs_t mWaitDuration = 500000000;  // 500ms
+    // VIRTUAL_CHANNEL_E
 
     enum { HAL_UNINIT, HAL_INIT } mState;
 
+    // Used to store variables in different process
+    CameraSharedMemory mCameraShm;
     int mCameraOpenNum;
 };
 

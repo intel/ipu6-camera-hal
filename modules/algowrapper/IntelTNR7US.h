@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2021 Intel Corporation
+ * Copyright (C) 2020-2023 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ extern "C" {
 #include "PlatformData.h"
 #include "TNRCommon.h"
 
+#ifdef TNR7_CM
 /* the cm_rt.h has some build error with current clang build flags
  * use the ignored setting to ignore these errors, and use
  * push/pop to make the ignore only take effect on this file */
@@ -53,15 +54,14 @@ extern int32_t destroyCMSurface2DUP(CmSurface2DUP*& surface);
 extern int tnr7usParamUpdate(int gain, bool forceUpdate = false, int type = 0);
 extern int32_t getSurface2DInfo(uint32_t width, uint32_t height, CM_SURFACE_FORMAT format,
                                 uint32_t& pitch, uint32_t& physicalSize);
-
+#endif
 namespace icamera {
 
-// IntelTNR7US object is for using Intel GPU tnr(tnr7ultraslim) feature.
 class IntelTNR7US {
  public:
-    explicit IntelTNR7US(int cameraId);
-    ~IntelTNR7US();
-    int init(int width, int height, TnrType type);
+    static IntelTNR7US* createIntelTNR(int cameraId);
+    virtual ~IntelTNR7US() {}
+    virtual int init(int width, int height, TnrType type = TNR_INSTANCE0) = 0;
     /**
      * call tnr api to calc tnr result
      *
@@ -70,14 +70,55 @@ class IntelTNR7US {
      * \param tnrParam: tnr parameters from ISP
      * \param fd: user output buffer file handle
      */
-    int runTnrFrame(const void* inBufAddr, void* outBufAddr, uint32_t inBufSize,
-                    uint32_t outBufSize, Tnr7Param* tnrParam, bool syncUpdate, int fd = -1);
+    virtual int runTnrFrame(const void* inBufAddr, void* outBufAddr, uint32_t inBufSize,
+                            uint32_t outBufSize, Tnr7Param* tnrParam, bool syncUpdate,
+                            int fd = -1) = 0;
     Tnr7Param* allocTnr7ParamBuf();
-    void* allocCamBuf(uint32_t bufSize, int id);
-    void freeAllBufs();
-    int prepareSurface(void* bufAddr, int size);
-    int asyncParamUpdate(int gain, bool forceUpdate);
-    int getSurfaceInfo(int width, int height, uint32_t* size);
+    virtual void* allocCamBuf(uint32_t bufSize, int id) = 0;
+    virtual void freeAllBufs() = 0;
+    virtual int prepareSurface(void* bufAddr, int size) { return OK; }
+    virtual int asyncParamUpdate(int gain, bool forceUpdate) { return OK; }
+    virtual int getTnrBufferSize(int width, int height, uint32_t* size) { return BAD_VALUE; }
+
+ protected:
+    explicit IntelTNR7US(int cameraId)
+            : mCameraId(cameraId),
+              mWidth(0),
+              mHeight(0),
+              mTnrType(TNR_INSTANCE_MAX),
+              mTnrParam(nullptr){};
+
+ protected:
+    int mCameraId;
+    int mWidth;
+    int mHeight;
+    TnrType mTnrType;
+    Tnr7Param* mTnrParam;
+
+    DISALLOW_COPY_AND_ASSIGN(IntelTNR7US);
+};
+
+#ifdef TNR7_CM
+class IntelC4mTNR : public IntelTNR7US {
+ public:
+    explicit IntelC4mTNR(int cameraId) : IntelTNR7US(cameraId) {}
+    virtual ~IntelC4mTNR();
+    virtual int init(int width, int height, TnrType type = TNR_INSTANCE0);
+    /**
+     * call tnr api to calc tnr result
+     *
+     * \param inBufAddr: input image buffer
+     * \param outBufAddr: tnr output
+     * \param tnrParam: tnr parameters from ISP
+     * \param fd: user output buffer file handle
+     */
+    virtual int runTnrFrame(const void* inBufAddr, void* outBufAddr, uint32_t inBufSize,
+                            uint32_t outBufSize, Tnr7Param* tnrParam, bool syncUpdate, int fd = -1);
+    virtual void* allocCamBuf(uint32_t bufSize, int id);
+    virtual void freeAllBufs();
+    virtual int prepareSurface(void* bufAddr, int size);
+    virtual int asyncParamUpdate(int gain, bool forceUpdate);
+    virtual int getTnrBufferSize(int width, int height, uint32_t* size);
 
  private:
     /* tnr api use CmSurface2DUP object as data buffer, call this api to create
@@ -88,17 +129,12 @@ class IntelTNR7US {
     CmSurface2DUP* getBufferCMSurface(void* bufAddr);
     /* call tnr7us API to update params */
     void handleParamUpdate(int gain, bool forceUpdate);
+    DISALLOW_COPY_AND_ASSIGN(IntelC4mTNR);
 
  private:
-    int mCameraId;
-    int mWidth;
-    int mHeight;
-    TnrType mTnrType;
     // Tnr will create CMSurface for input buffers and cache them in the map
     std::unordered_map<void*, CmSurface2DUP*> mCMSurfaceMap;
-    Tnr7Param* mTnrParam;
     std::unique_ptr<base::Thread> mThread;
-
-    DISALLOW_COPY_AND_ASSIGN(IntelTNR7US);
 };
+#endif
 }  // namespace icamera

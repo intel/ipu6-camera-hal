@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2021 Intel Corporation.
+ * Copyright (C) 2019-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,8 +25,8 @@
 
 #include "CameraLog.h"
 #include "Parameters.h"
-#include "base/bind.h"
-#include "base/callback.h"
+#include "base/functional/bind.h"
+#include "base/functional/callback.h"
 #include "cros-camera/camera_algorithm_bridge.h"
 #include "iutils/Thread.h"
 #include "modules/sandboxing/IPCCommon.h"
@@ -99,8 +99,8 @@ class IntelAlgoClient : public camera_algorithm_callback_ops_t {
     std::unique_ptr<cros::CameraAlgorithmBridge> mBridge;
     std::unique_ptr<cros::CameraAlgorithmBridge> mGpuBridge;
 
-    base::Callback<void(uint32_t, uint32_t, int32_t)> mCallback;
-    base::Callback<void(uint32_t)> mNotifyCallback;
+    base::RepeatingCallback<void(uint32_t, uint32_t, int32_t)> mCallback;
+    base::RepeatingCallback<void(uint32_t)> mNotifyCallback;
     bool mIPCStatus;             // true: no error happens, false: error happens
     std::mutex mIPCStatusMutex;  // the mutex for mIPCStatus
 

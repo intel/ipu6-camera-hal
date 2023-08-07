@@ -144,8 +144,10 @@ int ParserBase::getDataFromXmlFile(std::string fileName) {
 
     std::string chosenXmlFile;
     getAvaliableXmlFile(profiles, chosenXmlFile);
-    CheckAndLogError(chosenXmlFile.empty(), UNKNOWN_ERROR, "%s is not found in: %s or %s",
-                     fileName.c_str(), curFolderFileName.c_str(), sysFolderFileName.c_str());
+    if (chosenXmlFile.empty()) {
+        LOGI("%s is not found", fileName.c_str());
+        return UNKNOWN_ERROR;
+    }
 
     return parseXmlFile(chosenXmlFile);
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Intel Corporation.
+ * Copyright (C) 2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,11 +29,11 @@
 #endif
 
 #define SIZE_OF_PROCESS_EXTENSION \
-     ((VIED_NCI_RESOURCE_BITMAP_BITS * VIED_NCI_N_DEV_DFM_ID) \
-    + (VIED_NCI_RESOURCE_BITMAP_BITS * VIED_NCI_N_DEV_DFM_ID) \
-    + (VIED_NCI_N_DATA_MEM_TYPE_ID * VIED_NCI_RESOURCE_SIZE_BITS) \
-    + (VIED_NCI_N_DEV_CHN_ID * VIED_NCI_RESOURCE_SIZE_BITS) \
-    + (VIED_NCI_N_DATA_MEM_TYPE_ID * VIED_NCI_RESOURCE_ID_BITS) \
+     ((VIED_NCI_RESOURCE_BITMAP_BITS * VIED_NCI_N_DEV_DFM_ID_MAX) \
+    + (VIED_NCI_RESOURCE_BITMAP_BITS * VIED_NCI_N_DEV_DFM_ID_MAX) \
+    + (VIED_NCI_N_DATA_MEM_TYPE_ID_MAX * VIED_NCI_RESOURCE_SIZE_BITS) \
+    + (VIED_NCI_N_DEV_CHN_ID_MAX * VIED_NCI_RESOURCE_SIZE_BITS) \
+    + (VIED_NCI_N_DATA_MEM_TYPE_ID_MAX * VIED_NCI_RESOURCE_ID_BITS) \
     + (N_PADDING_UINT8_IN_PROCESS_EXT_STRUCT * 8))
 
 /** Extended process attributes describing more resource requirements
@@ -41,24 +41,16 @@
  *  ia_css_process_s.
  */
 struct ia_css_process_ext_s {
-#if VIED_NCI_N_DEV_DFM_ID > 0
     /** DFM port allocated to this process */
-    vied_nci_resource_bitmap_t dfm_port_bitmap[VIED_NCI_N_DEV_DFM_ID];
+    vied_nci_resource_bitmap_t dfm_port_bitmap[VIED_NCI_N_DEV_DFM_ID_MAX];
     /** Active DFM ports which need a kick */
-    vied_nci_resource_bitmap_t dfm_active_port_bitmap[VIED_NCI_N_DEV_DFM_ID];
-#endif
-#if VIED_NCI_N_DATA_MEM_TYPE_ID > 0
+    vied_nci_resource_bitmap_t dfm_active_port_bitmap[VIED_NCI_N_DEV_DFM_ID_MAX];
     /** (external) Memory allocation offset given to this process */
-    vied_nci_resource_size_t ext_mem_offset[VIED_NCI_N_DATA_MEM_TYPE_ID];
-#endif
-#if VIED_NCI_N_DEV_CHN_ID > 0
+    vied_nci_resource_size_t ext_mem_offset[VIED_NCI_N_DATA_MEM_TYPE_ID_MAX];
     /** Device channel allocation offset given to this process */
-    vied_nci_resource_size_t dev_chn_offset[VIED_NCI_N_DEV_CHN_ID];
-#endif
-#if VIED_NCI_N_DATA_MEM_TYPE_ID > 0
+    vied_nci_resource_size_t dev_chn_offset[VIED_NCI_N_DEV_CHN_ID_MAX];
     /** (external) Memory ID */
-    vied_nci_resource_id_t ext_mem_id[VIED_NCI_N_DATA_MEM_TYPE_ID];
-#endif
+    vied_nci_resource_id_t ext_mem_id[VIED_NCI_N_DATA_MEM_TYPE_ID_MAX];
 #if N_PADDING_UINT8_IN_PROCESS_EXT_STRUCT > 0
     /** Number of processes (mapped on cells) this process depends on */
     uint8_t padding[N_PADDING_UINT8_IN_PROCESS_EXT_STRUCT];
@@ -97,11 +89,11 @@ struct ia_css_process_s {
     /** Offset in bytes to process extension structure, ia_css_process_ext_s
      *  Align to 32 bit boundary.
      *  Set to zero if extension is not used. The manifest must be queried to
-     *  find out if the extensino is necessary.
+     *  find out if the extension is necessary.
      *  @see ia_css_program_manifest_process_requires_extension() */
     uint8_t process_extension_offset;
-    /** Referal ID to a specific program.  This ID is unique across PG's and
-     *  can be used to retreive program meta data (AKA "program descriptor")
+    /** Referral ID to a specific program.  This ID is unique across PG's and
+     *  can be used to retrieve program meta data (AKA "program descriptor")
      *  from the client package, including the program manifest and even
      *  firmware program code, if the program is to be executed on a DSP. */
     ia_css_program_ID_t ID;

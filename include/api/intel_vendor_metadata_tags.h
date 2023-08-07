@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2012 The Android Open Source Project
- * Copyright (C) 2021 Intel Corporation
+ * Copyright (C) 2021-2023 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,27 +55,28 @@ typedef enum vendor_metadata_tag {
     INTEL_VENDOR_CAMERA_CALLBACK_TM_CURVE,            // enum         | public
     INTEL_VENDOR_CAMERA_TONE_MAP_CURVE,               // float[]      | public
     INTEL_VENDOR_CAMERA_POWER_MODE,                   // enum         | public
-// ENABLE_EVCP_S
+// LEVEL0_ICBM_S
     INTEL_VENDOR_CAMERA_IC_CAPS,                      // int32        | public
-// ENABLE_EVCP_E
-// ENABLE_EVCP_S
+// LEVEL0_ICBM_E
+// LEVEL0_ICBM_S
     INTEL_VENDOR_CAMERA_IC_PEACE_FEATURES,            // int32[]      | public
-// ENABLE_EVCP_E
-// ENABLE_EVCP_S
+// LEVEL0_ICBM_E
+// LEVEL0_ICBM_S
     INTEL_VENDOR_CAMERA_IC_ECC_MODE,                  // enum         | public
-// ENABLE_EVCP_E
-// ENABLE_EVCP_S
+// LEVEL0_ICBM_E
+// LEVEL0_ICBM_S
     INTEL_VENDOR_CAMERA_IC_BC_MODE,                   // enum         | public
-// ENABLE_EVCP_E
-// ENABLE_EVCP_S
+// LEVEL0_ICBM_E
+// LEVEL0_ICBM_S
     INTEL_VENDOR_CAMERA_IC_BR_PARAMETERS,             // int32[]      | public
-// ENABLE_EVCP_E
-// ENABLE_EVCP_S
+// LEVEL0_ICBM_E
+// LEVEL0_ICBM_S
     INTEL_VENDOR_CAMERA_IC_UF_MODE,                   // enum         | public
-// ENABLE_EVCP_E
+// LEVEL0_ICBM_E
     INTEL_VENDOR_CAMERA_TOTAL_EXPOSURE_TARGET,        // int64        | public
     INTEL_VENDOR_CAMERA_TOTAL_EXPOSURE_TARGET_RANGE,  // int64[]      | public
     INTEL_VENDOR_CAMERA_RAW_DATA_OUTPUT,              // enum         | public
+    INTEL_VENDOR_CAMERA_HDR_RATIO,                    // float        | public
     INTEL_VENDOR_CAMERA_END,
 } vendor_metadata_tag_t;
 
@@ -107,15 +108,15 @@ typedef enum vendor_metadata_enum_intel_vendor_camera_power_mode {
     INTEL_VENDOR_CAMERA_POWER_MODE_HIGH_QUALITY,
 } vendor_metadata_enum_intel_vendor_camera_power_mode_t;
 
-// ENABLE_EVCP_S
+// LEVEL0_ICBM_S
 // INTEL_VENDOR_CAMERA_IC_ECC_MODE
 typedef enum vendor_metadata_enum_intel_vendor_camera_ic_ecc_mode {
     INTEL_VENDOR_CAMERA_IC_ECC_MODE_OFF,
     INTEL_VENDOR_CAMERA_IC_ECC_MODE_ON,
 } vendor_metadata_enum_intel_vendor_camera_ic_ecc_mode_t;
 
-// ENABLE_EVCP_E
-// ENABLE_EVCP_S
+// LEVEL0_ICBM_E
+// LEVEL0_ICBM_S
 // INTEL_VENDOR_CAMERA_IC_BC_MODE
 typedef enum vendor_metadata_enum_intel_vendor_camera_ic_bc_mode {
     INTEL_VENDOR_CAMERA_IC_BC_MODE_OFF,
@@ -123,15 +124,15 @@ typedef enum vendor_metadata_enum_intel_vendor_camera_ic_bc_mode {
     INTEL_VENDOR_CAMERA_IC_BC_MODE_REPLACEMENT,
 } vendor_metadata_enum_intel_vendor_camera_ic_bc_mode_t;
 
-// ENABLE_EVCP_E
-// ENABLE_EVCP_S
+// LEVEL0_ICBM_E
+// LEVEL0_ICBM_S
 // INTEL_VENDOR_CAMERA_IC_UF_MODE
 typedef enum vendor_metadata_enum_intel_vendor_camera_ic_uf_mode {
     INTEL_VENDOR_CAMERA_IC_UF_MODE_OFF,
     INTEL_VENDOR_CAMERA_IC_UF_MODE_AUTO,
 } vendor_metadata_enum_intel_vendor_camera_ic_uf_mode_t;
 
-// ENABLE_EVCP_E
+// LEVEL0_ICBM_E
 // INTEL_VENDOR_CAMERA_RAW_DATA_OUTPUT
 typedef enum vendor_metadata_enum_intel_vendor_camera_raw_data_output {
     INTEL_VENDOR_CAMERA_RAW_DATA_OUTPUT_OFF,

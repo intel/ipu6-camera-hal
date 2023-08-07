@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<!-- Copyright (C) 2020-2022 Intel Corporation.
+<!-- Copyright (C) 2019-2023 Intel Corporation.
 
      Licensed under the Apache License, Version 2.0 (the "License");
      you may not use this file except in compliance with the License.
@@ -18,9 +18,9 @@
     <Common>
         <version value="1.0"/>
         <platform value="IPU6"/>
-        <!-- The value format of availableSensors is "sensor name"-wf/uf-"CSI port ID".
-             wf is word facing, and uf is user facing.
-        -->
-        <availableSensors value="ov13b10-wf-2,ov13b10-uf-1,ov8856-wf-2,ov8856-uf-1,ov01a10-uf-1,ov01a10-uf-2,ov02c10-uf-1,ov02c10-uf-2,ov2740-uf-1,hm2170-uf-1,hi556-uf-1,ov01a1s-uf-1"/>
+        <!-- The value format of availableSensors is "sensor name"-wf/uf-"CSI port ID" -->
+        <availableSensors value="ov13b10-wf-2,ov13b10-uf-1,ov8856-wf-2,ov8856-uf-1,ov01a10-uf-1,ov01a10-uf-2,ov02c10-uf-1,ov02c10-uf-2,
+                                 ov2740-uf-1,hm2170-uf-1,hi556-uf-1,ov01a1s-uf-1,ov08a10-uf-1,
+                                 imx390,ar0234,external_source,ar0234_usb,lt6911uxc,lt6911uxe"/>
     </Common>
 </CameraSettings>

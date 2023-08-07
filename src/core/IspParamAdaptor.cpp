@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2022 Intel Corporation.
+ * Copyright (C) 2015-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,8 @@ IspParamAdaptor::IspParamAdaptor(int cameraId)
           mCameraId(cameraId),
           mTuningMode(TUNING_MODE_VIDEO),
           mIpuOutputFormat(V4L2_PIX_FMT_NV12),
+          mLastLscSequece(-1),
+          mLastGdcSequence(-1),
           mGraphConfig(nullptr),
           mIntelCca(nullptr),
           mGammaTmOffset(-1) {
@@ -50,7 +52,8 @@ IspParamAdaptor::IspParamAdaptor(int cameraId)
 
     PalRecord palRecordArray[] = {{ia_pal_uuid_isp_call_info, -1},
                                   {ia_pal_uuid_isp_bnlm_3_2, -1},
-                                  {ia_pal_uuid_isp_lsc_1_1, -1}};
+                                  {ia_pal_uuid_isp_lsc_1_1, -1},
+                                  {ia_pal_uuid_isp_gdc5, -1}};
     for (uint32_t i = 0; i < sizeof(palRecordArray) / sizeof(PalRecord); i++) {
         mPalRecords.push_back(palRecordArray[i]);
     }
@@ -208,6 +211,8 @@ int IspParamAdaptor::configure(const stream_t& stream, ConfigMode configMode, Tu
     LOG2("%s, configMode: %x, PSys output format 0x%x", __func__, configMode, mIpuOutputFormat);
     mTuningMode = tuningMode;
     CLEAR(mLastPalDataForVideoPipe);
+    mLastLscSequece = -1;
+    mLastGdcSequence = -1;
     for (uint32_t i = 0; i < mPalRecords.size(); i++) {
         mPalRecords[i].offset = -1;
     }
@@ -245,8 +250,12 @@ int IspParamAdaptor::configure(const stream_t& stream, ConfigMode configMode, Tu
             // Use the tuning mode in graph to update the isp tuning data
             if (ispTuningIndex != -1) {
                 uint8_t lardTag = cca::CCA_LARD_ISP;
-                ia_lard_input_params lardParam = {};
-                lardParam.isp_mode_index = ispTuningIndex;
+                ia_lard_input_params lardParam = {
+                    IA_MKN_CHTOUL('D', 'F', 'L', 'T'),
+                    IA_MKN_CHTOUL('D', 'F', 'L', 'T'),
+                    static_cast<uint32_t>(ispTuningIndex),
+                    IA_MKN_CHTOUL('D', 'F', 'L', 'T')
+                };
                 cca::cca_nvm tmpNvm = {};
 
                 ia_err iaErr =
@@ -269,6 +278,7 @@ int IspParamAdaptor::configure(const stream_t& stream, ConfigMode configMode, Tu
         inputParams->seq_id = -1;
         initInputParams(inputParams);
         inputParams->stream_id = ispParamIt.first;
+        inputParams->dvs_id = inputParams->stream_id;
 
         ia_isp_bxt_program_group* pgPtr = mGraphConfig->getProgramGroup(ispParamIt.first);
         CheckAndLogError(!pgPtr, UNKNOWN_ERROR,
@@ -355,9 +365,6 @@ int IspParamAdaptor::decodeStatsData(TuningMode tuningMode,
                                           hwStatsData->size, bitmap, &queryResults, outStats);
     CheckAndLogError(iaErr != ia_err_none, UNKNOWN_ERROR, "%s, Faield convert statistics",
                      __func__);
-    LOG2("%s, query results: rgbs_grid(%d), af_grid(%d), dvs_stats(%d), paf_grid(%d)", __func__,
-         queryResults.rgbs_grid, queryResults.af_grid, queryResults.dvs_stats,
-         queryResults.paf_grid);
 
     return OK;
 }
@@ -401,8 +408,12 @@ void IspParamAdaptor::updateKernelToggles(cca::cca_program_group* programGroup) 
  * but currently a ring buffer is used in HAL, which caused logic mismatching issue.
  * So temporarily copy latest PAL data into PAL output buffer.
  */
-void IspParamAdaptor::updatePalDataForVideoPipe(ia_binary_data dest) {
-    if (mLastPalDataForVideoPipe.data == nullptr || mLastPalDataForVideoPipe.size == 0) return;
+void IspParamAdaptor::updatePalDataForVideoPipe(ia_binary_data dest, int64_t bufSeq,
+                                                int64_t settingSeq) {
+    if (mLastPalDataForVideoPipe.data == nullptr || mLastPalDataForVideoPipe.size == 0) {
+        mLastGdcSequence = settingSeq;
+        return;
+    }
 
     if (mPalRecords.empty()) return;
 
@@ -437,6 +448,26 @@ void IspParamAdaptor::updatePalDataForVideoPipe(ia_binary_data dest) {
                 headerSrc = header;
             }
 
+            if (ia_pal_uuid_isp_lsc_1_1 == header->uuid) {
+                if (isLscCopy(bufSeq, settingSeq)) {
+                    LOG2("settingSeq %ld, copy LSC for buf %ld", settingSeq, bufSeq);
+                    updateLscSeqMap(bufSeq);
+                } else {
+                    LOG2("settingSeq %ld, not copy LSC for buf %ld", settingSeq, bufSeq);
+                    continue;
+                }
+            }
+
+            if (ia_pal_uuid_isp_gdc5 == header->uuid) {
+                if (isGdcCopy(bufSeq, settingSeq)) {
+                    LOG2("settingSeq %ld, copy GDC for buf %ld", settingSeq, bufSeq);
+                    updateGdcSeqMap(bufSeq);
+                } else {
+                    LOG2("settingSeq %ld, not copy GDC for buf %ld", settingSeq, bufSeq);
+                    continue;
+                }
+            }
+
             if (!headerSrc) {
                 LOGW("Failed to find PAL recorder header %d", mPalRecords[i].uuid);
                 continue;
@@ -463,6 +494,60 @@ void IspParamAdaptor::updateIspParameterMap(IspParameter* ispParam, int64_t data
         ispParam->mSequenceToDataId.erase(ispParam->mSequenceToDataId.begin());
     }
     ispParam->mSequenceToDataId[settingSeq] = dataSeq;
+}
+
+bool IspParamAdaptor::isLscCopy(int64_t bufSeq, int64_t settingSeq) {
+    AiqResult* aiqResults = const_cast<AiqResult*>(
+        AiqResultStorage::getInstance(mCameraId)->getAiqResult(settingSeq));
+    if (aiqResults == nullptr) return true;
+
+    if (aiqResults->mLscUpdate) {
+        mLastLscSequece = settingSeq;
+        LOG2("%s, LSC update %ld", __func__, settingSeq);
+        return false;
+    } else {
+        if (mSeqIdToLscSeqIdMap.find(bufSeq) != mSeqIdToLscSeqIdMap.end()) {
+            if (mLastLscSequece >= 0 && mSeqIdToLscSeqIdMap[bufSeq] == mLastLscSequece) {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+void IspParamAdaptor::updateLscSeqMap(int64_t settingSeq) {
+    mSeqIdToLscSeqIdMap[settingSeq] = mLastLscSequece;
+
+    if (mSeqIdToLscSeqIdMap.size() > ISP_PARAM_QUEUE_SIZE) {
+        mSeqIdToLscSeqIdMap.erase(mSeqIdToLscSeqIdMap.begin());
+    }
+}
+
+bool IspParamAdaptor::isGdcCopy(int64_t bufSeq, int64_t settingSeq) {
+    if (!PlatformData::isDvsSupported(mCameraId)) return false;
+
+    if (AiqResultStorage::getInstance(mCameraId)->isDvsRun(settingSeq)) {
+        mLastGdcSequence = settingSeq;
+        LOG2("%s, GDC update %ld", __func__, settingSeq);
+        return false;
+    } else {
+        if (mSeqIdToGdcSeqIdMap.find(bufSeq) != mSeqIdToGdcSeqIdMap.end()) {
+            if (mLastGdcSequence >= 0 && mSeqIdToGdcSeqIdMap[bufSeq] == mLastGdcSequence) {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+void IspParamAdaptor::updateGdcSeqMap(int64_t settingSeq) {
+    mSeqIdToGdcSeqIdMap[settingSeq] = mLastGdcSequence;
+
+    if (mSeqIdToGdcSeqIdMap.size() > ISP_PARAM_QUEUE_SIZE) {
+        mSeqIdToGdcSeqIdMap.erase(mSeqIdToGdcSeqIdMap.begin());
+    }
 }
 
 /**
@@ -510,7 +595,7 @@ int IspParamAdaptor::runIspAdapt(const IspSettings* ispSettings, int64_t setting
 
         // Update some PAL data to latest PAL result
         if (it.first == VIDEO_STREAM_ID) {
-            updatePalDataForVideoPipe(binaryData);
+            updatePalDataForVideoPipe(binaryData, dataIt->first, settingSequence);
         }
 
         ia_isp_bxt_program_group* pgPtr = mGraphConfig->getProgramGroup(it.first);
@@ -537,6 +622,8 @@ int IspParamAdaptor::runIspAdapt(const IspSettings* ispSettings, int64_t setting
                 if (it.first == VIDEO_STREAM_ID) {
                     mLastPalDataForVideoPipe = binaryData;
                     updateResultFromAlgo(&binaryData, settingSequence);
+                    updateLscSeqMap(settingSequence);
+                    updateGdcSeqMap(settingSequence);
                 }
             }
         }
@@ -643,7 +730,6 @@ void IspParamAdaptor::applyMediaFormat(const AiqResult* aiqResult, ia_media_form
                                        bool* useLinearGamma) {
     CheckAndLogError(!mediaFormat || !aiqResult, VOID_VALUE, "mediaFormat or aiqResult is nullptr");
 
-    *mediaFormat = media_format_legacy;
     if (aiqResult->mAiqParam.tonemapMode == TONEMAP_MODE_GAMMA_VALUE) {
         if (aiqResult->mAiqParam.tonemapGamma == 1.0) {
             *useLinearGamma = true;
@@ -713,6 +799,7 @@ int IspParamAdaptor::runIspAdaptL(ia_isp_bxt_program_group* pgPtr, ia_isp_bxt_gd
     inputParams->seq_id = settingSequence;
 
     bool useLinearGamma = false;
+    inputParams->media_format = PlatformData::getMediaFormat(mCameraId);
     applyMediaFormat(aiqResults, &inputParams->media_format, &useLinearGamma);
     LOG2("%s, media format: 0x%x, gamma lut size: %d", __func__, inputParams->media_format,
          aiqResults->mGbceResults.gamma_lut_size);
@@ -850,7 +937,7 @@ int IspParamAdaptor::runIspAdaptL(ia_isp_bxt_program_group* pgPtr, ia_isp_bxt_gd
         }
 
         LOG2("%s: set digital gain for ULL pipe: %f", __func__, inputParams->manual_digital_gain);
-    } else if (CameraUtils::isMultiExposureCase(mCameraId, mTuningMode) &&
+    } else if (PlatformData::isMultiExposureCase(mCameraId, mTuningMode) &&
                PlatformData::getSensorGainType(mCameraId) == ISP_DG_AND_SENSOR_DIRECT_AG) {
         inputParams->manual_digital_gain =
             aiqResults->mAeResults.exposures[0].exposure[0].digital_gain;
@@ -863,6 +950,12 @@ int IspParamAdaptor::runIspAdaptL(ia_isp_bxt_program_group* pgPtr, ia_isp_bxt_gd
     ia_err iaErr = ia_err_none;
     {
         PERF_CAMERA_ATRACE_PARAM1_IMAGING("ia_isp_bxt_run", 1);
+
+        // HDR_FEATURE_S
+        if (PlatformData::getSensorAeEnable(mCameraId)) {
+            inputParams->gain_id_gaic = 1;
+        }
+        // HDR_FEATURE_E
 
         iaErr = mIntelCca->runAIC(aiqResults->mFrameId, inputParams, binaryData);
     }

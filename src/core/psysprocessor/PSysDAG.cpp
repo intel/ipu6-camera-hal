@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2022 Intel Corporation.
+ * Copyright (C) 2017-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@
 
 #include "iutils/CameraLog.h"
 #include "iutils/Utils.h"
-#ifdef TNR7_CM
+#if defined(TNR7_CM) || defined(TNR7_LEVEL0)
 #include "GPUExecutor.h"
 #endif
 #include "CameraScheduler.h"
@@ -72,10 +72,16 @@ void PSysDAG::setFrameInfo(const std::map<Port, stream_t>& inputInfo,
         }
     }
 }
+void PSysDAG::unregisterNode() {
+    if (!mScheduler) return;
+
+    for (auto& executor : mExecutorsPool) {
+        mScheduler->unregisterNode(executor);
+    }
+}
 
 void PSysDAG::releasePipeExecutors() {
     for (auto& executor : mExecutorsPool) {
-        if (mScheduler) mScheduler->unregisterNode(executor);
         delete executor;
     }
     mExecutorsPool.clear();
@@ -137,7 +143,7 @@ int PSysDAG::createPipeExecutors(bool useTnrOutBuffer) {
         if (!hasVideoPipe) hasVideoPipe = (streamId == VIDEO_STREAM_ID);
         if (!hasStillPipe)
             hasStillPipe = (streamId == STILL_STREAM_ID || streamId == STILL_TNR_STREAM_ID);
-#ifdef TNR7_CM
+#if defined(TNR7_CM) || defined(TNR7_LEVEL0)
         PipeExecutor* executor;
         if (strstr(item.exeName.c_str(), "gputnr") != nullptr) {
             executor =
@@ -619,6 +625,11 @@ void PSysDAG::addTask(PSysTaskData taskParam) {
     // It's too early to runIspAdapt here, and the ipu parameters
     // may be incorrect when runPipe.
     bool runIspAdaptor = true;
+    // HDR_FEATURE_S
+    if (mTuningMode == TUNING_MODE_VIDEO_HDR || mTuningMode == TUNING_MODE_VIDEO_HDR2) {
+        runIspAdaptor = false;
+    }
+    // HDR_FEATURE_E
 
     int64_t sequence = taskParam.mInputBuffers.at(mDefaultMainInputPort)->getSequence();
     if (runIspAdaptor) {
@@ -774,6 +785,10 @@ int PSysDAG::prepareIpuParams(int64_t sequence, bool forceUpdate, TaskInfo* task
             }
         }
 
+// INTEL_DVS_S
+        mPSysDagCB->onDvsPrepare(sequence, id);
+// INTEL_DVS_E
+
         int ret = mIspParamAdaptor->runIspAdapt(&task->mTaskData.mIspSettings, sequence, id);
         CheckAndLogError(ret != OK, UNKNOWN_ERROR, "%s, <seq%ld> Failed to run AIC: streamId: %d",
                          __func__, sequence, id);
@@ -830,7 +845,7 @@ void PSysDAG::tuningReconfig(TuningMode newTuningMode) {
 }
 
 void PSysDAG::dumpExternalPortMap() {
-    if (!Log::isLogTagEnabled(GET_FILE_SHIFT(PSysDAG))) return;
+    if (!Log::isLogTagEnabled(GET_FILE_SHIFT(PSysDAG), CAMERA_DEBUG_LOG_LEVEL2)) return;
 
     for (auto& inputMap : mInputMaps) {
         if (inputMap.mExecutor) {

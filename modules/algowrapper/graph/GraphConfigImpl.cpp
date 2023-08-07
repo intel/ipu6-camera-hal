@@ -221,7 +221,7 @@ status_t GraphConfigImpl::createQueryRule(const vector<HalStream*>& activeStream
     mQuery.clear();
     mStreamToSinkIdMap.clear();
 
-    int videoIndex = 0, stillIndex = 0;
+    int videoIndex = 0, stillIndex = 0, stillTnrIndex = 0;
     map<GCSS::ItemUID, std::string> videoQuery;
     map<GCSS::ItemUID, std::string> stillQuery;
     map<HalStream*, uid_t> videoStreamToSinkIdMap;
@@ -230,7 +230,8 @@ status_t GraphConfigImpl::createQueryRule(const vector<HalStream*>& activeStream
                                                      GCSS_KEY_VIDEO2};
     vector<AndroidGraphConfigKey> stillStreamKeys = {GCSS_KEY_STILL0, GCSS_KEY_STILL1,
                                                      GCSS_KEY_STILL2};
-
+    vector<AndroidGraphConfigKey> stillTnrStreamKeys = {GCSS_KEY_STILLTNR0, GCSS_KEY_STILLTNR1,
+                                                        GCSS_KEY_STILLTNR2};
     // Depends on outputs numbers in GC settings
     int vOutputNum = (mType == DISPERSED) ? DISPERSED_MAX_OUTPUTS : videoStreamKeys.size();
     int sOutputNum = (mType == DISPERSED) ? DISPERSED_MAX_OUTPUTS : stillStreamKeys.size();
@@ -261,6 +262,15 @@ status_t GraphConfigImpl::createQueryRule(const vector<HalStream*>& activeStream
         query[h] = std::to_string(stream->height());
         streamToSinkId[stream] = key;
         LOG2("Adding stream %p to map %s", stream, ItemUID::key2str(key));
+        if (dummyStillSink && !isVideo) {
+            AndroidGraphConfigKey key = stillTnrStreamKeys[stillTnrIndex++];
+            ItemUID w = {key, GCSS_KEY_WIDTH};
+            ItemUID h = {key, GCSS_KEY_HEIGHT};
+
+            query[w] = std::to_string(stream->width());
+            query[h] = std::to_string(stream->height());
+            LOG2("Adding dummy stream %p to %s", stream, ItemUID::key2str(key));
+        }
     }
 
     if (mType == COUPLED) {
@@ -344,6 +354,9 @@ status_t GraphConfigImpl::getRawInputSize(GCSS::IGraphConfig* query, camera_reso
                      "%s, Failed to create the graph", __func__);
 
     vector<string> isysOutput = {"csi_be:output",
+                                 // DOL_FEATURE_S
+                                 "csi_be_dol:output",
+                                 // DOL_FEATURE_E
                                  "csi_be_soc:output"};
     for (auto& item : isysOutput) {
         GCSS::IGraphConfig* isysNode = graphResult->getDescendantByString(item.c_str());
@@ -629,6 +642,10 @@ status_t GraphConfigImpl::getGraphConfigData(IGraphType::GraphConfigData* data) 
     // The graph id, csi output and sensor mode must be same if there are two graph config pipes
     data->graphId = mGraphConfigPipe.begin()->second->getGraphId();
     mGraphConfigPipe.begin()->second->getCSIOutputResolution(&(data->csiReso));
+    // DOL_FEATURE_S
+    mGraphConfigPipe.begin()->second->getDolInfo(&(data->dolInfo.conversionGain),
+                                                 &(data->dolInfo.dolMode));
+    // DOL_FEATURE_E
 
     data->mcId = mMcId;
     getGdcKernelSetting(&data->gdcInfos);
@@ -666,7 +683,7 @@ status_t GraphConfigImpl::getGraphConfigData(IGraphType::GraphConfigData* data) 
     return OK;
 }
 
-status_t GraphConfigImpl::getGdcKernelSetting(std::vector<IGraphType::GdcInfo> *gdcInfos) {
+status_t GraphConfigImpl::getGdcKernelSetting(std::vector<IGraphType::GdcInfo>* gdcInfos) {
     CheckAndLogError(mGraphConfigPipe.empty(), UNKNOWN_ERROR, "%s, the mGraphConfigPipe is empty",
                      __func__);
     CheckAndLogError(!gdcInfos, UNKNOWN_ERROR, "%s, the gdcInfos is nullptr", __func__);

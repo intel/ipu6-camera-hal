@@ -317,20 +317,6 @@ void CameraBuffer::freeMmap() {
     }
 }
 
-void* CameraBuffer::mapDmaBufferAddr() {
-    if (getAddr() != nullptr)
-        return getAddr();
-
-    return CameraBuffer::mapDmaBufferAddr(getFd(), getBufferSize());
-}
-
-void CameraBuffer::unmapDmaBufferAddr(void* addr) {
-    if (getAddr() == addr)
-        return;
-
-    return CameraBuffer::unmapDmaBufferAddr(addr, getBufferSize());
-}
-
 void* CameraBuffer::mapDmaBufferAddr(int fd, unsigned int bufferSize) {
     CheckAndLogError(fd < 0 || !bufferSize, nullptr, "%s, fd:0x%x, bufferSize:%u", __func__, fd,
                      bufferSize);
@@ -399,6 +385,29 @@ int CameraBuffer::getFd(int plane) {
     }
 
     return mV.Fd(plane);
+}
+
+ScopeMapping::ScopeMapping(const std::shared_ptr<CameraBuffer>& cameraBuf)
+        : mCameraBuf(cameraBuf),
+          mUserPtr(nullptr) {
+}
+
+ScopeMapping::~ScopeMapping() {
+    if (mUserPtr && (mCameraBuf->getMemory() == V4L2_MEMORY_DMABUF)) {
+        CameraBuffer::unmapDmaBufferAddr(mUserPtr, mCameraBuf->getBufferSize());
+    }
+}
+
+void* ScopeMapping::getUserPtr() {
+    if (mCameraBuf->getBufferAddr() || mCameraBuf->getMemory() != V4L2_MEMORY_DMABUF) {
+        return mCameraBuf->getBufferAddr();
+    }
+
+    if (!mUserPtr) {
+        mUserPtr = CameraBuffer::mapDmaBufferAddr(mCameraBuf->getFd(), mCameraBuf->getBufferSize());
+    }
+
+    return mUserPtr;
 }
 
 }  // namespace icamera

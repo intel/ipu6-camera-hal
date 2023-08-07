@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017-2022 Intel Corporation
+#  Copyright (C) 2017-2023 Intel Corporation
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -253,6 +253,13 @@ else()
 endif()
 
 add_library(camhal_static STATIC ${LIBCAMHAL_SRCS})
+
+if (NOT CAL_BUILD AND (NOT "${CMAKE_INSTALL_SUB_PATH}" STREQUAL ""))
+    set(CMAKE_SKIP_RPATH TRUE)
+    set_target_properties(camhal PROPERTIES LINK_FLAGS
+                          "-Wl,-rpath,/usr/lib/${CMAKE_INSTALL_SUB_PATH}")
+    add_compile_definitions(SUB_CONFIG_PATH="${CMAKE_INSTALL_SUB_PATH}")
+endif()
 set_target_properties(camhal_static PROPERTIES OUTPUT_NAME "camhal")
 
 #---------------------------- Link settings ----------------------------
@@ -375,68 +382,37 @@ endif() #ENABLE_SANDBOXING
 #--------------------------- Install settings ---------------------------
 if (NOT CAL_BUILD)
 # Install headers
-install(DIRECTORY include/ DESTINATION include/libcamhal)
-if (SUPPORT_LIVE_TUNING)
-    install(FILES modules/livetune/LiveTuning.h DESTINATION include/libcamhal/api)
-endif() #SUPPORT_LIVE_TUNING
+if ("${CMAKE_INSTALL_SUB_PATH}" STREQUAL "")
+    install(DIRECTORY include/ DESTINATION include/libcamhal)
+    if (SUPPORT_LIVE_TUNING)
+        install(FILES modules/livetune/LiveTuning.h DESTINATION include/libcamhal/api)
+    endif() #SUPPORT_LIVE_TUNING
+endif()
 
-# Install configure files
-# By default ipu4 is used
-if("${IPU_VER}" STREQUAL "ipu6")
-    if("${PRODUCTION_NAME}" STREQUAL "Andrews")
-        message("Install TGL Andrews configure files")
-        install(DIRECTORY config/ubuntu/tgl/ DESTINATION share/defaults/etc/camera)
-    else()
-        message("Install TGL IPU6 configure files")
-        install(DIRECTORY config/linux/ipu6/ DESTINATION share/defaults/etc/camera)
-    endif()
-elseif("${IPU_VER}" STREQUAL "ipu6ep")
-    if("${PRODUCTION_NAME}" STREQUAL "ccg_platform")
-        message("Install ADL Platform configure files")
-        install(DIRECTORY config/ubuntu/adl/ DESTINATION share/defaults/etc/camera)
-    elseif("${PRODUCTION_NAME}" STREQUAL "Tributo")
-        message("Install ADL Tributo configure files")
-        install(DIRECTORY config/ubuntu/adl/ DESTINATION share/defaults/etc/camera)
-    else()
-        message("Install ADL IPU6EP configure files")
-        install(DIRECTORY config/linux/ipu6ep/ DESTINATION share/defaults/etc/camera)
-    endif()
-elseif("${IPU_VER}" STREQUAL "ipu6epmtl")
-    if("${PRODUCTION_NAME}" STREQUAL "mtl-ubuntu")
-        message("Install MTL ubuntu configure files")
-        install(DIRECTORY config/ubuntu/mtl/ DESTINATION share/defaults/etc/camera)
-    elseif("${PRODUCTION_NAME}" STREQUAL "mtl-iotg")
-        message("Install MTL iotg configure files")
-        install(DIRECTORY config/linux/ipu6ep/ DESTINATION share/defaults/etc/camera)
-    else()
-        message("Install MTL configure files")
-        install(DIRECTORY config/linux/ipu6ep/ DESTINATION share/defaults/etc/camera)
-    endif()
-elseif("${IPU_VER}" STREQUAL "ipu6sepla")
-    if("${PRODUCTION_NAME}" STREQUAL "penguin_peak")
-        message("Install JSL penguin peak configure files")
-        install(DIRECTORY config/ubuntu/jsl/ DESTINATION share/defaults/etc/camera)
-    endif()
+# Install configure files, by default ipu4 is used
+if(("${IPU_VER}" STREQUAL "") OR ("${IPU_VER}" STREQUAL "ipu4"))
+    message("Install camera configure files for ipu4")
+    install(DIRECTORY config/linux/ipu4/ DESTINATION share/defaults/etc/camera/${CMAKE_INSTALL_SUB_PATH})
 else()
-    message("Install APL IPU4 configure files")
-    install(DIRECTORY config/linux/ipu4/ DESTINATION share/defaults/etc/camera)
+    message("Install camera configure files for" ${IPU_VER})
+    install(DIRECTORY config/linux/${IPU_VER}/ DESTINATION share/defaults/etc/camera/${CMAKE_INSTALL_SUB_PATH})
 endif()
 
 # Install libraries
 if (${CMAKE_VERSION} VERSION_LESS 3.11)
 install(TARGETS camhal camhal_static
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib
+        LIBRARY DESTINATION lib/${CMAKE_INSTALL_SUB_PATH}
+        ARCHIVE DESTINATION lib/${CMAKE_INSTALL_SUB_PATH}
         )
 else()
-install(TARGETS camhal camhal_static)
+install(TARGETS camhal camhal_static DESTINATION lib/${CMAKE_INSTALL_SUB_PATH})
 endif()
 
 # Install package config file
 configure_file(${PROJECT_SOURCE_DIR}/cmake/libcamhal.pc.cmakein
                ${PROJECT_SOURCE_DIR}/libcamhal.pc @ONLY)
 install(FILES libcamhal.pc
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/${CMAKE_INSTALL_SUB_PATH}/pkgconfig)
 
 endif() #NOT CAL_BUILD
 

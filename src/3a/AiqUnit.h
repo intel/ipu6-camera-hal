@@ -158,6 +158,7 @@ class AiqUnit : public AiqUnitBase {
     DISALLOW_COPY_AND_ASSIGN(AiqUnit);
 
  private:
+    void resetIntelCcaHandle(const std::vector<ConfigMode>& configModes);
     int initIntelCcaHandle(const std::vector<ConfigMode>& configModes);
     void deinitIntelCcaHandle();
     void dumpCcaInitParam(const cca::cca_init_params params);

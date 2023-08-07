@@ -158,7 +158,7 @@ void IntelAlgoServer::request(uint32_t req_id, const uint8_t req_header[], uint3
         if (mThreads[threadId] && mThreads[threadId]->task_runner()) {
             mThreads[threadId]->task_runner()->PostTask(
                 FROM_HERE,
-                base::Bind(&IntelAlgoServer::handleRequest, base::Unretained(this), msg));
+                base::BindOnce(&IntelAlgoServer::handleRequest, base::Unretained(this), msg));
         }
     }
 }

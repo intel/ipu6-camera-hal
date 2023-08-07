@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2021 Intel Corporation
+ * Copyright (C) 2020-2023 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,7 +63,8 @@ int IntelTNRServer::init(void* pData, int dataSize) {
 
     int key = getIndex(initInfo->cameraId, initInfo->type);
     if (mIntelTNRMap.find(key) == mIntelTNRMap.end()) {
-        mIntelTNRMap[key] = std::unique_ptr<IntelTNR7US>(new IntelTNR7US(initInfo->cameraId));
+        mIntelTNRMap[key] =
+            std::unique_ptr<IntelTNR7US>(IntelTNR7US::createIntelTNR(initInfo->cameraId));
     }
 
     mLockMap[key] = std::unique_ptr<std::mutex>(new std::mutex);
@@ -130,7 +131,7 @@ int IntelTNRServer::asyncParamUpdate(TnrRequestInfo* requestInfo) {
     return mIntelTNRMap[key]->asyncParamUpdate(requestInfo->gain, requestInfo->isForceUpdate);
 }
 
-int IntelTNRServer::getSurfaceInfo(TnrRequestInfo* requestInfo) {
+int IntelTNRServer::getTnrBufferSize(TnrRequestInfo* requestInfo) {
     CheckAndLogError(requestInfo == nullptr, UNKNOWN_ERROR, "@%s, requestInfo is nullptr",
                      __func__);
     int key = getIndex(requestInfo->cameraId, requestInfo->type);
@@ -139,8 +140,8 @@ int IntelTNRServer::getSurfaceInfo(TnrRequestInfo* requestInfo) {
                      requestInfo->type);
     std::unique_lock<std::mutex> lock(*mLockMap[key]);
 
-    return mIntelTNRMap[key]->getSurfaceInfo(requestInfo->width, requestInfo->height,
-                                             &requestInfo->surfaceSize);
+    return mIntelTNRMap[key]->getTnrBufferSize(requestInfo->width, requestInfo->height,
+                                               &requestInfo->surfaceSize);
 }
 
 }  // namespace icamera

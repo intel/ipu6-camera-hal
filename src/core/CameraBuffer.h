@@ -136,9 +136,6 @@ class CameraBuffer {
     // Buffers are allocated the buffers by Camera
     int allocateMemory(V4L2VideoNode* vDevice = nullptr);
 
-    void* mapDmaBufferAddr();
-    void unmapDmaBufferAddr(void* addr);
-
  public:
     static void* mapDmaBufferAddr(int fd, unsigned int bufferSize);
     static void unmapDmaBufferAddr(void* addr, unsigned int bufferSize);
@@ -179,5 +176,17 @@ class CameraBuffer {
 
 typedef std::vector<std::shared_ptr<CameraBuffer> > CameraBufVector;
 typedef std::queue<std::shared_ptr<CameraBuffer> > CameraBufQ;
+
+class ScopeMapping {
+ public:
+    explicit ScopeMapping(const std::shared_ptr<CameraBuffer>& cameraBuf);
+    ~ScopeMapping();
+
+    void* getUserPtr();
+
+ private:
+    std::shared_ptr<CameraBuffer> mCameraBuf;
+    void* mUserPtr;
+};
 
 }  // namespace icamera

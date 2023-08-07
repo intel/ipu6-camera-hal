@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2022 Intel Corporation.
+ * Copyright (C) 2015-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,16 @@
 
 #include <stdarg.h>
 
-#include "utils/ScopedAtrace.h"
 #ifdef HAVE_ANDROID_OS
 #include <log/log.h>
+#endif
+
+#ifndef GPU_ALGO_SERVER
+#ifdef CAL_BUILD
+#include "src/iutils/PerfettoTrace.h"
+#else
+#include "utils/ScopedAtrace.h"
+#endif
 #endif
 
 #ifdef CAMERA_TRACE
@@ -128,7 +135,7 @@ namespace Log {
 void setDebugLevel(void);
 void print_log(bool enable, const char* module, const int level, const char* format, ...);
 bool isDebugLevelEnable(int level);
-bool isLogTagEnabled(int tag, int level = 0);
+bool isLogTagEnabled(int tag, int level);
 // DUMP_ENTITY_TOPOLOGY_S
 bool isDumpMediaTopo(void);
 // DUMP_ENTITY_TOPOLOGY_E

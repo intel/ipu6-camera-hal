@@ -66,11 +66,17 @@ enum {
 typedef enum {
     TUNING_MODE_VIDEO,
     TUNING_MODE_VIDEO_ULL,
+    // HDR_FEATURE_S
+    TUNING_MODE_VIDEO_HDR,
+    TUNING_MODE_VIDEO_HDR2,
+    TUNING_MODE_VIDEO_HLC,
+    // HDR_FEATURE_E
     TUNING_MODE_VIDEO_CUSTOM_AIC,
     TUNING_MODE_VIDEO_LL,
     TUNING_MODE_VIDEO_REAR_VIEW,
     TUNING_MODE_VIDEO_HITCH_VIEW,
     TUNING_MODE_STILL_CAPTURE,
+    TUNING_MODE_VIDEO_BINNING,
     TUNING_MODE_MAX
 } TuningMode;
 
@@ -127,6 +133,11 @@ typedef struct {
     uint32_t vertical_scaling_denominator;
 } SensorFrameParams;
 
+typedef struct {
+    int8_t edgeStrength;
+    int8_t nrStrength;
+} EdgeNrSetting;
+
 enum ExecutorNotifyPolicy {
     POLICY_FRAME_FIRST = 0,
     POLICY_STATS_FIRST,
@@ -173,7 +184,6 @@ struct CommonConfig {
     float xmlVersion;
     std::string ipuName;
     std::vector<std::string> availableSensors;
-    bool isGpuTnrEnabled;
     bool isStillTnrPrior;
     bool isTnrParamForceUpdate;
     bool useTnrGlobalProtection;
@@ -182,27 +192,20 @@ struct CommonConfig {
     bool supportIspTuningUpdate;
     bool supportHwJpegEncode;
     int maxIsysTimeoutValue;
-    // ENABLE_EVCP_S
-    bool isGpuEvcpEnabled;
-    // ENABLE_EVCP_E
     // LEVEL0_ICBM_S
     bool isGPUICBMEnabled;
     // LEVEL0_ICBM_E
 
     CommonConfig() {
         xmlVersion = 1.0;
-        isGpuTnrEnabled = false;
-        isStillTnrPrior = true;
+        isStillTnrPrior = false;
         isTnrParamForceUpdate = false;
-        useTnrGlobalProtection = false;
+        useTnrGlobalProtection = true;
         cameraNumber = -1;
         videoStreamNum = DEFAULT_VIDEO_STREAM_NUM;
         supportIspTuningUpdate = false;
         supportHwJpegEncode = true;
         maxIsysTimeoutValue = 0;
-        // ENABLE_EVCP_S
-        isGpuEvcpEnabled = false;
-        // ENABLE_EVCP_E
         // LEVEL0_ICBM_S
         isGPUICBMEnabled = false;
         // LEVEL0_ICBM_E
@@ -271,4 +274,11 @@ typedef enum {
 } PrivacyModeType;
 // PRIVACY_MODE_E
 
+// VIRTUAL_CHANNEL_S
+struct VcAggregator {
+    VcAggregator() { mIndex = -1; }
+    int mIndex;
+    std::string mName;
+};
+// VIRTUAL_CHANNEL_E
 } /* namespace icamera */

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Intel Corporation.
+ * Copyright (C) 2020-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,7 +52,7 @@ void IntelGPUAlgoServer::handleRequest(const MsgReq& msg) {
             break;
         case IPC_GPU_TNR_GET_SURFACE_INFO: {
             TnrRequestInfo* requestInfo = static_cast<TnrRequestInfo*>(addr);
-            status = mTNR.getSurfaceInfo(requestInfo);
+            status = mTNR.getTnrBufferSize(requestInfo);
             break;
         }
         case IPC_GPU_TNR_PREPARE_SURFACE: {
@@ -113,45 +113,15 @@ void IntelGPUAlgoServer::handleRequest(const MsgReq& msg) {
             break;
         }
 #endif
-            // ENABLE_EVCP_S
-        case IPC_EVCP_INIT:
-            status = mEvcp.init(addr, requestSize);
-            break;
-        case IPC_EVCP_UPDCONF:
-            status = mEvcp.updateEvcpParam(reinterpret_cast<EvcpParam*>(addr));
-            break;
-        case IPC_EVCP_GETCONF:
-            mEvcp.getEvcpParam(reinterpret_cast<EvcpParam*>(addr));
-            status = OK;
-            break;
-        case IPC_EVCP_RUN_FRAME: {
-            status = UNKNOWN_ERROR;
-            EvcpRunInfo* runInfo = static_cast<EvcpRunInfo*>(addr);
-            ShmInfo inBuffer = {};
-            if (runInfo->inHandle < 0) break;
 
-            status = getIntelAlgoServer()->getShmInfo(runInfo->inHandle, &inBuffer);
-            if (status != OK) {
-                LOGE("%s, the buffer handle for EVCP inBuffer data is invalid", __func__);
-                break;
-            }
-
-            status = mEvcp.runEvcpFrame(inBuffer.addr, inBuffer.size);
-            break;
-        }
-        case IPC_EVCP_DEINIT:
-            status = mEvcp.deInit();
-            break;
-            // ENABLE_EVCP_E
-
-            // LEVEL0_ICBM_S
+        // LEVEL0_ICBM_S
         case IPC_ICBM_INIT:
             (void) requestSize;
             status = mICBMServer.setup(reinterpret_cast<ICBMInitInfo*>(addr));
             break;
         case IPC_ICBM_RUN_FRAME: {
             status = UNKNOWN_ERROR;
-            ICBMRunInfo* runInfo = reinterpret_cast<ICBMRunInfo*>(addr);
+            ICBMReqInfo* runInfo = reinterpret_cast<ICBMReqInfo*>(addr);
             ShmInfo inBuffer = {};
             if (runInfo->inHandle < 0) break;
             ShmInfo outBuffer = {};
@@ -168,19 +138,31 @@ void IntelGPUAlgoServer::handleRequest(const MsgReq& msg) {
                 LOGE("%s, the buffer handle for ICBM outBuffer data is invalid", __func__);
                 break;
             }
+            if (runInfo->paramHandle >= 0) {
+                ShmInfo paramBuffer = {};
+                status = getIntelAlgoServer()->getShmInfo(runInfo->paramHandle, &paramBuffer);
+                if (status != OK) {
+                    LOGE("%s, the buffer handle for parameter is invalid", __func__);
+                    break;
+                }
+                runInfo->paramAddr = paramBuffer.addr;
+            }
             runInfo->inII.bufAddr = inBuffer.addr;
             runInfo->outII.bufAddr = outBuffer.addr;
 
-            status = mICBMServer.processFrame(runInfo->inII, runInfo->outII, runInfo->icbmReqInfo);
+            status = mICBMServer.processFrame(*runInfo);
 
             runInfo->inII.bufAddr = nullptr;
             runInfo->outII.bufAddr = nullptr;
+            runInfo->paramAddr = nullptr;
             break;
         }
-        case IPC_ICBM_DEINIT:
-            status = mICBMServer.shutdown();
+        case IPC_ICBM_DEINIT: {
+            ICBMReqInfo* shutInfo = static_cast<ICBMReqInfo*>(addr);
+            status = mICBMServer.shutdown(*shutInfo);
             break;
-            // LEVEL0_ICBM_E
+        }
+        // LEVEL0_ICBM_E
         default:
             LOGE("@%s, req_id:%d is not defined", __func__, req_id);
             status = UNKNOWN_ERROR;
@@ -189,6 +171,8 @@ void IntelGPUAlgoServer::handleRequest(const MsgReq& msg) {
     LOG1("@%s, req_id:%d:%s, status:%d", __func__, req_id,
          IntelAlgoIpcCmdToString(static_cast<IPC_CMD>(req_id)), status);
 
+    (void)requestSize;
+    (void)addr;
     getIntelAlgoServer()->returnCallback(req_id, status, buffer_handle);
 }
 } /* namespace icamera */

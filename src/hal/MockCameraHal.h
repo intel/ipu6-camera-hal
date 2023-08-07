@@ -53,7 +53,7 @@ class MockCameraHal : public CameraHal, public Thread {
 
     // Device API
  public:
-    virtual int deviceOpen(int cameraId);
+    virtual int deviceOpen(int cameraId, int vcNum = 0);
     virtual void deviceClose(int cameraId);
 
     virtual void deviceCallbackRegister(int cameraId, const camera_callback_ops_t* callback);

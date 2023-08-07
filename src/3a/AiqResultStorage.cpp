@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2022 Intel Corporation.
+ * Copyright (C) 2016-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -134,6 +134,32 @@ const AiqResult* AiqResultStorage::getAiqResult(int64_t sequence) {
     }
 
     return nullptr;
+}
+
+void AiqResultStorage::updateDvsRunMap(int64_t sequence) {
+    AutoWMutex wlock(mDataLock);
+
+    mDvsRunMap[sequence] = true;
+
+    if (mDvsRunMap.size() > kDvsRunMapSize) {
+        mDvsRunMap.erase(mDvsRunMap.begin());
+    }
+}
+
+void AiqResultStorage::clearDvsRunMap() {
+    AutoWMutex wlock(mDataLock);
+
+    mDvsRunMap.clear();
+}
+
+bool AiqResultStorage::isDvsRun(int64_t sequence) {
+    AutoWMutex rlock(mDataLock);
+
+    if (mDvsRunMap.find(sequence) != mDvsRunMap.end()) {
+        return true;
+    }
+
+    return false;
 }
 
 /**

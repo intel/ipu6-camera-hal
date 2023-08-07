@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Intel Corporation
+ * Copyright (C) 2022-2023 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,26 +17,40 @@
 #define LOG_TAG IntelICBM
 
 #include "modules/algowrapper/IntelICBM.h"
-#include "src/icbm/ICBMFactory.h"
 
 #include "Errors.h"
 #include "iutils/CameraLog.h"
+#include "iutils/Utils.h"
 
 namespace icamera {
 
-Result IntelICBM::setup(ICBMInitInfo* initParam) {
-    mIIntelICBM = std::unique_ptr<IIntelICBM>(createIntelICBM());
+int IntelICBM::setup(ICBMInitInfo* initParam, std::shared_ptr<IC2ApiHandle> handle) {
+    mIntelOPIC2 = IntelOPIC2::getInstance();
 
-    return mIIntelICBM->setup(initParam);
+    return mIntelOPIC2->setup(initParam, handle);
 }
 
-void IntelICBM::shutdown() {
-    mIIntelICBM->shutdown();
+int IntelICBM::shutdown(const ICBMReqInfo& request) {
+    CheckAndLogError(mIntelOPIC2 == nullptr, UNKNOWN_ERROR, "@%s, no active ICBM session",
+                     __func__);
+    int ret = mIntelOPIC2->shutdown(request);
+    // ret is the active session count, only release the object when no active session
+    if (ret == 0) {
+        IntelOPIC2::releaseInstance();
+        mIntelOPIC2 = nullptr;
+    }
+    return ret;
 }
 
-Result IntelICBM::processFrame(const ImageInfo& iii, const ImageInfo& iio,
-                               const ICBMReqInfo& reqInfo) {
-    return mIIntelICBM->processFrame(iii, iio, reqInfo);
+int IntelICBM::processFrame(const ICBMReqInfo& reqInfo) {
+    CheckAndLogError(mIntelOPIC2 == nullptr, UNKNOWN_ERROR, "@%s, no active ICBM session",
+                     __func__);
+    if (reqInfo.reqType &
+        (icamera::ICBMFeatureType::USER_FRAMING | icamera::ICBMFeatureType::BC_MODE_BB))
+        return mIntelOPIC2->processFrame(reqInfo);
+    if (reqInfo.reqType & icamera::ICBMFeatureType::LEVEL0_TNR)
+        return mIntelOPIC2->runTnrFrame(reqInfo);
+    return 0;
 }
 
 }  // namespace icamera

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2022 Intel Corporation.
+ * Copyright (C) 2015-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,6 +74,7 @@ class AiqInitData {
     int deinitMakernote(int cameraId, TuningMode tuningMode);
     int saveMakernoteData(int cameraId, camera_makernote_mode_t makernoteMode, int64_t sequence,
                           TuningMode tuningMode);
+    void* getMakernoteBuf(camera_makernote_mode_t makernoteMode, bool& dump);
     void updateMakernoteTimeStamp(int64_t sequence, uint64_t timestamp);
     void acquireMakernoteData(uint64_t timestamp, Parameters* param);
 

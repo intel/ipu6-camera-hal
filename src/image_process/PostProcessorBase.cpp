@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2021 Intel Corporation.
+ * Copyright (C) 2019-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -147,7 +147,8 @@ std::shared_ptr<camera3::Camera3Buffer> JpegProcess::cropAndDownscaleThumbnail(
 
     int format = camera3::HalV3Utils::V4l2FormatToHALFormat(inBuf->v4l2Fmt());
     int usage = inBuf->usage();
-    LOG2("%s, inputbuffer format:%d, usage:%d", __func__, format, usage);
+    LOG2("%s, inputbuffer format:%s(%d), usage:%d", __func__,
+         CameraUtils::format2string(inBuf->v4l2Fmt()).c_str(), format, usage);
 
     // Do crop first if needed
     if (IImageProcessor::isProcessingTypeSupported(POST_PROCESS_CROP) &&

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Intel Corporation
+ * Copyright (C) 2022-2023 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,19 +19,19 @@
 #include <vector>
 #include <memory>
 
-#include "src/icbm/IntelICBM.h"
+#include "src/icbm/OnePunchIC2.h"
 #include "src/icbm/ICBMTypes.h"
 
 namespace icamera {
 
 class IntelICBM {
  public:
-    Result setup(ICBMInitInfo* initParam);
-    void shutdown();
+    int setup(ICBMInitInfo* initParam, std::shared_ptr<IC2ApiHandle> handle = nullptr);
+    int shutdown(const ICBMReqInfo& reqInfo);
 
-    Result processFrame(const ImageInfo& iii, const ImageInfo& iio, const ICBMReqInfo& reqInfo);
+    int processFrame(const ICBMReqInfo& reqInfo);
 
  private:
-    std::unique_ptr<IIntelICBM> mIIntelICBM;
+    IntelOPIC2* mIntelOPIC2;
 };
 }  // namespace icamera

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2022 Intel Corporation.
+ * Copyright (C) 2017-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,6 +60,9 @@ class PSysProcessor : public BufferQueue, public PSysDagCallback {
     void onFrameDone(const PSysTaskData& result);
     void onBufferDone(int64_t sequence, Port port, const std::shared_ptr<CameraBuffer>& camBuffer);
     void onStatsDone(int64_t sequence, const CameraBufferPortMap& outBuf);
+// INTEL_DVS_S
+    void onDvsPrepare(int64_t sequence, int32_t streamId);
+// INTEL_DVS_E
 
  private:
     DISALLOW_COPY_AND_ASSIGN(PSysProcessor);
@@ -74,6 +77,9 @@ class PSysProcessor : public BufferQueue, public PSysDagCallback {
                       bool fakeTask = false, bool callbackRgbs = false);
 
     void handleEvent(EventData eventData);
+    // DOL_FEATURE_S
+    int setVbpToIspParam(int64_t sequence, timeval timestamp);
+    // DOL_FEATURE_E
 
     int64_t getSettingSequence(const CameraBufferPortMap& outBuf);
     bool needSkipOutputFrame(int64_t sequence);

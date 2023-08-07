@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2022 Intel Corporation.
+ * Copyright (C) 2018-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -136,16 +136,14 @@ class DeviceBase : public EventSource {
     std::set<BufferConsumer*> mConsumers;
 
     /**
-     * Each device has below three structures to manager its buffers.
+     * Each device has below two structures to manager its buffers.
      * And please note that:
-     * 1. If the buffer is not allocated inside CaptureUnit, mAllocatedBuffers will be empty.
-     * 2. Buffer to be queued into drive comes from mPendingBuffers.
-     * 3. Buffer to be dequeued from driver comes from mBuffersInDevice.
-     * 4. To make code clean, no null CameraBuffer is allowed to be put into these structures.
-     * 5. The buffer cannot be in both mPendingBuffers and mBuffersInDevice.
+     * 1. Buffer to be queued into drive comes from mPendingBuffers.
+     * 2. Buffer to be dequeued from driver comes from mBuffersInDevice.
+     * 3. To make code clean, no null CameraBuffer is allowed to be put into these structures.
+     * 4. The buffer cannot be in both mPendingBuffers and mBuffersInDevice.
      *    We must make the data consistent.
      */
-    std::vector<std::shared_ptr<CameraBuffer>> mAllocatedBuffers;
     // Save all buffers allocated internally.
     std::list<std::shared_ptr<CameraBuffer>> mPendingBuffers;
     // The buffers that are going to be queued.
@@ -174,4 +172,19 @@ class MainDevice : public DeviceBase {
     bool needQueueBack(std::shared_ptr<CameraBuffer> buffer);
 };
 
+// DOL_FEATURE_S
+/**
+ * DolCaptureDevice is used for producing DOL HDR frames.
+ */
+class DolCaptureDevice : public DeviceBase {
+ public:
+    DolCaptureDevice(int cameraId, VideoNodeType nodeType);
+    ~DolCaptureDevice();
+
+ private:
+    int createBufferPool(const stream_t& config);
+    int onDequeueBuffer(std::shared_ptr<CameraBuffer> buffer);
+    bool needQueueBack(std::shared_ptr<CameraBuffer> buffer);
+};
+// DOL_FEATURE_E
 }  // namespace icamera

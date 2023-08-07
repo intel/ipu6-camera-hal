@@ -25,6 +25,9 @@
 #include "SensorHwCtrl.h"
 #include "SofSource.h"
 #include "StreamSource.h"
+// CSI_META_S
+#include "CsiMetaDevice.h"
+// CSI_META_E
 // PRIVACY_MODE_S
 #include "CvfPrivacyChecker.h"
 // PRIVACY_MODE_E
@@ -77,6 +80,9 @@ class CameraDevice : public EventListener {
      * \brief Camera device class init
      *
      * 1.Related classes init: StreamSource, SofSource, 3AControl, lensCtrl
+     // CSI_META_S
+     *                         CsiMeta
+     // CSI_META_E
      * 2.Register listener if enable AIQ
      * 3.Set the defualt parameters
      *
@@ -247,6 +253,9 @@ class CameraDevice : public EventListener {
     SensorHwCtrl* mSensorCtrl;
     SofSource* mSofSource;
     AiqUnitBase* m3AControl;
+    // CSI_META_S
+    CsiMetaDevice* mCsiMetaDevice;
+    // CSI_META_E
 
     // Internal used variable
     int mCameraId;

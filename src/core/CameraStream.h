@@ -80,20 +80,20 @@ class CameraStream : public BufferConsumer, public EventSource {
     virtual void setBufferProducer(BufferProducer* producer);
 
     /**
-     * \brief The notify when polled or processed one frame buffer
+     * \brief receive one frame buffer as consumer
      */
     virtual int onFrameAvailable(Port port, const std::shared_ptr<CameraBuffer>& camBuffer);
+
+    /**
+     * \brief notify EVENT_FRAME_AVAILABLE event to its listener
+     */
+    virtual int doFrameAvailable(Port port, const std::shared_ptr<CameraBuffer>& camBuffer);
 
     // PRIVACY_MODE_S
     /**
      * \brief Return a privacy buffer
      */
     virtual std::shared_ptr<CameraBuffer> getPrivacyBuffer();
-
-    /**
-     * \brief Special function to send last frame after privacy on
-     */
-    virtual int doFrameAvailable(Port port, const std::shared_ptr<CameraBuffer>& camBuffer);
     // PRIVACY_MODE_E
 
  private:

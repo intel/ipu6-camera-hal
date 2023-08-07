@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2021 Intel Corporation.
+ * Copyright (C) 2019-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -496,7 +496,7 @@ bool IPCIntelPGParam::serverFlattenDecode(void* pData, int dataSize,
     CheckAndLogError(!pData || dataSize < sizeof(pg_param_decode_params), false,
                      "@%s, Wrong parameters, pData: %p, dataSize: %d", __func__, pData, dataSize);
     pg_param_decode_params* params = static_cast<pg_param_decode_params*>(pData);
-    params->clientStatsSize = statistics.size;
+    params->statsSize = statistics.size;
     return true;
 }
 
@@ -506,7 +506,7 @@ bool IPCIntelPGParam::clientUnflattenDecode(void* pData, int dataSize, ia_binary
                      pData, statistics, dataSize);
 
     pg_param_decode_params* params = static_cast<pg_param_decode_params*>(pData);
-    statistics->size = params->clientStatsSize;
+    statistics->size = params->statsSize;
     return true;
 }
 

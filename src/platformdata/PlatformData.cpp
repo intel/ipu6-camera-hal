@@ -99,15 +99,88 @@ int PlatformData::init() {
             staticCfg->mCameras[i].mMaxNvmDataSize, camModuleName);
         getInstance()->mAiqInitData.push_back(aiqInitData);
 
+        staticCfg->getModuleInfoFromCmc(i);
+
+        // Overwrite staticCfg with CameraModuleInfo in sensor xml
         if (!camModuleName.empty() &&
             staticCfg->mCameras[i].mCameraModuleInfoMap.find(camModuleName) !=
                 staticCfg->mCameras[i].mCameraModuleInfoMap.end()) {
             ParameterHelper::merge(staticCfg->mCameras[i].mCameraModuleInfoMap[camModuleName],
                                    &staticCfg->mCameras[i].mCapability);
         }
+
+        // HDR_FEATURE_S
+        if (isEnableHDR(i)) {
+            /* If sensor enable HDR replace media format to full range*/
+            bool ret = updateMediaFormat(i, false);
+            if (ret) {
+                LOG1("%s, Using full range media format for HDR sensor %s", __func__,
+                     getSensorName(i));
+            }
+        } else {
+            bool ret = updateMediaFormat(i, true);
+            if (ret) {
+                LOG1("%s, Using narrow mode media format for sensor %s", __func__,
+                     getSensorName(i));
+            }
+        }
+        // HDR_FEATURE_E
     }
 
     return OK;
+}
+
+void PlatformData::StaticCfg::getModuleInfoFromCmc(int cameraId) {
+    CameraInfo& info = mCameras[cameraId];
+
+    if (info.mSupportedTuningConfig.empty()) return;
+
+    // Get default tuning mode and cpf data to update some static capabilities
+    TuningMode tuningMode = info.mSupportedTuningConfig[0].tuningMode;
+    ia_binary_data cpfData;
+    int ret = PlatformData::getCpf(cameraId, tuningMode, &cpfData);
+    CheckWarning(ret != OK || !cpfData.data || cpfData.size > cca::MAX_CPF_LEN, VOID_VALUE,
+                 "%s, AIQB error data %p size %d (max %d), ret %d", __func__, cpfData.data,
+                 cpfData.size, cca::MAX_CPF_LEN, ret);
+
+    cca::cca_cmc cmc;
+    cca::cca_cpf* cpf = new cca::cca_cpf;
+    cpf->size = cpfData.size;
+    MEMCPY_S(cpf->buf, cca::MAX_CPF_LEN, cpfData.data, cpfData.size);
+
+    ia_err iaRet = IntelCca::getInstance(cameraId, tuningMode)->getCMC(&cmc, cpf);
+    delete cpf;
+    IntelCca::releaseInstance(cameraId, tuningMode);
+    CheckWarning(iaRet != ia_err_none, VOID_VALUE, "Get cmc data failed");
+
+    LOG1("%s: base iso %d, dg [%4.2f, %4.2f], ag [%4.2f, %4.2f], from aiqb", __func__, cmc.base_iso,
+         cmc.min_dg, cmc.max_dg, cmc.min_ag, cmc.max_ag);
+    LOG1("%s: focal_len %d, min_fd %d, ap %d", __func__, cmc.optics.effect_focal_length,
+         cmc.optics.min_focus_distance, cmc.lut_apertures);
+    // HDR_FEATURE_S
+    mCameras[cameraId].mMediaFormat = static_cast<ia_media_format>(cmc.media_format);
+    LOG1("%s: media_format %d", __func__, cmc.media_format);
+    // HDR_FEATURE_E
+    int32_t maxAg = cmc.base_iso * cmc.max_ag;
+    const CameraMetadata caps = ParameterHelper::getMetadata(info.mCapability);
+    CameraMetadata meta;
+    uint32_t tag = CAMERA_SENSOR_MAX_ANALOG_SENSITIVITY;
+    icamera_metadata_ro_entry entry = caps.find(tag);
+    if (!entry.count) {
+        meta.update(tag, &maxAg, 1);
+    }
+
+    tag = CAMERA_SENSOR_INFO_SENSITIVITY_RANGE;
+    entry = caps.find(tag);
+    if (!entry.count) {
+        int32_t maxDg = static_cast<int32_t>(cmc.max_dg);
+        int32_t range[] = {cmc.base_iso, maxAg * maxDg};
+        meta.update(tag, range, ARRAY_SIZE(range));
+    }
+
+    if (!meta.isEmpty()) {
+        ParameterHelper::merge(meta, &info.mCapability);
+    }
 }
 
 /**
@@ -144,6 +217,27 @@ int PlatformData::queryGraphSettings(int cameraId, const stream_config_t* stream
         }
     }
     return OK;
+}
+
+int PlatformData::getEdgeNrSetting(int cameraId, float totalGain, float hdrRatio,
+                                   EdgeNrSetting& setting) {
+    const StaticCfg::CameraInfo& pCam = getInstance()->mStaticCfg.mCameras[cameraId];
+    LOG2("%s, totalGain %f, hdrRatio %f", __func__, totalGain, hdrRatio);
+
+    if (!pCam.mTotalGainHdrRatioToEdgeNrMap.empty()) {
+        // found the lower value in map
+        auto subMap = pCam.mTotalGainHdrRatioToEdgeNrMap.upper_bound(totalGain);
+        if (subMap != pCam.mTotalGainHdrRatioToEdgeNrMap.begin()) {
+            auto sub = (--subMap)->second;
+            auto it = sub.upper_bound(hdrRatio);
+            if (it != sub.begin()) {
+                setting = (--it)->second;
+                return OK;
+            }
+        }
+    }
+
+    return NAME_NOT_FOUND;
 }
 
 void PlatformData::releaseGraphConfigNodes() {
@@ -297,7 +391,6 @@ bool PlatformData::isDvsSupported(int cameraId) {
     auto entry = meta.find(CAMERA_SCALER_AVAILABLE_MAX_DIGITAL_ZOOM);
     if (entry.count > 0 && *entry.data.f > 1) supported = true;
 
-    LOG2("@%s, dvs supported:%d", __func__, supported);
     return supported;
 }
 
@@ -341,13 +434,114 @@ int PlatformData::getExposureNum(int cameraId, bool multiExposure) {
     }
 
     int exposureNum = 1;
+    // DOL_FEATURE_S
+    if (PlatformData::isDolShortEnabled(cameraId)) exposureNum++;
+
+    if (PlatformData::isDolMediumEnabled(cameraId)) exposureNum++;
+    // DOL_FEATURE_E
 
     return exposureNum;
 }
 
 bool PlatformData::isLtmEnabled(int cameraId) {
+    // HDR_FEATURE_S
+    if (isEnableHDR(cameraId)) {
+        return true;
+    }
+    // HDR_FEATURE_E
 
     return getInstance()->mStaticCfg.mCameras[cameraId].mLtmEnabled;
+}
+
+ia_media_format PlatformData::getMediaFormat(int cameraId) {
+    return getInstance()->mStaticCfg.mCameras[cameraId].mMediaFormat;
+}
+
+// HDR_FEATURE_S
+bool PlatformData::updateMediaFormat(int cameraId, bool isNarrow) {
+    ia_media_format tuning_media_format =
+        getInstance()->mStaticCfg.mCameras[cameraId].mMediaFormat;
+    ia_media_format media_format = tuning_media_format;
+    switch (tuning_media_format) {
+    case media_format_legacy:
+        media_format = media_format_legacy;
+        break;
+    case media_format_srgb_jpeg:
+        media_format = media_format_srgb_jpeg;
+        break;
+    case media_format_linear_mono:
+        media_format = media_format_linear_mono;
+        break;
+    case media_format_custom:
+        media_format = media_format_custom;
+        break;
+    case media_format_bt601_8b:
+        media_format = isNarrow ? media_format_bt601_8b_narrow : media_format_bt601_8b;
+        break;
+    case media_format_bt709_8b:
+        media_format = isNarrow ? media_format_bt709_8b_narrow : media_format_bt709_8b;
+        break;
+    case media_format_bt709_10b:
+        media_format = isNarrow ? media_format_bt709_10b_narrow : media_format_bt709_10b;
+        break;
+    case media_format_bt2020_10b:
+        media_format = isNarrow ? media_format_bt2020_10b_narrow : media_format_bt2020_10b;
+        break;
+    case media_format_bt2100_10b:
+        media_format = isNarrow ? media_format_bt2100_10b_narrow : media_format_bt2100_10b;
+        break;
+    case media_format_bt2100_10b_cl:
+        media_format = isNarrow ? media_format_bt2100_10b_cl_narrow : media_format_bt2100_10b_cl;
+        break;
+    case media_format_bt2020_12b:
+        media_format = isNarrow ? media_format_bt2020_12b_narrow : media_format_bt2020_12b;
+        break;
+    case media_format_bt2100_12b:
+        media_format = isNarrow ? media_format_bt2100_12b_narrow : media_format_bt2100_12b;
+        break;
+    case media_format_bt2100_12b_cl:
+        media_format = isNarrow ? media_format_bt2100_12b_cl_narrow : media_format_bt2100_12b_cl;
+        break;
+    default:
+        LOGE("invalid media format, default value used.");
+        return false;
+        break;
+    }
+    LOGI("%s, media format in tuning: %d, media format for aic %d.", tuning_media_format,
+         media_format);
+    getInstance()->mStaticCfg.mCameras[cameraId].mMediaFormat = media_format;
+    return true;
+}
+
+bool PlatformData::isEnableHDR(int cameraId) {
+    return (getInstance()->mStaticCfg.mCameras[cameraId].mSensorExposureType !=
+            SENSOR_EXPOSURE_SINGLE);
+}
+
+int PlatformData::getHDRStatsInputBitDepth(int cameraId) {
+    return getInstance()->mStaticCfg.mCameras[cameraId].mHdrStatsInputBitDepth;
+}
+
+int PlatformData::getHDRStatsOutputBitDepth(int cameraId) {
+    return getInstance()->mStaticCfg.mCameras[cameraId].mHdrStatsOutputBitDepth;
+}
+
+int PlatformData::isUseFixedHDRExposureInfo(int cameraId) {
+    return getInstance()->mStaticCfg.mCameras[cameraId].mUseFixedHdrExposureInfo;
+}
+// HDR_FEATURE_E
+
+bool PlatformData::isMultiExposureCase(int cameraId, TuningMode tuningMode) {
+    // HDR_FEATURE_S
+    if (tuningMode == TUNING_MODE_VIDEO_HDR || tuningMode == TUNING_MODE_VIDEO_HDR2 ||
+        tuningMode == TUNING_MODE_VIDEO_HLC) {
+        return true;
+    } else if (getSensorAeEnable(cameraId)) {
+        return true;
+    }
+    // HDR_FEATURE_E
+
+    return false;
 }
 
 int PlatformData::getSensorExposureType(int cameraId) {
@@ -434,11 +628,27 @@ MediaCtlConf* PlatformData::getMediaCtlConf(int cameraId) {
 
 int PlatformData::getCameraInfo(int cameraId, camera_info_t& info) {
     info.device_version = 1;
-    info.facing = getInstance()->mStaticCfg.mCameras[cameraId].mFacing;
     info.orientation = getInstance()->mStaticCfg.mCameras[cameraId].mOrientation;
     info.name = getSensorName(cameraId);
     info.description = getSensorDescription(cameraId);
     info.capability = &getInstance()->mStaticCfg.mCameras[cameraId].mCapability;
+
+    const CameraMetadata& meta = icamera::ParameterHelper::getMetadata(*info.capability);
+    auto entry = meta.find(CAMERA_LENS_FACING);
+    info.facing = FACING_BACK;
+    if (entry.count == 1) {
+        info.facing = entry.data.u8[0] == CAMERA_LENS_FACING_BACK ?
+                                          FACING_BACK : FACING_FRONT;
+    }
+
+    // VIRTUAL_CHANNEL_S
+    info.vc.total_num = 0;
+    if (getInstance()->mStaticCfg.mCameras[cameraId].mVirtualChannel) {
+        info.vc.total_num = getInstance()->mStaticCfg.mCameras[cameraId].mVCNum;
+        info.vc.sequence = getInstance()->mStaticCfg.mCameras[cameraId].mVCSeq;
+        info.vc.group = getInstance()->mStaticCfg.mCameras[cameraId].mVCGroupId;
+    }
+    // VIRTUAL_CHANNEL_E
     return OK;
 }
 
@@ -664,6 +874,84 @@ stream_t PlatformData::getISysOutputByPort(int cameraId, Port port) {
 
     return config;
 }
+
+// DOL_FEATURE_S
+int PlatformData::getFixedVbp(int cameraId) {
+    MediaCtlConf* mc = getMediaCtlConf(cameraId);
+    if (!mc) {
+        LOGW("%s: Failed to get MC for fixed VBP, disable fixed VBP.", __func__);
+        return -1;
+    }
+    return mc->vbp;
+}
+
+bool PlatformData::needHandleVbpInMetaData(int cameraId, ConfigMode configMode) {
+    int fixedVbp;
+
+    if (configMode != CAMERA_STREAM_CONFIGURATION_MODE_HDR) {
+        return false;
+    }
+
+    // Fixed VBP take higher priority when both fixed and dynamic VBP are configured
+    fixedVbp = getFixedVbp(cameraId);
+    if (fixedVbp >= 0) {
+        LOG2("%s: fixed VBP configure detected, no need to handle VBP in meta", __func__);
+        return false;
+    }
+
+    vector<int> vbpOffset;
+    PlatformData::getDolVbpOffset(cameraId, vbpOffset);
+    if (vbpOffset.size() > 0) {
+        return true;
+    }
+
+    return false;
+}
+
+bool PlatformData::needSetVbp(int cameraId, ConfigMode configMode) {
+    int fixedVbp;
+
+    if (configMode != CAMERA_STREAM_CONFIGURATION_MODE_HDR) {
+        return false;
+    }
+
+    fixedVbp = getFixedVbp(cameraId);
+    if (fixedVbp >= 0) {
+        LOG2("%s: Fixed VBP configure detected, value %d", __func__, fixedVbp);
+        return true;
+    }
+
+    vector<int> vbpOffset;
+    PlatformData::getDolVbpOffset(cameraId, vbpOffset);
+    if (vbpOffset.size() > 0) {
+        LOG2("%s: Dynamic VBP configure detected", __func__);
+        return true;
+    }
+
+    return false;
+}
+
+void PlatformData::getDolVbpOffset(int cameraId, vector<int>& dolVbpOffset) {
+    dolVbpOffset = getInstance()->mStaticCfg.mCameras[cameraId].mDolVbpOffset;
+}
+
+bool PlatformData::isDolShortEnabled(int cameraId) {
+    return isVideoNodeEnabled(cameraId, VIDEO_GENERIC_SHORT_EXPO);
+}
+
+bool PlatformData::isDolMediumEnabled(int cameraId) {
+    return isVideoNodeEnabled(cameraId, VIDEO_GENERIC_MEDIUM_EXPO);
+}
+// DOL_FEATURE_E
+
+// CSI_META_S
+bool PlatformData::isCsiMetaEnabled(int cameraId) {
+    // FILE_SOURCE_S
+    if (isFileSourceEnabled()) return false;
+    // FILE_SOURCE_E
+    return isVideoNodeEnabled(cameraId, VIDEO_CSI_META);
+}
+// CSI_META_E
 
 bool PlatformData::isAiqdEnabled(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mEnableAiqd;
@@ -991,6 +1279,54 @@ int PlatformData::getConfigModesByOperationMode(int cameraId, uint32_t operation
     return INVALID_OPERATION;
 }
 
+/*
+ * This function adds for binning mode tuning support, and there are 2 tuning modes for configMode.
+ * The first tuning mode will be used when selecting tuning mode.
+ * When selecting small ISYS output, the binning mode should be moved to first, otherwise full size
+ * mode should be the first tuning mode.
+ */
+void PlatformData::reorderSupportedTuningConfig(int cameraId, ConfigMode configMode) {
+    auto pCam = &getInstance()->mStaticCfg.mCameras[cameraId];
+    int binningIdx = -1;
+    int fullIdx = -1;
+    int idx = -1;
+    for (auto& cfg : pCam->mSupportedTuningConfig) {
+        idx++;
+        LOG1("%s, tuningMode %d, configMode %x, idx %d", __func__, cfg.tuningMode, cfg.configMode,
+             idx);
+        if (cfg.configMode == configMode) {
+            if (cfg.tuningMode == TUNING_MODE_VIDEO_BINNING) {
+                binningIdx = idx;
+            } else {
+                fullIdx = idx;
+            }
+        }
+    }
+
+    if (binningIdx < 0 || fullIdx < 0) return;
+
+    bool smallSize = false;
+    MediaCtlConf* mc = PlatformData::getMediaCtlConf(cameraId);
+    vector<camera_resolution_t> res;
+    // The supported resolutions are saved in res with ascending order(small -> bigger)
+    getSupportedISysSizes(cameraId, res);
+    if (!res.empty() && mc) {
+        for (const auto& output : mc->outputs) {
+            if (res.back().width > output.width || res.back().height > output.height) {
+                smallSize = true;
+                break;
+            }
+        }
+    }
+
+    if ((smallSize && binningIdx > fullIdx) || (!smallSize && binningIdx < fullIdx)) {
+        // Switch binning mode and full mode
+        auto config = pCam->mSupportedTuningConfig[fullIdx];
+        pCam->mSupportedTuningConfig[fullIdx] = pCam->mSupportedTuningConfig[binningIdx];
+        pCam->mSupportedTuningConfig[binningIdx] = config;
+    }
+}
+
 int PlatformData::getTuningModeByConfigMode(int cameraId, ConfigMode configMode,
                                             TuningMode& tuningMode) {
     CheckAndLogError(getInstance()->mStaticCfg.mCameras[cameraId].mSupportedTuningConfig.empty(),
@@ -1167,6 +1503,35 @@ vector<MultiExpRange> PlatformData::getMultiExpRanges(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mMultiExpRanges;
 }
 
+// FILE_SOURCE_S
+const char* PlatformData::getInjectedFile() {
+    const char* PROP_CAMERA_FILE_INJECTION = "cameraInjectFile";
+    return getenv(PROP_CAMERA_FILE_INJECTION);
+}
+
+bool PlatformData::isFileSourceEnabled() {
+    return getInjectedFile() != nullptr;
+}
+// FILE_SOURCE_E
+
+// VIRTUAL_CHANNEL_S
+int PlatformData::getVirtualChannelSequence(int cameraId) {
+    if (getInstance()->mStaticCfg.mCameras[cameraId].mVirtualChannel) {
+        return getInstance()->mStaticCfg.mCameras[cameraId].mVCSeq;
+    }
+
+    return -1;
+}
+
+int PlatformData::getVcAggregator(int cameraId, struct VcAggregator& aggregator) {
+    if (getInstance()->mStaticCfg.mCameras[cameraId].mVcAggregator.mIndex >= 0) {
+        aggregator = getInstance()->mStaticCfg.mCameras[cameraId].mVcAggregator;
+        return OK;
+    }
+    return NO_ENTRY;
+}
+// VIRTUAL_CHANNEL_E
+
 camera_resolution_t* PlatformData::getPslOutputForRotation(int width, int height, int cameraId) {
     CheckAndLogError(getInstance()->mStaticCfg.mCameras[cameraId].mOutputMap.empty(), nullptr,
                      "<id%d>@%s, there isn't pslOutputMapForRotation field in xml.", cameraId,
@@ -1178,6 +1543,25 @@ camera_resolution_t* PlatformData::getPslOutputForRotation(int width, int height
             LOG2("<id%d> find the psl output resoltion(%d, %d) for %dx%d", cameraId, map.Psl.width,
                  map.Psl.height, map.User.width, map.User.height);
             return &map.Psl;
+        }
+    }
+
+    return nullptr;
+}
+
+const camera_resolution_t* PlatformData::getPreferStillOutput(int width, int height,
+                                                              int cameraId) {
+    if (getInstance()->mStaticCfg.mCameras[cameraId].mPreferStillOutput.empty()) return nullptr;
+
+    const std::vector<camera_resolution_t>& preferOutput =
+        getInstance()->mStaticCfg.mCameras[cameraId].mPreferStillOutput;
+    for (const auto& output : preferOutput) {
+        // get preferred still output for small size
+        if ((width < output.width || height < output.height)
+            && (width * output.height == height * output.width)) {
+            LOG2("<id%d> the psl output: (%dx%d) for user: %dx%d", cameraId, output.width,
+                 output.height, width, height);
+            return &output;
         }
     }
 
@@ -1223,9 +1607,14 @@ camera_coordinate_system_t PlatformData::getActivePixelArray(int cameraId) {
 }
 
 string PlatformData::getCameraCfgPath() {
-    char* p = getenv("CAMERA_CFG_PATH");
+    string cfgPath = string(CAMERA_DEFAULT_CFG_PATH);
+#ifdef SUB_CONFIG_PATH
+    cfgPath += string(SUB_CONFIG_PATH);
+    cfgPath.append("/");
+#endif
 
-    return p ? string(p) : string(CAMERA_DEFAULT_CFG_PATH);
+    char* p = getenv("CAMERA_CFG_PATH");
+    return p ? string(p) : cfgPath;
 }
 
 string PlatformData::getGraphDescFilePath() {
@@ -1291,6 +1680,14 @@ int PlatformData::saveMakernoteData(int cameraId, camera_makernote_mode_t makern
                                                                     sequence, tuningMode);
 }
 
+void* PlatformData::getMakernoteBuf(int cameraId, camera_makernote_mode_t makernoteMode,
+                                    bool& dump) {
+    CheckAndLogError(cameraId >= static_cast<int>(getInstance()->mAiqInitData.size()), nullptr,
+                     "@%s, bad cameraId:%d", __func__, cameraId);
+
+    return getInstance()->mAiqInitData[cameraId]->getMakernoteBuf(makernoteMode, dump);
+}
+
 void PlatformData::updateMakernoteTimeStamp(int cameraId, int64_t sequence, uint64_t timestamp) {
     CheckAndLogError(cameraId >= static_cast<int>(getInstance()->mAiqInitData.size()), VOID_VALUE,
                      "@%s, bad cameraId:%d", __func__, cameraId);
@@ -1343,10 +1740,6 @@ void PlatformData::setScalerInfo(int cameraId, std::vector<IGraphType::ScalerInf
     }
 }
 
-bool PlatformData::isGpuTnrEnabled() {
-    return getInstance()->mStaticCfg.mCommonConfig.isGpuTnrEnabled;
-}
-
 int PlatformData::getVideoStreamNum() {
     return getInstance()->mStaticCfg.mCommonConfig.videoStreamNum;
 }
@@ -1365,10 +1758,9 @@ int PlatformData::getMaxIsysTimeout() {
 
 bool PlatformData::isUsingGpuAlgo() {
     bool enabled = false;
-    enabled |= isGpuTnrEnabled();
-    // ENABLE_EVCP_S
-    enabled |= isGpuEvcpEnabled();
-    // ENABLE_EVCP_E
+    for (int cameraId = static_cast<int>(getInstance()->mStaticCfg.mCameras.size()) - 1;
+         cameraId >= 0; cameraId--)
+        enabled |= isGpuTnrEnabled(cameraId);
     // LEVEL0_ICBM_S
     enabled |= isGPUICBMEnabled();
     // LEVEL0_ICBM_E
@@ -1403,6 +1795,10 @@ bool PlatformData::isDummyStillSink(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mDummyStillSink;
 }
 
+bool PlatformData::isGpuTnrEnabled(int cameraId) {
+    return getInstance()->mStaticCfg.mCameras[cameraId].mGpuTnrEnabled;
+}
+
 bool PlatformData::removeCacheFlushOutputBuffer(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mRemoveCacheFlushOutputBuffer;
 }
@@ -1410,12 +1806,6 @@ bool PlatformData::removeCacheFlushOutputBuffer(int cameraId) {
 bool PlatformData::getPLCEnable(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mPLCEnable;
 }
-
-// ENABLE_EVCP_S
-bool PlatformData::isGpuEvcpEnabled() {
-    return getInstance()->mStaticCfg.mCommonConfig.isGpuEvcpEnabled;
-}
-// ENABLE_EVCP_E
 
 // PRIVACY_MODE_S
 PrivacyModeType PlatformData::getSupportPrivacy(int cameraId) {
@@ -1443,6 +1833,10 @@ bool PlatformData::getDisableBLCByAGain(int cameraId, int& low, int& high) {
 
 bool PlatformData::isResetLinkRoute(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mResetLinkRoute;
+}
+
+int64_t PlatformData::getReqWaitTimeout(int cameraId) {
+    return getInstance()->mStaticCfg.mCameras[cameraId].mReqWaitTimeout;
 }
 
 // LEVEL0_ICBM_S

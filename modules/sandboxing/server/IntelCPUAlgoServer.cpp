@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2021 Intel Corporation.
+ * Copyright (C) 2020-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -139,16 +139,18 @@ void IntelCPUAlgoServer::handleRequest(const MsgReq& msg) {
             status = mCcas[key]->init(addr, requestSize);
             break;
         }
-        case IPC_CCA_SET_STATS: {
-            intel_cca_set_stats_data* p = static_cast<intel_cca_set_stats_data*>(addr);
-            FUNCTION_PREPARED_RETURN
-
-            status = mCcas[key]->setStats(addr, requestSize);
-            break;
-        }
         case IPC_CCA_RUN_AEC: {
             intel_cca_run_aec_data* p = static_cast<intel_cca_run_aec_data*>(addr);
             FUNCTION_PREPARED_RETURN
+
+            if (p->hasDecodeStats) {
+                intel_cca_decode_stats_data* pDecodeStats = &p->decodeStatsParams;
+                status = decodeStats(pDecodeStats, key);
+                if (status != OK) {
+                    LOGE("failed to decode stats in sandbox");
+                    break;
+                }
+            }
 
             status = mCcas[key]->runAEC(addr, requestSize);
             break;
@@ -156,6 +158,26 @@ void IntelCPUAlgoServer::handleRequest(const MsgReq& msg) {
         case IPC_CCA_RUN_AIQ: {
             intel_cca_run_aiq_data* p = static_cast<intel_cca_run_aiq_data*>(addr);
             FUNCTION_PREPARED_RETURN
+
+            if (p->mknResultsHandle >= 0) {
+                ShmInfo paramsInfo = {};
+                status = getIntelAlgoServer()->getShmInfo(p->mknResultsHandle, &paramsInfo);
+                if (status != OK) {
+                    LOGE("%s, the buffer handle for mknResultsHandle is invalid", __func__);
+                    break;
+                }
+                p->mknResults = static_cast<cca::cca_mkn*>(paramsInfo.addr);
+            }
+
+            if (p->aiqResultHandle >= 0) {
+                ShmInfo paramsInfo = {};
+                status = getIntelAlgoServer()->getShmInfo(p->aiqResultHandle, &paramsInfo);
+                if (status != OK) {
+                    LOGE("%s, the buffer handle for aiqResultsHandle is invalid", __func__);
+                    break;
+                }
+                p->results = static_cast<cca::cca_aiq_results*>(paramsInfo.addr);
+            }
 
             status = mCcas[key]->runAIQ(addr, requestSize);
             break;
@@ -214,22 +236,6 @@ void IntelCPUAlgoServer::handleRequest(const MsgReq& msg) {
             status = mCcas[key]->getCMC(addr, requestSize);
             break;
         }
-        case IPC_CCA_GET_MKN: {
-            intel_cca_mkn_data* p = static_cast<intel_cca_mkn_data*>(addr);
-            FUNCTION_PREPARED_RETURN
-
-            if (p->resultsHandle >= 0) {
-                ShmInfo paramsInfo = {};
-                status = getIntelAlgoServer()->getShmInfo(p->resultsHandle, &paramsInfo);
-                if (status != OK) {
-                    LOGE("%s, the buffer handle for resultsHandle is invalid", __func__);
-                    break;
-                }
-                p->results = static_cast<cca::cca_mkn*>(paramsInfo.addr);
-            }
-            status = mCcas[key]->getMKN(addr, requestSize);
-            break;
-        }
         case IPC_CCA_GET_AIQD: {
             intel_cca_get_aiqd_data* p = static_cast<intel_cca_get_aiqd_data*>(addr);
             FUNCTION_PREPARED_RETURN
@@ -249,19 +255,6 @@ void IntelCPUAlgoServer::handleRequest(const MsgReq& msg) {
             FUNCTION_PREPARED_RETURN
 
             status = mCcas[key]->deinit(addr, requestSize);
-            break;
-        }
-        case IPC_CCA_DECODE_STATS: {
-            intel_cca_decode_stats_data* p = static_cast<intel_cca_decode_stats_data*>(addr);
-            FUNCTION_PREPARED_RETURN
-
-            ShmInfo info = {};
-            status = getIntelAlgoServer()->getShmInfo(p->statsHandle, &info);
-            if (status != OK) {
-                LOGE("%s, the buffer handle for stats data is invalid", __func__);
-                break;
-            }
-            status = mCcas[key]->decodeStats(addr, requestSize, info.addr);
             break;
         }
         case IPC_CCA_GET_PAL_SIZE: {
@@ -317,6 +310,15 @@ void IntelCPUAlgoServer::handleRequest(const MsgReq& msg) {
             } else {
                 LOGE("%s, the buffer handle for stats data is invalid", __func__);
             }
+
+            if (decodeParams->hasStatsDecode) {
+                // Update stats bin size
+                intel_cca_decode_stats_data* p = &decodeParams->decodeStatsParams;
+                p->statsBuffer.size = decodeParams->statsSize;
+                FUNCTION_PREPARED_RETURN
+                status = decodeStats(p, key);
+            }
+
             break;
         }
         case IPC_PG_PARAM_DEINIT:
@@ -331,6 +333,14 @@ void IntelCPUAlgoServer::handleRequest(const MsgReq& msg) {
     LOG2("@%s, req_id:%d:%s, status:%d", __func__, req_id,
          IntelAlgoIpcCmdToString(static_cast<IPC_CMD>(req_id)), status);
     getIntelAlgoServer()->returnCallback(req_id, status, buffer_handle);
+}
+
+status_t IntelCPUAlgoServer::decodeStats(intel_cca_decode_stats_data* p, uint16_t key) {
+    ShmInfo info = {};
+    status_t status = getIntelAlgoServer()->getShmInfo(p->statsHandle, &info);
+    CheckAndLogError(status != OK, status, "the handle for stats data is invalid");
+
+    return mCcas[key]->decodeStats(p, info.addr);
 }
 
 uint16_t IntelCPUAlgoServer::getKey(int cameraId, TuningMode mode) {

@@ -147,6 +147,9 @@ status_t GraphConfigPipe::analyzeSourceType() {
 
 status_t GraphConfigPipe::analyzeCSIOutput() {
     vector<string> csiBeOutput = {"csi_be:output",
+                                  // DOL_FEATURE_S
+                                  "csi_be_dol:output",
+                                  // DOL_FEATURE_E
                                   "csi_be_soc:output"};
     for (auto& item : csiBeOutput) {
         GCSS::IGraphConfig* csiBeNode =
@@ -998,7 +1001,7 @@ status_t GraphConfigPipe::getScalerByStreamId(
                 if (((input_crop->left == 0) && (input_crop->top == 0) &&
                      (input_crop->right == 0) && (input_crop->bottom == 0)) &&
                     ((output_crop->left == 0) && (output_crop->top == 0) &&
-                     (output_crop->right == 0) &&(output_crop->bottom == 0))) {
+                     (output_crop->right == 0) && (output_crop->bottom == 0))) {
                     gdcScalerW = static_cast<float>(gdcResolution.input_width) /
                                  static_cast<float>(gdcResolution.output_width);
                     gdcScalerH = static_cast<float>(gdcResolution.input_height) /
@@ -1490,6 +1493,15 @@ status_t GraphConfigPipe::portGetClientStream(Node* port, HalStream** stream) {
         return BAD_VALUE;
     }
 
+    /* When using the still tnr mode, both still(x) and stilltnr(x) port eventually mapped to the
+     * same Hal stream. stilltnr(x) is dummy port and will not appear in mStreamToSinkIdMap, so need
+     * use still(x) to find the corresponding Hal stream
+     */
+    string::size_type pos = 0;
+    if ((pos = portName.find("tnr")) != string::npos) {
+        portName = portName.erase(pos, 3);
+    }
+
     uid_t vPortId = GCSS::ItemUID::str2key(portName);
     *stream = getHalStreamByVirtualId(vPortId);
 
@@ -1564,6 +1576,17 @@ bool GraphConfigPipe::portIsEdgePort(Node* port) {
 
     return isEdge;
 }
+
+// DOL_FEATURE_S
+int GraphConfigPipe::getDolInfo(float* gain, string* mode) {
+    CheckAndLogError(!gain || !mode, UNKNOWN_ERROR, "%s, the gain or mode is nullptr", __func__);
+
+    css_err_t status = mGCSSAicUtil.getDolInfo(*gain, *mode);
+    CheckAndLogError(status != css_err_none, UNKNOWN_ERROR, "%s, Get DOL info fails", __func__);
+
+    return OK;
+}
+// DOL_FEATURE_E
 
 void GraphConfigPipe::dumpSettings() {
     mSettings->dumpNodeTree(mSettings, 2);

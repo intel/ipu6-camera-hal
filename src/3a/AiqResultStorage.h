@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2022 Intel Corporation.
+ * Copyright (C) 2016-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -126,6 +126,10 @@ class AiqResultStorage {
      */
     void resetAiqStatistics();
 
+    void updateDvsRunMap(int64_t sequence);
+    void clearDvsRunMap();
+    bool isDvsRun(int64_t sequence);
+
  private:
     AiqResultStorage(int cameraId);
     ~AiqResultStorage();
@@ -147,6 +151,10 @@ class AiqResultStorage {
     static const int kAiqStatsStorageSize = 3;  // Always use the latest, but may hold for long time
     int mCurrentAiqStatsIndex = -1;
     AiqStatistics mAiqStatistics[kAiqStatsStorageSize];
+
+    static const int kDvsRunMapSize = 15;
+    // first: sequence id, second: true
+    std::map<int64_t, bool> mDvsRunMap;
 };
 
 }  // namespace icamera

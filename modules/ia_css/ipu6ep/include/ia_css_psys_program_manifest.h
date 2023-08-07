@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Intel Corporation.
+ * Copyright (C) 2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -380,7 +380,7 @@ uint8_t ia_css_program_manifest_get_is_dfm_relocatable(
 
  @return 0 when not applicable and/or invalid arguments
 
- @deprecated Implementation is trival (returns 0) and
+ @deprecated Implementation is trivial (returns 0) and
  no known users or known intention for future use.
  */
 IA_CSS_PSYS_STATIC_STORAGE_CLASS_H

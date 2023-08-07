@@ -89,6 +89,9 @@ camera_window_t convertToIaWindow(const camera_coordinate_system_t& srcSystem,
 float normalizeAwbGain(int gain);
 int convertToUserAwbGain(float normalizedGain);
 float convertSpeedModeToTime(camera_converge_speed_t mode);
+// HDR_FEATURE_S
+float convertSpeedModeToTimeForHDR(camera_converge_speed_t mode);
+// HDR_FEATURE_E
 
 ia_aiq_frame_use convertFrameUsageToIaFrameUsage(int frameUsage);
 

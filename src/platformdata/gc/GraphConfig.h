@@ -66,6 +66,9 @@ class GraphConfig : public IGraphConfig {
     virtual int getStreamIdByPgName(std::string pgName);
     virtual int getPgIdByPgName(std::string pgName);
     virtual int getTuningModeByStreamId(const int32_t streamId);
+    // DOL_FEATURE_S
+    virtual int getDolInfo(float& gain, std::string& mode);
+    // DOL_FEATURE_E
     virtual ia_isp_bxt_program_group* getProgramGroup(int32_t streamId);
     virtual status_t getPgRbmValue(std::string pgName, IGraphType::StageAttr* stageAttr);
     virtual status_t getMBRData(int32_t streamId, ia_isp_bxt_gdc_limits* data);

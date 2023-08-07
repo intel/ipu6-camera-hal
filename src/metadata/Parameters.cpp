@@ -21,7 +21,6 @@
 #include "iutils/CameraDump.h"
 #include "iutils/Utils.h"
 
-#include "PlatformData.h"
 #include "Parameters.h"
 #include "ParameterHelper.h"
 
@@ -527,6 +526,24 @@ int Parameters::getIrisLevel(int& level) {
     level = entry.data.i32[0];
     return OK;
 }
+
+// HDR_FEATURE_S
+int Parameters::setWdrMode(camera_wdr_mode_t wdrMode) {
+    uint8_t mode = wdrMode;
+    ParameterHelper::AutoWLock wl(mData);
+    return ParameterHelper::getMetadata(mData).update(INTEL_CONTROL_WDR_MODE, &mode, 1);
+}
+
+int Parameters::getWdrMode(camera_wdr_mode_t& wdrMode) const {
+    ParameterHelper::AutoRLock rl(mData);
+    auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_CONTROL_WDR_MODE);
+    if (entry.count != 1) {
+        return NAME_NOT_FOUND;
+    }
+    wdrMode = (camera_wdr_mode_t)entry.data.u8[0];
+    return OK;
+}
+// HDR_FEATURE_E
 
 int Parameters::setWdrLevel(uint8_t level) {
     ParameterHelper::AutoWLock wl(mData);
@@ -1596,7 +1613,6 @@ int Parameters::getSensorMountType(camera_mount_type_t& sensorMountType) const {
 // User can set envrionment and then call api to update the debug level.
 int Parameters::updateDebugLevel() {
     Log::setDebugLevel();
-    CameraDump::setDumpLevel();
     return OK;
 }
 
@@ -1879,6 +1895,20 @@ int Parameters::getPowerMode(camera_power_mode_t& mode) const {
     return OK;
 }
 
+int Parameters::setHdrRatio(float hdrRatio) {
+    ParameterHelper::AutoWLock wl(mData);
+    return ParameterHelper::getMetadata(mData).update(INTEL_VENDOR_CAMERA_HDR_RATIO, &hdrRatio, 1);
+}
+
+int Parameters::getHdrRatio(float& hdrRatio) const {
+    ParameterHelper::AutoRLock rl(mData);
+    auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_VENDOR_CAMERA_HDR_RATIO);
+    if (entry.count != 1) return NAME_NOT_FOUND;
+
+    hdrRatio = entry.data.f[0];
+    return OK;
+}
+
 int Parameters::setTotalExposureTarget(int64_t totalExposureTarget) {
     ParameterHelper::AutoWLock wl(mData);
     return ParameterHelper::getMetadata(mData).update(INTEL_VENDOR_CAMERA_TOTAL_EXPOSURE_TARGET,
@@ -1965,79 +1995,6 @@ int Parameters::getCallbackTmCurve(bool* enabled) const {
     return OK;
 }
 
-// ENABLE_EVCP_S
-int Parameters::setEvcpEccMode(uint8_t enabled) {
-    ParameterHelper::AutoWLock wl(mData);
-    return ParameterHelper::getMetadata(mData).update(INTEL_VENDOR_CAMERA_IC_ECC_MODE, &enabled, 1);
-}
-int Parameters::getEvcpEccMode(uint8_t* enabled) const {
-    ParameterHelper::AutoRLock rl(mData);
-    auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_VENDOR_CAMERA_IC_ECC_MODE);
-
-    if (entry.count != 1) {
-        return NAME_NOT_FOUND;
-    }
-
-    *enabled = entry.data.u8[0];
-    return OK;
-}
-
-int Parameters::setEvcpBCMode(uint8_t mode) {
-    ParameterHelper::AutoWLock wl(mData);
-    return ParameterHelper::getMetadata(mData).update(INTEL_VENDOR_CAMERA_IC_BC_MODE, &mode, 1);
-}
-int Parameters::getEvcpBCMode(uint8_t* mode) const {
-    ParameterHelper::AutoRLock rl(mData);
-    auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_VENDOR_CAMERA_IC_BC_MODE);
-
-    if (entry.count != 1) {
-        return NAME_NOT_FOUND;
-    }
-
-    *mode = entry.data.u8[0];
-
-    return OK;
-}
-
-int Parameters::setEvcpBRParameters(int height, int width, int fd) {
-    ParameterHelper::AutoWLock wl(mData);
-    int32_t values[3] = {width, height, fd};
-    return ParameterHelper::getMetadata(mData).update(INTEL_VENDOR_CAMERA_IC_BR_PARAMETERS, values,
-                                                      3);
-}
-
-int Parameters::getEvcpBRParameters(int* height, int* width, int* fd) const {
-    ParameterHelper::AutoRLock rl(mData);
-    auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_VENDOR_CAMERA_IC_BR_PARAMETERS);
-
-    if (entry.count != 3) {
-        return NAME_NOT_FOUND;
-    }
-
-    *height = entry.data.i32[0];
-    *width = entry.data.i32[1];
-    *fd = entry.data.i32[2];
-
-    return OK;
-}
-
-int Parameters::setEvcpFFMode(uint8_t mode) {
-    ParameterHelper::AutoWLock wl(mData);
-    return ParameterHelper::getMetadata(mData).update(INTEL_VENDOR_CAMERA_IC_UF_MODE, &mode, 1);
-}
-int Parameters::getEvcpFFMode(uint8_t* mode) const {
-    ParameterHelper::AutoRLock rl(mData);
-    auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_VENDOR_CAMERA_IC_UF_MODE);
-
-    if (entry.count != 1) {
-        return NAME_NOT_FOUND;
-    }
-
-    *mode = entry.data.u8[0];
-    return OK;
-}
-// ENABLE_EVCP_E
-
 int Parameters::setZoomRegion(const camera_zoom_region_t& region) {
     ParameterHelper::AutoWLock wl(mData);
     int32_t values[4] = {region.left, region.top, region.right, region.bottom};
@@ -2069,6 +2026,23 @@ int Parameters::setICBMUFMode(uint8_t mode) {
 int Parameters::getICBMUFMode(uint8_t* mode) const {
     ParameterHelper::AutoRLock rl(mData);
     auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_VENDOR_CAMERA_IC_UF_MODE);
+
+    if (entry.count != 1) {
+        return NAME_NOT_FOUND;
+    }
+
+    *mode = entry.data.u8[0];
+    return OK;
+}
+
+int Parameters::setICBMBBMode(uint8_t mode) {
+    ParameterHelper::AutoWLock wl(mData);
+    return ParameterHelper::getMetadata(mData).update(INTEL_VENDOR_CAMERA_IC_BC_MODE, &mode, 1);
+}
+
+int Parameters::getICBMBBMode(uint8_t* mode) const {
+    ParameterHelper::AutoRLock rl(mData);
+    auto entry = ParameterHelper::getMetadataEntry(mData, INTEL_VENDOR_CAMERA_IC_BC_MODE);
 
     if (entry.count != 1) {
         return NAME_NOT_FOUND;

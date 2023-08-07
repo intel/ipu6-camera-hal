@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Intel Corporation
+ * Copyright (C) 2022-2023 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,19 +26,17 @@ namespace icamera {
 int IntelICBMServer::setup(ICBMInitInfo* initParam) {
     mIntelICBM = std::unique_ptr<IntelICBM>(new IntelICBM());
 
-    return mIntelICBM->setup(initParam) == Result::OK ? OK : UNKNOWN_ERROR;
+    return mIntelICBM->setup(initParam);
 }
 
-int IntelICBMServer::shutdown() {
-    mIntelICBM->shutdown();
-    mIntelICBM = nullptr;
+int IntelICBMServer::shutdown(const ICBMReqInfo& reqInfo) {
+    int ret = mIntelICBM->shutdown(reqInfo);
 
-    return OK;
+    return ret >= 0 ? OK : ret;
 }
 
-int IntelICBMServer::processFrame(const ImageInfo& iii, const ImageInfo& iio,
-                                  const ICBMReqInfo& reqInfo) {
-    return mIntelICBM->processFrame(iii, iio, reqInfo) == Result::OK ? OK : UNKNOWN_ERROR;
+int IntelICBMServer::processFrame(const ICBMReqInfo& reqInfo) {
+    return mIntelICBM->processFrame(reqInfo);
 }
 
 }  // namespace icamera

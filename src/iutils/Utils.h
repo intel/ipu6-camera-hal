@@ -276,8 +276,6 @@ void getSubDeviceName(const char* entityName, std::string& deviceNodeName);
 
 int getInterlaceHeight(int field, int height);
 
-bool isMultiExposureCase(int cameraId, TuningMode tuningMode);
-
 bool isUllPsysPipe(TuningMode tuningMode);
 
 ConfigMode getConfigModeByName(const char* ConfigName);

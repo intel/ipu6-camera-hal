@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2022 Intel Corporation
+ * Copyright (C) 2017-2023 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,6 +68,9 @@ class PSysDagCallback {
     virtual void onBufferDone(int64_t sequence, Port port,
                               const std::shared_ptr<CameraBuffer>& camBuffer) {}
     virtual void onStatsDone(int64_t sequence, const CameraBufferPortMap& outBuf) {}
+// INTEL_DVS_S
+    virtual void onDvsPrepare(int64_t sequence, int32_t streamId) {}
+// INTEL_DVS_E
 };
 
 class PSysDAG {
@@ -82,6 +85,8 @@ class PSysDAG {
 
     int resume();
     int pause();
+
+    void unregisterNode();
 
     int registerInternalBufs(std::map<Port, CameraBufVector>& internalBufs);
     int registerUserOutputBufs(Port port, const std::shared_ptr<CameraBuffer>& camBuffer);

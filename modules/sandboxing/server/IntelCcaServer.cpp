@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Intel Corporation
+ * Copyright (C) 2020-2023 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,24 +57,18 @@ status_t IntelCcaServer::init(void* pData, int dataSize) {
     return OK;
 }
 
-status_t IntelCcaServer::setStats(void* pData, int dataSize) {
-    CheckAndLogError(pData == nullptr, UNKNOWN_ERROR, "@%s, pData is nullptr", __func__);
-    CheckAndLogError(mCca == nullptr, UNKNOWN_ERROR, "@%s, mCca is nullptr", __func__);
-
-    intel_cca_set_stats_data* params = static_cast<intel_cca_set_stats_data*>(pData);
-
-    ia_err ret = mCca->setStatsParams(params->inParams);
-    CheckAndLogError(ret != ia_err_none, UNKNOWN_ERROR, "@%s, fails: %d", __func__, ret);
-
-    return OK;
-}
-
 status_t IntelCcaServer::runAEC(void* pData, int dataSize) {
     PERF_CAMERA_ATRACE();
     CheckAndLogError(pData == nullptr, UNKNOWN_ERROR, "@%s, pData is nullptr", __func__);
     CheckAndLogError(mCca == nullptr, UNKNOWN_ERROR, "@%s, mCca is nullptr", __func__);
 
     intel_cca_run_aec_data* params = static_cast<intel_cca_run_aec_data*>(pData);
+
+    if (params->hasStats) {
+        ia_err ret = mCca->setStatsParams(params->inStatsParams);
+        CheckAndLogError(ret != ia_err_none, UNKNOWN_ERROR, "@%s, fails to set stats: %d", __func__,
+                         ret);
+    }
 
     ia_err ret = mCca->runAEC(params->frameId, params->inParams, &params->results);
     CheckAndLogError(ret != ia_err_none, UNKNOWN_ERROR, "@%s, fails: %d", __func__, ret);
@@ -89,8 +83,14 @@ status_t IntelCcaServer::runAIQ(void* pData, int dataSize) {
 
     intel_cca_run_aiq_data* params = static_cast<intel_cca_run_aiq_data*>(pData);
 
-    ia_err ret = mCca->runAIQ(params->frameId, params->inParams, &params->results);
+    ia_err ret = mCca->runAIQ(params->frameId, params->inParams, params->results);
     CheckAndLogError(ret != ia_err_none, UNKNOWN_ERROR, "@%s, fails: %d", __func__, ret);
+
+    if (params->mknResultsHandle >= 0) {
+        ret = mCca->getMKN(params->type, params->mknResults);
+        CheckAndLogError(ret != ia_err_none, UNKNOWN_ERROR, "@%s, fails to get MKN: %d", __func__,
+                         ret);
+    }
 
     return OK;
 }
@@ -161,19 +161,7 @@ status_t IntelCcaServer::getCMC(void* pData, int dataSize) {
 
     intel_cca_get_cmc_data* params = static_cast<intel_cca_get_cmc_data*>(pData);
 
-    ia_err ret = mCca->getCMC(&params->results);
-    CheckAndLogError(ret != ia_err_none, UNKNOWN_ERROR, "@%s, fails: %d", __func__, ret);
-
-    return OK;
-}
-
-status_t IntelCcaServer::getMKN(void* pData, int dataSize) {
-    CheckAndLogError(pData == nullptr, UNKNOWN_ERROR, "@%s, pData is nullptr", __func__);
-    CheckAndLogError(mCca == nullptr, UNKNOWN_ERROR, "@%s, mCca is nullptr", __func__);
-
-    intel_cca_mkn_data* params = static_cast<intel_cca_mkn_data*>(pData);
-
-    ia_err ret = mCca->getMKN(params->type, params->results);
+    ia_err ret = mCca->getCMC(&params->results, params->cpf.size ? &params->cpf : nullptr);
     CheckAndLogError(ret != ia_err_none, UNKNOWN_ERROR, "@%s, fails: %d", __func__, ret);
 
     return OK;
@@ -215,7 +203,7 @@ status_t IntelCcaServer::deinit(void* pData, int dataSize) {
     return OK;
 }
 
-status_t IntelCcaServer::decodeStats(void* pData, int dataSize, void* statsAddr) {
+status_t IntelCcaServer::decodeStats(void* pData, void* statsAddr) {
     PERF_CAMERA_ATRACE();
     CheckAndLogError(pData == nullptr, UNKNOWN_ERROR, "@%s, pData is nullptr", __func__);
     CheckAndLogError(statsAddr == nullptr, UNKNOWN_ERROR, "@%s, statsAddr is nullptr", __func__);
