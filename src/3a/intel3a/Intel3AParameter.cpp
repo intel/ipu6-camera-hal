@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Intel Corporation.
+ * Copyright (C) 2015-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -423,25 +423,37 @@ void Intel3AParameter::updateAeParameter(const aiq_parameter_t& param) {
     }
 }
 
-void Intel3AParameter::updatePaResult(cca::cca_pa_params* paResult) {
+void Intel3AParameter::updatePaResult(cca::cca_pa_params* paResult, bool awbLocked,
+                                      const camera_color_gains_t& colorGains,
+                                      const camera_color_transform_t& colorMatrix) {
     CheckAndLogError((paResult == nullptr), VOID_VALUE, "No Pa result provided.");
 
     paResult->enable_manual_settings = false;
-    if (!mUseManualColorMatrix) return;
+    if (mUseManualColorMatrix) {
+        if (VALID_COLOR_GAINS(mColorGains.color_gains_rggb)) {
+            paResult->color_gains.r = mColorGains.color_gains_rggb[0];
+            paResult->color_gains.gr = mColorGains.color_gains_rggb[1];
+            paResult->color_gains.gb = mColorGains.color_gains_rggb[2];
+            paResult->color_gains.b = mColorGains.color_gains_rggb[3];
+        }
 
-    if (VALID_COLOR_GAINS(mColorGains.color_gains_rggb)) {
-        paResult->color_gains.r = mColorGains.color_gains_rggb[0];
-        paResult->color_gains.gr = mColorGains.color_gains_rggb[1];
-        paResult->color_gains.gb = mColorGains.color_gains_rggb[2];
-        paResult->color_gains.b = mColorGains.color_gains_rggb[3];
+        // Override color_conversion_matrix and color_gains
+        // when application requires manual color transform.
+        MEMCPY_S(&paResult->color_conversion_matrix, sizeof(paResult->color_conversion_matrix),
+                 &mColorMatrix.color_transform, sizeof(mColorMatrix.color_transform));
+
+        paResult->enable_manual_settings = true;
+    } else if (awbLocked) {
+        paResult->color_gains.r = colorGains.color_gains_rggb[0];
+        paResult->color_gains.gr = colorGains.color_gains_rggb[1];
+        paResult->color_gains.gb = colorGains.color_gains_rggb[2];
+        paResult->color_gains.b = colorGains.color_gains_rggb[3];
+
+        MEMCPY_S(&paResult->color_conversion_matrix, sizeof(paResult->color_conversion_matrix),
+                 &colorMatrix.color_transform, sizeof(colorMatrix.color_transform));
+
+        paResult->enable_manual_settings = true;
     }
-
-    // Override color_conversion_matrix and color_gains
-    // when application requires manual color transform.
-    MEMCPY_S(&paResult->color_conversion_matrix, sizeof(paResult->color_conversion_matrix),
-             &mColorMatrix.color_transform, sizeof(mColorMatrix.color_transform));
-
-    paResult->enable_manual_settings = true;
 }
 
 /**

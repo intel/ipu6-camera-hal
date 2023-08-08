@@ -24,10 +24,10 @@
 
 namespace icamera {
 
-int IntelICBM::setup(ICBMInitInfo* initParam) {
+int IntelICBM::setup(ICBMInitInfo* initParam, std::shared_ptr<IC2ApiHandle> handle) {
     mIntelOPIC2 = IntelOPIC2::getInstance();
 
-    return mIntelOPIC2->setup(initParam);
+    return mIntelOPIC2->setup(initParam, handle);
 }
 
 int IntelICBM::shutdown(const ICBMReqInfo& request) {

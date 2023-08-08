@@ -233,6 +233,9 @@ class AiqCore {
     uint32_t mLockedExposureTimeUs;
     uint16_t mLockedIso;
 
+    camera_color_transform_t mLockedColorTransform;
+    camera_color_gains_t mLockedColorGain;
+
  private:
     DISALLOW_COPY_AND_ASSIGN(AiqCore);
 };

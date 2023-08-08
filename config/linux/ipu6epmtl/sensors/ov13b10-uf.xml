@@ -21,7 +21,34 @@
             <format name="Intel IPU6 CSI-2 $CSI_PORT" pad="0" width="4208" height="3120" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
             <format name="Intel IPU6 CSI2 BE SOC $CSI_PORT" pad="0" width="4208" height="3120" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
             <format name="Intel IPU6 CSI2 BE SOC $CSI_PORT" pad="1" width="4208" height="3120" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
-            <selection name="Intel IPU6 CSI2 BE SOC $CSI_PORT" pad="1" target="V4L2_SEL_TGT_CROP" left="0" top="0" width="4208" height="3120"/>
+
+            <link srcName="ov13b10 $I2CBUS" srcPad="0" sinkName="Intel IPU6 CSI-2 $CSI_PORT" sinkPad="0" enable="true"/>
+            <link srcName="Intel IPU6 CSI-2 $CSI_PORT" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC $CSI_PORT" sinkPad="0" enable="true"/>
+            <link srcName="Intel IPU6 CSI2 BE SOC $CSI_PORT" srcPad="1" sinkName="Intel IPU6 BE SOC capture $CSI_PORT" sinkPad="0" enable="true"/>
+
+            <videonode name="Intel IPU6 BE SOC capture $CSI_PORT" videoNodeType="VIDEO_GENERIC"/>
+            <videonode name="Intel IPU6 CSI-2 $CSI_PORT" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+            <videonode name="ov13b10 $I2CBUS" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+        </MediaCtlConfig>
+        <MediaCtlConfig id="1" ConfigMode="AUTO" outputWidth="2104" outputHeight="1560" format="V4L2_PIX_FMT_SGRBG10"> <!-- RAW10 BE capture -->
+            <format name="ov13b10 $I2CBUS" pad="0" width="2104" height="1560" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
+            <format name="Intel IPU6 CSI-2 $CSI_PORT" pad="0" width="2104" height="1560" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
+            <format name="Intel IPU6 CSI2 BE SOC $CSI_PORT" pad="0" width="2104" height="1560" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
+            <format name="Intel IPU6 CSI2 BE SOC $CSI_PORT" pad="1" width="2104" height="1560" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
+
+            <link srcName="ov13b10 $I2CBUS" srcPad="0" sinkName="Intel IPU6 CSI-2 $CSI_PORT" sinkPad="0" enable="true"/>
+            <link srcName="Intel IPU6 CSI-2 $CSI_PORT" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC $CSI_PORT" sinkPad="0" enable="true"/>
+            <link srcName="Intel IPU6 CSI2 BE SOC $CSI_PORT" srcPad="1" sinkName="Intel IPU6 BE SOC capture $CSI_PORT" sinkPad="0" enable="true"/>
+
+            <videonode name="Intel IPU6 BE SOC capture $CSI_PORT" videoNodeType="VIDEO_GENERIC"/>
+            <videonode name="Intel IPU6 CSI-2 $CSI_PORT" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+            <videonode name="ov13b10 $I2CBUS" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+        </MediaCtlConfig>
+        <MediaCtlConfig id="2" ConfigMode="AUTO" outputWidth="1364" outputHeight="768" format="V4L2_PIX_FMT_SGRBG10"> <!-- RAW10 BE capture -->
+            <format name="ov13b10 $I2CBUS" pad="0" width="1364" height="768" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
+            <format name="Intel IPU6 CSI-2 $CSI_PORT" pad="0" width="1364" height="768" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
+            <format name="Intel IPU6 CSI2 BE SOC $CSI_PORT" pad="0" width="1364" height="768" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
+            <format name="Intel IPU6 CSI2 BE SOC $CSI_PORT" pad="1" width="1364" height="768" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
 
             <link srcName="ov13b10 $I2CBUS" srcPad="0" sinkName="Intel IPU6 CSI-2 $CSI_PORT" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI-2 $CSI_PORT" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC $CSI_PORT" sinkPad="0" enable="true"/>
@@ -34,15 +61,14 @@
 
         <StaticMetadata>
             <!-- format,widthxheight,field(none:0,alternate:7),mcId -->
-            <supportedStreamConfig value="V4L2_PIX_FMT_NV12,1280x720,0,0,
-                                          V4L2_PIX_FMT_NV12,1920x1080,0,0,
+            <supportedStreamConfig value="V4L2_PIX_FMT_NV12,1280x720,0,2,
+                                          V4L2_PIX_FMT_NV12,1920x1080,0,1,
                                           V4L2_PIX_FMT_NV12,1280x960,0,0,
-                                          V4L2_PIX_FMT_NV12,1600x1200,0,0,
                                           V4L2_PIX_FMT_NV12,640x480,0,0,
                                           V4L2_PIX_FMT_NV12,640x360,0,0,
-                                          V4L2_PIX_FMT_NV12,320x240,0,0,
+                                          V4L2_PIX_FMT_NV12,4096x3072,0,0,
                                           V4L2_PIX_FMT_SGRBG10,4208x3120,0,0,
-                                          V4L2_PIX_FMT_NV12,4096x3072,0,0"/>
+                                          V4L2_PIX_FMT_NV12,3840x2160,0,0"/>
 
             <supportedFeatures value="MANUAL_EXPOSURE,
                                       MANUAL_WHITE_BALANCE,
@@ -85,7 +111,7 @@
             <!-- 0: off, 1: solid color, 2: color bars  -->
             <sensor.availableTestPatternModes value="0,2"/>
             <!-- 0:RGGB, 1:GRBG, 2:GBRG, 3:BGGR, 4:RGB -->
-            <sensor.info.colorFilterArrangement value="2"/>
+            <sensor.info.colorFilterArrangement value="1"/>
 
             <!-- shading 0:OFF,1:FAST,2:HIGH_QUALITY-->
             <shading.availableModes value="0,1,2"/>
@@ -118,68 +144,60 @@
             <!-- available stream configurations: format: IMPLEMENTATION_DEFINED(34)|YCbCr_420_888:0x23(35)|BLOB(33), widthxheight, type: output(0)|input(1) -->
             <scaler.availableStreamConfigurations value="
                 33,4096x3072,0,
+                33,3840x2160,0,
                 33,1920x1080,0,
-                33,1600x1200,0,
                 33,1280x960,0,
                 33,1280x720,0,
                 33,640x480,0,
                 33,640x360,0,
-                33,320x240,0,
                 35,4096x3072,0,
+                35,3840x2160,0,
                 35,1920x1080,0,
-                35,1600x1200,0,
                 35,1280x960,0,
                 35,1280x720,0,
                 35,640x480,0,
                 35,640x360,0,
-                35,320x240,0,
                 34,4096x3072,0,
-                34,4096x3072,1,
+                34,3840x2160,0,
                 34,1920x1080,0,
-                34,1600x1200,0,
                 34,1280x960,0,
                 34,1280x720,0,
                 34,640x480,0,
-                34,640x360,0,
-                34,320x240,0" />
+                34,640x360,0" />
             <!-- minimum frame duration: format: IMPLEMENTATION_DEFINED(34)|YCbCr_420_888:0x23(35)|BLOB(33), widthxheight, duration:(ns) -->
             <scaler.availableMinFrameDurations value="
                 33,4096x3072,66666666,
+                33,3840x2160,66666666,
                 33,1920x1080,33333333,
-                33,1600x1200,33333333,
                 33,1280x960,33333333,
                 33,1280x720,33333333,
                 33,640x480,33333333,
                 33,640x360,33333333,
-                33,320x240,33333333,
                 35,4096x3072,66666666,
+                35,3840x2160,66666666,
                 35,1920x1080,33333333,
-                35,1600x1200,33333333,
                 35,1280x960,33333333,
                 35,1280x720,33333333,
                 35,640x480,33333333,
                 35,640x360,33333333,
-                35,320x240,33333333,
                 34,4096x3072,66666666,
+                34,3840x2160,66666666,
                 34,1920x1080,33333333,
-                34,1600x1200,33333333,
                 34,1280x960,33333333,
                 34,1280x720,33333333,
                 34,640x480,33333333,
-                34,640x360,33333333,
-                34,320x240,33333333" />
+                34,640x360,33333333" />
             <!-- maximum stall duration: format: IMPLEMENTATION_DEFINED(34)|YCbCr_420_888:0x23(35)|BLOB(33), widthxheight, duration:(ns) -->
             <scaler.availableStallDurations value="
                 33,4096x3072,66666666,
+                33,3840x2160,66666666,
                 33,1920x1080,33333333,
-                33,1600x1200,33333333,
                 33,1280x960,33333333,
                 33,1280x720,33333333,
                 33,640x480,33333333,
-                33,640x360,33333333,
-                33,320x240,33333333" />
+                33,640x360,33333333" />
 
-            <jpeg.maxSize value="18874368"/>  <!-- 4096*3072*1.5 -->
+            <jpeg.maxSize value="19693440"/>  <!-- 4208*3120*1.5 -->
             <jpeg.availableThumbnailSizes value="0,0,320,180,320,240"/> <!-- INCREASING ORDER -->
 
             <!-- 0:off, 1:fast, 2:high_quality, 3:zero_shutter_lag -->
@@ -199,14 +217,14 @@
             <sync.maxLatency value="0"/>
         </StaticMetadata>
 
-        <supportedTuningConfig value="NORMAL,VIDEO,ov13b10,
-                                      STILL_CAPTURE,VIDEO,ov13b10"/>
+        <supportedTuningConfig value="NORMAL,VIDEO,OV13B10_09B13_MTL_PDAF_DPC_T3,
+                                      STILL_CAPTURE,VIDEO,OV13B10_09B13_MTL_PDAF_DPC_T3"/>
 
         <!-- The lard tags configuration. Every tag should be 4-characters. -->
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
         <lardTags value="VIDEO,DFLT,DFLT,DFLT,DFLT"/>
 
-        <supportedISysSizes value="4208x3120"/> <!-- ascending order request -->
+        <supportedISysSizes value="1364x768,2104x1560,4208x3120"/> <!-- ascending order request -->
         <supportedISysFormat value="V4L2_PIX_FMT_SGRBG10"/>
         <enableAIQ value="true"/>
         <iSysRawFormat value="V4L2_PIX_FMT_SGRBG10"/>
@@ -219,7 +237,7 @@
         <ltmGainLag value="1"/>
         <yuvColorRangeMode value="full"/> <!-- there are 2 yuv color range mode, like full, reduced. -->
         <pipeSwitchDelayFrame value="60"/>
-        <graphSettingsFile value="graph_settings_ov13b10.xml"/>
+        <graphSettingsFile value="graph_settings_OV13B10_09B13_DPC_T3_MTL.xml"/>
         <graphSettingsType value="dispersed"/>
         <enablePSysProcessor value="true"/>
         <dvsType value="IMG_TRANS"/>
@@ -230,8 +248,8 @@
         <AlgoRunningRate value="AE,0.2,AWB,0.2"/> <!-- AE running rate is 0.2, AWB running rate is 0.2. -->
         <enableAiqd value = "true"/>
         <useCrlModule value = "false"/>
-        <pslOutputMapForRotation value="4096x3072@4096x3072,1920x1080@1920x1080,1600x1200@1600x1200,
-                                        1280x960@1280x960,1280x720@1280x720,640x480@1280x960,640x360@1280x720,320x240@640x480"/>
+        <pslOutputMapForRotation value="4096x3072@4096x3072,3840x2160@3840x2160,1920x1080@1920x1080,
+                                        1280x960@1280x960,1280x720@1280x720,640x480@1280x960,640x360@1280x720"/>
 
         <maxRequestsInflight value="6"/>
         <faceEngineRunningInterval value="10"/>

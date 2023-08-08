@@ -453,10 +453,12 @@ void PSysProcessor::handleEvent(EventData eventData) {
             AutoMutex l(mSofLock);
 
             mSofSequence = eventData.data.sync.sequence;
-            gettimeofday(&mSofTimestamp, nullptr);
-            LOG2("%s, received SOF event sequence: %ld, timestamp: %ld", __func__,
-                 eventData.data.sync.sequence, TIMEVAL2USECS(mSofTimestamp));
-            mSofCondition.signal();
+            if (PlatformData::psysAlignWithSof(mCameraId)) {
+                gettimeofday(&mSofTimestamp, nullptr);
+                LOG2("%s, received SOF event sequence: %ld, timestamp: %ld", __func__,
+                     eventData.data.sync.sequence, TIMEVAL2USECS(mSofTimestamp));
+                mSofCondition.signal();
+            }
             break;
         }
         default:
@@ -522,8 +524,10 @@ int PSysProcessor::processNewFrame() {
     if (mScheduler) {
         {
             ConditionLock lock(mBufferQueueLock);
-            // Wait input buffer, use TRIGGER_MAX_MARGIN to ensure Scheduler is triggered in time
-            bool bufReady = waitBufferQueue(lock, mInputQueue, TRIGGER_MAX_MARGIN);
+            // Wait input buffer, use TRIGGER_MAX_MARGIN to ensure Scheduler is triggered in time.
+            // Reduce wait time for the first 10 frames for better performance.
+            int64_t delay = mSofSequence < 10 ? TRIGGER_MARGIN : TRIGGER_MAX_MARGIN;
+            bool bufReady = waitBufferQueue(lock, mInputQueue, delay);
             // Already stopped
             if (!mThreadRunning) return -1;
 

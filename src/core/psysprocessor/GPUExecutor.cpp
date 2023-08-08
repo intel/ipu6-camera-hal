@@ -242,7 +242,7 @@ int GPUExecutor::getStillTnrTriggerInfo(TuningMode mode) {
     CheckAndLogError(!intelCca, UNKNOWN_ERROR, "cca is nullptr, mode:%d", mode);
     cca::cca_cmc cmc;
     ia_err ret = intelCca->getCMC(&cmc);
-    CheckAndLogError(ret != OK, BAD_VALUE, "Get cmc data failed");
+    CheckAndLogError(ret != ia_err_none, BAD_VALUE, "Get cmc data failed");
     mStillTnrTriggerInfo = cmc.tnr7us_trigger_info;
     LOG1("%s still tnr trigger gain num: %d threshold: %f", mName.c_str(),
          mStillTnrTriggerInfo.num_gains, mStillTnrTriggerInfo.tnr7us_threshold_gain);

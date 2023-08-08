@@ -129,7 +129,9 @@ int AiqCore::init() {
     int ret = mIntel3AParameter->init();
     CheckAndLogError(ret != OK, ret, "@%s, Init 3a parameter failed ret: %d", __func__, ret);
 
-    CLEAR(mLastAeResult), mAeRunTime = 0;
+    CLEAR(mLastAeResult);
+
+    mAeRunTime = 0;
     mAwbRunTime = 0;
     mAiqRunTime = 0;
 
@@ -256,6 +258,10 @@ int AiqCore::updateParameter(const aiq_parameter_t& param) {
 
         mHyperFocalDistance = AiqUtils::calculateHyperfocalDistance(mIntel3AParameter->mCMC);
         mTuningMode = param.tuningMode;
+
+        // Tuning Mode changed, reset AE/AWB run count
+        mAeRunTime = 0;
+        mAwbRunTime = 0;
     }
     mShadingMode = param.shadingMode;
     mLensShadingMapMode = param.lensShadingMapMode;
@@ -451,8 +457,19 @@ int AiqCore::runAiq(long requestId, AiqResult* aiqResult) {
 
     // handle pa result
     if (aaaRunType & IMAGING_ALGO_PA) {
-        mIntel3AParameter->updatePaResult(&mAiqResults->pa_output);
+        mIntel3AParameter->updatePaResult(&mAiqResults->pa_output, mAwbForceLock,
+                                          mLockedColorGain, mLockedColorTransform);
         aiqResult->mPaResults = mAiqResults->pa_output;
+        if (!mAwbForceLock) {
+            mLockedColorGain.color_gains_rggb[0] = aiqResult->mPaResults.color_gains.r;
+            mLockedColorGain.color_gains_rggb[1] = aiqResult->mPaResults.color_gains.gr;
+            mLockedColorGain.color_gains_rggb[2] = aiqResult->mPaResults.color_gains.gb;
+            mLockedColorGain.color_gains_rggb[3] = aiqResult->mPaResults.color_gains.b;
+            MEMCPY_S(&mLockedColorTransform.color_transform,
+                     sizeof(mLockedColorTransform.color_transform),
+                     aiqResult->mPaResults.color_conversion_matrix,
+                     sizeof(aiqResult->mPaResults.color_conversion_matrix));
+        }
         AiqUtils::dumpPaResults(aiqResult->mPaResults);
     }
 

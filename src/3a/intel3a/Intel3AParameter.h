@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Intel Corporation.
+ * Copyright (C) 2015-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,9 @@ class Intel3AParameter {
     int updateParameter(aiq_parameter_t param);
     void updateAeResult(cca::cca_ae_results* aeResult);
     void updateAwbResult(cca::cca_awb_results* awbResult);
-    void updatePaResult(cca::cca_pa_params* paResult);
+    void updatePaResult(cca::cca_pa_params* paResult, bool awbLocked,
+                        const camera_color_gains_t& colorGains,
+                        const camera_color_transform_t& colorMatrix);
 
     void fillAfTriggerResult(cca::cca_af_results* afResults);
 

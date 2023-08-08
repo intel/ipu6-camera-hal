@@ -149,7 +149,8 @@ int AiqUnit::configure(const stream_config_t* streamList) {
     return OK;
 }
 
-int AiqUnit::initIntelCcaHandle(const std::vector<ConfigMode>& configModes) {
+void AiqUnit::resetIntelCcaHandle(const std::vector<ConfigMode>& configModes) {
+    bool reinit = false;
     if ((PlatformData::supportUpdateTuning() || PlatformData::isDvsSupported(mCameraId)) &&
         !configModes.empty()) {
         std::shared_ptr<IGraphConfig> graphConfig =
@@ -159,15 +160,75 @@ int AiqUnit::initIntelCcaHandle(const std::vector<ConfigMode>& configModes) {
             graphConfig->graphGetStreamIds(streamIds);
 
             if (streamIds.size() != mActiveStreamCount) {
-                LOG2("%s, the pipe count(%zu) changed, need to re-init CCA", __func__,
+                LOG1("%s, the pipe count(%zu) changed, need to re-init CCA", __func__,
                      streamIds.size());
-                deinitIntelCcaHandle();
                 mActiveStreamCount = streamIds.size();
+                reinit = true;
             }
         }
     }
 
-    if (mCcaInitialized) return OK;
+    if (!mTuningModes.empty()) {
+        for (const auto& cfg : configModes) {
+            TuningMode tuningMode;
+            int ret = PlatformData::getTuningModeByConfigMode(mCameraId, cfg, tuningMode);
+            if (ret == OK) {
+                bool match = false;
+                for (auto mode : mTuningModes) {
+                    if (tuningMode == mode) {
+                        match = true;
+                        break;
+                    }
+                }
+                if (!match) {
+                    LOG1("%s, tuning mode changed from %d to %d", __func__, mTuningModes[0],
+                         tuningMode);
+                    reinit = true;
+                    break;
+                }
+            }
+        }
+    }
+
+    if (reinit) deinitIntelCcaHandle();
+}
+
+int AiqUnit::initIntelCcaHandle(const std::vector<ConfigMode>& configModes) {
+    resetIntelCcaHandle(configModes);
+
+    if (mCcaInitialized) {
+        // INTEL_DVS_S
+        if (mDvs) {
+            for (auto& cfg : configModes) {
+                std::vector<int32_t> streamIds;
+                std::shared_ptr<IGraphConfig> graphConfig =
+                    IGraphConfigManager::getInstance(mCameraId)->getGraphConfig(cfg);
+                if (graphConfig != nullptr) {
+                    graphConfig->graphGetStreamIds(streamIds);
+                }
+                DvsConfig dvsConfig;
+                dvsConfig.gdcConfigs.count = streamIds.size();
+                for (size_t i = 0; i < streamIds.size(); ++i) {
+                    dvsConfig.gdcConfigs.ids[i] = streamIds[i];
+                }
+                int ret = mDvs->configure(cfg, &dvsConfig);
+                CheckAndLogError(ret != OK, UNKNOWN_ERROR, "%s, configure DVS error", __func__);
+
+                TuningMode tuningMode;
+                ret = PlatformData::getTuningModeByConfigMode(mCameraId, cfg, tuningMode);
+                CheckAndLogError(ret != OK, ret, "Failed to get tuningMode, cfg: %d", cfg);
+                IntelCca* intelCca = IntelCca::getInstance(mCameraId, tuningMode);
+                CheckAndLogError(!intelCca, UNKNOWN_ERROR, "Failed to get cca. mode:%d cameraId:%d",
+                                 tuningMode, mCameraId);
+                cca::cca_dvs_init_param dvsInitParam = {dvsConfig.zoomRatio, dvsConfig.outputType};
+                ia_err iaErr = intelCca->reconfigDvs(dvsInitParam, dvsConfig.gdcConfigs);
+                CheckAndLogError(iaErr != ia_err_none, UNKNOWN_ERROR, "Failed to reconfig DVS %d",
+                                 iaErr);
+            }
+        }
+        // INTEL_DVS_E
+        return OK;
+    }
 
     LOG1("<id%d>@%s", mCameraId, __func__);
     mTuningModes.clear();
@@ -253,16 +314,21 @@ int AiqUnit::initIntelCcaHandle(const std::vector<ConfigMode>& configModes) {
         // INTEL_DVS_S
         if (mDvs) {
             std::vector<int32_t> streamIds;
+            DvsConfig dvsConfig;
             if (graphConfig != nullptr) {
                 graphConfig->graphGetStreamIds(streamIds);
             }
-            params.gdcConfigs.count = streamIds.size();
+            dvsConfig.gdcConfigs.count = streamIds.size();
             for (size_t i = 0; i < streamIds.size(); ++i) {
-                params.gdcConfigs.ids[i] = streamIds[i];
+                dvsConfig.gdcConfigs.ids[i] = streamIds[i];
             }
-            ret = mDvs->configure(cfg, &params);
+            ret = mDvs->configure(cfg, &dvsConfig);
             CheckAndLogError(ret != OK, UNKNOWN_ERROR, "%s, configure DVS error", __func__);
             params.bitmap |= cca::CCA_MODULE_DVS;
+            params.dvsOutputType = dvsConfig.outputType;
+            params.dvsZoomRatio = dvsConfig.zoomRatio;
+            params.enableVideoStablization = dvsConfig.enableDvs;
+            params.gdcConfigs = dvsConfig.gdcConfigs;
         }
         // INTEL_DVS_E
 

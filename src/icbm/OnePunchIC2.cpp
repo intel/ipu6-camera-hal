@@ -72,16 +72,19 @@ IntelOPIC2::~IntelOPIC2() {
     mFeatureMap.clear();
 }
 
-int IntelOPIC2::setup(ICBMInitInfo* initParams) {
+int IntelOPIC2::setup(ICBMInitInfo* initParams, std::shared_ptr<IC2ApiHandle> handle) {
+    CheckAndLogError(!handle, NAME_NOT_FOUND, "%s", __func__);
+    mIC2Api = handle;
+
     int ver[3];
-    ::iaic_query_version(&ver[0], &ver[1], &ver[2]);
+    mIC2Api->query_version(&ver[0], &ver[1], &ver[2]);
     LOG1("@%s, IC2 Version %d.%d.%d", __func__, ver[0], ver[1], ver[2]);
 
     size_t featureLen;
     std::string supportedFeatures;
-    ::iaic_query_features(nullptr, &featureLen);
+    mIC2Api->query_features(nullptr, &featureLen);
     supportedFeatures.resize(featureLen);
-    ::iaic_query_features(supportedFeatures.data(), &featureLen);
+    mIC2Api->query_features(supportedFeatures.data(), &featureLen);
     LOG1("@%s, IC supported features: %s", __func__, supportedFeatures.c_str());
 
     LOG1("<%d>@%s type %d", initParams->cameraId, __func__, initParams->sessionType);
@@ -111,7 +114,7 @@ int IntelOPIC2::setup(ICBMInitInfo* initParams) {
         option.profiling = false;
         option.blocked_init = false;
         const char* featureStr = gFeatureStrMapping.at(ICBMFeatureType::USER_FRAMING);
-        ::iaic_create_session(mSessionMap[key], featureStr, option);
+        mIC2Api->create_session(mSessionMap[key], featureStr, option);
         mFeatureMap[key].push_back(featureStr);
     }
 
@@ -120,7 +123,7 @@ int IntelOPIC2::setup(ICBMInitInfo* initParams) {
         option.profiling = false;
         option.blocked_init = false;
         const char* featureStr = gFeatureStrMapping.at(ICBMFeatureType::BC_MODE_BB);
-        ::iaic_create_session(mSessionMap[key], featureStr, option);
+        mIC2Api->create_session(mSessionMap[key], featureStr, option);
         mFeatureMap[key].push_back(featureStr);
     }
     if (initParams->sessionType & ICBMFeatureType::LEVEL0_TNR) {
@@ -128,7 +131,7 @@ int IntelOPIC2::setup(ICBMInitInfo* initParams) {
         option.profiling = true;
         option.blocked_init = true;
         const char* featureStr = gFeatureStrMapping.at(ICBMFeatureType::LEVEL0_TNR);
-        ::iaic_create_session(mSessionMap[key], featureStr, option);
+        mIC2Api->create_session(mSessionMap[key], featureStr, option);
         mFeatureMap[key].push_back(featureStr);
     }
 
@@ -146,7 +149,7 @@ int IntelOPIC2::shutdown(const ICBMReqInfo& reqInfo) {
     {
         std::unique_lock<std::mutex> lock(*mLockMap[key]);
         for (auto& feature : mFeatureMap[key]) {
-            ::iaic_close_session(mSessionMap[key], feature);
+            mIC2Api->close_session(mSessionMap[key], feature);
         }
         mSessionMap.erase(key);
         ret = mSessionMap.size();
@@ -166,8 +169,8 @@ int IntelOPIC2::processFrame(const ICBMReqInfo& reqInfo) {
     if (mem.first == nullptr) return OK;
 
     std::unique_lock<std::mutex> lock(*mLockMap[key]);
-    bool res = ::iaic_execute(mSessionMap[key], *mem.first, *mem.second);
-    ::iaic_get_data(mSessionMap[key], *mem.second);
+    bool res = mIC2Api->execute(mSessionMap[key], *mem.first, *mem.second);
+    mIC2Api->get_data(mSessionMap[key], *mem.second);
     CheckAndLogError(res != true, UNKNOWN_ERROR, "%s, IC2 Internal Error on processing frame",
                      __func__);
 
@@ -253,8 +256,8 @@ int IntelOPIC2::runTnrFrame(const ICBMReqInfo& reqInfo) {
             sizeof(tnrParam->blend.max_recursive_similarity), featureName,
             "tnr7us/pal:max_recursive_similarity");
 
-    int ret = ::iaic_execute(mSessionMap[key], inMem, outMem);
-    ::iaic_get_data(mSessionMap[key], outMem);
+    int ret = mIC2Api->execute(mSessionMap[key], inMem, outMem);
+    mIC2Api->get_data(mSessionMap[key], outMem);
 
     return ret;
 }
@@ -268,7 +271,7 @@ void IntelOPIC2::setData(iaic_session uid, void* p, size_t size, const char* fea
     setting.port_name = portName;
     setting.p = p;
     setting.size[0] = size;
-    iaic_set_data(uid, setting);
+    mIC2Api->set_data(uid, setting);
 }
 
 MemoryChainDescription IntelOPIC2::createMemoryChain(const ICBMReqInfo& reqInfo) {
