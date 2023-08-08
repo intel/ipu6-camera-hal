@@ -259,7 +259,7 @@ void CameraDevice::bindListeners() {
     }
     // CSI_META_E
 
-    if (PlatformData::psysAlignWithSof(mCameraId)) {
+    if (PlatformData::psysAlignWithSof(mCameraId) || PlatformData::isSchedulerEnabled(mCameraId)) {
         for (auto& item : mProcessors) {
             mSofSource->registerListener(EVENT_ISYS_SOF, item);
             // FILE_SOURCE_S
@@ -341,7 +341,7 @@ void CameraDevice::unbindListeners() {
     }
     // CSI_META_E
 
-    if (PlatformData::psysAlignWithSof(mCameraId)) {
+    if (PlatformData::psysAlignWithSof(mCameraId) || PlatformData::isSchedulerEnabled(mCameraId)) {
         for (auto& item : mProcessors) {
             mSofSource->removeListener(EVENT_ISYS_SOF, item);
             // FILE_SOURCE_S

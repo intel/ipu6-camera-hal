@@ -44,15 +44,15 @@ Dvs::Dvs(int cameraId) :
 
 Dvs::~Dvs() {}
 
-int Dvs::configure(const ConfigMode configMode, cca::cca_init_params* params) {
-    CheckAndLogError(!params, BAD_VALUE, "params is nullptr");
+int Dvs::configure(const ConfigMode configMode, DvsConfig* cfg) {
+    CheckAndLogError(!cfg, BAD_VALUE, "cfg is nullptr");
     LOG2("@%s", __func__);
 
     mZoomRegion = { -1, -1, -1, -1 };
     AiqResultStorage::getInstance(mCameraId)->clearDvsRunMap();
 
-    for (uint8_t i = 0; i < params->gdcConfigs.count; i++) {
-        auto ret = configCcaDvsData(params->gdcConfigs.ids[i], configMode, params);
+    for (uint8_t i = 0; i < cfg->gdcConfigs.count; i++) {
+        auto ret = configCcaDvsData(cfg->gdcConfigs.ids[i], configMode, cfg);
         CheckAndLogError(ret != OK, UNKNOWN_ERROR, "%s, configure DVS data error", __func__);
     }
 
@@ -62,12 +62,11 @@ int Dvs::configure(const ConfigMode configMode, cca::cca_init_params* params) {
     }
     mTuningMode = tuningMode;
 
-    dumpDvsConfiguration(*params);
+    dumpDvsConfiguration(*cfg);
     return OK;
 }
 
-int Dvs::configCcaDvsData(int32_t streamId, const ConfigMode configMode,
-                          cca::cca_init_params* params) {
+int Dvs::configCcaDvsData(int32_t streamId, const ConfigMode configMode, DvsConfig* cfg) {
     // update GC
     std::shared_ptr<IGraphConfig> gc = nullptr;
     if (PlatformData::getGraphConfigNodes(mCameraId)) {
@@ -88,9 +87,9 @@ int Dvs::configCcaDvsData(int32_t streamId, const ConfigMode configMode,
          resolution.output_height);
 
     cca::cca_gdc_configuration* gdcConfig = nullptr;
-    for (size_t i = 0; i < params->gdcConfigs.count; ++i) {
-        if (params->gdcConfigs.ids[i] == static_cast<uint32_t>(streamId)) {
-            gdcConfig = &params->gdcConfigs.configs[i];
+    for (size_t i = 0; i < cfg->gdcConfigs.count; ++i) {
+        if (cfg->gdcConfigs.ids[i] == static_cast<uint32_t>(streamId)) {
+            gdcConfig = &cfg->gdcConfigs.configs[i];
         }
     }
 
@@ -142,13 +141,13 @@ int Dvs::configCcaDvsData(int32_t streamId, const ConfigMode configMode,
 
     float zoomHRatio = resolution.input_width / (resolution.input_width - envelope_bq.width * 2);
     float zoomVRatio = resolution.input_height / (resolution.input_height - envelope_bq.height * 2);
-    params->dvsZoomRatio = (zoomHRatio > zoomVRatio) ? zoomHRatio : zoomVRatio;
-    params->enableVideoStablization = VIDEO_STABILIZATION_MODE_OFF;
+    cfg->zoomRatio = (zoomHRatio > zoomVRatio) ? zoomHRatio : zoomVRatio;
+    cfg->enableDvs = VIDEO_STABILIZATION_MODE_OFF;
     int dvsType = PlatformData::getDVSType(mCameraId);
     if (dvsType == IMG_TRANS) {
-        params->dvsOutputType = cca::CCA_DVS_IMAGE_TRANSFORM;
+        cfg->outputType = cca::CCA_DVS_IMAGE_TRANSFORM;
     } else {
-        params->dvsOutputType = cca::CCA_DVS_MORPH_TABLE;
+        cfg->outputType = cca::CCA_DVS_MORPH_TABLE;
     }
 
     gdcConfig->gdc_resolution_history = gdcConfig->gdc_resolution_info;
@@ -254,12 +253,12 @@ void Dvs::handleEvent(EventData eventData) {
     return;
 }
 
-void Dvs::dumpDvsConfiguration(const cca::cca_init_params& config) {
+void Dvs::dumpDvsConfiguration(const DvsConfig& config) {
     if (!Log::isLogTagEnabled(GET_FILE_SHIFT(Dvs), CAMERA_DEBUG_LOG_LEVEL3)) return;
 
-    LOG3("config: config.dvsOutputType %d", config.dvsOutputType);
-    LOG3("config: config.enableVideoStablization %d", config.enableVideoStablization);
-    LOG3("config: config.dvsZoomRatio %f", config.dvsZoomRatio);
+    LOG3("config: dvsOutputType %d", config.outputType);
+    LOG3("config: enableVideoStablization %d", config.enableDvs);
+    LOG3("config: dvsZoomRatio %f", config.zoomRatio);
 
     for (size_t i = 0; i < config.gdcConfigs.count; ++i) {
         LOG3("GDC Config for steeam: %d", config.gdcConfigs.ids[i]);

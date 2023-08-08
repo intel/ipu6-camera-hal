@@ -153,7 +153,7 @@ void PlatformData::StaticCfg::getModuleInfoFromCmc(int cameraId) {
     IntelCca::releaseInstance(cameraId, tuningMode);
     CheckWarning(iaRet != ia_err_none, VOID_VALUE, "Get cmc data failed");
 
-    LOG1("%s: base iso %d, ag [%4.2f, %4.2f], ag [%4.2f, %4.2f], from aiqb", __func__, cmc.base_iso,
+    LOG1("%s: base iso %d, dg [%4.2f, %4.2f], ag [%4.2f, %4.2f], from aiqb", __func__, cmc.base_iso,
          cmc.min_dg, cmc.max_dg, cmc.min_ag, cmc.max_ag);
     LOG1("%s: focal_len %d, min_fd %d, ap %d", __func__, cmc.optics.effect_focal_length,
          cmc.optics.min_focus_distance, cmc.lut_apertures);
@@ -226,10 +226,10 @@ int PlatformData::getEdgeNrSetting(int cameraId, float totalGain, float hdrRatio
 
     if (!pCam.mTotalGainHdrRatioToEdgeNrMap.empty()) {
         // found the lower value in map
-        auto subMap = pCam.mTotalGainHdrRatioToEdgeNrMap.upper_bound(hdrRatio);
+        auto subMap = pCam.mTotalGainHdrRatioToEdgeNrMap.upper_bound(totalGain);
         if (subMap != pCam.mTotalGainHdrRatioToEdgeNrMap.begin()) {
             auto sub = (--subMap)->second;
-            auto it = sub.upper_bound(totalGain);
+            auto it = sub.upper_bound(hdrRatio);
             if (it != sub.begin()) {
                 setting = (--it)->second;
                 return OK;
@@ -391,7 +391,6 @@ bool PlatformData::isDvsSupported(int cameraId) {
     auto entry = meta.find(CAMERA_SCALER_AVAILABLE_MAX_DIGITAL_ZOOM);
     if (entry.count > 0 && *entry.data.f > 1) supported = true;
 
-    LOG2("@%s, dvs supported:%d", __func__, supported);
     return supported;
 }
 
