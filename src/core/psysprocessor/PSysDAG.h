@@ -69,7 +69,7 @@ class PSysDagCallback {
                               const std::shared_ptr<CameraBuffer>& camBuffer) {}
     virtual void onStatsDone(int64_t sequence, const CameraBufferPortMap& outBuf) {}
 // INTEL_DVS_S
-    virtual void onDvsPrepare(int32_t streamId) {}
+    virtual void onDvsPrepare(int64_t sequence, int32_t streamId) {}
 // INTEL_DVS_E
 };
 

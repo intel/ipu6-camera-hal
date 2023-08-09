@@ -61,7 +61,7 @@ class PSysProcessor : public BufferQueue, public PSysDagCallback {
     void onBufferDone(int64_t sequence, Port port, const std::shared_ptr<CameraBuffer>& camBuffer);
     void onStatsDone(int64_t sequence, const CameraBufferPortMap& outBuf);
 // INTEL_DVS_S
-    void onDvsPrepare(int32_t streamId);
+    void onDvsPrepare(int64_t sequence, int32_t streamId);
 // INTEL_DVS_E
 
  private:
@@ -77,6 +77,9 @@ class PSysProcessor : public BufferQueue, public PSysDagCallback {
                       bool fakeTask = false, bool callbackRgbs = false);
 
     void handleEvent(EventData eventData);
+    // DOL_FEATURE_S
+    int setVbpToIspParam(int64_t sequence, timeval timestamp);
+    // DOL_FEATURE_E
 
     int64_t getSettingSequence(const CameraBufferPortMap& outBuf);
     bool needSkipOutputFrame(int64_t sequence);

@@ -172,4 +172,19 @@ class MainDevice : public DeviceBase {
     bool needQueueBack(std::shared_ptr<CameraBuffer> buffer);
 };
 
+// DOL_FEATURE_S
+/**
+ * DolCaptureDevice is used for producing DOL HDR frames.
+ */
+class DolCaptureDevice : public DeviceBase {
+ public:
+    DolCaptureDevice(int cameraId, VideoNodeType nodeType);
+    ~DolCaptureDevice();
+
+ private:
+    int createBufferPool(const stream_t& config);
+    int onDequeueBuffer(std::shared_ptr<CameraBuffer> buffer);
+    bool needQueueBack(std::shared_ptr<CameraBuffer> buffer);
+};
+// DOL_FEATURE_E
 }  // namespace icamera

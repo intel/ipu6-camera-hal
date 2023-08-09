@@ -142,6 +142,14 @@ struct PgInfo {
     StageAttr rbmValue;
 };
 
+// DOL_FEATURE_S
+struct DolInfo {
+    DolInfo() : conversionGain(0.0) {}
+    float conversionGain;
+    std::string dolMode;
+};
+// DOL_FEATURE_E
+
 struct MbrInfo {
     MbrInfo() {
         streamId = -1;
@@ -177,6 +185,9 @@ struct GdcInfo {
 struct GraphConfigData {
     int mcId;
     int graphId;
+    // DOL_FEATURE_S
+    DolInfo dolInfo;
+    // DOL_FEATURE_E
     camera_resolution_t csiReso;
     std::vector<GdcInfo> gdcInfos;
     std::vector<int32_t> streamIds;
@@ -215,6 +226,9 @@ class IGraphConfig {
     virtual int getStreamIdByPgName(std::string pgName) = 0;
     virtual int getTuningModeByStreamId(const int32_t streamId) = 0;
     virtual int getPgIdByPgName(std::string pgName) = 0;
+    // DOL_FEATURE_S
+    virtual int getDolInfo(float& gain, std::string& mode) = 0;
+    // DOL_FEATURE_E
     virtual ia_isp_bxt_program_group* getProgramGroup(int32_t streamId) = 0;
     virtual status_t getMBRData(int32_t streamId, ia_isp_bxt_gdc_limits* data) = 0;
     virtual status_t getPgRbmValue(std::string pgName, IGraphType::StageAttr* stageAttr) {

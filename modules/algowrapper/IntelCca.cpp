@@ -138,6 +138,14 @@ ia_err IntelCca::runLTM(uint64_t frameId, const cca::cca_ltm_input_params& param
     return ret;
 }
 
+ia_err IntelCca::reconfigDvs(const cca::cca_dvs_init_param& dvsInitParam,
+                             const cca::cca_gdc_configurations& gdcConfigs) {
+    ia_err ret = getIntelCCA()->reconfigDvs(dvsInitParam, gdcConfigs);
+    LOG2("@%s, ret:%d", __func__, ret);
+
+    return ret;
+}
+
 ia_err IntelCca::updateZoom(uint32_t streamId, const cca::cca_dvs_zoom& params) {
     ia_err ret = getIntelCCA()->updateZoom(streamId, params);
     LOG2("@%s, ret:%d", __func__, ret);
@@ -157,7 +165,8 @@ ia_err IntelCca::runAIC(uint64_t frameId, const cca::cca_pal_input_params* param
     CheckAndLogError(!params, ia_err_argument, "@%s, params is nullptr", __func__);
     CheckAndLogError(!pal, ia_err_argument, "@%s, pal is nullptr", __func__);
 
-    ia_err ret = getIntelCCA()->runAIC(frameId, *params, pal);
+    // Currently the aicId is same as stream_id
+    ia_err ret = getIntelCCA()->runAIC(frameId, *params, pal, params->stream_id);
 
     // if PAL doesn't run, set output size to 0
     if (ret == ia_err_not_run) pal->size = 0;
@@ -201,6 +210,15 @@ ia_err IntelCca::updateTuning(uint8_t lardTags, const ia_lard_input_params& lard
 
     return ret;
 }
+
+// PRIVACY_MODE_S
+ia_err IntelCca::getBrightestIndex(uint32_t* outMaxBin) {
+    ia_err ret = getIntelCCA()->getBrightestIndex(outMaxBin);
+    LOG2("@%s, Brightest Index: %u", __func__, *outMaxBin);
+
+    return ret;
+}
+// PRIVACY_MODE_E
 
 bool IntelCca::allocStatsDataMem(unsigned int size) {
     LOG2("<id%d>@%s, tuningMode:%d, size:%d", mCameraId, __func__, mTuningMode, size);

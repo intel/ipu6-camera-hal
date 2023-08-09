@@ -39,11 +39,34 @@ set(CORE_SRCS
         )
 # FRAME_SYNC_E
 
+# CSI_META_S
+    set(CORE_SRCS
+        ${CORE_SRCS}
+        ${CORE_DIR}/CsiMetaDevice.cpp
+        CACHE INTERNAL "core sources"
+        )
+# CSI_META_E
+
+# FILE_SOURCE_S
+    set(CORE_SRCS
+        ${CORE_SRCS}
+        ${CORE_DIR}/FileSource.cpp
+        CACHE INTERNAL "core sources"
+        )
+# FILE_SOURCE_E
+
     set(CORE_SRCS
         ${CORE_SRCS}
         ${CORE_DIR}/psysprocessor/PolicyManager.cpp
         CACHE INTERNAL "core sources"
         )
+# PRIVACY_MODE_S
+    set(CORE_SRCS
+        ${CORE_SRCS}
+        ${CORE_DIR}/CvfPrivacyChecker.cpp
+        CACHE INTERNAL "core sources"
+        )
+# PRIVACY_MODE_E
 
 # IPU_PROCESSING_S
     set(CORE_SRCS

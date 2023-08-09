@@ -242,7 +242,7 @@ int GPUExecutor::getStillTnrTriggerInfo(TuningMode mode) {
     CheckAndLogError(!intelCca, UNKNOWN_ERROR, "cca is nullptr, mode:%d", mode);
     cca::cca_cmc cmc;
     ia_err ret = intelCca->getCMC(&cmc);
-    CheckAndLogError(ret != OK, BAD_VALUE, "Get cmc data failed");
+    CheckAndLogError(ret != ia_err_none, BAD_VALUE, "Get cmc data failed");
     mStillTnrTriggerInfo = cmc.tnr7us_trigger_info;
     LOG1("%s still tnr trigger gain num: %d threshold: %f", mName.c_str(),
          mStillTnrTriggerInfo.num_gains, mStillTnrTriggerInfo.tnr7us_threshold_gain);
@@ -274,7 +274,7 @@ int GPUExecutor::getTotalGain(int64_t seq, float* totalGain) {
 bool GPUExecutor::isBypassStillTnr(int64_t seq) {
     if (mStreamId != STILL_TNR_STREAM_ID) return true;
 
-#ifndef IPU_SYSVER_ipu6v5
+#ifdef IPU_SYSVER_ipu6v3
     float totalGain = 0.0f;
     int ret = getTotalGain(seq, &totalGain);
     CheckAndLogError(ret, true, "Failed to get total gain");
@@ -299,6 +299,8 @@ int GPUExecutor::getTnrExtraFrameCount(int64_t seq) {
             index = i;
     }
     /* the frame_count is total tnr7 frame count, already run 1 frame */
+    LOG2("%s total gain %f with tnr frame count %d", __func__, totalGain,
+         mStillTnrTriggerInfo.trigger_infos[index].frame_count);
     return mStillTnrTriggerInfo.trigger_infos[index].frame_count - 1;
 }
 
@@ -552,7 +554,7 @@ int GPUExecutor::runTnrFrame(const std::shared_ptr<CameraBuffer>& inBuf,
             clock_gettime(CLOCK_MONOTONIC, &endTime);
             uint64_t timeUsedUs = (endTime.tv_sec - beginTime.tv_sec) * 1000000 +
                                   (endTime.tv_nsec - beginTime.tv_nsec) / 1000;
-            LOG2(ST_GPU_TNR, "%s executor name:%s, sequence: %u update param time %lu us", __func__,
+            LOG2(ST_GPU_TNR, "executor name:%s, sequence: %u update param time %lu us",
                  mName.c_str(), inBuf->getSequence(), timeUsedUs);
         }
         CheckAndLogError(ret != OK, UNKNOWN_ERROR, "Failed to update TNR parameters");

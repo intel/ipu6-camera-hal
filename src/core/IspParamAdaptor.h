@@ -51,6 +51,9 @@ extern "C" {
 #include "ia_isp_bxt_types.h"
 #include "ia_isp_bxt_statistics_types.h"
 #include "ia_isp_bxt.h"
+// DOL_FEATURE_S
+#include "ia_bcomp.h"
+// DOL_FEATURE_E
 #include "ia_bcomp_types.h"
 #include "gc/IGraphConfigManager.h"
 #include "IspSettings.h"
@@ -127,6 +130,9 @@ class IspParamAdaptor {
     bool isLscCopy(int64_t bufSeq, int64_t settingSeq);
     void updateLscSeqMap(int64_t settingSeq);
 
+    bool isGdcCopy(int64_t bufSeq, int64_t settingSeq);
+    void updateGdcSeqMap(int64_t settingSeq);
+
  private:
     enum IspAdaptorState {
         ISP_ADAPTOR_NOT_INIT,
@@ -148,6 +154,9 @@ class IspParamAdaptor {
 
     int64_t mLastLscSequece;
     std::map<int64_t, int64_t> mSeqIdToLscSeqIdMap;
+
+    int64_t mLastGdcSequence;
+    std::map<int64_t, int64_t> mSeqIdToGdcSeqIdMap;
 
     // Guard lock for ipu parameter
     Mutex mIpuParamLock;

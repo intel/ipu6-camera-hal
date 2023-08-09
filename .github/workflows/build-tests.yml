@@ -1,0 +1,51 @@
+name: Build tests
+
+on:
+  push:
+    branches:
+      - main
+
+  pull_request:
+
+jobs:
+  build-ipu6-on-ubuntu-2204:
+    runs-on: ubuntu-latest
+    container: ubuntu:22.04
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build on Ubuntu 22.04
+        run: |
+          echo 'APT::Get::Always-Include-Phased-Updates True;' | tee -a /etc/apt/apt.conf
+          echo 'Acquire::http::User-Agent-Non-Interactive "true";' | tee -a /etc/apt/apt.conf
+          apt-get update -q
+          echo "" | apt-get install git build-essential cmake libexpat-dev automake libtool libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libunwind-dev --yes
+          git clone https://github.com/intel/ipu6-camera-bins -b main --depth 1
+          cp -rv ipu6-camera-bins/include/* /usr/include/
+          cp -rv ipu6-camera-bins/lib/* /usr/lib/
+          rm -fr ipu6-camera-bins
+          git clone https://github.com/intel/icamerasrc.git -b icamerasrc_slim_api ../icamerasrc --depth 1
+          ./build.sh -s ${PWD}/.. -i ${PWD}/out --board ipu_tgl ipu_adl ipu_mtl
+          cp -rv ./out/install/include/* /usr/include
+          cp -rv ./out/install/lib/* /usr/lib
+          cp -rv ./out/install/share/* /usr/share
+  build-ipu6-on-ubuntu-2004:
+    runs-on: ubuntu-latest
+    container: ubuntu:20.04
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build on Ubuntu 20.04
+        run: |
+          echo 'Acquire::http::User-Agent-Non-Interactive "true";' | tee -a /etc/apt/apt.conf
+          apt-get update -q
+          export TZ=Asia/Shanghai
+          echo "" | apt-get install -qy tzdata
+          echo "" | apt-get install git build-essential cmake libexpat-dev automake libtool libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libdrm-dev --yes
+          git clone https://github.com/intel/ipu6-camera-bins -b main --depth 1
+          cp -rv ipu6-camera-bins/include/* /usr/include/
+          cp -rv ipu6-camera-bins/lib/* /usr/lib/
+          rm -fr ipu6-camera-bins
+          git clone https://github.com/intel/icamerasrc.git -b icamerasrc_slim_api ../icamerasrc --depth 1
+          ./build.sh -s ${PWD}/.. -i ${PWD}/out --board ipu_tgl ipu_adl ipu_mtl
+          cp -rv ./out/install/include/* /usr/include
+          cp -rv ./out/install/lib/* /usr/lib
+          cp -rv ./out/install/share/* /usr/share

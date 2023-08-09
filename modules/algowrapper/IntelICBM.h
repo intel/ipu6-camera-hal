@@ -26,7 +26,7 @@ namespace icamera {
 
 class IntelICBM {
  public:
-    int setup(ICBMInitInfo* initParam);
+    int setup(ICBMInitInfo* initParam, std::shared_ptr<IC2ApiHandle> handle = nullptr);
     int shutdown(const ICBMReqInfo& reqInfo);
 
     int processFrame(const ICBMReqInfo& reqInfo);

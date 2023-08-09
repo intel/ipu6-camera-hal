@@ -65,6 +65,14 @@ class SensorManager {
     int getSensorInfo(ia_aiq_frame_params& frameParams,
                       ia_aiq_exposure_sensor_descriptor& sensorDescriptor);
 
+    // HDR_FEATURE_S
+    int setWdrMode(TuningMode tuningMode, int64_t sequence);
+
+    int setAWB(float r_per_g, float b_per_g);
+    // HDR_FEATURE_E
+    // CRL_MODULE_S
+    int setFrameRate(float fps);
+    // CRL_MODULE_E
     int getCurrentExposureAppliedDelay();
     uint64_t getSofTimestamp(int64_t sequence);
 
@@ -72,6 +80,10 @@ class SensorManager {
     DISALLOW_COPY_AND_ASSIGN(SensorManager);
 
     void handleSensorExposure();
+    // HDR_FEATURE_S
+    void handleSensorModeSwitch(int64_t sequence);
+    int convertTuningModeToWdrMode(TuningMode tuningMode);
+    // HDR_FEATURE_E
     int getSensorModeData(ia_aiq_exposure_sensor_descriptor& sensorData);
 
  private:
@@ -80,6 +92,11 @@ class SensorManager {
 
     int mCameraId;
     SensorHwCtrl* mSensorHwCtrl;
+
+    // HDR_FEATURE_S
+    bool mModeSwitched;  // Whether the TuningMode get updated
+    WdrModeSetting mWdrModeSetting;
+    // HDR_FEATURE_E
 
     int64_t mLastSofSequence;
 

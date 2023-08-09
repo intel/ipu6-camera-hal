@@ -24,10 +24,10 @@
 
 namespace icamera {
 
-int IntelICBM::setup(ICBMInitInfo* initParam) {
+int IntelICBM::setup(ICBMInitInfo* initParam, std::shared_ptr<IC2ApiHandle> handle) {
     mIntelOPIC2 = IntelOPIC2::getInstance();
 
-    return mIntelOPIC2->setup(initParam);
+    return mIntelOPIC2->setup(initParam, handle);
 }
 
 int IntelICBM::shutdown(const ICBMReqInfo& request) {
@@ -45,9 +45,10 @@ int IntelICBM::shutdown(const ICBMReqInfo& request) {
 int IntelICBM::processFrame(const ICBMReqInfo& reqInfo) {
     CheckAndLogError(mIntelOPIC2 == nullptr, UNKNOWN_ERROR, "@%s, no active ICBM session",
                      __func__);
-    if (reqInfo.reqType == icamera::ICBMReqType::USER_FRAMING)
+    if (reqInfo.reqType &
+        (icamera::ICBMFeatureType::USER_FRAMING | icamera::ICBMFeatureType::BC_MODE_BB))
         return mIntelOPIC2->processFrame(reqInfo);
-    if (reqInfo.reqType == icamera::ICBMReqType::LEVEL0_TNR)
+    if (reqInfo.reqType & icamera::ICBMFeatureType::LEVEL0_TNR)
         return mIntelOPIC2->runTnrFrame(reqInfo);
     return 0;
 }

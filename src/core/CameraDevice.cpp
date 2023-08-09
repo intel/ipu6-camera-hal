@@ -31,6 +31,9 @@
 #include "ICamera.h"
 #include "PlatformData.h"
 #include "V4l2DeviceFactory.h"
+// FILE_SOURCE_S
+#include "FileSource.h"
+// FILE_SOURCE_E
 #include "CaptureUnit.h"
 
 using std::vector;
@@ -49,6 +52,10 @@ CameraDevice::CameraDevice(int cameraId)
     V4l2DeviceFactory::createDeviceFactory(mCameraId);
     CLEAR(mInputConfig);
     mInputConfig.format = -1;
+
+    // CSI_META_S
+    mCsiMetaDevice = new CsiMetaDevice(mCameraId);
+    // CSI_META_E
 
     mProducer = createBufferProducer();
 
@@ -72,6 +79,11 @@ CameraDevice::CameraDevice(int cameraId)
     } else {
         mGCM = nullptr;
     }
+    // PRIVACY_MODE_S
+    if (PlatformData::getSupportPrivacy(mCameraId) != NO_PRIVACY_MODE) {
+        mCvfPrivacyChecker = new CvfPrivacyChecker(mCameraId, mStreams);
+    }
+    // PRIVACY_MODE_E
 }
 
 CameraDevice::~CameraDevice() {
@@ -79,6 +91,11 @@ CameraDevice::~CameraDevice() {
     LOG1("<id%d>@%s", mCameraId, __func__);
     AutoMutex m(mDeviceLock);
 
+    // PRIVACY_MODE_S
+    if (PlatformData::getSupportPrivacy(mCameraId) != NO_PRIVACY_MODE) {
+        delete mCvfPrivacyChecker;
+    }
+    // PRIVACY_MODE_E
     // Clear the media control when close the device.
     MediaControl* mc = MediaControl::getInstance();
     MediaCtlConf* mediaCtl = PlatformData::getMediaCtlConf(mCameraId);
@@ -98,6 +115,9 @@ CameraDevice::~CameraDevice() {
     delete mParamGenerator;
     delete mSofSource;
     delete mProducer;
+    // CSI_META_S
+    delete mCsiMetaDevice;
+    // CSI_META_E
     delete mRequestThread;
 
     V4l2DeviceFactory::releaseDeviceFactory(mCameraId);
@@ -112,6 +132,11 @@ int CameraDevice::init() {
     int ret = mProducer->init();
     CheckAndLogError(ret < 0, ret, "%s: Init capture unit failed", __func__);
 
+    // CSI_META_S
+    ret = mCsiMetaDevice->init();
+    CheckAndLogError(ret != OK, ret, "@%s: init csi meta device failed", __func__);
+    // CSI_META_E
+
     ret = mSofSource->init();
     CheckAndLogError(ret != OK, ret, "@%s: init sync manager failed", __func__);
 
@@ -119,6 +144,14 @@ int CameraDevice::init() {
 
     ret = m3AControl->init();
     CheckAndLogError((ret != OK), ret, "%s: Init 3A Unit falied", __func__);
+
+    // PRIVACY_MODE_S
+    if (PlatformData::getSupportPrivacy(mCameraId) == CVF_BASED_PRIVACY_MODE) {
+        ret = mCvfPrivacyChecker->init();
+        CheckAndLogError((ret != OK), ret, "%s: Init privacy checker falied", __func__);
+        mCvfPrivacyChecker->run("CvfPrivacyChecker", PRIORITY_NORMAL);
+    }
+    // PRIVACY_MODE_E
 
     mRequestThread->run("RequestThread", PRIORITY_NORMAL);
 
@@ -144,6 +177,12 @@ void CameraDevice::deinit() {
         stopLocked();
     }
 
+    // PRIVACY_MODE_S
+    if (PlatformData::getSupportPrivacy(mCameraId) == CVF_BASED_PRIVACY_MODE) {
+        mCvfPrivacyChecker->requestExit();
+        mCvfPrivacyChecker->join();
+    }
+    // PRIVACY_MODE_E
     // stop request thread
     mRequestThread->requestExit();
     mRequestThread->join();
@@ -156,6 +195,10 @@ void CameraDevice::deinit() {
 
     mSofSource->deinit();
 
+    // CSI_META_S
+    mCsiMetaDevice->deinit();
+    // CSI_META_E
+
     mProducer->deinit();
 
     mState = DEVICE_UNINIT;
@@ -167,6 +210,17 @@ void CameraDevice::callbackRegister(const camera_callback_ops_t* callback) {
 }
 
 StreamSource* CameraDevice::createBufferProducer() {
+    // FILE_SOURCE_S
+    if (PlatformData::isFileSourceEnabled()) {
+        return new FileSource(mCameraId);
+    }
+    // FILE_SOURCE_E
+
+    // DUMMY_SOURCE_S
+    if (!PlatformData::isIsysEnabled(mCameraId)) {
+        return new DummySource;
+    }
+    // DUMMY_SOURCE_E
 
     return new CaptureUnit(mCameraId);
 }
@@ -188,11 +242,32 @@ void CameraDevice::bindListeners() {
     vector<EventListener*> sofListenerList = m3AControl->getSofEventListener();
     for (auto sofListener : sofListenerList) {
         mSofSource->registerListener(EVENT_ISYS_SOF, sofListener);
+        // FILE_SOURCE_S
+        if (PlatformData::isFileSourceEnabled()) {
+            // File source needs to produce SOF event as well when it's enabled.
+            mProducer->registerListener(EVENT_ISYS_SOF, sofListener);
+        }
+        // FILE_SOURCE_E
     }
 
-    if (PlatformData::psysAlignWithSof(mCameraId)) {
+    // CSI_META_S
+    // Listen to meta data when enabled
+    if (mCsiMetaDevice->isEnabled()) {
+        for (auto& item : mProcessors) {
+            mCsiMetaDevice->registerListener(EVENT_META, item);
+        }
+    }
+    // CSI_META_E
+
+    if (PlatformData::psysAlignWithSof(mCameraId) || PlatformData::isSchedulerEnabled(mCameraId)) {
         for (auto& item : mProcessors) {
             mSofSource->registerListener(EVENT_ISYS_SOF, item);
+            // FILE_SOURCE_S
+            if (PlatformData::isFileSourceEnabled()) {
+                // File source needs to produce SOF event as well when it's enabled.
+                mProducer->registerListener(EVENT_ISYS_SOF, item);
+            }
+            // FILE_SOURCE_E
         }
     }
 
@@ -209,6 +284,12 @@ void CameraDevice::bindListeners() {
     }
 
     mSofSource->registerListener(EVENT_ISYS_SOF, mRequestThread);
+    // FILE_SOURCE_S
+    if (PlatformData::isFileSourceEnabled()) {
+        // File source needs to produce SOF event as well when it's enabled.
+        mProducer->registerListener(EVENT_ISYS_SOF, mRequestThread);
+    }
+    // FILE_SOURCE_E
 
     // INTEL_DVS_S
     auto dvsListener = m3AControl->getDVSEventListener();
@@ -216,6 +297,18 @@ void CameraDevice::bindListeners() {
         for (auto& item : mProcessors) item->registerListener(EVENT_DVS_READY, lis);
     // INTEL_DVS_E
 
+    // PRIVACY_MODE_S
+    if (PlatformData::getSupportPrivacy(mCameraId) == AE_BASED_PRIVACY_MODE) {
+        EventSource* readySource = m3AControl->get3AReadyEventSource();
+        CheckWarningNoReturn(!readySource, "No 3A_READY event source");
+        if (readySource) {
+            readySource->registerListener(EVENT_3A_READY, mCvfPrivacyChecker);
+        }
+        for (int i = 0; i < mStreamNum; i++) {
+            mStreams[i]->registerListener(EVENT_FRAME_AVAILABLE, mCvfPrivacyChecker);
+        }
+    }
+    // PRIVACY_MODE_E
 }
 
 void CameraDevice::unbindListeners() {
@@ -233,11 +326,29 @@ void CameraDevice::unbindListeners() {
     vector<EventListener*> sofListenerList = m3AControl->getSofEventListener();
     for (auto sofListener : sofListenerList) {
         mSofSource->removeListener(EVENT_ISYS_SOF, sofListener);
+        // FILE_SOURCE_S
+        if (PlatformData::isFileSourceEnabled()) {
+            mProducer->removeListener(EVENT_ISYS_SOF, sofListener);
+        }
+        // FILE_SOURCE_E
     }
 
-    if (PlatformData::psysAlignWithSof(mCameraId)) {
+    // CSI_META_S
+    if (mCsiMetaDevice->isEnabled()) {
+        for (auto& item : mProcessors) {
+            mCsiMetaDevice->removeListener(EVENT_META, item);
+        }
+    }
+    // CSI_META_E
+
+    if (PlatformData::psysAlignWithSof(mCameraId) || PlatformData::isSchedulerEnabled(mCameraId)) {
         for (auto& item : mProcessors) {
             mSofSource->removeListener(EVENT_ISYS_SOF, item);
+            // FILE_SOURCE_S
+            if (PlatformData::isFileSourceEnabled()) {
+                mProducer->removeListener(EVENT_ISYS_SOF, item);
+            }
+            // FILE_SOURCE_E
         }
     }
 
@@ -254,6 +365,12 @@ void CameraDevice::unbindListeners() {
     }
 
     mSofSource->removeListener(EVENT_ISYS_SOF, mRequestThread);
+    // FILE_SOURCE_S
+    if (PlatformData::isFileSourceEnabled()) {
+        // File source needs to produce SOF event as well when it's enabled.
+        mProducer->removeListener(EVENT_ISYS_SOF, mRequestThread);
+    }
+    // FILE_SOURCE_E
 
     // INTEL_DVS_S
     auto dvsListener = m3AControl->getDVSEventListener();
@@ -261,6 +378,18 @@ void CameraDevice::unbindListeners() {
         for (auto& item : mProcessors) item->removeListener(EVENT_DVS_READY, lis);
     // INTEL_DVS_E
 
+    // PRIVACY_MODE_S
+    if (PlatformData::getSupportPrivacy(mCameraId) == AE_BASED_PRIVACY_MODE) {
+        EventSource* readySource = m3AControl->get3AReadyEventSource();
+        CheckWarningNoReturn(!readySource, "No 3A_READY event source");
+        if (readySource) {
+            readySource->removeListener(EVENT_3A_READY, mCvfPrivacyChecker);
+        }
+        for (int i = 0; i < mStreamNum; i++) {
+            mStreams[i]->removeListener(EVENT_FRAME_AVAILABLE, mCvfPrivacyChecker);
+        }
+    }
+    // PRIVACY_MODE_E
 }
 
 int CameraDevice::configureInput(const stream_t* inputConfig) {
@@ -321,8 +450,22 @@ int CameraDevice::configure(stream_config_t* streamList) {
     vector<ConfigMode> configModes;
     PlatformData::getConfigModesByOperationMode(mCameraId, streamList->operation_mode, configModes);
 
+    for (auto cfg : configModes) {
+        PlatformData::reorderSupportedTuningConfig(mCameraId, cfg);
+    }
+
     ret = mProducer->configure(producerConfigs, configModes);
     CheckAndLogError(ret < 0, BAD_VALUE, "@%s Device Configure failed", __func__);
+
+    // CSI_META_S
+    ret = mCsiMetaDevice->configure();
+    CheckAndLogError(ret != OK, ret, "@%s failed to configure CSI meta device", __func__);
+    // CSI_META_E
+
+    // CRL_MODULE_S
+    ret = mSensorCtrl->configure();
+    CheckAndLogError(ret != OK, ret, "@%s failed to configure sensor HW", __func__);
+    // CRL_MODULE_E
 
     ret = mSofSource->configure();
     CheckAndLogError(ret != OK, ret, "@%s failed to configure SOF source device", __func__);
@@ -434,6 +577,13 @@ std::map<Port, stream_t> CameraDevice::selectProducerConfig(const stream_config_
     mainConfig.format = PlatformData::getISysFormat(mCameraId);
     mainConfig.width = producerRes.width;
     mainConfig.height = CameraUtils::getInterlaceHeight(mainConfig.field, producerRes.height);
+
+    // DOL_FEATURE_S
+    // In DOL case isys scale must be disabled, and 2 ports have same
+    if (PlatformData::isDolShortEnabled(mCameraId)) producerConfigs[SECOND_PORT] = mainConfig;
+
+    if (PlatformData::isDolMediumEnabled(mCameraId)) producerConfigs[THIRD_PORT] = mainConfig;
+    // DOL_FEATURE_E
 
     // configuration with main port
     producerConfigs[MAIN_PORT] = mainConfig;
@@ -571,6 +721,12 @@ int CameraDevice::analyzeStream(stream_config_t* streamList) {
     }
 
     bool checkInput = !PlatformData::isIsysEnabled(mCameraId);
+    // FILE_SOURCE_S
+    if (PlatformData::isFileSourceEnabled()) {
+        // In file source case, PSYS can work without ISYS, so don't check raw input.
+        checkInput = false;
+    }
+    // FILE_SOURCE_E
     if (checkInput) {
         CheckAndLogError(inputStreamId < 0, BAD_VALUE, "Input stream was missing");
     }
@@ -681,6 +837,13 @@ int CameraDevice::dqbuf(int streamId, camera_buffer_t** ubuffer, Parameters* set
     LOG2("<id%d>@%s, stream id:%d", mCameraId, __func__, streamId);
 
     int ret = mRequestThread->waitFrame(streamId, ubuffer);
+
+    if ((ret == TIMED_OUT) && (PlatformData::getReqWaitTimeout(mCameraId) > 0)) {
+        LOG1("<id%d>@%s, reqWaitTimeoutNs (%lld).", mCameraId, __func__,
+             PlatformData::getReqWaitTimeout(mCameraId));
+        return ret;
+    }
+
     while (ret == TIMED_OUT) ret = mRequestThread->waitFrame(streamId, ubuffer);
 
     if (ret == NO_INIT) return ret;
@@ -879,6 +1042,11 @@ int CameraDevice::startLocked() {
     ret = mProducer->start();
     CheckAndLogError((ret < 0), BAD_VALUE, "Start capture unit failed with ret:%d.", ret);
 
+    // CSI_META_S
+    ret = mCsiMetaDevice->start();
+    CheckAndLogError((ret != OK), BAD_VALUE, "Start CSI meta failed with ret:%d.", ret);
+    // CSI_META_E
+
     ret = mSofSource->start();
     CheckAndLogError((ret != OK), BAD_VALUE, "Start SOF event source failed with ret:%d.", ret);
 
@@ -895,6 +1063,10 @@ int CameraDevice::stopLocked() {
     }
 
     mSofSource->stop();
+
+    // CSI_META_S
+    mCsiMetaDevice->stop();
+    // CSI_META_E
 
     // Stop the CaptureUnit for streamon
     mProducer->stop();

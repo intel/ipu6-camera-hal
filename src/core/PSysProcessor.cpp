@@ -112,7 +112,8 @@ int PSysProcessor::configure(const std::vector<ConfigMode>& configModes) {
     }
 
     // Hold raw for SDV case with GPU TNR enabled
-    if (PlatformData::isGpuTnrEnabled() && videoStream.width > 0 && stillStream.width > 0) {
+    if (PlatformData::isGpuTnrEnabled(mCameraId) && videoStream.width > 0 &&
+        stillStream.width > 0) {
         // hold raw buffer for running TNR in still pipe
         mHoldRawBuffers = true;
     }
@@ -180,6 +181,10 @@ int PSysProcessor::start() {
      * time is slower than ISYS
      */
     bool needProducerBuffer = PlatformData::isIsysEnabled(mCameraId);
+
+    // FILE_SOURCE_S
+    needProducerBuffer = needProducerBuffer || PlatformData::isFileSourceEnabled();
+    // FILE_SOURCE_E
 
     if (needProducerBuffer) {
         int ret = allocProducerBuffers(mCameraId, rawBufferNum);
@@ -432,14 +437,28 @@ bool PSysProcessor::needSwitchPipe(int64_t sequence) {
 void PSysProcessor::handleEvent(EventData eventData) {
     // Process registered events
     switch (eventData.type) {
+        // CSI_META_S
+        case EVENT_META:
+            // DOL_FEATURE_S
+            if (PlatformData::needHandleVbpInMetaData(mCameraId, mCurConfigMode)) {
+                AutoMutex l(mMetaQueueLock);
+                mMetaQueue.push(eventData.data.meta);
+                LOG2("%s: received meta data, current queue size %lu", __func__, mMetaQueue.size());
+                mMetaAvailableSignal.signal();
+            }
+            // DOL_FEATURE_E
+            break;
+        // CSI_META_E
         case EVENT_ISYS_SOF: {
             AutoMutex l(mSofLock);
 
             mSofSequence = eventData.data.sync.sequence;
-            gettimeofday(&mSofTimestamp, nullptr);
-            LOG2("%s, received SOF event sequence: %ld, timestamp: %ld", __func__,
-                 eventData.data.sync.sequence, TIMEVAL2USECS(mSofTimestamp));
-            mSofCondition.signal();
+            if (PlatformData::psysAlignWithSof(mCameraId)) {
+                gettimeofday(&mSofTimestamp, nullptr);
+                LOG2("%s, received SOF event sequence: %ld, timestamp: %ld", __func__,
+                     eventData.data.sync.sequence, TIMEVAL2USECS(mSofTimestamp));
+                mSofCondition.signal();
+            }
             break;
         }
         default:
@@ -447,6 +466,52 @@ void PSysProcessor::handleEvent(EventData eventData) {
             break;
     }
 }
+
+// DOL_FEATURE_S
+int PSysProcessor::setVbpToIspParam(int64_t sequence, timeval timestamp) {
+    // Check fixed VBP firstly.
+    int fixedVbp = PlatformData::getFixedVbp(mCameraId);
+    if (fixedVbp >= 0) {
+        AutoWMutex wl(mIspSettingsLock);
+        LOG2("%s: set fixed vbp %d", __func__, fixedVbp);
+        mIspSettings.vbp = fixedVbp;
+        return OK;
+    }
+
+    // Check dynamic VBP.
+    ConditionLock lock(mMetaQueueLock);
+
+    // Remove all older meta data
+    while (!mMetaQueue.empty() && mMetaQueue.front().sequence < sequence) {
+        LOG2("%s: remove older meta data for sequence %ld", __func__, mMetaQueue.front().sequence);
+        mMetaQueue.pop();
+    }
+
+    while (mMetaQueue.empty()) {
+        int ret = mMetaAvailableSignal.waitRelative(lock, kWaitDuration * SLOWLY_MULTIPLIER);
+
+        if (!mThreadRunning) {
+            LOG2("@%s: Processor is not active while waiting for meta data.", __func__);
+            return UNKNOWN_ERROR;
+        }
+
+        CheckAndLogError(ret == TIMED_OUT, ret, "@%s: dqbuf MetaQueue timed out", __func__);
+    }
+
+    if (mMetaQueue.front().sequence == sequence) {
+        AutoWMutex l(mIspSettingsLock);
+        mIspSettings.vbp = mMetaQueue.front().vbp;
+        mMetaQueue.pop();
+        LOG2("%s: found vbp %d for frame sequence %ld", __func__, mIspSettings.vbp, sequence);
+        return OK;
+    }
+
+    LOGW("Missing meta data for seq %ld, timestamp %ld, Cur meta seq %ld, timestamp %ld", sequence,
+         TIMEVAL2USECS(timestamp), mMetaQueue.front().sequence,
+         TIMEVAL2USECS(mMetaQueue.front().timestamp));
+    return UNKNOWN_ERROR;
+}
+// DOL_FEATURE_E
 
 // PSysProcessor ThreadLoop
 int PSysProcessor::processNewFrame() {
@@ -459,8 +524,10 @@ int PSysProcessor::processNewFrame() {
     if (mScheduler) {
         {
             ConditionLock lock(mBufferQueueLock);
-            // Wait input buffer, use TRIGGER_MAX_MARGIN to ensure Scheduler is triggered in time
-            bool bufReady = waitBufferQueue(lock, mInputQueue, TRIGGER_MAX_MARGIN);
+            // Wait input buffer, use TRIGGER_MAX_MARGIN to ensure Scheduler is triggered in time.
+            // Reduce wait time for the first 10 frames for better performance.
+            int64_t delay = mSofSequence < 10 ? TRIGGER_MARGIN : TRIGGER_MAX_MARGIN;
+            bool bufReady = waitBufferQueue(lock, mInputQueue, delay);
             // Already stopped
             if (!mThreadRunning) return -1;
 
@@ -579,6 +646,10 @@ void PSysProcessor::prepareIpuForNextFrame(int64_t sequence) {
             mSequencesInflight.find(sequence) == mSequencesInflight.end()) return;
     }
 
+    // HDR_FEATURE_S
+    if (mTuningMode == TUNING_MODE_VIDEO_HDR || mTuningMode == TUNING_MODE_VIDEO_HDR2) return;
+    // HDR_FEATURE_E
+
     int32_t userRequestId = -1;
     // Check if next sequence is used or not
     if (mParameterGenerator &&
@@ -663,7 +734,7 @@ void PSysProcessor::handleRawReprocessing(CameraBufferPortMap* srcBuffers,
         sendPsysRequestEvent(dstBuffers, settingSequence, timestamp, EVENT_PSYS_REQUEST_BUF_READY);
 
         // only one video buffer is supported
-        if (PlatformData::isGpuTnrEnabled() && videoBuf.size() == 1) {
+        if (PlatformData::isGpuTnrEnabled(mCameraId) && videoBuf.size() == 1) {
             shared_ptr<CameraBuffer> buf = videoBuf.begin()->second;
             bool handled = mPSysDAGs[mCurConfigMode]->fetchTnrOutBuffer(settingSequence, buf);
             if (handled) {
@@ -792,6 +863,25 @@ status_t PSysProcessor::prepareTask(CameraBufferPortMap* srcBuffers,
     uint64_t timestamp = TIMEVAL2NSECS(mainBuf->getTimestamp());
     LOG2("%s: input buffer sequence %ld timestamp %ld", __func__, inputSequence, timestamp);
 
+    // DOL_FEATURE_S
+    if (PlatformData::needSetVbp(mCameraId, mCurConfigMode)) {
+        int vbpStatus = setVbpToIspParam(inputSequence, mainBuf->getTimestamp());
+
+        // Skip input frame and return buffer if no matching vbp set to ISP params
+        if (vbpStatus != OK) {
+            AutoMutex l(mBufferQueueLock);
+            for (auto& input : mInputQueue) {
+                input.second.pop();
+            }
+
+            for (const auto& item : *srcBuffers) {
+                mBufferProducer->qbuf(item.first, item.second);
+            }
+            return OK;
+        }
+    }
+    // DOL_FEATURE_E
+
     // Output raw image
     if (mRawPort != INVALID_PORT) {
         shared_ptr<CameraBuffer> dstBuf = nullptr;
@@ -839,7 +929,7 @@ status_t PSysProcessor::prepareTask(CameraBufferPortMap* srcBuffers,
             sendPsysRequestEvent(dstBuffers, settingSequence, timestamp,
                                  EVENT_PSYS_REQUEST_BUF_READY);
         }
-        if (PlatformData::isGpuTnrEnabled()) {
+        if (PlatformData::isGpuTnrEnabled(mCameraId)) {
             handleStillPipeForTnr(inputSequence, dstBuffers);
         }
 
@@ -963,6 +1053,25 @@ void PSysProcessor::dispatchTask(CameraBufferPortMap& inBuf, CameraBufferPortMap
         Parameters params;
         if (mParameterGenerator->getIspParameters(currentSequence, &params) == OK) {
             setParameters(params);
+
+            // Apply HAL tuning parameters
+            float hdrRatio = 0;
+            EdgeNrSetting edgeNrSetting;
+            CLEAR(edgeNrSetting);
+
+            int ret = params.getHdrRatio(hdrRatio);
+            if (ret == OK) {
+                auto* res = AiqResultStorage::getInstance(mCameraId)->getAiqResult(currentSequence);
+                if (res != nullptr) {
+                    auto exposure = res->mAeResults.exposures[0].exposure[0];
+                    float totalGain = exposure.analog_gain * exposure.digital_gain;
+                    PlatformData::getEdgeNrSetting(mCameraId, totalGain, hdrRatio, edgeNrSetting);
+                    mIspSettings.eeSetting.strength += edgeNrSetting.edgeStrength;
+                    mIspSettings.nrSetting.strength += edgeNrSetting.nrStrength;
+                    LOG2("edgeStrength %d, nrStrength %d", edgeNrSetting.edgeStrength,
+                         edgeNrSetting.nrStrength);
+                }
+            }
 
             bool hasStill = false;
             for (const auto& item : outBuf) {
@@ -1137,13 +1246,18 @@ void PSysProcessor::onStatsDone(int64_t sequence, const CameraBufferPortMap& out
 }
 
 // INTEL_DVS_S
-void PSysProcessor::onDvsPrepare(int32_t streamId) {
+void PSysProcessor::onDvsPrepare(int64_t sequence, int32_t streamId) {
     LOG2("%s stream Id %d", __func__, streamId);
 
-    EventData eventData;
-    eventData.type = EVENT_DVS_READY;
-    eventData.data.dvsRunReady.streamId = streamId;
-    notifyListeners(eventData);
+    camera_zoom_region_t region;
+    if (mParameterGenerator && mParameterGenerator->getZoomRegion(sequence, region) == OK) {
+        EventData eventData;
+        eventData.type = EVENT_DVS_READY;
+        eventData.data.dvsRunReady.streamId = streamId;
+        eventData.data.dvsRunReady.sequence = sequence;
+        eventData.data.dvsRunReady.region = region;
+        notifyListeners(eventData);
+    }
 }
 // INTEL_DVS_E
 

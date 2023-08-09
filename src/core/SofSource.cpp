@@ -20,6 +20,9 @@
 #include <string>
 #include <poll.h>
 
+// VIRTUAL_CHANNEL_S
+#include "linux/ipu-isys.h"
+// VIRTUAL_CHANNEL_E
 #include "PlatformData.h"
 #include "V4l2DeviceFactory.h"
 #include "iutils/CameraLog.h"
@@ -30,11 +33,18 @@ namespace icamera {
 SofSource::SofSource(int cameraId)
         : mPollThread(nullptr),
           mCameraId(cameraId),
+          // VIRTUAL_CHANNEL_S
+          mAggregatorSubDev(nullptr),
+          mFrameSyncId(-1),
+          // VIRTUAL_CHANNEL_E
           mIsysReceiverSubDev(nullptr),
           mExitPending(false) {
     LOG1("%s: SofSource is constructed", __func__);
 
     mSofDisabled = !PlatformData::isIsysEnabled(cameraId);
+    // FILE_SOURCE_S
+    mSofDisabled = mSofDisabled || PlatformData::isFileSourceEnabled();
+    // FILE_SOURCE_E
 }
 
 SofSource::~SofSource() {
@@ -80,6 +90,33 @@ int SofSource::initDev() {
     LOG1("%s: Using SOF event id 0 for sync", __func__);
 #else
     int id = 0;
+    // VIRTUAL_CHANNEL_S
+    /* The value of virtual channel sequence is 1, 2, 3, ... if virtual channel supported.
+       The value of SOF event id is 0, 1, 2, ... (sequence -1)  when virtual channel supported. */
+    int sequence = PlatformData::getVirtualChannelSequence(mCameraId);
+    if (sequence > 0) {
+        mFrameSyncId = sequence - 1;
+    }
+
+    struct VcAggregator aggregator;
+    if (PlatformData::getVcAggregator(mCameraId, aggregator) == OK) {
+        std::string devName;
+        CameraUtils::getDeviceName(aggregator.mName.c_str(), devName, true);
+        if (!devName.empty()) {
+            LOG1("%s, found aggregator subdevice %s", __func__, devName);
+            mAggregatorSubDev = V4l2DeviceFactory::getSubDev(mCameraId, devName);
+
+            struct v4l2_querymenu qm = {.id = V4L2_CID_IPU_QUERY_SUB_STREAM, };
+            qm.index = aggregator.mIndex;
+            int ret = mAggregatorSubDev->QueryMenu(&qm);
+            if (ret == 0) {
+                #define SUB_STREAM_VC_ID(value) ((value) >> 56 & 0xFF)
+                mFrameSyncId = SUB_STREAM_VC_ID(qm.value);
+            }
+        }
+    }
+    if (mFrameSyncId >= 0) id = mFrameSyncId;
+    // VIRTUAL_CHANNEL_E
 
     int status = mIsysReceiverSubDev->SubscribeEvent(V4L2_EVENT_FRAME_SYNC, id);
     CheckAndLogError(status != OK, status, "Failed to subscribe sync event %d", id);
@@ -102,6 +139,9 @@ int SofSource::deinitDev() {
     }
 #else
     int id = 0;
+    // VIRTUAL_CHANNEL_S
+    if (mFrameSyncId >= 0) id = mFrameSyncId;
+    // VIRTUAL_CHANNEL_E
     status = mIsysReceiverSubDev->UnsubscribeEvent(V4L2_EVENT_FRAME_SYNC, id);
     if (status == OK) {
         LOG1("%s: Unsubscribe SOF event id %d done", __func__, id);
