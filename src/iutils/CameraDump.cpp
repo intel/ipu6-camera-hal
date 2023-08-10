@@ -23,6 +23,8 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
 #include <sys/stat.h>
 
 #include <fstream>
@@ -41,6 +43,8 @@ using std::shared_ptr;
 using std::string;
 
 namespace icamera {
+
+Thread* gDumpThread = nullptr;
 
 int gDumpType = 0;
 int gDumpFormat = 0;
@@ -83,9 +87,13 @@ void CameraDump::setDumpLevel(void) {
     }
 
     char* cameraDumpPath = getenv(PROP_CAMERA_HAL_DUMP_PATH);
-    snprintf(gDumpPath, sizeof(gDumpPath), "%s", "./");
+
     if (cameraDumpPath) {
         snprintf(gDumpPath, sizeof(gDumpPath), "%s", cameraDumpPath);
+        LOGI("User defined dump path %s", gDumpPath);
+    } else {
+        snprintf(gDumpPath, sizeof(gDumpPath), "%s", "./");
+        LOG1("Default dump path %s", gDumpPath);
     }
 
     char* cameraDumpSkipNum = getenv(PROP_CAMERA_HAL_DUMP_SKIP_NUM);
@@ -142,6 +150,15 @@ void CameraDump::setDumpLevel(void) {
             LOGE("setenv error for %s, current path:%s\n", PROP_CAMERA_CSS_DUMP_PATH,
                  cssDumpPath ? cssDumpPath : "null");
         }
+    }
+}
+
+void CameraDump::setDumpThread(void) {
+    if (!gDumpThread) {
+        // Default disable AIQDUMP when use dump thread
+        setenv("AIQDUMP", "disable", 1);
+        gDumpThread = new DumpThread();
+        gDumpThread->run("DumpThread", PRIORITY_NORMAL);
     }
 }
 
@@ -394,14 +411,12 @@ void CameraDump::dumpImage(int cameraId, const shared_ptr<CameraBuffer>& camBuff
     int fd = camBuffer->getFd();
     int bufferSize = camBuffer->getBufferSize();
     int memoryType = camBuffer->getMemory();
-    void* pBuf = (memoryType == V4L2_MEMORY_DMABUF) ?
-                     camBuffer->mapDmaBufferAddr() : camBuffer->getBufferAddr();
+
+    ScopeMapping mapper(camBuffer);
+    void* pBuf = mapper.getUserPtr();
     LOG1("@%s, fd:%d, buffersize:%d, buf:%p, memoryType:%d, fileName:%s", __func__, fd, bufferSize,
          pBuf, memoryType, fileName.c_str());
     writeData(pBuf, bufferSize, fileName.c_str());
-    if (memoryType == V4L2_MEMORY_DMABUF) {
-        camBuffer->unmapDmaBufferAddr(pBuf);
-    }
 }
 
 void CameraDump::dumpBinary(int cameraId, const void* data, int size, BinParam_t* binParam) {
@@ -421,5 +436,90 @@ void CameraDump::dumpBinary(int cameraId, const void* data, int size, BinParam_t
     LOG2("@%s, fileName:%s", __func__, fileName.c_str());
     writeData(data, size, fileName.c_str());
 }
+
+namespace CameraDump {
+DumpThread::DumpThread() {}
+DumpThread::~DumpThread() {}
+
+#define FIFO_NAME "/tmp/cameraDump"
+#define BUFFER_SIZE 4096
+bool DumpThread::threadLoop() {
+    int pipe_fd;
+    int res;
+    int open_mode = O_RDONLY;
+    int bytes_read = 0;
+    char buffer[BUFFER_SIZE + 1];
+    char* equal = nullptr;
+    const char* PROP_CAMERA_HAL_DUMP = "cameraDump";
+    const char* PROP_CAMERA_HAL_DUMP_FORMAT = "cameraDumpFormat";
+    const char* PROP_CAMERA_HAL_DUMP_PATH = "cameraDumpPath";
+    const char* PROP_CAMERA_HAL_DUMP_SKIP_NUM = "cameraDumpSkipNum";
+    const char* PROP_CAMERA_HAL_DUMP_RANGE = "cameraDumpRange";
+    const char* PROP_CAMERA_HAL_DUMP_FREQUENCY = "cameraDumpFrequency";
+    const char* PROP_AIQDUMP = "AIQDUMP";
+
+    char fifo_name[BUFFER_SIZE + 1];
+
+    LOGI("DumpThread start");
+
+    memset(fifo_name, '\0', sizeof(fifo_name));
+    snprintf(fifo_name, BUFFER_SIZE, "%s_%d", FIFO_NAME, getpid());
+    if (access(fifo_name, F_OK) == -1) {
+        res = mkfifo(fifo_name, 0777);
+        if (res != 0) {
+            LOGI("Could not create fifo %s", fifo_name);
+        }
+    }
+
+    memset(buffer, '\0', sizeof(buffer));
+
+    pipe_fd = open(fifo_name, open_mode);
+    LOGI("Process %d opened fd %d", getpid(), pipe_fd);
+
+    if (pipe_fd != -1) {
+        do  {
+            res = read(pipe_fd, buffer, BUFFER_SIZE);
+            bytes_read += res;
+        } while (0);
+        (void)close(pipe_fd);
+    } else {
+        return false;
+    }
+
+    LOGI("Process %d finished, %s", getpid(), buffer);
+    equal = strchr(buffer, '=');
+    if (equal) {
+        *equal = '\0';
+    } else {
+        return true;
+    }
+
+    LOGI("%s, %d, %s", __func__, __LINE__, buffer);
+    if (!strncmp(PROP_CAMERA_HAL_DUMP, buffer, strlen(PROP_CAMERA_HAL_DUMP))
+        && strlen(PROP_CAMERA_HAL_DUMP) == strlen(buffer)) {
+        setenv(PROP_CAMERA_HAL_DUMP, equal + 1, 1);
+    } else if (!strncmp(PROP_CAMERA_HAL_DUMP_FORMAT, buffer,
+        strlen(PROP_CAMERA_HAL_DUMP_FORMAT))) {
+        setenv(PROP_CAMERA_HAL_DUMP_FORMAT, equal + 1, 1);
+    } else if (!strncmp(PROP_CAMERA_HAL_DUMP_PATH, buffer,
+        strlen(PROP_CAMERA_HAL_DUMP_PATH))) {
+        setenv(PROP_CAMERA_HAL_DUMP_PATH, equal + 1, 1);
+    } else if (!strncmp(PROP_CAMERA_HAL_DUMP_SKIP_NUM, buffer,
+        strlen(PROP_CAMERA_HAL_DUMP_SKIP_NUM))) {
+        setenv(PROP_CAMERA_HAL_DUMP_SKIP_NUM, equal + 1, 1);
+    } else if (!strncmp(PROP_CAMERA_HAL_DUMP_RANGE, buffer,
+        strlen(PROP_CAMERA_HAL_DUMP_RANGE))) {
+        setenv(PROP_CAMERA_HAL_DUMP_RANGE, equal + 1, 1);
+    } else if (!strncmp(PROP_CAMERA_HAL_DUMP_FREQUENCY, buffer,
+        strlen(PROP_CAMERA_HAL_DUMP_FREQUENCY))) {
+        setenv(PROP_CAMERA_HAL_DUMP_FREQUENCY, equal + 1, 1);
+    } else if (!strncmp(PROP_AIQDUMP, buffer, strlen(PROP_AIQDUMP))) {
+        setenv(PROP_AIQDUMP, equal + 1, 1);
+    }
+    setDumpLevel();
+
+    return true;
+}
+}  // namespace CameraDump
 
 }  // namespace icamera

@@ -44,9 +44,12 @@ class IntelCca {
     ia_err runAEC(uint64_t frameId, const cca::cca_ae_input_params& params,
                   cca::cca_ae_results* results);
     ia_err runAIQ(uint64_t frameId, const cca::cca_aiq_params& params,
-                  cca::cca_aiq_results* results);
+                  cca::cca_aiq_results* results, camera_makernote_mode_t mode = MAKERNOTE_MODE_OFF);
 
     ia_err runLTM(uint64_t frameId, const cca::cca_ltm_input_params& params);
+
+    ia_err reconfigDvs(const cca::cca_dvs_init_param& dvsInitParam,
+                       const cca::cca_gdc_configurations& gdcConfigs);
 
     ia_err updateZoom(uint32_t streamId, const cca::cca_dvs_zoom& params);
 
@@ -54,7 +57,7 @@ class IntelCca {
 
     ia_err runAIC(uint64_t frameId, const cca::cca_pal_input_params* params, ia_binary_data* pal);
 
-    ia_err getCMC(cca::cca_cmc* cmc);
+    ia_err getCMC(cca::cca_cmc* cmc, const cca::cca_cpf* cpf = nullptr);
     ia_err getMKN(ia_mkn_trg type, cca::cca_mkn* mkn);
     ia_err getAiqd(cca::cca_aiqd* aiqd);
     ia_err updateTuning(uint8_t lardTags, const ia_lard_input_params& lardParams,
@@ -64,14 +67,16 @@ class IntelCca {
     // PRIVACY_MODE_E
 
     bool allocStatsDataMem(unsigned int size);
+    void freeStatsDataMem();
     void* getStatsDataBuffer();
     void decodeHwStatsDone(int64_t sequence, unsigned int byteUsed);
     void* fetchHwStatsData(int64_t sequence, unsigned int* byteUsed);
 
     void deinit();
 
+    // Do decoding if results is valid
     ia_err decodeStats(uint64_t statsPointer, uint32_t statsSize, uint32_t bitmap,
-                       ia_isp_bxt_statistics_query_results_t* results,
+                       ia_isp_bxt_statistics_query_results_t* results = nullptr,
                        cca::cca_out_stats* outStats = nullptr);
 
     uint32_t getPalDataSize(const cca::cca_program_group& programGroup);
@@ -81,7 +86,6 @@ class IntelCca {
  private:
     cca::IntelCCA* getIntelCCA();
     void releaseIntelCCA();
-    void freeStatsDataMem();
 
  private:
     int mCameraId;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Intel Corporation.
+ * Copyright (C) 2015-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,19 +41,21 @@ RequestThread::RequestThread(int cameraId, AiqUnitBase* a3AControl, ParameterGen
           mLastAppliedSeq(-1),
           mLastSofSeq(-1),
           mBlockRequest(true),
-          mSofEnabled(false) {
+          mSofEnabled(false),
+          mWaitFrameDurationOverride(0) {
     CLEAR(mFakeReqBuf);
 
     mPerframeControlSupport = PlatformData::isFeatureSupported(mCameraId, PER_FRAME_CONTROL);
 
     mSofEnabled = PlatformData::isIsysEnabled(cameraId);
+    // FILE_SOURCE_S
+    mSofEnabled = mSofEnabled || PlatformData::isFileSourceEnabled();
+    // FILE_SOURCE_E
+    mWaitFrameDurationOverride = PlatformData::getReqWaitTimeout(cameraId);
+    LOG1("%s: Set mWaitFrameDurationOverride: %lld", __func__, mWaitFrameDurationOverride);
 }
 
-RequestThread::~RequestThread() {
-    while (!mReqParamsPool.empty()) {
-        mReqParamsPool.pop();
-    }
-}
+RequestThread::~RequestThread() {}
 
 void RequestThread::requestExit() {
     clearRequests();
@@ -167,7 +169,7 @@ int RequestThread::processRequest(int bufferNum, camera_buffer_t** ubuffer,
         mBlockRequest = false;
     }
 
-    request.mParams = copyRequestParams(params);
+    request.mRequestParam = copyRequestParams(params);
     mPendingRequests.push_back(request);
 
     if (!mActive) {
@@ -179,19 +181,13 @@ int RequestThread::processRequest(int bufferNum, camera_buffer_t** ubuffer,
     return OK;
 }
 
-shared_ptr<Parameters> RequestThread::copyRequestParams(const Parameters* srcParams) {
+shared_ptr<RequestParam> RequestThread::copyRequestParams(const Parameters* srcParams) {
     if (srcParams == nullptr) return nullptr;
 
-    if (mReqParamsPool.empty()) {
-        shared_ptr<Parameters> sParams = std::make_shared<Parameters>();
-        CheckAndLogError(!sParams, nullptr, "%s: no memory!", __func__);
-        mReqParamsPool.push(sParams);
-    }
+    std::shared_ptr<RequestParam> requestParam = mParamGenerator->getRequestParamBuf();
 
-    shared_ptr<Parameters> sParams = mReqParamsPool.front();
-    mReqParamsPool.pop();
-    *sParams = *srcParams;
-    return sParams;
+    requestParam->param = *srcParams;
+    return requestParam;
 }
 
 int RequestThread::waitFrame(int streamId, camera_buffer_t** ubuffer) {
@@ -201,7 +197,8 @@ int RequestThread::waitFrame(int streamId, camera_buffer_t** ubuffer) {
     if (!mActive) return NO_INIT;
     while (frameQueue.mFrameQueue.empty()) {
         int ret = frameQueue.mFrameAvailableSignal.waitRelative(
-            lock, kWaitFrameDuration * SLOWLY_MULTIPLIER);
+            lock, (mWaitFrameDurationOverride > 0) ? mWaitFrameDurationOverride :
+                                                     (kWaitFrameDuration * SLOWLY_MULTIPLIER));
         if (!mActive) return NO_INIT;
 
         CheckWarning(ret == TIMED_OUT, ret, "<id%d>@%s, time out happens, wait recovery", mCameraId,
@@ -327,9 +324,11 @@ bool RequestThread::threadLoop() {
 
         if (blockRequest()) {
             int ret = mRequestSignal.waitRelative(lock, kWaitDuration * SLOWLY_MULTIPLIER);
-            CheckWarning(ret == TIMED_OUT, true,
-                         "wait event time out, %d requests processing, %zu requests in HAL",
-                         mRequestsInProcessing, mPendingRequests.size());
+            if (ret == TIMED_OUT) {
+                LOG2("wait event time out, %d requests processing, %zu requests in HAL",
+                     mRequestsInProcessing, mPendingRequests.size());
+                return true;
+            }
 
             if (blockRequest()) {
                 LOG2("Pending request processing, mBlockRequest %d, Req in processing %d",
@@ -389,8 +388,8 @@ void RequestThread::handleRequest(CameraRequest& request, int64_t applyingSeq) {
     // Raw reprocessing case, don't run 3A.
     if (request.mBuffer[0]->sequence >= 0 && request.mBuffer[0]->timestamp > 0) {
         effectSeq = request.mBuffer[0]->sequence;
-        if (request.mParams.get()) {
-            mParamGenerator->updateParameters(effectSeq, request.mParams.get());
+        if (request.mRequestParam) {
+            mParamGenerator->updateParameters(effectSeq, &request.mRequestParam->param);
         }
         LOG2("%s: Reprocess request: seq %ld, out buffer %d", __func__, effectSeq,
              request.mBufferNum);
@@ -400,8 +399,8 @@ void RequestThread::handleRequest(CameraRequest& request, int64_t applyingSeq) {
             AutoMutex l(mPendingReqLock);
             if (mActive) {
                 requestId = ++mLastRequestId;
-                if (request.mParams.get()) {
-                    m3AControl->setParameters(*request.mParams);
+                if (request.mRequestParam) {
+                    m3AControl->setParameters(request.mRequestParam->param);
                 }
             }
         }
@@ -412,24 +411,18 @@ void RequestThread::handleRequest(CameraRequest& request, int64_t applyingSeq) {
 
         {
             AutoMutex l(mPendingReqLock);
-            if (!mActive) {
-                // Recycle params buffer for re-using
-                if (request.mParams) {
-                    mReqParamsPool.push(request.mParams);
-                }
-                return;
-            }
+            if (!mActive) return;
 
             // Check the final prediction value from 3A
             if (effectSeq <= mLastEffectSeq) {
                 LOG2("predict effectSeq %ld, last effect %ld", effectSeq, mLastEffectSeq);
             }
 
-            mParamGenerator->saveParameters(effectSeq, mLastRequestId, request.mParams.get());
+            mParamGenerator->saveParameters(effectSeq, mLastRequestId, request.mRequestParam);
             mLastEffectSeq = effectSeq;
 
             LOG2("%s: Process request: %ld:%ld, out buffer %d, param? %s", __func__, mLastRequestId,
-                 effectSeq, request.mBufferNum, request.mParams.get() ? "true" : "false");
+                 effectSeq, request.mBufferNum, request.mRequestParam.get() ? "true" : "false");
         }
     }
 
@@ -437,18 +430,16 @@ void RequestThread::handleRequest(CameraRequest& request, int64_t applyingSeq) {
     EventRequestData requestData;
     requestData.bufferNum = request.mBufferNum;
     requestData.buffer = request.mBuffer;
-    requestData.param = request.mParams.get();
+    camera_test_pattern_mode_t testPatternMode = TEST_PATTERN_OFF;
+    if (request.mRequestParam) {
+        request.mRequestParam->param.getTestPatternMode(testPatternMode);
+    }
+    requestData.testPatternMode = testPatternMode;
     requestData.settingSeq = effectSeq;
     EventData eventData;
     eventData.type = EVENT_PROCESS_REQUEST;
     eventData.data.request = requestData;
     notifyListeners(eventData);
-
-    // Recycle params buffer for re-using
-    if (request.mParams) {
-        AutoMutex l(mPendingReqLock);
-        mReqParamsPool.push(request.mParams);
-    }
 
     {
         AutoMutex l(mFirstRequestLock);

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2022 Intel Corporation
+ * Copyright (C) 2017-2023 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,23 +37,31 @@
 #include "Parameters.h"
 
 namespace icamera {
+
+typedef struct DvsConfig {
+    cca::cca_gdc_configurations gdcConfigs;
+    float zoomRatio;
+    cca::CCADVSOutputType outputType;
+    bool enableDvs;
+} DvsConfig;
+
 class Dvs : public EventListener {
  public:
     explicit Dvs(int cameraId);
     ~Dvs();
 
-    int configure(const ConfigMode configMode, cca::cca_init_params* params);
+    int configure(const ConfigMode configMode, DvsConfig* cfg);
     void handleEvent(EventData eventData);
-    void setParameter(const Parameters& p);
 
  private:
-    int configCcaDvsData(int32_t streamId, const ConfigMode configMode,
-                         cca::cca_init_params* params);
-    void dumpDvsConfiguration(const cca::cca_init_params& config);
+    int configCcaDvsData(int32_t streamId, const ConfigMode configMode, DvsConfig* cfg);
+    void dumpDvsConfiguration(const DvsConfig& config);
+    void setParameter(const camera_zoom_region_t& region);
 
  private:
     int mCameraId;
     TuningMode mTuningMode;
+    camera_zoom_region_t mZoomRegion;
     struct ZoomParam {
         camera_zoom_region_t ptzRegion;
         camera_zoom_region_t gdcRegion;

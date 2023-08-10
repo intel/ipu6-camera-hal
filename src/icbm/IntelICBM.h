@@ -24,9 +24,9 @@ class IIntelICBM {
  public:
     virtual ~IIntelICBM() {}
 
-    virtual ICBMResult setup(void* initParams) = 0;
+    virtual int setup(void* initParams) = 0;
     virtual void shutdown() = 0;
-    virtual ICBMResult processFrame(const ImageInfo& iii, const ImageInfo& iio,
+    virtual int processFrame(const ImageInfo& iii, const ImageInfo& iio,
                                     const ICBMReqInfo& reqInfo) = 0;
 };
 

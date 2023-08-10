@@ -111,6 +111,18 @@ int CaptureUnit::createDevices() {
     vector<Port> targetPorts;
     targetPorts.push_back(portOfMainDevice);
 
+    // DOL_FEATURE_S
+    if (PlatformData::isDolShortEnabled(mCameraId)) {
+        mDevices.push_back(new DolCaptureDevice(mCameraId, VIDEO_GENERIC_SHORT_EXPO));
+        targetPorts.push_back(SECOND_PORT);
+    }
+
+    if (PlatformData::isDolMediumEnabled(mCameraId)) {
+        mDevices.push_back(new DolCaptureDevice(mCameraId, VIDEO_GENERIC_MEDIUM_EXPO));
+        targetPorts.push_back(THIRD_PORT);
+    }
+    // DOL_FEATURE_E
+
     // Open and configure the devices. The stream and port that are used by the device is
     // decided by whether consumer has provided such info, use the default one if not.
     for (uint8_t i = 0; i < mDevices.size(); i++) {

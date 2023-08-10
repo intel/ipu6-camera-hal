@@ -45,4 +45,26 @@ class StreamSource : public BufferProducer {
     virtual void removeAllFrameAvailableListener() = 0;
 };
 
+// DUMMY_SOURCE_S
+class DummySource : public StreamSource {
+ public:
+    DummySource() : StreamSource(V4L2_MEMORY_USERPTR) {}
+
+    int init() { return OK; }
+    void deinit() {}
+    int configure(const std::map<Port, stream_t>& outputFrames,
+                  const std::vector<ConfigMode>& configModes) {
+        return OK;
+    }
+    int start() { return OK; }
+    int stop() { return OK; }
+    void removeAllFrameAvailableListener() {}
+
+    int qbuf(Port port, const std::shared_ptr<CameraBuffer>& camBuffer) { return OK; }
+    int allocateMemory(Port port, const std::shared_ptr<CameraBuffer>& camBuffer) { return OK; }
+
+    void addFrameAvailableListener(BufferConsumer* listener) {}
+    void removeFrameAvailableListener(BufferConsumer* listener) {}
+};
+// DUMMY_SOURCE_E
 }  // namespace icamera

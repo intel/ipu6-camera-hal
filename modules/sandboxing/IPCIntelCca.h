@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Intel Corporation.
+ * Copyright (C) 2020-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,11 +32,16 @@ struct intel_cca_init_data {
     cca::cca_init_params inParams;
 };
 
-struct intel_cca_set_stats_data {
+struct intel_cca_decode_stats_data {
     int cameraId;
     TuningMode tuningMode;
 
-    cca::cca_stats_params inParams;
+    ia_binary_data statsBuffer;
+    int32_t statsHandle;
+    uint32_t bitmap;
+    cca::cca_out_stats outStats;
+
+    ia_isp_bxt_statistics_query_results_t results;
 };
 
 struct intel_cca_run_aec_data {
@@ -45,6 +50,12 @@ struct intel_cca_run_aec_data {
 
     uint64_t frameId;
     cca::cca_ae_input_params inParams;
+
+    bool hasStats;
+    cca::cca_stats_params inStatsParams;
+
+    bool hasDecodeStats;
+    intel_cca_decode_stats_data decodeStatsParams;
 
     cca::cca_ae_results results;
 };
@@ -56,7 +67,13 @@ struct intel_cca_run_aiq_data {
     uint64_t frameId;
     cca::cca_aiq_params inParams;
 
-    cca::cca_aiq_results results;
+    cca::cca_aiq_results* results;
+    int32_t aiqResultHandle;
+
+    ia_mkn_trg type;
+
+    cca::cca_mkn* mknResults;
+    int32_t mknResultsHandle;
 };
 
 struct intel_cca_run_ltm_data {
@@ -98,6 +115,7 @@ struct intel_cca_run_aic_data {
 struct intel_cca_get_cmc_data {
     int cameraId;
     TuningMode tuningMode;
+    cca::cca_cpf cpf;
 
     cca::cca_cmc results;
 };
@@ -107,16 +125,6 @@ struct intel_cca_get_aiqd_data {
     TuningMode tuningMode;
 
     cca::cca_aiqd results;
-};
-
-struct intel_cca_mkn_data {
-    int cameraId;
-    TuningMode tuningMode;
-
-    ia_mkn_trg type;
-
-    cca::cca_mkn* results;
-    int32_t resultsHandle;
 };
 
 struct intel_cca_update_tuning_data {
@@ -132,18 +140,6 @@ struct intel_cca_update_tuning_data {
 struct intel_cca_deinit_data {
     int cameraId;
     TuningMode tuningMode;
-};
-
-struct intel_cca_decode_stats_data {
-    int cameraId;
-    TuningMode tuningMode;
-
-    ia_binary_data statsBuffer;
-    int32_t statsHandle;
-    uint32_t bitmap;
-    cca::cca_out_stats outStats;
-
-    ia_isp_bxt_statistics_query_results_t results;
 };
 
 struct intel_cca_get_pal_data_size {

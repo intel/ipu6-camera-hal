@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Intel Corporation.
+ * Copyright (C) 2020-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,6 @@ class IntelCcaServer {
     virtual ~IntelCcaServer();
 
     status_t init(void* pData, int dataSize);
-    status_t setStats(void* pData, int dataSize);
     status_t runAEC(void* pData, int dataSize);
     status_t runAIQ(void* pData, int dataSize);
     status_t runLTM(void* pData, int dataSize);
@@ -38,11 +37,10 @@ class IntelCcaServer {
     status_t runDVS(void* pData, int dataSize);
     status_t runAIC(void* pData, int dataSize);
     status_t getCMC(void* pData, int dataSize);
-    status_t getMKN(void* pData, int dataSize);
     status_t getAiqd(void* pData, int dataSize);
     status_t updateTuning(void* pData, int dataSize);
     status_t deinit(void* pData, int dataSize);
-    status_t decodeStats(void* pData, int dataSize, void* statsAddr);
+    status_t decodeStats(void* pData, void* statsAddr);
     status_t getPalDataSize(void* pData, int dataSize);
 
  private:

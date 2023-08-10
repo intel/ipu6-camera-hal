@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2022 Intel Corporation
+ * Copyright (C) 2018-2023 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,14 +40,21 @@ typedef std::vector<Node*> NodesPtrVector;
 
 namespace icamera {
 
-#ifdef TNR7_CM
 // Stream id associated with video stream.
+#if defined(TNR7_CM) && defined (IPU_SYSVER_ipu6v3)
+// on JSL with tnr7CM
 static const int32_t VIDEO_STREAM_ID = 60006;
 #else
 static const int32_t VIDEO_STREAM_ID = 60001;
 #endif
 // Stream id associated with still capture with gpu tnr.
+#ifdef IPU_SYSVER_ipu6v3
+// on JSL with tnr7CM
 static const int32_t STILL_TNR_STREAM_ID = 60009;
+#else
+// on ADL with tnr7CM or Level0
+static const int32_t STILL_TNR_STREAM_ID = 60013;
+#endif
 // Stream id associated with still capture.
 static const int32_t STILL_STREAM_ID = 60000;
 
@@ -135,6 +142,14 @@ struct PgInfo {
     StageAttr rbmValue;
 };
 
+// DOL_FEATURE_S
+struct DolInfo {
+    DolInfo() : conversionGain(0.0) {}
+    float conversionGain;
+    std::string dolMode;
+};
+// DOL_FEATURE_E
+
 struct MbrInfo {
     MbrInfo() {
         streamId = -1;
@@ -170,6 +185,9 @@ struct GdcInfo {
 struct GraphConfigData {
     int mcId;
     int graphId;
+    // DOL_FEATURE_S
+    DolInfo dolInfo;
+    // DOL_FEATURE_E
     camera_resolution_t csiReso;
     std::vector<GdcInfo> gdcInfos;
     std::vector<int32_t> streamIds;
@@ -208,6 +226,9 @@ class IGraphConfig {
     virtual int getStreamIdByPgName(std::string pgName) = 0;
     virtual int getTuningModeByStreamId(const int32_t streamId) = 0;
     virtual int getPgIdByPgName(std::string pgName) = 0;
+    // DOL_FEATURE_S
+    virtual int getDolInfo(float& gain, std::string& mode) = 0;
+    // DOL_FEATURE_E
     virtual ia_isp_bxt_program_group* getProgramGroup(int32_t streamId) = 0;
     virtual status_t getMBRData(int32_t streamId, ia_isp_bxt_gdc_limits* data) = 0;
     virtual status_t getPgRbmValue(std::string pgName, IGraphType::StageAttr* stageAttr) {

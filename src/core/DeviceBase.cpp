@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2022 Intel Corporation.
+ * Copyright (C) 2018-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -86,7 +86,6 @@ void DeviceBase::closeDevice() {
         AutoMutex l(mBufferLock);
         mPendingBuffers.clear();
         mBuffersInDevice.clear();
-        mAllocatedBuffers.clear();
     }
     mDevice->Close();
 }
@@ -209,9 +208,6 @@ void DeviceBase::resetBuffers() {
 
     mBuffersInDevice.clear();
     mPendingBuffers.clear();
-    for (const auto& buffer : mAllocatedBuffers) {
-        mPendingBuffers.push_back(buffer);
-    }
 }
 
 bool DeviceBase::hasPendingBuffer() {
@@ -436,4 +432,73 @@ bool MainDevice::needQueueBack(shared_ptr<CameraBuffer> buffer) {
     return needSkipFrame;
 }
 
+// DOL_FEATURE_S
+DolCaptureDevice::DolCaptureDevice(int cameraId, VideoNodeType nodeType)
+        : DeviceBase(cameraId, nodeType, INPUT_VIDEO_NODE) {
+    LOG1("<id%d>%s, device:%s", mCameraId, __func__, mName);
+}
+
+DolCaptureDevice::~DolCaptureDevice() {}
+
+int DolCaptureDevice::createBufferPool(const stream_t& config) {
+    LOG1("<id%d>%s, fmt:%s(%dx%d) field:%d", mCameraId, __func__,
+         CameraUtils::pixelCode2String(config.format), config.width, config.height, config.field);
+
+    CheckAndLogError(mPort == INVALID_PORT, NO_MEMORY, "@%s: consumer does not provide DOL buffers",
+                     __func__);
+
+    struct v4l2_format v4l2fmt;
+    v4l2fmt.fmt.pix.width = config.width;
+    v4l2fmt.fmt.pix.height = config.height;
+    v4l2fmt.fmt.pix.pixelformat = config.format;
+    v4l2fmt.fmt.pix.bytesperline = config.width;
+    v4l2fmt.fmt.pix.sizeimage = 0;
+    v4l2fmt.fmt.pix_mp.field = 0;
+
+    v4l2fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    V4L2Format tmpbuf{v4l2fmt};
+    int ret = mDevice->SetFormat(tmpbuf);
+    CheckAndLogError(ret != OK, ret, "set DOL v4l2 format failed ret=%d", ret);
+    v4l2fmt = *tmpbuf.Get();
+
+    std::vector<V4L2Buffer> bufs;
+    int bufNum = mDevice->SetupBuffers(mMaxBufferNumber, false,
+                                       static_cast<enum v4l2_memory>(config.memType), &bufs);
+    CheckAndLogError(bufNum < 0, bufNum, "request DOL buffers failed return=%d", bufNum);
+
+    return OK;
+}
+
+int DolCaptureDevice::onDequeueBuffer(shared_ptr<CameraBuffer> buffer) {
+    if (mNeedSkipFrame) {
+        return OK;  // Do nothing if the buffer needs to be skipped.
+    }
+
+    for (auto& consumer : mConsumers) {
+        consumer->onFrameAvailable(mPort, buffer);
+    }
+
+    dumpFrame(buffer);
+    return OK;
+}
+
+bool DolCaptureDevice::needQueueBack(shared_ptr<CameraBuffer> buffer) {
+    /**
+     * needNotifyBufferDone is used to check if the buffer needs to be returned to its consumer.
+     * It is only true when: 1. ISA raw buffers are queued from its consumer;
+     *                       2. there is no frame needs to be skipped;
+     *                       3. there is no STR2MMIOErr happened.
+     * needNotifyBufferDone is false means the buffer needs to be queued back immediately.
+     */
+    bool needNotifyBufferDone = (mPort != INVALID_PORT);
+    if ((buffer->getV4L2Buffer().Flags() & V4L2_BUF_FLAG_ERROR) &&
+        PlatformData::isSkipFrameOnSTR2MMIOErr(mCameraId)) {
+        needNotifyBufferDone = false;
+    } else if (mFrameSkipNum > 0) {
+        needNotifyBufferDone = false;
+    }
+
+    return !needNotifyBufferDone;
+}
+// DOL_FEATURE_E
 }  // namespace icamera

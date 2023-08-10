@@ -1,0 +1,629 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!-- Copyright (c) 2021 Intel Corporation
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+	limitations under the License.
+	-->
+<graph_settings version="IPU6_SE_JSL_20210408.0.1.0.247.1.2021.5.27.21.7.34">
+<sensor_modes sensor_name="ov13858" csi_port="0" metadata="0" interlaced="0" bayer_order="GRBG">
+    <available_bit_per_pixel>
+        <bpp value="10"/>
+    </available_bit_per_pixel>
+    <pll_configs>
+        <pll_config bpp="0" pixel_rate_csi="0" pixel_rate="0" id="0"/>
+    </pll_configs>
+    <sensor_mode name="4:3" id="0" width="4096" height="3072" fps="30" min_llp="0" min_fll="0" min_fps="0" max_out_width="4096" max_out_height="3072" bpp="10" sensor_type="BAYER" pdaf_type="PDAFNone" flip_h="0" flip_v="0" conversion_gain="1" dol_mode="NoDol">
+        <pixel_array>
+            <input width="4096" height="3072" left="0" top="0"/>
+            <output width="4096" height="3072" left="0" top="0"/>
+        </pixel_array>
+        <binner h_factor="1" v_factor="1">
+            <input width="4096" height="3072" left="0" top="0"/>
+            <output width="4096" height="3072" left="0" top="0"/>
+        </binner>
+        <scaler num_factor="1" denom_factor="1">
+            <input width="4096" height="3072" left="0" top="0"/>
+            <output width="4096" height="3072" left="0" top="0"/>
+        </scaler>
+        <pdaf width="0" height="0"/>
+    </sensor_mode>
+    <!--
+    <sensor_mode name="16:9" id="1" width="3844" height="2182" fps="30" min_llp="0" min_fll="0" min_fps="0" max_out_width="3844" max_out_height="2182" bpp="10" sensor_type="BAYER" pdaf_type="PDAFNone" flip_h="0" flip_v="0" conversion_gain="1" dol_mode="NoDol">
+        <pixel_array>
+            <input width="4096" height="3072" left="0" top="0"/>
+            <output width="3844" height="2182" left="126" top="444"/>
+        </pixel_array>
+        <binner h_factor="1" v_factor="1">
+            <input width="3844" height="2182" left="0" top="0"/>
+            <output width="3844" height="2182" left="0" top="0"/>
+        </binner>
+        <scaler num_factor="1" denom_factor="1">
+            <input width="3844" height="2182" left="0" top="0"/>
+            <output width="3844" height="2182" left="0" top="0"/>
+        </scaler>
+        <pdaf width="0" height="0"/>
+    </sensor_mode>
+    -->
+    <!--
+    <sensor_mode name="1080p60" id="2" width="2048" height="1152" fps="60" min_llp="0" min_fll="0" min_fps="0" max_out_width="2048" max_out_height="1152" bpp="10" sensor_type="BAYER" pdaf_type="PDAFNone" flip_h="0" flip_v="0" conversion_gain="1" dol_mode="NoDol">
+        <pixel_array>
+            <input width="4096" height="3072" left="0" top="0"/>
+            <output width="4096" height="2304" left="0" top="384"/>
+        </pixel_array>
+        <binner h_factor="2" v_factor="2">
+            <input width="4096" height="2304" left="0" top="0"/>
+            <output width="2048" height="1152" left="0" top="0"/>
+        </binner>
+        <scaler num_factor="1" denom_factor="1">
+            <input width="2048" height="1152" left="0" top="0"/>
+            <output width="2048" height="1152" left="0" top="0"/>
+        </scaler>
+        <pdaf width="0" height="0"/>
+    </sensor_mode>
+    <sensor_mode name="720p120" id="3" width="1364" height="768" fps="120" min_llp="0" min_fll="0" min_fps="0" max_out_width="1364" max_out_height="768" bpp="10" sensor_type="BAYER" pdaf_type="PDAFNone" flip_h="0" flip_v="0" conversion_gain="1" dol_mode="NoDol">
+        <pixel_array>
+            <input width="4096" height="3072" left="0" top="0"/>
+            <output width="2728" height="1536" left="684" top="768"/>
+        </pixel_array>
+        <binner h_factor="2" v_factor="2">
+            <input width="2728" height="1536" left="0" top="0"/>
+            <output width="1364" height="768" left="0" top="0"/>
+        </binner>
+        <scaler num_factor="1" denom_factor="1">
+            <input width="1364" height="768" left="0" top="0"/>
+            <output width="1364" height="768" left="0" top="0"/>
+        </scaler>
+        <pdaf width="0" height="0"/>
+    </sensor_mode>
+    -->
+</sensor_modes>
+
+<selected_resolutions>
+  <FPS value="30">
+    <sensor>
+      <resolution width="3844" height="2182" />
+      <resolution width="4096" height="3072" />
+    </sensor>
+    <isys_cropped_output>
+	<resolution width="640" height="360" />
+	<resolution width="640" height="480" />
+	<resolution width="1280" height="720" />
+	<resolution width="1280" height="960" />
+	<resolution width="1920" height="1080" />
+    </isys_cropped_output>
+    <preview>
+      <resolution width="640" height="360" />
+      <resolution width="640" height="480" />
+      <resolution width="1280" height="720" />
+      <resolution width="1280" height="960" />
+      <resolution width="1920" height="1080" />
+    </preview>
+    <video>
+      <resolution width="640" height="360" />
+      <resolution width="640" height="480" />
+      <resolution width="1280" height="720" />
+      <resolution width="1920" height="1080" />
+      <resolution width="1280" height="960" />
+    </video>
+    <stills>
+      <resolution width="3840" height="2160" />
+      <resolution width="3712" height="2784" />
+      <resolution width="4096" height="3072" />
+    </stills>
+    <raw>
+      <resolution width="4096" height="3072" />
+      <resolution width="3844" height="2182" />
+    </raw>
+  </FPS>
+<!--
+  <FPS value="60">
+    <sensor>
+      <resolution width="2048" height="1152" />
+    </sensor>
+    <isys_cropped_output>
+      <resolution width="1920" height="1080" />
+    </isys_cropped_output>
+    <preview>
+      <resolution width="1920" height="1080" />
+    </preview>
+    <video>
+      <resolution width="1920" height="1080" />
+    </video>
+    <stills />
+    <raw>
+      <resolution width="2048" height="1152" />
+    </raw>
+  </FPS>
+  <FPS value="120">
+    <sensor>
+      <resolution width="1364" height="768" />
+    </sensor>
+    <isys_cropped_output>
+      <resolution width="1280" height="720" />
+    </isys_cropped_output>
+    <preview>
+      <resolution width="1280" height="720" />
+    </preview>
+    <video>
+      <resolution width="1280" height="720" />
+    </video>
+    <stills />
+    <raw>
+      <resolution width="1364" height="768" />
+    </raw>
+</FPS>
+-->
+</selected_resolutions>
+<!--
+<settings key="8000" id="100000" active_outputs="1" dvs="0" power_factor="0" fps="30" flow="HighPerformance" flip_v="0" flip_h="0" pdaf_type="0">
+  <video0 width="640" height="360" stream_id="60001" bpp="8" format="Linear" />
+  <sensor vflip="0" hflip="0" mode_id="16:9">
+            <port_0 format="BG10" width="3844" height="2182" />
+        </sensor>
+  <csi_be>
+    <output format="GR10" width="3844" height="2182" />
+    <stream2mmio>
+      <input width="3844" height="2182" top="0" left="0" bottom="0" right="0" />
+      <output width="3844" height="2182" top="0" left="0" bottom="0" right="0" />
+    </stream2mmio>
+    <tuning_mode value="0" />
+  </csi_be>
+  <isa_video>
+    <ds0 format="YUV420_8_SP" width="640" height="360" peer="video0" />
+    <b2i_ds_1_0_0>
+      <input width="3840" height="2180" top="0" left="0" bottom="0" right="0" />
+      <output width="640" height="362" top="0" left="0" bottom="0" right="0" />
+    </b2i_ds_1_0_0>
+    <pixelformatter>
+      <input width="3844" height="2182" top="2" left="2" bottom="0" right="2" />
+      <output width="3840" height="2180" top="0" left="0" bottom="0" right="0" />
+    </pixelformatter>
+    <pxl_crop_yuv_a>
+      <input width="640" height="362" top="0" left="0" bottom="2" right="0" />
+      <output width="640" height="360" top="0" left="0" bottom="0" right="0" />
+    </pxl_crop_yuv_a>
+    <padder_yuv_a>
+      <input width="640" height="362" top="0" left="0" bottom="0" right="0" />
+      <output width="640" height="362" top="0" left="0" bottom="0" right="0" />
+    </padder_yuv_a>
+    <tuning_mode value="0" />
+  </isa_video>
+</settings>
+-->
+<!-- fake 8000 by manual -->
+<settings key="8000" id="100000" active_outputs="1" dvs="0" power_factor="0" fps="30" flow="HighPerformance" flip_v="0" flip_h="0" pdaf_type="0">
+  <video0 width="640" height="360" stream_id="60001" bpp="8" format="Linear" />
+  <sensor vflip="0" hflip="0" mode_id="4:3">
+            <port_0 format="BG10" width="4096" height="3072" />
+        </sensor>
+  <csi_be>
+    <output format="GR10" width="4096" height="3072" />
+    <stream2mmio>
+      <input width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+      <output width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+    </stream2mmio>
+    <tuning_mode value="0" />
+  </csi_be>
+  <isa_video>
+    <ds0 format="YUV420_8_SP" width="640" height="360" peer="video0" />
+    <b2i_ds_1_0_0>
+      <input width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+      <output width="640" height="360" top="0" left="0" bottom="0" right="0" />
+    </b2i_ds_1_0_0>
+    <pixelformatter>
+      <input width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+      <output width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+    </pixelformatter>
+    <pxl_crop_yuv_a>
+      <input width="640" height="360" top="0" left="0" bottom="0" right="0" />
+      <output width="640" height="360" top="0" left="0" bottom="0" right="0" />
+    </pxl_crop_yuv_a>
+    <padder_yuv_a>
+      <input width="640" height="360" top="0" left="0" bottom="0" right="0" />
+      <output width="640" height="360" top="0" left="0" bottom="0" right="0" />
+    </padder_yuv_a>
+    <tuning_mode value="0" />
+  </isa_video>
+</settings>
+<settings key="8002" id="100000" active_outputs="1" dvs="0" power_factor="0" fps="30" flow="HighPerformance" flip_v="0" flip_h="0" pdaf_type="0">
+  <video0 width="640" height="480" stream_id="60001" bpp="8" format="Linear" />
+  <sensor vflip="0" hflip="0" mode_id="4:3">
+            <port_0 format="BG10" width="4096" height="3072" />
+        </sensor>
+  <csi_be>
+    <output format="GR10" width="4096" height="3072" />
+    <stream2mmio>
+      <input width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+      <output width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+    </stream2mmio>
+    <tuning_mode value="0" />
+  </csi_be>
+  <isa_video>
+    <ds0 format="YUV420_8_SP" width="640" height="480" peer="video0" />
+    <b2i_ds_1_0_0>
+      <input width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+      <output width="640" height="480" top="0" left="0" bottom="0" right="0" />
+    </b2i_ds_1_0_0>
+    <pixelformatter>
+      <input width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+      <output width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+    </pixelformatter>
+    <pxl_crop_yuv_a>
+      <input width="640" height="480" top="0" left="0" bottom="0" right="0" />
+      <output width="640" height="480" top="0" left="0" bottom="0" right="0" />
+    </pxl_crop_yuv_a>
+    <padder_yuv_a>
+      <input width="640" height="480" top="0" left="0" bottom="0" right="0" />
+      <output width="640" height="480" top="0" left="0" bottom="0" right="0" />
+    </padder_yuv_a>
+    <tuning_mode value="0" />
+  </isa_video>
+</settings>
+<settings key="8007" id="100000" active_outputs="1" dvs="0" power_factor="0" fps="30" flow="HighPerformance" flip_v="0" flip_h="0" pdaf_type="0">
+  <video0 width="1280" height="960" stream_id="60001" bpp="8" format="Linear" />
+  <sensor vflip="0" hflip="0" mode_id="4:3">
+            <port_0 format="BG10" width="4096" height="3072" />
+        </sensor>
+  <csi_be>
+    <output format="GR10" width="4096" height="3072" />
+    <stream2mmio>
+      <input width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+      <output width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+    </stream2mmio>
+    <tuning_mode value="0" />
+  </csi_be>
+  <isa_video>
+    <ds0 format="YUV420_8_SP" width="1280" height="960" peer="video0" />
+    <b2i_ds_1_0_0>
+      <input width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+      <output width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+    </b2i_ds_1_0_0>
+    <pixelformatter>
+      <input width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+      <output width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+    </pixelformatter>
+    <pxl_crop_yuv_a>
+      <input width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+      <output width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+    </pxl_crop_yuv_a>
+    <padder_yuv_a>
+      <input width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+      <output width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+    </padder_yuv_a>
+    <tuning_mode value="0" />
+  </isa_video>
+</settings>
+<settings key="8028" id="100000" active_outputs="1" dvs="0" power_factor="0" fps="30" flow="HighPerformance" flip_v="0" flip_h="0" pdaf_type="0">
+  <!--            <video1 width="640" height="480" stream_id="60001" bpp="8" format="Linear" />-->
+  <video0 width="1280" height="720" stream_id="60001" bpp="8" format="Linear" />
+  <sensor vflip="0" hflip="0" mode_id="4:3">
+            <port_0 format="BG10" width="4096" height="3072" />
+        </sensor>
+  <csi_be>
+    <output format="GR10" width="4096" height="3072" />
+    <stream2mmio>
+      <input width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+      <output width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+    </stream2mmio>
+    <tuning_mode value="0" />
+  </csi_be>
+  <isa_video>
+    <ds0 format="YUV420_8_SP" width="1280" height="720" peer="video0" />
+    <ds1 format="YUV420_8_SP" width="640" height="480" peer="video1" />
+    <padder_yuv_b>
+      <input width="640" height="480" top="0" left="0" bottom="0" right="0" />
+      <output width="640" height="480" top="0" left="0" bottom="0" right="0" />
+    </padder_yuv_b>
+    <b2i_ds_1_0_1>
+      <input width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+      <output width="640" height="480" top="0" left="0" bottom="0" right="0" />
+    </b2i_ds_1_0_1>
+    <b2i_ds_1_0_0>
+      <input width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+      <output width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+    </b2i_ds_1_0_0>
+    <pixelformatter>
+      <input width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+      <output width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+    </pixelformatter>
+    <pxl_crop_yuv_b>
+      <input width="640" height="480" top="0" left="0" bottom="0" right="0" />
+      <output width="640" height="480" top="0" left="0" bottom="0" right="0" />
+    </pxl_crop_yuv_b>
+    <pxl_crop_yuv_a>
+      <input width="1280" height="960" top="120" left="0" bottom="120" right="0" />
+      <output width="1280" height="720" top="0" left="0" bottom="0" right="0" />
+    </pxl_crop_yuv_a>
+    <padder_yuv_a>
+      <input width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+      <output width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+    </padder_yuv_a>
+    <tuning_mode value="0" />
+  </isa_video>
+</settings>
+<settings key="8045" id="100000" active_outputs="1" dvs="0" power_factor="0" fps="30" flow="HighPerformance" flip_v="0" flip_h="0" pdaf_type="0">
+  <!--  <video1 width="1280" height="960" stream_id="60001" bpp="8" format="Linear" />-->
+  <video0 width="1920" height="1080" stream_id="60001" bpp="8" format="Linear" />
+  <sensor vflip="0" hflip="0" mode_id="4:3">
+            <port_0 format="BG10" width="4096" height="3072" />
+        </sensor>
+  <csi_be>
+    <output format="GR10" width="4096" height="3072" />
+    <stream2mmio>
+      <input width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+      <output width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+    </stream2mmio>
+    <tuning_mode value="0" />
+  </csi_be>
+  <isa_video>
+    <ds0 format="YUV420_8_SP" width="1920" height="1080" peer="video0" />
+    <!-- <ds1 format="YUV420_8_SP" width="1280" height="960" peer="video1" /> -->
+    <padder_yuv_b>
+      <input width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+      <output width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+    </padder_yuv_b>
+    <b2i_ds_1_0_1>
+      <input width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+      <output width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+    </b2i_ds_1_0_1>
+    <b2i_ds_1_0_0>
+      <input width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+      <output width="1920" height="1440" top="0" left="0" bottom="0" right="0" />
+    </b2i_ds_1_0_0>
+    <pixelformatter>
+      <input width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+      <output width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+    </pixelformatter>
+    <pxl_crop_yuv_b>
+      <input width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+      <output width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+    </pxl_crop_yuv_b>
+    <pxl_crop_yuv_a>
+      <input width="1920" height="1440" top="180" left="0" bottom="180" right="0" />
+      <output width="1920" height="1080" top="0" left="0" bottom="0" right="0" />
+    </pxl_crop_yuv_a>
+    <padder_yuv_a>
+      <input width="1920" height="1440" top="0" left="0" bottom="0" right="0" />
+      <output width="1920" height="1440" top="0" left="0" bottom="0" right="0" />
+    </padder_yuv_a>
+    <tuning_mode value="0" />
+  </isa_video>
+</settings>
+<!-- 8046 hand created video and still -->
+<settings key="8046" id="100000" active_outputs="1" dvs="0" power_factor="0" fps="30" flow="HighPerformance" flip_v="0" flip_h="0" pdaf_type="0">
+  <video0 width="1920" height="1080" stream_id="60001" bpp="8" format="Linear" />
+  <still0 width="4096" height="3072" stream_id="60000" bpp="8" format="Linear" />
+  <sensor vflip="0" hflip="0" mode_id="4:3">
+            <port_0 format="BG10" width="4096" height="3072" />
+        </sensor>
+  <csi_be>
+    <output format="GR10" width="4096" height="3072" />
+    <stream2mmio>
+      <input width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+      <output width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+    </stream2mmio>
+    <tuning_mode value="0" />
+  </csi_be>
+  <isa_video>
+    <ds0 format="YUV420_8_SP" width="1920" height="1080" peer="video0" />
+    <padder_yuv_b>
+      <input width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+      <output width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+    </padder_yuv_b>
+    <b2i_ds_1_0_1>
+      <input width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+      <output width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+    </b2i_ds_1_0_1>
+    <b2i_ds_1_0_0>
+      <input width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+      <output width="1920" height="1440" top="0" left="0" bottom="0" right="0" />
+    </b2i_ds_1_0_0>
+    <pixelformatter>
+      <input width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+      <output width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+    </pixelformatter>
+    <pxl_crop_yuv_b>
+      <input width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+      <output width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+    </pxl_crop_yuv_b>
+    <pxl_crop_yuv_a>
+      <input width="1920" height="1440" top="180" left="0" bottom="180" right="0" />
+      <output width="1920" height="1080" top="0" left="0" bottom="0" right="0" />
+    </pxl_crop_yuv_a>
+    <padder_yuv_a>
+      <input width="1920" height="1440" top="0" left="0" bottom="0" right="0" />
+      <output width="1920" height="1440" top="0" left="0" bottom="0" right="0" />
+    </padder_yuv_a>
+    <tuning_mode value="0" />
+  </isa_video>
+  <isa_stills>
+    <ds0 format="YUV420_8_SP" width="4096" height="3072" peer="still0" />
+    <ds1 format="YUV420_8_SP" width="512" height="384" peer="still1" />
+    <padder_yuv_b>
+      <input width="512" height="384" top="0" left="0" bottom="0" right="0" />
+      <output width="512" height="384" top="0" left="0" bottom="0" right="0" />
+    </padder_yuv_b>
+    <b2i_ds_1_0_1>
+      <input width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+      <output width="512" height="384" top="0" left="0" bottom="0" right="0" />
+    </b2i_ds_1_0_1>-->
+    <b2i_ds_1_0_0>
+      <input width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+      <output width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+    </b2i_ds_1_0_0>
+    <pixelformatter>
+      <input width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+      <output width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+    </pixelformatter>
+    <pxl_crop_yuv_b>
+      <input width="512" height="384" top="0" left="0" bottom="0" right="0" />
+      <output width="512" height="384" top="0" left="0" bottom="0" right="0" />
+    </pxl_crop_yuv_b>
+    <pxl_crop_yuv_a>
+      <input width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+      <output width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+    </pxl_crop_yuv_a>
+    <padder_yuv_a>
+      <input width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+      <output width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+    </padder_yuv_a>
+    <tuning_mode value="0" />
+  </isa_stills>
+</settings>
+
+<settings key="8072" id="100000" active_outputs="1" dvs="0" power_factor="0" fps="30" flow="HighPerformance" flip_v="0" flip_h="0" pdaf_type="0" golden="true" >
+  <still0 width="4096" height="3072" stream_id="60000" bpp="8" format="Linear" />
+  <!-- <still1 width="512" height="384" stream_id="60000" bpp="8" format="Linear" />-->
+  <sensor vflip="0" hflip="0" mode_id="4:3">
+            <port_0 format="BG10" width="4096" height="3072" />
+        </sensor>
+  <csi_be>
+    <output format="GR10" width="4096" height="3072" />
+    <stream2mmio>
+      <input width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+      <output width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+    </stream2mmio>
+    <tuning_mode value="0" />
+  </csi_be>
+  <isa_stills>
+    <ds0 format="YUV420_8_SP" width="4096" height="3072" peer="still0" />
+    <ds1 format="YUV420_8_SP" width="512" height="384" peer="still1" />
+    <padder_yuv_b>
+      <input width="512" height="384" top="0" left="0" bottom="0" right="0" />
+      <output width="512" height="384" top="0" left="0" bottom="0" right="0" />
+    </padder_yuv_b>
+    <b2i_ds_1_0_1>
+      <input width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+      <output width="512" height="384" top="0" left="0" bottom="0" right="0" />
+    </b2i_ds_1_0_1>-->
+    <b2i_ds_1_0_0>
+      <input width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+      <output width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+    </b2i_ds_1_0_0>
+    <pixelformatter>
+      <input width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+      <output width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+    </pixelformatter>
+    <pxl_crop_yuv_b>
+      <input width="512" height="384" top="0" left="0" bottom="0" right="0" />
+      <output width="512" height="384" top="0" left="0" bottom="0" right="0" />
+    </pxl_crop_yuv_b>
+    <pxl_crop_yuv_a>
+      <input width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+      <output width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+    </pxl_crop_yuv_a>
+    <padder_yuv_a>
+      <input width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+      <output width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+    </padder_yuv_a>
+    <tuning_mode value="0" />
+  </isa_stills>
+</settings>
+<settings key="8070" id="100000" active_outputs="1" dvs="0" power_factor="0" fps="30" flow="HighPerformance" flip_v="0" flip_h="0" pdaf_type="0" >
+  <!--<still1 width="512" height="384" stream_id="60000" bpp="8" format="Linear" />-->
+  <still0 width="3712" height="2784" stream_id="60000" bpp="8" format="Linear" />
+  <sensor vflip="0" hflip="0" mode_id="4:3">
+            <port_0 format="BG10" width="4096" height="3072" />
+        </sensor>
+  <csi_be>
+    <output format="GR10" width="4096" height="3072" />
+    <stream2mmio>
+      <input width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+      <output width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+    </stream2mmio>
+    <tuning_mode value="0" />
+  </csi_be>
+  <isa_stills>
+    <ds0 format="YUV420_8_SP" width="3712" height="2784" peer="still0" />
+    <ds1 format="YUV420_8_SP" width="512" height="384" peer="still1" />
+    <padder_yuv_b>
+      <input width="512" height="384" top="0" left="0" bottom="0" right="0" />
+      <output width="512" height="384" top="0" left="0" bottom="0" right="0" />
+    </padder_yuv_b>
+    <b2i_ds_1_0_1>
+      <input width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+      <output width="512" height="384" top="0" left="0" bottom="0" right="0" />
+    </b2i_ds_1_0_1>
+    <b2i_ds_1_0_0>
+      <input width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+      <output width="3712" height="2784" top="0" left="0" bottom="0" right="0" />
+    </b2i_ds_1_0_0>
+    <pixelformatter>
+      <input width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+      <output width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+    </pixelformatter>
+    <pxl_crop_yuv_b>
+      <input width="512" height="384" top="0" left="0" bottom="0" right="0" />
+      <output width="512" height="384" top="0" left="0" bottom="0" right="0" />
+    </pxl_crop_yuv_b>
+    <pxl_crop_yuv_a>
+      <input width="3712" height="2784" top="0" left="0" bottom="0" right="0" />
+      <output width="3712" height="2784" top="0" left="0" bottom="0" right="0" />
+    </pxl_crop_yuv_a>
+    <padder_yuv_a>
+      <input width="3712" height="2784" top="0" left="0" bottom="0" right="0" />
+      <output width="3712" height="2784" top="0" left="0" bottom="0" right="0" />
+    </padder_yuv_a>
+    <tuning_mode value="0" />
+  </isa_stills>
+</settings>
+<!--16:9 -> 4:3 still graph settings -->
+<settings key="8304" id="100000" active_outputs="1" dvs="0" power_factor="1" fps="30" flow="HighPerformance" flip_v="0" flip_h="0" pdaf_type="0" golden="true"  >
+  <!--<still1 width="512" height="288" stream_id="60000" bpp="8" format="Linear" />-->
+  <still0 width="3840" height="2160" stream_id="60000" bpp="8" format="Linear" />
+  <sensor vflip="0" hflip="0" mode_id="4:3">
+            <port_0 format="BG10" width="4096" height="3072" />
+        </sensor>
+  <csi_be>
+    <output format="GR10" width="4096" height="3072" />
+    <stream2mmio>
+      <input width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+      <output width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+    </stream2mmio>
+    <tuning_mode value="0" />
+  </csi_be>
+  <isa_stills>
+    <ds0 format="YUV420_8_SP" width="3840" height="2160" peer="still0" />
+    <ds1 format="YUV420_8_SP" width="512" height="288" peer="still1" />
+    <padder_yuv_b>
+      <input width="512" height="384" top="0" left="0" bottom="0" right="0" />
+      <output width="512" height="384" top="0" left="0" bottom="0" right="0" />
+    </padder_yuv_b>
+    <b2i_ds_1_0_1>
+      <input width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+      <output width="512" height="384" top="0" left="0" bottom="0" right="0" />
+    </b2i_ds_1_0_1>
+    <b2i_ds_1_0_0>
+      <input width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+      <output width="3840" height="2880" top="0" left="0" bottom="0" right="0" />
+    </b2i_ds_1_0_0>
+    <pixelformatter>
+      <input width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+      <output width="4096" height="3072" top="0" left="0" bottom="0" right="0" />
+    </pixelformatter>
+    <pxl_crop_yuv_b>
+      <input width="512" height="384" top="48" left="0" bottom="48" right="0" />
+      <output width="512" height="288" top="0" left="0" bottom="0" right="0" />
+    </pxl_crop_yuv_b>
+    <pxl_crop_yuv_a>
+      <input width="3840" height="2880" top="360" left="0" bottom="360" right="0" />
+      <output width="3840" height="2160" top="0" left="0" bottom="0" right="0" />
+    </pxl_crop_yuv_a>
+    <padder_yuv_a>
+      <input width="3840" height="2880" top="0" left="0" bottom="0" right="0" />
+      <output width="3840" height="2880" top="0" left="0" bottom="0" right="0" />
+    </padder_yuv_a>
+    <tuning_mode value="0" />
+  </isa_stills>
+</settings>
+</graph_settings>
+

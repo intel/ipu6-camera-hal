@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Intel Corporation.
+ * Copyright (C) 2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -161,7 +161,7 @@
 #define IA_CSS_TRACE_DYNAMIC_DECLARE(module) \
     IA_CSS_TRACE_DYNAMIC_DECLARE_IMPL(module)
 /**
-* Declares the configuration function for the dynamic api seperatly, if one
+* Declares the configuration function for the dynamic api separately, if one
 * wants to use it.
 */
 #define IA_CSS_TRACE_DYNAMIC_DECLARE_CONFIG_FUNC(module) \
@@ -178,7 +178,7 @@
 #define IA_CSS_TRACE_DYNAMIC_DEFINE(module) \
     IA_CSS_TRACE_DYNAMIC_DEFINE_IMPL(module)
 /**
-* Defines the configuration function for the dynamic api seperatly, if one
+* Defines the configuration function for the dynamic api separately, if one
 * wants to use it.
 */
 #define IA_CSS_TRACE_DYNAMIC_DEFINE_CONFIG_FUNC(module) \

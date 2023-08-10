@@ -122,7 +122,7 @@ ia_err IntelCca::runAEC(uint64_t frameId, const cca::cca_ae_input_params& params
 }
 
 ia_err IntelCca::runAIQ(uint64_t frameId, const cca::cca_aiq_params& params,
-                        cca::cca_aiq_results* results) {
+                        cca::cca_aiq_results* results, camera_makernote_mode_t mode) {
     CheckAndLogError(!results, ia_err_argument, "@%s, results is nullptr", __func__);
 
     ia_err ret = getIntelCCA()->runAIQ(frameId, params, results);
@@ -134,6 +134,14 @@ ia_err IntelCca::runAIQ(uint64_t frameId, const cca::cca_aiq_params& params,
 ia_err IntelCca::runLTM(uint64_t frameId, const cca::cca_ltm_input_params& params) {
     ia_err ret = getIntelCCA()->runLTM(frameId, params);
     LOG2("@%s, frameId: %u, ret:%d", __func__, frameId, ret);
+
+    return ret;
+}
+
+ia_err IntelCca::reconfigDvs(const cca::cca_dvs_init_param& dvsInitParam,
+                             const cca::cca_gdc_configurations& gdcConfigs) {
+    ia_err ret = getIntelCCA()->reconfigDvs(dvsInitParam, gdcConfigs);
+    LOG2("@%s, ret:%d", __func__, ret);
 
     return ret;
 }
@@ -157,7 +165,8 @@ ia_err IntelCca::runAIC(uint64_t frameId, const cca::cca_pal_input_params* param
     CheckAndLogError(!params, ia_err_argument, "@%s, params is nullptr", __func__);
     CheckAndLogError(!pal, ia_err_argument, "@%s, pal is nullptr", __func__);
 
-    ia_err ret = getIntelCCA()->runAIC(frameId, *params, pal);
+    // Currently the aicId is same as stream_id
+    ia_err ret = getIntelCCA()->runAIC(frameId, *params, pal, params->stream_id);
 
     // if PAL doesn't run, set output size to 0
     if (ret == ia_err_not_run) pal->size = 0;
@@ -167,10 +176,10 @@ ia_err IntelCca::runAIC(uint64_t frameId, const cca::cca_pal_input_params* param
     return ret;
 }
 
-ia_err IntelCca::getCMC(cca::cca_cmc* cmc) {
+ia_err IntelCca::getCMC(cca::cca_cmc* cmc, const cca::cca_cpf* cpf) {
     CheckAndLogError(!cmc, ia_err_argument, "@%s, cmc is nullptr", __func__);
 
-    ia_err ret = getIntelCCA()->getCMC(*cmc);
+    ia_err ret = getIntelCCA()->getCMC(*cmc, cpf);
     LOG2("@%s, ret:%d", __func__, ret);
 
     return ret;
@@ -286,11 +295,15 @@ void IntelCca::deinit() {
 ia_err IntelCca::decodeStats(uint64_t statsPointer, uint32_t statsSize, uint32_t bitmap,
                              ia_isp_bxt_statistics_query_results_t* results,
                              cca::cca_out_stats* outStats) {
-    CheckAndLogError(!results, ia_err_argument, "@%s, results is nullptr", __func__);
+    ia_isp_bxt_statistics_query_results_t resultsTmp = {};
+    ia_isp_bxt_statistics_query_results_t* query = results ? results : &resultsTmp;
 
-    ia_err ret = getIntelCCA()->decodeStats(statsPointer, statsSize, bitmap, results, outStats);
+    ia_err ret = getIntelCCA()->decodeStats(statsPointer, statsSize, bitmap, query, outStats);
     LOG2("@%s, statsPointer: 0x%lu, statsSize:%d, bitmap:%x, ret: %d", __func__, statsPointer,
          statsSize, bitmap, ret);
+
+    LOG2("%s, query results: rgbs_grid(%d), af_grid(%d), dvs_stats(%d), paf_grid(%d)", __func__,
+         query->rgbs_grid, query->af_grid, query->dvs_stats, query->paf_grid);
 
     return ret;
 }

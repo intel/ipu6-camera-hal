@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Corporation.
+ * Copyright (C) 2015-2023 Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@
 #include "V4l2DeviceFactory.h"
 
 #include <fcntl.h>
+
+#include <string>
 
 #include "iutils/CameraLog.h"
 
@@ -67,6 +69,7 @@ void V4l2DeviceFactory::releaseDeviceFactory(int cameraId) {
  * Return a not nullptr sub device pointer
  */
 V4L2Subdevice* V4l2DeviceFactory::getSubDev(int cameraId, const std::string& devName) {
+    LOG2("<id%d> @%s, sub device name: %s", cameraId, __func__, devName.c_str());
     AutoMutex lock(sLock);
     V4l2DeviceFactory* factory = getInstance(cameraId);
     // If an existing sub device found, then just return it.
@@ -82,6 +85,27 @@ V4L2Subdevice* V4l2DeviceFactory::getSubDev(int cameraId, const std::string& dev
     // Add the new allocated sub device into device map.
     factory->mDevices[devName] = subdev;
     return subdev;
+}
+
+/**
+ * Close the sub device and release it in the device map
+ *
+ * It MUST be called after this sub device is not used anymore
+ */
+void V4l2DeviceFactory::releaseSubDev(int cameraId, const std::string& devName) {
+    LOG2("<id%d> @%s, sub device name: %s", cameraId, __func__, devName.c_str());
+    AutoMutex lock(sLock);
+    V4l2DeviceFactory* factory = getInstance(cameraId);
+
+    if (factory->mDevices.find(devName) != factory->mDevices.end()) {
+        V4L2Subdevice* subdev = factory->mDevices[devName];
+        if (subdev) {
+            subdev->Close();
+            delete subdev;
+        }
+
+        factory->mDevices.erase(devName);
+    }
 }
 
 /**

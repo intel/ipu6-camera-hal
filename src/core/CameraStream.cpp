@@ -140,6 +140,7 @@ void CameraStream::setBufferProducer(BufferProducer* producer) {
     if (producer != nullptr) producer->addFrameAvailableListener(this);
 }
 
+// PRIVACY_MODE_S
 shared_ptr<CameraBuffer> CameraStream::getPrivacyBuffer() {
     AutoMutex l(mBufferPoolLock);
     shared_ptr<CameraBuffer> buf = nullptr;
@@ -149,24 +150,9 @@ shared_ptr<CameraBuffer> CameraStream::getPrivacyBuffer() {
     }
     return buf;
 }
+// PRIVACY_MODE_E
 
 int CameraStream::onFrameAvailable(Port port, const shared_ptr<CameraBuffer>& camBuffer) {
-    if (mPort != port) return OK;
-    if (camBuffer->getStreamId() != mStreamId) return OK;
-    std::shared_ptr<CameraBuffer> buf;
-    {
-        AutoMutex l(mBufferPoolLock);
-        mPrivacyBuffer.push(camBuffer);
-        if (mPrivacyBuffer.size() <= 1) {
-            return OK;
-        }
-        buf = mPrivacyBuffer.front();
-        mPrivacyBuffer.pop();
-    }
-    return doFrameAvailable(port, buf);
-}
-
-int CameraStream::doFrameAvailable(Port port, const shared_ptr<CameraBuffer>& camBuffer) {
     // Ignore if the buffer is not for this stream.
     if (mPort != port) return OK;
     if (camBuffer->getStreamId() != mStreamId) return OK;
@@ -174,6 +160,21 @@ int CameraStream::doFrameAvailable(Port port, const shared_ptr<CameraBuffer>& ca
     LOG2("<id%d>@%s: mStreamId:%d, CameraBuffer:%p for port:%d", mCameraId, __func__, mStreamId,
          camBuffer.get(), port);
 
+    std::shared_ptr<CameraBuffer> buf = camBuffer;
+    // PRIVACY_MODE_S
+    if (PlatformData::getSupportPrivacy(mCameraId) != NO_PRIVACY_MODE) {
+        AutoMutex l(mBufferPoolLock);
+        mPrivacyBuffer.push(camBuffer);
+        if (mPrivacyBuffer.size() <= 1) return OK;
+
+        buf = mPrivacyBuffer.front();
+        mPrivacyBuffer.pop();
+    }
+    // PRIVACY_MODE_E
+    return doFrameAvailable(port, buf);
+}
+
+int CameraStream::doFrameAvailable(Port port, const shared_ptr<CameraBuffer>& camBuffer) {
     // Update the user buffer info before return back
     camBuffer->updateUserBuffer();
 
@@ -201,5 +202,4 @@ int CameraStream::doFrameAvailable(Port port, const shared_ptr<CameraBuffer>& ca
 
     return OK;
 }
-
 }  // namespace icamera

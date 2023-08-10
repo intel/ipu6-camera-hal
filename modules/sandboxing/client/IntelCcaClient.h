@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Intel Corporation.
+ * Copyright (C) 2020-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ class IntelCca {
     ia_err runAEC(uint64_t frameId, const cca::cca_ae_input_params& params,
                   cca::cca_ae_results* results);
     ia_err runAIQ(uint64_t frameId, const cca::cca_aiq_params& params,
-                  cca::cca_aiq_results* results);
+                  cca::cca_aiq_results* results, camera_makernote_mode_t mode = MAKERNOTE_MODE_OFF);
 
     ia_err runLTM(uint64_t frameId, const cca::cca_ltm_input_params& params);
 
@@ -53,7 +53,7 @@ class IntelCca {
 
     ia_err runAIC(uint64_t frameId, cca::cca_pal_input_params* params, ia_binary_data* pal);
 
-    ia_err getCMC(cca::cca_cmc* cmc);
+    ia_err getCMC(cca::cca_cmc* cmc, const cca::cca_cpf* cpf = nullptr);
     ia_err getMKN(ia_mkn_trg type, cca::cca_mkn* mkn);
     ia_err getAiqd(cca::cca_aiqd* aiqd);
     ia_err updateTuning(uint8_t lardTags, const ia_lard_input_params& lardParams,
@@ -66,8 +66,10 @@ class IntelCca {
 
     void deinit();
 
+    // No decoding here because decoding should be done
+    // in IPC_CCA_RUN_AEC or IPC_PG_PARAM_DECODE if it is required.
     ia_err decodeStats(uint64_t statsPointer, uint32_t statsSize, uint32_t bitmap,
-                       ia_isp_bxt_statistics_query_results_t* results,
+                       ia_isp_bxt_statistics_query_results_t* results = nullptr,
                        cca::cca_out_stats* outStats = nullptr);
 
     uint32_t getPalDataSize(const cca::cca_program_group& programGroup);
@@ -82,12 +84,12 @@ class IntelCca {
  private:
     int mCameraId;
     TuningMode mTuningMode;
+    bool mHasMknData;
 
     IntelAlgoCommon mCommon;
 
     ShmMemInfo mMemStruct;
     ShmMemInfo mMemInit;
-    ShmMemInfo mMemStats;
     ShmMemInfo mMemAEC;
     ShmMemInfo mMemAIQ;
     ShmMemInfo mMemLTM;
@@ -95,7 +97,6 @@ class IntelCca {
     ShmMemInfo mMemDVS;
     ShmMemInfo mMemAIC;
     ShmMemInfo mMemCMC;
-    ShmMemInfo mMemMKN;
     ShmMemInfo mMemAIQD;
     ShmMemInfo mMemTuning;
     ShmMemInfo mMemDeinit;
