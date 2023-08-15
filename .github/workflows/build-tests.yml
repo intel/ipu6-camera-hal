@@ -8,44 +8,49 @@ on:
   pull_request:
 
 jobs:
-  build-ipu6-on-ubuntu-2204:
+  build:
+    strategy:
+      matrix:
+        version: [ipu6epmtl, ipu6ep, ipu6]
+        os: ["ubuntu:22.04", "ubuntu:20.04"]
     runs-on: ubuntu-latest
-    container: ubuntu:22.04
+    container: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
-      - name: Build on Ubuntu 22.04
+      - name: Build test for ${{ matrix.version }} on ${{ matrix.os }}
         run: |
+          case "${{ matrix.version }}" in
+            (ipu6)
+              PLATFORM="ipu_tgl"
+              ;;
+            (ipu6ep)
+              PLATFORM="ipu_adl"
+              ;;
+            (ipu6epmtl)
+              PLATFORM="ipu_mtl"
+              ;;
+            (*)
+              echo "Not support for ${IPU_VER} yet."
+              exit 1
+              ;;
+          esac
           echo 'APT::Get::Always-Include-Phased-Updates True;' | tee -a /etc/apt/apt.conf
           echo 'Acquire::http::User-Agent-Non-Interactive "true";' | tee -a /etc/apt/apt.conf
           apt-get update -q
+          export TZ=UTC+8
           echo "" | apt-get install git build-essential cmake libexpat-dev automake libtool libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libunwind-dev --yes
           git clone https://github.com/intel/ipu6-camera-bins -b main --depth 1
-          cp -rv ipu6-camera-bins/include/* /usr/include/
-          cp -rv ipu6-camera-bins/lib/* /usr/lib/
+          cp -rv ipu6-camera-bins/include/"${PLATFORM}" /usr/include/
+          cp -rv ipu6-camera-bins/lib/"${PLATFORM}" /usr/lib/
+          rm -fr /usr/lib/"${PLATFORM}"/pkgconfig
+          cp -rv ipu6-camera-bins/lib/"${PLATFORM}"/pkgconfig/* /usr/lib/pkgconfig/
           rm -fr ipu6-camera-bins
-          git clone https://github.com/intel/icamerasrc.git -b icamerasrc_slim_api ../icamerasrc --depth 1
-          ./build.sh -s ${PWD}/.. -i ${PWD}/out --board ipu_tgl ipu_adl ipu_mtl
-          cp -rv ./out/install/include/* /usr/include
-          cp -rv ./out/install/lib/* /usr/lib
-          cp -rv ./out/install/share/* /usr/share
-  build-ipu6-on-ubuntu-2004:
-    runs-on: ubuntu-latest
-    container: ubuntu:20.04
-    steps:
-      - uses: actions/checkout@v3
-      - name: Build on Ubuntu 20.04
-        run: |
-          echo 'Acquire::http::User-Agent-Non-Interactive "true";' | tee -a /etc/apt/apt.conf
-          apt-get update -q
-          export TZ=Asia/Shanghai
-          echo "" | apt-get install -qy tzdata
-          echo "" | apt-get install git build-essential cmake libexpat-dev automake libtool libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libdrm-dev --yes
-          git clone https://github.com/intel/ipu6-camera-bins -b main --depth 1
-          cp -rv ipu6-camera-bins/include/* /usr/include/
-          cp -rv ipu6-camera-bins/lib/* /usr/lib/
-          rm -fr ipu6-camera-bins
-          git clone https://github.com/intel/icamerasrc.git -b icamerasrc_slim_api ../icamerasrc --depth 1
-          ./build.sh -s ${PWD}/.. -i ${PWD}/out --board ipu_tgl ipu_adl ipu_mtl
-          cp -rv ./out/install/include/* /usr/include
-          cp -rv ./out/install/lib/* /usr/lib
-          cp -rv ./out/install/share/* /usr/share
+          mkdir -p ./build/out/install/usr && cd ./build/
+          cmake -DCMAKE_BUILD_TYPE=Release \
+            -DIPU_VER="${{ matrix.version }}" \
+            -DENABLE_VIRTUAL_IPU_PIPE=OFF \
+            -DUSE_PG_LITE_PIPE=ON \
+            -DUSE_STATIC_GRAPH=OFF \
+            -DCMAKE_INSTALL_PREFIX=/usr ..
+          make
+          make install
