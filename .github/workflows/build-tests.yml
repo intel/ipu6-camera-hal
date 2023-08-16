@@ -18,6 +18,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Build test for ${{ matrix.version }} on ${{ matrix.os }}
+        timeout-minutes: 10
         run: |
           case "${{ matrix.version }}" in
             (ipu6)
@@ -37,7 +38,8 @@ jobs:
           echo 'APT::Get::Always-Include-Phased-Updates True;' | tee -a /etc/apt/apt.conf
           echo 'Acquire::http::User-Agent-Non-Interactive "true";' | tee -a /etc/apt/apt.conf
           apt-get update -q
-          export TZ=UTC+8
+          export TZ=Asia/Shanghai
+          echo "" | apt-get install -qy tzdata
           echo "" | apt-get install git build-essential cmake libexpat-dev automake libtool libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libunwind-dev --yes
           git clone https://github.com/intel/ipu6-camera-bins -b main --depth 1
           cp -rv ipu6-camera-bins/include/"${PLATFORM}" /usr/include/
