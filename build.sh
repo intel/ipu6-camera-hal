@@ -86,10 +86,6 @@ function build_target() {
         exit -1
     fi
 
-    # indicate the install folder of binary package
-    # export PKG_CONFIG_PATH=~/work/linux/camera_submit/camera/out/install/lib/$target/pkgconfig:$PKG_CONFIG_PATH
-    export PKG_CONFIG_PATH=/usr/lib/$target/pkgconfig:$PKG_CONFIG_PATH
-
     command cmake -DCMAKE_BUILD_TYPE=Release \
                   -DIPU_VER=$IPU_VERSION \
                   -DBUILD_CAMHAL_TESTS=OFF   \
