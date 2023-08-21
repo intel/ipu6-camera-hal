@@ -87,6 +87,8 @@ set(HAL_ADAPTOR_SRCS
 )
 
 add_library(hal_adaptor SHARED ${HAL_ADAPTOR_SRCS})
+set_target_properties(hal_adaptor PROPERTIES SOVERSION 0)
+set_target_properties(hal_adaptor PROPERTIES VERSION "0.0.0")
 
 #---------------------------- Link settings ----------------------------
 set (THREADS_PREFER_PTHREAD_FLAG ON)
