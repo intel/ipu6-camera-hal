@@ -92,7 +92,9 @@ namespace icamera {
 #define MAX_CAMERA_NUMBER 100
 // Temporarily using current path to save aiqd file for none CAL platforms.
 #define CAMERA_CACHE_DIR "./"
-#define CAMERA_DEFAULT_CFG_PATH "/usr/share/defaults/etc/camera/"
+#if !defined(CAMERA_DEFAULT_CFG_PATH)
+#error CAMERA_DEFAULT_CFG_PATH not defined.
+#endif
 #define CAMERA_GRAPH_DESCRIPTOR_FILE "gcss/graph_descriptor.xml"
 #define CAMERA_GRAPH_SETTINGS_DIR "gcss/"
 #endif

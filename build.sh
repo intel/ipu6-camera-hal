@@ -91,7 +91,7 @@ function build_target() {
                   -DBUILD_CAMHAL_TESTS=OFF   \
                   -DUSE_PG_LITE_PIPE=ON \
                   -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/install   \
-                  -DCMAKE_INSTALL_SUB_PATH=$target ..
+                  ..
 
     # make and install
     make -j`nproc`
@@ -99,7 +99,6 @@ function build_target() {
 
     make install
     check_result $? "$FUNCNAME: $target"
-    standardize_pkg_config_path ${INSTALL_DIR}/install/lib/${target}/pkgconfig/libcamhal.pc
     cd ..
 }
 
@@ -124,7 +123,6 @@ function build_hal_adaptor() {
 
     make install
     check_result $? $FUNCNAME
-    standardize_pkg_config_path ${INSTALL_DIR}/install/lib/pkgconfig/hal_adaptor.pc
 }
 
 function build_icamerasrc() {
