@@ -66,6 +66,7 @@ add_compile_options(-Wall -Werror
 add_definitions(-D__STDC_FORMAT_MACROS
                 -DHAVE_PTHREADS
                 -DHAVE_LINUX_OS
+                -DCAMHAL_PLUGIN_DIR=\"${CMAKE_INSTALL_LIBDIR}/libcamhal/plugins/\"
                 )
 
 set(HAL_ADAPTOR_LD_FLAGS "-fPIE -fPIC -D_FORTIFY_SOURCE=2 -Wformat -Wformat-security -Wl,-z,relro -Wl,-z,now")
@@ -87,6 +88,7 @@ set(HAL_ADAPTOR_SRCS
 )
 
 add_library(hal_adaptor SHARED ${HAL_ADAPTOR_SRCS})
+set_target_properties(hal_adaptor PROPERTIES OUTPUT_NAME camhal)
 set_target_properties(hal_adaptor PROPERTIES SOVERSION 0)
 set_target_properties(hal_adaptor PROPERTIES VERSION "0.0.0")
 
@@ -98,9 +100,9 @@ target_link_libraries(hal_adaptor ${CMAKE_DL_LIBS})
 target_link_libraries(hal_adaptor rt)
 
 # Install headers
-install(DIRECTORY ${ROOT_DIR}/include/ DESTINATION include/hal_adaptor)
+install(DIRECTORY ${ROOT_DIR}/include/ DESTINATION include/libcamhal)
 if (SUPPORT_LIVE_TUNING)
-    install(FILES ${ROOT_DIR}/modules/livetune/LiveTuning.h DESTINATION include/hal_adaptor/api)
+    install(FILES ${ROOT_DIR}/modules/livetune/LiveTuning.h DESTINATION include/libcamhal/api)
 endif()
 
 # Install libraries
@@ -115,8 +117,8 @@ endif()
 
 # Install package config file
 configure_file(${PROJECT_SOURCE_DIR}/hal_adaptor.pc.cmakein
-               ${PROJECT_SOURCE_DIR}/hal_adaptor.pc @ONLY)
-install(FILES hal_adaptor.pc
+               ${PROJECT_SOURCE_DIR}/libcamhal.pc @ONLY)
+install(FILES libcamhal.pc
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 
 set(CPACK_GENERATOR "RPM")

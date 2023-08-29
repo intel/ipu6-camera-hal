@@ -251,8 +251,10 @@ if (${CMAKE_VERSION} VERSION_LESS 3.11)
 else()
     add_library(camhal SHARED $<TARGET_OBJECTS:camhal_static>)
 endif()
-set_target_properties(camhal PROPERTIES SOVERSION 0)
-set_target_properties(camhal PROPERTIES VERSION "0.0.0")
+if(NOT USE_HAL_ADAPTOR)
+    set_target_properties(camhal PROPERTIES SOVERSION 0)
+    set_target_properties(camhal PROPERTIES VERSION "0.0.0")
+endif()
 
 add_library(camhal_static STATIC ${LIBCAMHAL_SRCS})
 
@@ -401,21 +403,38 @@ install(DIRECTORY config/linux/${CAMHAL_CFG_VARIANT}/ DESTINATION share/defaults
 add_definitions("-DCAMERA_DEFAULT_CFG_PATH=\"${CMAKE_INSTALL_PREFIX}/share/defaults/etc/camera/${CAMHAL_CFG_VARIANT}/\"")
 
 # Install libraries
-if (${CMAKE_VERSION} VERSION_LESS 3.11)
-install(TARGETS camhal camhal_static
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib
-        )
+set(CAMHAL_TARGETS camhal)
+if (USE_HAL_ADAPTOR)
+    set(CAMHAL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/libcamhal/plugins)
 else()
-install(TARGETS camhal camhal_static DESTINATION lib)
+    set(CAMHAL_DESTINATION ${CMAKE_INSTALL_LIBDIR})
+    set(CAMHAL_TARGETS "${CAMHAL_TARGETS} camhal_static")
 endif()
-set_target_properties(camhal PROPERTIES OUTPUT_NAME camhal${CAMHAL_NAME_SUFFIX})
+if (${CMAKE_VERSION} VERSION_LESS 3.11)
+    install(TARGETS ${CAMHAL_TARGETS}
+            LIBRARY DESTINATION ${CAMHAL_DESTINATION}
+            ARCHIVE DESTINATION ${CAMHAL_DESTINATION})
+else()
+    install(TARGETS ${CAMHAL_TARGETS} DESTINATION ${CAMHAL_DESTINATION})
+endif()
+if (USE_HAL_ADAPTOR)
+    set_target_properties(camhal PROPERTIES PREFIX "")
+    if("${IPU_VER}" STREQUAL "")
+        set_target_properties(camhal PROPERTIES OUTPUT_NAME ipu4)
+    else()
+        set_target_properties(camhal PROPERTIES OUTPUT_NAME ${IPU_VER})
+    endif()
+else()
+    set_target_properties(camhal PROPERTIES OUTPUT_NAME camhal${CAMHAL_NAME_SUFFIX})
+endif()
 
+if(NOT USE_HAL_ADAPTOR)
 # Install package config file
 configure_file(${PROJECT_SOURCE_DIR}/cmake/libcamhal.pc.cmakein
                ${PROJECT_SOURCE_DIR}/libcamhal${CAMHAL_NAME_SUFFIX}.pc @ONLY)
 install(FILES libcamhal${CAMHAL_NAME_SUFFIX}.pc
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+endif()
 
 endif() #NOT CAL_BUILD
 

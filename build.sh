@@ -91,6 +91,7 @@ function build_target() {
                   -DBUILD_CAMHAL_TESTS=OFF   \
                   -DUSE_PG_LITE_PIPE=ON \
                   -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/install   \
+                  -DUSE_HAL_ADAPTOR=ON \
                   ..
 
     # make and install
@@ -128,18 +129,13 @@ function build_hal_adaptor() {
 function build_icamerasrc() {
     cd $SOURCE_DIR/icamerasrc/
 
-    export CAMHAL_LIBS="-L$INSTALL_DIR/install/lib -lhal_adaptor"
-    export CAMHAL_CFLAGS="-I$INSTALL_DIR/install/include/hal_adaptor  \
-                          -I$INSTALL_DIR/install/include/hal_adaptor/api \
-                          -I$INSTALL_DIR/install/include/hal_adaptor/utils \
-                          -I$INSTALL_DIR/install/include/hal_adaptor/linux"
     export CHROME_SLIM_CAMHAL=ON
-    export PKG_CONFIG_PATH="/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/lib/pkgconfig:${PKG_CONFIG_PATH}"
+    export PKG_CONFIG_PATH="${INSTALL_DIR}/install/lib/pkgconfig"
 
     rm -fr config.h.in autom4te.cache/ aclocal.m4 *-libtool config.guess compile \
            config.sub configure depcomp install-sh ltmain.sh m4
     autoreconf --install
-    CFLAGS="-O2" CXXFLAGS="-O2" ./configure --with-haladaptor=yes ${CONFIGURE_FLAGS} \
+    CFLAGS="-O2" CXXFLAGS="-O2" ./configure ${CONFIGURE_FLAGS} \
                                             --prefix=$INSTALL_DIR/install DEFAULT_CAMERA=0
     check_result $? $FUNCNAME
 
