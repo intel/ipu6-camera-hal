@@ -65,11 +65,6 @@ function print_helper() {
     echo
 }
 
-standardize_pkg_config_path(){
-    if [[ ! -f $1 ]]; then echo "file $1 not exsist."; exit 0; fi
-    sed -i '1c prefix=\/usr' $*
-}
-
 function build_target() {
     rm -fr build && mkdir -p build && cd build
 
@@ -145,8 +140,6 @@ function build_icamerasrc() {
 
     make install
     check_result $? $FUNCNAME
-    find $INSTALL_DIR/install/ -name "*.la" -exec rm -f "{}" \;
-    standardize_pkg_config_path ${INSTALL_DIR}/install/lib/pkgconfig/libgsticamerasrc.pc
 }
 
 function main () {
