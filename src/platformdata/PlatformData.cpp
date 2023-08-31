@@ -1608,10 +1608,6 @@ camera_coordinate_system_t PlatformData::getActivePixelArray(int cameraId) {
 
 string PlatformData::getCameraCfgPath() {
     string cfgPath = string(CAMERA_DEFAULT_CFG_PATH);
-#ifdef SUB_CONFIG_PATH
-    cfgPath += string(SUB_CONFIG_PATH);
-    cfgPath.append("/");
-#endif
 
     char* p = getenv("CAMERA_CFG_PATH");
     return p ? string(p) : cfgPath;

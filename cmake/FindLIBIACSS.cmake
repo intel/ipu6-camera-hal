@@ -17,8 +17,16 @@
 # Get include and lib paths for LIBIACSS from pkgconfig
 include(FindPackageHandleStandardArgs)
 
+if(NOT DEFINED IPU_VER)
+    set(IACSS_PKG_SUFFIX "-ipu4")
+elseif(${IPU_VER} STREQUAL ipu6)
+    set(IACSS_PKG_SUFFIX "")
+else()
+    set(IACSS_PKG_SUFFIX "-${IPU_VER}")
+endif()
+
 find_package(PkgConfig)
-pkg_check_modules(LIBIACSS libiacss)
+pkg_check_modules(LIBIACSS libiacss${IACSS_PKG_SUFFIX})
 if(NOT LIBIACSS_FOUND)
     message(FATAL_ERROR "LIBIACSS not found")
 endif()
@@ -26,9 +34,9 @@ endif()
 set(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} ${LIBIACSS_LIBRARY_DIRS})
 
 # Libraries
-find_library(GCSS_LIB      gcss)
-find_library(IA_CAMERA_LIB ia_camera)
-find_library(IA_CIPF_LIB   ia_cipf)
+find_library(GCSS_LIB      gcss${IACSS_PKG_SUFFIX})
+find_library(IA_CAMERA_LIB ia_camera${IACSS_PKG_SUFFIX})
+find_library(IA_CIPF_LIB   ia_cipf${IACSS_PKG_SUFFIX})
 set(LIBIACSS_LIBS
     ${GCSS_LIB}
     ${IA_CAMERA_LIB}

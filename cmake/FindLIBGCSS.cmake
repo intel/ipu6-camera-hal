@@ -17,8 +17,16 @@
 # Get include and lib paths for LIBGCSS from pkgconfig
 include(FindPackageHandleStandardArgs)
 
+if(NOT DEFINED IPU_VER)
+    set(LIBGCSS_PKG_SUFFIX "-ipu4")
+elseif(${IPU_VER} STREQUAL ipu6)
+    set(LIBGCSS_PKG_SUFFIX "")
+else()
+    set(LIBGCSS_PKG_SUFFIX "-${IPU_VER}")
+endif()
+
 find_package(PkgConfig)
-pkg_check_modules(LIBGCSS libgcss)
+pkg_check_modules(LIBGCSS libgcss${LIBGCSS_PKG_SUFFIX})
 if(NOT LIBGCSS_FOUND)
     message(FATAL_ERROR "LIBGCSS not found")
 endif()
@@ -26,7 +34,7 @@ endif()
 set(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} ${LIBGCSS_LIBRARY_DIRS})
 
 # Libraries
-find_library(GCSS_LIB gcss)
+find_library(GCSS_LIB gcss${LIBGCSS_PKG_SUFFIX})
 set(LIBGCSS_LIBS ${GCSS_LIB})
 
 # handle the QUIETLY and REQUIRED arguments and set EXPAT_FOUND to TRUE if
