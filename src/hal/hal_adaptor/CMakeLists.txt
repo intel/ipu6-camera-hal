@@ -66,7 +66,7 @@ add_compile_options(-Wall -Werror
 add_definitions(-D__STDC_FORMAT_MACROS
                 -DHAVE_PTHREADS
                 -DHAVE_LINUX_OS
-                -DCAMHAL_PLUGIN_DIR=\"${CMAKE_INSTALL_LIBDIR}/libcamhal/plugins/\"
+                -DCAMHAL_PLUGIN_DIR=\"${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/libcamhal/plugins/\"
                 )
 
 set(HAL_ADAPTOR_LD_FLAGS "-fPIE -fPIC -D_FORTIFY_SOURCE=2 -Wformat -Wformat-security -Wl,-z,relro -Wl,-z,now")
