@@ -264,6 +264,17 @@ int PlatformData::getLensHwType(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mLensHwType;
 }
 
+int PlatformData::getSensitivityRangeByTuningMode(int cameraId, TuningMode mode,
+                                                  SensitivityRange& range) {
+    auto& map = getInstance()->mStaticCfg.mCameras[cameraId].mTuningModeToSensitivityMap;
+    if (map.find(mode) != map.end()) {
+        range = map[mode];
+        return OK;
+    }
+
+    return NAME_NOT_FOUND;
+}
+
 bool PlatformData::isPdafEnabled(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mEnablePdaf;
 }

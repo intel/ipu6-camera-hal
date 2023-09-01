@@ -240,6 +240,11 @@ struct MultiExpRange {
     ExpRange SHS3;
 };
 
+struct SensitivityRange {
+    int32_t min;
+    int32_t max;
+};
+
 struct UserToPslOutputMap {
     camera_resolution_t User;
     camera_resolution_t Psl;

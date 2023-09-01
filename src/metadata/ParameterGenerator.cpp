@@ -68,6 +68,8 @@ ParameterGenerator::ParameterGenerator(int cameraId)
             mTonemapCurveGreen[i * 2 + 1] = index / (mTonemapMaxCurvePoints - 1);
         }
     }
+    CLEAR(mSensitivityRange);
+    info.capability->getSupportedSensorSensitivityRange(mSensitivityRange);
 }
 
 ParameterGenerator::~ParameterGenerator() {}
@@ -325,7 +327,19 @@ int ParameterGenerator::updateWithAiqResultsL(int64_t sequence, Parameters* para
     } else {
         params->setExposureTime(aiqResult->mAeResults.exposures[0].exposure[0].exposure_time_us);
     }
-    params->setSensitivityIso(aiqResult->mAeResults.exposures[0].exposure[0].iso);
+
+    int iso = aiqResult->mAeResults.exposures[0].exposure[0].iso;
+    SensitivityRange range;
+    if (PlatformData::getSensitivityRangeByTuningMode(mCameraId, aiqResult->mTuningMode,
+                                                      range) == OK) {
+        float ratio = static_cast<float>(iso - range.min) / (range.max - range.min);
+        iso = mSensitivityRange.min + ratio * (mSensitivityRange.max - mSensitivityRange.min);
+        iso = CLIP(iso, mSensitivityRange.max, mSensitivityRange.min);
+        LOG2("%s, exposure[0].iso %d, iso %d", __func__,
+             aiqResult->mAeResults.exposures[0].exposure[0].iso, iso);
+    }
+    params->setSensitivityIso(iso);
+
     float fps = 1000000.0 / aiqResult->mFrameDuration;
     params->setFrameRate(fps);
 
