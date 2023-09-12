@@ -399,8 +399,8 @@ else()
     set(CAMHAL_CFG_VARIANT ${IPU_VER})
 endif()
 message("Install camera configure files for ${CAMHAL_CFG_VARIANT}")
-install(DIRECTORY config/linux/${CAMHAL_CFG_VARIANT}/ DESTINATION share/defaults/etc/camera/${CAMHAL_CFG_VARIANT})
-add_definitions("-DCAMERA_DEFAULT_CFG_PATH=\"${CMAKE_INSTALL_PREFIX}/share/defaults/etc/camera/${CAMHAL_CFG_VARIANT}/\"")
+install(DIRECTORY config/linux/${CAMHAL_CFG_VARIANT}/ DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/camera/${CAMHAL_CFG_VARIANT})
+add_definitions("-DCAMERA_DEFAULT_CFG_PATH=\"${CMAKE_INSTALL_SYSCONFDIR}/camera/${CAMHAL_CFG_VARIANT}/\"")
 
 # Install libraries
 set(CAMHAL_TARGETS camhal)
