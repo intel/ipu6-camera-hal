@@ -294,6 +294,16 @@ void Intel3AParameter::setManualIso(const aiq_parameter_t& param) {
         return;
     }
 
+    SensitivityRange range;
+    if (PlatformData::getSensitivityRangeByTuningMode(mCameraId, param.tuningMode, range) == OK) {
+        float ratio =
+            (manualIso - mSensitivityRange.min) / (mSensitivityRange.max - mSensitivityRange.min);
+        manualIso = range.min + ratio * (range.max - range.min);
+        manualIso = CLIP(manualIso, range.max, range.min);
+
+        LOG2("%s, param.manualIso %d, manualIso %d", __func__, param.manualIso, manualIso);
+    }
+
     // Will overwrite manual_analog_gain
     for (unsigned int i = 0; i < mAeParams.num_exposures; i++) {
         mAeParams.manual_iso[i] = manualIso;

@@ -426,6 +426,27 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
             LOGE("unknown Lens HW type %s, set to LENS_NONE_HW", atts[1]);
             pCurrentCam->mLensHwType = LENS_NONE_HW;
         }
+    } else if (strcmp(name, "tuningModeToSensitivityMap") == 0) {
+        int size = strlen(atts[1]);
+        char src[size + 1];
+        MEMCPY_S(src, size, atts[1], size);
+        src[size] = '\0';
+
+        char* savePtr = nullptr;
+        char* tuningMode = strtok_r(src, ",", &savePtr);
+        while (tuningMode) {
+            SensitivityRange range;
+            char* min = strtok_r(nullptr, ",", &savePtr);
+            char* max = strtok_r(nullptr, ",", &savePtr);
+            CheckAndLogError(!tuningMode || !min || !max, VOID_VALUE, "Wrong sensitivity map");
+
+            TuningMode mode = CameraUtils::string2TuningMode(tuningMode);
+            range.min = atoi(min);
+            range.max = atoi(max);
+            pCurrentCam->mTuningModeToSensitivityMap[mode] = range;
+
+            tuningMode = strtok_r(nullptr, ",", &savePtr);
+        }
     } else if (strcmp(name, "enablePdaf") == 0) {
         pCurrentCam->mEnablePdaf = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "sensorAwb") == 0) {
