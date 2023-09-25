@@ -301,20 +301,6 @@ int MainDevice::createBufferPool(const stream_t& config) {
              csiBEDeviceNodeName.c_str(), ret);
     }
 
-    bool setWithHeaderCtl = true;
-    std::string subDeviceNodeName;
-
-    if (PlatformData::getDevNameByType(mCameraId, VIDEO_ISYS_RECEIVER, subDeviceNodeName) == OK) {
-        LOG1("%s: found ISYS receiver subdevice %s", __func__, subDeviceNodeName.c_str());
-        if (PlatformData::isTPGReceiver(mCameraId)) {
-            LOG1("%s: no need to set csi header ctrl for tpg", __func__);
-            setWithHeaderCtl = false;
-        }
-    } else {
-        setWithHeaderCtl = false;
-    }
-
-    int withHeader = 1;
     struct v4l2_format v4l2fmt;
     v4l2fmt.fmt.pix_mp.field = config.field;
 
@@ -330,25 +316,12 @@ int MainDevice::createBufferPool(const stream_t& config) {
             v4l2fmt.fmt.pix_mp.plane_fmt[i].bytesperline = config.width;
             v4l2fmt.fmt.pix_mp.plane_fmt[i].sizeimage = 0;
         }
-        // The frame data is without header(MIPI STORE MODE) when
-        // format is YUV/RGB and frame output from CSI-Front-End entity.
-        if (!CameraUtils::isRaw(config.format)) {
-            LOG2("@%s, set frame without header for format: %s", __func__,
-                 CameraUtils::pixelCode2String(config.format));
-            withHeader = 0;
-        }
     } else {
         v4l2fmt.fmt.pix.width = config.width;
         v4l2fmt.fmt.pix.height = config.height;
         v4l2fmt.fmt.pix.pixelformat = config.format;
         v4l2fmt.fmt.pix.bytesperline = config.width;
         v4l2fmt.fmt.pix.sizeimage = 0;
-    }
-
-    if (setWithHeaderCtl) {
-        V4L2Subdevice* receiverSubDev = V4l2DeviceFactory::getSubDev(mCameraId, subDeviceNodeName);
-        int ret = receiverSubDev->SetControl(V4L2_CID_IPU_STORE_CSI2_HEADER, withHeader);
-        CheckAndLogError(ret != OK, ret, "set v4l2 store csi2 header failed, ret=%d", ret);
     }
 
     v4l2fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
