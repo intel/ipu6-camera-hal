@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<!-- Copyright (C) 2022 Intel Corporation.
+<!-- Copyright (C) 2023 Intel Corporation.
 
      Licensed under the Apache License, Version 2.0 (the "License");
      you may not use this file except in compliance with the License.
@@ -15,17 +15,17 @@
 -->
 
 <CameraSettings>
-    <Sensor name="hm2172-uf" description="hm2172 sensor.">
+    <Sensor name="ov02e10-uf" description="ov02e10 sensor.">
         <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1928" outputHeight="1088" format="V4L2_PIX_FMT_SGRBG10"> <!-- RAW10 BE capture -->
-            <format name="hm2172 $I2CBUS" pad="0" width="1928" height="1088" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
+            <format name="ov02e10 $I2CBUS" pad="0" width="1928" height="1088" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
             <format name="Intel IPU6 CSI-2 $CSI_PORT" pad="0" width="1928" height="1088" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
             <format name="Intel IPU6 CSI2 BE SOC 0" pad="0" width="1928" height="1088" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
 
-            <link srcName="hm2172 $I2CBUS" srcPad="0" sinkName="Intel IPU6 CSI-2 $CSI_PORT" sinkPad="0" enable="true"/>
+            <link srcName="ov02e10 $I2CBUS" srcPad="0" sinkName="Intel IPU6 CSI-2 $CSI_PORT" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI-2 $CSI_PORT" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 0" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC 0" srcPad="1" sinkName="Intel IPU6 BE SOC capture 0" sinkPad="0" enable="true"/>
 
-            <videonode name="hm2172 $I2CBUS" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+            <videonode name="ov02e10 $I2CBUS" videoNodeType="VIDEO_PIXEL_ARRAY"/>
             <videonode name="Intel IPU6 CSI-2 $CSI_PORT" videoNodeType="VIDEO_ISYS_RECEIVER"/>
             <videonode name="Intel IPU6 BE SOC capture 0" videoNodeType="VIDEO_GENERIC"/>
         </MediaCtlConfig>
@@ -57,8 +57,8 @@
             <supportedAfMode value="OFF"/>
         </StaticMetadata>
 
-        <supportedTuningConfig value="NORMAL,VIDEO,hm2172_ASG205N3_MTL,
-                                      STILL_CAPTURE,VIDEO,hm2172_ASG205N3_MTL"/>
+        <supportedTuningConfig value="NORMAL,VIDEO,OV02E10_ASG202N3_MTL,
+                                      STILL_CAPTURE,VIDEO,OV02E10_ASG202N3_MTL"/>
 
         <!-- The lard tags configuration. Every tag should be 4-characters. -->
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
@@ -72,10 +72,10 @@
         <initialSkipFrame value="0"/>
         <exposureLag value="2"/>
         <gainLag value="2"/>
-        <digitalGainLag value="3"/>
+        <digitalGainLag value="0"/>
         <ltmGainLag value="1"/>
         <yuvColorRangeMode value="full"/> <!-- there are 2 yuv color range mode, like full, reduced. -->
-        <graphSettingsFile value="graph_settings_hm2172_ASG205N3_MTL.xml"/>
+        <graphSettingsFile value="graph_settings_OV02E10_ASG202N3_MTL.xml"/>
         <graphSettingsType value="dispersed"/>
         <enablePSysProcessor value="true"/>
         <dvsType value="IMG_TRANS"/>
