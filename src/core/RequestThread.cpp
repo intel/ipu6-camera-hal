@@ -263,8 +263,10 @@ void RequestThread::handleEvent(EventData eventData) {
         case EVENT_ISYS_SOF: {
             AutoMutex l(mPendingReqLock);
             mLastSofSeq = eventData.data.sync.sequence;
-            mRequestTriggerEvent |= NEW_SOF;
-            mRequestSignal.signal();
+            if (mLastSofSeq > mLastAppliedSeq) {
+                mRequestTriggerEvent |= NEW_SOF;
+                mRequestSignal.signal();
+            }
         } break;
         case EVENT_FRAME_AVAILABLE: {
             if (eventData.buffer->getUserBuffer() != &mFakeReqBuf) {

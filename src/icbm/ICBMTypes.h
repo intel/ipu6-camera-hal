@@ -46,6 +46,10 @@ struct ICBMInitInfo {
     uint32_t sessionType;
     uint32_t height;
     uint32_t width;
+// DLC_FEATURE_S
+    int32_t dlcPathHandle;
+    char* dlcPath;
+// DLC_FEATURE_E
 };
 
 struct ICBMReqInfo {

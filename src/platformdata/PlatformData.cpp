@@ -96,7 +96,7 @@ int PlatformData::init() {
         AiqInitData* aiqInitData = new AiqInitData(
             staticCfg->mCameras[i].sensorName, getCameraCfgPath(),
             staticCfg->mCameras[i].mSupportedTuningConfig, staticCfg->mCameras[i].mNvmDirectory,
-            staticCfg->mCameras[i].mMaxNvmDataSize, camModuleName);
+            staticCfg->mCameras[i].mMaxNvmDataSize, camModuleName, i);
         getInstance()->mAiqInitData.push_back(aiqInitData);
 
         staticCfg->getModuleInfoFromCmc(i);
@@ -250,6 +250,28 @@ void PlatformData::releaseGraphConfigNodes() {
 
 const char* PlatformData::getSensorName(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].sensorName.c_str();
+}
+
+void PlatformData::setBoardName(const std::string& boardName) {
+    getInstance()->mStaticCfg.mBoardName = boardName;
+}
+
+bool PlatformData::isHDRnetTuningUsed(int cameraId, bool& boardConfig) {
+    auto& boards = getInstance()->mStaticCfg.mCameras[cameraId].mDisableHDRnetBoards;
+    auto& boardName = getInstance()->mStaticCfg.mBoardName;
+
+    if (!boards.empty()) boardConfig = true;
+
+    if (boardName.empty()) return true;
+
+    for (auto& board : boards) {
+        LOG2("mBoardName %s, board %s", boardName.c_str(), board.c_str());
+        if (board == boardName) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 const char* PlatformData::getSensorDescription(int cameraId) {
@@ -1428,9 +1450,13 @@ bool PlatformData::isCSIBackEndCapture(int cameraId) {
     CheckAndLogError(!mc, false, "getMediaCtlConf returns nullptr, cameraId:%d", cameraId);
 
     for (const auto& node : mc->videoNodes) {
-        if (node.videoNodeType == VIDEO_GENERIC &&
-            (node.name.find("BE capture") != string::npos ||
-             node.name.find("BE SOC capture") != string::npos)) {
+    if (IPU6_UPSTREAM && node.videoNodeType == VIDEO_GENERIC &&
+        node.name.find("ISYS capture") != string::npos) {
+        isCsiBECapture = true;
+        break;
+    } else if (node.videoNodeType == VIDEO_GENERIC &&
+               (node.name.find("BE capture") != string::npos ||
+                node.name.find("BE SOC capture") != string::npos)) {
             isCsiBECapture = true;
             break;
         }
@@ -1445,8 +1471,13 @@ bool PlatformData::isCSIFrontEndCapture(int cameraId) {
     CheckAndLogError(!mc, false, "getMediaCtlConf returns nullptr, cameraId:%d", cameraId);
 
     for (const auto& node : mc->videoNodes) {
-        if (node.videoNodeType == VIDEO_GENERIC &&
-            (node.name.find("CSI-2") != string::npos || node.name.find("TPG") != string::npos)) {
+        if (IPU6_UPSTREAM && node.videoNodeType == VIDEO_GENERIC &&
+            node.name.find("CSI2") != string::npos) {
+            isCsiFeCapture = true;
+            break;
+        } else if (node.videoNodeType == VIDEO_GENERIC &&
+                   (node.name.find("CSI-2") != string::npos ||
+                    node.name.find("TPG") != string::npos)) {
             isCsiFeCapture = true;
             break;
         }

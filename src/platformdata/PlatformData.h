@@ -63,14 +63,11 @@ namespace icamera {
 #define FACE_ENGINE_INTEL_PVL 0
 #define FACE_ENGINE_GOOGLE_FACESSD 1
 
-#define DEFAULT_TNR_EXTRA_FRAME_NUM 2
-
 /* Max number of the RAW buffer number is 32.
  * Max number size of the pipeline depth is 6.
  * Max setting count should be larger than raw buffer number + pipeline depth.
  */
 #define MAX_SETTING_COUNT 40
-#define CAMERA_PORT_NAME "CSI-2"
 
 #ifdef CAL_BUILD
 #define MAX_CAMERA_NUMBER 2
@@ -92,7 +89,7 @@ namespace icamera {
 #define MAX_CAMERA_NUMBER 100
 // Temporarily using current path to save aiqd file for none CAL platforms.
 #define CAMERA_CACHE_DIR "./"
-#define CAMERA_DEFAULT_CFG_PATH "/usr/share/defaults/etc/camera/"
+#define CAMERA_DEFAULT_CFG_PATH "/etc/camera/"
 #define CAMERA_GRAPH_DESCRIPTOR_FILE "gcss/graph_descriptor.xml"
 #define CAMERA_GRAPH_SETTINGS_DIR "gcss/"
 #endif
@@ -197,7 +194,7 @@ class PlatformData {
                       mSwProcessingAlignWithIsp(false),
                       mMaxNvmDataSize(0),
                       mNvmOverwrittenFileSize(0),
-                      mTnrExtraFrameNum(DEFAULT_TNR_EXTRA_FRAME_NUM),
+                      mTnrExtraFrameNum(0),
                       mDummyStillSink(false),
                       mGpuTnrEnabled(false),
                       mRemoveCacheFlushOutputBuffer(false),
@@ -227,7 +224,7 @@ class PlatformData {
             VcAggregator mVcAggregator;
             // VIRTUAL_CHANNEL_E
             int mLensHwType;
-            std::unordered_map<TuningMode, SensitivityRange> mTuningModeToSensitivityMap;
+            std::map<TuningMode, SensitivityRange> mTuningModeToSensitivityMap;
             bool mEnablePdaf;
             bool mSensorAwb;
             bool mSensorAe;
@@ -280,6 +277,7 @@ class PlatformData {
             std::vector<LardTagConfig> mLardTagsConfig;
             std::vector<ConfigMode> mConfigModesForAuto;
 
+            std::vector<std::string> mDisableHDRnetBoards;
             bool mUseCrlModule;
             int mOrientation;
             int mSensorOrientation;
@@ -362,6 +360,7 @@ class PlatformData {
         std::vector<CameraInfo> mCameras;
         std::vector<PolicyConfig> mPolicyConfig;
         CommonConfig mCommonConfig;
+        std::string mBoardName;
     };
 
  private:
@@ -451,6 +450,22 @@ class PlatformData {
      * \return char*: the sensor name string.
      */
     static const char* getSensorName(int cameraId);
+
+    /**
+     * set board name
+     *
+     * \param[in] boardName
+     */
+    static void setBoardName(const std::string& boardName);
+
+    /**
+     * get status if HDRnet tuning used
+     *
+     * \param[in] cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \param[out] boardConfig: set true if configured
+     * \return true if HDRnet tuning used, otherwise return false.
+     */
+    static bool isHDRnetTuningUsed(int cameraId, bool& boardConfig);
 
     /**
      * get the sensor description

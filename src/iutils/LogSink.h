@@ -75,6 +75,7 @@ class SysLogSink : public LogOutputSink {
 class FileLogSink : public LogOutputSink {
  public:
     FileLogSink();
+    ~FileLogSink();
     const char* getName() const override;
     void sendOffLog(LogItem logItem) override;
 

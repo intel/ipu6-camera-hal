@@ -1,0 +1,578 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!-- Copyright (c) 2016 Intel Corporation
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+	limitations under the License.
+	-->
+<graph_settings version="IPU6_20210310.0.1.0.247.1.2021.3.10.15.16.5">
+<sensor_modes sensor_name="AR0234" csi_port="0" metadata="0" interlaced="0" bayer_order="GRBG">
+    <available_bit_per_pixel>
+        <bpp value="10"/>
+    </available_bit_per_pixel>
+    <pll_configs>
+        <pll_config bpp="0" pixel_rate_csi="0" pixel_rate="0" id="0"/>
+    </pll_configs>
+    <sensor_mode name="WUXGA" id="0" width="1920" height="1200" fps="30" min_llp="0" min_fll="0" min_fps="0" max_out_width="1920" max_out_height="1200" bpp="10" sensor_type="BAYER" pdaf_type="PDAFNone" flip_h="0" flip_v="0" conversion_gain="1" dol_mode="NoDol">
+        <pixel_array>
+            <input width="1920" height="1200" left="0" top="0"/>
+            <output width="1920" height="1200" left="0" top="0"/>
+        </pixel_array>
+        <binner h_factor="1" v_factor="1">
+            <input width="1920" height="1200" left="0" top="0"/>
+            <output width="1920" height="1200" left="0" top="0"/>
+        </binner>
+        <scaler num_factor="1" denom_factor="1">
+            <input width="1920" height="1200" left="0" top="0"/>
+            <output width="1920" height="1200" left="0" top="0"/>
+        </scaler>
+        <pdaf width="0" height="0"/>
+    </sensor_mode>
+    <sensor_mode name="VGA" id="1" width="1280" height="960" fps="30" min_llp="0" min_fll="0" min_fps="0" max_out_width="1280" max_out_height="960" bpp="10" sensor_type="BAYER" pdaf_type="PDAFNone" flip_h="0" flip_v="0" conversion_gain="1" dol_mode="NoDol">
+        <pixel_array>
+            <input width="1920" height="1200" left="0" top="0"/>
+            <output width="1600" height="1200" left="320" top="120"/>
+        </pixel_array>
+        <binner h_factor="1" v_factor="1">
+            <input width="1280" height="960" left="0" top="0"/>
+            <output width="1280" height="960" left="0" top="0"/>
+        </binner>
+        <scaler num_factor="1" denom_factor="1">
+            <input width="1280" height="960" left="0" top="0"/>
+            <output width="1280" height="960" left="0" top="0"/>
+        </scaler>
+        <pdaf width="0" height="0"/>
+    </sensor_mode>
+</sensor_modes>
+<selected_resolutions>
+  <FPS value="30">
+    <sensor>
+      <resolution width="1280" height="960" />
+      <resolution width="1920" height="1200" />
+    </sensor>
+    <isys_cropped_output>
+      <resolution width="1280" height="960" />
+      <resolution width="1920" height="1200" />
+    </isys_cropped_output>
+    <preview />
+    <video>
+      <resolution width="1280" height="960" />
+      <resolution width="1920" height="1200" />
+    </video>
+    <stills />
+    <raw />
+  </FPS>
+</selected_resolutions>
+<settings key="8000" id="100000" active_outputs="1" dvs="0" power_factor="0" fps="30" flow="StillsDuringVideo" flip_v="0" flip_h="0" pdaf_type="0">
+  <video0 width="1280" height="960" stream_id="60001" bpp="8" format="Linear" />
+  <sis_b width="320" height="240" stream_id="60001" />
+  <sis_a width="320" height="240" stream_id="60001" />
+  <sensor vflip="0" hflip="0" mode_id="VGA">
+            <port_0 format="BG10" width="1280" height="960" />
+        </sensor>
+  <csi_be>
+    <output format="GR10" width="1280" height="960" />
+    <stream2mmio>
+      <input width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+      <output width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+    </stream2mmio>
+    <tuning_mode value="0" />
+  </csi_be>
+  <isa_lb_video>
+    <main format="YUV420_10_PL" width="1280" height="960" />
+    <sis_a format="GRBG_12_LI" width="320" height="240" peer="sis_a" />
+    <sis_b format="GRBG_12_LI" width="320" height="240" peer="sis_b" />
+    <pxl_crop_sis_a>
+      <input width="320" height="240" top="0" left="0" bottom="0" right="0" />
+      <output width="320" height="240" top="0" left="0" bottom="0" right="0" />
+    </pxl_crop_sis_a>
+    <pxl_crop_sis_b>
+      <input width="320" height="240" top="0" left="0" bottom="0" right="0" />
+      <output width="320" height="240" top="0" left="0" bottom="0" right="0" />
+    </pxl_crop_sis_b>
+    <pixelformatter>
+      <input width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+      <output width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+    </pixelformatter>
+    <pxl_crop_yuv_a>
+      <input width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+      <output width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+    </pxl_crop_yuv_a>
+    <sis_1_0_b>
+      <input width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+      <output width="320" height="240" top="0" left="0" bottom="0" right="0" />
+    </sis_1_0_b>
+    <sis_1_0_a>
+      <input width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+      <output width="320" height="240" top="0" left="0" bottom="0" right="0" />
+    </sis_1_0_a>
+    <padder_yuv_a>
+      <input width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+      <output width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+    </padder_yuv_a>
+    <strm_crop_sis_b>
+      <input width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+      <output width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+    </strm_crop_sis_b>
+    <strm_crop_sis_a>
+      <input width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+      <output width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+    </strm_crop_sis_a>
+    <vertical_padding_1_0>
+      <input width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+      <output width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+    </vertical_padding_1_0>
+    <b2i_ds_1_0_0>
+      <input width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+      <output width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+    </b2i_ds_1_0_0>
+    <tuning_mode value="0" />
+  </isa_lb_video>
+  <post_gdc_video>
+    <main format="YUV420_8_SP" width="1280" height="960" peer="video0" />
+    <tnr_ref_in format="YUV420_8_SP" private="1" width="1280" height="960" />
+    <tnr_ref_out format="YUV420_8_SP" private="1" width="1280" height="960" />
+    <gdc5>
+      <input width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+      <output width="1280" height="960" top="-28" left="0" bottom="-4" right="0" />
+    </gdc5>
+    <ofa_2_mp>
+      <input width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+      <output width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+    </ofa_2_mp>
+    <tnr_6_0>
+      <input width="1280" height="992" top="28" left="0" bottom="4" right="0" />
+      <output width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+    </tnr_6_0>
+    <tuning_mode value="0" />
+  </post_gdc_video>
+</settings>
+<settings key="8001" id="100006" active_outputs="1" dvs="0" power_factor="0" fps="30" flow="StillsDuringVideo" flip_v="0" flip_h="0" pdaf_type="0">
+  <video0 width="1280" height="960" stream_id="60001" bpp="10" format="Linear" />
+  <sis_b width="320" height="240" stream_id="60001" />
+  <sis_a width="320" height="240" stream_id="60001" />
+  <sensor vflip="0" hflip="0" mode_id="VGA">
+            <port_0 format="BG10" width="1280" height="960" />
+        </sensor>
+  <csi_be>
+    <output format="GR10" width="1280" height="960" />
+    <stream2mmio>
+      <input width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+      <output width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+    </stream2mmio>
+    <tuning_mode value="0" />
+  </csi_be>
+  <isa_lb_video>
+    <main format="YUV420_10_PL" width="1280" height="960" />
+    <sis_a format="GRBG_12_LI" width="320" height="240" peer="sis_a" />
+    <sis_b format="GRBG_12_LI" width="320" height="240" peer="sis_b" />
+    <pxl_crop_sis_a>
+      <input width="320" height="240" top="0" left="0" bottom="0" right="0" />
+      <output width="320" height="240" top="0" left="0" bottom="0" right="0" />
+    </pxl_crop_sis_a>
+    <pxl_crop_sis_b>
+      <input width="320" height="240" top="0" left="0" bottom="0" right="0" />
+      <output width="320" height="240" top="0" left="0" bottom="0" right="0" />
+    </pxl_crop_sis_b>
+    <pixelformatter>
+      <input width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+      <output width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+    </pixelformatter>
+    <pxl_crop_yuv_a>
+      <input width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+      <output width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+    </pxl_crop_yuv_a>
+    <sis_1_0_b>
+      <input width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+      <output width="320" height="240" top="0" left="0" bottom="0" right="0" />
+    </sis_1_0_b>
+    <sis_1_0_a>
+      <input width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+      <output width="320" height="240" top="0" left="0" bottom="0" right="0" />
+    </sis_1_0_a>
+    <padder_yuv_a>
+      <input width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+      <output width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+    </padder_yuv_a>
+    <strm_crop_sis_b>
+      <input width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+      <output width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+    </strm_crop_sis_b>
+    <strm_crop_sis_a>
+      <input width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+      <output width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+    </strm_crop_sis_a>
+    <vertical_padding_1_0>
+      <input width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+      <output width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+    </vertical_padding_1_0>
+    <b2i_ds_1_0_0>
+      <input width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+      <output width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+    </b2i_ds_1_0_0>
+    <tuning_mode value="0" />
+  </isa_lb_video>
+  <post_gdc_video>
+    <main format="YUV420_8_SP" width="1280" height="960" peer="video0" />
+    <tnr_ref_in format="YUV420_10_SP" private="1" width="1280" height="960" />
+    <tnr_ref_out format="YUV420_10_SP" private="1" width="1280" height="960" />
+    <gdc5>
+      <input width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+      <output width="1280" height="960" top="-28" left="0" bottom="-4" right="0" />
+    </gdc5>
+    <ofa_2_mp>
+      <input width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+      <output width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+    </ofa_2_mp>
+    <tnr_6_0>
+      <input width="1280" height="992" top="28" left="0" bottom="4" right="0" />
+      <output width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+    </tnr_6_0>
+    <tuning_mode value="0" />
+  </post_gdc_video>
+</settings>
+<settings key="8002" id="100015" active_outputs="1" dvs="0" power_factor="0" fps="30" flow="StillsDuringVideo" flip_v="0" flip_h="0" pdaf_type="0">
+  <video0 width="1280" height="960" stream_id="60001" bpp="12" format="Linear" />
+  <sis_b width="320" height="240" stream_id="60001" />
+  <sis_a width="320" height="240" stream_id="60001" />
+  <sensor vflip="0" hflip="0" mode_id="VGA">
+            <port_0 format="BG10" width="1280" height="960" />
+        </sensor>
+  <csi_be>
+    <output format="GR10" width="1280" height="960" />
+    <stream2mmio>
+      <input width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+      <output width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+    </stream2mmio>
+    <tuning_mode value="0" />
+  </csi_be>
+  <isa_lb_video>
+    <main format="YUV420_10_PL" width="1280" height="960" />
+    <sis_a format="GRBG_12_LI" width="320" height="240" peer="sis_a" />
+    <sis_b format="GRBG_12_LI" width="320" height="240" peer="sis_b" />
+    <pxl_crop_sis_a>
+      <input width="320" height="240" top="0" left="0" bottom="0" right="0" />
+      <output width="320" height="240" top="0" left="0" bottom="0" right="0" />
+    </pxl_crop_sis_a>
+    <pxl_crop_sis_b>
+      <input width="320" height="240" top="0" left="0" bottom="0" right="0" />
+      <output width="320" height="240" top="0" left="0" bottom="0" right="0" />
+    </pxl_crop_sis_b>
+    <pixelformatter>
+      <input width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+      <output width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+    </pixelformatter>
+    <pxl_crop_yuv_a>
+      <input width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+      <output width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+    </pxl_crop_yuv_a>
+    <sis_1_0_b>
+      <input width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+      <output width="320" height="240" top="0" left="0" bottom="0" right="0" />
+    </sis_1_0_b>
+    <sis_1_0_a>
+      <input width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+      <output width="320" height="240" top="0" left="0" bottom="0" right="0" />
+    </sis_1_0_a>
+    <padder_yuv_a>
+      <input width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+      <output width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+    </padder_yuv_a>
+    <strm_crop_sis_b>
+      <input width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+      <output width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+    </strm_crop_sis_b>
+    <strm_crop_sis_a>
+      <input width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+      <output width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+    </strm_crop_sis_a>
+    <vertical_padding_1_0>
+      <input width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+      <output width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+    </vertical_padding_1_0>
+    <b2i_ds_1_0_0>
+      <input width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+      <output width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+    </b2i_ds_1_0_0>
+    <tuning_mode value="0" />
+  </isa_lb_video>
+  <post_gdc_video>
+    <main format="YUV420_8_SP" width="1280" height="960" peer="video0" />
+    <tnr_ref_in format="YUV420_12_SP" private="1" width="1280" height="960" />
+    <tnr_ref_out format="YUV420_12_SP" private="1" width="1280" height="960" />
+    <gdc5>
+      <input width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+      <output width="1280" height="960" top="-28" left="0" bottom="-4" right="0" />
+    </gdc5>
+    <ofa_2_mp>
+      <input width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+      <output width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+    </ofa_2_mp>
+    <tnr_6_0>
+      <input width="1280" height="992" top="28" left="0" bottom="4" right="0" />
+      <output width="1280" height="960" top="0" left="0" bottom="0" right="0" />
+    </tnr_6_0>
+    <tuning_mode value="0" />
+  </post_gdc_video>
+</settings>
+<settings key="8003" id="100000" active_outputs="1" dvs="0" power_factor="0" fps="30" flow="StillsDuringVideo" flip_v="0" flip_h="0" pdaf_type="0" golden="true">
+  <video0 width="1920" height="1200" stream_id="60001" bpp="8" format="Linear" />
+  <sis_b width="240" height="150" stream_id="60001" />
+  <sis_a width="480" height="300" stream_id="60001" />
+  <sensor vflip="0" hflip="0" mode_id="WUXGA">
+            <port_0 format="BG10" width="1920" height="1200" />
+        </sensor>
+  <csi_be>
+    <output format="GR10" width="1920" height="1200" />
+    <stream2mmio>
+      <input width="1920" height="1200" top="0" left="0" bottom="0" right="0" />
+      <output width="1920" height="1200" top="0" left="0" bottom="0" right="0" />
+    </stream2mmio>
+    <tuning_mode value="0" />
+  </csi_be>
+  <isa_lb_video>
+    <main format="YUV420_10_PL" width="1920" height="1216" />
+    <sis_a format="GRBG_12_LI" width="480" height="300" peer="sis_a" />
+    <sis_b format="GRBG_12_LI" width="240" height="150" peer="sis_b" />
+    <pxl_crop_sis_a>
+      <input width="480" height="300" top="0" left="0" bottom="0" right="0" />
+      <output width="480" height="300" top="0" left="0" bottom="0" right="0" />
+    </pxl_crop_sis_a>
+    <pxl_crop_sis_b>
+      <input width="240" height="150" top="0" left="0" bottom="0" right="0" />
+      <output width="240" height="150" top="0" left="0" bottom="0" right="0" />
+    </pxl_crop_sis_b>
+    <pixelformatter>
+      <input width="1920" height="1200" top="0" left="0" bottom="0" right="0" />
+      <output width="1920" height="1200" top="0" left="0" bottom="0" right="0" />
+    </pixelformatter>
+    <pxl_crop_yuv_a>
+      <input width="1920" height="1200" top="0" left="0" bottom="0" right="0" />
+      <output width="1920" height="1200" top="0" left="0" bottom="0" right="0" />
+    </pxl_crop_yuv_a>
+    <sis_1_0_b>
+      <input width="1920" height="1200" top="0" left="0" bottom="0" right="0" />
+      <output width="240" height="150" top="0" left="0" bottom="0" right="0" />
+    </sis_1_0_b>
+    <sis_1_0_a>
+      <input width="1920" height="1200" top="0" left="0" bottom="0" right="0" />
+      <output width="480" height="300" top="0" left="0" bottom="0" right="0" />
+    </sis_1_0_a>
+    <padder_yuv_a>
+      <input width="1920" height="1200" top="0" left="0" bottom="0" right="0" />
+      <output width="1920" height="1200" top="0" left="0" bottom="0" right="0" />
+    </padder_yuv_a>
+    <strm_crop_sis_b>
+      <input width="1920" height="1200" top="0" left="0" bottom="0" right="0" />
+      <output width="1920" height="1200" top="0" left="0" bottom="0" right="0" />
+    </strm_crop_sis_b>
+    <strm_crop_sis_a>
+      <input width="1920" height="1200" top="0" left="0" bottom="0" right="0" />
+      <output width="1920" height="1200" top="0" left="0" bottom="0" right="0" />
+    </strm_crop_sis_a>
+    <vertical_padding_1_0>
+      <input width="1920" height="1200" top="-8" left="0" bottom="-8" right="0" />
+      <output width="1920" height="1216" top="0" left="0" bottom="0" right="0" />
+    </vertical_padding_1_0>
+    <b2i_ds_1_0_0>
+      <input width="1920" height="1200" top="0" left="0" bottom="0" right="0" />
+      <output width="1920" height="1200" top="0" left="0" bottom="0" right="0" />
+    </b2i_ds_1_0_0>
+    <tuning_mode value="0" />
+  </isa_lb_video>
+  <post_gdc_video>
+    <main format="YUV420_8_SP" width="1920" height="1200" peer="video0" />
+    <tnr_ref_in format="YUV420_8_SP" private="1" width="1920" height="1216" />
+    <tnr_ref_out format="YUV420_8_SP" private="1" width="1920" height="1216" />
+    <gdc5>
+      <input width="1920" height="1216" top="0" left="0" bottom="0" right="0" />
+      <output width="1920" height="1216" top="-28" left="0" bottom="-4" right="0" />
+    </gdc5>
+    <ofa_2_mp>
+      <input width="1920" height="1216" top="8" left="0" bottom="8" right="0" />
+      <output width="1920" height="1200" top="0" left="0" bottom="0" right="0" />
+    </ofa_2_mp>
+    <tnr_6_0>
+      <input width="1920" height="1248" top="28" left="0" bottom="4" right="0" />
+      <output width="1920" height="1216" top="0" left="0" bottom="0" right="0" />
+    </tnr_6_0>
+    <tuning_mode value="0" />
+  </post_gdc_video>
+</settings>
+<settings key="8004" id="100006" active_outputs="1" dvs="0" power_factor="0" fps="30" flow="StillsDuringVideo" flip_v="0" flip_h="0" pdaf_type="0">
+  <video0 width="1920" height="1200" stream_id="60001" bpp="10" format="Linear" />
+  <sis_b width="240" height="150" stream_id="60001" />
+  <sis_a width="480" height="300" stream_id="60001" />
+  <sensor vflip="0" hflip="0" mode_id="WUXGA">
+            <port_0 format="BG10" width="1920" height="1200" />
+        </sensor>
+  <csi_be>
+    <output format="GR10" width="1920" height="1200" />
+    <stream2mmio>
+      <input width="1920" height="1200" top="0" left="0" bottom="0" right="0" />
+      <output width="1920" height="1200" top="0" left="0" bottom="0" right="0" />
+    </stream2mmio>
+    <tuning_mode value="0" />
+  </csi_be>
+  <isa_lb_video>
+    <main format="YUV420_10_PL" width="1920" height="1216" />
+    <sis_a format="GRBG_12_LI" width="480" height="300" peer="sis_a" />
+    <sis_b format="GRBG_12_LI" width="240" height="150" peer="sis_b" />
+    <pxl_crop_sis_a>
+      <input width="480" height="300" top="0" left="0" bottom="0" right="0" />
+      <output width="480" height="300" top="0" left="0" bottom="0" right="0" />
+    </pxl_crop_sis_a>
+    <pxl_crop_sis_b>
+      <input width="240" height="150" top="0" left="0" bottom="0" right="0" />
+      <output width="240" height="150" top="0" left="0" bottom="0" right="0" />
+    </pxl_crop_sis_b>
+    <pixelformatter>
+      <input width="1920" height="1200" top="0" left="0" bottom="0" right="0" />
+      <output width="1920" height="1200" top="0" left="0" bottom="0" right="0" />
+    </pixelformatter>
+    <pxl_crop_yuv_a>
+      <input width="1920" height="1200" top="0" left="0" bottom="0" right="0" />
+      <output width="1920" height="1200" top="0" left="0" bottom="0" right="0" />
+    </pxl_crop_yuv_a>
+    <sis_1_0_b>
+      <input width="1920" height="1200" top="0" left="0" bottom="0" right="0" />
+      <output width="240" height="150" top="0" left="0" bottom="0" right="0" />
+    </sis_1_0_b>
+    <sis_1_0_a>
+      <input width="1920" height="1200" top="0" left="0" bottom="0" right="0" />
+      <output width="480" height="300" top="0" left="0" bottom="0" right="0" />
+    </sis_1_0_a>
+    <padder_yuv_a>
+      <input width="1920" height="1200" top="0" left="0" bottom="0" right="0" />
+      <output width="1920" height="1200" top="0" left="0" bottom="0" right="0" />
+    </padder_yuv_a>
+    <strm_crop_sis_b>
+      <input width="1920" height="1200" top="0" left="0" bottom="0" right="0" />
+      <output width="1920" height="1200" top="0" left="0" bottom="0" right="0" />
+    </strm_crop_sis_b>
+    <strm_crop_sis_a>
+      <input width="1920" height="1200" top="0" left="0" bottom="0" right="0" />
+      <output width="1920" height="1200" top="0" left="0" bottom="0" right="0" />
+    </strm_crop_sis_a>
+    <vertical_padding_1_0>
+      <input width="1920" height="1200" top="-8" left="0" bottom="-8" right="0" />
+      <output width="1920" height="1216" top="0" left="0" bottom="0" right="0" />
+    </vertical_padding_1_0>
+    <b2i_ds_1_0_0>
+      <input width="1920" height="1200" top="0" left="0" bottom="0" right="0" />
+      <output width="1920" height="1200" top="0" left="0" bottom="0" right="0" />
+    </b2i_ds_1_0_0>
+    <tuning_mode value="0" />
+  </isa_lb_video>
+  <post_gdc_video>
+    <main format="YUV420_8_SP" width="1920" height="1200" peer="video0" />
+    <tnr_ref_in format="YUV420_10_SP" private="1" width="1920" height="1216" />
+    <tnr_ref_out format="YUV420_10_SP" private="1" width="1920" height="1216" />
+    <gdc5>
+      <input width="1920" height="1216" top="0" left="0" bottom="0" right="0" />
+      <output width="1920" height="1216" top="-28" left="0" bottom="-4" right="0" />
+    </gdc5>
+    <ofa_2_mp>
+      <input width="1920" height="1216" top="8" left="0" bottom="8" right="0" />
+      <output width="1920" height="1200" top="0" left="0" bottom="0" right="0" />
+    </ofa_2_mp>
+    <tnr_6_0>
+      <input width="1920" height="1248" top="28" left="0" bottom="4" right="0" />
+      <output width="1920" height="1216" top="0" left="0" bottom="0" right="0" />
+    </tnr_6_0>
+    <tuning_mode value="0" />
+  </post_gdc_video>
+</settings>
+<settings key="8005" id="100015" active_outputs="1" dvs="0" power_factor="0" fps="30" flow="StillsDuringVideo" flip_v="0" flip_h="0" pdaf_type="0">
+  <video0 width="1920" height="1200" stream_id="60001" bpp="12" format="Linear" />
+  <sis_b width="240" height="150" stream_id="60001" />
+  <sis_a width="480" height="300" stream_id="60001" />
+  <sensor vflip="0" hflip="0" mode_id="WUXGA">
+            <port_0 format="BG10" width="1920" height="1200" />
+        </sensor>
+  <csi_be>
+    <output format="GR10" width="1920" height="1200" />
+    <stream2mmio>
+      <input width="1920" height="1200" top="0" left="0" bottom="0" right="0" />
+      <output width="1920" height="1200" top="0" left="0" bottom="0" right="0" />
+    </stream2mmio>
+    <tuning_mode value="0" />
+  </csi_be>
+  <isa_lb_video>
+    <main format="YUV420_10_PL" width="1920" height="1216" />
+    <sis_a format="GRBG_12_LI" width="480" height="300" peer="sis_a" />
+    <sis_b format="GRBG_12_LI" width="240" height="150" peer="sis_b" />
+    <pxl_crop_sis_a>
+      <input width="480" height="300" top="0" left="0" bottom="0" right="0" />
+      <output width="480" height="300" top="0" left="0" bottom="0" right="0" />
+    </pxl_crop_sis_a>
+    <pxl_crop_sis_b>
+      <input width="240" height="150" top="0" left="0" bottom="0" right="0" />
+      <output width="240" height="150" top="0" left="0" bottom="0" right="0" />
+    </pxl_crop_sis_b>
+    <pixelformatter>
+      <input width="1920" height="1200" top="0" left="0" bottom="0" right="0" />
+      <output width="1920" height="1200" top="0" left="0" bottom="0" right="0" />
+    </pixelformatter>
+    <pxl_crop_yuv_a>
+      <input width="1920" height="1200" top="0" left="0" bottom="0" right="0" />
+      <output width="1920" height="1200" top="0" left="0" bottom="0" right="0" />
+    </pxl_crop_yuv_a>
+    <sis_1_0_b>
+      <input width="1920" height="1200" top="0" left="0" bottom="0" right="0" />
+      <output width="240" height="150" top="0" left="0" bottom="0" right="0" />
+    </sis_1_0_b>
+    <sis_1_0_a>
+      <input width="1920" height="1200" top="0" left="0" bottom="0" right="0" />
+      <output width="480" height="300" top="0" left="0" bottom="0" right="0" />
+    </sis_1_0_a>
+    <padder_yuv_a>
+      <input width="1920" height="1200" top="0" left="0" bottom="0" right="0" />
+      <output width="1920" height="1200" top="0" left="0" bottom="0" right="0" />
+    </padder_yuv_a>
+    <strm_crop_sis_b>
+      <input width="1920" height="1200" top="0" left="0" bottom="0" right="0" />
+      <output width="1920" height="1200" top="0" left="0" bottom="0" right="0" />
+    </strm_crop_sis_b>
+    <strm_crop_sis_a>
+      <input width="1920" height="1200" top="0" left="0" bottom="0" right="0" />
+      <output width="1920" height="1200" top="0" left="0" bottom="0" right="0" />
+    </strm_crop_sis_a>
+    <vertical_padding_1_0>
+      <input width="1920" height="1200" top="-8" left="0" bottom="-8" right="0" />
+      <output width="1920" height="1216" top="0" left="0" bottom="0" right="0" />
+    </vertical_padding_1_0>
+    <b2i_ds_1_0_0>
+      <input width="1920" height="1200" top="0" left="0" bottom="0" right="0" />
+      <output width="1920" height="1200" top="0" left="0" bottom="0" right="0" />
+    </b2i_ds_1_0_0>
+    <tuning_mode value="0" />
+  </isa_lb_video>
+  <post_gdc_video>
+    <main format="YUV420_8_SP" width="1920" height="1200" peer="video0" />
+    <tnr_ref_in format="YUV420_12_SP" private="1" width="1920" height="1216" />
+    <tnr_ref_out format="YUV420_12_SP" private="1" width="1920" height="1216" />
+    <gdc5>
+      <input width="1920" height="1216" top="0" left="0" bottom="0" right="0" />
+      <output width="1920" height="1216" top="-28" left="0" bottom="-4" right="0" />
+    </gdc5>
+    <ofa_2_mp>
+      <input width="1920" height="1216" top="8" left="0" bottom="8" right="0" />
+      <output width="1920" height="1200" top="0" left="0" bottom="0" right="0" />
+    </ofa_2_mp>
+    <tnr_6_0>
+      <input width="1920" height="1248" top="28" left="0" bottom="4" right="0" />
+      <output width="1920" height="1216" top="0" left="0" bottom="0" right="0" />
+    </tnr_6_0>
+    <tuning_mode value="0" />
+  </post_gdc_video>
+</settings>
+</graph_settings>
