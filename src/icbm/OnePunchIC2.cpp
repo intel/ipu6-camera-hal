@@ -113,6 +113,7 @@ int IntelOPIC2::setup(ICBMInitInfo* initParams, std::shared_ptr<IC2ApiHandle> ha
         iaic_options option{};
         option.profiling = false;
         option.blocked_init = false;
+        option.external_device = nullptr;
         const char* featureStr = gFeatureStrMapping.at(ICBMFeatureType::USER_FRAMING);
         mIC2Api->create_session(mSessionMap[key], featureStr, option);
         mFeatureMap[key].push_back(featureStr);
@@ -122,6 +123,7 @@ int IntelOPIC2::setup(ICBMInitInfo* initParams, std::shared_ptr<IC2ApiHandle> ha
         iaic_options option{};
         option.profiling = false;
         option.blocked_init = false;
+        option.external_device = nullptr;
         const char* featureStr = gFeatureStrMapping.at(ICBMFeatureType::BC_MODE_BB);
         mIC2Api->create_session(mSessionMap[key], featureStr, option);
         mFeatureMap[key].push_back(featureStr);
@@ -130,6 +132,7 @@ int IntelOPIC2::setup(ICBMInitInfo* initParams, std::shared_ptr<IC2ApiHandle> ha
         iaic_options option{};
         option.profiling = true;
         option.blocked_init = true;
+        option.external_device = nullptr;
         const char* featureStr = gFeatureStrMapping.at(ICBMFeatureType::LEVEL0_TNR);
         mIC2Api->create_session(mSessionMap[key], featureStr, option);
         mFeatureMap[key].push_back(featureStr);
@@ -187,7 +190,8 @@ int IntelOPIC2::runTnrFrame(const ICBMReqInfo& reqInfo) {
 
     const char* featureName = gFeatureStrMapping.at(ICBMFeatureType::LEVEL0_TNR);
     iaic_memory inMem, outMem;
-    inMem.has_gfx = false;
+
+    inMem.gfx = iaic_gfx_none;
     inMem.size[0] = reqInfo.inII.size;
     inMem.size[1] = reqInfo.inII.width;
     inMem.size[2] = reqInfo.inII.height;
@@ -256,10 +260,12 @@ int IntelOPIC2::runTnrFrame(const ICBMReqInfo& reqInfo) {
             sizeof(tnrParam->blend.max_recursive_similarity), featureName,
             "tnr7us/pal:max_recursive_similarity");
 
-    int ret = mIC2Api->execute(mSessionMap[key], inMem, outMem);
-    mIC2Api->get_data(mSessionMap[key], outMem);
+    if (mIC2Api->execute(mSessionMap[key], inMem, outMem)) {
+        mIC2Api->get_data(mSessionMap[key], outMem);
+        return OK;
+    }
 
-    return ret;
+    return UNKNOWN_ERROR;
 }
 
 void IntelOPIC2::setData(iaic_session uid, void* p, size_t size, const char* featureName,

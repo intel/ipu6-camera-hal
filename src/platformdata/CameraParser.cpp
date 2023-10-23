@@ -131,7 +131,7 @@ CameraParser::~CameraParser() {
  * Replacing $I2CBUS with the real mI2CBus if the value contains the string "$I2CBUS"
  * one example: "imx319 $I2CBUS"
  * Replacing $CSI_PORT with the real mCsiPort if the value contains the string "$CSI_PORT"
- * one example: "Intel IPU6 CSI-2 $CSI_PORT"
+ * one example: "Intel IPU6 CSI-2 $CSI_PORT" or "Intel IPU6 CSI2 $CSI_PORT"
  *
  * \param profiles: the pointer of the CameraParser.
  * \param value: camera information.
@@ -169,7 +169,7 @@ void CameraParser::getCsiPortAndI2CBus(CameraParser* profiles) {
         if ((availableSensorTmp.first.find(fullSensorName) != string::npos) &&
             (sensorInfo->sensorFlag != true)) {
             /* parameters information format example:
-               sinkEntityName is "Intel IPU6 CSI-2 1"
+               sinkEntityName is "Intel IPU6 CSI-2 1" or "Intel IPU6 CSI2 1"
                profiles->pCurrentCam->sensorName is "ov8856-wf" or "ov8856"
                sensorName is "ov8856"
             */
@@ -390,6 +390,17 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
             fabs(awbRunningRate - aeRunningRate) < EPSILON) {
             // if same runnning rate of AE and AWB, stats running rate is supported
             pCurrentCam->mStatsRunningRate = true;
+        }
+    } else if (strcmp(name, "disableHDRnetBoards") == 0) {
+        int size = strlen(atts[1]);
+        char src[size + 1];
+        MEMCPY_S(src, size, atts[1], size);
+        src[size] = '\0';
+        char* savePtr = nullptr;
+        char* tablePtr = strtok_r(src, ",", &savePtr);
+        while (tablePtr) {
+            pCurrentCam->mDisableHDRnetBoards.push_back(tablePtr);
+            tablePtr = strtok_r(nullptr, ",", &savePtr);
         }
     } else if (strcmp(name, "useCrlModule") == 0) {
         pCurrentCam->mUseCrlModule = strcmp(atts[1], "true") == 0;
@@ -681,7 +692,7 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
             val > 0 ? std::min(val, MAX_FACES_DETECTABLE) : MAX_FACES_DETECTABLE;
     } else if (strcmp(name, "tnrExtraFrameNum") == 0) {
         int val = atoi(atts[1]);
-        pCurrentCam->mTnrExtraFrameNum = val > 0 ? val : DEFAULT_TNR_EXTRA_FRAME_NUM;
+        pCurrentCam->mTnrExtraFrameNum = val > 0 ? val : 0;
     } else if (strcmp(name, "dummyStillSink") == 0) {
         pCurrentCam->mDummyStillSink = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "useGpuTnr") == 0) {
@@ -2258,7 +2269,8 @@ void CameraParser::getNVMDirectory(CameraParser* profiles) {
  * 1. <availableSensors value="ov8856-wf-2,ov2740-uf-0,ov2740-wf-2"/>
  *     The value is "'camera name'-wf/uf-'CSI port number'".
  *     For example: camera name is "ov8856". Sensor's sink entity name is
- *      "Intel IPU6 CSI-2 2" and it is word facing. The value is ov8856-wf-2.
+ *      "Intel IPU6 CSI-2 2" or "Intel IPU6 CSI2 2" and it is word facing.
+ *      The value is ov8856-wf-2.
  * 2. <platform value="IPU6"/> the platform value must be uppercase letter.
  *
  */
@@ -2272,10 +2284,13 @@ std::vector<std::string> CameraParser::getAvailableSensors(
         return sensorsList;
     }
 
-    // sensor's sink entity name prefix:Intel IPU6 CSI-2 2
+    // sensor's sink entity name prefix:"Intel IPU6 CSI-2 2" or "Intel IPU6 CSI2 2"
     std::string sensorSinkName = "Intel ";
     sensorSinkName.append(ipuName);
-    sensorSinkName.append(" CSI-2 ");
+    if (IPU6_UPSTREAM)
+        sensorSinkName.append(" CSI2 ");
+    else
+        sensorSinkName.append(" CSI-2 ");
 
     std::vector<string> availableSensors;
     for (auto& sensor : sensorsList) {

@@ -1032,6 +1032,7 @@ void IspParamAdaptor::dumpIspParameter(int streamId, int64_t sequence, ia_binary
     bParam.mType = M_PSYS;
     bParam.sequence = sequence;
     bParam.gParam.appendix = ("pal_" + std::to_string(streamId)).c_str();
+    bParam.sUsage = (streamId == VIDEO_STREAM_ID) ? 0 : 2;
     CameraDump::dumpBinary(mCameraId, binaryData.data, binaryData.size, &bParam);
 }
 

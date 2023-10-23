@@ -17,6 +17,12 @@
 cmake_minimum_required(VERSION 2.8)
 project(hal_adaptor)
 
+if (UPSTREAM_CODE)
+    add_compile_definitions(IPU6_UPSTREAM=1)
+else()
+    add_compile_definitions(IPU6_UPSTREAM=0)
+endif()
+
 # Source directories
 set(ROOT_DIR        ${CMAKE_CURRENT_LIST_DIR}/../../../)
 set(METADATA_DIR    ${ROOT_DIR}/src/metadata)

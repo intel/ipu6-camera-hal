@@ -811,10 +811,10 @@ void* CameraUtils::dlopenLibrary(const char* name, int flags) {
 
     const char* lError = dlerror();
     if (lError) {
-        if (handle == nullptr) {
-            LOGW("%s, handle is NULL", __func__);
-        }
         LOGW("%s, dlopen Error: %s", __func__, lError);
+        if (handle) {
+            dlclose(handle);
+        }
         return nullptr;
     }
 

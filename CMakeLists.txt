@@ -67,6 +67,12 @@ endif()
 
 message(STATUS "install prefix: " ${CMAKE_INSTALL_PREFIX})
 
+if (UPSTREAM_CODE)
+    add_compile_definitions(IPU6_UPSTREAM=1)
+else()
+    add_compile_definitions(IPU6_UPSTREAM=0)
+endif()
+
 #------------------------- Compilation settings -------------------------
 
 include(GNUInstallDirs)
@@ -392,10 +398,14 @@ endif()
 # Install configure files, by default ipu4 is used
 if(("${IPU_VER}" STREQUAL "") OR ("${IPU_VER}" STREQUAL "ipu4"))
     message("Install camera configure files for ipu4")
-    install(DIRECTORY config/linux/ipu4/ DESTINATION share/defaults/etc/camera/${CMAKE_INSTALL_SUB_PATH})
+    install(DIRECTORY config/linux/ipu4/ DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/camera/${CMAKE_INSTALL_SUB_PATH})
 else()
-    message("Install camera configure files for" ${IPU_VER})
-    install(DIRECTORY config/linux/${IPU_VER}/ DESTINATION share/defaults/etc/camera/${CMAKE_INSTALL_SUB_PATH})
+    message("Install camera configure files for " ${IPU_VER})
+    if (UPSTREAM_CODE)
+        install(DIRECTORY config/linux/${IPU_VER}_upstream/ DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/camera/${CMAKE_INSTALL_SUB_PATH})
+    else()
+        install(DIRECTORY config/linux/${IPU_VER}/ DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/camera/${CMAKE_INSTALL_SUB_PATH})
+    endif()
 endif()
 
 # Install libraries

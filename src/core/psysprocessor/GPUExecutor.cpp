@@ -568,10 +568,10 @@ int GPUExecutor::runTnrFrame(const std::shared_ptr<CameraBuffer>& inBuf,
 
     bool paramSyncUpdate = (mStreamId == VIDEO_STREAM_ID) ? false : true;
 
-    // LEVEL0_ICBM_S
+#ifdef TNR7_LEVEL0
     // no async param update in level0 tnr
     paramSyncUpdate = true;
-    // LEVEL0_ICBM_E
+#endif
 
     if (!paramSyncUpdate && mIntelTNR) {
         // request update tnr parameters before wait
