@@ -257,6 +257,8 @@ if (${CMAKE_VERSION} VERSION_LESS 3.11)
 else()
     add_library(camhal SHARED $<TARGET_OBJECTS:camhal_static>)
 endif()
+set_target_properties(camhal PROPERTIES SOVERSION 0)
+set_target_properties(camhal PROPERTIES VERSION "0.0.0")
 
 add_library(camhal_static STATIC ${LIBCAMHAL_SRCS})
 

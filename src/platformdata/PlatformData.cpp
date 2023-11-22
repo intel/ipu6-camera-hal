@@ -22,6 +22,7 @@
 #include <sys/sysinfo.h>
 
 #include <memory>
+#include <vector>
 
 #include "CameraParser.h"
 #include "iutils/CameraLog.h"
@@ -246,6 +247,17 @@ void PlatformData::releaseGraphConfigNodes() {
     for (size_t i = 0; i < mStaticCfg.mCameras.size(); ++i) {
         IGraphConfigManager::releaseInstance(i);
     }
+}
+
+int PlatformData::getModuleInfo(int cameraId, std::string& moduleId, std::string& sensorId) {
+    const StaticCfg::CameraInfo& pCam = getInstance()->mStaticCfg.mCameras[cameraId];
+
+    if (pCam.mModuleId.empty() || pCam.mSensorId.empty()) return NAME_NOT_FOUND;
+
+    moduleId = pCam.mModuleId;
+    sensorId = pCam.mSensorId;
+
+    return OK;
 }
 
 const char* PlatformData::getSensorName(int cameraId) {
@@ -1835,6 +1847,11 @@ int PlatformData::getSensorOrientation(int cameraId) {
 
 bool PlatformData::isDummyStillSink(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mDummyStillSink;
+}
+
+void PlatformData::getTnrThresholdSizes(int cameraId,
+                                        std::vector<camera_resolution_t>& resolutions) {
+    resolutions = getInstance()->mStaticCfg.mCameras[cameraId].mTnrThresholdSizes;
 }
 
 bool PlatformData::isGpuTnrEnabled(int cameraId) {
