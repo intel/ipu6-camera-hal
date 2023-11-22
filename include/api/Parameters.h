@@ -232,6 +232,7 @@ typedef enum {
     BUFFER_FLAG_INTERNAL = 1 << 1,
     BUFFER_FLAG_SW_READ = 1 << 2,
     BUFFER_FLAG_SW_WRITE = 1 << 3,
+    BUFFER_FLAG_NO_FLUSH = 1 << 4,
 } camera_buffer_flags_t;
 
 /**

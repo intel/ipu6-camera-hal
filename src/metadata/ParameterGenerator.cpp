@@ -480,6 +480,14 @@ int ParameterGenerator::updateCommonMetadata(Parameters* params, const AiqResult
     entry.data.i64 = &frameDuration;
     ParameterHelper::mergeTag(entry, params);
 
+    uint8_t sensorMode = (aiqResult->mTuningMode == TUNING_MODE_VIDEO_BINNING) ?
+        INTEL_VENDOR_CAMERA_SENSOR_MODE_BINNING : INTEL_VENDOR_CAMERA_SENSOR_MODE_FULL;
+    entry.tag = INTEL_VENDOR_CAMERA_SENSOR_MODE;
+    entry.type = ICAMERA_TYPE_BYTE;
+    entry.count = 1;
+    entry.data.u8 = &sensorMode;
+    ParameterHelper::mergeTag(entry, params);
+
     int32_t userRequestId = 0;
     params->getUserRequestId(userRequestId);
     camera_msg_data_t data = {CAMERA_METADATA_ENTRY, {}};

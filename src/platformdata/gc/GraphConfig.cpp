@@ -18,6 +18,8 @@
 
 #include "src/platformdata/gc/GraphConfig.h"
 
+#include <algorithm>
+
 #include "PlatformData.h"
 #include "iutils/CameraLog.h"
 
@@ -64,8 +66,23 @@ status_t GraphConfig::queryGraphSettings(const std::vector<HalStream*>& activeSt
 status_t GraphConfig::configStreams(const vector<HalStream*>& activeStreams) {
     LOG1("@%s", __func__);
 
+    vector<camera_resolution_t> res;
+    PlatformData::getTnrThresholdSizes(mCameraId, res);
+
+    // enable tnr dummy sink on resolution size larger than threshold
+    bool highResolution = res.size() > 0 ? false : true;
+    if (res.size() > 0) {
+        for (auto& stream : activeStreams) {
+            if (static_cast<int>(stream->mHeight) * static_cast<int>(stream->mWidth) >
+                res.begin()->height * res.begin()->width) {
+                highResolution = true;
+                break;
+            }
+        }
+    }
+
     bool dummyStillSink = PlatformData::isDummyStillSink(mCameraId);
-    int ret = mGraphConfigImpl->configStreams(activeStreams, dummyStillSink);
+    int ret = mGraphConfigImpl->configStreams(activeStreams, dummyStillSink && highResolution);
     CheckAndLogError(ret != OK, UNKNOWN_ERROR, "%s, Failed to config streams", __func__);
 
     ret = mGraphConfigImpl->getGraphConfigData(&mGraphData);

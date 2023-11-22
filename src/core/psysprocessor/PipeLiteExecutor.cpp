@@ -780,7 +780,7 @@ int PipeLiteExecutor::runPipe(map<Port, shared_ptr<CameraBuffer>>& inBuffers,
         unit.inputBuffers.begin()->second->setSequence(sequence);
         // Currently PG handles one stats buffer only
         ret = unit.pg->iterate(unit.inputBuffers, unit.outputBuffers,
-                               (statsCount > 0) ? pgStatsDatas[0] : nullptr, ipuParameters);
+                               pgStatsDatas.empty() ? nullptr : pgStatsDatas[0], ipuParameters);
         CheckAndLogError((ret != OK), ret, "%s: pipe iteration error %d", mName.c_str(), ret);
 
         if (CameraDump::isDumpTypeEnable(DUMP_PSYS_INTERM_BUFFER)) {

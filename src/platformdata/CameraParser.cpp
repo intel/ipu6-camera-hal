@@ -695,6 +695,10 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
         pCurrentCam->mTnrExtraFrameNum = val > 0 ? val : 0;
     } else if (strcmp(name, "dummyStillSink") == 0) {
         pCurrentCam->mDummyStillSink = strcmp(atts[1], "true") == 0;
+    } else if (strcmp(name, "tnrThresholdSizes") == 0) {
+        parseSizesList(atts[1], pCurrentCam->mTnrThresholdSizes);
+        for (const auto& s : pCurrentCam->mTnrThresholdSizes)
+            LOG2("@%s, mTnrThresholdSizes: width:%d, height:%d", __func__, s.width, s.height);
     } else if (strcmp(name, "useGpuTnr") == 0) {
         pCurrentCam->mGpuTnrEnabled = strcmp(atts[1], "true") == 0;
     } else if (!strcmp(name, "removeCacheFlushOutputBuffer")) {
@@ -2138,12 +2142,11 @@ void CameraParser::endParseElement(void* userData, const char* name) {
     }
 }
 
-int CameraParser::getCameraModuleNameFromEEPROM(const std::string& nvmDir,
-                                                std::string* cameraModule) {
+int CameraParser::getCameraModuleNameFromEEPROM(PlatformData::StaticCfg::CameraInfo* cam) {
     const int moduleInfoOffset = CAMERA_MODULE_INFO_OFFSET;
-    FILE* eepromFile = fopen(nvmDir.c_str(), "rb");
+    FILE* eepromFile = fopen(cam->mNvmDirectory.c_str(), "rb");
     CheckAndLogError(!eepromFile, UNKNOWN_ERROR, "Failed to open EEPROM file in %s",
-                     nvmDir.c_str());
+                     cam->mNvmDirectory.c_str());
 
     // file size should be larger than CAMERA_MODULE_INFO_OFFSET
     fseek(eepromFile, 0, SEEK_END);
@@ -2172,8 +2175,20 @@ int CameraParser::getCameraModuleNameFromEEPROM(const std::string& nvmDir,
     snprintf(tmpName, CAMERA_MODULE_INFO_SIZE, "%c%c_%04x", cameraModuleInfo.mModuleVendor[0],
              cameraModuleInfo.mModuleVendor[1], cameraModuleInfo.mModuleProduct);
 
-    cameraModule->assign(tmpName);
-    LOG1("%s, aiqb name %s", __func__, cameraModule->c_str());
+    cam->mCamModuleName.assign(tmpName);
+    LOG1("%s, aiqb name %s", __func__, cam->mCamModuleName.c_str());
+
+    char moduleId[CAMERA_MODULE_INFO_SIZE];
+    snprintf(moduleId, CAMERA_MODULE_INFO_SIZE, "%c%c%04x", cameraModuleInfo.mModuleVendor[0],
+             cameraModuleInfo.mModuleVendor[1], cameraModuleInfo.mModuleProduct);
+    cam->mModuleId.assign(moduleId);
+
+    char sensorId[CAMERA_MODULE_INFO_SIZE];
+    snprintf(sensorId, CAMERA_MODULE_INFO_SIZE, "%c%c%04x", cameraModuleInfo.mSensorVendor[0],
+             cameraModuleInfo.mSensorVendor[1], cameraModuleInfo.mSensorModel);
+    cam->mSensorId.assign(sensorId);
+
+    LOG1("module id %s, sensor id %s", cam->mModuleId.c_str(), cam->mSensorId.c_str());
 
     return OK;
 }
@@ -2249,8 +2264,7 @@ void CameraParser::getNVMDirectory(CameraParser* profiles) {
             LOG2("NVM data is located in %s", nvmPath.c_str());
             profiles->pCurrentCam->mNvmDirectory = nvmPath;
             profiles->pCurrentCam->mMaxNvmDataSize = nvm.dataSize;
-            int ret = getCameraModuleNameFromEEPROM(profiles->pCurrentCam->mNvmDirectory,
-                                                    &profiles->pCurrentCam->mCamModuleName);
+            int ret = getCameraModuleNameFromEEPROM(profiles->pCurrentCam);
             LOG2("NVM dir %s, ret %d", profiles->pCurrentCam->mNvmDirectory.c_str(), ret);
             break;
         } else {

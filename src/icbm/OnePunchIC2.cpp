@@ -31,6 +31,7 @@ namespace icamera {
 IntelOPIC2* IntelOPIC2::sInstance = nullptr;
 std::mutex IntelOPIC2::sLock;
 
+// LEVEL0_ICBM_S
 void UserFramingBuilder::linkToMemoryChain(MemoryChainDescription& memoryChain) {
     memoryChain.linkIn("user_framing", "source:source", "drain:drain");
 }
@@ -38,11 +39,14 @@ void UserFramingBuilder::linkToMemoryChain(MemoryChainDescription& memoryChain) 
 void BackgroundBlurBuilder::linkToMemoryChain(MemoryChainDescription& memoryChain) {
     memoryChain.linkIn("background_concealment", "in:source", "out:drain");
 }
+// LEVEL0_ICBM_E
 
 static const std::unordered_map<ICBMFeatureType, const char*> gFeatureStrMapping = {
+    {ICBMFeatureType::LEVEL0_TNR, "tnr7us_l0"},
+    // LEVEL0_ICBM_S
     {ICBMFeatureType::USER_FRAMING, "user_framing"},
     {ICBMFeatureType::BC_MODE_BB, "background_concealment"},
-    {ICBMFeatureType::LEVEL0_TNR, "tnr7us_l0"},
+    // LEVEL0_ICBM_E
 };
 
 IntelOPIC2* IntelOPIC2::getInstance() {
@@ -94,7 +98,7 @@ int IntelOPIC2::setup(ICBMInitInfo* initParams, std::shared_ptr<IC2ApiHandle> ha
                  "<id%d> @%s, request type: %d is already exist", initParams->cameraId, __func__,
                  initParams->sessionType);
 
-    for (int feature = USER_FRAMING; feature < REQUEST_MAX; feature <<= 1) {
+    for (int feature = LEVEL0_TNR; feature < REQUEST_MAX; feature <<= 1) {
         if (!(initParams->sessionType & feature)) continue;
         const char* featureStr = gFeatureStrMapping.at(static_cast<ICBMFeatureType>(feature));
         if (strstr(supportedFeatures.c_str(), featureStr) == nullptr) {
@@ -109,6 +113,7 @@ int IntelOPIC2::setup(ICBMInitInfo* initParams, std::shared_ptr<IC2ApiHandle> ha
     mFeatureMap[key] = std::vector<const char*>();
     // we use the key value as the unique session id
     mSessionMap[key] = static_cast<iaic_session>(key);
+    // LEVEL0_ICBM_S
     if (initParams->sessionType & ICBMFeatureType::USER_FRAMING) {
         iaic_options option{};
         option.profiling = false;
@@ -128,6 +133,7 @@ int IntelOPIC2::setup(ICBMInitInfo* initParams, std::shared_ptr<IC2ApiHandle> ha
         mIC2Api->create_session(mSessionMap[key], featureStr, option);
         mFeatureMap[key].push_back(featureStr);
     }
+    // LEVEL0_ICBM_E
     if (initParams->sessionType & ICBMFeatureType::LEVEL0_TNR) {
         iaic_options option{};
         option.profiling = true;
@@ -282,7 +288,7 @@ void IntelOPIC2::setData(iaic_session uid, void* p, size_t size, const char* fea
 
 MemoryChainDescription IntelOPIC2::createMemoryChain(const ICBMReqInfo& reqInfo) {
     MemoryChainDescription mCD(reqInfo.inII, reqInfo.outII);
-
+    // LEVEL0_ICBM_S
     if (reqInfo.reqType & ICBMFeatureType::USER_FRAMING) {
         UserFramingBuilder().linkToMemoryChain(mCD);
     }
@@ -290,6 +296,7 @@ MemoryChainDescription IntelOPIC2::createMemoryChain(const ICBMReqInfo& reqInfo)
     if (reqInfo.reqType & ICBMFeatureType::BC_MODE_BB) {
         BackgroundBlurBuilder().linkToMemoryChain(mCD);
     }
+    // LEVEL0_ICBM_E
     if (reqInfo.reqType & ICBMFeatureType::LEVEL0_TNR) {
         mCD.linkIn(gFeatureStrMapping.at(ICBMFeatureType::LEVEL0_TNR), "in:source", "out:drain");
     }
