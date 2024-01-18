@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2023 Intel Corporation
+ * Copyright (C) 2015-2024 Intel Corporation
  * Copyright 2008-2017, The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -331,8 +331,8 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
         getSupportedFormat(atts[1], pCurrentCam->mSupportedISysFormat);
     } else if (strcmp(name, "iSysRawFormat") == 0) {
         pCurrentCam->mISysRawFormat = CameraUtils::string2PixelCode(atts[1]);
-    } else if (strcmp(name, "preferredStillOutput") == 0) {
-        parseSizesList(atts[1], pCurrentCam->mPreferStillOutput);
+    } else if (strcmp(name, "preferredOutput") == 0) {
+        parseSizesList(atts[1], pCurrentCam->mPreferOutput);
     } else if (strcmp(name, "configModeToStreamId") == 0) {
         char* srcDup = strdup(atts[1]);
         CheckAndLogError(!srcDup, VOID_VALUE, "Create a copy of source string failed.");
@@ -457,6 +457,12 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
             pCurrentCam->mTuningModeToSensitivityMap[mode] = range;
 
             tuningMode = strtok_r(nullptr, ",", &savePtr);
+        }
+    } else if (strcmp(name, "sensorMode") == 0) {
+        if (strcmp(atts[1], "binning") == 0) {
+            pCurrentCam->mSensorMode = SENSOR_MODE_BINNING;
+        } else if (strcmp(atts[1], "full") == 0) {
+            pCurrentCam->mSensorMode = SENSOR_MODE_FULL;
         }
     } else if (strcmp(name, "enablePdaf") == 0) {
         pCurrentCam->mEnablePdaf = strcmp(atts[1], "true") == 0;

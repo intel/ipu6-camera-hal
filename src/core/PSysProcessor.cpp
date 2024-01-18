@@ -74,7 +74,9 @@ PSysProcessor::~PSysProcessor() {
      * before delete PipeExecutor in PSysDAG.
      */
     if (mScheduler) {
-        mPSysDAGs[mCurConfigMode]->unregisterNode();
+        if (mPSysDAGs.find(mCurConfigMode) != mPSysDAGs.end()) {
+            mPSysDAGs[mCurConfigMode]->unregisterNode();
+        }
         delete mScheduler;
     }
     mPSysDAGs.clear();
@@ -541,7 +543,7 @@ int PSysProcessor::processNewFrame() {
             ret = prepareTask(&srcBuffers, &dstBuffers);
             CheckAndLogError(ret != OK, UNKNOWN_ERROR, "%s, Failed to process frame", __func__);
         } else {
-            LOG2("<id%d>@%s, No available buffers, in %u, out %u", mCameraId, __func__,
+            LOG2("<id%d>@%s, No available buffers, in %lu, out %lu", mCameraId, __func__,
                  srcBuffers.size(), dstBuffers.size());
         }
 
@@ -1065,7 +1067,8 @@ void PSysProcessor::dispatchTask(CameraBufferPortMap& inBuf, CameraBufferPortMap
                 if (res != nullptr) {
                     auto exposure = res->mAeResults.exposures[0].exposure[0];
                     float totalGain = exposure.analog_gain * exposure.digital_gain;
-                    PlatformData::getEdgeNrSetting(mCameraId, totalGain, hdrRatio, edgeNrSetting);
+                    PlatformData::getEdgeNrSetting(mCameraId, totalGain, hdrRatio, mTuningMode,
+                                                   edgeNrSetting);
                     mIspSettings.eeSetting.strength += edgeNrSetting.edgeStrength;
                     mIspSettings.nrSetting.strength += edgeNrSetting.nrStrength;
                     LOG2("edgeStrength %d, nrStrength %d", edgeNrSetting.edgeStrength,

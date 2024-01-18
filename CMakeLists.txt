@@ -189,7 +189,7 @@ if (CAL_BUILD)
     include_directories(include include/api include/utils include/linux
                         ${USR_INCLUDE_HEADER}/android/system/core/include/
                         ${USR_INCLUDE_HEADER}/ia_imaging
-                        ${USR_INCLUDE_HEADER}/lib${IPU_VER}
+                        ${USR_INCLUDE_HEADER}/usr/lib${IPU_VER}
                         ${USR_INCLUDE_HEADER}/android/hardware/libhardware/include/
                         aal aal/chrome src/iutils src/jpeg
                         modules/memory modules/memory/chrome
@@ -391,9 +391,9 @@ endif() #ENABLE_SANDBOXING
 if (NOT CAL_BUILD)
 # Install headers
 if ("${CMAKE_INSTALL_SUB_PATH}" STREQUAL "")
-    install(DIRECTORY include/ DESTINATION include/libcamhal)
+    install(DIRECTORY include/ DESTINATION usr/include/libcamhal)
     if (SUPPORT_LIVE_TUNING)
-        install(FILES modules/livetune/LiveTuning.h DESTINATION include/libcamhal/api)
+        install(FILES modules/livetune/LiveTuning.h DESTINATION usr/include/libcamhal/api)
     endif() #SUPPORT_LIVE_TUNING
 endif()
 
@@ -413,18 +413,18 @@ endif()
 # Install libraries
 if (${CMAKE_VERSION} VERSION_LESS 3.11)
 install(TARGETS camhal camhal_static
-        LIBRARY DESTINATION lib/${CMAKE_INSTALL_SUB_PATH}
-        ARCHIVE DESTINATION lib/${CMAKE_INSTALL_SUB_PATH}
+        LIBRARY DESTINATION usr/lib/${CMAKE_INSTALL_SUB_PATH}
+        ARCHIVE DESTINATION usr/lib/${CMAKE_INSTALL_SUB_PATH}
         )
 else()
-install(TARGETS camhal camhal_static DESTINATION lib/${CMAKE_INSTALL_SUB_PATH})
+install(TARGETS camhal camhal_static DESTINATION usr/lib/${CMAKE_INSTALL_SUB_PATH})
 endif()
 
 # Install package config file
 configure_file(${PROJECT_SOURCE_DIR}/cmake/libcamhal.pc.cmakein
                ${PROJECT_SOURCE_DIR}/libcamhal.pc @ONLY)
 install(FILES libcamhal.pc
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/${CMAKE_INSTALL_SUB_PATH}/pkgconfig)
+        DESTINATION usr/${CMAKE_INSTALL_LIBDIR}/${CMAKE_INSTALL_SUB_PATH}/pkgconfig)
 
 endif() #NOT CAL_BUILD
 

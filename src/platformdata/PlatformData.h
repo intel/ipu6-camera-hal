@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2023 Intel Corporation.
+ * Copyright (C) 2015-2024 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -127,6 +127,7 @@ class PlatformData {
                       mVCGroupId(-1),
                       // VIRTUAL_CHANNEL_E
                       mLensHwType(LENS_NONE_HW),
+                      mSensorMode(SENSOR_MODE_UNKNOWN),
                       mEnablePdaf(false),
                       mSensorAwb(false),
                       mSensorAe(false),
@@ -225,6 +226,7 @@ class PlatformData {
             // VIRTUAL_CHANNEL_E
             int mLensHwType;
             std::map<TuningMode, SensitivityRange> mTuningModeToSensitivityMap;
+            SensorMode mSensorMode;
             bool mEnablePdaf;
             bool mSensorAwb;
             bool mSensorAe;
@@ -293,8 +295,12 @@ class PlatformData {
             std::map<int, stream_array_t> mStreamToMcMap;
             Parameters mCapability;
 
-            /* key: total gain, value: a map (key: hdr ratio, value: edge and noise settings) */
-            std::map<float, std::map<float, EdgeNrSetting>> mTotalGainHdrRatioToEdgeNrMap;
+            /* key: TuningMode,
+               value: map (key: total gain,
+                           value: map (key: hdr ratio,
+                                       value: edge and noise settings)) */
+            std::map<TuningMode,
+                     std::map<float, std::map<float, EdgeNrSetting>>> mTotalGainHdrRatioToEdgeNrMap;
             std::string mGraphSettingsFile;
             GraphSettingType mGraphSettingsType;
             std::vector<MultiExpRange> mMultiExpRanges;
@@ -322,7 +328,7 @@ class PlatformData {
             // a PG might be incorrect. To be removed after stream id mismatch issue fixed.
             std::map<int, int> mConfigModeToStreamId;
             std::vector<UserToPslOutputMap> mOutputMap;
-            std::vector<camera_resolution_t> mPreferStillOutput;
+            std::vector<camera_resolution_t> mPreferOutput;
             int mMaxNvmDataSize;
             std::string mNvmDirectory;
             int mNvmOverwrittenFileSize;
@@ -504,6 +510,30 @@ class PlatformData {
      * \return int: the Lens HW type
      */
     static int getLensHwType(int cameraId);
+
+    /**
+     * get sensor mode
+     *
+     * \param[in] cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return SensorMode.
+     */
+    static SensorMode getSensorMode(int cameraId);
+
+    /**
+     * set sensor mode
+     *
+     * \param[in] cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \param[in] sensorMode: SensorMode
+     */
+    static void setSensorMode(int cameraId, SensorMode sensorMode);
+
+    /**
+     * check if binning mode supported
+     *
+     * \param[in] cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return true if binning mode supported, otherwise return false.
+     */
+    static bool isBinningModeSupport(int cameraId);
 
     /**
      * get sensitivity range by TuningMode
@@ -968,21 +998,22 @@ class PlatformData {
      * \param[in] cameraId: [0, MAX_CAMERA_NUMBER - 1]
      * \param[in] totalGain: total gain
      * \param[in] hdrRatio: hdr ratio
+     * \param[in] mode: TuningMode
      * \param[out] setting: EdgeNrSetting setting
      *
      * \return OK if setting is available, otherwise return NAME_NOT_FOUND.
      */
     static int getEdgeNrSetting(int cameraId, float totalGain, float hdrRatio,
-                                EdgeNrSetting& setting);
+                                TuningMode mode, EdgeNrSetting& setting);
 
     /**
      * Get the executor policy config.
      *
-     * \param[in] graphId: the graph id
+     * \param[in] graphIds: the graph ids
      *
      * \return PolicyConfig* object if found, otherwise return nullptr.
      */
-    static PolicyConfig* getExecutorPolicyConfig(int graphId);
+    static PolicyConfig* getExecutorPolicyConfig(const std::set<int>& graphIds);
 
     /**
      * According to stream info to select MC
@@ -1449,14 +1480,14 @@ class PlatformData {
     static camera_resolution_t* getPslOutputForRotation(int width, int height, int cameraId);
 
     /**
-     * Get preferred output size for still
+     * Get preferred output size
      *
      * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
      * \param width:    The width of user requirement
      * \param height:   The height of user requirement
      * \return the output resolution if provides it in xml file, otherwise return nullptr.
      */
-    const static camera_resolution_t* getPreferStillOutput(int width, int height, int cameraId);
+    const static camera_resolution_t* getPreferOutput(int width, int height, int cameraId);
 
     /**
      * Check if test pattern is supported or not

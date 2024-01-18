@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2023 Intel Corporation.
+ * Copyright (C) 2015-2024 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -221,21 +221,68 @@ int PlatformData::queryGraphSettings(int cameraId, const stream_config_t* stream
 }
 
 int PlatformData::getEdgeNrSetting(int cameraId, float totalGain, float hdrRatio,
-                                   EdgeNrSetting& setting) {
+                                   TuningMode mode, EdgeNrSetting& setting) {
+    LOG2("%s, tuningmode %d, totalGain %f, hdrRatio %f", __func__, mode, totalGain, hdrRatio);
     const StaticCfg::CameraInfo& pCam = getInstance()->mStaticCfg.mCameras[cameraId];
-    LOG2("%s, totalGain %f, hdrRatio %f", __func__, totalGain, hdrRatio);
 
-    if (!pCam.mTotalGainHdrRatioToEdgeNrMap.empty()) {
-        // found the lower value in map
-        auto subMap = pCam.mTotalGainHdrRatioToEdgeNrMap.upper_bound(totalGain);
-        if (subMap != pCam.mTotalGainHdrRatioToEdgeNrMap.begin()) {
-            auto sub = (--subMap)->second;
-            auto it = sub.upper_bound(hdrRatio);
-            if (it != sub.begin()) {
-                setting = (--it)->second;
-                return OK;
-            }
+    auto totalMap = pCam.mTotalGainHdrRatioToEdgeNrMap.find(mode);
+    if (totalMap == pCam.mTotalGainHdrRatioToEdgeNrMap.end()) return NAME_NOT_FOUND;
+
+    std::map<float, std::map<float, EdgeNrSetting>> l1SettingMap;
+    // found the l1 value
+    auto l1Map = totalMap->second.equal_range(totalGain);
+    if (l1Map.second == totalMap->second.begin()) {
+        l1SettingMap[l1Map.second->first] = l1Map.second->second;
+    } else if (l1Map.first == totalMap->second.end()) {
+        --l1Map.first;
+        l1SettingMap[l1Map.first->first] = l1Map.first->second;
+    } else if (l1Map.first != l1Map.second) {
+        l1SettingMap[l1Map.first->first] = l1Map.first->second;
+    } else {
+        --l1Map.first;
+        l1SettingMap[l1Map.first->first] = l1Map.first->second;
+        l1SettingMap[l1Map.second->first] = l1Map.second->second;
+    }
+
+    auto interpolation = [](float v, float low, float up, const EdgeNrSetting& l,
+                            const EdgeNrSetting& u) {
+        EdgeNrSetting result = l;
+        result.edgeStrength +=
+            static_cast<int8_t>((u.edgeStrength - l.edgeStrength) * (v - low) / (up - low) + 0.5);
+        result.nrStrength +=
+            static_cast<int8_t>((u.nrStrength - l.nrStrength) * (v - low) / (up - low) + 0.5);
+        return result;
+    };
+
+    for (auto& it : l1SettingMap) {
+        std::map<float, EdgeNrSetting> l2SettingMap;
+        // found the l2 values
+        auto l2Map = it.second.equal_range(hdrRatio);
+        if (l2Map.second == it.second.begin()) {
+            l2SettingMap[l2Map.second->first] = l2Map.second->second;
+        } else if (l2Map.first == it.second.end()) {
+            --l2Map.first;
+            l2SettingMap[l2Map.first->first] = l2Map.first->second;
+        } else if (l2Map.first != l2Map.second) {
+            l2SettingMap[l2Map.first->first] = l2Map.first->second;
+        } else {
+            --l2Map.first;
+            l2SettingMap[l2Map.first->first] = interpolation(hdrRatio, l2Map.first->first,
+                l2Map.second->first, l2Map.first->second, l2Map.second->second);
         }
+
+        it.second = l2SettingMap;
+    }
+
+    if (l1SettingMap.size() == 1) {
+        setting = l1SettingMap.begin()->second.begin()->second;
+        return OK;
+    } else if (l1SettingMap.size() == 2) {
+        auto it = l1SettingMap.end();
+        --it;
+        setting = interpolation(totalGain, l1SettingMap.begin()->first, it->first,
+            l1SettingMap.begin()->second.begin()->second, it->second.begin()->second);
+        return OK;
     }
 
     return NAME_NOT_FOUND;
@@ -296,6 +343,27 @@ const char* PlatformData::getLensName(int cameraId) {
 
 int PlatformData::getLensHwType(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mLensHwType;
+}
+
+void PlatformData::setSensorMode(int cameraId, SensorMode sensorMode) {
+    // Only change sensor mode when binning mode supported
+    if (!PlatformData::isBinningModeSupport(cameraId)) return;
+    getInstance()->mStaticCfg.mCameras[cameraId].mSensorMode = sensorMode;
+}
+
+SensorMode PlatformData::getSensorMode(int cameraId) {
+    return getInstance()->mStaticCfg.mCameras[cameraId].mSensorMode;
+}
+
+bool PlatformData::isBinningModeSupport(int cameraId) {
+    auto pCam = &getInstance()->mStaticCfg.mCameras[cameraId];
+    for (auto& cfg : pCam->mSupportedTuningConfig) {
+        if (cfg.tuningMode == TUNING_MODE_VIDEO_BINNING) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 int PlatformData::getSensitivityRangeByTuningMode(int cameraId, TuningMode mode,
@@ -552,7 +620,7 @@ bool PlatformData::updateMediaFormat(int cameraId, bool isNarrow) {
         return false;
         break;
     }
-    LOGI("%s, media format in tuning: %d, media format for aic %d.", tuning_media_format,
+    LOGI("%s, media format in tuning: %d, media format for aic %d.", __func__, tuning_media_format,
          media_format);
     getInstance()->mStaticCfg.mCameras[cameraId].mMediaFormat = media_format;
     return true;
@@ -645,17 +713,31 @@ int PlatformData::getAnalogGainLag(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mAnalogGainLag;
 }
 
-PolicyConfig* PlatformData::getExecutorPolicyConfig(int graphId) {
-    size_t i = 0;
+PolicyConfig* PlatformData::getExecutorPolicyConfig(const std::set<int>& graphIds) {
     PlatformData::StaticCfg* cfg = &getInstance()->mStaticCfg;
 
+    size_t i = 0;
+    size_t graphCount = graphIds.size();
     for (i = 0; i < cfg->mPolicyConfig.size(); i++) {
-        if (graphId == cfg->mPolicyConfig[i].graphId) {
-            return &(cfg->mPolicyConfig[i]);
+        PolicyConfig& policy = cfg->mPolicyConfig[i];
+        if (policy.graphIds.size() != graphCount) continue;
+
+        bool match = true;
+        for (auto it = graphIds.cbegin(); it != graphIds.cend(); ++it) {
+            if (policy.graphIds.find(*it) == policy.graphIds.end()) {
+                match = false;
+                break;
+            }
+        }
+        if (match) {
+            return &policy;
         }
     }
 
-    LOGW("Couldn't find the executor policy for graphId(%d), please check xml file", graphId);
+    LOGW("Couldn't find the executor policy in xml, need %lu graphs:", graphIds.size());
+    for (auto it = graphIds.begin(); it != graphIds.end(); ++it) {
+        LOGW("    graph id %d", *it);
+    }
     return nullptr;
 }
 
@@ -1603,14 +1685,13 @@ camera_resolution_t* PlatformData::getPslOutputForRotation(int width, int height
     return nullptr;
 }
 
-const camera_resolution_t* PlatformData::getPreferStillOutput(int width, int height,
-                                                              int cameraId) {
-    if (getInstance()->mStaticCfg.mCameras[cameraId].mPreferStillOutput.empty()) return nullptr;
+const camera_resolution_t* PlatformData::getPreferOutput(int width, int height, int cameraId) {
+    if (getInstance()->mStaticCfg.mCameras[cameraId].mPreferOutput.empty()) return nullptr;
 
     const std::vector<camera_resolution_t>& preferOutput =
-        getInstance()->mStaticCfg.mCameras[cameraId].mPreferStillOutput;
+        getInstance()->mStaticCfg.mCameras[cameraId].mPreferOutput;
     for (const auto& output : preferOutput) {
-        // get preferred still output for small size
+        // get preferred output for small size
         if ((width < output.width || height < output.height)
             && (width * output.height == height * output.width)) {
             LOG2("<id%d> the psl output: (%dx%d) for user: %dx%d", cameraId, output.width,

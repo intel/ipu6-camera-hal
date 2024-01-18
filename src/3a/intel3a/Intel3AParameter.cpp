@@ -247,7 +247,10 @@ void Intel3AParameter::setAeManualLimits(const aiq_parameter_t& param) {
     if (gainRange.min >= 0 && gainRange.max >= gainRange.min) {
         float isoMin = convertdBGainToISO(gainRange.min, mCMC.base_iso);
         float isoMax = convertdBGainToISO(gainRange.max, mCMC.base_iso);
-        if (isoMin <= INT_MAX && isoMax <= INT_MAX) {
+        // Cast these to doubles for this comparison, as float(INT_MAX) produces
+        // the value 2147483648, which is INT_MAX+1. Clang warns about this.
+        if (static_cast<double>(isoMin) <= INT_MAX &&
+            static_cast<double>(isoMax) <= INT_MAX) {
             limit->manual_iso_min = static_cast<int>(isoMin);
             limit->manual_iso_max = static_cast<int>(isoMax);
         }

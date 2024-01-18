@@ -358,7 +358,7 @@ int MainDevice::onDequeueBuffer(shared_ptr<CameraBuffer> buffer) {
 
     if (mNeedSkipFrame) return OK;
 
-    LOG2("<seq%ld>@%s, field:%d, timestamp: sec=%ld, usec=%ld", buffer->getSequence(), __func__,
+    LOG2("<seq%d>@%s, field:%d, timestamp: sec=%ld, usec=%ld", buffer->getSequence(), __func__,
          buffer->getField(), buffer->getTimestamp().tv_sec, buffer->getTimestamp().tv_usec);
 
     for (auto& consumer : mConsumers) {
@@ -396,7 +396,7 @@ bool MainDevice::needQueueBack(shared_ptr<CameraBuffer> buffer) {
         sharedCamBufInfo.sof_ts = buffer->getTimestamp();
         SyncManager::getInstance()->updateCameraBufInfo(mCameraId, &sharedCamBufInfo);
         if (skipFrameAfterSyncCheck(buffer->getSequence())) {
-            LOG1("<id%d:seq%ld>@%s: dropped due to frame not sync", mCameraId,
+            LOG1("<id%d:seq%d>@%s: dropped due to frame not sync", mCameraId,
                  buffer->getSequence(), __func__);
             needSkipFrame = true;
         }

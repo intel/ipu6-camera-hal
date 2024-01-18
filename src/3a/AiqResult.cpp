@@ -36,6 +36,8 @@ AiqResult::AiqResult(int cameraId)
           mLscUpdate(false),
           mFrameDuration(0),
           mRollingShutter(0) {
+    CLEAR(mAnalogGainRange);
+    CLEAR(mDigitalGainRange);
     CLEAR(mCustomControls);
     CLEAR(mCustomControlsParams);
     CLEAR(mAwbResults);

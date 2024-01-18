@@ -80,6 +80,11 @@ typedef enum vendor_metadata_tag {
     INTEL_VENDOR_CAMERA_MODULE_ID,                    // byte[]       | public
     INTEL_VENDOR_CAMERA_SENSOR_ID,                    // byte[]       | public
     INTEL_VENDOR_CAMERA_SENSOR_MODE,                  // enum         | public
+    INTEL_VENDOR_CAMERA_ANALOG_GAIN_RANGE,            // float[]      | public
+    INTEL_VENDOR_CAMERA_DIGITAL_GAIN_RANGE,           // float[]      | public
+    INTEL_VENDOR_CAMERA_ANALOG_GAIN,                  // float        | public
+    INTEL_VENDOR_CAMERA_DIGITAL_GAIN,                 // float        | public
+    INTEL_VENDOR_CAMERA_SENSITIVITY_RANGE,            // int32[]      | public
     INTEL_VENDOR_CAMERA_END,
 } vendor_metadata_tag_t;
 

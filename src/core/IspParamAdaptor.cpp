@@ -1014,7 +1014,7 @@ void IspParamAdaptor::updateResultFromAlgo(ia_binary_data* binaryData, int64_t s
         CheckAndLogError(tmSize < aiqResults->mGbceResults.tone_map_lut_size, VOID_VALUE,
                          "memory is mismatch to store tone map from algo");
 
-        LOG2("%s, Tonemap Curve. enable: %d, prog_shift: %d, table size: %zu", __func__, TM->enable,
+        LOG2("%s, Tonemap Curve. enable: %d, prog_shift: %d, table size: %u", __func__, TM->enable,
              TM->prog_shift, tmSize);
 
         const int shiftBase = 1 << TM->prog_shift;

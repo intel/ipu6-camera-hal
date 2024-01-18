@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Intel Corporation
+ * Copyright (C) 2022-2023 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <set>
 
 #include "ParserBase.h"
 
@@ -36,7 +37,7 @@ class CameraSchedulerPolicy : public ParserBase {
     ~CameraSchedulerPolicy();
 
  public:
-    int32_t setConfig(uint32_t graphId);
+    int32_t setConfig(const std::set<int32_t>& graphIds);
     // Return <exeName, trigger source name>
     int32_t getExecutors(std::map<const char*, const char*>* executors) const;
     int32_t getNodeList(const char* exeName, std::vector<std::string>* nodeList) const;
@@ -54,12 +55,11 @@ class CameraSchedulerPolicy : public ParserBase {
     struct PolicyConfigDesc {
         // static data
         uint32_t configId;
-        uint32_t graphId;
+        std::set<int32_t> graphIds;
         std::vector<ExecutorDesc> exeList;
 
         PolicyConfigDesc() {
             configId = 0;
-            graphId = 0;
         }
     };
 
