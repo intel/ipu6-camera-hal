@@ -44,6 +44,7 @@ AiqCore::AiqCore(int cameraId)
           mAiqRunTime(0),
           mAiqState(AIQ_NOT_INIT),
           mHyperFocalDistance(0.0f),
+          mLowPowerMode(false),
           mTuningMode(TUNING_MODE_MAX),
           mShadingMode(SHADING_MODE_FAST),
           mLensShadingMapMode(LENS_SHADING_MAP_MODE_OFF),
@@ -119,11 +120,6 @@ int AiqCore::initAiqPlusParams() {
 int AiqCore::init() {
     initAiqPlusParams();
 
-#ifndef ENABLE_SANDBOXING
-    ia_env env = {&Log::ccaPrintInfo, &Log::ccaPrintError, &Log::ccaPrintInfo};
-    ia_log_init(&env);
-#endif
-
     mAiqState = AIQ_INIT;
 
     int ret = mIntel3AParameter->init();
@@ -139,10 +135,6 @@ int AiqCore::init() {
 }
 
 int AiqCore::deinit() {
-#ifndef ENABLE_SANDBOXING
-    ia_log_deinit();
-#endif
-
     mAiqState = AIQ_NOT_INIT;
 
     freeAiqResultMem();
@@ -266,6 +258,8 @@ int AiqCore::updateParameter(const aiq_parameter_t& param) {
     mShadingMode = param.shadingMode;
     mLensShadingMapMode = param.lensShadingMapMode;
     mLensShadingMapSize = param.lensShadingMapSize;
+
+    mLowPowerMode = param.powerMode == CAMERA_LOW_POWER ? true : false;
 
     mGbceParams.ev_shift = param.evShift;
 
@@ -489,6 +483,10 @@ int AiqCore::runAiq(long requestId, AiqResult* aiqResult) {
 
     mLastEvShift = mIntel3AParameter->mAeParams.ev_shift;
     aiqResult->mTimestamp = mTimestamp;
+    aiqResult->mAnalogGainRange[0] = mIntel3AParameter->mCMC.min_ag;
+    aiqResult->mAnalogGainRange[1] = mIntel3AParameter->mCMC.max_ag;
+    aiqResult->mDigitalGainRange[0] = mIntel3AParameter->mCMC.min_dg;
+    aiqResult->mDigitalGainRange[1] = mIntel3AParameter->mCMC.max_dg;
 
     if (PlatformData::isStatsRunningRateSupport(mCameraId)) {
         bool bothConverged = (mLastAeResult.exposures[0].converged &&
@@ -523,7 +521,8 @@ int AiqCore::runAEC(long requestId, cca::cca_ae_results* aeResults) {
     CheckAndLogError(!intelCca, UNKNOWN_ERROR, "%s, intelCca is null, m:%d", __func__, mTuningMode);
     {
         PERF_CAMERA_ATRACE_PARAM1_IMAGING("intelCca->runAEC", 1);
-        ia_err iaErr = intelCca->runAEC(requestId, mIntel3AParameter->mAeParams, newAeResults);
+        ia_err iaErr = intelCca->runAEC(requestId, mIntel3AParameter->mAeParams, newAeResults,
+                                        mLowPowerMode);
         ret = AiqUtils::convertError(iaErr);
         CheckAndLogError(ret != OK, ret, "Error running AE, ret: %d", ret);
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2021 Intel Corporation
+ * Copyright (C) 2019-2024 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,8 +81,14 @@ status_t GraphConfig::configStreams(const vector<HalStream*>& activeStreams) {
         }
     }
 
+    SensorMode sensorMode = SENSOR_MODE_UNKNOWN;
+    if (PlatformData::isBinningModeSupport(mCameraId)) {
+        sensorMode = PlatformData::getSensorMode(mCameraId);
+    }
+
     bool dummyStillSink = PlatformData::isDummyStillSink(mCameraId);
-    int ret = mGraphConfigImpl->configStreams(activeStreams, dummyStillSink && highResolution);
+    int ret = mGraphConfigImpl->configStreams(activeStreams, dummyStillSink && highResolution,
+                                              sensorMode);
     CheckAndLogError(ret != OK, UNKNOWN_ERROR, "%s, Failed to config streams", __func__);
 
     ret = mGraphConfigImpl->getGraphConfigData(&mGraphData);

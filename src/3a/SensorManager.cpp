@@ -119,8 +119,8 @@ void SensorManager::handleSensorModeSwitch(int64_t sequence) {
 
     if (mWdrModeSetting.sequence <= sequence) {
         int wdrMode = convertTuningModeToWdrMode(mWdrModeSetting.tuningMode);
-        LOG2("<seq%ld>@%s, tunning mode %d, set wdrMode %d sequence %ld", sequence, __func__,
-             wdrMode, mWdrModeSetting.sequence);
+        LOG2("<seq%ld>@%s, tunning mode %d, set wdrMode %d sequence %u", sequence, __func__,
+             mWdrModeSetting.tuningMode, wdrMode, mWdrModeSetting.sequence);
 
         if (mSensorHwCtrl->setWdrMode(wdrMode) == OK) {
             mModeSwitched = false;

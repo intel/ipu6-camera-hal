@@ -63,6 +63,7 @@ struct MediaEntity {
     char devname[32];
 };
 
+static const string ivscName = "Intel IVSC CSI";
 MediaControl* MediaControl::sInstance = nullptr;
 Mutex MediaControl::sLock;
 
@@ -868,6 +869,29 @@ int MediaControl::mediaCtlSetup(int cameraId, MediaCtlConf* mc, int width, int h
         }
     }
 
+    MediaEntity* ivsc = getEntityByName(ivscName.c_str());
+    if (ivsc) {
+        for (uint32_t i = 0; i < ivsc->numLinks; ++i) {
+            if (ivsc->links[i].sink->entity == ivsc) {
+                MediaEntity* sensor = ivsc->links[i].source->entity;
+                int sensor_entity_id = sensor->info.id;
+                LOG1("@%s, found %s -> %s", __func__,
+                     sensor->info.name, ivscName.c_str());
+                for (McLink& link : mc->links) {
+                    if (link.srcEntity == sensor_entity_id) {
+                        LOG1("@%s, skip %s, link %s -> %s",
+                             __func__, link.srcEntityName.c_str(),
+                             ivscName.c_str(), link.sinkEntityName.c_str());
+                        link.srcEntity = ivsc->info.id;
+                        link.srcEntityName = ivscName;
+                        break;
+                    }
+                }
+                break;
+            }
+        }
+    }
+
     /* Set link in format Configuration */
     ret = setMediaMcLink(mc->links);
     CheckAndLogError(ret != OK, ret, "set MediaCtlConf McLink failed: ret = %d", ret);
@@ -938,7 +962,8 @@ bool MediaControl::checkAvailableSensor(const std::string& sensorEntityName,
         int linksCount = entity.info.links;
         MediaLink* links = entity.links;
         for (int i = 0; i < linksCount; i++) {
-            if (strcmp(links[i].sink->entity->info.name, sinkEntityName.c_str()) == 0) {
+            if (strcmp(links[i].sink->entity->info.name, sinkEntityName.c_str()) == 0 ||
+                strcmp(links[i].sink->entity->info.name, ivscName.c_str()) == 0) {
                 char* entityName = entity.info.name;
                 if (strncmp(entityName, sensorEntityNameTmp.c_str(), nameLen) == 0) {
                     return true;
@@ -965,6 +990,9 @@ int MediaControl::getI2CBusAddress(const string& sensorEntityName, const string&
         for (int i = 0; i < linksCount; i++) {
             if (strcmp(links[i].sink->entity->info.name, sinkEntityName.c_str()) == 0) {
                 entityName = entity.info.name;
+                if (strcmp(entityName, ivscName.c_str()) == 0) {
+                    return getI2CBusAddress(sensorEntityName, ivscName, i2cBus);
+                }
                 break;
             }
         }

@@ -16,6 +16,7 @@
 #pragma once
 
 #include <string>
+#include <set>
 #include "HalStream.h"
 #include "Parameters.h"
 #include "iutils/CameraLog.h"
@@ -184,7 +185,7 @@ struct GdcInfo {
 
 struct GraphConfigData {
     int mcId;
-    int graphId;
+    std::set<int> graphIds;
     // DOL_FEATURE_S
     DolInfo dolInfo;
     // DOL_FEATURE_E
@@ -196,7 +197,7 @@ struct GraphConfigData {
     std::vector<std::string> pgNames;
     std::vector<ProgramGroupInfo> programGroup;
     std::vector<TuningModeInfo> tuningModes;
-    GraphConfigData() : mcId(-1), graphId(-1) {
+    GraphConfigData() : mcId(-1) {
         CLEAR(csiReso);
     }
 };
@@ -222,7 +223,7 @@ class IGraphConfig {
                                          ia_isp_bxt_resolution_info_t* resolution,
                                          int32_t streamId = VIDEO_STREAM_ID) = 0;
     virtual status_t graphGetStreamIds(std::vector<int32_t>& streamIds) = 0;
-    virtual int getGraphId(void) = 0;
+    virtual int getGraphIds(std::set<int32_t>& graphIds) = 0;
     virtual int getStreamIdByPgName(std::string pgName) = 0;
     virtual int getTuningModeByStreamId(const int32_t streamId) = 0;
     virtual int getPgIdByPgName(std::string pgName) = 0;
