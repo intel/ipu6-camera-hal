@@ -146,10 +146,12 @@ class PlatformData {
                       mAiqRunningInterval(1),
                       mStatsRunningRate(false),
                       mEnableMkn(true),
+                      mIspTuningUpdate(false),
                       mSkipFrameV4L2Error(false),
                       mCITMaxMargin(0),
                       mYuvColorRangeMode(CAMERA_FULL_MODE_YUV_COLOR_RANGE),
                       mInitialSkipFrame(0),
+                      mInitialPendingFrame(0),
                       mMaxRawDataNum(MAX_BUFFER_COUNT),
                       mTopBottomReverse(false),
                       mPsysContinueStats(false),
@@ -245,6 +247,7 @@ class PlatformData {
             int mAiqRunningInterval;
             bool mStatsRunningRate;
             bool mEnableMkn;
+            bool mIspTuningUpdate;
             // first: one algo type in imaging_algorithm_t, second: running rate
             std::unordered_map<int, float> mAlgoRunningRateMap;
             // DOL_FEATURE_S
@@ -254,6 +257,7 @@ class PlatformData {
             int mCITMaxMargin;
             camera_yuv_color_range_mode_t mYuvColorRangeMode;
             unsigned int mInitialSkipFrame;
+            unsigned int mInitialPendingFrame;
             unsigned int mMaxRawDataNum;
             bool mTopBottomReverse;
             bool mPsysContinueStats;
@@ -800,6 +804,14 @@ class PlatformData {
      * \return the value of initial skip frame number
      */
     static unsigned int getInitialSkipFrame(int cameraId);
+
+    /**
+     * Get initial pending frame number
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return the value of initial pending frame number
+     */
+    static unsigned int getInitialPendingFrame(int cameraId);
 
     /**
      * Get max raw data number
@@ -1672,8 +1684,10 @@ class PlatformData {
 
     /**
      * Check if support to update tuning data or not
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
      */
-    static bool supportUpdateTuning();
+    static bool supportUpdateTuning(int cameraId);
 
     /**
      * Check if support hardware jpeg encode or not

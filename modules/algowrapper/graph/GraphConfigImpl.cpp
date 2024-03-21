@@ -667,7 +667,8 @@ status_t GraphConfigImpl::selectSetting(
 
 status_t GraphConfigImpl::getGraphConfigData(IGraphType::GraphConfigData* data) {
     // The graph id, csi output and sensor mode must be same if there are two graph config pipes
-    LOG1("Query graphs, count %lu", mGraphConfigPipe.size());
+    LOG1("Query graphs, count %lu, 1st graph id %d", mGraphConfigPipe.size(),
+         mGraphConfigPipe.begin()->second->getGraphId());
     for (auto& item : mGraphConfigPipe) {
         LOG1("    Graph usage %d, graph id %d", item.first, item.second->getGraphId());
         data->graphIds.insert(item.second->getGraphId());

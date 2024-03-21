@@ -351,6 +351,8 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
         pCurrentCam->mEnableAIQ = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "enableMkn") == 0) {
         pCurrentCam->mEnableMkn = strcmp(atts[1], "true") == 0;
+    } else if (strcmp(name, "ispTuningUpdate") == 0) {
+        pCurrentCam->mIspTuningUpdate = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "AiqRunningInterval") == 0) {
         pCurrentCam->mAiqRunningInterval = atoi(atts[1]);
     } else if (strcmp(name, "AlgoRunningRate") == 0) {
@@ -558,6 +560,8 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
         }
     } else if (strcmp(name, "initialSkipFrame") == 0) {
         pCurrentCam->mInitialSkipFrame = atoi(atts[1]);
+    } else if (strcmp(name, "initialPendingFrame") == 0) {
+        pCurrentCam->mInitialPendingFrame = atoi(atts[1]);
     } else if (strcmp(name, "maxRawDataNum") == 0) {
         pCurrentCam->mMaxRawDataNum = atoi(atts[1]);
     } else if (strcmp(name, "topBottomReverse") == 0) {
@@ -2226,8 +2230,8 @@ void CameraParser::getNVMDirectory(CameraParser* profiles) {
                 int size = static_cast<int>(ftell(fp));
                 fseek(fp, 0, SEEK_SET);
                 std::unique_ptr<char[]> ptr(new char[size + 1]);
-                ptr[size] = 0;
                 size_t readSize = fread(ptr.get(), sizeof(char), size, fp);
+                ptr[readSize] = 0;
                 fclose(fp);
 
                 if (readSize > 0) {
