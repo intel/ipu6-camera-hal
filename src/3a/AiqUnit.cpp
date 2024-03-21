@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2023 Intel Corporation.
+ * Copyright (C) 2015-2024 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -151,7 +151,7 @@ int AiqUnit::configure(const stream_config_t* streamList) {
 
 void AiqUnit::resetIntelCcaHandle(const std::vector<ConfigMode>& configModes) {
     bool reinit = false;
-    if ((PlatformData::supportUpdateTuning() || PlatformData::isDvsSupported(mCameraId)) &&
+    if ((PlatformData::supportUpdateTuning(mCameraId) || PlatformData::isDvsSupported(mCameraId)) &&
         !configModes.empty()) {
         std::shared_ptr<IGraphConfig> graphConfig =
             IGraphConfigManager::getInstance(mCameraId)->getGraphConfig(configModes[0]);
@@ -361,7 +361,7 @@ int AiqUnit::initIntelCcaHandle(const std::vector<ConfigMode>& configModes) {
         }
         // DOL_FEATURE_E
 
-        if (PlatformData::supportUpdateTuning()) {
+        if (PlatformData::supportUpdateTuning(mCameraId)) {
             if (graphConfig != nullptr) {
                 std::vector<int32_t> streamIds;
                 graphConfig->graphGetStreamIds(streamIds);

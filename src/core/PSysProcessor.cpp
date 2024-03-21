@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2023 Intel Corporation.
+ * Copyright (C) 2017-2024 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -319,6 +319,9 @@ int PSysProcessor::setParameters(const Parameters& param) {
     LOG2("%s: ISP NR setting, level: %d, strength: %d", __func__,
          static_cast<int>(mIspSettings.nrSetting.feature_level),
          static_cast<int>(mIspSettings.nrSetting.strength));
+
+    mIspSettings.nrStillSetting = mIspSettings.nrSetting;
+    mIspSettings.eeStillSetting = mIspSettings.eeSetting;
 
     camera_video_stabilization_mode_t stabilizationMode;
     ret = param.getVideoStabilizationMode(stabilizationMode);
@@ -1072,6 +1075,15 @@ void PSysProcessor::dispatchTask(CameraBufferPortMap& inBuf, CameraBufferPortMap
                     mIspSettings.eeSetting.strength += edgeNrSetting.edgeStrength;
                     mIspSettings.nrSetting.strength += edgeNrSetting.nrStrength;
                     LOG2("edgeStrength %d, nrStrength %d", edgeNrSetting.edgeStrength,
+                         edgeNrSetting.nrStrength);
+
+                    TuningMode stillMode = (mTuningMode == TUNING_MODE_VIDEO) ?
+                                           TUNING_MODE_STILL_CAPTURE : TUNING_MODE_VIDEO_ULL;
+                    PlatformData::getEdgeNrSetting(mCameraId, totalGain, hdrRatio, stillMode,
+                                                   edgeNrSetting);
+                    mIspSettings.eeStillSetting.strength += edgeNrSetting.edgeStrength;
+                    mIspSettings.nrStillSetting.strength += edgeNrSetting.nrStrength;
+                    LOG2("Still edgeStrength %d, nrStrength %d", edgeNrSetting.edgeStrength,
                          edgeNrSetting.nrStrength);
                 }
             }

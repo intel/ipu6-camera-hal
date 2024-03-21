@@ -551,7 +551,9 @@ int MediaControl::enumLinks(int fd) {
 
         links.entity = entity.info.id;
         links.pads = new media_pad_desc[entity.info.pads];
+        memset(links.pads, 0, sizeof(struct media_pad_desc) * entity.info.pads);
         links.links = new media_link_desc[entity.info.links];
+        memset(links.links, 0, sizeof(struct media_link_desc) * entity.info.links);
 
         if (sc->ioctl(fd, MEDIA_IOC_ENUM_LINKS, &links) < 0) {
             ret = -errno;

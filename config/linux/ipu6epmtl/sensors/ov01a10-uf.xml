@@ -150,7 +150,8 @@
             <sync.maxLatency value="0"/>
         </StaticMetadata>
 
-        <supportedTuningConfig value="NORMAL,VIDEO,ov01a10,STILL_CAPTURE,VIDEO,ov01a10" />
+        <supportedTuningConfig value="NORMAL,VIDEO,ov01a_1BG101N3_MTL,
+                                      STILL_CAPTURE,VIDEO,ov01a_1BG101N3_MTL"/>
 
         <!-- The lard tags configuration. Every tag should be 4-characters. -->
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
@@ -168,7 +169,172 @@
         <ltmGainLag value="1"/>
         <yuvColorRangeMode value="full"/> <!-- there are 2 yuv color range mode, like full, reduced. -->
         <pipeSwitchDelayFrame value="60"/>
-        <graphSettingsFile value="graph_settings_ov01a10.xml"/>
+        <graphSettingsFile value="graph_settings_ov01a_1BG101N3_MTL.xml"/>
+        <graphSettingsType value="dispersed"/>
+        <enablePSysProcessor value="true"/>
+        <dvsType value="IMG_TRANS"/>
+        <testPatternMap value="Off,0,ColorBars,2"/>
+        <enableAiqd value = "true"/>
+        <useCrlModule value = "false"/>
+        <pslOutputMapForRotation value="1280x720@1280x720,640x480@640x480,320x240@640x480"/>
+
+        <maxRequestsInflight value="5"/>
+    </Sensor>
+    <Sensor name="ov01a10-uf" description="OV01A10 sensor.">
+        <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1280" outputHeight="798" format="V4L2_PIX_FMT_SGRBG10"><!-- RAW10 BE capture -->
+            <format name="ov01a10 $I2CBUS" pad="0" width="1280" height="800" format="V4L2_MBUS_FMT_SBGGR10_1X10"/>
+            <format name="Intel IPU6 CSI-2 $CSI_PORT" pad="0" width="1280" height="800" format="V4L2_MBUS_FMT_SBGGR10_1X10"/>
+
+            <link srcName="ov01a10 $I2CBUS" srcPad="0" sinkName="Intel IPU6 CSI-2 $CSI_PORT" sinkPad="0" enable="true"/>
+
+            <format name="Intel IPU6 CSI2 BE SOC 0" pad="0" width="1280" height="800" format="V4L2_MBUS_FMT_SBGGR10_1X10"/>
+            <format name="Intel IPU6 CSI2 BE SOC 0" pad="1" width="1280" height="798" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
+            <selection name="Intel IPU6 CSI2 BE SOC 0" pad="1" target="V4L2_SEL_TGT_CROP" left="0" top="1" width="1280" height="798"/>
+
+            <link srcName="Intel IPU6 CSI-2 $CSI_PORT" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 0" sinkPad="0" enable="true"/>
+            <link srcName="Intel IPU6 CSI2 BE SOC 0" srcPad="1" sinkName="Intel IPU6 BE SOC capture 0" sinkPad="0" enable="true"/>
+
+            <videonode name="Intel IPU6 BE SOC capture 0" videoNodeType="VIDEO_GENERIC"/>
+            <videonode name="Intel IPU6 CSI-2 $CSI_PORT" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+            <videonode name="ov01a10 $I2CBUS" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+        </MediaCtlConfig>
+
+        <StaticMetadata>
+            <!-- format,widthxheight,field(none:0,alternate:7),mcId -->
+            <supportedStreamConfig value="V4L2_PIX_FMT_NV12,1280x720,0,0,
+                                          V4L2_PIX_FMT_NV12,640x480,0,0,
+                                          V4L2_PIX_FMT_NV12,640x360,0,0"/>
+
+            <supportedFeatures value="MANUAL_EXPOSURE,
+                                      MANUAL_WHITE_BALANCE,
+                                      IMAGE_ENHANCEMENT,
+                                      NOISE_REDUCTION,
+                                      PER_FRAME_CONTROL,
+                                      SCENE_MODE"/>
+            <supportedAeExposureTimeRange value="AUTO,10,1000000"/> <!--scene_mode,min_exposure_time,max_exposure_time -->
+            <supportedAeGainRange value="AUTO,0,60"/> <!--scene_mode,min_gain,max_gain -->
+            <fpsRange value="15,15,15,30,30,30"/>
+            <evRange value="-6,6"/>
+            <evStep value="1,3"/>
+            <supportedAeMode value="AUTO,MANUAL"/>
+            <supportedVideoStabilizationModes value="OFF"/>
+            <supportedSceneMode value="NORMAL"/>
+            <supportedAntibandingMode value="AUTO,50Hz,60Hz,OFF"/>
+            <supportedAwbMode value="AUTO,INCANDESCENT,FLUORESCENT,DAYLIGHT,FULL_OVERCAST,PARTLY_OVERCAST,SUNSET,VIDEO_CONFERENCE,MANUAL_CCT_RANGE,MANUAL_WHITE_POINT,MANUAL_GAIN,MANUAL_COLOR_TRANSFORM"/>
+            <supportedAfMode value="OFF"/>
+
+            <!-- 0:FALSE, 1: TRUE -->
+            <ae.lockAvailable value="1"/>
+            <awb.lockAvailable value="1"/>
+            <!-- 0: OFF, 1: AUTO, 2: USE_SCENE_MODE, 3: OFF_KEEP_STATE -->
+            <control.availableModes value="1"/>
+            <control.maxRegions value="1,0,0"/>
+            <!-- 0: DISABLE, 1: FACE_PRIORITY -->
+            <control.availableSceneModes value="1"/>
+            <!-- 0: OFF, 1: SMPLE, 2: FULL -->
+            <statistics.info.availableFaceDetectModes value="0,1"/>
+            <statistics.info.maxFaceCount value="10"/>
+
+            <sensor.orientation value="0"/>
+            <sensor.info.sensitivityRange value="100,800"/>
+            <!-- microsecond -->
+            <sensor.info.exposureTimeRange value="100,100000"/>  <!-- align with supportedAeExposureTimeRange -->
+
+            <!-- Blow static metadata are for camera HAL V3 -->
+            <sensor.info.activeArraySize value="0,0,1280,800"/> <!-- 1296,800 -->
+            <sensor.info.pixelArraySize value="1280x800"/>
+            <!-- 4096x1.12um 3072x1.12um -->
+            <sensor.info.physicalSize value="3.69,2.77"/>
+            <!-- 0: off, 1: solid color, 2: color bars  -->
+            <sensor.availableTestPatternModes value="0,2"/>
+            <!-- 0:RGGB, 1:GRBG, 2:GBRG, 3:BGGR, 4:RGB -->
+            <sensor.info.colorFilterArrangement value="2"/>
+
+            <!-- shading 0:OFF,1:FAST,2:HIGH_QUALITY-->
+            <shading.availableModes value="0,1,2"/>
+
+            <!-- Lens -->
+            <lens.facing value="0"/>
+            <!-- Lens info -->
+            <lens.info.availableApertures value="2.5"/>
+            <lens.info.availableFilterDensities value="0.0"/>
+            <lens.info.availableFocalLengths value="4.28"/>
+            <lens.info.availableOpticalStabilization value="0"/>
+            <lens.info.hyperfocalDistance value="0.0"/>
+            <lens.info.minimumFocusDistance value="0.1"/>
+            <lens.info.shadingMapSize value="50,38"/>
+            <!-- 0:UNCALIBRATED, 1:APPROXIMATE, 2:CALIBRATED -->
+            <lens.info.focusDistanceCalibration value="1"/>
+
+            <!-- raw, yuv, jpeg -->
+            <request.maxNumOutputStreams value="1,3,1"/>
+            <!-- 0 or 1 -->
+            <request.maxNumInputStreams value="1"/>
+            <request.pipelineMaxDepth value="6"/>
+            <!-- 0:backward, 1:manual_sensor, 2:manual_pso_processing, 3:raw, 4:zsl, 5:read_sensor_settings, 6:burst_capture, 7: yuv reprocessing -->
+            <request.availableCapabilities value="0,1,2,4,5,6,7"/>
+
+            <!-- input fmt, output fmt number, output fmts; fmt: YCbCr_420_888:0x23 (35), IMPLEMENTATION_DEFINED:0x22 (34), Blob:0x21 (33) -->
+            <scaler.availableInputOutputFormatsMap value="35,2,33,35,34,2,33,35"/>
+            <!-- [width, height, raw-out-size] -->
+            <sensor.opaqueRawSize value="1280,800,100"/>
+            <!-- available stream configurations: format: IMPLEMENTATION_DEFINED(34)|YCbCr_420_888:0x23(35)|BLOB(33), widthxheight, type: output(0)|input(1) -->
+            <scaler.availableStreamConfigurations value="
+                33,1280x720,0,
+                33,640x480,0,
+                33,640x360,0" />
+            <!-- minimum frame duration: format: IMPLEMENTATION_DEFINED(34)|YCbCr_420_888:0x23(35)|BLOB(33), widthxheight, duration:(ns) -->
+            <scaler.availableMinFrameDurations value="
+                33,1280x720,33333333,
+                33,640x480,33333333,
+                33,640x360,33333333" />
+            <!-- maximum stall duration: format: IMPLEMENTATION_DEFINED(34)|YCbCr_420_888:0x23(35)|BLOB(33), widthxheight, duration:(ns) -->
+            <scaler.availableStallDurations value="
+                33,1280x720,33333333,
+                33,640x480,33333333,
+                33,640x360,33333333" />
+
+            <jpeg.maxSize value="1382400"/>  <!-- 1280*720*1.5 -->
+            <jpeg.availableThumbnailSizes value="0,0,320,180,320,240"/> <!-- INCREASING ORDER -->
+
+            <!-- 0:off, 1:fast, 2:high_quality, 3:zero_shutter_lag -->
+            <edge.availableEdgeModes value="0,1,2,3"/>
+            <!-- 0:off, 1:fast, 2:high_quality -->
+            <hotPixel.availableHotPixelModes value="1,2"/>
+            <!-- 0:off, 1:fast, 2:high_quality, 3:minimal, 4:zero_shutter_lag -->
+            <noiseReduction.availableNoiseReductionModes value="0,1,2,4"/>
+            <tonemap.maxCurvePoints value="1024"/>
+            <!-- 0:contrast_curve, 1:fast, 2:high_quality, 3:gamma_value, 4:preset_curve -->
+            <tonemap.availableToneMapModes value="1,2,3,4"/>
+            <!-- Number of frames -->
+            <reprocess.maxCaptureStall value="4"/>
+
+            <!-- 0:limited, 1:full, 2:legacy, 3:level3 -->
+            <info.supportedHardwareLevel value="1"/>
+            <!-- 0:per-frame, -1:unknown, other positive number:frame count -->
+            <sync.maxLatency value="0"/>
+        </StaticMetadata>
+
+        <supportedTuningConfig value="NORMAL,VIDEO,ov01a_CJFLE21_MTL,
+                                      STILL_CAPTURE,VIDEO,ov01a_CJFLE21_MTL"/>
+
+        <!-- The lard tags configuration. Every tag should be 4-characters. -->
+        <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
+        <lardTags value="VIDEO,DFLT,DFLT,DFLT,DFLT"/>
+
+        <supportedISysSizes value="1280x800"/> <!-- ascending order request -->
+        <supportedISysFormat value="V4L2_PIX_FMT_SGRBG10"/>
+        <enableAIQ value="true"/>
+        <iSysRawFormat value="V4L2_PIX_FMT_SGRBG10"/>
+        <maxRawDataNum value="32"/>
+        <pSysFormat value="V4L2_PIX_FMT_NV12"/>
+        <initialSkipFrame value="0"/>
+        <exposureLag value="2"/>
+        <gainLag value="2"/>
+        <ltmGainLag value="1"/>
+        <yuvColorRangeMode value="full"/> <!-- there are 2 yuv color range mode, like full, reduced. -->
+        <pipeSwitchDelayFrame value="60"/>
+        <graphSettingsFile value="graph_settings_ov01a_CJFLE21_MTL.xml"/>
         <graphSettingsType value="dispersed"/>
         <enablePSysProcessor value="true"/>
         <dvsType value="IMG_TRANS"/>

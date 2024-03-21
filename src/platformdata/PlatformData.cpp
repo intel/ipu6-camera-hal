@@ -673,6 +673,10 @@ unsigned int PlatformData::getInitialSkipFrame(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mInitialSkipFrame;
 }
 
+unsigned int PlatformData::getInitialPendingFrame(int cameraId) {
+    return getInstance()->mStaticCfg.mCameras[cameraId].mInitialPendingFrame;
+}
+
 unsigned int PlatformData::getMaxRawDataNum(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mMaxRawDataNum;
 }
@@ -718,10 +722,14 @@ PolicyConfig* PlatformData::getExecutorPolicyConfig(const std::set<int>& graphId
 
     size_t i = 0;
     size_t graphCount = graphIds.size();
+    PolicyConfig* pCfg = nullptr;
     for (i = 0; i < cfg->mPolicyConfig.size(); i++) {
         PolicyConfig& policy = cfg->mPolicyConfig[i];
-        if (policy.graphIds.size() != graphCount) continue;
+        // Previous platforms only support cfg with one graph id.
+        // Find cfg according to the first graphId for them
+        if (!graphIds.empty() && (*policy.graphIds.begin() == *graphIds.begin())) pCfg = &policy;
 
+        if (policy.graphIds.size() != graphCount) continue;
         bool match = true;
         for (auto it = graphIds.cbegin(); it != graphIds.cend(); ++it) {
             if (policy.graphIds.find(*it) == policy.graphIds.end()) {
@@ -738,7 +746,8 @@ PolicyConfig* PlatformData::getExecutorPolicyConfig(const std::set<int>& graphId
     for (auto it = graphIds.begin(); it != graphIds.end(); ++it) {
         LOGW("    graph id %d", *it);
     }
-    return nullptr;
+    if (pCfg) LOGW("%s: use cfg with graph id %d", __func__, *pCfg->graphIds.begin());
+    return pCfg;
 }
 
 int PlatformData::numberOfCameras() {
@@ -1544,13 +1553,14 @@ bool PlatformData::isCSIBackEndCapture(int cameraId) {
     CheckAndLogError(!mc, false, "getMediaCtlConf returns nullptr, cameraId:%d", cameraId);
 
     for (const auto& node : mc->videoNodes) {
-    if (IPU6_UPSTREAM && node.videoNodeType == VIDEO_GENERIC &&
-        node.name.find("ISYS capture") != string::npos) {
-        isCsiBECapture = true;
-        break;
-    } else if (node.videoNodeType == VIDEO_GENERIC &&
-               (node.name.find("BE capture") != string::npos ||
-                node.name.find("BE SOC capture") != string::npos)) {
+        if (IPU6_UPSTREAM && node.videoNodeType == VIDEO_GENERIC &&
+            node.name.find("ISYS capture") != string::npos) {
+            isCsiBECapture = true;
+            break;
+        }
+        if (node.videoNodeType == VIDEO_GENERIC &&
+            (node.name.find("BE capture") != string::npos ||
+             node.name.find("BE SOC capture") != string::npos)) {
             isCsiBECapture = true;
             break;
         }
@@ -1569,9 +1579,9 @@ bool PlatformData::isCSIFrontEndCapture(int cameraId) {
             node.name.find("CSI2") != string::npos) {
             isCsiFeCapture = true;
             break;
-        } else if (node.videoNodeType == VIDEO_GENERIC &&
-                   (node.name.find("CSI-2") != string::npos ||
-                    node.name.find("TPG") != string::npos)) {
+        }
+        if (node.videoNodeType == VIDEO_GENERIC &&
+            (node.name.find("CSI-2") != string::npos || node.name.find("TPG") != string::npos)) {
             isCsiFeCapture = true;
             break;
         }
@@ -1879,8 +1889,12 @@ int PlatformData::getVideoStreamNum() {
     return getInstance()->mStaticCfg.mCommonConfig.videoStreamNum;
 }
 
-bool PlatformData::supportUpdateTuning() {
-    return getInstance()->mStaticCfg.mCommonConfig.supportIspTuningUpdate;
+bool PlatformData::supportUpdateTuning(int cameraId) {
+    // Check if support UpdateTuning per platform config
+    if (getInstance()->mStaticCfg.mCommonConfig.supportIspTuningUpdate) return true;
+
+    // check if support UpdateTuning per sensor config
+    return getInstance()->mStaticCfg.mCameras[cameraId].mIspTuningUpdate;
 }
 
 bool PlatformData::supportHwJpegEncode() {

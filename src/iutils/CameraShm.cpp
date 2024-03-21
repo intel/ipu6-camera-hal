@@ -31,6 +31,7 @@ static const int CAMERA_IPCKEY = 0x43414D;
 static const int CAMERA_SHM_LOCK_TIME = 2;
 
 #define SEM_NAME "/camlock"
+#define SEM_FD_NAME "/dev/shm/sem.camlock"
 
 CameraSharedMemory::CameraSharedMemory()
         : mSemLock(nullptr),
@@ -211,7 +212,7 @@ bool CameraSharedMemory::processExist(pid_t pid, const char* storedName) {
 }
 
 void CameraSharedMemory::openSemLock() {
-    mSemLock = sem_open(SEM_NAME, O_CREAT | O_EXCL, 0777, 1);
+    mSemLock = sem_open(SEM_NAME, O_CREAT | O_EXCL, 0644, 1);
     if (mSemLock == SEM_FAILED) {
         mSemLock = sem_open(SEM_NAME, O_RDWR);
         if (mSemLock == SEM_FAILED) {
@@ -221,6 +222,7 @@ void CameraSharedMemory::openSemLock() {
             LOG1("Open the sem lock");
         }
     } else {
+        chmod(SEM_FD_NAME, 0666);
         LOG1("Create the sem lock");
         return;
     }
@@ -244,7 +246,12 @@ void CameraSharedMemory::openSemLock() {
         LOG1("Lock timed out, process holding it may have crashed. Re-create the semaphore.");
         sem_close(mSemLock);
         sem_unlink(SEM_NAME);
-        mSemLock = sem_open(SEM_NAME, O_CREAT | O_EXCL, 0777, 1);
+        mSemLock = sem_open(SEM_NAME, O_CREAT | O_EXCL, 0644, 1);
+        if (mSemLock == SEM_FAILED) {
+            LOGE("failed to re-create sem lock, errno: %s\n", strerror(errno));
+        } else {
+            chmod(SEM_FD_NAME, 0666);
+        }
     }
 }
 
@@ -255,9 +262,10 @@ void CameraSharedMemory::closeSemLock() {
 int CameraSharedMemory::lock() {
     int ret = OK;
     struct timespec ts;
-    CLEAR(ts);
+    CheckAndLogError(mSemLock == SEM_FAILED, BAD_VALUE, "invalid sem lock");
 
     // Wait the semaphore lock for 2 seconds
+    CLEAR(ts);
     clock_gettime(CLOCK_REALTIME, &ts);
     ts.tv_sec += CAMERA_SHM_LOCK_TIME;
     while (((ret = sem_timedwait(mSemLock, &ts)) == -1) && errno == EINTR) {

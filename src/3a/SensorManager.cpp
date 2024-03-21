@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2023 Intel Corporation.
+ * Copyright (C) 2015-2024 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -195,7 +195,7 @@ int SensorManager::getCurrentExposureAppliedDelay() {
 uint32_t SensorManager::updateSensorExposure(SensorExpGroup sensorExposures, int64_t applyingSeq) {
     AutoMutex l(mLock);
 
-    int64_t effectSeq = mLastSofSequence < 0 ? PlatformData::getInitialSkipFrame(mCameraId)
+    int64_t effectSeq = mLastSofSequence < 0 ? 0
         : mLastSofSequence + PlatformData::getExposureLag(mCameraId);
 
     if (sensorExposures.empty()) {
@@ -248,6 +248,10 @@ uint32_t SensorManager::updateSensorExposure(SensorExpGroup sensorExposures, int
         mSensorHwCtrl->setExposure(exposureData.coarseExposures, exposureData.fineExposures);
         mSensorHwCtrl->setAnalogGains(analogGains);
         mSensorHwCtrl->setDigitalGains(digitalGains);
+    }
+
+    if (effectSeq == 0) {
+        effectSeq = PlatformData::getInitialSkipFrame(mCameraId);
     }
 
     LOG2("<seq%ld>@%s: effectSeq %ld, applyingSeq %ld", mLastSofSequence, __func__, effectSeq,
