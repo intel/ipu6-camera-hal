@@ -19,6 +19,6 @@
         <version value="1.0"/>
         <platform value="IPU6"/>
         <!-- The value format of availableSensors is "sensor name"-wf/uf-"CSI port ID". -->
-        <availableSensors value="ov13b10-uf-0,ov13b10-wf-4,ov5675-uf-2,hm2172-uf-0,ov02e10-uf-0,imx390,ar0234,external_source,ar0234_usb,lt6911uxc,lt6911uxe"/>
+        <availableSensors value="ov08x40-uf-0,ov13b10-uf-0,ov13b10-wf-4,ov5675-uf-2,hm2172-uf-0,ov02e10-uf-0,imx390,ar0234,external_source,ar0234_usb,lt6911uxc,lt6911uxe"/>
     </Common>
 </CameraSettings>
