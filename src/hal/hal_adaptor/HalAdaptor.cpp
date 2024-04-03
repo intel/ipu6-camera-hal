@@ -15,10 +15,11 @@
  */
 #define LOG_TAG HalAdaptor
 
-#include "HalAdaptor.h"
-
+#include <dirent.h>
 #include <dlfcn.h>
+#include <fstream>
 
+#include "HalAdaptor.h"
 #include "iutils/CameraLog.h"
 #include "iutils/Utils.h"
 #include "iutils/Errors.h"
@@ -28,6 +29,7 @@ namespace icamera {
 
 static void* gCameraHalLib = nullptr;
 static HalApiHandle gCameraHalAdaptor = {};
+static char gPciId[8];
 
 #define CheckFuncCall(function)                             \
     do {                                                    \
@@ -47,34 +49,65 @@ static HalApiHandle gCameraHalAdaptor = {};
         LOG2("@%s: LOADING: " #fnName "= %x", __func__, gCameraHalAdaptor.member);           \
     } while (0)
 
+static bool get_ipu_info(const std::string& path) {
+    bool retval = false;
+
+    DIR* dir = opendir(path.c_str());
+    if (dir == nullptr) {
+        return retval;
+    }
+
+    struct dirent* entry;
+    while ((entry = readdir(dir)) != nullptr) {
+        if (entry->d_type != DT_LNK || strstr(entry->d_name, "0000:") == nullptr) {
+            continue;
+        }
+
+        std::string devicePath = path + '/' + entry->d_name + "/device";
+        std::ifstream pciDevice(devicePath);
+        if (!pciDevice.is_open()) {
+            continue;
+        }
+        std::string pciId;
+        pciDevice >> pciId;
+        pciDevice.close();
+        if (pciId.length() > 0) {
+            retval = true;
+            strncpy(gPciId, pciId.c_str(), sizeof(gPciId) - 1);
+            break;
+        }
+    }
+    closedir(dir);
+    return retval;
+}
+
 static void load_camera_hal_library() {
-    FILE* pciDevice = fopen("/sys/bus/pci/drivers/intel-ipu6/0000:00:05.0/device", "rt");
-    CheckAndLogError(!pciDevice, VOID_VALUE, "%s, failed to open PCI device. error: %s", __func__,
+    const std::string ipu6Path = "/sys/bus/pci/drivers/intel-ipu6";
+    const std::string ipu7Path = "/sys/bus/pci/drivers/intel-ipu7";
+    bool hasIpuInfo = get_ipu_info(ipu6Path);
+    if (!hasIpuInfo) {
+        hasIpuInfo = get_ipu_info(ipu7Path);
+    }
+
+    CheckAndLogError(!hasIpuInfo, VOID_VALUE, "%s, failed to open PCI device. error: %s", __func__,
                      dlerror());
 
-    fseek(pciDevice, 0, SEEK_END);
-    int idSize = static_cast<int>(ftell(pciDevice));
-    fseek(pciDevice, 0, SEEK_SET);
-
-    char pciID[idSize] = {0};
-    int ret = fread(pciID, idSize, 1, pciDevice);
-    fclose(pciDevice);
-    CheckAndLogError((strlen(pciID) == 0), VOID_VALUE, "%s, Failed to read PCI id. %d", __func__,
-                     ret);
-
     std::string libName = CAMHAL_PLUGIN_DIR;
-    if (strstr(pciID, "0xa75d") != nullptr /* RPL */ ||
-        strstr(pciID, "0x462e") != nullptr /* ADLN */ ||
-        strstr(pciID, "0x465d") != nullptr /* ADLP */) {
+    if (strstr(gPciId, "0xa75d") != nullptr /* RPL */ ||
+        strstr(gPciId, "0x462e") != nullptr /* ADLN */ ||
+        strstr(gPciId, "0x465d") != nullptr /* ADLP */) {
         libName += "ipu6ep.so";
-    } else if (strstr(pciID, "0x7d19") != nullptr /* MTL */) {
+    } else if (strstr(gPciId, "0x7d19") != nullptr /* MTL */) {
         libName += "ipu6epmtl.so";
-    } else if (strstr(pciID, "0x9a19") != nullptr /* TGL */) {
+    } else if (strstr(gPciId, "0x645d") != nullptr /* LNL */) {
+        libName += "ipu7hal.so";
+    } else if (strstr(gPciId, "0x9a19") != nullptr /* TGL */) {
         libName += "ipu6.so";
     } else {
-        LOGE("%s, Not support the PCI device %s for hal adaptor API", __func__, pciID);
+        LOGE("%s, Not support the PCI device %s for hal adaptor API", __func__, gPciId);
         return VOID_VALUE;
     }
+
     LOG1("%s, the library name: %s", __func__, libName.c_str());
 
     gCameraHalLib = dlopen(libName.c_str(), RTLD_NOW);
