@@ -176,7 +176,7 @@ class CameraParser : public ParserBase {
 
     std::string replaceStringInXml(CameraParser* profiles, const char* value);
     void getNVMDirectory(CameraParser* profiles);
-    int getCameraModuleNameFromEEPROM(const std::string& nvmDir, std::string* cameraModule);
+    int getCameraModuleNameFromEEPROM(PlatformData::StaticCfg::CameraInfo* cam);
 
  private:
     DISALLOW_COPY_AND_ASSIGN(CameraParser);

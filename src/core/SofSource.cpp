@@ -103,7 +103,7 @@ int SofSource::initDev() {
         std::string devName;
         CameraUtils::getDeviceName(aggregator.mName.c_str(), devName, true);
         if (!devName.empty()) {
-            LOG1("%s, found aggregator subdevice %s", __func__, devName);
+            LOG1("%s, found aggregator subdevice %s", __func__, devName.c_str());
             mAggregatorSubDev = V4l2DeviceFactory::getSubDev(mCameraId, devName);
 
             struct v4l2_querymenu qm = {.id = V4L2_CID_IPU_QUERY_SUB_STREAM, };

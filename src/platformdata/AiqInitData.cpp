@@ -125,7 +125,7 @@ void AiqData::saveDataToFile(const std::string& fileName, const ia_binary_data* 
 
 AiqInitData::AiqInitData(const std::string& sensorName, const std::string& camCfgDir,
                          const std::vector<TuningConfig>& tuningCfg, const std::string& nvmDir,
-                         int maxNvmSize, const std::string& camModuleName)
+                         int maxNvmSize, const std::string& camModuleName, int cameraId)
         : mSensorName(sensorName),
           mMaxNvmSize(maxNvmSize),
           mTuningCfg(tuningCfg),
@@ -143,9 +143,18 @@ AiqInitData::AiqInitData(const std::string& sensorName, const std::string& camCf
                 std::string postfix(".aiqb");
                 aiqbName.append(camModuleName);
                 struct dirent* direntPtr = nullptr;
+                bool boardConfig = false;
+                bool HDRnetUsed = PlatformData::isHDRnetTuningUsed(cameraId, boardConfig);
                 while ((direntPtr = readdir(dir)) != nullptr) {
                     if ((strncmp(direntPtr->d_name, aiqbName.c_str(), aiqbName.length()) == 0) &&
                         (strstr(direntPtr->d_name, postfix.c_str()) != nullptr)) {
+                        if (boardConfig) {
+                            if (HDRnetUsed && (strstr(direntPtr->d_name, "hdrnet") == nullptr))
+                                continue;
+                            else if (!HDRnetUsed &&
+                                     (strstr(direntPtr->d_name, "hdrnet") != nullptr))
+                                continue;
+                        }
                         aiqbNameFromModuleInfo.insert(direntPtr->d_name);
                     }
                 }

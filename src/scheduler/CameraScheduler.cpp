@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Intel Corporation
+ * Copyright (C) 2022-2023 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,9 +35,9 @@ CameraScheduler::~CameraScheduler() {
     destoryExecutors();
 }
 
-int32_t CameraScheduler::configurate(int32_t graphId) {
-    int ret = mPolicy->setConfig(graphId);
-    CheckAndLogError(ret != OK, ret, "configurate %d error", graphId);
+int32_t CameraScheduler::configurate(const std::set<int32_t>& graphIds) {
+    int ret = mPolicy->setConfig(graphIds);
+    CheckAndLogError(ret != OK, ret, "configurate error");
 
     mTriggerCount = 0;
     destoryExecutors();
@@ -174,7 +174,7 @@ bool CameraScheduler::Executor::threadLoop() {
     if (!mActive) return false;
 
     for (auto& node : mNodes) {
-        LOG2("%s process %d", getName(), tick);
+        LOG2("%s process %ld", getName(), tick);
         bool ret = node->process(tick);
         CheckAndLogError(!ret, true, "%s: node %s process error", getName(), node->getName());
     }

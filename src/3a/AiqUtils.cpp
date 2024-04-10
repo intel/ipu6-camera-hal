@@ -109,6 +109,7 @@ void AiqUtils::dumpAwbResults(const cca::cca_awb_results& awbResult) {
     LOG3("AWB result: accurate_r/g %f, accurate_b/g %f, distance_from_convergence %f",
          awbResult.accurate_r_per_g, awbResult.accurate_b_per_g,
          awbResult.distance_from_convergence);
+    LOG3("AWB result: cct_estimate %d", awbResult.cct_estimate);
 }
 
 void AiqUtils::dumpGbceResults(const cca::cca_gbce_params& gbceResult) {

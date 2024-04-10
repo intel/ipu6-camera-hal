@@ -27,6 +27,7 @@
 #include "iutils/CameraDump.h"
 #include "iutils/CameraLog.h"
 #include "iutils/Utils.h"
+#include "AiqResultStorage.h"
 
 namespace icamera {
 
@@ -84,6 +85,7 @@ PGCommon::PGCommon(int cameraId, int pgId, const std::string& pgName, TuningMode
           mInputMainTerminal(-1),
           mOutputMainTerminal(-1),
           mShareReferPool(nullptr),
+          mIpuParameters(nullptr),
           mIntelCca(nullptr) {
     mTnrTerminalPair.inId = -1;
     mTnrTerminalPair.outId = -1;
@@ -1089,9 +1091,10 @@ int PGCommon::prepareTerminalBuffers(const ia_binary_data* ipuParameters,
 
         if (buffer) {
             bool flush = buffer->getUsage() == BUFFER_USAGE_GENERAL ? true : false;
-            if (PlatformData::removeCacheFlushOutputBuffer(mCameraId) &&
-                buffer->getMemory() == V4L2_MEMORY_DMABUF &&
-                !buffer->isFlagsSet(BUFFER_FLAG_SW_READ)) {
+            if (buffer->getMemory() == V4L2_MEMORY_DMABUF &&
+                ((PlatformData::removeCacheFlushOutputBuffer(mCameraId) &&
+                  !buffer->isFlagsSet(BUFFER_FLAG_SW_READ)) ||
+                 buffer->isFlagsSet(BUFFER_FLAG_NO_FLUSH))) {
                 flush = false;
             }
             ciprBuf =
@@ -1131,6 +1134,16 @@ int PGCommon::prepareTerminalBuffers(const ia_binary_data* ipuParameters,
         // Update palyload buffers
         mTerminalBuffers[pair.inId]->getMemoryCpuPtr(&mParamPayload[pair.inId].data);
         mTerminalBuffers[pair.outId]->getMemoryCpuPtr(&mParamPayload[pair.outId].data);
+    }
+
+    const AiqResult* aiqResult = AiqResultStorage::getInstance(mCameraId)->getAiqResult(sequence);
+    if (aiqResult && aiqResult->mAiqParam.powerMode == CAMERA_LOW_POWER) {
+        if (ipuParameters != mIpuParameters) {
+            mIpuParameters = ipuParameters;
+        } else if (sequence > MAX_SETTING_COUNT) {
+            LOG2("don't run P2P if no PAL update, seq %ld", sequence);
+            return OK;
+        }
     }
 
     return mPGParamAdapt->updatePALAndEncode(ipuParameters, mTerminalCount, mParamPayload);

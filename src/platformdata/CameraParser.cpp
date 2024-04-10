@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2023 Intel Corporation
+ * Copyright (C) 2015-2024 Intel Corporation
  * Copyright 2008-2017, The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -131,7 +131,7 @@ CameraParser::~CameraParser() {
  * Replacing $I2CBUS with the real mI2CBus if the value contains the string "$I2CBUS"
  * one example: "imx319 $I2CBUS"
  * Replacing $CSI_PORT with the real mCsiPort if the value contains the string "$CSI_PORT"
- * one example: "Intel IPU6 CSI-2 $CSI_PORT"
+ * one example: "Intel IPU6 CSI-2 $CSI_PORT" or "Intel IPU6 CSI2 $CSI_PORT"
  *
  * \param profiles: the pointer of the CameraParser.
  * \param value: camera information.
@@ -169,7 +169,7 @@ void CameraParser::getCsiPortAndI2CBus(CameraParser* profiles) {
         if ((availableSensorTmp.first.find(fullSensorName) != string::npos) &&
             (sensorInfo->sensorFlag != true)) {
             /* parameters information format example:
-               sinkEntityName is "Intel IPU6 CSI-2 1"
+               sinkEntityName is "Intel IPU6 CSI-2 1" or "Intel IPU6 CSI2 1"
                profiles->pCurrentCam->sensorName is "ov8856-wf" or "ov8856"
                sensorName is "ov8856"
             */
@@ -331,8 +331,8 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
         getSupportedFormat(atts[1], pCurrentCam->mSupportedISysFormat);
     } else if (strcmp(name, "iSysRawFormat") == 0) {
         pCurrentCam->mISysRawFormat = CameraUtils::string2PixelCode(atts[1]);
-    } else if (strcmp(name, "preferredStillOutput") == 0) {
-        parseSizesList(atts[1], pCurrentCam->mPreferStillOutput);
+    } else if (strcmp(name, "preferredOutput") == 0) {
+        parseSizesList(atts[1], pCurrentCam->mPreferOutput);
     } else if (strcmp(name, "configModeToStreamId") == 0) {
         char* srcDup = strdup(atts[1]);
         CheckAndLogError(!srcDup, VOID_VALUE, "Create a copy of source string failed.");
@@ -351,6 +351,8 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
         pCurrentCam->mEnableAIQ = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "enableMkn") == 0) {
         pCurrentCam->mEnableMkn = strcmp(atts[1], "true") == 0;
+    } else if (strcmp(name, "ispTuningUpdate") == 0) {
+        pCurrentCam->mIspTuningUpdate = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "AiqRunningInterval") == 0) {
         pCurrentCam->mAiqRunningInterval = atoi(atts[1]);
     } else if (strcmp(name, "AlgoRunningRate") == 0) {
@@ -390,6 +392,17 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
             fabs(awbRunningRate - aeRunningRate) < EPSILON) {
             // if same runnning rate of AE and AWB, stats running rate is supported
             pCurrentCam->mStatsRunningRate = true;
+        }
+    } else if (strcmp(name, "disableHDRnetBoards") == 0) {
+        int size = strlen(atts[1]);
+        char src[size + 1];
+        MEMCPY_S(src, size, atts[1], size);
+        src[size] = '\0';
+        char* savePtr = nullptr;
+        char* tablePtr = strtok_r(src, ",", &savePtr);
+        while (tablePtr) {
+            pCurrentCam->mDisableHDRnetBoards.push_back(tablePtr);
+            tablePtr = strtok_r(nullptr, ",", &savePtr);
         }
     } else if (strcmp(name, "useCrlModule") == 0) {
         pCurrentCam->mUseCrlModule = strcmp(atts[1], "true") == 0;
@@ -446,6 +459,12 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
             pCurrentCam->mTuningModeToSensitivityMap[mode] = range;
 
             tuningMode = strtok_r(nullptr, ",", &savePtr);
+        }
+    } else if (strcmp(name, "sensorMode") == 0) {
+        if (strcmp(atts[1], "binning") == 0) {
+            pCurrentCam->mSensorMode = SENSOR_MODE_BINNING;
+        } else if (strcmp(atts[1], "full") == 0) {
+            pCurrentCam->mSensorMode = SENSOR_MODE_FULL;
         }
     } else if (strcmp(name, "enablePdaf") == 0) {
         pCurrentCam->mEnablePdaf = strcmp(atts[1], "true") == 0;
@@ -541,6 +560,8 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
         }
     } else if (strcmp(name, "initialSkipFrame") == 0) {
         pCurrentCam->mInitialSkipFrame = atoi(atts[1]);
+    } else if (strcmp(name, "initialPendingFrame") == 0) {
+        pCurrentCam->mInitialPendingFrame = atoi(atts[1]);
     } else if (strcmp(name, "maxRawDataNum") == 0) {
         pCurrentCam->mMaxRawDataNum = atoi(atts[1]);
     } else if (strcmp(name, "topBottomReverse") == 0) {
@@ -656,6 +677,9 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
         pCurrentCam->mFaceAeEnabled = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "psysAlignWithSof") == 0) {
         pCurrentCam->mPsysAlignWithSof = strcmp(atts[1], "true") == 0;
+    } else if (strcmp(name, "psysAlignWithSystem") == 0) {
+        int val = atoi(atts[1]);
+        pCurrentCam->mMsPsysAlignWithSystem = val > 0 ? val : 0;
     } else if (strcmp(name, "psysBundleWithAic") == 0) {
         pCurrentCam->mPsysBundleWithAic = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "swProcessingAlignWithIsp") == 0) {
@@ -681,9 +705,13 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
             val > 0 ? std::min(val, MAX_FACES_DETECTABLE) : MAX_FACES_DETECTABLE;
     } else if (strcmp(name, "tnrExtraFrameNum") == 0) {
         int val = atoi(atts[1]);
-        pCurrentCam->mTnrExtraFrameNum = val > 0 ? val : DEFAULT_TNR_EXTRA_FRAME_NUM;
+        pCurrentCam->mTnrExtraFrameNum = val > 0 ? val : 0;
     } else if (strcmp(name, "dummyStillSink") == 0) {
         pCurrentCam->mDummyStillSink = strcmp(atts[1], "true") == 0;
+    } else if (strcmp(name, "tnrThresholdSizes") == 0) {
+        parseSizesList(atts[1], pCurrentCam->mTnrThresholdSizes);
+        for (const auto& s : pCurrentCam->mTnrThresholdSizes)
+            LOG2("@%s, mTnrThresholdSizes: width:%d, height:%d", __func__, s.width, s.height);
     } else if (strcmp(name, "useGpuTnr") == 0) {
         pCurrentCam->mGpuTnrEnabled = strcmp(atts[1], "true") == 0;
     } else if (!strcmp(name, "removeCacheFlushOutputBuffer")) {
@@ -2127,12 +2155,11 @@ void CameraParser::endParseElement(void* userData, const char* name) {
     }
 }
 
-int CameraParser::getCameraModuleNameFromEEPROM(const std::string& nvmDir,
-                                                std::string* cameraModule) {
+int CameraParser::getCameraModuleNameFromEEPROM(PlatformData::StaticCfg::CameraInfo* cam) {
     const int moduleInfoOffset = CAMERA_MODULE_INFO_OFFSET;
-    FILE* eepromFile = fopen(nvmDir.c_str(), "rb");
+    FILE* eepromFile = fopen(cam->mNvmDirectory.c_str(), "rb");
     CheckAndLogError(!eepromFile, UNKNOWN_ERROR, "Failed to open EEPROM file in %s",
-                     nvmDir.c_str());
+                     cam->mNvmDirectory.c_str());
 
     // file size should be larger than CAMERA_MODULE_INFO_OFFSET
     fseek(eepromFile, 0, SEEK_END);
@@ -2161,8 +2188,20 @@ int CameraParser::getCameraModuleNameFromEEPROM(const std::string& nvmDir,
     snprintf(tmpName, CAMERA_MODULE_INFO_SIZE, "%c%c_%04x", cameraModuleInfo.mModuleVendor[0],
              cameraModuleInfo.mModuleVendor[1], cameraModuleInfo.mModuleProduct);
 
-    cameraModule->assign(tmpName);
-    LOG1("%s, aiqb name %s", __func__, cameraModule->c_str());
+    cam->mCamModuleName.assign(tmpName);
+    LOG1("%s, aiqb name %s", __func__, cam->mCamModuleName.c_str());
+
+    char moduleId[CAMERA_MODULE_INFO_SIZE];
+    snprintf(moduleId, CAMERA_MODULE_INFO_SIZE, "%c%c%04x", cameraModuleInfo.mModuleVendor[0],
+             cameraModuleInfo.mModuleVendor[1], cameraModuleInfo.mModuleProduct);
+    cam->mModuleId.assign(moduleId);
+
+    char sensorId[CAMERA_MODULE_INFO_SIZE];
+    snprintf(sensorId, CAMERA_MODULE_INFO_SIZE, "%c%c%04x", cameraModuleInfo.mSensorVendor[0],
+             cameraModuleInfo.mSensorVendor[1], cameraModuleInfo.mSensorModel);
+    cam->mSensorId.assign(sensorId);
+
+    LOG1("module id %s, sensor id %s", cam->mModuleId.c_str(), cam->mSensorId.c_str());
 
     return OK;
 }
@@ -2194,8 +2233,8 @@ void CameraParser::getNVMDirectory(CameraParser* profiles) {
                 int size = static_cast<int>(ftell(fp));
                 fseek(fp, 0, SEEK_SET);
                 std::unique_ptr<char[]> ptr(new char[size + 1]);
-                ptr[size] = 0;
                 size_t readSize = fread(ptr.get(), sizeof(char), size, fp);
+                ptr[readSize] = 0;
                 fclose(fp);
 
                 if (readSize > 0) {
@@ -2238,8 +2277,7 @@ void CameraParser::getNVMDirectory(CameraParser* profiles) {
             LOG2("NVM data is located in %s", nvmPath.c_str());
             profiles->pCurrentCam->mNvmDirectory = nvmPath;
             profiles->pCurrentCam->mMaxNvmDataSize = nvm.dataSize;
-            int ret = getCameraModuleNameFromEEPROM(profiles->pCurrentCam->mNvmDirectory,
-                                                    &profiles->pCurrentCam->mCamModuleName);
+            int ret = getCameraModuleNameFromEEPROM(profiles->pCurrentCam);
             LOG2("NVM dir %s, ret %d", profiles->pCurrentCam->mNvmDirectory.c_str(), ret);
             break;
         } else {
@@ -2258,7 +2296,8 @@ void CameraParser::getNVMDirectory(CameraParser* profiles) {
  * 1. <availableSensors value="ov8856-wf-2,ov2740-uf-0,ov2740-wf-2"/>
  *     The value is "'camera name'-wf/uf-'CSI port number'".
  *     For example: camera name is "ov8856". Sensor's sink entity name is
- *      "Intel IPU6 CSI-2 2" and it is word facing. The value is ov8856-wf-2.
+ *      "Intel IPU6 CSI-2 2" or "Intel IPU6 CSI2 2" and it is word facing.
+ *      The value is ov8856-wf-2.
  * 2. <platform value="IPU6"/> the platform value must be uppercase letter.
  *
  */
@@ -2272,10 +2311,13 @@ std::vector<std::string> CameraParser::getAvailableSensors(
         return sensorsList;
     }
 
-    // sensor's sink entity name prefix:Intel IPU6 CSI-2 2
+    // sensor's sink entity name prefix:"Intel IPU6 CSI-2 2" or "Intel IPU6 CSI2 2"
     std::string sensorSinkName = "Intel ";
     sensorSinkName.append(ipuName);
-    sensorSinkName.append(" CSI-2 ");
+    if (IPU6_UPSTREAM)
+        sensorSinkName.append(" CSI2 ");
+    else
+        sensorSinkName.append(" CSI-2 ");
 
     std::vector<string> availableSensors;
     for (auto& sensor : sensorsList) {

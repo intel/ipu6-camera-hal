@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 Intel Corporation.
+ * Copyright (C) 2016-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -301,7 +301,7 @@ void CsiMetaDevice::handleCsiMetaBuffer() {
     if (mExitPending) return;
     CheckAndLogError(index < 0, VOID_VALUE, "grab frame failed. index %d", index);
 
-    LOG2("%s: grab meta data buffer sequence %ld timestamp %ld", __func__, camBuffer->getSequence(),
+    LOG2("%s: grab meta data buffer sequence %d timestamp %ld", __func__, camBuffer->getSequence(),
          TIMEVAL2USECS(camBuffer->getTimestamp()));
     PERF_CAMERA_ATRACE_PARAM3("grabFrame SeqID", camBuffer->getSequence(), "csi2_port",
                               camBuffer->getCsi2Port(), "virtual_channel",

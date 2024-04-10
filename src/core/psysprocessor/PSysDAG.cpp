@@ -105,13 +105,14 @@ int PSysDAG::createPipeExecutors(bool useTnrOutBuffer) {
     std::shared_ptr<IGraphConfig> gc = GCM->getGraphConfig(mConfigMode);
     CheckAndLogError(!gc, UNKNOWN_ERROR, "Failed to get GraphConfig in PSysDAG!");
 
-    int graphId = gc->getGraphId();
-    PolicyConfig* cfg = PlatformData::getExecutorPolicyConfig(graphId);
+    std::set<int> graphIds;
+    gc->getGraphIds(graphIds);
+    PolicyConfig* cfg = PlatformData::getExecutorPolicyConfig(graphIds);
     CheckAndLogError(!cfg, UNKNOWN_ERROR, "Failed to get PolicyConfig in PSysDAG!");
-    if (mScheduler) mScheduler->configurate(graphId);
+    if (mScheduler) mScheduler->configurate(graphIds);
 
 #ifdef USE_PG_LITE_PIPE
-    configShareReferPool(gc);
+    configShareReferPool(gc, cfg);
 #endif
 
     std::vector<std::string> pgNames;
@@ -502,8 +503,7 @@ int PSysDAG::queueBuffers(const PSysTaskData& task) {
 }
 
 #ifdef USE_PG_LITE_PIPE
-void PSysDAG::configShareReferPool(std::shared_ptr<IGraphConfig> gc) {
-    PolicyConfig* cfg = PlatformData::getExecutorPolicyConfig(gc->getGraphId());
+void PSysDAG::configShareReferPool(std::shared_ptr<IGraphConfig> gc, PolicyConfig* cfg) {
     if (!cfg || cfg->shareReferPairList.empty()) {
         return;
     }

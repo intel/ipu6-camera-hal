@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2022 Intel Corporation
+ * Copyright (C) 2017-2024 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 
 #include "PolicyManager.h"
 
+#include "AiqResultStorage.h"
 #include "iutils/Errors.h"
 #include "iutils/CameraLog.h"
 
@@ -141,14 +142,19 @@ int PolicyManager::wait(std::string executorName, int64_t sequence) {
 
     bundle->mWaitingCount++;
 
+    int64_t waitDuration = 66000000;  // 66ms
+    const AiqResult* aiqResult = AiqResultStorage::getInstance(mCameraId)->getAiqResult(sequence);
+    if (aiqResult && aiqResult->mAiqParam.aeFpsRange.min >= 30.0) {
+        waitDuration = 33000000;  // 33ms
+    }
+
     /**
      * If waiting count less than total executor number in the bundle, it means
      * we need to wait for other executors to run with them together.
      */
     if (bundle->mWaitingCount < bundle->mExecutorNum) {
         LOG2("%s: need wait for other executors.", executorName.c_str());
-        const int64_t kWaitDuration = 66000000;  // 66ms
-        int ret = bundle->mCondition.waitRelative(lock, kWaitDuration * SLOWLY_MULTIPLIER);
+        int ret = bundle->mCondition.waitRelative(lock, waitDuration * SLOWLY_MULTIPLIER);
         if (ret == TIMED_OUT) {
             LOG2("%s: wait executors timeout", executorName.c_str());
             return ret;

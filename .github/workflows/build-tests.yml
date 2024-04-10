@@ -42,7 +42,7 @@ jobs:
           apt-get update -q
           export TZ=Asia/Shanghai
           echo "" | apt-get install -qy tzdata
-          echo "" | apt-get install git build-essential cmake libexpat-dev automake libtool libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libunwind-dev --yes
+          echo "" | apt-get install git build-essential cmake libexpat-dev automake libtool libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libunwind-dev libdrm-dev --yes
           git clone https://github.com/intel/ipu6-camera-bins -b main --depth 1
           cp -rv ipu6-camera-bins/include/"${PLATFORM}" /usr/include/
           cp -rv ipu6-camera-bins/lib/"${PLATFORM}" /usr/lib/

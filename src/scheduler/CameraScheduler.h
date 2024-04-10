@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Intel Corporation
+ * Copyright (C) 2022-2023 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <set>
 
 #include "CameraEvent.h"
 #include "CameraSchedulerPolicy.h"
@@ -42,7 +43,7 @@ class CameraScheduler {
     CameraScheduler();
     ~CameraScheduler();
 
-    int32_t configurate(int32_t graphId);
+    int32_t configurate(const std::set<int32_t>& graphIds);
 
     int32_t registerNode(ISchedulerNode* node);
     void unregisterNode(ISchedulerNode* node);
