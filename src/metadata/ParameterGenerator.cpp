@@ -480,6 +480,31 @@ int ParameterGenerator::updateCommonMetadata(Parameters* params, const AiqResult
     entry.data.i64 = &frameDuration;
     ParameterHelper::mergeTag(entry, params);
 
+    uint8_t sensorMode = (aiqResult->mTuningMode == TUNING_MODE_VIDEO_BINNING) ?
+        INTEL_VENDOR_CAMERA_SENSOR_MODE_BINNING : INTEL_VENDOR_CAMERA_SENSOR_MODE_FULL;
+    entry.tag = INTEL_VENDOR_CAMERA_SENSOR_MODE;
+    entry.type = ICAMERA_TYPE_BYTE;
+    entry.count = 1;
+    entry.data.u8 = &sensorMode;
+    ParameterHelper::mergeTag(entry, params);
+
+    int32_t isoRange[2];
+    SensitivityRange range;
+    if (PlatformData::getSensitivityRangeByTuningMode(mCameraId, aiqResult->mTuningMode,
+                                                      range) == OK) {
+        isoRange[0] = range.min;
+        isoRange[1] = range.max;
+    } else {
+        isoRange[0] = static_cast<int32_t>(mSensitivityRange.min);
+        isoRange[1] = static_cast<int32_t>(mSensitivityRange.max);
+    }
+    LOG2("%s, sensitivity range [%d-%d]", __func__, isoRange[0], isoRange[1]);
+    entry.tag = INTEL_VENDOR_CAMERA_SENSITIVITY_RANGE;
+    entry.type = ICAMERA_TYPE_INT32;
+    entry.count = 2;
+    entry.data.i32 = isoRange;
+    ParameterHelper::mergeTag(entry, params);
+
     int32_t userRequestId = 0;
     params->getUserRequestId(userRequestId);
     camera_msg_data_t data = {CAMERA_METADATA_ENTRY, {}};
@@ -540,13 +565,45 @@ int ParameterGenerator::updateCommonMetadata(Parameters* params, const AiqResult
     if (aiqResult->mAiqParam.manualExpTimeUs <= 0 && aiqResult->mAiqParam.manualIso <= 0) {
         int64_t range[] = {aiqResult->mAeResults.exposures[0].exposure[0].low_limit_total_exposure,
                            aiqResult->mAeResults.exposures[0].exposure[0].up_limit_total_exposure};
-        LOG2("total et limits [%ldx%ld]", range[0], range[1]);
+        LOG2("total et limits [%ld-%ld]", range[0], range[1]);
         entry.tag = INTEL_VENDOR_CAMERA_TOTAL_EXPOSURE_TARGET_RANGE;
         entry.type = ICAMERA_TYPE_INT64;
         entry.count = 2;
         entry.data.i64 = range;
         ParameterHelper::mergeTag(entry, params);
     }
+
+    if (aiqResult->mAnalogGainRange[0] > 0.0 && aiqResult->mAnalogGainRange[1] > 0.0) {
+        LOG2("analog gain range is [%f-%f]", aiqResult->mAnalogGainRange[0],
+             aiqResult->mAnalogGainRange[1]);
+        entry.tag = INTEL_VENDOR_CAMERA_ANALOG_GAIN_RANGE;
+        entry.type = ICAMERA_TYPE_FLOAT;
+        entry.count = 2;
+        entry.data.f = aiqResult->mAnalogGainRange;
+        ParameterHelper::mergeTag(entry, params);
+    }
+
+    if (aiqResult->mDigitalGainRange[0] > 0.0 && aiqResult->mDigitalGainRange[1] > 0.0) {
+        LOG2("digital gain range is [%f-%f]", aiqResult->mDigitalGainRange[0],
+             aiqResult->mDigitalGainRange[1]);
+        entry.tag = INTEL_VENDOR_CAMERA_DIGITAL_GAIN_RANGE;
+        entry.type = ICAMERA_TYPE_FLOAT;
+        entry.count = 2;
+        entry.data.f = aiqResult->mDigitalGainRange;
+        ParameterHelper::mergeTag(entry, params);
+    }
+
+    entry.tag = INTEL_VENDOR_CAMERA_ANALOG_GAIN;
+    entry.type = ICAMERA_TYPE_FLOAT;
+    entry.count = 1;
+    entry.data.f = &aiqResult->mAeResults.exposures[0].exposure[0].analog_gain;
+    ParameterHelper::mergeTag(entry, params);
+
+    entry.tag = INTEL_VENDOR_CAMERA_DIGITAL_GAIN;
+    entry.type = ICAMERA_TYPE_FLOAT;
+    entry.count = 1;
+    entry.data.f = &aiqResult->mAeResults.exposures[0].exposure[0].digital_gain;;
+    ParameterHelper::mergeTag(entry, params);
 
     bool callbackTmCurve = false;
     params->getCallbackTmCurve(&callbackTmCurve);

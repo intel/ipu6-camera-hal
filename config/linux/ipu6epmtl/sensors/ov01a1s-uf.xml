@@ -178,7 +178,7 @@
         <pslOutputMapForRotation value="1280x720@1280x720,640x480@640x480,320x240@640x480"/>
 
         <maxRequestsInflight value="5"/>
-        <supportPrivacy value="1"/> <!-- privacy mode, 0: off, 1: CVF privacy 2: AE-based privacy -->
+        <supportPrivacy value="0"/> <!-- privacy mode, 0: off, 1: CVF privacy 2: AE-based privacy -->
     </Sensor>
 </CameraSettings>
 

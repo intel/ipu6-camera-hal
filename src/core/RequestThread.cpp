@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2023 Intel Corporation.
+ * Copyright (C) 2015-2024 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -144,7 +144,8 @@ bool RequestThread::blockRequest() {
      * 2. Too many requests in flight;
      * 3. if no trigger event is available.
      */
-    return ((mBlockRequest && (mLastRequestId >= 0)) ||
+    return ((mBlockRequest &&
+             (mLastRequestId >= PlatformData::getInitialPendingFrame(mCameraId))) ||
             (mRequestsInProcessing >= PlatformData::getMaxRequestsInflight(mCameraId)) ||
             (mPerframeControlSupport && (mRequestTriggerEvent == NONE_EVENT)));
 }

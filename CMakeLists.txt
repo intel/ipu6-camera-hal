@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017-2023 Intel Corporation
+#  Copyright (C) 2017-2024 Intel Corporation
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -67,6 +67,12 @@ endif()
 
 message(STATUS "install prefix: " ${CMAKE_INSTALL_PREFIX})
 
+if (UPSTREAM_CODE)
+    add_compile_definitions(IPU6_UPSTREAM=1)
+else()
+    add_compile_definitions(IPU6_UPSTREAM=0)
+endif()
+
 #------------------------- Compilation settings -------------------------
 
 include(GNUInstallDirs)
@@ -84,6 +90,7 @@ set (CMAKE_CXX_STANDARD 11)
 add_compile_options(-Wall -Werror
                     -fstack-protector
                     -fPIE -fPIC
+                    -U_FORTIFY_SOURCE
                     -D_FORTIFY_SOURCE=2
                     -DDCHECK_ALWAYS_ON
                     -Wformat -Wformat-security
@@ -151,7 +158,7 @@ include_directories(include
                     src/image_process
                     )
 
-set(LIBCAMHAL_LD_FLAGS "-fPIE -fPIC -D_FORTIFY_SOURCE=2 -Wformat -Wformat-security -Wl,-z,relro -Wl,-z,now")
+set(LIBCAMHAL_LD_FLAGS "-fPIE -fPIC -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2 -Wformat -Wformat-security -Wl,-z,relro -Wl,-z,now")
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${LIBCAMHAL_LD_FLAGS}")
 
 add_subdirectory(src)
@@ -183,7 +190,7 @@ if (CAL_BUILD)
     include_directories(include include/api include/utils include/linux
                         ${USR_INCLUDE_HEADER}/android/system/core/include/
                         ${USR_INCLUDE_HEADER}/ia_imaging
-                        ${USR_INCLUDE_HEADER}/lib${IPU_VER}
+                        ${USR_INCLUDE_HEADER}/usr/lib${IPU_VER}
                         ${USR_INCLUDE_HEADER}/android/hardware/libhardware/include/
                         aal aal/chrome src/iutils src/jpeg
                         modules/memory modules/memory/chrome
@@ -251,6 +258,8 @@ if (${CMAKE_VERSION} VERSION_LESS 3.11)
 else()
     add_library(camhal SHARED $<TARGET_OBJECTS:camhal_static>)
 endif()
+set_target_properties(camhal PROPERTIES SOVERSION 0)
+set_target_properties(camhal PROPERTIES VERSION "0.0.0")
 
 add_library(camhal_static STATIC ${LIBCAMHAL_SRCS})
 
@@ -299,6 +308,13 @@ else()
     target_link_libraries(camhal ${LIBIACSS_LIBS})
     target_link_libraries(camhal_static ${LIBIACSS_LIBS})
 endif()
+
+# DUMP_DMA_BUF_FOR_DRM_PRIME_S
+find_package(LIBDRM)
+include_directories(${LIBDRM_INCLUDE_DIRS})
+target_link_libraries(camhal ${LIBDRM_LIBS})
+target_link_libraries(camhal_static ${LIBDRM_LIBS})
+# DUMP_DMA_BUF_FOR_DRM_PRIME_E
 
 # Include libipu(4) headers
 find_package(LIBIPU)
@@ -383,36 +399,40 @@ endif() #ENABLE_SANDBOXING
 if (NOT CAL_BUILD)
 # Install headers
 if ("${CMAKE_INSTALL_SUB_PATH}" STREQUAL "")
-    install(DIRECTORY include/ DESTINATION include/libcamhal)
+    install(DIRECTORY include/ DESTINATION usr/include/libcamhal)
     if (SUPPORT_LIVE_TUNING)
-        install(FILES modules/livetune/LiveTuning.h DESTINATION include/libcamhal/api)
+        install(FILES modules/livetune/LiveTuning.h DESTINATION usr/include/libcamhal/api)
     endif() #SUPPORT_LIVE_TUNING
 endif()
 
 # Install configure files, by default ipu4 is used
 if(("${IPU_VER}" STREQUAL "") OR ("${IPU_VER}" STREQUAL "ipu4"))
     message("Install camera configure files for ipu4")
-    install(DIRECTORY config/linux/ipu4/ DESTINATION share/defaults/etc/camera/${CMAKE_INSTALL_SUB_PATH})
+    install(DIRECTORY config/linux/ipu4/ DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/camera/${CMAKE_INSTALL_SUB_PATH})
 else()
-    message("Install camera configure files for" ${IPU_VER})
-    install(DIRECTORY config/linux/${IPU_VER}/ DESTINATION share/defaults/etc/camera/${CMAKE_INSTALL_SUB_PATH})
+    message("Install camera configure files for " ${IPU_VER})
+    if (UPSTREAM_CODE)
+        install(DIRECTORY config/linux/${IPU_VER}_upstream/ DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/camera/${CMAKE_INSTALL_SUB_PATH})
+    else()
+        install(DIRECTORY config/linux/${IPU_VER}/ DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/camera/${CMAKE_INSTALL_SUB_PATH})
+    endif()
 endif()
 
 # Install libraries
 if (${CMAKE_VERSION} VERSION_LESS 3.11)
 install(TARGETS camhal camhal_static
-        LIBRARY DESTINATION lib/${CMAKE_INSTALL_SUB_PATH}
-        ARCHIVE DESTINATION lib/${CMAKE_INSTALL_SUB_PATH}
+        LIBRARY DESTINATION usr/lib/${CMAKE_INSTALL_SUB_PATH}
+        ARCHIVE DESTINATION usr/lib/${CMAKE_INSTALL_SUB_PATH}
         )
 else()
-install(TARGETS camhal camhal_static DESTINATION lib/${CMAKE_INSTALL_SUB_PATH})
+install(TARGETS camhal camhal_static DESTINATION usr/lib/${CMAKE_INSTALL_SUB_PATH})
 endif()
 
 # Install package config file
 configure_file(${PROJECT_SOURCE_DIR}/cmake/libcamhal.pc.cmakein
                ${PROJECT_SOURCE_DIR}/libcamhal.pc @ONLY)
 install(FILES libcamhal.pc
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/${CMAKE_INSTALL_SUB_PATH}/pkgconfig)
+        DESTINATION usr/${CMAKE_INSTALL_LIBDIR}/${CMAKE_INSTALL_SUB_PATH}/pkgconfig)
 
 endif() #NOT CAL_BUILD
 

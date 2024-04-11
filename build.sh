@@ -103,7 +103,7 @@ function build_target() {
 
     make install
     check_result $? "$FUNCNAME: $target"
-    standardize_pkg_config_path ${INSTALL_DIR}/install/lib/${target}/pkgconfig/libcamhal.pc
+    standardize_pkg_config_path ${INSTALL_DIR}/install/usr/lib/${target}/pkgconfig/libcamhal.pc
     cd ..
 }
 

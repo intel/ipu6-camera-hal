@@ -63,22 +63,31 @@ static void load_camera_hal_library() {
                      ret);
 
     std::string libName = "/usr/lib/";
-    if (strstr(pciID, "0xa75d") != nullptr /* RPL */ ||
-        strstr(pciID, "0x462e") != nullptr /* ADLN */ ||
-        strstr(pciID, "0x465d") != nullptr /* ADLP */) {
-        libName += "ipu_adl";
-    } else if (strstr(pciID, "0x7d19") != nullptr /* MTL */) {
-        libName += "ipu_mtl";
-    } else if (strstr(pciID, "0x9a19") != nullptr /* TGL */) {
-        libName += "ipu_tgl";
-    } else if (strstr(pciID, "0x4e19") != nullptr /* JSL */) {
-        libName += "ipu_jsl";
+    if (IPU6_UPSTREAM) {
+        if (strstr(pciID, "0x7d19") != nullptr /* MTL */) {
+            libName += "ipu_mtl_upstream";
+        } else {
+            LOGE("%s, Not support the PCI device %s for hal adaptor API", __func__, pciID);
+            return VOID_VALUE;
+        }
     } else {
-        LOGE("%s, Not support the PCI device %s for hal adaptor API", __func__, pciID);
-        return VOID_VALUE;
+        if (strstr(pciID, "0xa75d") != nullptr /* RPL */ ||
+            strstr(pciID, "0x462e") != nullptr /* ADLN */ ||
+            strstr(pciID, "0x465d") != nullptr /* ADLP */) {
+            libName += "ipu_adl";
+        } else if (strstr(pciID, "0x7d19") != nullptr /* MTL */) {
+            libName += "ipu_mtl";
+        } else if (strstr(pciID, "0x9a19") != nullptr /* TGL */) {
+            libName += "ipu_tgl";
+        } else if (strstr(pciID, "0x4e19") != nullptr /* JSL */) {
+            libName += "ipu_jsl";
+        } else {
+            LOGE("%s, Not support the PCI device %s for hal adaptor API", __func__, pciID);
+            return VOID_VALUE;
+        }
     }
     libName += "/libcamhal.so";
-    LOGI("%s, the library name: %s", __func__, libName.c_str());
+    LOG1("%s, the library name: %s", __func__, libName.c_str());
 
     gCameraHalLib = dlopen(libName.c_str(), RTLD_NOW);
     CheckAndLogError(!gCameraHalLib, VOID_VALUE, "%s, failed to open library: %s, error: %s",

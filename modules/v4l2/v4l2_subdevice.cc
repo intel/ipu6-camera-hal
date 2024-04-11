@@ -102,7 +102,7 @@ int V4L2Subdevice::GetPadFormat(int pad_index, int* width, int* height, int* cod
     LOG1("@%s", __func__);
 
     if (!width || !height || !code) {
-        LOGE("%s: Device node %s some of parameters is nullptr: %s", __func__, name_.c_str());
+        LOGE("%s: Device node %s some of parameters is nullptr", __func__, name_.c_str());
         return -EINVAL;
     }
     struct v4l2_subdev_format format = {};
@@ -138,7 +138,7 @@ int V4L2Subdevice::SetRouting(v4l2_subdev_route* routes, uint32_t numRoutes) {
     LOG1("@%s", __func__);
 
     if (!routes) {
-        LOGE("%s: Device node %s routes is nullptr: %s", __func__, name_.c_str());
+        LOGE("%s: Device node %s routes is nullptr", __func__, name_.c_str());
         return -EINVAL;
     }
 
@@ -158,7 +158,7 @@ int V4L2Subdevice::GetRouting(v4l2_subdev_route* routes, uint32_t* numRoutes) {
     LOG1("@%s", __func__);
 
     if (!routes || !numRoutes) {
-        LOGE("%s: Device node %s routes or numRoutes is nullptr: %s", __func__, name_.c_str());
+        LOGE("%s: Device node %s routes or numRoutes is nullptr", __func__, name_.c_str());
         return -EINVAL;
     }
 

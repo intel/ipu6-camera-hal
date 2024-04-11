@@ -15,7 +15,7 @@ There are 4 repositories that provide the complete setup:
 - Dependencies: ipu6-camera-bins
     Please follow https://github.com/intel/ipu6-camera-bins README to install.
 
-- Dependencies: libexpat-dev automake libtool libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
+- Dependencies: libexpat-dev automake libtool libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libdrm-dev
 
 - Build and install:
     Recommend to build together with icamerasrc and using `build.sh` in this repo.
@@ -33,9 +33,10 @@ There are 4 repositories that provide the complete setup:
 
 3. Install contents in `out/install` to your `/usr`:
     ```sh
-    sudo cp -r ./out/install/include/* /usr/include
-    sudo cp -r ./out/install/lib/* /usr/lib
-    sudo cp -r ./out/install/share/* /usr/share
+    sudo cp -r ./out/install/etc/* /etc/
+    sudo cp -r ./out/install/include/* /usr/include/
+    sudo cp -r ./out/install/lib/* /usr/lib/
+    sudo cp -r ./out/install/usr/* /usr/
     ```
 
 For more building details please reference the `build.sh`.

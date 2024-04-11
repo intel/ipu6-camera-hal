@@ -29,9 +29,7 @@
 #include <base/logging.h>
 #endif
 
-#ifdef CAMERA_SYS_LOG
 #include <syslog.h>
-#endif
 
 #include "CameraLog.h"
 #include "Trace.h"
@@ -93,7 +91,6 @@ __attribute__((__format__(__printf__, 3, 0))) static void printLog(const char* m
 }
 #endif
 
-#ifdef CAMERA_SYS_LOG
 __attribute__((__format__(__printf__, 3, 0))) static void printLog(const char* module, int level,
                                                                    const char* fmt, va_list ap) {
     const char* levelStr = nullptr;
@@ -136,34 +133,6 @@ __attribute__((__format__(__printf__, 3, 0))) static void printLog(const char* m
     vsyslog(priority, format, ap);
     closelog();
 }
-#endif
-
-static void getLogTime(char* timeBuf, int bufLen) {
-    // The format of time is: 01-22 15:24:53.071
-    struct timeval tv;
-    gettimeofday(&tv, nullptr);
-    time_t nowtime = tv.tv_sec;
-    struct tm* nowtm = localtime(&nowtime);
-    if (nowtm) {  // If nowtm is nullptr, simply print nothing for time info
-        char tmbuf[bufLen];
-        CLEAR(tmbuf);
-        strftime(tmbuf, bufLen, "%m-%d %H:%M:%S", nowtm);
-        snprintf(timeBuf, bufLen, "%s.%03ld", tmbuf, tv.tv_usec / 1000);
-    }
-}
-
-__attribute__((__format__(__printf__, 3, 0))) static void printLog(const char* module, int level,
-                                                                   const char* fmt, va_list ap) {
-    // Add time into beginning of the log.
-    const int BUF_LEN = 64;
-    char timeBuf[BUF_LEN] = {'\0'};
-
-    getLogTime(timeBuf, BUF_LEN);
-
-    fprintf(stdout, "%s: [%s]: CamHAL_%s:", timeBuf, cameraDebugLogToString(level), module);
-    vfprintf(stdout, fmt, ap);
-    fprintf(stdout, "\n");
-}
 
 void doLogBody(int logTag, int level, int grpPosition, const char* fmt, ...) {
     if (!(level & globalGroupsDescp[grpPosition].level)) return;
@@ -193,6 +162,7 @@ namespace Log {
 
 #define DEFAULT_LOG_SINK "GLOG"
 #define FILELOG_SINK "FILELOG"
+#define SYSLOG_SINK "SYSLOG"
 
 static void initLogSinks() {
 #ifdef CAL_BUILD
@@ -211,23 +181,20 @@ static void initLogSinks() {
     }
 #endif
 
-#ifdef CAMERA_SYS_LOG
     const char* sinkName = ::getenv("logSink");
 
     if (!sinkName) {
         sinkName = DEFAULT_LOG_SINK;
     }
 
-    if (!::strcmp(sinkName, DEFAULT_LOG_SINK)) {
+    if (!::strcmp(sinkName, SYSLOG_SINK)) {
         globalLogSink = new SysLogSink();
     } else if (!::strcmp(sinkName, FILELOG_SINK)) {
         globalLogSink = new FileLogSink;
     } else {
         globalLogSink = new StdconLogSink();
     }
-#endif
 
-    globalLogSink = new StdconLogSink();
 }
 
 static void setLogTagLevel() {
