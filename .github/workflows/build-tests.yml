@@ -14,7 +14,7 @@ jobs:
     strategy:
       matrix:
         version: [ipu6epmtl, ipu6ep, ipu6]
-        os: ["ubuntu:22.04", "ubuntu:20.04"]
+        os: ["ubuntu:24.04", "ubuntu:22.04", "ubuntu:20.04"]
     runs-on: ubuntu-latest
     container: ${{ matrix.os }}
     steps:
