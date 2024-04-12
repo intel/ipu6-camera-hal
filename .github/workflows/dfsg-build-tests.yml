@@ -57,18 +57,32 @@ jobs:
       - name: Build test for ${{ matrix.version }} on ${{ matrix.os }}
         timeout-minutes: 10
         run: |
+          case "${{ matrix.os }}" in
+            ("ubuntu:24.04")
+              fortify_level=3
+              ;;
+            ("ubuntu:22.04"|"ubuntu:20.04")
+              fortify_level=2
+              ;;
+            (*)
+              echo "${{ matrix.os }} is unsupported yet. Please find the default fortify_level in /usr/share/perl5/Dpkg/Vendor/Ubuntu.pm or /usr/share/perl5/Dpkg/Vendor/Debian.pm."
+              exit 1
+              ;;
+          esac
           cd "${GITHUB_WORKSPACE}/hal"
 
           mkdir build && cd build
           if [ "${{ matrix.version }}" = "hal" ]; then
             cmake -DCMAKE_BUILD_TYPE=Release \
+              "-DCMAKE_CXX_FLAGS=-D_FORTIFY_SOURCE=$fortify_level" \
               ../src/hal/hal_adaptor;
           else
             cmake -DCMAKE_BUILD_TYPE=Release \
+              "-DCMAKE_CXX_FLAGS=-D_FORTIFY_SOURCE=$fortify_level" \
               -DIPU_VER="${{ matrix.version }}" \
               -DUSE_PG_LITE_PIPE=ON \
               -DUSE_HAL_ADAPTOR=ON \
               ..
           fi
-          make
+          VERBOSE=1 make
           make install
