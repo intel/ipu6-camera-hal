@@ -58,8 +58,6 @@ set (CMAKE_CXX_STANDARD 11)
 add_compile_options(-Wall -Werror
                     -fstack-protector
                     -fPIE -fPIC
-                    -U_FORTIFY_SOURCE
-                    -D_FORTIFY_SOURCE=2
                     -DDCHECK_ALWAYS_ON
                     -Wformat -Wformat-security
                     )
@@ -70,7 +68,7 @@ add_definitions(-D__STDC_FORMAT_MACROS
                 -DCAMHAL_PLUGIN_DIR=\"${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/libcamhal/plugins/\"
                 )
 
-set(HAL_ADAPTOR_LD_FLAGS "-fPIE -fPIC -D_FORTIFY_SOURCE=2 -Wformat -Wformat-security -Wl,-z,relro -Wl,-z,now")
+set(HAL_ADAPTOR_LD_FLAGS "-fPIE -fPIC -Wformat -Wformat-security -Wl,-z,relro -Wl,-z,now")
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${HAL_ADAPTOR_LD_FLAGS}")
 
 set(HAL_ADAPTOR_SRCS
