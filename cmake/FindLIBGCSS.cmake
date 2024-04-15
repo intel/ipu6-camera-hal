@@ -19,7 +19,7 @@ include(FindPackageHandleStandardArgs)
 
 if(NOT DEFINED IPU_VER)
     set(LIBGCSS_PKG_SUFFIX "-ipu4")
-elseif(${IPU_VER} STREQUAL ipu6)
+elseif(${IPU_VER} STREQUAL ipu6epmtl)
     set(LIBGCSS_PKG_SUFFIX "")
 else()
     set(LIBGCSS_PKG_SUFFIX "-${IPU_VER}")
