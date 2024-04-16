@@ -193,6 +193,7 @@ class PlatformData {
                       mFaceEngineByIPU(false),
                       mMaxFaceDetectionNumber(MAX_FACES_DETECTABLE),
                       mPsysAlignWithSof(false),
+                      mMsPsysAlignWithSystem(0),
                       mPsysBundleWithAic(false),
                       mSwProcessingAlignWithIsp(false),
                       mMaxNvmDataSize(0),
@@ -322,6 +323,7 @@ class PlatformData {
             bool mFaceEngineByIPU;
             unsigned int mMaxFaceDetectionNumber;
             bool mPsysAlignWithSof;
+            int mMsPsysAlignWithSystem;  // Aligned with system time
             bool mPsysBundleWithAic;
             bool mSwProcessingAlignWithIsp;
 
@@ -948,6 +950,14 @@ class PlatformData {
      * \return if psys align with sof is enabled or not.
      */
     static bool psysAlignWithSof(int cameraId);
+
+    /**
+     * Get time interval to align psys processing
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return time interval.
+     */
+    static int getMsOfPsysAlignWithSystem(int cameraId);
 
     /**
      * Check running psys bundle with aic is enabled or not
