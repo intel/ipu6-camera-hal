@@ -20,7 +20,7 @@
 
 // DUMP_DMA_BUF_FOR_DRM_PRIME_S
 #include <xf86drm.h>
-#include <drm/i915_drm.h>
+#include <libdrm/i915_drm.h>
 // DUMP_DMA_BUF_FOR_DRM_PRIME_E
 
 #include <errno.h>
