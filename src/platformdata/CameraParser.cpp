@@ -677,6 +677,9 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
         pCurrentCam->mFaceAeEnabled = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "psysAlignWithSof") == 0) {
         pCurrentCam->mPsysAlignWithSof = strcmp(atts[1], "true") == 0;
+    } else if (strcmp(name, "psysAlignWithSystem") == 0) {
+        int val = atoi(atts[1]);
+        pCurrentCam->mMsPsysAlignWithSystem = val > 0 ? val : 0;
     } else if (strcmp(name, "psysBundleWithAic") == 0) {
         pCurrentCam->mPsysBundleWithAic = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "swProcessingAlignWithIsp") == 0) {
@@ -2302,12 +2305,6 @@ std::vector<std::string> CameraParser::getAvailableSensors(
     const std::string& ipuName, const std::vector<std::string>& sensorsList) {
     LOG2("@%s, ipuName:%s", __func__, ipuName.c_str());
 
-    /* if the string doesn't contain -wf- or -uf-, it needn't be parsed */
-    if ((sensorsList[0].find("-wf-") == string::npos) &&
-        (sensorsList[0].find("-uf-") == string::npos)) {
-        return sensorsList;
-    }
-
     // sensor's sink entity name prefix:"Intel IPU6 CSI-2 2" or "Intel IPU6 CSI2 2"
     std::string sensorSinkName = "Intel ";
     sensorSinkName.append(ipuName);
@@ -2318,15 +2315,20 @@ std::vector<std::string> CameraParser::getAvailableSensors(
 
     std::vector<string> availableSensors;
     for (auto& sensor : sensorsList) {
+        if (sensor.find("-") == string::npos) {
+            availableSensors.push_back(sensor);
+            continue;
+        }
         std::string srcSensor = sensor;
         std::string portNum = srcSensor.substr(srcSensor.find_last_of('-') + 1);
         std::string sensorSinkNameTmp = sensorSinkName;
         sensorSinkNameTmp.append(portNum);
         std::string sensorName = srcSensor.substr(0, srcSensor.find_first_of('-'));
+        std::string sensorOutName = srcSensor.substr(0, srcSensor.find_last_of('-'));
 
         if (mMC && mMC->checkAvailableSensor(sensorName, sensorSinkNameTmp)) {
             AvailableSensorInfo sensorInfo = {sensorSinkNameTmp, false};
-            availableSensors.push_back(srcSensor);
+            availableSensors.push_back(sensorOutName);
             mAvailableSensor[srcSensor] = sensorInfo;
             LOG2("@%s, The availabel sensor name:%s, sensorSinkNameTmp:%s", __func__,
                  srcSensor.c_str(), sensorSinkNameTmp.c_str());
@@ -2365,13 +2367,7 @@ void CameraParser::getSensorDataFromXmlFile(void) {
     }
 
     for (auto sensor : allSensors) {
-        string sensorName = "sensors/";
-        if ((sensor.find("-wf-") != string::npos) || (sensor.find("-uf-") != string::npos)) {
-            sensorName.append(sensor.substr(0, sensor.find_last_of('-')));
-        } else {
-            sensorName.append(sensor);
-        }
-        sensorName.append(".xml");
+        string sensorName = "sensors/" + sensor + ".xml";
         LOG1("%s: parse sensor name %s", __func__, sensorName.c_str());
         int ret = getDataFromXmlFile(sensorName);
         CheckAndLogError(ret != OK, VOID_VALUE, "Failed to get sensor profile data from %s",

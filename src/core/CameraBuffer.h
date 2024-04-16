@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2023 Intel Corporation.
+ * Copyright (C) 2015-2024 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -172,6 +172,21 @@ class CameraBuffer {
 
     void* mMmapAddrs[VIDEO_MAX_PLANES];
     int mDmaFd[VIDEO_MAX_PLANES];
+
+    // DUMP_DMA_BUF_FOR_DRM_PRIME_S
+    class DeviceRender {
+     public:
+        DeviceRender();
+        explicit DeviceRender(const char* path_file);
+        ~DeviceRender();
+        void* mapDmaBufferAddr(int fd, unsigned int bufferSize);
+
+     private:
+        int m_handle;
+    };
+
+    static DeviceRender mDeviceRender;
+    // DUMP_DMA_BUF_FOR_DRM_PRIME_E
 };
 
 typedef std::vector<std::shared_ptr<CameraBuffer> > CameraBufVector;

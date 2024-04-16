@@ -87,7 +87,7 @@ static void load_camera_hal_library() {
         }
     }
     libName += "/libcamhal.so";
-    LOGI("%s, the library name: %s", __func__, libName.c_str());
+    LOG1("%s, the library name: %s", __func__, libName.c_str());
 
     gCameraHalLib = dlopen(libName.c_str(), RTLD_NOW);
     CheckAndLogError(!gCameraHalLib, VOID_VALUE, "%s, failed to open library: %s, error: %s",

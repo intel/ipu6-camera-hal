@@ -38,7 +38,7 @@
         <pSysFormat value="V4L2_PIX_FMT_NV12"/>
         <initialSkipFrame value="0"/>
         <exposureLag value="2"/>
-        <gainLag value="1"/>
+        <gainLag value="0"/>
         <ltmGainLag value="1"/>
         <hdrExposureNum value="2"/>
         <hdrExposureType value="fix-exposure-ratio"/>
@@ -72,7 +72,7 @@
         <pSysFormat value="V4L2_PIX_FMT_NV12"/>
         <initialSkipFrame value="0"/>
         <exposureLag value="2"/>
-        <gainLag value="1"/>
+        <gainLag value="0"/>
         <ltmGainLag value="1"/>
         <hdrExposureNum value="2"/>
         <hdrExposureType value="fix-exposure-ratio"/>
@@ -106,7 +106,7 @@
         <pSysFormat value="V4L2_PIX_FMT_NV12"/>
         <initialSkipFrame value="0"/>
         <exposureLag value="2"/>
-        <gainLag value="1"/>
+        <gainLag value="0"/>
         <ltmGainLag value="1"/>
         <hdrExposureNum value="2"/>
         <hdrExposureType value="fix-exposure-ratio"/>
@@ -140,7 +140,7 @@
         <pSysFormat value="V4L2_PIX_FMT_NV12"/>
         <initialSkipFrame value="0"/>
         <exposureLag value="2"/>
-        <gainLag value="1"/>
+        <gainLag value="0"/>
         <ltmGainLag value="1"/>
         <hdrExposureNum value="2"/>
         <hdrExposureType value="fix-exposure-ratio"/>

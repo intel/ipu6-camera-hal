@@ -511,6 +511,10 @@ bool PlatformData::psysAlignWithSof(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mPsysAlignWithSof;
 }
 
+int PlatformData::getMsOfPsysAlignWithSystem(int cameraId) {
+    return getInstance()->mStaticCfg.mCameras[cameraId].mMsPsysAlignWithSystem;
+}
+
 bool PlatformData::psysBundleWithAic(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mPsysBundleWithAic;
 }

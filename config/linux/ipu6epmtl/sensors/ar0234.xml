@@ -86,7 +86,7 @@
         <pSysFormat value="V4L2_PIX_FMT_NV12"/>
         <initialSkipFrame value="0"/>
         <exposureLag value="2"/>
-        <gainLag value="1"/>
+        <gainLag value="0"/>
         <ltmGainLag value="1"/>
         <maxRequestsInflight value="6"/>
         <yuvColorRangeMode value="full"/> <!-- there are 2 yuv color range mode, like full, reduced. -->
@@ -167,7 +167,7 @@
         <pSysFormat value="V4L2_PIX_FMT_NV12"/>
         <initialSkipFrame value="0"/>
         <exposureLag value="2"/>
-        <gainLag value="1"/>
+        <gainLag value="0"/>
         <ltmGainLag value="1"/>
         <maxRequestsInflight value="6"/>
         <yuvColorRangeMode value="full"/> <!-- there are 2 yuv color range mode, like full, reduced. -->
@@ -249,7 +249,7 @@
         <pSysFormat value="V4L2_PIX_FMT_NV12"/>
         <initialSkipFrame value="0"/>
         <exposureLag value="2"/>
-        <gainLag value="1"/>
+        <gainLag value="0"/>
         <ltmGainLag value="1"/>
         <maxRequestsInflight value="6"/>
         <yuvColorRangeMode value="full"/> <!-- there are 2 yuv color range mode, like full, reduced. -->
@@ -330,7 +330,7 @@
         <pSysFormat value="V4L2_PIX_FMT_NV12"/>
         <initialSkipFrame value="0"/>
         <exposureLag value="2"/>
-        <gainLag value="1"/>
+        <gainLag value="0"/>
         <ltmGainLag value="1"/>
         <maxRequestsInflight value="6"/>
         <yuvColorRangeMode value="full"/> <!-- there are 2 yuv color range mode, like full, reduced. -->
