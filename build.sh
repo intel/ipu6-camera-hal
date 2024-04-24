@@ -86,6 +86,7 @@ function build_target() {
                   -DBUILD_CAMHAL_TESTS=OFF   \
                   -DUSE_PG_LITE_PIPE=ON \
                   -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/install   \
+                  -DCMAKE_INSTALL_SYSCONFDIR=/etc \
                   -DUSE_HAL_ADAPTOR=ON \
                   ..
 
