@@ -84,13 +84,14 @@ static bool get_ipu_info(const std::string& path) {
 static void load_camera_hal_library() {
     const std::string ipu6Path = "/sys/bus/pci/drivers/intel-ipu6";
     const std::string ipu7Path = "/sys/bus/pci/drivers/intel-ipu7";
-    bool hasIpuInfo = get_ipu_info(ipu6Path);
-    if (!hasIpuInfo) {
-        hasIpuInfo = get_ipu_info(ipu7Path);
+    bool hasIpu6Info = get_ipu_info(ipu6Path);
+    bool hasIpu7Info = false;
+    if (!hasIpu6Info) {
+        hasIpu7Info = get_ipu_info(ipu7Path);
     }
 
-    CheckAndLogError(!hasIpuInfo, VOID_VALUE, "%s, failed to open PCI device. error: %s", __func__,
-                     dlerror());
+    CheckAndLogError(!(hasIpu6Info || hasIpu7Info), VOID_VALUE,
+                     "%s, failed to open PCI device. error: %s", __func__, dlerror());
 
     std::string libName = CAMHAL_PLUGIN_DIR;
     if (strstr(gPciId, "0xa75d") != nullptr /* RPL */ ||
