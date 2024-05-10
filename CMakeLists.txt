@@ -432,7 +432,7 @@ endif()
 configure_file(${PROJECT_SOURCE_DIR}/cmake/libcamhal.pc.cmakein
                ${PROJECT_SOURCE_DIR}/libcamhal.pc @ONLY)
 install(FILES libcamhal.pc
-        DESTINATION usr/${CMAKE_INSTALL_LIBDIR}/${CMAKE_INSTALL_SUB_PATH}/pkgconfig)
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/${CMAKE_INSTALL_SUB_PATH}/pkgconfig)
 
 endif() #NOT CAL_BUILD
 
