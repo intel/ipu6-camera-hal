@@ -80,7 +80,7 @@
         <enableAiqd value = "true"/>
         <useCrlModule value = "false"/>
         <maxRequestsInflight value="5"/>
-        <supportPrivacy value="1"/> <!-- privacy mode, 0: off, 1: CVF privacy 2: AE-based privacy -->
+        <supportPrivacy value="0"/> <!-- privacy mode, 0: off, 1: CVF privacy 2: AE-based privacy -->
     </Sensor>
     <Sensor name="ov02c10-uf" description="OV02C10 sensor.">
         <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1928" outputHeight="1092" format="V4L2_PIX_FMT_SGRBG10"><!-- RAW10 BE capture -->
@@ -147,7 +147,7 @@
         <enableAiqd value = "true"/>
         <useCrlModule value = "false"/>
         <maxRequestsInflight value="5"/>
-        <supportPrivacy value="1"/> <!-- privacy mode, 0: off, 1: CVF privacy 2: AE-based privacy -->
+        <supportPrivacy value="0"/> <!-- privacy mode, 0: off, 1: CVF privacy 2: AE-based privacy -->
     </Sensor>
     <Sensor name="ov02c10-uf" description="OV02C10 sensor.">
         <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1928" outputHeight="1092" format="V4L2_PIX_FMT_SGRBG10"><!-- RAW10 BE capture -->
@@ -214,7 +214,7 @@
         <enableAiqd value = "true"/>
         <useCrlModule value = "false"/>
         <maxRequestsInflight value="5"/>
-        <supportPrivacy value="1"/> <!-- privacy mode, 0: off, 1: CVF privacy 2: AE-based privacy -->
+        <supportPrivacy value="0"/> <!-- privacy mode, 0: off, 1: CVF privacy 2: AE-based privacy -->
     </Sensor>
 </CameraSettings>
 

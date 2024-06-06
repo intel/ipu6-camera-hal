@@ -173,7 +173,7 @@ class CameraBuffer {
     void* mMmapAddrs[VIDEO_MAX_PLANES];
     int mDmaFd[VIDEO_MAX_PLANES];
 
-    // DUMP_DMA_BUF_FOR_DRM_PRIME_S
+#ifdef LIBDRM_SUPPORT_MMAP_OFFSET
     class DeviceRender {
      public:
         DeviceRender();
@@ -186,7 +186,7 @@ class CameraBuffer {
     };
 
     static DeviceRender mDeviceRender;
-    // DUMP_DMA_BUF_FOR_DRM_PRIME_E
+#endif
 };
 
 typedef std::vector<std::shared_ptr<CameraBuffer> > CameraBufVector;

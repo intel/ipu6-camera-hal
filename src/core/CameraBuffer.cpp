@@ -18,10 +18,10 @@
 
 #include "CameraBuffer.h"
 
-// DUMP_DMA_BUF_FOR_DRM_PRIME_S
+#ifdef LIBDRM_SUPPORT_MMAP_OFFSET
 #include <xf86drm.h>
-#include <drm/i915_drm.h>
-// DUMP_DMA_BUF_FOR_DRM_PRIME_E
+#include <libdrm/i915_drm.h>
+#endif
 
 #include <errno.h>
 #include <stdlib.h>
@@ -322,7 +322,7 @@ void CameraBuffer::freeMmap() {
     }
 }
 
-// DUMP_DMA_BUF_FOR_DRM_PRIME_S
+#ifdef LIBDRM_SUPPORT_MMAP_OFFSET
 CameraBuffer::DeviceRender::DeviceRender() : m_handle(-1) {
     m_handle = open("/dev/dri/renderD128", O_RDWR);
 }
@@ -367,13 +367,17 @@ void* CameraBuffer::DeviceRender::mapDmaBufferAddr(int fd, unsigned int bufferSi
 
     return addr;
 }
-// DUMP_DMA_BUF_FOR_DRM_PRIME_E
+#endif
 
 void* CameraBuffer::mapDmaBufferAddr(int fd, unsigned int bufferSize) {
     CheckAndLogError(fd < 0 || !bufferSize, nullptr, "%s, fd:0x%x, bufferSize:%u", __func__, fd,
                      bufferSize);
 
+#ifdef LIBDRM_SUPPORT_MMAP_OFFSET
     return mDeviceRender.mapDmaBufferAddr(fd, bufferSize);
+#else
+    return ::mmap(nullptr, bufferSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+#endif
 }
 
 void CameraBuffer::unmapDmaBufferAddr(void* addr, unsigned int bufferSize) {

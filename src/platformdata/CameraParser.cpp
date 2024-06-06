@@ -258,6 +258,8 @@ void CameraParser::checkField(CameraParser* profiles, const char* name, const ch
         return;
     }
 
+    if (profiles->mIsAvailableSensor) return;
+
     LOGE("@%s, name:%s, atts[0]:%s, xml format wrong", __func__, name, atts[0]);
     return;
 }
@@ -301,10 +303,10 @@ void CameraParser::handleCommon(CameraParser* profiles, const char* name, const 
         cfg->supportHwJpegEncode = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "maxIsysTimeoutValue") == 0) {
         cfg->maxIsysTimeoutValue = atoi(atts[1]);
-    // LEVEL0_ICBM_S
+        // LEVEL0_ICBM_S
     } else if (strcmp(name, "useGPUICBM") == 0) {
         cfg->isGPUICBMEnabled = strcmp(atts[1], "true") == 0;
-    // LEVEL0_ICBM_E
+        // LEVEL0_ICBM_E
     }
 }
 
@@ -718,7 +720,7 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
         pCurrentCam->mRemoveCacheFlushOutputBuffer = strcmp(atts[1], "true") == 0;
     } else if (!strcmp(name, "isPLCEnable")) {
         pCurrentCam->mPLCEnable = strcmp(atts[1], "true") == 0;
-    // PRIVACY_MODE_S
+        // PRIVACY_MODE_S
     } else if (strcmp(name, "supportPrivacy") == 0) {
         int val = atoi(atts[1]);
         if (val > 0 && val <= 2) {
@@ -734,10 +736,10 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
         if (val >= 0) {
             pCurrentCam->mPrivacyModeFrameDelay = val;
         }
-    // PRIVACY_MODE_E
+        // PRIVACY_MODE_E
     } else if (strcmp(name, "stillOnlyPipe") == 0) {
         pCurrentCam->mStillOnlyPipe = strcmp(atts[1], "true") == 0;
-    // VIRTUAL_CHANNEL_S
+        // VIRTUAL_CHANNEL_S
     } else if (strcmp(name, "vcAggregator") == 0) {
         int size = strlen(atts[1]);
         char src[size + 1];
@@ -748,7 +750,7 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
         if (tablePtr) pCurrentCam->mVcAggregator.mName = tablePtr;
         tablePtr = strtok_r(nullptr, ",", &savePtr);
         if (tablePtr) pCurrentCam->mVcAggregator.mIndex = atoi(tablePtr);
-    // VIRTUAL_CHANNEL_E
+        // VIRTUAL_CHANNEL_E
     } else if (strcmp(name, "disableBLCByAGain") == 0) {
         int size = strlen(atts[1]);
         char src[size + 1];
@@ -2098,8 +2100,8 @@ void CameraParser::endParseElement(void* userData, const char* name) {
                 for (size_t i = 0; i < profiles->pCurrentCam->mSupportModuleNames.size(); i++) {
                     if ((strcmp(pCurrentCam->mSupportModuleNames[i].c_str(),
                                 profiles->pCurrentCam->mCamModuleName.c_str()) == 0) ||
-                         (strcmp(pCurrentCam->mSupportModuleNames[i].c_str(),
-                                 DEFAULT_MODULE_NAME) == 0)) {
+                        (strcmp(pCurrentCam->mSupportModuleNames[i].c_str(), DEFAULT_MODULE_NAME) ==
+                         0)) {
                         isCameraAvailable = true;
                         // If find an available sensor, it will not search other sensors
                         profiles->mIsAvailableSensor = true;
@@ -2316,22 +2318,29 @@ std::vector<std::string> CameraParser::getAvailableSensors(
     std::vector<string> availableSensors;
     for (auto& sensor : sensorsList) {
         if (sensor.find("-") == string::npos) {
-            availableSensors.push_back(sensor);
-            continue;
-        }
-        std::string srcSensor = sensor;
-        std::string portNum = srcSensor.substr(srcSensor.find_last_of('-') + 1);
-        std::string sensorSinkNameTmp = sensorSinkName;
-        sensorSinkNameTmp.append(portNum);
-        std::string sensorName = srcSensor.substr(0, srcSensor.find_first_of('-'));
-        std::string sensorOutName = srcSensor.substr(0, srcSensor.find_last_of('-'));
+            // sensors without suffix port number
+            if (mMC && mMC->checkAvailableSensor(sensor)) {
+                availableSensors.push_back(sensor);
+                LOG2("@%s, available sensor name: %s", __func__, sensor.c_str());
+            } else if (sensor.find("_usb") != string::npos) {
+                    availableSensors.push_back(sensor);
+                    LOG2("@%s, available usb sensor name: %s", __func__, sensor.c_str());
+            }
 
-        if (mMC && mMC->checkAvailableSensor(sensorName, sensorSinkNameTmp)) {
-            AvailableSensorInfo sensorInfo = {sensorSinkNameTmp, false};
-            availableSensors.push_back(sensorOutName);
-            mAvailableSensor[srcSensor] = sensorInfo;
-            LOG2("@%s, The availabel sensor name:%s, sensorSinkNameTmp:%s", __func__,
-                 srcSensor.c_str(), sensorSinkNameTmp.c_str());
+        } else {
+            // sensors with suffix port number
+            std::string portNum = sensor.substr(sensor.find_last_of('-') + 1);
+            std::string sensorSinkNameTmp = sensorSinkName + portNum;
+            std::string sensorName = sensor.substr(0, sensor.find_first_of('-'));
+            std::string sensorOutName = sensor.substr(0, sensor.find_last_of('-'));
+
+            if (mMC && mMC->checkAvailableSensor(sensorName, sensorSinkNameTmp)) {
+                AvailableSensorInfo sensorInfo = {sensorSinkNameTmp, false};
+                availableSensors.push_back(sensorOutName);
+                mAvailableSensor[sensor] = sensorInfo;
+                LOG2("@%s, available sensor name: %s, sensorSinkNameTmp:%s", __func__,
+                     sensor.c_str(), sensorSinkNameTmp.c_str());
+            }
         }
     }
 
