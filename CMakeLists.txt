@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017-2023 Intel Corporation
+#  Copyright (C) 2017-2024 Intel Corporation
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -90,7 +90,6 @@ set (CMAKE_CXX_STANDARD 11)
 add_compile_options(-Wall -Werror
                     -fstack-protector
                     -fPIE -fPIC
-                    -D_FORTIFY_SOURCE=2
                     -DDCHECK_ALWAYS_ON
                     -Wformat -Wformat-security
                     )
@@ -157,7 +156,21 @@ include_directories(include
                     src/image_process
                     )
 
-set(LIBCAMHAL_LD_FLAGS "-fPIE -fPIC -D_FORTIFY_SOURCE=2 -Wformat -Wformat-security -Wl,-z,relro -Wl,-z,now")
+set(LIBCAMHAL_LD_FLAGS "-fPIE -fPIC -Wformat -Wformat-security -Wl,-z,relro -Wl,-z,now")
+
+# check if _FORTIFY_SOURCE is default defined with -O
+include(CheckFortifyLevel)
+set(FORTIFY_SOURCE_VALUE)
+check_fortify_source(FORTIFY_SOURCE_VALUE)
+if(FORTIFY_SOURCE_VALUE)
+    message(STATUS "compiler default _FORTIFY_SOURCE=${FORTIFY_SOURCE_VALUE}")
+else()
+    message(STATUS "_FORTIFY_SOURCE is not defined or could not be determined.")
+    add_compile_options(-D_FORTIFY_SOURCE=2)
+    set(LIBCAMHAL_LD_FLAGS "${LIBCAMHAL_LD_FLAGS} -D_FORTIFY_SOURCE=2")
+    message(STATUS "define _FORTIFY_SOURCE=2")
+endif()
+
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${LIBCAMHAL_LD_FLAGS}")
 
 add_subdirectory(src)
@@ -306,6 +319,14 @@ else()
     include_directories(${LIBIACSS_INCLUDE_DIRS})
     target_link_libraries(camhal ${LIBIACSS_LIBS})
     target_link_libraries(camhal_static ${LIBIACSS_LIBS})
+endif()
+
+find_package(LIBDRM)
+if(LIBDRM_FOUND AND ("${LIBDRM_VERSION}" VERSION_GREATER_EQUAL 2.4.114))
+include_directories(${LIBDRM_INCLUDE_DIRS})
+target_link_libraries(camhal ${LIBDRM_LIBS})
+target_link_libraries(camhal_static ${LIBDRM_LIBS})
+add_definitions(-DLIBDRM_SUPPORT_MMAP_OFFSET)
 endif()
 
 # Include libipu(4) headers

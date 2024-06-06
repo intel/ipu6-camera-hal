@@ -285,7 +285,7 @@ int V4L2Device::GetControl(struct v4l2_ext_control* ext_control) {
 
     int ret = ::ioctl(fd_, VIDIOC_G_EXT_CTRLS, &controls);
     if (ret != 0) {
-        LOGE("%s: Device node %s IOCTL VIDIOC_G_EXT_CTRLS error: %s", __func__, name_.c_str(),
+        LOG1("%s: Device node %s IOCTL VIDIOC_G_EXT_CTRLS error: %s", __func__, name_.c_str(),
              strerror(errno));
         return ret;
     }

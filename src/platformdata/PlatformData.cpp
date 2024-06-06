@@ -620,11 +620,10 @@ bool PlatformData::updateMediaFormat(int cameraId, bool isNarrow) {
         media_format = isNarrow ? media_format_bt2100_12b_cl_narrow : media_format_bt2100_12b_cl;
         break;
     default:
-        LOGE("invalid media format, default value used.");
+        LOG1("invalid media format, default value used.");
         return false;
-        break;
     }
-    LOGI("%s, media format in tuning: %d, media format for aic %d.", __func__, tuning_media_format,
+    LOG1("%s, media format in tuning: %d, media format for aic %d.", __func__, tuning_media_format,
          media_format);
     getInstance()->mStaticCfg.mCameras[cameraId].mMediaFormat = media_format;
     return true;
@@ -1390,7 +1389,7 @@ int PlatformData::getConfigModesByOperationMode(int cameraId, uint32_t operation
         return INVALID_OPERATION;
     }
 
-    CheckAndLogError(getInstance()->mStaticCfg.mCameras[cameraId].mSupportedTuningConfig.empty(),
+    CheckAndLog1(getInstance()->mStaticCfg.mCameras[cameraId].mSupportedTuningConfig.empty(),
                      INVALID_OPERATION, "@%s, the tuning config in xml does not exist", __func__);
 
     if (operationMode == CAMERA_STREAM_CONFIGURATION_MODE_AUTO) {

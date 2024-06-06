@@ -877,15 +877,19 @@ int MediaControl::mediaCtlSetup(int cameraId, MediaCtlConf* mc, int width, int h
             if (ivsc->links[i].sink->entity == ivsc) {
                 MediaEntity* sensor = ivsc->links[i].source->entity;
                 int sensor_entity_id = sensor->info.id;
-                LOG1("@%s, found %s -> %s", __func__,
-                     sensor->info.name, ivscName.c_str());
+                LOG1("@%s, found %s -> %s", __func__, sensor->info.name, ivscName.c_str());
                 for (McLink& link : mc->links) {
                     if (link.srcEntity == sensor_entity_id) {
-                        LOG1("@%s, skip %s, link %s -> %s",
-                             __func__, link.srcEntityName.c_str(),
+                        LOG1("@%s, skip %s, link %s -> %s", __func__, link.srcEntityName.c_str(),
                              ivscName.c_str(), link.sinkEntityName.c_str());
                         link.srcEntity = ivsc->info.id;
                         link.srcEntityName = ivscName;
+                        for (uint32_t j = 0; j < ivsc->info.pads; ++j) {
+                            if (ivsc->pads[j].flags & MEDIA_PAD_FL_SOURCE) {
+                                link.srcPad = j;
+                                break;
+                            }
+                        }
                         break;
                     }
                 }
@@ -951,26 +955,62 @@ int MediaControl::getLensName(string* lensName) {
     return UNKNOWN_ERROR;
 }
 
+// PRIVACY_MODE_S
+int MediaControl::getPrivacyDeviceName(std::string* name) {
+    CheckAndLogError(!name, UNKNOWN_ERROR, "nullptr input");
+    MediaEntity* ivsc = getEntityByName(ivscName.c_str());
+
+    if (!ivsc) {
+        return BAD_VALUE;
+    }
+    name->assign(ivsc->devname);
+    return OK;
+}
+// PRIVACY_MODE_E
+
+bool MediaControl::checkHasSource(const MediaEntity* sink, const std::string& source) {
+    for (unsigned int i = 0; i < sink->numLinks; ++i) {
+        if (sink->links[i].sink->entity == sink) {
+            // links[i] is the link to sink entity
+            // pre is the link's source entity
+            MediaEntity* pre = sink->links[i].source->entity;
+            if (pre->info.type == MEDIA_ENT_T_V4L2_SUBDEV_SENSOR) {
+                // if pre is sensor, return compare name result
+                if (strncmp(source.c_str(), pre->info.name, source.length()) == 0) return true;
+            } else {
+                // if pre is not sensor, search recursively
+                if (checkHasSource(pre, source)) return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+// This function must be called after enumEntities().
+bool MediaControl::checkAvailableSensor(const std::string& sensorEntityName) {
+    LOG1("@%s, sensorEntityName:%s", __func__, sensorEntityName.c_str());
+    for (auto& entity : mEntities) {
+        if (strncmp(sensorEntityName.c_str(), entity.info.name, sensorEntityName.length()) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
 // This function must be called after enumEntities().
 bool MediaControl::checkAvailableSensor(const std::string& sensorEntityName,
                                         const std::string& sinkEntityName) {
     LOG1("@%s, sensorEntityName:%s, sinkEntityName:%s", __func__, sensorEntityName.c_str(),
          sinkEntityName.c_str());
 
-    std::string sensorEntityNameTmp = sensorEntityName;
-    sensorEntityNameTmp.append(" ");
-    size_t nameLen = sensorEntityNameTmp.length();
+    // Check if any sensor starts with sensorEntityName connects to
+    // sinkEntityName, which is IPU CSI port
+    std::string sensorEntityNameTmp = sensorEntityName + " ";
     for (auto& entity : mEntities) {
-        int linksCount = entity.info.links;
-        MediaLink* links = entity.links;
-        for (int i = 0; i < linksCount; i++) {
-            if (strcmp(links[i].sink->entity->info.name, sinkEntityName.c_str()) == 0 ||
-                strcmp(links[i].sink->entity->info.name, ivscName.c_str()) == 0) {
-                char* entityName = entity.info.name;
-                if (strncmp(entityName, sensorEntityNameTmp.c_str(), nameLen) == 0) {
-                    return true;
-                }
-            }
+        if (strcmp(sinkEntityName.c_str(), entity.info.name) == 0) {
+            // Got the correct IPU CSI port, check its source
+            return checkHasSource(&entity, sensorEntityNameTmp);
         }
     }
 

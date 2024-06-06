@@ -17,12 +17,6 @@
 cmake_minimum_required(VERSION 2.8)
 project(hal_adaptor)
 
-if (UPSTREAM_CODE)
-    add_compile_definitions(IPU6_UPSTREAM=1)
-else()
-    add_compile_definitions(IPU6_UPSTREAM=0)
-endif()
-
 # Source directories
 set(ROOT_DIR        ${CMAKE_CURRENT_LIST_DIR}/../../../)
 set(METADATA_DIR    ${ROOT_DIR}/src/metadata)
@@ -64,7 +58,6 @@ set (CMAKE_CXX_STANDARD 11)
 add_compile_options(-Wall -Werror
                     -fstack-protector
                     -fPIE -fPIC
-                    -D_FORTIFY_SOURCE=2
                     -DDCHECK_ALWAYS_ON
                     -Wformat -Wformat-security
                     )
@@ -74,7 +67,21 @@ add_definitions(-D__STDC_FORMAT_MACROS
                 -DHAVE_LINUX_OS
                 )
 
-set(HAL_ADAPTOR_LD_FLAGS "-fPIE -fPIC -D_FORTIFY_SOURCE=2 -Wformat -Wformat-security -Wl,-z,relro -Wl,-z,now")
+set(HAL_ADAPTOR_LD_FLAGS "-fPIE -fPIC -Wformat -Wformat-security -Wl,-z,relro -Wl,-z,now")
+
+# check if _FORTIFY_SOURCE is default defined with -O
+include(${ROOT_DIR}/cmake/CheckFortifyLevel.cmake)
+set(FORTIFY_SOURCE_VALUE)
+check_fortify_source(FORTIFY_SOURCE_VALUE)
+if(FORTIFY_SOURCE_VALUE)
+    message(STATUS "compiler default _FORTIFY_SOURCE=${FORTIFY_SOURCE_VALUE}")
+else()
+    message(STATUS "_FORTIFY_SOURCE is not defined or could not be determined.")
+    add_compile_options(-D_FORTIFY_SOURCE=2)
+    set(CMAKE_SHARED_LINKER_FLAGS "${LIBCAMHAL_LD_FLAGS} -D_FORTIFY_SOURCE=2")
+    message(STATUS "define _FORTIFY_SOURCE=2")
+endif()
+
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${HAL_ADAPTOR_LD_FLAGS}")
 
 set(HAL_ADAPTOR_SRCS

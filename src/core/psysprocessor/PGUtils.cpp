@@ -144,7 +144,7 @@ int getCssStride(int v4l2Fmt, int width, bool compression) {
                 stride = ALIGN(width * 2, PSYS_COMPRESSION_TNR_STRIDE_ALIGNMENT);
                 break;
             default:
-                LOGW("%s format %d compress not supported", __func__, v4l2Fmt);
+                LOG1("%s format %d compress not supported", __func__, v4l2Fmt);
                 break;
         }
     }
@@ -178,7 +178,7 @@ int getCssBpp(int v4l2Fmt, bool compression) {
                 bpp = 24;
                 break;
             default:
-                LOGW("%s format %d compress not supported", __func__, v4l2Fmt);
+                LOG1("%s format %d compress not supported", __func__, v4l2Fmt);
                 break;
         }
     }
@@ -216,7 +216,7 @@ int getCssBpe(int v4l2Fmt, bool compression) {
                 bpe = 16;
                 break;
             default:
-                LOGW("%s format %d compress not supported", __func__, v4l2Fmt);
+                LOG1("%s format %d compress not supported", __func__, v4l2Fmt);
                 break;
         }
     }
