@@ -242,6 +242,17 @@ class MediaControl {
      */
     int getVCMI2CAddr(const char* vcmName, std::string* vcmI2CAddr);
 
+    // PRIVACY_MODE_S
+    /**
+     * \brief Get privacy control device name
+     *
+     * \param [out]name: the device name which has privacy control
+     *
+     * \return 0 if succeed or error value if error
+     */
+    int getPrivacyDeviceName(std::string* name);
+    // PRIVACY_MODE_E
+
     /**
      * \brief Set up media controller pipe
      *
@@ -306,6 +317,7 @@ class MediaControl {
     int getDevnameFromSysfs(MediaEntity* entity);
     MediaEntity* getEntityById(uint32_t id);
     MediaEntity* getEntityByName(const char* name);
+    bool checkHasSource(const MediaEntity* sink, const std::string& source);
 
     // set up entity link.
 

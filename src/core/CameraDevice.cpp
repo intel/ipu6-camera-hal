@@ -147,9 +147,11 @@ int CameraDevice::init() {
 
     // PRIVACY_MODE_S
     if (PlatformData::getSupportPrivacy(mCameraId) == CVF_BASED_PRIVACY_MODE) {
-        ret = mCvfPrivacyChecker->init();
-        CheckAndLogError((ret != OK), ret, "%s: Init privacy checker falied", __func__);
-        mCvfPrivacyChecker->run("CvfPrivacyChecker", PRIORITY_NORMAL);
+        if (OK == mCvfPrivacyChecker->init()) {
+            mCvfPrivacyChecker->run("CvfPrivacyChecker", PRIORITY_NORMAL);
+        } else {
+            LOGW("%s: Init privacy checker not initialized", __func__);
+        }
     }
     // PRIVACY_MODE_E
 
