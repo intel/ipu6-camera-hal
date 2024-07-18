@@ -18,6 +18,7 @@ cmake_minimum_required(VERSION 2.8)
 
 project(libcamhal)
 
+option(BUILD_CAMHAL_TESTS "Build test cases or not" OFF)
 
 #---------------------------- Fold settings ----------------------------
 
@@ -28,6 +29,9 @@ set(3A_DIR              ${SRC_ROOT_DIR}/3a)
 set(CORE_DIR            ${SRC_ROOT_DIR}/core)
 set(HAL_DIR             ${SRC_ROOT_DIR}/hal)
 set(IIO_DIR             ${SRC_ROOT_DIR}/iio)
+# ISP_CONTROL_S
+set(ISP_CTRL_DIR        ${SRC_ROOT_DIR}/isp_control)
+# ISP_CONTROL_E
 set(IUTILS_DIR          ${SRC_ROOT_DIR}/iutils)
 set(SCHEDULER_DIR       ${SRC_ROOT_DIR}/scheduler)
 set(METADATA_DIR        ${SRC_ROOT_DIR}/metadata)
@@ -90,6 +94,8 @@ set (CMAKE_CXX_STANDARD 11)
 add_compile_options(-Wall -Werror
                     -fstack-protector
                     -fPIE -fPIC
+                    -U_FORTIFY_SOURCE
+                    -D_FORTIFY_SOURCE=2
                     -DDCHECK_ALWAYS_ON
                     -Wformat -Wformat-security
                     )
@@ -106,6 +112,10 @@ add_definitions(-D__STDC_FORMAT_MACROS
 if (USE_PG_LITE_PIPE)
         add_definitions(-DUSE_PG_LITE_PIPE)
 endif() #USE_PG_LITE_PIPE
+
+if (BYPASS_MODE)
+        add_definitions(-DBYPASS_MODE)
+endif() #BYPASS_MODE
 
 if (CAL_BUILD)
     message("Chrome enabled ")
@@ -156,21 +166,7 @@ include_directories(include
                     src/image_process
                     )
 
-set(LIBCAMHAL_LD_FLAGS "-fPIE -fPIC -Wformat -Wformat-security -Wl,-z,relro -Wl,-z,now")
-
-# check if _FORTIFY_SOURCE is default defined with -O
-include(CheckFortifyLevel)
-set(FORTIFY_SOURCE_VALUE)
-check_fortify_source(FORTIFY_SOURCE_VALUE)
-if(FORTIFY_SOURCE_VALUE)
-    message(STATUS "compiler default _FORTIFY_SOURCE=${FORTIFY_SOURCE_VALUE}")
-else()
-    message(STATUS "_FORTIFY_SOURCE is not defined or could not be determined.")
-    add_compile_options(-D_FORTIFY_SOURCE=2)
-    set(LIBCAMHAL_LD_FLAGS "${LIBCAMHAL_LD_FLAGS} -D_FORTIFY_SOURCE=2")
-    message(STATUS "define _FORTIFY_SOURCE=2")
-endif()
-
+set(LIBCAMHAL_LD_FLAGS "-fPIE -fPIC -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2 -Wformat -Wformat-security -Wl,-z,relro -Wl,-z,now")
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${LIBCAMHAL_LD_FLAGS}")
 
 add_subdirectory(src)
@@ -262,7 +258,9 @@ set(LIBCAMHAL_SRCS
     )
 endif() #ENABLE_SANDBOXING
 
+if (NOT BYPASS_MODE)
     set(LIBCAMHAL_SRCS ${LIBCAMHAL_SRCS} ${IIO_SRCS})
+endif() #BYPASS_MODE
 
 # Add libcamhal using the specified sources
 if (${CMAKE_VERSION} VERSION_LESS 3.11)
@@ -301,6 +299,7 @@ if (CAL_BUILD)
 endif()
 
 # Link libraries, the building will be interrupted if libs/includes not found
+if (NOT BYPASS_MODE)
 
     # Link ia_imaging
     find_package(IA_IMAGING)
@@ -321,13 +320,12 @@ else()
     target_link_libraries(camhal_static ${LIBIACSS_LIBS})
 endif()
 
+# DUMP_DMA_BUF_FOR_DRM_PRIME_S
 find_package(LIBDRM)
-if(LIBDRM_FOUND AND ("${LIBDRM_VERSION}" VERSION_GREATER_EQUAL 2.4.114))
 include_directories(${LIBDRM_INCLUDE_DIRS})
 target_link_libraries(camhal ${LIBDRM_LIBS})
 target_link_libraries(camhal_static ${LIBDRM_LIBS})
-add_definitions(-DLIBDRM_SUPPORT_MMAP_OFFSET)
-endif()
+# DUMP_DMA_BUF_FOR_DRM_PRIME_E
 
 # Include libipu(4) headers
 find_package(LIBIPU)
@@ -337,6 +335,8 @@ if (USE_PG_LITE_PIPE)
     target_link_libraries(camhal ${IPU_LIB})
     target_link_libraries(camhal_static ${IPU_LIB})
 endif()
+
+endif() #BYPASS_MODE
 
 if (CAL_BUILD)
     find_package(LIBCAMERA_CLIENT)
@@ -407,6 +407,13 @@ if (ENABLE_SANDBOXING)
     target_link_libraries(camhal_static ${LIBCAMERA_IPC_LIBS})
     target_link_libraries(camhal_static ${CMAKE_PREFIX_PATH}/librt.a)
 endif() #ENABLE_SANDBOXING
+
+# BUILD_TESTS_S
+#--------------------------- build test  ---------------------------
+if (BUILD_CAMHAL_TESTS AND NOT RT_BACKEND STREQUAL "IPUSIM")
+    add_subdirectory(test/linux)
+endif()
+# BUILD_TESTS_E
 
 #--------------------------- Install settings ---------------------------
 if (NOT CAL_BUILD)
