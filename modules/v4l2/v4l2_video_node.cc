@@ -392,6 +392,7 @@ V4L2VideoNode::V4L2VideoNode(const std::string& name)
           buffer_type_(V4L2_BUF_TYPE_VIDEO_CAPTURE),
           memory_type_(V4L2_MEMORY_USERPTR) {
     LOG1("@%s", __func__);
+    device_caps = 0;
 }
 
 V4L2VideoNode::~V4L2VideoNode() {
@@ -426,14 +427,14 @@ int V4L2VideoNode::Open(int flags) {
         {V4L2_CAP_VIDEO_OUTPUT_MPLANE, V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE},
         {V4L2_CAP_META_CAPTURE, V4L2_BUF_TYPE_META_CAPTURE},
         {V4L2_CAP_META_OUTPUT, V4L2_BUF_TYPE_META_OUTPUT}};
+
     size_t i = 0;
     for (; i < ARRAY_SIZE(buffer_type_mapper); i++) {
         if (cap.capabilities & buffer_type_mapper[i].first) {
-            buffer_type_ = buffer_type_mapper[i].second;
-            break;
+            device_caps |= buffer_type_mapper[i].first;
         }
     }
-    if (i == ARRAY_SIZE(buffer_type_mapper)) {
+    if (device_caps == 0) {
         V4L2Device::Close();
         LOGE("%s: ARRAY_SIZE error.", __func__);
         return -EINVAL;
@@ -460,6 +461,12 @@ enum v4l2_memory V4L2VideoNode::GetMemoryType() {
     LOG1("@%s", __func__);
 
     return memory_type_;
+}
+
+int V4L2VideoNode::GetDeviceCaps() {
+    LOG1("@%s", __func__);
+
+    return device_caps;
 }
 
 enum v4l2_buf_type V4L2VideoNode::GetBufferType() {
@@ -530,7 +537,7 @@ int V4L2VideoNode::SetFormat(const V4L2Format& format) {
     }
 
     V4L2Format fmt(format);
-    fmt.SetType(buffer_type_);
+    buffer_type_ = static_cast<enum v4l2_buf_type>(fmt.Type());
 
     if (V4L2_TYPE_IS_META(buffer_type_)) {
         fmt.SetSizeImage(0, 0);

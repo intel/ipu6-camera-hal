@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2023 Intel Corporation.
+ * Copyright (C) 2015-2024 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -85,18 +85,6 @@
 
 extern "C" {
 namespace icamera {
-
-// VIRTUAL_CHANNEL_S
-/**
- * \struct vc_info_t: Define the virtual channel information for the device
- */
-typedef struct {
-    int total_num; /**< the total camera number of virtual channel. 0: the virtual channel is
-                      disabled */
-    int sequence;  /**< the current camera's sequence in all the virtual channel cameras */
-    int group;     /**< the virtual channel group id */
-} vc_info_t;
-// VIRTUAL_CHANNEL_E
 
 /**
  * \struct camera_info_t: Define each camera basic information

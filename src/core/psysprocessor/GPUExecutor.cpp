@@ -291,6 +291,7 @@ int GPUExecutor::getTnrExtraFrameCount(int64_t seq) {
     CheckAndLogError(ret, 0, "Failed to get total gain");
 
     if (!mStillTnrTriggerInfo.num_gains) return PlatformData::getTnrExtraFrameCount(mCameraId);
+    if (totalGain <= mStillTnrTriggerInfo.tnr7us_threshold_gain) return 0;
 
     int index = 0;
     for (int i = 1; i < mStillTnrTriggerInfo.num_gains; i++) {

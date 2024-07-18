@@ -127,6 +127,18 @@ typedef ::cros::V4L2Format V4L2Format;
         }                                                 \
     } while (0)
 
+/**
+ * Used to check input parameters, if unsuccessful, returns err_code and prints a log1 message,
+ * which applies to error checking without substance.
+ */
+#define CheckAndLog1(condition, err_code, err_msg, args...)     \
+    do {                                                        \
+        if (condition) {                                        \
+            LOG1(err_msg, ##args);                              \
+            return err_code;                                    \
+        }                                                       \
+    } while (0)
+
 // macro delete array and set it to null
 #define DELETE_ARRAY_AND_NULLIFY(var) \
     do {                              \
