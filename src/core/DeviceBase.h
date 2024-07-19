@@ -152,6 +152,9 @@ class DeviceBase : public EventSource {
 
     uint32_t mMaxBufferNumber;
     bool mBufferQueuing;
+#ifndef CAL_BUILD
+     uint32_t mBufType;
+#endif
 
  private:
     DISALLOW_COPY_AND_ASSIGN(DeviceBase);

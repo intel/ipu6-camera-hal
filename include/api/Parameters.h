@@ -81,6 +81,30 @@
 namespace icamera {
 
 /***************Start of Camera Basic Data Structure ****************************/
+
+// VIRTUAL_CHANNEL_S
+/**
+ * \struct vc_info_t: Define the virtual channel information for the device
+ */
+typedef struct {
+    int total_num; /**< the total camera number of virtual channel. 0: the virtual channel is
+                      disabled */
+    int sequence;  /**< the current camera's sequence in all the virtual channel cameras */
+    int group;     /**< the virtual channel group id */
+} vc_info_t;
+// VIRTUAL_CHANNEL_E
+
+/**
+ * \struct device_info_t: Define each camera basic information
+ */
+typedef struct {
+    int facing;
+    int orientation;
+    int device_version;
+    const char* name; /**< Sensor name */
+    const char* description; /**< Sensor description */
+} device_info_t;
+
 /**
  * Basic definition will be inherited by more complicated structure.
  * MUST be all "int" in this structure.
@@ -196,8 +220,9 @@ typedef struct {
      */
     uint32_t max_buffers;
 
-    int usage;      /**<The usage of this stream defined in camera_stream_usage_t. */
-    int streamType; /**<The stream type of this stream defined in camera_stream_type_t. */
+    int usage;          /**<The usage of this stream defined in camera_stream_usage_t. */
+    int streamType;     /**<The stream type of this stream defined in camera_stream_type_t. */
+    int orientation;    /**<The orientation of this stream. [0, 90, 180, 270] */
 } stream_t;
 
 typedef std::vector<stream_t> stream_array_t;
@@ -251,8 +276,9 @@ typedef struct {
     int flags;          /**< buffer flags, its type is camera_buffer_flags_t, used to specify buffer
                            properties */
     uint64_t timestamp; /**< buffer timestamp, it's a time reference measured in nanosecond */
-    uint32_t requestId; /**< buffer requestId, it's a request id of buffer */
-    int reserved;       /**< reserved for future */
+    uint32_t frameNumber;   /**< buffer frameNumber, it's an id of buffer */
+    void *priv;         /**< used to pass private data */
+    uint64_t reserved;  /**< reserved for future */
 } camera_buffer_t;
 
 /**
@@ -342,6 +368,8 @@ typedef enum {
      * This stream is an output stream for Opaque RAW reprocess.
      */
     CAMERA_STREAM_OPAQUE_RAW,
+
+    CAMERA_STREAM_MAX,
 } camera_stream_usage_t;
 
 /**
@@ -727,6 +755,7 @@ typedef enum {
     CAMERA_METADATA_READY,
     CAMERA_DEVICE_ERROR,
     CAMERA_IPC_ERROR,
+    CAMERA_FRAME_DONE,
     CAMERA_METADATA_ENTRY,
 } camera_msg_type_t;
 
@@ -747,12 +776,12 @@ typedef enum {
 } raw_data_output_t;
 
 /**
- * \struct Sensor RAW data info for ZSL.
+ * \struct Sensor data info for ZSL and YUV reprocessing.
  */
 typedef struct {
     int64_t sequence;
     uint64_t timestamp;
-} sensor_raw_info_t;
+} sensor_data_info_t;
 
 /**
  * \struct isp_buffer_ready_t: Use to send isp buffer ready event data.
@@ -786,6 +815,10 @@ typedef struct {
     } data;
 } metadata_entry_t;
 
+typedef struct {
+    int32_t streamId;
+} frame_ready_t;
+
 /**
  * \struct camera_msg_data_t: Use to specify msg data.
  */
@@ -794,6 +827,7 @@ typedef struct {
     union {
         isp_buffer_ready_t buffer_ready;
         metadata_ready_t metadata_ready;
+        frame_ready_t frame_ready;
         metadata_entry_t metadata_entry;
     } data;
 } camera_msg_data_t;
@@ -1055,6 +1089,20 @@ typedef enum {
     LENS_SHADING_MAP_MODE_ON
 } camera_lens_shading_map_mode_type_t;
 
+typedef enum {
+    CAMERA_STATISTICS_FACE_DETECT_MODE_OFF,
+    CAMERA_STATISTICS_FACE_DETECT_MODE_SIMPLE,
+    CAMERA_STATISTICS_FACE_DETECT_MODE_FULL,
+} camera_statistics_face_detect_mode_t;
+
+typedef enum {
+    ROTATE_NONE,
+    ROTATE_90,
+    ROTATE_180,
+    ROTATE_270,
+    ROTATE_AUTO,
+} camera_rotate_mode_t;
+
 /**
  * \struct camera_zoom_region_t: Used to specify zoom regions.
  */
@@ -1063,6 +1111,8 @@ typedef struct {
     int32_t top;
     int32_t right;
     int32_t bottom;
+    float ratio;
+    camera_rotate_mode_t rotateMode;
 } camera_zoom_region_t;
 
 /**

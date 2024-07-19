@@ -351,6 +351,7 @@ class CROS_CAMERA_EXPORT V4L2VideoNode final : public V4L2Device {
     //    V4L2 memory type.
     enum v4l2_memory GetMemoryType();
 
+    int GetDeviceCaps();
     // This method get the buffer type of video device.
     //
     // Returns:
@@ -467,6 +468,7 @@ class CROS_CAMERA_EXPORT V4L2VideoNode final : public V4L2Device {
 
     bool is_buffer_cached_;
 
+    int device_caps;
     enum v4l2_buf_type buffer_type_;
 
     enum v4l2_memory memory_type_;
