@@ -59,6 +59,9 @@ DeviceBase::DeviceBase(int cameraId, VideoNodeType nodeType, VideoNodeDirection 
                      nodeType);
 
     mDevice = new V4L2VideoNode(devName);
+#ifdef LINUX_BUILD
+    mBufType = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
+#endif
 }
 
 DeviceBase::~DeviceBase() {
@@ -74,7 +77,24 @@ int DeviceBase::openDevice() {
         SyncManager::getInstance()->updateSyncCamNum();
     // FRAME_SYNC_E
 
+#ifdef LINUX_BUILD
+    int ret = mDevice->Open(O_RDWR);
+    if (ret)
+        return ret;
+
+    int dev_caps = mDevice->GetDeviceCaps();
+    if (dev_caps & V4L2_CAP_VIDEO_CAPTURE) {
+        mBufType = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    } else {
+        mBufType = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
+    }
+
+    PlatformData::setV4L2BufType(mCameraId, mBufType);
+
+    return OK;
+#else
     return mDevice->Open(O_RDWR);
+#endif
 }
 
 void DeviceBase::closeDevice() {
@@ -139,6 +159,10 @@ int DeviceBase::queueBuffer(int64_t sequence) {
         mBufferQueuing = true;
     }
 
+#ifdef LINUX_BUILD
+    buffer->getV4L2Buffer().SetType(mBufType);
+
+#endif
     int ret = onQueueBuffer(sequence, buffer);
     if (ret == OK) {
         ret = mDevice->PutFrame(&buffer->getV4L2Buffer());
@@ -324,7 +348,11 @@ int MainDevice::createBufferPool(const stream_t& config) {
         v4l2fmt.fmt.pix.sizeimage = 0;
     }
 
+#ifdef LINUX_BUILD
+    v4l2fmt.type = mBufType;
+#else
     v4l2fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+#endif
     V4L2Format tmpbuf{v4l2fmt};
     int ret = mDevice->SetFormat(tmpbuf);
     CheckAndLogError(ret != OK, ret, "set v4l2 format failed ret=%d", ret);
@@ -428,7 +456,11 @@ int DolCaptureDevice::createBufferPool(const stream_t& config) {
     v4l2fmt.fmt.pix.sizeimage = 0;
     v4l2fmt.fmt.pix_mp.field = 0;
 
+#ifdef LINUX_BUILD
+    v4l2fmt.type = mBufType;
+#else
     v4l2fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+#endif
     V4L2Format tmpbuf{v4l2fmt};
     int ret = mDevice->SetFormat(tmpbuf);
     CheckAndLogError(ret != OK, ret, "set DOL v4l2 format failed ret=%d", ret);

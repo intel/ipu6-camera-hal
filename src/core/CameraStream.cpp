@@ -98,10 +98,12 @@ shared_ptr<CameraBuffer> CameraStream::userBufferToCameraBuffer(camera_buffer_t*
     }
 
     if (!camBuffer) {  // Not found in the pool, so create a new CameraBuffer for it.
+        v4l2_buf_type v4l2BufType = PlatformData::getV4L2BufType(mCameraId);
         ubuffer->index = mUserBuffersPool.size();
         camBuffer =
             std::make_shared<CameraBuffer>(mCameraId, BUFFER_USAGE_GENERAL, ubuffer->s.memType,
-                                           ubuffer->s.size, ubuffer->index, ubuffer->s.format);
+                                           ubuffer->s.size, ubuffer->index, ubuffer->s.format,
+                                           v4l2BufType);
         CheckAndLogError(!camBuffer, nullptr, "@%s: fail to alloc CameraBuffer", __func__);
         mUserBuffersPool.push_back(camBuffer);
     }
