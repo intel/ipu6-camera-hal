@@ -85,7 +85,7 @@ function build_target() {
                   -DIPU_VER=$IPU_VERSION \
                   -DBUILD_CAMHAL_TESTS=OFF   \
                   -DUSE_PG_LITE_PIPE=ON \
-                  -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/install   \
+                  -DCMAKE_INSTALL_PREFIX=/usr   \
                   -DUSE_HAL_ADAPTOR=ON \
                   ..
 
@@ -93,7 +93,7 @@ function build_target() {
     make -j`nproc`
     check_result $? "$FUNCNAME: $target"
 
-    make install
+    make DESTDIR=${INSTALL_DIR}/install install
     check_result $? "$FUNCNAME: $target"
     cd ..
 }
@@ -111,13 +111,13 @@ function build_hal_adaptor() {
     cd $SOURCE_DIR/ipu6-camera-hal/src/hal/hal_adaptor
     rm -fr build && mkdir -p build && cd build
 
-    command cmake -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/install ../
+    command cmake -DCMAKE_INSTALL_PREFIX=/usr ../
 
     # make and install
     make -j
     check_result $? $FUNCNAME
 
-    make install
+    make make DESTDIR=${INSTALL_DIR}/install install
     check_result $? $FUNCNAME
 }
 
