@@ -117,7 +117,7 @@ function build_hal_adaptor() {
     make -j
     check_result $? $FUNCNAME
 
-    make make DESTDIR=${INSTALL_DIR}/install install
+    make DESTDIR=${INSTALL_DIR}/install install
     check_result $? $FUNCNAME
 }
 
