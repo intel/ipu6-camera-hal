@@ -24,8 +24,6 @@ include(FindPackageHandleStandardArgs)
 
 if(NOT DEFINED IPU_VER)
     set(IA_IMAGING_PKG_SUFFIX "-ipu4")
-elseif(${IPU_VER} STREQUAL ipu6)
-    set(IA_IMAGING_PKG_SUFFIX "")
 else()
     set(IA_IMAGING_PKG_SUFFIX "-${IPU_VER}")
 endif()
