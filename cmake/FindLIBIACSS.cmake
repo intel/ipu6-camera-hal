@@ -19,8 +19,6 @@ include(FindPackageHandleStandardArgs)
 
 if(NOT DEFINED IPU_VER)
     set(IACSS_PKG_SUFFIX "-ipu4")
-elseif(${IPU_VER} STREQUAL ipu6)
-    set(IACSS_PKG_SUFFIX "")
 else()
     set(IACSS_PKG_SUFFIX "-${IPU_VER}")
 endif()
