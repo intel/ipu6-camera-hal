@@ -145,7 +145,7 @@ function build_icamerasrc() {
     rm -fr config.h.in autom4te.cache/ aclocal.m4 *-libtool config.guess compile \
            config.sub configure depcomp install-sh ltmain.sh m4
     autoreconf --install
-    CFLAGS="-O2" CXXFLAGS="-O2" ./configure --with-haladaptor=yes ${CONFIGURE_FLAGS} \
+    CFLAGS="-O2" CXXFLAGS="-O2" ./configure --with-haladaptor=yes --enable-gstdrmformat=yes ${CONFIGURE_FLAGS} \
                                             --prefix=$INSTALL_DIR/install DEFAULT_CAMERA=0
     check_result $? $FUNCNAME
 
