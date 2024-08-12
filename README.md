@@ -30,6 +30,8 @@ There are 4 repositories that provide the complete setup:
     ```
 
 2. In `work` folder, run `./build.sh`. Output binaries will be in `out/install`. (RPM build is not implemented yet)
+   Notice: To disable 'dma-drm', should remove '--enable-gstdrmformat=yes' in build.sh manually.
+           The featuer depends on 'gstreamer >= 1.23' and 'libva-drm'.
 
 3. Install contents in `out/install` to your `/usr`:
     ```sh
