@@ -74,17 +74,7 @@ function build_target() {
     rm -fr build && mkdir -p build && cd build
 
     local target=$1
-    export IPU_VERSION=
-    if [ "$target" = "ipu_tgl" ]; then
-        IPU_VERSION=ipu6
-    elif [ "$target" = "ipu_adl" ]; then
-        IPU_VERSION=ipu6ep
-    elif [ "$target" = "ipu_mtl" ]; then
-        IPU_VERSION=ipu6epmtl
-    else
-        echo "Error: unsupport the target name : $target"
-        exit -1
-    fi
+    export IPU_VERSION=ipu6ep
 
     # indicate the install folder of binary package
     # export PKG_CONFIG_PATH=~/work/linux/camera_submit/camera/out/install/lib/$target/pkgconfig:$PKG_CONFIG_PATH
@@ -94,16 +84,17 @@ function build_target() {
                   -DIPU_VER=$IPU_VERSION \
                   -DBUILD_CAMHAL_TESTS=OFF   \
                   -DUSE_PG_LITE_PIPE=ON \
-                  -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/install   \
-                  -DCMAKE_INSTALL_SUB_PATH=$target ..
+		  -DBUILD_CAMHAL_ADAPTOR=ON   \
+                  -DBUILD_CAMHAL_PLUGIN=ON   \
+                  -DCMAKE_INSTALL_PREFIX=/usr   \
 
     # make and install
     make -j`nproc`
-    check_result $? "$FUNCNAME: $target"
+    check_result $? $FUNCNAME
 
     make install
-    check_result $? "$FUNCNAME: $target"
-    standardize_pkg_config_path ${INSTALL_DIR}/install/usr/lib/${target}/pkgconfig/libcamhal.pc
+    check_result $? $FUNCNAME
+    standardize_pkg_config_path ${INSTALL_DIR}/install/usr/lib/pkgconfig/libcamhal.pc
     cd ..
 }
 
