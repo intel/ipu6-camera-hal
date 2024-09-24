@@ -13,7 +13,7 @@ There are 4 repositories that provide the complete setup:
 
 ## Build instructions:
 - Dependencies: ipu6-camera-bins
-    Please follow https://github.com/intel/ipu6-camera-bins README to install.
+    Please follow https://github.com/intel/ipu6-camera-bins/tree/ia_ipu6 README to install.
 
 - Dependencies: libexpat-dev automake libtool libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libdrm-dev
 
