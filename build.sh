@@ -71,14 +71,11 @@ standardize_pkg_config_path(){
 }
 
 function build_target() {
-    rm -fr build && mkdir -p build && cd build
-
-    local target=$1
     export IPU_VERSION=ipu6ep
 
     # indicate the install folder of binary package
     # export PKG_CONFIG_PATH=~/work/linux/camera_submit/camera/out/install/lib/$target/pkgconfig:$PKG_CONFIG_PATH
-    export PKG_CONFIG_PATH=/usr/lib/$target/pkgconfig:$PKG_CONFIG_PATH
+    export PKG_CONFIG_PATH=/usr/lib/pkgconfig:$PKG_CONFIG_PATH
 
     command cmake -DCMAKE_BUILD_TYPE=Release \
                   -DIPU_VER=$IPU_VERSION \
@@ -95,21 +92,16 @@ function build_target() {
     make install
     check_result $? $FUNCNAME
     standardize_pkg_config_path ${INSTALL_DIR}/install/usr/lib/pkgconfig/libcamhal.pc
-    cd ..
 }
 
 function build_hal() {
     cd $SOURCE_DIR/ipu6-camera-hal
 
-    for target in $BOARD_LIST
-    do
-        build_target $target
-    done
+    build_target
 }
 
 function build_hal_adaptor() {
     cd $SOURCE_DIR/ipu6-camera-hal/src/hal/hal_adaptor
-    rm -fr build && mkdir -p build && cd build
 
     command cmake -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/install ../
 
