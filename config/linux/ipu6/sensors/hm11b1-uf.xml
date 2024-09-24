@@ -16,12 +16,12 @@
 
 <CameraSettings>
     <Sensor name="hm11b1-uf" description="HM11B1 sensor.">
-        <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1312" outputHeight="800" format="V4L2_PIX_FMT_SGRBG10"><!-- RAW10 BE capture -->
+        <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1292" outputHeight="800" format="V4L2_PIX_FMT_SGRBG10"><!-- RAW10 BE capture -->
             <format name="hm11b1 $I2CBUS" pad="0" width="1292" height="800" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
             <format name="Intel IPU6 CSI-2 $CSI_PORT" pad="0" width="1292" height="800" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
             <format name="Intel IPU6 CSI2 BE SOC 0" pad="0" width="1292" height="800" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
-            <format name="Intel IPU6 CSI2 BE SOC 0" pad="1" width="1312" height="800" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
-            <selection name="Intel IPU6 CSI2 BE SOC 0" pad="1" target="V4L2_SEL_TGT_CROP" left="0" top="0" width="1312" height="800"/>
+            <format name="Intel IPU6 CSI2 BE SOC 0" pad="1" width="1292" height="800" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
+            <selection name="Intel IPU6 CSI2 BE SOC 0" pad="1" target="V4L2_SEL_TGT_CROP" left="0" top="0" width="1292" height="800"/>
 
             <link srcName="hm11b1 $I2CBUS" srcPad="0" sinkName="Intel IPU6 CSI-2 $CSI_PORT" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI-2 $CSI_PORT" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 0" sinkPad="0" enable="true"/>
@@ -29,6 +29,17 @@
 
             <videonode name="Intel IPU6 BE SOC capture 0" videoNodeType="VIDEO_GENERIC"/>
             <videonode name="Intel IPU6 CSI-2 $CSI_PORT" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+            <videonode name="hm11b1 $I2CBUS" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+        </MediaCtlConfig>
+        <MediaCtlConfig id="0" mediaCfg="1" ConfigMode="AUTO" outputWidth="1292" outputHeight="800" format="V4L2_PIX_FMT_SGRBG10"><!-- RAW10 BE capture -->
+            <format name="hm11b1 $I2CBUS" pad="0" width="1292" height="800" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
+            <format name="Intel IPU6 CSI2 $CSI_PORT" pad="0" width="1292" height="800" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
+
+            <link srcName="hm11b1 $I2CBUS" srcPad="0" sinkName="Intel IPU6 CSI2 $CSI_PORT" sinkPad="0" enable="true"/>
+            <link srcName="Intel IPU6 CSI2 $CSI_PORT" srcPad="1" sinkName="Intel IPU6 ISYS Capture $CAPTURE_ID" sinkPad="0" enable="true"/>
+
+            <videonode name="Intel IPU6 ISYS Capture $CAPTURE_ID" videoNodeType="VIDEO_GENERIC"/>
+            <videonode name="Intel IPU6 CSI2 $CSI_PORT" videoNodeType="VIDEO_ISYS_RECEIVER"/>
             <videonode name="hm11b1 $I2CBUS" videoNodeType="VIDEO_PIXEL_ARRAY"/>
         </MediaCtlConfig>
 
@@ -63,7 +74,7 @@
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
         <lardTags value="VIDEO,DFLT,DFLT,DFLT,DFLT"/>
 
-        <supportedISysSizes value="1312x800"/> <!-- ascending order request -->
+        <supportedISysSizes value="1292x800"/> <!-- ascending order request -->
         <supportedISysFormat value="V4L2_PIX_FMT_SGRBG10"/>
         <enableAIQ value="true"/>
         <iSysRawFormat value="V4L2_PIX_FMT_SGRBG10"/>

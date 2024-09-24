@@ -535,6 +535,7 @@ int ia_css_process_group_print(
     ia_css_rbm_t routing_bitmap;
 
     NOT_USED(fid);
+    NOT_USED(routing_bitmap);
 
     IA_CSS_TRACE_0(PSYSAPI_DYNAMIC, VERBOSE,
         "ia_css_process_group_print(): enter:\n");
@@ -689,6 +690,7 @@ bool ia_css_can_process_group_submit(
     int i;
     bool can_submit = false;
     int retval = -1;
+    NOT_USED(retval);
     uint8_t    terminal_count =
         ia_css_process_group_get_terminal_count(process_group);
 
@@ -701,6 +703,7 @@ bool ia_css_can_process_group_submit(
         ia_css_terminal_t *terminal =
             ia_css_process_group_get_terminal(process_group, i);
         vied_vaddress_t buffer;
+        NOT_USED(buffer);
         ia_css_buffer_state_t buffer_state;
 
         verifexitval(terminal != NULL, EINVAL);
@@ -772,6 +775,7 @@ bool ia_css_can_enqueue_buffer_set(
     int i;
     bool can_enqueue = false;
     int retval = -1;
+    NOT_USED(retval);
     uint8_t    terminal_count;
 
     IA_CSS_TRACE_0(PSYSAPI_DYNAMIC, INFO,
@@ -795,6 +799,7 @@ bool ia_css_can_enqueue_buffer_set(
         ia_css_terminal_t *terminal =
             ia_css_process_group_get_terminal(process_group, i);
         vied_vaddress_t buffer;
+        NOT_USED(buffer);
         ia_css_buffer_state_t buffer_state;
 
         verifexitval(terminal != NULL, EINVAL);
@@ -854,6 +859,7 @@ bool ia_css_can_process_group_start(
     int i;
     bool can_start = false;
     int retval = -1;
+    NOT_USED(retval);
     uint8_t    terminal_count;
 
     IA_CSS_TRACE_0(PSYSAPI_DYNAMIC, INFO,

@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2013 The Android Open Source Project
- * Copyright (C) 2015-2023 Intel Corporation.
+ * Copyright (C) 2015-2024 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -94,6 +94,7 @@ typedef struct {
 } vc_info_t;
 // VIRTUAL_CHANNEL_E
 
+// IPU7_FEATURE_S
 /**
  * \struct device_info_t: Define each camera basic information
  */
@@ -104,6 +105,7 @@ typedef struct {
     const char* name; /**< Sensor name */
     const char* description; /**< Sensor description */
 } device_info_t;
+// IPU7_FEATURE_E
 
 /**
  * Basic definition will be inherited by more complicated structure.
@@ -277,7 +279,7 @@ typedef struct {
                            properties */
     uint64_t timestamp; /**< buffer timestamp, it's a time reference measured in nanosecond */
     uint32_t frameNumber;   /**< buffer frameNumber, it's an id of buffer */
-    void *priv;         /**< used to pass private data */
+    uint64_t privateHandle;   /**< used to pass private data */
     uint64_t reserved;  /**< reserved for future */
 } camera_buffer_t;
 
@@ -1089,11 +1091,13 @@ typedef enum {
     LENS_SHADING_MAP_MODE_ON
 } camera_lens_shading_map_mode_type_t;
 
+// IPU7_FEATURE_S
 typedef enum {
     CAMERA_STATISTICS_FACE_DETECT_MODE_OFF,
     CAMERA_STATISTICS_FACE_DETECT_MODE_SIMPLE,
     CAMERA_STATISTICS_FACE_DETECT_MODE_FULL,
 } camera_statistics_face_detect_mode_t;
+// IPU7_FEATURE_E
 
 typedef enum {
     ROTATE_NONE,
