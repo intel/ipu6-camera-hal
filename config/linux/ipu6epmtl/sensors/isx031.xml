@@ -18,15 +18,15 @@
     <Sensor name="isx031-a" description="isx031 sensor">
         <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1920" outputHeight="1536" format="V4L2_PIX_FMT_UYVY">
             <format name="isx031 a" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <format name="TI960 b" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <format name="TI960 b" pad="4" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="TI960 a" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="TI960 a" pad="4" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI-2 1" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI-2 1" pad="1" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI2 BE SOC 1" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI2 BE SOC 1" pad="1" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
 
-            <link srcName="isx031 a" srcPad="0" sinkName="TI960 b" sinkPad="0" enable="true"/>
-            <link srcName="TI960 b" srcPad="4" sinkName="Intel IPU6 CSI-2 1" sinkPad="0" enable="true"/>
+            <link srcName="isx031 a" srcPad="0" sinkName="TI960 a" sinkPad="0" enable="true"/>
+            <link srcName="TI960 a" srcPad="4" sinkName="Intel IPU6 CSI-2 1" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI-2 1" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 1" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC 1" srcPad="1" sinkName="Intel IPU6 BE SOC 1 capture 0" sinkPad="0" enable="true"/>
 
@@ -36,15 +36,15 @@
         </MediaCtlConfig>
         <MediaCtlConfig id="1" ConfigMode="AUTO" outputWidth="1920" outputHeight="1080" format="V4L2_PIX_FMT_UYVY">
             <format name="isx031 a" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <format name="TI960 b" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <format name="TI960 b" pad="4" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="TI960 a" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="TI960 a" pad="4" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI-2 1" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI-2 1" pad="1" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI2 BE SOC 1" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI2 BE SOC 1" pad="1" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
 
-            <link srcName="isx031 a" srcPad="0" sinkName="TI960 b" sinkPad="0" enable="true"/>
-            <link srcName="TI960 b" srcPad="4" sinkName="Intel IPU6 CSI-2 1" sinkPad="0" enable="true"/>
+            <link srcName="isx031 a" srcPad="0" sinkName="TI960 a" sinkPad="0" enable="true"/>
+            <link srcName="TI960 a" srcPad="4" sinkName="Intel IPU6 CSI-2 1" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI-2 1" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 1" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC 1" srcPad="1" sinkName="Intel IPU6 BE SOC 1 capture 0" sinkPad="0" enable="true"/>
 
@@ -54,15 +54,15 @@
         </MediaCtlConfig>
         <MediaCtlConfig id="2" ConfigMode="AUTO" outputWidth="1280" outputHeight="720" format="V4L2_PIX_FMT_UYVY">
             <format name="isx031 a" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <format name="TI960 b" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <format name="TI960 b" pad="4" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="TI960 a" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="TI960 a" pad="4" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI-2 1" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI-2 1" pad="1" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI2 BE SOC 1" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI2 BE SOC 1" pad="1" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
 
-            <link srcName="isx031 a" srcPad="0" sinkName="TI960 b" sinkPad="0" enable="true"/>
-            <link srcName="TI960 b" srcPad="4" sinkName="Intel IPU6 CSI-2 1" sinkPad="0" enable="true"/>
+            <link srcName="isx031 a" srcPad="0" sinkName="TI960 a" sinkPad="0" enable="true"/>
+            <link srcName="TI960 a" srcPad="4" sinkName="Intel IPU6 CSI-2 1" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI-2 1" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 1" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC 1" srcPad="1" sinkName="Intel IPU6 BE SOC 1 capture 0" sinkPad="0" enable="true"/>
 
@@ -84,15 +84,15 @@
     <Sensor name="isx031-b" description="isx031 sensor">
         <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1920" outputHeight="1536" format="V4L2_PIX_FMT_UYVY">
             <format name="isx031 b" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <format name="TI960 b" pad="1" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <format name="TI960 b" pad="4" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="TI960 a" pad="1" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="TI960 a" pad="4" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI-2 1" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI-2 1" pad="1" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI2 BE SOC 1" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI2 BE SOC 1" pad="2" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
 
-            <link srcName="isx031 b" srcPad="0" sinkName="TI960 b" sinkPad="1" enable="true"/>
-            <link srcName="TI960 b" srcPad="4" sinkName="Intel IPU6 CSI-2 1" sinkPad="0" enable="true"/>
+            <link srcName="isx031 b" srcPad="0" sinkName="TI960 a" sinkPad="1" enable="true"/>
+            <link srcName="TI960 a" srcPad="4" sinkName="Intel IPU6 CSI-2 1" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI-2 1" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 1" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC 1" srcPad="2" sinkName="Intel IPU6 BE SOC 1 capture 1" sinkPad="0" enable="true"/>
 
@@ -102,15 +102,15 @@
         </MediaCtlConfig>
         <MediaCtlConfig id="1" ConfigMode="AUTO" outputWidth="1920" outputHeight="1080" format="V4L2_PIX_FMT_UYVY">
             <format name="isx031 b" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <format name="TI960 b" pad="1" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <format name="TI960 b" pad="4" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="TI960 a" pad="1" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="TI960 a" pad="4" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI-2 1" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI-2 1" pad="1" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI2 BE SOC 1" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI2 BE SOC 1" pad="2" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
 
-            <link srcName="isx031 b" srcPad="0" sinkName="TI960 b" sinkPad="1" enable="true"/>
-            <link srcName="TI960 b" srcPad="4" sinkName="Intel IPU6 CSI-2 1" sinkPad="0" enable="true"/>
+            <link srcName="isx031 b" srcPad="0" sinkName="TI960 a" sinkPad="1" enable="true"/>
+            <link srcName="TI960 a" srcPad="4" sinkName="Intel IPU6 CSI-2 1" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI-2 1" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 1" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC 1" srcPad="2" sinkName="Intel IPU6 BE SOC 1 capture 1" sinkPad="0" enable="true"/>
 
@@ -120,15 +120,15 @@
         </MediaCtlConfig>
         <MediaCtlConfig id="2" ConfigMode="AUTO" outputWidth="1280" outputHeight="720" format="V4L2_PIX_FMT_UYVY">
             <format name="isx031 b" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <format name="TI960 b" pad="1" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <format name="TI960 b" pad="4" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="TI960 a" pad="1" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="TI960 a" pad="4" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI-2 1" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI-2 1" pad="1" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI2 BE SOC 1" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI2 BE SOC 1" pad="2" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
 
-            <link srcName="isx031 b" srcPad="0" sinkName="TI960 b" sinkPad="1" enable="true"/>
-            <link srcName="TI960 b" srcPad="4" sinkName="Intel IPU6 CSI-2 1" sinkPad="0" enable="true"/>
+            <link srcName="isx031 b" srcPad="0" sinkName="TI960 a" sinkPad="1" enable="true"/>
+            <link srcName="TI960 a" srcPad="4" sinkName="Intel IPU6 CSI-2 1" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI-2 1" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 1" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC 1" srcPad="2" sinkName="Intel IPU6 BE SOC 1 capture 1" sinkPad="0" enable="true"/>
 
@@ -150,15 +150,15 @@
     <Sensor name="isx031-c" description="isx031 sensor">
         <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1920" outputHeight="1536" format="V4L2_PIX_FMT_UYVY">
             <format name="isx031 c" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <format name="TI960 b" pad="2" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <format name="TI960 b" pad="4" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="TI960 a" pad="2" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="TI960 a" pad="4" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI-2 1" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI-2 1" pad="1" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI2 BE SOC 1" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI2 BE SOC 1" pad="3" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
 
-            <link srcName="isx031 c" srcPad="0" sinkName="TI960 b" sinkPad="2" enable="true"/>
-            <link srcName="TI960 b" srcPad="4" sinkName="Intel IPU6 CSI-2 1" sinkPad="0" enable="true"/>
+            <link srcName="isx031 c" srcPad="0" sinkName="TI960 a" sinkPad="2" enable="true"/>
+            <link srcName="TI960 a" srcPad="4" sinkName="Intel IPU6 CSI-2 1" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI-2 1" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 1" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC 1" srcPad="3" sinkName="Intel IPU6 BE SOC 1 capture 2" sinkPad="0" enable="true"/>
 
@@ -168,15 +168,15 @@
         </MediaCtlConfig>
         <MediaCtlConfig id="1" ConfigMode="AUTO" outputWidth="1920" outputHeight="1080" format="V4L2_PIX_FMT_UYVY">
             <format name="isx031 c" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <format name="TI960 b" pad="2" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <format name="TI960 b" pad="4" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="TI960 a" pad="2" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="TI960 a" pad="4" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI-2 1" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI-2 1" pad="1" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI2 BE SOC 1" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI2 BE SOC 1" pad="3" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
 
-            <link srcName="isx031 c" srcPad="0" sinkName="TI960 b" sinkPad="2" enable="true"/>
-            <link srcName="TI960 b" srcPad="4" sinkName="Intel IPU6 CSI-2 1" sinkPad="0" enable="true"/>
+            <link srcName="isx031 c" srcPad="0" sinkName="TI960 a" sinkPad="2" enable="true"/>
+            <link srcName="TI960 a" srcPad="4" sinkName="Intel IPU6 CSI-2 1" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI-2 1" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 1" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC 1" srcPad="3" sinkName="Intel IPU6 BE SOC 1 capture 2" sinkPad="0" enable="true"/>
 
@@ -186,15 +186,15 @@
         </MediaCtlConfig>
         <MediaCtlConfig id="2" ConfigMode="AUTO" outputWidth="1280" outputHeight="720" format="V4L2_PIX_FMT_UYVY">
             <format name="isx031 c" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <format name="TI960 b" pad="2" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <format name="TI960 b" pad="4" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="TI960 a" pad="2" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="TI960 a" pad="4" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI-2 1" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI-2 1" pad="1" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI2 BE SOC 1" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI2 BE SOC 1" pad="3" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
 
-            <link srcName="isx031 c" srcPad="0" sinkName="TI960 b" sinkPad="2" enable="true"/>
-            <link srcName="TI960 b" srcPad="4" sinkName="Intel IPU6 CSI-2 1" sinkPad="0" enable="true"/>
+            <link srcName="isx031 c" srcPad="0" sinkName="TI960 a" sinkPad="2" enable="true"/>
+            <link srcName="TI960 a" srcPad="4" sinkName="Intel IPU6 CSI-2 1" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI-2 1" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 1" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC 1" srcPad="3" sinkName="Intel IPU6 BE SOC 1 capture 2" sinkPad="0" enable="true"/>
 
@@ -216,15 +216,15 @@
     <Sensor name="isx031-d" description="isx031 sensor">
         <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1920" outputHeight="1536" format="V4L2_PIX_FMT_UYVY">
             <format name="isx031 d" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <format name="TI960 b" pad="3" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <format name="TI960 b" pad="4" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="TI960 a" pad="3" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="TI960 a" pad="4" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI-2 1" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI-2 1" pad="1" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI2 BE SOC 1" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI2 BE SOC 1" pad="4" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
 
-            <link srcName="isx031 d" srcPad="0" sinkName="TI960 b" sinkPad="3" enable="true"/>
-            <link srcName="TI960 b" srcPad="4" sinkName="Intel IPU6 CSI-2 1" sinkPad="0" enable="true"/>
+            <link srcName="isx031 d" srcPad="0" sinkName="TI960 a" sinkPad="3" enable="true"/>
+            <link srcName="TI960 a" srcPad="4" sinkName="Intel IPU6 CSI-2 1" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI-2 1" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 1" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC 1" srcPad="4" sinkName="Intel IPU6 BE SOC 1 capture 3" sinkPad="0" enable="true"/>
 
@@ -234,15 +234,15 @@
         </MediaCtlConfig>
         <MediaCtlConfig id="1" ConfigMode="AUTO" outputWidth="1920" outputHeight="1080" format="V4L2_PIX_FMT_UYVY">
             <format name="isx031 d" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <format name="TI960 b" pad="3" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <format name="TI960 b" pad="4" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="TI960 a" pad="3" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="TI960 a" pad="4" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI-2 1" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI-2 1" pad="1" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI2 BE SOC 1" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI2 BE SOC 1" pad="4" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
 
-            <link srcName="isx031 d" srcPad="0" sinkName="TI960 b" sinkPad="3" enable="true"/>
-            <link srcName="TI960 b" srcPad="4" sinkName="Intel IPU6 CSI-2 1" sinkPad="0" enable="true"/>
+            <link srcName="isx031 d" srcPad="0" sinkName="TI960 a" sinkPad="3" enable="true"/>
+            <link srcName="TI960 a" srcPad="4" sinkName="Intel IPU6 CSI-2 1" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI-2 1" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 1" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC 1" srcPad="4" sinkName="Intel IPU6 BE SOC 1 capture 3" sinkPad="0" enable="true"/>
 
@@ -252,15 +252,15 @@
         </MediaCtlConfig>
         <MediaCtlConfig id="2" ConfigMode="AUTO" outputWidth="1280" outputHeight="720" format="V4L2_PIX_FMT_UYVY">
             <format name="isx031 d" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <format name="TI960 b" pad="3" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <format name="TI960 b" pad="4" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="TI960 a" pad="3" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="TI960 a" pad="4" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI-2 1" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI-2 1" pad="1" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI2 BE SOC 1" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI2 BE SOC 1" pad="4" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
 
-            <link srcName="isx031 d" srcPad="0" sinkName="TI960 b" sinkPad="3" enable="true"/>
-            <link srcName="TI960 b" srcPad="4" sinkName="Intel IPU6 CSI-2 1" sinkPad="0" enable="true"/>
+            <link srcName="isx031 d" srcPad="0" sinkName="TI960 a" sinkPad="3" enable="true"/>
+            <link srcName="TI960 a" srcPad="4" sinkName="Intel IPU6 CSI-2 1" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI-2 1" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 1" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC 1" srcPad="4" sinkName="Intel IPU6 BE SOC 1 capture 3" sinkPad="0" enable="true"/>
 
@@ -282,15 +282,15 @@
     <Sensor name="isx031-e" description="isx031 sensor">
         <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1920" outputHeight="1536" format="V4L2_PIX_FMT_UYVY">
             <format name="isx031 e" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <format name="TI960 b" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <format name="TI960 b" pad="4" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="TI960 a" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="TI960 a" pad="4" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI-2 2" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI-2 2" pad="1" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI2 BE SOC 2" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI2 BE SOC 2" pad="1" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
 
-            <link srcName="isx031 e" srcPad="0" sinkName="TI960 b" sinkPad="0" enable="true"/>
-            <link srcName="TI960 b" srcPad="4" sinkName="Intel IPU6 CSI-2 2" sinkPad="0" enable="true"/>
+            <link srcName="isx031 e" srcPad="0" sinkName="TI960 a" sinkPad="0" enable="true"/>
+            <link srcName="TI960 a" srcPad="4" sinkName="Intel IPU6 CSI-2 2" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI-2 2" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 2" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC 2" srcPad="1" sinkName="Intel IPU6 BE SOC 2 capture 0" sinkPad="0" enable="true"/>
 
@@ -300,15 +300,15 @@
         </MediaCtlConfig>
         <MediaCtlConfig id="1" ConfigMode="AUTO" outputWidth="1920" outputHeight="1080" format="V4L2_PIX_FMT_UYVY">
             <format name="isx031 e" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <format name="TI960 b" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <format name="TI960 b" pad="4" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="TI960 a" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="TI960 a" pad="4" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI-2 2" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI-2 2" pad="1" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI2 BE SOC 2" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI2 BE SOC 2" pad="1" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
 
-            <link srcName="isx031 e" srcPad="0" sinkName="TI960 b" sinkPad="0" enable="true"/>
-            <link srcName="TI960 b" srcPad="4" sinkName="Intel IPU6 CSI-2 2" sinkPad="0" enable="true"/>
+            <link srcName="isx031 e" srcPad="0" sinkName="TI960 a" sinkPad="0" enable="true"/>
+            <link srcName="TI960 a" srcPad="4" sinkName="Intel IPU6 CSI-2 2" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI-2 2" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 2" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC 2" srcPad="1" sinkName="Intel IPU6 BE SOC 2 capture 0" sinkPad="0" enable="true"/>
 
@@ -318,15 +318,15 @@
         </MediaCtlConfig>
         <MediaCtlConfig id="2" ConfigMode="AUTO" outputWidth="1280" outputHeight="720" format="V4L2_PIX_FMT_UYVY">
             <format name="isx031 e" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <format name="TI960 b" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <format name="TI960 b" pad="4" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="TI960 a" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="TI960 a" pad="4" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI-2 2" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI-2 2" pad="1" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI2 BE SOC 2" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI2 BE SOC 2" pad="1" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
 
-            <link srcName="isx031 e" srcPad="0" sinkName="TI960 b" sinkPad="0" enable="true"/>
-            <link srcName="TI960 b" srcPad="4" sinkName="Intel IPU6 CSI-2 2" sinkPad="0" enable="true"/>
+            <link srcName="isx031 e" srcPad="0" sinkName="TI960 a" sinkPad="0" enable="true"/>
+            <link srcName="TI960 a" srcPad="4" sinkName="Intel IPU6 CSI-2 2" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI-2 2" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 2" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC 2" srcPad="1" sinkName="Intel IPU6 BE SOC 2 capture 0" sinkPad="0" enable="true"/>
 
@@ -348,15 +348,15 @@
     <Sensor name="isx031-f" description="isx031 sensor">
         <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1920" outputHeight="1536" format="V4L2_PIX_FMT_UYVY">
             <format name="isx031 f" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <format name="TI960 b" pad="1" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <format name="TI960 b" pad="4" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="TI960 a" pad="1" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="TI960 a" pad="4" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI-2 2" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI-2 2" pad="1" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI2 BE SOC 2" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI2 BE SOC 2" pad="2" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
 
-            <link srcName="isx031 f" srcPad="0" sinkName="TI960 b" sinkPad="1" enable="true"/>
-            <link srcName="TI960 b" srcPad="4" sinkName="Intel IPU6 CSI-2 2" sinkPad="0" enable="true"/>
+            <link srcName="isx031 f" srcPad="0" sinkName="TI960 a" sinkPad="1" enable="true"/>
+            <link srcName="TI960 a" srcPad="4" sinkName="Intel IPU6 CSI-2 2" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI-2 2" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 2" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC 2" srcPad="2" sinkName="Intel IPU6 BE SOC 2 capture 1" sinkPad="0" enable="true"/>
 
@@ -366,15 +366,15 @@
         </MediaCtlConfig>
         <MediaCtlConfig id="1" ConfigMode="AUTO" outputWidth="1920" outputHeight="1080" format="V4L2_PIX_FMT_UYVY">
             <format name="isx031 f" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <format name="TI960 b" pad="1" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <format name="TI960 b" pad="4" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="TI960 a" pad="1" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="TI960 a" pad="4" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI-2 2" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI-2 2" pad="1" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI2 BE SOC 2" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI2 BE SOC 2" pad="2" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
 
-            <link srcName="isx031 f" srcPad="0" sinkName="TI960 b" sinkPad="1" enable="true"/>
-            <link srcName="TI960 b" srcPad="4" sinkName="Intel IPU6 CSI-2 2" sinkPad="0" enable="true"/>
+            <link srcName="isx031 f" srcPad="0" sinkName="TI960 a" sinkPad="1" enable="true"/>
+            <link srcName="TI960 a" srcPad="4" sinkName="Intel IPU6 CSI-2 2" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI-2 2" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 2" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC 2" srcPad="2" sinkName="Intel IPU6 BE SOC 2 capture 1" sinkPad="0" enable="true"/>
 
@@ -384,15 +384,15 @@
         </MediaCtlConfig>
         <MediaCtlConfig id="2" ConfigMode="AUTO" outputWidth="1280" outputHeight="720" format="V4L2_PIX_FMT_UYVY">
             <format name="isx031 f" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <format name="TI960 b" pad="1" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <format name="TI960 b" pad="4" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="TI960 a" pad="1" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="TI960 a" pad="4" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI-2 2" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI-2 2" pad="1" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI2 BE SOC 2" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI2 BE SOC 2" pad="2" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
 
-            <link srcName="isx031 f" srcPad="0" sinkName="TI960 b" sinkPad="1" enable="true"/>
-            <link srcName="TI960 b" srcPad="4" sinkName="Intel IPU6 CSI-2 2" sinkPad="0" enable="true"/>
+            <link srcName="isx031 f" srcPad="0" sinkName="TI960 a" sinkPad="1" enable="true"/>
+            <link srcName="TI960 a" srcPad="4" sinkName="Intel IPU6 CSI-2 2" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI-2 2" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 2" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC 2" srcPad="2" sinkName="Intel IPU6 BE SOC 2 capture 1" sinkPad="0" enable="true"/>
 
@@ -414,15 +414,15 @@
     <Sensor name="isx031-g" description="isx031 sensor">
         <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1920" outputHeight="1536" format="V4L2_PIX_FMT_UYVY">
             <format name="isx031 g" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <format name="TI960 b" pad="2" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <format name="TI960 b" pad="4" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="TI960 a" pad="2" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="TI960 a" pad="4" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI-2 2" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI-2 2" pad="1" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI2 BE SOC 2" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI2 BE SOC 2" pad="3" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
 
-            <link srcName="isx031 g" srcPad="0" sinkName="TI960 b" sinkPad="2" enable="true"/>
-            <link srcName="TI960 b" srcPad="4" sinkName="Intel IPU6 CSI-2 2" sinkPad="0" enable="true"/>
+            <link srcName="isx031 g" srcPad="0" sinkName="TI960 a" sinkPad="2" enable="true"/>
+            <link srcName="TI960 a" srcPad="4" sinkName="Intel IPU6 CSI-2 2" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI-2 2" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 2" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC 2" srcPad="3" sinkName="Intel IPU6 BE SOC 2 capture 2" sinkPad="0" enable="true"/>
 
@@ -432,15 +432,15 @@
         </MediaCtlConfig>
         <MediaCtlConfig id="1" ConfigMode="AUTO" outputWidth="1920" outputHeight="1080" format="V4L2_PIX_FMT_UYVY">
             <format name="isx031 g" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <format name="TI960 b" pad="2" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <format name="TI960 b" pad="4" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="TI960 a" pad="2" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="TI960 a" pad="4" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI-2 2" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI-2 2" pad="1" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI2 BE SOC 2" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI2 BE SOC 2" pad="3" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
 
-            <link srcName="isx031 g" srcPad="0" sinkName="TI960 b" sinkPad="2" enable="true"/>
-            <link srcName="TI960 b" srcPad="4" sinkName="Intel IPU6 CSI-2 2" sinkPad="0" enable="true"/>
+            <link srcName="isx031 g" srcPad="0" sinkName="TI960 a" sinkPad="2" enable="true"/>
+            <link srcName="TI960 a" srcPad="4" sinkName="Intel IPU6 CSI-2 2" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI-2 2" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 2" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC 2" srcPad="3" sinkName="Intel IPU6 BE SOC 2 capture 2" sinkPad="0" enable="true"/>
 
@@ -450,15 +450,15 @@
         </MediaCtlConfig>
         <MediaCtlConfig id="2" ConfigMode="AUTO" outputWidth="1280" outputHeight="720" format="V4L2_PIX_FMT_UYVY">
             <format name="isx031 g" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <format name="TI960 b" pad="2" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <format name="TI960 b" pad="4" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="TI960 a" pad="2" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="TI960 a" pad="4" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI-2 2" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI-2 2" pad="1" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI2 BE SOC 2" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI2 BE SOC 2" pad="3" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
 
-            <link srcName="isx031 g" srcPad="0" sinkName="TI960 b" sinkPad="2" enable="true"/>
-            <link srcName="TI960 b" srcPad="4" sinkName="Intel IPU6 CSI-2 2" sinkPad="0" enable="true"/>
+            <link srcName="isx031 g" srcPad="0" sinkName="TI960 a" sinkPad="2" enable="true"/>
+            <link srcName="TI960 a" srcPad="4" sinkName="Intel IPU6 CSI-2 2" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI-2 2" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 2" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC 2" srcPad="3" sinkName="Intel IPU6 BE SOC 2 capture 2" sinkPad="0" enable="true"/>
 
@@ -480,15 +480,15 @@
     <Sensor name="isx031-h" description="isx031 sensor">
         <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1920" outputHeight="1536" format="V4L2_PIX_FMT_UYVY">
             <format name="isx031 h" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <format name="TI960 b" pad="3" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <format name="TI960 b" pad="4" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="TI960 a" pad="3" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="TI960 a" pad="4" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI-2 2" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI-2 2" pad="1" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI2 BE SOC 2" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI2 BE SOC 2" pad="4" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
 
-            <link srcName="isx031 h" srcPad="0" sinkName="TI960 b" sinkPad="3" enable="true"/>
-            <link srcName="TI960 b" srcPad="4" sinkName="Intel IPU6 CSI-2 2" sinkPad="0" enable="true"/>
+            <link srcName="isx031 h" srcPad="0" sinkName="TI960 a" sinkPad="3" enable="true"/>
+            <link srcName="TI960 a" srcPad="4" sinkName="Intel IPU6 CSI-2 2" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI-2 2" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 2" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC 2" srcPad="4" sinkName="Intel IPU6 BE SOC 2 capture 3" sinkPad="0" enable="true"/>
 
@@ -498,15 +498,15 @@
         </MediaCtlConfig>
         <MediaCtlConfig id="1" ConfigMode="AUTO" outputWidth="1920" outputHeight="1080" format="V4L2_PIX_FMT_UYVY">
             <format name="isx031 h" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <format name="TI960 b" pad="3" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <format name="TI960 b" pad="4" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="TI960 a" pad="3" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="TI960 a" pad="4" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI-2 2" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI-2 2" pad="1" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI2 BE SOC 2" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI2 BE SOC 2" pad="4" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
 
-            <link srcName="isx031 h" srcPad="0" sinkName="TI960 b" sinkPad="3" enable="true"/>
-            <link srcName="TI960 b" srcPad="4" sinkName="Intel IPU6 CSI-2 2" sinkPad="0" enable="true"/>
+            <link srcName="isx031 h" srcPad="0" sinkName="TI960 a" sinkPad="3" enable="true"/>
+            <link srcName="TI960 a" srcPad="4" sinkName="Intel IPU6 CSI-2 2" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI-2 2" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 2" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC 2" srcPad="4" sinkName="Intel IPU6 BE SOC 2 capture 3" sinkPad="0" enable="true"/>
 
@@ -516,15 +516,15 @@
         </MediaCtlConfig>
         <MediaCtlConfig id="2" ConfigMode="AUTO" outputWidth="1280" outputHeight="720" format="V4L2_PIX_FMT_UYVY">
             <format name="isx031 h" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <format name="TI960 b" pad="3" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <format name="TI960 b" pad="4" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="TI960 a" pad="3" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="TI960 a" pad="4" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI-2 2" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI-2 2" pad="1" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI2 BE SOC 2" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI2 BE SOC 2" pad="4" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
 
-            <link srcName="isx031 h" srcPad="0" sinkName="TI960 b" sinkPad="3" enable="true"/>
-            <link srcName="TI960 b" srcPad="4" sinkName="Intel IPU6 CSI-2 2" sinkPad="0" enable="true"/>
+            <link srcName="isx031 h" srcPad="0" sinkName="TI960 a" sinkPad="3" enable="true"/>
+            <link srcName="TI960 a" srcPad="4" sinkName="Intel IPU6 CSI-2 2" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI-2 2" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 2" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC 2" srcPad="4" sinkName="Intel IPU6 BE SOC 2 capture 3" sinkPad="0" enable="true"/>
 

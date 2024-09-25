@@ -89,9 +89,12 @@ namespace icamera {
 #define MAX_CAMERA_NUMBER 100
 // Temporarily using current path to save aiqd file for none CAL platforms.
 #define CAMERA_CACHE_DIR "./"
-#define CAMERA_DEFAULT_CFG_PATH "/etc/camera/"
 #define CAMERA_GRAPH_DESCRIPTOR_FILE "gcss/graph_descriptor.xml"
 #define CAMERA_GRAPH_SETTINGS_DIR "gcss/"
+#endif
+
+#ifndef CAMERA_DEFAULT_CFG_PATH
+#error CAMERA_DEFAULT_CFG_PATH not defined
 #endif
 
 #define NVM_DATA_PATH "/sys/bus/i2c/devices/"
@@ -108,7 +111,8 @@ class PlatformData {
  public:
     class StaticCfg {
      public:
-        StaticCfg() { mCameras.clear(); }
+        StaticCfg()
+                  : mMediaCfgId(IPU6_DOWNSTREAM_MEDIA_CFG) { mCameras.clear(); }
         ~StaticCfg() {}  // not release resource by design
 
         /**
@@ -378,6 +382,7 @@ class PlatformData {
         std::vector<PolicyConfig> mPolicyConfig;
         CommonConfig mCommonConfig;
         std::string mBoardName;
+        int mMediaCfgId;
     };
 
  private:
@@ -1852,6 +1857,13 @@ class PlatformData {
      * \param v4l2BufType：V4L2 buffer type
      */
     static void setV4L2BufType(int cameraId, v4l2_buf_type v4l2BufType);
+
+    /**
+     * Get media configuration ID
+     *
+     * \return media configuration ID
+     */
+    static int getMediaCfgId();
 
     // LEVEL0_ICBM_S
     /**
