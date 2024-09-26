@@ -14,30 +14,22 @@ function check_result() {
 
 function parse_argument() {
     export SOURCE_DIR=${PWD}
-    export INSTALL_DIR=${PWD}/out
+    export TARGET_BUILD_INSTALL_DIR=${PWD}/out
     export BOARD_LIST="ipu_tgl ipu_adl ipu_mtl"
-    export BUILD_RPM=ON
+    export BUILD_RPM=OFF
+    export ENABLE_DMA_DRM=OFF
 
     while true; do
         case $1 in
-        -s|--source)
-            export SOURCE_DIR=$2
-            echo "$2"
-            shift
-            ;;
-        -i|--install)
-            export INSTALL_DIR=$2
-            echo "$2"
-            shift
-            ;;
         --no-rpm)
             export BUILD_RPM=OFF
             ;;
+        -d|--dma)
+            export ENABLE_DMA_DRM=ON
+            ;;
         --board)
-            shift
-            export BOARD_LIST=$@
-            echo "$$"
-            break
+            export BOARD_LIST=$2
+            echo "$2"
             ;;
         -?*)
             echo "WARNING: not supported option: $1"
@@ -51,8 +43,9 @@ function parse_argument() {
 
     echo "=========================== Build Config ============================"
     echo "SOURCE_DIR:                $SOURCE_DIR"
-    echo "INSTALL_DIR:               $INSTALL_DIR"
+    echo "INSTALL_DIR:               $TARGET_BUILD_INSTALL_DIR"
     echo "BUILD_RPM:                 $BUILD_RPM"
+    echo "ENABLE_DMA_DRM:            $ENABLE_DMA_DRM"
     echo "BOARD_LIST:                $BOARD_LIST"
     echo "====================================================================="
 }
@@ -60,114 +53,117 @@ function parse_argument() {
 function print_helper() {
     echo
     echo "========================= Command Helper ============================"
-    echo "./build_release.sh -s source_dir -i install_dir --board target1 targert2 ..."
+    echo "==== disable dma ===="
+    echo "./build.sh --board target"
+    echo "==== enable dma ===="
+    echo "./build.sh -d --board target"
     echo "====================================================================="
     echo
 }
 
-standardize_pkg_config_path(){
-    if [[ ! -f $1 ]]; then echo "file $1 not exsist."; exit 0; fi
-    sed -i '1c prefix=\/usr' $*
-}
-
-function build_target() {
+function build_libcamhal() {
     rm -fr build && mkdir -p build && cd build
 
     local target=$1
-    export IPU_VERSION=
+
+    rm -fr $TARGET_BUILD_INSTALL_DIR/$target && mkdir -p $TARGET_BUILD_INSTALL_DIR/$target
+    export BUILD_INSTALL_DIR=$TARGET_BUILD_INSTALL_DIR/$target/install
+
+    export IPU_VERSIONS=
     if [ "$target" = "ipu_tgl" ]; then
-        IPU_VERSION=ipu6
+        IPU_VERSIONS=ipu6
     elif [ "$target" = "ipu_adl" ]; then
-        IPU_VERSION=ipu6ep
+        IPU_VERSIONS=ipu6ep
     elif [ "$target" = "ipu_mtl" ]; then
-        IPU_VERSION=ipu6epmtl
+        IPU_VERSIONS=ipu6epmtl
     else
-        echo "Error: unsupport the target name : $target"
+        echo "Error: doesn't support the target : $target"
         exit -1
     fi
 
     # indicate the install folder of binary package
-    # export PKG_CONFIG_PATH=~/work/linux/camera_submit/camera/out/install/lib/$target/pkgconfig:$PKG_CONFIG_PATH
-    export PKG_CONFIG_PATH=/usr/lib/$target/pkgconfig:$PKG_CONFIG_PATH
+    sed -i 's|^prefix=.*|prefix='$BUILD_INSTALL_DIR/usr/'|' $BUILD_INSTALL_DIR/usr/lib/pkgconfig/*.pc
 
     command cmake -DCMAKE_BUILD_TYPE=Release \
-                  -DIPU_VER=$IPU_VERSION \
-                  -DBUILD_CAMHAL_TESTS=OFF   \
+                  -DIPU_VERSIONS=$IPU_VERSIONS \
+                  -DBUILD_CAMHAL_TESTS=ON \
                   -DUSE_PG_LITE_PIPE=ON \
-                  -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/install   \
-                  -DCMAKE_INSTALL_SUB_PATH=$target ..
+                  -DUSE_STATIC_GRAPH=ON   \
+                  -DUSE_STATIC_GRAPH_AUTOGEN=ON   \
+                  -DCMAKE_C_FLAGS=-O2 \
+                  -DCMAKE_CXX_FLAGS=-O2 \
+                  -DBUILD_CAMHAL_ADAPTOR=ON \
+                  -DBUILD_CAMHAL_PLUGIN=ON \
+                  -DCMAKE_INSTALL_PREFIX=/usr \
+                  -DCMAKE_INSTALL_LIBDIR=lib \
+                  ..
 
     # make and install
     make -j`nproc`
     check_result $? "$FUNCNAME: $target"
 
-    make install
+    make DESTDIR=$BUILD_INSTALL_DIR install
     check_result $? "$FUNCNAME: $target"
-    standardize_pkg_config_path ${INSTALL_DIR}/install/usr/lib/${target}/pkgconfig/libcamhal.pc
+
     cd ..
 }
 
-function build_hal() {
+function build_libcamhal_target() {
     cd $SOURCE_DIR/ipu6-camera-hal
 
     for target in $BOARD_LIST
     do
-        build_target $target
+        build_libcamhal $target
     done
-}
-
-function build_hal_adaptor() {
-    cd $SOURCE_DIR/ipu6-camera-hal/src/hal/hal_adaptor
-    rm -fr build && mkdir -p build && cd build
-
-    command cmake -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/install ../
-
-    # make and install
-    make -j
-    check_result $? $FUNCNAME
-
-    make install
-    check_result $? $FUNCNAME
-    standardize_pkg_config_path ${INSTALL_DIR}/install/lib/pkgconfig/hal_adaptor.pc
 }
 
 function build_icamerasrc() {
     cd $SOURCE_DIR/icamerasrc/
 
-    export CAMHAL_LIBS="-L$INSTALL_DIR/install/lib -lhal_adaptor"
-    export CAMHAL_CFLAGS="-I$INSTALL_DIR/install/include/hal_adaptor  \
-                          -I$INSTALL_DIR/install/include/hal_adaptor/api \
-                          -I$INSTALL_DIR/install/include/hal_adaptor/utils \
-                          -I$INSTALL_DIR/install/include/hal_adaptor/linux"
-    export CHROME_SLIM_CAMHAL=ON
-    export PKG_CONFIG_PATH="/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/lib/pkgconfig:${PKG_CONFIG_PATH}"
+    export DEFAULT_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
+    export PKG_CONFIG_PATH=$DEFAULT_PKG_CONFIG_PATH:/usr/lib/x86_64-linux-gnu/pkgconfig:$BUILD_INSTALL_DIR/usr/lib/pkgconfig
+
+    sed -i 's|^prefix=.*|prefix='$BUILD_INSTALL_DIR/usr/'|' $BUILD_INSTALL_DIR/usr/lib/pkgconfig/libcamhal.pc
 
     rm -fr config.h.in autom4te.cache/ aclocal.m4 *-libtool config.guess compile \
            config.sub configure depcomp install-sh ltmain.sh m4
     autoreconf --install
-    CFLAGS="-O2" CXXFLAGS="-O2" ./configure --with-haladaptor=yes --enable-gstdrmformat=yes ${CONFIGURE_FLAGS} \
-                                            --prefix=$INSTALL_DIR/install DEFAULT_CAMERA=0
+
+    export CAMHAL_CFLAGS="-I$BUILD_INSTALL_DIR/usr/include/libcamhal  \
+                          -I$BUILD_INSTALL_DIR/usr/include/libcamhal/api \
+                          -I$BUILD_INSTALL_DIR/usr/include/libcamhal/utils \
+                          -I$BUILD_INSTALL_DIR/usr/include/libcamhal/linux"
+
+    export CHROME_SLIM_CAMHAL=ON
+
+    local ENABLE_FEATURE_ARGS=
+    if [ "$ENABLE_DMA_DRM" = "ON" ]; then
+            ENABLE_FEATURE_ARGS+="--enable-gstdrmformat=yes "
+    fi
+
+    CFLAGS="-O2" CXXFLAGS="-O2" ./configure --prefix=/usr DEFAULT_CAMERA=0 ${ENABLE_FEATURE_ARGS}
     check_result $? $FUNCNAME
 
     make clean
     make -j
     check_result $? $FUNCNAME
 
-    make install
+    make DESTDIR=$BUILD_INSTALL_DIR install
     check_result $? $FUNCNAME
-    find $INSTALL_DIR/install/ -name "*.la" -exec rm -f "{}" \;
-    standardize_pkg_config_path ${INSTALL_DIR}/install/lib/pkgconfig/libgsticamerasrc.pc
+
+    find $BUILD_INSTALL_DIR -name "*.la" -exec rm -f "{}" \;
 }
 
 function main () {
     parse_argument $@
-    if [ -z "$SOURCE_DIR" ] || [ -z "$INSTALL_DIR" ] || [ -z "$BOARD_LIST" ]; then
+    if [ -z "$SOURCE_DIR" ] || [ -z "$TARGET_BUILD_INSTALL_DIR" ] || [ -z "$BOARD_LIST" ]; then
         print_helper
         exit 1
     fi
-    rm -fr $INSTALL_DIR/install $INSTALL_DIR/rpm && mkdir -p $INSTALL_DIR/install $INSTALL_DIR/rpm
-    build_hal
-    build_hal_adaptor
+
+    rm -fr $TARGET_BUILD_INSTALL_DIR && mkdir -p $TARGET_BUILD_INSTALL_DIR
+
+    build_libcamhal_target
     build_icamerasrc
 
     # TODO: Generate the RPM for hal, hal_adaptor and icamerasrc together

@@ -29,6 +29,17 @@
             <videonode name="Intel IPU6 CSI-2 $CSI_PORT" videoNodeType="VIDEO_ISYS_RECEIVER"/>
             <videonode name="Intel IPU6 BE SOC capture 0" videoNodeType="VIDEO_GENERIC"/>
         </MediaCtlConfig>
+        <MediaCtlConfig id="0" mediaCfg="1" ConfigMode="AUTO" outputWidth="1932" outputHeight="1092" format="V4L2_PIX_FMT_SGRBG10"> <!-- RAW10 BE capture -->
+            <format name="ov2740 $I2CBUS" pad="0" width="1932" height="1092" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
+            <format name="Intel IPU6 CSI2 $CSI_PORT" pad="0" width="1932" height="1092" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
+
+            <link srcName="ov2740 $I2CBUS" srcPad="0" sinkName="Intel IPU6 CSI2 $CSI_PORT" sinkPad="0" enable="true"/>
+            <link srcName="Intel IPU6 CSI2 $CSI_PORT" srcPad="1" sinkName="Intel IPU6 ISYS Capture $CAPTURE_ID" sinkPad="0" enable="true"/>
+
+            <videonode name="ov2740 $I2CBUS" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+            <videonode name="Intel IPU6 CSI2 $CSI_PORT" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+            <videonode name="Intel IPU6 ISYS Capture $CAPTURE_ID" videoNodeType="VIDEO_GENERIC"/>
+        </MediaCtlConfig>
 
         <StaticMetadata>
             <!-- format,widthxheight,field(none:0,alternate:7),mcId -->

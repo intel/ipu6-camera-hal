@@ -29,16 +29,15 @@ There are 4 repositories that provide the complete setup:
     # └── out
     ```
 
-2. In `work` folder, run `./build.sh`. Output binaries will be in `out/install`. (RPM build is not implemented yet)
-   Notice: To disable 'dma-drm', should remove '--enable-gstdrmformat=yes' in build.sh manually.
-           The featuer depends on 'gstreamer >= 1.23' and 'libva-drm'.
+2. For example, in `work` folder, run `./build.sh -d --board ipu_mtl`. Output binaries will be in `out/ipu_mtl/install`.
+   Notice: Use `./build.sh --board ipu_mtl` to disable dma build.
+           The dma build depends on 'gstreamer >= 1.23' and 'libva-drm'.
 
-3. Install contents in `out/install` to your `/usr`:
+3. Install built out drivers in `out/<target>/install` to target:
     ```sh
-    sudo cp -r ./out/install/etc/* /etc/
-    sudo cp -r ./out/install/include/* /usr/include/
-    sudo cp -r ./out/install/lib/* /usr/lib/
-    sudo cp -r ./out/install/usr/* /usr/
+    cp -r ./out/<target>/install/etc* /etc/
+    cp -r ./out/<target>/install/usr/include/* /usr/include/
+    cp -r ./out/<target>/install/usr/lib/* /usr/lib/
     ```
 
 For more building details please reference the `build.sh`.
