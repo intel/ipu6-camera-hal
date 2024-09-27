@@ -370,15 +370,15 @@
     <Sensor name="imx390-5" description="imx390 sensor">
         <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1920" outputHeight="1200" format="V4L2_PIX_FMT_SGRBG12">
             <format name="imx390 e" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="TI960 e" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="TI960 e" pad="4" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="TI960 b" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="TI960 b" pad="4" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="Intel IPU6 CSI-2 4" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="Intel IPU6 CSI-2 4" pad="1" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="Intel IPU6 CSI2 BE SOC 1" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="Intel IPU6 CSI2 BE SOC 1" pad="1" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
 
-            <link srcName="imx390 e" srcPad="0" sinkName="TI960 e" sinkPad="0" enable="true"/>
-            <link srcName="TI960 e" srcPad="4" sinkName="Intel IPU6 CSI-2 4" sinkPad="0" enable="true"/>
+            <link srcName="imx390 e" srcPad="0" sinkName="TI960 b" sinkPad="0" enable="true"/>
+            <link srcName="TI960 b" srcPad="4" sinkName="Intel IPU6 CSI-2 4" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI-2 4" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 1" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC 1" srcPad="1" sinkName="Intel IPU6 BE SOC 1 capture 0" sinkPad="0" enable="true"/>
 
@@ -388,15 +388,15 @@
         </MediaCtlConfig>
         <MediaCtlConfig id="1" ConfigMode="AUTO" outputWidth="1280" outputHeight="960" format="V4L2_PIX_FMT_SGRBG12">
             <format name="imx390 e" pad="0" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="TI960 e" pad="0" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="TI960 e" pad="4" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="TI960 b" pad="0" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="TI960 b" pad="4" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="Intel IPU6 CSI-2 4" pad="0" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="Intel IPU6 CSI-2 4" pad="1" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="Intel IPU6 CSI2 BE SOC 1" pad="0" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="Intel IPU6 CSI2 BE SOC 1" pad="1" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
 
-            <link srcName="imx390 e" srcPad="0" sinkName="TI960 e" sinkPad="0" enable="true"/>
-            <link srcName="TI960 e" srcPad="4" sinkName="Intel IPU6 CSI-2 4" sinkPad="0" enable="true"/>
+            <link srcName="imx390 e" srcPad="0" sinkName="TI960 b" sinkPad="0" enable="true"/>
+            <link srcName="TI960 b" srcPad="4" sinkName="Intel IPU6 CSI-2 4" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI-2 4" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 1" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC 1" srcPad="1" sinkName="Intel IPU6 BE SOC 1 capture 0" sinkPad="0" enable="true"/>
 
@@ -451,22 +451,22 @@
         <hdrExposureNum value="2"/>
         <hdrGainType value="multi-dg-and-direct-ag"/>
         <runIspAlways value="true"/>
-        <vcAggregator value="TI960 e,0"/>
+        <vcAggregator value="TI960 b,0"/>
         <reqWaitTimeoutNs value="2000000000"/>
     </Sensor>
 
     <Sensor name="imx390-6" description="imx390 sensor">
         <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1920" outputHeight="1200" format="V4L2_PIX_FMT_SGRBG12">
             <format name="imx390 f" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="TI960 e" pad="1" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="TI960 e" pad="4" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="TI960 b" pad="1" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="TI960 b" pad="4" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="Intel IPU6 CSI-2 4" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="Intel IPU6 CSI-2 4" pad="1" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="Intel IPU6 CSI2 BE SOC 1" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="Intel IPU6 CSI2 BE SOC 1" pad="2" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
 
-            <link srcName="imx390 f" srcPad="0" sinkName="TI960 e" sinkPad="1" enable="true"/>
-            <link srcName="TI960 e" srcPad="4" sinkName="Intel IPU6 CSI-2 4" sinkPad="0" enable="true"/>
+            <link srcName="imx390 f" srcPad="0" sinkName="TI960 b" sinkPad="1" enable="true"/>
+            <link srcName="TI960 b" srcPad="4" sinkName="Intel IPU6 CSI-2 4" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI-2 4" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 1" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC 1" srcPad="2" sinkName="Intel IPU6 BE SOC 1 capture 1" sinkPad="0" enable="true"/>
 
@@ -476,15 +476,15 @@
         </MediaCtlConfig>
         <MediaCtlConfig id="1" ConfigMode="AUTO" outputWidth="1280" outputHeight="960" format="V4L2_PIX_FMT_SGRBG12">
             <format name="imx390 f" pad="0" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="TI960 e" pad="1" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="TI960 e" pad="4" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="TI960 b" pad="1" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="TI960 b" pad="4" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="Intel IPU6 CSI-2 4" pad="0" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="Intel IPU6 CSI-2 4" pad="1" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="Intel IPU6 CSI2 BE SOC 1" pad="0" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="Intel IPU6 CSI2 BE SOC 1" pad="2" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
 
-            <link srcName="imx390 f" srcPad="0" sinkName="TI960 e" sinkPad="1" enable="true"/>
-            <link srcName="TI960 e" srcPad="4" sinkName="Intel IPU6 CSI-2 4" sinkPad="0" enable="true"/>
+            <link srcName="imx390 f" srcPad="0" sinkName="TI960 b" sinkPad="1" enable="true"/>
+            <link srcName="TI960 b" srcPad="4" sinkName="Intel IPU6 CSI-2 4" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI-2 4" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 1" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC 1" srcPad="2" sinkName="Intel IPU6 BE SOC 1 capture 1" sinkPad="0" enable="true"/>
 
@@ -539,7 +539,7 @@
         <hdrExposureNum value="2"/>
         <hdrGainType value="multi-dg-and-direct-ag"/>
         <runIspAlways value="true"/>
-        <vcAggregator value="TI960 e,1"/>
+        <vcAggregator value="TI960 b,1"/>
         <reqWaitTimeoutNs value="2000000000"/>
     </Sensor>
 

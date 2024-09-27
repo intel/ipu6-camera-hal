@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Intel Corporation.
+ * Copyright (C) 2023-2024 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,6 @@ namespace icamera {
 static void* gCameraHalLib = nullptr;
 static HalApiHandle gCameraHalAdaptor = {};
 static char gPciId[8];
-static bool gUpstreamIpuDriver;
 
 #define CheckFuncCall(function)                             \
     do {                                                    \
@@ -47,7 +46,7 @@ static bool gUpstreamIpuDriver;
             LOGE("@%s: LOADING: " #fnName "failed: %s", __func__, dlerror());                \
             return;                                                                          \
         }                                                                                    \
-        LOG2("@%s: LOADING: " #fnName "= %x", __func__, gCameraHalAdaptor.member);           \
+        LOG2("@%s: LOADING: " #fnName "= %p", __func__, gCameraHalAdaptor.member);           \
     } while (0)
 
 static bool get_ipu_info(const std::string& path) {
@@ -75,19 +74,6 @@ static bool get_ipu_info(const std::string& path) {
         if (pciId.length() > 0) {
             retval = true;
             strncpy(gPciId, pciId.c_str(), sizeof(gPciId) - 1);
-            // TODO: Use another way to identify whether using upstream IPU driver.
-            // Upstream IPU isys driver use e.g. "intel_ipu6.isys.40" instead of
-            // "intel-ipu6-isys0". We use "." to identify it.
-            std::string pciPath = path + '/' + entry->d_name;
-            DIR* pciDir = opendir(pciPath.c_str());
-            struct dirent* pciEntry;
-            while ((pciEntry = readdir(pciDir)) != nullptr) {
-                if (strstr(pciEntry->d_name, "intel")) {
-                    gUpstreamIpuDriver = (strchr(pciEntry->d_name, '.') != nullptr);
-                    break;
-                }
-            }
-            closedir(pciDir);
             break;
         }
     }
@@ -107,28 +93,27 @@ static void load_camera_hal_library() {
     CheckAndLogError(!(hasIpu6Info || hasIpu7Info), VOID_VALUE,
                      "%s, failed to open PCI device. error: %s", __func__, dlerror());
 
-    std::string libName = "/usr/lib/";
+    std::string libName = CAMHAL_PLUGIN_DIR;
     if (strstr(gPciId, "0xa75d") != nullptr /* RPL */ ||
         strstr(gPciId, "0x462e") != nullptr /* ADLN */ ||
         strstr(gPciId, "0x465d") != nullptr /* ADLP */) {
-        libName += "ipu_adl";
+        libName += "ipu6ep";
     } else if (strstr(gPciId, "0x7d19") != nullptr /* MTL */) {
-        libName += "ipu_mtl";
+        libName += "ipu6epmtl";
     } else if (strstr(gPciId, "0x645d") != nullptr /* LNL */) {
-        libName += "ipu_lnl";
+        libName += "ipu7x";
+    } else if (strstr(gPciId, "0xb05d") != nullptr /* PTL */) {
+        libName += "ipu75xa";
     } else if (strstr(gPciId, "0x9a19") != nullptr /* TGL */) {
-        libName += "ipu_tgl";
+        libName += "ipu6";
     } else if (strstr(gPciId, "0x4e19") != nullptr /* JSL */) {
-        libName += "ipu_jsl";
+        libName += "ipu6sepla";
     } else {
         LOGE("%s, Not support the PCI device %s for hal adaptor API", __func__, gPciId);
         return;
     }
 
-    if (hasIpu6Info && gUpstreamIpuDriver) {
-        libName += "_upstream";
-    }
-    libName += "/libcamhal.so";
+    libName += ".so";
     LOG1("%s, the library name: %s", __func__, libName.c_str());
 
     gCameraHalLib = dlopen(libName.c_str(), RTLD_NOW);

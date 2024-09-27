@@ -2,8 +2,6 @@ name: Build tests
 
 on:
   push:
-    branches:
-      - main
 
   pull_request:
 
@@ -13,48 +11,63 @@ jobs:
   build:
     strategy:
       matrix:
-        version: [ipu6epmtl, ipu6ep, ipu6]
+        version: [ipu6]
         os: ["ubuntu:24.04", "ubuntu:22.04", "ubuntu:20.04"]
     runs-on: ubuntu-latest
     container: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      - name: Build test for ${{ matrix.version }} on ${{ matrix.os }}
-        timeout-minutes: 10
+        with:
+          repository: intel/ipu6-camera-bins
+          ref: main
+          path: bins
+
+      - name: Install from intel/ipu6-camera-bins
         run: |
-          case "${{ matrix.version }}" in
-            (ipu6)
-              PLATFORM="ipu_tgl"
-              ;;
-            (ipu6ep)
-              PLATFORM="ipu_adl"
-              ;;
-            (ipu6epmtl)
-              PLATFORM="ipu_mtl"
-              ;;
-            (*)
-              echo "Not support for ${IPU_VER} yet."
-              exit 1
-              ;;
-          esac
+          cd "${GITHUB_WORKSPACE}/bins"
+
+          cat README.md | \
+            awk 'BEGIN { \
+                FS="/"; \
+              } \
+              /^```/ { \
+                getline; \
+                if ($1 == "# Runtime files") { \
+                  while ($1 != "```") { \
+                    print $0; \
+                    getline; \
+                  } \
+                } \
+              }' | \
+            sed 's,ipu6-camera-bins/,./,' | \
+            sh -x
+
+      - uses: actions/checkout@v4
+        with:
+          path: hal
+
+      - name: Install prerequisite packages
+        run: |
           echo 'APT::Get::Always-Include-Phased-Updates True;' | tee -a /etc/apt/apt.conf
           echo 'Acquire::http::User-Agent-Non-Interactive "true";' | tee -a /etc/apt/apt.conf
           apt-get update -q
           export TZ=Asia/Shanghai
           echo "" | apt-get install -qy tzdata
           echo "" | apt-get install git build-essential cmake libexpat-dev automake libtool libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libunwind-dev libdrm-dev --yes
-          git clone https://github.com/intel/ipu6-camera-bins -b main --depth 1
-          cp -rv ipu6-camera-bins/include/"${PLATFORM}" /usr/include/
-          cp -rv ipu6-camera-bins/lib/"${PLATFORM}" /usr/lib/
-          rm -fr /usr/lib/"${PLATFORM}"/pkgconfig
-          cp -rv ipu6-camera-bins/lib/"${PLATFORM}"/pkgconfig/* /usr/lib/pkgconfig/
-          rm -fr ipu6-camera-bins
-          mkdir -p ./build/out/install/usr && cd ./build/
-          cmake -DCMAKE_BUILD_TYPE=Release \
-            -DIPU_VER="${{ matrix.version }}" \
-            -DENABLE_VIRTUAL_IPU_PIPE=OFF \
-            -DUSE_PG_LITE_PIPE=ON \
-            -DUSE_STATIC_GRAPH=OFF \
-            -DCMAKE_INSTALL_PREFIX=/usr ..
-          make
+      - name: Build test for ${{ matrix.version }} on ${{ matrix.os }}
+        timeout-minutes: 10
+        run: |
+          cd "${GITHUB_WORKSPACE}/hal"
+
+          mkdir build && cd build
+          cmake  -DCMAKE_BUILD_TYPE=Release \
+                 -DCMAKE_INSTALL_PREFIX=/usr \
+                 -DCMAKE_INSTALL_LIBDIR=lib \
+                 -DBUILD_CAMHAL_TESTS=OFF \
+                 -DBUILD_CAMHAL_ADAPTOR=ON \
+                 -DBUILD_CAMHAL_PLUGIN=ON \
+                 -DIPU_VERSIONS="ipu6;ipu6ep;ipu6epmtl" \
+                 -DUSE_PG_LITE_PIPE=ON \
+                 ..
+          VERBOSE=1 make -j16
           make install

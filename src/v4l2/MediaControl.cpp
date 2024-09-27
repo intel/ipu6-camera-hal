@@ -127,7 +127,9 @@ void MediaControl::releaseInstance() {
     }
 }
 
-MediaControl::MediaControl(const char* devName) : mDevName(devName) {
+MediaControl::MediaControl(const char* devName)
+        : mDevName(devName),
+          mMediaCfgId(IPU6_DOWNSTREAM_MEDIA_CFG) {
     LOG1("@%s device: %s", __func__, devName);
 }
 
@@ -425,6 +427,7 @@ void MediaControl::dumpEntityDesc(media_entity_desc& desc, media_device_info& de
 }
 
 int MediaControl::enumEntities(int fd, media_device_info& devInfo) {
+    int mediaCfgId = IPU6_MEDIA_CFG_MAX;
     MediaEntity entity;
     uint32_t id;
     int ret;
@@ -438,6 +441,14 @@ int MediaControl::enumEntities(int fd, media_device_info& devInfo) {
         if (ret < 0) {
             ret = errno != EINVAL ? -errno : 0;
             break;
+        }
+
+        if (mediaCfgId == IPU6_MEDIA_CFG_MAX) {
+            if (!strncmp(entity.info.name, IPU6_DOWNSTREAM_ENTITY, strlen(IPU6_DOWNSTREAM_ENTITY)))
+                mediaCfgId = IPU6_DOWNSTREAM_MEDIA_CFG;
+            else if (!strncmp(entity.info.name, IPU6_UPSTREAM_ENTITY,
+                     strlen(IPU6_UPSTREAM_ENTITY)))
+                mediaCfgId = IPU6_UPSTREAM_MEDIA_CFG;
         }
 
         if (Log::isDumpMediaInfo()) dumpEntityDesc(entity.info, devInfo);
@@ -465,7 +476,21 @@ int MediaControl::enumEntities(int fd, media_device_info& devInfo) {
         }
     }
 
-    return ret;
+    if (ret != 0)
+        return ret;
+
+    if (mediaCfgId != IPU6_MEDIA_CFG_MAX)
+        mMediaCfgId = mediaCfgId;
+
+    if ((!strcmp(devInfo.model, IPU6_DOWNSTREAM_DEV_MODEL) &&
+         mMediaCfgId != IPU6_DOWNSTREAM_MEDIA_CFG) ||
+        (!strcmp(devInfo.model, IPU6_UPSTREAM_DEV_MODEL) &&
+         mMediaCfgId != IPU6_UPSTREAM_MEDIA_CFG)) {
+        LOGE("Invalid media configuration id %d for %s", mMediaCfgId, devInfo.model);
+        return -EINVAL;
+    }
+
+    return OK;
 }
 
 int MediaControl::getDevnameFromSysfs(MediaEntity* entity) {

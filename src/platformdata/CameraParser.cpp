@@ -49,14 +49,19 @@ CameraParser::CameraParser(MediaControl* mc, PlatformData::StaticCfg* cfg)
           mCurrentDataField(FIELD_INVALID),
           mSensorNum(0),
           mCurrentSensor(0),
+          mCaptureIdLinkIndex(0),
+          mCaptureIdIndex(0),
           pCurrentCam(nullptr),
           mInMediaCtlCfg(false),
+          mSkipMediaCtlCfg(false),
           mInStaticMetadata(false),
           mMC(mc),
           mMetadataCache(nullptr),
           mIsAvailableSensor(false) {
     LOG1("@%s", __func__);
     CheckAndLogError(cfg == nullptr, VOID_VALUE, "@%s, cfg is nullptr", __func__);
+
+    memset(mCaptureId, 0, sizeof(mCaptureId));
 
     // Get common data from libcamhal_profile.xml
     int ret = getDataFromXmlFile(LIBCAMHAL_PROFILE_NAME);
@@ -132,12 +137,14 @@ CameraParser::~CameraParser() {
  * one example: "imx319 $I2CBUS"
  * Replacing $CSI_PORT with the real mCsiPort if the value contains the string "$CSI_PORT"
  * one example: "Intel IPU6 CSI-2 $CSI_PORT" or "Intel IPU6 CSI2 $CSI_PORT"
+ * Replacing $CAPTURE_ID with the real mCaptureId if the value contains the string "$CAPTURE_ID"
  *
  * \param profiles: the pointer of the CameraParser.
  * \param value: camera information.
  * \return: if the value contains the string, it will be replaced.
  */
-string CameraParser::replaceStringInXml(CameraParser* profiles, const char* value) {
+string CameraParser::replaceStringInXml(CameraParser* profiles, const char* value,
+                                        const char* name) {
     string valueTmp;
     CheckAndLogError(value == nullptr, valueTmp, "value is nullptr");
 
@@ -147,6 +154,20 @@ string CameraParser::replaceStringInXml(CameraParser* profiles, const char* valu
         valueTmp.replace(found, sizeof("$I2CBUS"), profiles->mI2CBus);
     } else if ((found = valueTmp.find("$CSI_PORT")) != string::npos) {
         valueTmp.replace(found, sizeof("$CSI_PORT"), profiles->mCsiPort);
+    } else if ((found = valueTmp.find("$CAPTURE_ID")) != string::npos) {
+        if (strcmp(name, "link") == 0 && profiles->mCaptureIdLinkIndex < IPU_ISYS_CAPTURE_ID_MAX) {
+            int captureId = std::stoi(profiles->mCsiPort) * 8 + profiles->mCaptureIdLinkIndex;
+            valueTmp.replace(found, sizeof("$CAPTURE_ID"), std::to_string(captureId));
+            profiles->mCaptureId[profiles->mCaptureIdLinkIndex] = captureId;
+            profiles->mCaptureIdLinkIndex++;
+            profiles->mCaptureIdIndex = 0;
+        } else if (strcmp(name, "videonode") == 0 &&
+                   profiles->mCaptureIdIndex < IPU_ISYS_CAPTURE_ID_MAX) {
+            valueTmp.replace(found, sizeof("$CAPTURE_ID"),
+                             std::to_string(profiles->mCaptureId[profiles->mCaptureIdIndex]));
+            profiles->mCaptureIdIndex++;
+            profiles->mCaptureIdLinkIndex = 0;
+        }
     }
 
     return valueTmp;
@@ -838,6 +859,7 @@ int CameraParser::parseLardTags(const char* str, vector<LardTagConfig>& lardTags
 void CameraParser::parseMediaCtlConfigElement(CameraParser* profiles, const char* name,
                                               const char** atts) {
     MediaCtlConf mc;
+    bool skipMediaCtlCfg = true;
     int idx = 0;
 
     while (atts[idx]) {
@@ -857,8 +879,20 @@ void CameraParser::parseMediaCtlConfigElement(CameraParser* profiles, const char
         } else if (strcmp(key, "vbp") == 0) {
             mc.vbp = strtoul(atts[idx + 1], nullptr, 10);
             // DOL_FEATURE_E
+        } else if (strcmp(key, "mediaCfg") == 0) {
+            skipMediaCtlCfg = false;
+            if (strtol(atts[idx + 1], nullptr, 10) != profiles->mStaticCfg->mMediaCfgId) {
+                profiles->mSkipMediaCtlCfg = true;
+                return;
+            }
         }
         idx += 2;
+    }
+
+    if (profiles->mSkipMediaCtlCfg ||
+        (skipMediaCtlCfg && profiles->mStaticCfg->mMediaCfgId == IPU6_UPSTREAM_MEDIA_CFG)) {
+        profiles->mSkipMediaCtlCfg = true;
+        return;
     }
 
     LOG2("@%s, name:%s, atts[0]:%s, id: %d", __func__, name, atts[0], mc.mcId);
@@ -879,7 +913,7 @@ void CameraParser::parseControlElement(CameraParser* profiles, const char* name,
         const char* val = atts[idx + 1];
         LOG2("@%s, name:%s, atts[%d]:%s, atts[%d]:%s", __func__, name, idx, key, idx + 1, val);
         if (strcmp(key, "name") == 0) {
-            ctl.entityName = replaceStringInXml(profiles, val);
+            ctl.entityName = replaceStringInXml(profiles, val, name);
             if (profiles->mMC) {
                 ctl.entity = profiles->mMC->getEntityIdByName(ctl.entityName.c_str());
             }
@@ -956,7 +990,7 @@ void CameraParser::parseSelectionElement(CameraParser* profiles, const char* nam
         const char* val = atts[idx + 1];
         LOG2("@%s, name:%s, atts[%d]:%s, atts[%d]:%s", __func__, name, idx, key, idx + 1, val);
         if (strcmp(key, "name") == 0) {
-            sel.entityName = replaceStringInXml(profiles, val);
+            sel.entityName = replaceStringInXml(profiles, val, name);
             if (profiles->mMC) {
                 sel.entity = profiles->mMC->getEntityIdByName(sel.entityName.c_str());
             }
@@ -1299,7 +1333,7 @@ void CameraParser::parseFormatElement(CameraParser* profiles, const char* name, 
         const char* val = atts[idx + 1];
         LOG2("@%s, name:%s, atts[%d]:%s, atts[%d]:%s", __func__, name, idx, key, idx + 1, val);
         if (strcmp(key, "name") == 0) {
-            fmt.entityName = replaceStringInXml(profiles, val);
+            fmt.entityName = replaceStringInXml(profiles, val, name);
             if (profiles->mMC) {
                 fmt.entity = profiles->mMC->getEntityIdByName(fmt.entityName.c_str());
             }
@@ -1345,14 +1379,14 @@ void CameraParser::parseLinkElement(CameraParser* profiles, const char* name, co
         const char* val = atts[idx + 1];
         LOG2("@%s, name:%s, atts[%d]:%s, atts[%d]:%s", __func__, name, idx, key, idx + 1, val);
         if (strcmp(key, "srcName") == 0) {
-            link.srcEntityName = replaceStringInXml(profiles, val);
+            link.srcEntityName = replaceStringInXml(profiles, val, name);
             if (profiles->mMC) {
                 link.srcEntity = profiles->mMC->getEntityIdByName(link.srcEntityName.c_str());
             }
         } else if (strcmp(key, "srcPad") == 0) {
             link.srcPad = strtoul(val, nullptr, 10);
         } else if (strcmp(key, "sinkName") == 0) {
-            link.sinkEntityName = replaceStringInXml(profiles, val);
+            link.sinkEntityName = replaceStringInXml(profiles, val, name);
             if (profiles->mMC) {
                 link.sinkEntity = profiles->mMC->getEntityIdByName(link.sinkEntityName.c_str());
             }
@@ -1379,7 +1413,7 @@ void CameraParser::parseRouteElement(CameraParser* profiles, const char* name, c
         const char* val = atts[idx + 1];
         LOG2("@%s, name:%s, atts[%d]:%s, atts[%d]:%s", __func__, name, idx, key, idx + 1, val);
         if (strcmp(key, "name") == 0) {
-            route.entityName = replaceStringInXml(profiles, val);
+            route.entityName = replaceStringInXml(profiles, val, name);
             if (profiles->mMC) {
                 route.entity = profiles->mMC->getEntityIdByName(route.entityName.c_str());
             }
@@ -1400,12 +1434,12 @@ void CameraParser::parseRouteElement(CameraParser* profiles, const char* name, c
     mc.routes.push_back(route);
 }
 
-void CameraParser::parseVideoElement(CameraParser* profiles, const char* /*name*/,
+void CameraParser::parseVideoElement(CameraParser* profiles, const char* name,
                                      const char** atts) {
     McVideoNode videoNode;
     MediaCtlConf& mc = profiles->pCurrentCam->mMediaCtlConfs.back();
 
-    videoNode.name = replaceStringInXml(profiles, atts[1]);
+    videoNode.name = replaceStringInXml(profiles, atts[1], name);
     videoNode.videoNodeType = GetNodeType(atts[3]);
     LOG2("@%s, name:%s, videoNodeType:%d", __func__, videoNode.name.c_str(),
          videoNode.videoNodeType);
@@ -1716,6 +1750,10 @@ int CameraParser::getSupportedFormat(const char* str, vector<int>& supportedForm
 void CameraParser::handleMediaCtlCfg(CameraParser* profiles, const char* name, const char** atts) {
     LOG2("@%s, name:%s, atts[0]:%s, profiles->mCurrentSensor:%d", __func__, name, atts[0],
          profiles->mCurrentSensor);
+
+    if (profiles->mSkipMediaCtlCfg)
+        return;
+
     if (strcmp(name, "MediaCtlConfig") == 0) {
         parseMediaCtlConfigElement(profiles, name, atts);
     } else if (strcmp(name, "link") == 0) {
@@ -2132,6 +2170,7 @@ void CameraParser::endParseElement(void* userData, const char* name) {
     if (strcmp(name, "MediaCtlConfig") == 0) {
         LOG2("@%s %s, mInMediaCtlCfg is set to false", __func__, name);
         profiles->mInMediaCtlCfg = false;
+        profiles->mSkipMediaCtlCfg = false;
     }
 
     if (strcmp(name, "StaticMetadata") == 0) {
@@ -2298,19 +2337,20 @@ void CameraParser::getNVMDirectory(CameraParser* profiles) {
  * 1. <availableSensors value="ov8856-wf-2,ov2740-uf-0,ov2740-wf-2"/>
  *     The value is "'camera name'-wf/uf-'CSI port number'".
  *     For example: camera name is "ov8856". Sensor's sink entity name is
- *      "Intel IPU6 CSI-2 2" or "Intel IPU6 CSI2 2" and it is word facing.
+ *      "Intel IPU6 CSI-2 2" or "Intel IPU6 CSI2 2" and it is world-facing.
  *      The value is ov8856-wf-2.
  * 2. <platform value="IPU6"/> the platform value must be uppercase letter.
  *
  */
 std::vector<std::string> CameraParser::getAvailableSensors(
-    const std::string& ipuName, const std::vector<std::string>& sensorsList) {
+    const std::string& ipuName, const std::vector<std::string>& sensorsList, int mediaCfgId) {
     LOG2("@%s, ipuName:%s", __func__, ipuName.c_str());
 
     // sensor's sink entity name prefix:"Intel IPU6 CSI-2 2" or "Intel IPU6 CSI2 2"
     std::string sensorSinkName = "Intel ";
     sensorSinkName.append(ipuName);
-    if (IPU6_UPSTREAM)
+
+    if (mediaCfgId == IPU6_UPSTREAM_MEDIA_CFG)
         sensorSinkName.append(" CSI2 ");
     else
         sensorSinkName.append(" CSI-2 ");
@@ -2322,11 +2362,12 @@ std::vector<std::string> CameraParser::getAvailableSensors(
             if (mMC && mMC->checkAvailableSensor(sensor)) {
                 availableSensors.push_back(sensor);
                 LOG2("@%s, available sensor name: %s", __func__, sensor.c_str());
+#ifdef LINUX_BUILD
             } else if (sensor.find("_usb") != string::npos) {
-                    availableSensors.push_back(sensor);
-                    LOG2("@%s, available usb sensor name: %s", __func__, sensor.c_str());
+                availableSensors.push_back(sensor);
+                LOG2("@%s, available usb sensor name: %s", __func__, sensor.c_str());
+#endif
             }
-
         } else {
             // sensors with suffix port number
             std::string portNum = sensor.substr(sensor.find_last_of('-') + 1);
@@ -2368,7 +2409,8 @@ void CameraParser::getSensorDataFromXmlFile(void) {
     // According to sensor name to get sensor data
     LOG1("%s, available sensors: %zu", __func__, mStaticCfg->mCommonConfig.availableSensors.size());
     vector<string> allSensors = getAvailableSensors(mStaticCfg->mCommonConfig.ipuName,
-                                                    mStaticCfg->mCommonConfig.availableSensors);
+                                                    mStaticCfg->mCommonConfig.availableSensors,
+                                                    mStaticCfg->mMediaCfgId);
 
     if (allSensors.size() == 0) {
         LOGW("The style of libcamhal_profile is too old, please switch it as soon as possible !!!");
