@@ -386,6 +386,7 @@ else()
     set_target_properties(${CAMHAL_TARGET} PROPERTIES OUTPUT_NAME ${CAMHAL_TARGET})
 endif()
 
+
 #--------------------------- Install settings ---------------------------
 if (NOT CAL_BUILD)
     if (NOT BUILD_CAMHAL_PLUGIN)

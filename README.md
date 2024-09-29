@@ -23,7 +23,6 @@ mkdir build && cd build
 cmake -DCMAKE_BUILD_TYPE=Release \
       -DCMAKE_INSTALL_PREFIX=/usr \
       -DCMAKE_INSTALL_LIBDIR=lib \
-      -DBUILD_CAMHAL_TESTS=OFF \
       -DBUILD_CAMHAL_ADAPTOR=ON \
       -DBUILD_CAMHAL_PLUGIN=ON \
       -DIPU_VERSIONS="ipu6;ipu6ep;ipu6epmtl" \
