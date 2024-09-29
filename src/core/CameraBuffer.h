@@ -54,7 +54,8 @@ class CameraBuffer {
                                                 int srcWidth = -1, int srcHeight = -1);
 
  public:
-    CameraBuffer(int cameraId, int usage, int memory, uint32_t size, int index, int format = -1);
+    CameraBuffer(int cameraId, int usage, int memory, uint32_t size, int index, int format = -1,
+                 v4l2_buf_type v4l2BufType = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE);
     virtual ~CameraBuffer();
 
  public:

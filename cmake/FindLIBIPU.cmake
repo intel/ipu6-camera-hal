@@ -15,8 +15,16 @@
 #
 
 if (TARGET ${IPU_VER})
-    message("libcamhal found lib${IPU_VER} target")
-    return()
+    if (NOT BUILD_CAMHAL_PLUGIN)
+        message("libcamhal found lib${IPU_VER} target")
+        return()
+    endif()
+endif()
+
+if(NOT DEFINED IPU_VER)
+    set(libipu_ver libipu4)
+else()
+    set(libipu_ver lib${IPU_VER})
 endif()
 
 # Get include and lib paths for LIBIPU from pkgconfig
@@ -24,28 +32,22 @@ include(FindPackageHandleStandardArgs)
 
 # Include directory
 find_package(PkgConfig)
-if(NOT DEFINED IPU_VER)
-set(libipu_ver libipu4)
-else()
-set(libipu_ver lib${IPU_VER})
-endif()
-pkg_check_modules(LIBIPU ${libipu_ver})
-if(NOT LIBIPU_FOUND)
-    message(FATAL_ERROR "LIBIPU not found")
+pkg_check_modules(LIBIPU${TARGET_SUFFIX} ${libipu_ver})
+if(NOT LIBIPU${TARGET_SUFFIX}_FOUND)
+    message(FATAL_ERROR "LIBIPU${TARGET_SUFFIX} not found")
 endif()
 
-set(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} ${LIBIPU_LIBRARY_DIRS})
+set(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} ${LIBIPU${TARGET_SUFFIX}_LIBRARY_DIRS})
 
 # Libraries
-find_library(IPU_LIB NAMES ${libipu_ver}.a)
-
-set(LIBIPU_LIBS ${IPU_LIB})
+find_library(IPU${TARGET_SUFFIX}_LIB NAMES ${libipu_ver}.a)
+set(LIBIPU${TARGET_SUFFIX}_LIBS ${IPU${TARGET_SUFFIX}_LIB})
 
 # handle the QUIETLY and REQUIRED arguments and set EXPAT_FOUND to TRUE if
 # all listed variables are TRUE
-find_package_handle_standard_args(LIBIPU
-                                  REQUIRED_VARS LIBIPU_INCLUDE_DIRS LIBIPU_LIBS)
+find_package_handle_standard_args(LIBIPU${TARGET_SUFFIX}
+                                  REQUIRED_VARS LIBIPU${TARGET_SUFFIX}_INCLUDE_DIRS LIBIPU${TARGET_SUFFIX}_LIBS)
 
-if(NOT LIBIPU_FOUND)
-    message(FATAL_ERROR "LIBIPU not found")
+if(NOT LIBIPU${TARGET_SUFFIX}_FOUND)
+    message(FATAL_ERROR "LIBIPU${TARGET_SUFFIX} not found")
 endif()

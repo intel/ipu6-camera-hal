@@ -16,27 +16,18 @@ There are 4 repositories that provide the complete setup:
     Please follow https://github.com/intel/ipu6-camera-bins README to install.
 
 - Dependencies: libexpat-dev automake libtool libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libdrm-dev
-
-- Build and install:
-    Recommend to build together with icamerasrc and using `build.sh` in this repo.
-1. Put ipu6-camera-hal, icameasrc and build.sh parallel as below:
-    ```
-    cp build.sh .. && cd ..
-    # work
-    # ├── build.sh
-    # ├── icamerasrc
-    # ├── ipu6-camera-hal
-    # └── out
-    ```
-
-2. In `work` folder, run `./build.sh`. Output binaries will be in `out/install`. (RPM build is not implemented yet)
-
-3. Install contents in `out/install` to your `/usr`:
-    ```sh
-    sudo cp -r ./out/install/etc/* /etc/
-    sudo cp -r ./out/install/include/* /usr/include/
-    sudo cp -r ./out/install/lib/* /usr/lib/
-    sudo cp -r ./out/install/usr/* /usr/
-    ```
-
-For more building details please reference the `build.sh`.
+```sh
+# Please follow common cmake, make & make install flow
+cd ipu6-camera-hal
+mkdir build && cd build
+cmake -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_INSTALL_PREFIX=/usr \
+      -DCMAKE_INSTALL_LIBDIR=lib \
+      -DBUILD_CAMHAL_TESTS=OFF \
+      -DBUILD_CAMHAL_ADAPTOR=ON \
+      -DBUILD_CAMHAL_PLUGIN=ON \
+      -DIPU_VERSIONS="ipu6;ipu6ep;ipu6epmtl" \
+      -DUSE_PG_LITE_PIPE=ON \
+      ..
+make && sudo make install
+```

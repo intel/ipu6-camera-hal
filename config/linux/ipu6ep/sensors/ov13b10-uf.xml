@@ -31,7 +31,39 @@
             <videonode name="Intel IPU6 CSI-2 $CSI_PORT" videoNodeType="VIDEO_ISYS_RECEIVER"/>
             <videonode name="ov13b10 $I2CBUS" videoNodeType="VIDEO_PIXEL_ARRAY"/>
         </MediaCtlConfig>
+        <MediaCtlConfig id="0" mediaCfg="1" ConfigMode="AUTO" outputWidth="4208" outputHeight="3120" format="V4L2_PIX_FMT_SGRBG10"> <!-- RAW10 BE capture -->
+            <format name="ov13b10 $I2CBUS" pad="0" width="4208" height="3120" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
+            <format name="Intel IPU6 CSI2 $CSI_PORT" pad="0" width="4208" height="3120" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
 
+            <link srcName="ov13b10 $I2CBUS" srcPad="0" sinkName="Intel IPU6 CSI2 $CSI_PORT" sinkPad="0" enable="true"/>
+            <link srcName="Intel IPU6 CSI2 $CSI_PORT" srcPad="1" sinkName="Intel IPU6 ISYS Capture $CAPTURE_ID" sinkPad="0" enable="true"/>
+
+            <videonode name="Intel IPU6 ISYS Capture $CAPTURE_ID" videoNodeType="VIDEO_GENERIC"/>
+            <videonode name="Intel IPU6 CSI2 $CSI_PORT" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+            <videonode name="ov13b10 $I2CBUS" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+        </MediaCtlConfig>
+        <MediaCtlConfig id="1" mediaCfg="1" ConfigMode="AUTO" outputWidth="2104" outputHeight="1560" format="V4L2_PIX_FMT_SGRBG10"> <!-- RAW10 BE capture -->
+            <format name="ov13b10 $I2CBUS" pad="0" width="2104" height="1560" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
+            <format name="Intel IPU6 CSI2 $CSI_PORT" pad="0" width="2104" height="1560" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
+
+            <link srcName="ov13b10 $I2CBUS" srcPad="0" sinkName="Intel IPU6 CSI2 $CSI_PORT" sinkPad="0" enable="true"/>
+            <link srcName="Intel IPU6 CSI2 $CSI_PORT" srcPad="1" sinkName="Intel IPU6 ISYS Capture $CAPTURE_ID" sinkPad="0" enable="true"/>
+
+            <videonode name="Intel IPU6 ISYS Capture $CAPTURE_ID" videoNodeType="VIDEO_GENERIC"/>
+            <videonode name="Intel IPU6 CSI2 $CSI_PORT" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+            <videonode name="ov13b10 $I2CBUS" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+        </MediaCtlConfig>
+        <MediaCtlConfig id="2" mediaCfg="1" ConfigMode="AUTO" outputWidth="1364" outputHeight="768" format="V4L2_PIX_FMT_SGRBG10"> <!-- RAW10 BE capture -->
+            <format name="ov13b10 $I2CBUS" pad="0" width="1364" height="768" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
+            <format name="Intel IPU6 CSI2 $CSI_PORT" pad="0" width="1364" height="768" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
+
+            <link srcName="ov13b10 $I2CBUS" srcPad="0" sinkName="Intel IPU6 CSI2 $CSI_PORT" sinkPad="0" enable="true"/>
+            <link srcName="Intel IPU6 CSI2 $CSI_PORT" srcPad="1" sinkName="Intel IPU6 ISYS Capture $CAPTURE_ID" sinkPad="0" enable="true"/>
+
+            <videonode name="Intel IPU6 ISYS Capture $CAPTURE_ID" videoNodeType="VIDEO_GENERIC"/>
+            <videonode name="Intel IPU6 CSI2 $CSI_PORT" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+            <videonode name="ov13b10 $I2CBUS" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+        </MediaCtlConfig>
         <StaticMetadata>
             <!-- format,widthxheight,field(none:0,alternate:7),mcId -->
             <supportedStreamConfig value="V4L2_PIX_FMT_NV12,1280x720,0,0,

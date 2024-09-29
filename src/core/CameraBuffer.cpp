@@ -37,13 +37,12 @@
 
 namespace icamera {
 CameraBuffer::CameraBuffer(int cameraId, int usage, int memory, uint32_t size, int index,
-                           int format)
+                           int format, v4l2_buf_type v4l2BufType)
         : mNumPlanes(1),
           mAllocatedMemory(false),
           mU(nullptr),
           mBufferUsage(usage),
           mSettingSequence(-1) {
-    v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
     int num_plane = 1;
 
     LOG2("<id%d>%s: construct buffer with usage:%d, memory:%d, size:%d, format:%d, index:%d",
@@ -62,28 +61,22 @@ CameraBuffer::CameraBuffer(int cameraId, int usage, int memory, uint32_t size, i
         case BUFFER_USAGE_GENERAL:
             if (PlatformData::isIsysEnabled(cameraId) &&
                 PlatformData::isCSIFrontEndCapture(cameraId)) {
-                type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
                 num_plane = CameraUtils::getNumOfPlanes(format);
-            } else {
-                type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
             }
-            break;
-        case BUFFER_USAGE_PSYS_STATS:
-            type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
             break;
         case BUFFER_USAGE_MIPI_CAPTURE:
         case BUFFER_USAGE_METADATA:
-            type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
             num_plane = CameraUtils::getNumOfPlanes(format);
             break;
         default:
             LOGE("Not supported Usage");
+            break;
     }
 
     CLEAR(mMmapAddrs);
     CLEAR(mDmaFd);
 
-    initBuffer(memory, type, size, index, num_plane);
+    initBuffer(memory, v4l2BufType, size, index, num_plane);
 }
 
 CameraBuffer::~CameraBuffer() {
@@ -104,7 +97,6 @@ void CameraBuffer::initBuffer(int memType, v4l2_buf_type bufType, uint32_t size,
     if (!V4L2_TYPE_IS_MULTIPLANAR(bufType)) {
         mV.SetOffset(0, 0);
         mV.SetLength(size, 0);
-        LOGE("SINGLE PLANE!");
     } else {
         mV.SetLength(num_plane, 0);
         mNumPlanes = num_plane;
