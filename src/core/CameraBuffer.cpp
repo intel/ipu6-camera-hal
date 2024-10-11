@@ -69,6 +69,7 @@ CameraBuffer::CameraBuffer(int cameraId, int usage, int memory, uint32_t size, i
             num_plane = CameraUtils::getNumOfPlanes(format);
             break;
         default:
+            LOGE("Not supported Usage");
             break;
     }
 
