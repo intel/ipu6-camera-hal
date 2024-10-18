@@ -125,7 +125,7 @@ class MakerNote {
 
  private:
     // Should > max request number in processing
-    static const int MAX_MAKER_NOTE_LIST_SIZE = 32;
+    static const int MAX_MAKER_NOTE_LIST_SIZE = 48;
 
     enum MknState { UNINIT, INIT } mMknState;
 

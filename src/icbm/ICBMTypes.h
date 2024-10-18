@@ -36,8 +36,10 @@ struct ImageInfo {
 enum ICBMFeatureType {
     REQUEST_NONE = 0,
     LEVEL0_TNR = 1 << 1,
+// LEVEL0_ICBM_S
     USER_FRAMING = 1 << 2,
     BC_MODE_BB = 1 << 3,
+// LEVEL0_ICBM_E
     REQUEST_MAX = 1 << ICBM_REQUEST_MAX_SHIFT
 };
 
@@ -46,6 +48,8 @@ struct ICBMInitInfo {
     uint32_t sessionType;
     uint32_t height;
     uint32_t width;
+    int32_t libPathHandle;
+    char* libPath;
 };
 
 struct ICBMReqInfo {

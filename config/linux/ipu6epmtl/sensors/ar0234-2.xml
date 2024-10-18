@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!-- Copyright (C) 2024 Intel Corporation.
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+
+<CameraSettings>
+    <Sensor name="ar0234-2" description="ar0234 sensor">
+        <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1280" outputHeight="960" format="V4L2_PIX_FMT_SGRBG10">
+            <format name="ar0234 e" pad="0" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
+            <format name="Intel IPU6 CSI-2 4" pad="0" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
+            <format name="Intel IPU6 CSI2 BE SOC 1" pad="0" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
+
+            <link srcName="ar0234 e" srcPad="0" sinkName="Intel IPU6 CSI-2 4" sinkPad="0" enable="true"/>
+            <link srcName="Intel IPU6 CSI-2 4" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 1" sinkPad="0" enable="true"/>
+            <link srcName="Intel IPU6 CSI2 BE SOC 1" srcPad="1" sinkName="Intel IPU6 BE SOC 1 capture 0" sinkPad="0" enable="true"/>
+
+            <control name="ar0234 e" ctrlId="V4L2_CID_VFLIP" value="1" ctrlName="set vflip"/>
+            <control name="ar0234 e" ctrlId="V4L2_CID_HFLIP" value="1" ctrlName="set hflip"/>
+
+            <videonode name="Intel IPU6 BE SOC 1 capture 0" videoNodeType="VIDEO_GENERIC"/>
+            <videonode name="Intel IPU6 CSI-2 4" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+            <videonode name="ar0234 e" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+        </MediaCtlConfig>
+
+        <MediaCtlConfig id="0" mediaCfg="1" ConfigMode="AUTO" outputWidth="1280" outputHeight="960" format="V4L2_PIX_FMT_SGRBG10">
+            <format name="ar0234 $I2CBUS" pad="0" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
+            <format name="Intel IPU6 CSI2 $CSI_PORT" pad="0" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
+
+            <link srcName="ar0234 $I2CBUS" srcPad="0" sinkName="Intel IPU6 CSI2 $CSI_PORT" sinkPad="0" enable="true"/>
+            <link srcName="Intel IPU6 CSI2 $CSI_PORT" srcPad="1" sinkName="Intel IPU6 ISYS Capture $CAPTURE_ID" sinkPad="0" enable="true"/>
+
+	    <control name="ar0234 $I2CBUS" ctrlId="V4L2_CID_VFLIP" value="1" ctrlName="set vflip"/>
+	    <control name="ar0234 $I2CBUS" ctrlId="V4L2_CID_HFLIP" value="1" ctrlName="set hflip"/>
+
+	    <videonode name="Intel IPU6 ISYS Capture $CAPTURE_ID" videoNodeType="VIDEO_GENERIC"/>
+            <videonode name="Intel IPU6 CSI2 $CSI_PORT" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+            <videonode name="ar0234 $I2CBUS" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+        </MediaCtlConfig>
+        <StaticMetadata>
+            <!-- list of stream config info. Meanings of each part is "format,widthxheight,field(0 is none, 7 is alternate),mcId" -->
+            <supportedStreamConfig value="V4L2_PIX_FMT_NV12,1280x960,0,0"/>
+
+            <supportedFeatures value="MANUAL_EXPOSURE,
+                                      MANUAL_WHITE_BALANCE,
+                                      IMAGE_ENHANCEMENT,
+                                      NOISE_REDUCTION,
+                                      PER_FRAME_CONTROL,
+                                      SCENE_MODE"/>
+            <supportedAeExposureTimeRange value="AUTO,10,1000000"/> <!--scene_mode,min_exposure_time,max_exposure_time -->
+            <supportedAeGainRange value="AUTO,0,24"/> <!--scene_mode,min_gain,max_gain -->
+            <fpsRange value="10,30"/>
+            <evRange value="-6,6"/>
+            <evStep value="1,3"/>
+            <supportedAeMode value="AUTO,MANUAL"/>
+            <supportedVideoStabilizationModes value="OFF"/>
+            <supportedAntibandingMode value="AUTO,50Hz,60Hz,OFF"/>
+            <supportedAwbMode value="AUTO,INCANDESCENT,FLUORESCENT,DAYLIGHT,FULL_OVERCAST,PARTLY_OVERCAST,SUNSET,VIDEO_CONFERENCE,MANUAL_CCT_RANGE,MANUAL_WHITE_POINT,MANUAL_GAIN,MANUAL_COLOR_TRANSFORM"/>
+            <supportedAfMode value="OFF"/>
+        </StaticMetadata>
+
+        <supportedTuningConfig value="NORMAL,VIDEO,AR0234_TGL_10bits,
+                                      STILL_CAPTURE,VIDEO,AR0234_TGL_10bits"/>
+        <!-- The lard tags configuration. Every tag should be 4-characters. -->
+        <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
+        <lardTags value="VIDEO,DFLT,DFLT,DFLT,DFLT"/>
+        <supportedISysSizes value="1280x960"/> <!-- ascending order request -->
+        <supportedISysFormat value="V4L2_PIX_FMT_SGRBG10"/>
+        <enableAIQ value="true"/>
+        <iSysRawFormat value="V4L2_PIX_FMT_SGRBG10"/>
+        <pSysFormat value="V4L2_PIX_FMT_NV12"/>
+        <initialSkipFrame value="0"/>
+        <exposureLag value="2"/>
+        <gainLag value="0"/>
+        <ltmGainLag value="1"/>
+        <maxRequestsInflight value="6"/>
+        <yuvColorRangeMode value="full"/> <!-- there are 2 yuv color range mode, like full, reduced. -->
+        <pipeSwitchDelayFrame value="60"/>
+        <graphSettingsFile value="graph_settings_ar0234.xml"/>
+        <graphSettingsType value="coupled"/>
+        <enablePSysProcessor value="true"/>
+        <useCrlModule value = "false"/>
+        <forceFlushIpuBuffer value="true"/>
+    </Sensor>
+
+</CameraSettings>

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2022 Intel Corporation
+ * Copyright (C) 2015-2024 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -99,7 +99,10 @@ class GraphConfigImpl {
 
     // These public methods called by GraphConfig
     bool queryGraphSettings(const std::vector<HalStream*>& activeStreams);
-    status_t configStreams(const std::vector<HalStream*>& activeStreams, bool dummyStillSink);
+    void reorderQueryResults(std::map<int, std::vector<GCSS::IGraphConfig*>>& queryResults,
+                             SensorMode sensorMode);
+    status_t configStreams(const std::vector<HalStream*>& activeStreams, bool dummyStillSink,
+                           SensorMode sensorMode);
     status_t getGraphConfigData(IGraphType::GraphConfigData* data);
 
     status_t getPgIdForKernel(const uint32_t streamId, const int32_t kernelId, int32_t* pgId);
