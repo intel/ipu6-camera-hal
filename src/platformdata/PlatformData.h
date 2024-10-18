@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2023 Intel Corporation.
+ * Copyright (C) 2015-2024 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,14 +63,11 @@ namespace icamera {
 #define FACE_ENGINE_INTEL_PVL 0
 #define FACE_ENGINE_GOOGLE_FACESSD 1
 
-#define DEFAULT_TNR_EXTRA_FRAME_NUM 2
-
 /* Max number of the RAW buffer number is 32.
  * Max number size of the pipeline depth is 6.
  * Max setting count should be larger than raw buffer number + pipeline depth.
  */
 #define MAX_SETTING_COUNT 40
-#define CAMERA_PORT_NAME "CSI-2"
 
 #ifdef CAL_BUILD
 #define MAX_CAMERA_NUMBER 2
@@ -92,11 +89,12 @@ namespace icamera {
 #define MAX_CAMERA_NUMBER 100
 // Temporarily using current path to save aiqd file for none CAL platforms.
 #define CAMERA_CACHE_DIR "./"
-#if !defined(CAMERA_DEFAULT_CFG_PATH)
-#error CAMERA_DEFAULT_CFG_PATH not defined.
-#endif
 #define CAMERA_GRAPH_DESCRIPTOR_FILE "gcss/graph_descriptor.xml"
 #define CAMERA_GRAPH_SETTINGS_DIR "gcss/"
+#endif
+
+#ifndef CAMERA_DEFAULT_CFG_PATH
+#error CAMERA_DEFAULT_CFG_PATH not defined
 #endif
 
 #define NVM_DATA_PATH "/sys/bus/i2c/devices/"
@@ -113,7 +111,8 @@ class PlatformData {
  public:
     class StaticCfg {
      public:
-        StaticCfg() { mCameras.clear(); }
+        StaticCfg()
+                  : mMediaCfgId(IPU6_DOWNSTREAM_MEDIA_CFG) { mCameras.clear(); }
         ~StaticCfg() {}  // not release resource by design
 
         /**
@@ -132,6 +131,7 @@ class PlatformData {
                       mVCGroupId(-1),
                       // VIRTUAL_CHANNEL_E
                       mLensHwType(LENS_NONE_HW),
+                      mSensorMode(SENSOR_MODE_UNKNOWN),
                       mEnablePdaf(false),
                       mSensorAwb(false),
                       mSensorAe(false),
@@ -150,10 +150,12 @@ class PlatformData {
                       mAiqRunningInterval(1),
                       mStatsRunningRate(false),
                       mEnableMkn(true),
+                      mIspTuningUpdate(false),
                       mSkipFrameV4L2Error(false),
                       mCITMaxMargin(0),
                       mYuvColorRangeMode(CAMERA_FULL_MODE_YUV_COLOR_RANGE),
                       mInitialSkipFrame(0),
+                      mInitialPendingFrame(0),
                       mMaxRawDataNum(MAX_BUFFER_COUNT),
                       mTopBottomReverse(false),
                       mPsysContinueStats(false),
@@ -195,11 +197,12 @@ class PlatformData {
                       mFaceEngineByIPU(false),
                       mMaxFaceDetectionNumber(MAX_FACES_DETECTABLE),
                       mPsysAlignWithSof(false),
+                      mMsPsysAlignWithSystem(0),
                       mPsysBundleWithAic(false),
                       mSwProcessingAlignWithIsp(false),
                       mMaxNvmDataSize(0),
                       mNvmOverwrittenFileSize(0),
-                      mTnrExtraFrameNum(DEFAULT_TNR_EXTRA_FRAME_NUM),
+                      mTnrExtraFrameNum(0),
                       mDummyStillSink(false),
                       mGpuTnrEnabled(false),
                       mRemoveCacheFlushOutputBuffer(false),
@@ -214,7 +217,8 @@ class PlatformData {
                       mDisableBLCAGainLow(-1),
                       mDisableBLCAGainHigh(-1),
                       mResetLinkRoute(true),
-                      mReqWaitTimeout(0) {}
+                      mReqWaitTimeout(0),
+                      mV4l2BufType(V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE) {}
 
             std::vector<MediaCtlConf> mMediaCtlConfs;
 
@@ -229,6 +233,8 @@ class PlatformData {
             VcAggregator mVcAggregator;
             // VIRTUAL_CHANNEL_E
             int mLensHwType;
+            std::map<TuningMode, SensitivityRange> mTuningModeToSensitivityMap;
+            SensorMode mSensorMode;
             bool mEnablePdaf;
             bool mSensorAwb;
             bool mSensorAe;
@@ -247,6 +253,7 @@ class PlatformData {
             int mAiqRunningInterval;
             bool mStatsRunningRate;
             bool mEnableMkn;
+            bool mIspTuningUpdate;
             // first: one algo type in imaging_algorithm_t, second: running rate
             std::unordered_map<int, float> mAlgoRunningRateMap;
             // DOL_FEATURE_S
@@ -256,6 +263,7 @@ class PlatformData {
             int mCITMaxMargin;
             camera_yuv_color_range_mode_t mYuvColorRangeMode;
             unsigned int mInitialSkipFrame;
+            unsigned int mInitialPendingFrame;
             unsigned int mMaxRawDataNum;
             bool mTopBottomReverse;
             bool mPsysContinueStats;
@@ -281,6 +289,7 @@ class PlatformData {
             std::vector<LardTagConfig> mLardTagsConfig;
             std::vector<ConfigMode> mConfigModesForAuto;
 
+            std::vector<std::string> mDisableHDRnetBoards;
             bool mUseCrlModule;
             int mOrientation;
             int mSensorOrientation;
@@ -296,8 +305,12 @@ class PlatformData {
             std::map<int, stream_array_t> mStreamToMcMap;
             Parameters mCapability;
 
-            /* key: total gain, value: a map (key: hdr ratio, value: edge and noise settings) */
-            std::map<float, std::map<float, EdgeNrSetting>> mTotalGainHdrRatioToEdgeNrMap;
+            /* key: TuningMode,
+               value: map (key: total gain,
+                           value: map (key: hdr ratio,
+                                       value: edge and noise settings)) */
+            std::map<TuningMode,
+                     std::map<float, std::map<float, EdgeNrSetting>>> mTotalGainHdrRatioToEdgeNrMap;
             std::string mGraphSettingsFile;
             GraphSettingType mGraphSettingsType;
             std::vector<MultiExpRange> mMultiExpRanges;
@@ -315,6 +328,7 @@ class PlatformData {
             bool mFaceEngineByIPU;
             unsigned int mMaxFaceDetectionNumber;
             bool mPsysAlignWithSof;
+            int mMsPsysAlignWithSystem;  // Aligned with system time
             bool mPsysBundleWithAic;
             bool mSwProcessingAlignWithIsp;
 
@@ -325,18 +339,21 @@ class PlatformData {
             // a PG might be incorrect. To be removed after stream id mismatch issue fixed.
             std::map<int, int> mConfigModeToStreamId;
             std::vector<UserToPslOutputMap> mOutputMap;
-            std::vector<camera_resolution_t> mPreferStillOutput;
+            std::vector<camera_resolution_t> mPreferOutput;
             int mMaxNvmDataSize;
             std::string mNvmDirectory;
             int mNvmOverwrittenFileSize;
             std::string mNvmOverwrittenFile;  // overwrite NVM data
             std::string mCamModuleName;
+            std::string mModuleId;
+            std::string mSensorId;
             std::vector<std::string> mSupportModuleNames;
             /* key: camera module name, value: camera module info */
             std::unordered_map<std::string, CameraMetadata> mCameraModuleInfoMap;
             std::vector<IGraphType::ScalerInfo> mScalerInfo;
             int mTnrExtraFrameNum;
             bool mDummyStillSink;
+            std::vector<camera_resolution_t> mTnrThresholdSizes;
             bool mGpuTnrEnabled;
             bool mRemoveCacheFlushOutputBuffer;
             bool mPLCEnable;
@@ -353,6 +370,7 @@ class PlatformData {
             bool mResetLinkRoute;
             /* mReqWaitTimeout is used to override dqbuf timeout (ns) */
             int64_t mReqWaitTimeout;
+            v4l2_buf_type mV4l2BufType;
         };
 
         /**
@@ -363,6 +381,8 @@ class PlatformData {
         std::vector<CameraInfo> mCameras;
         std::vector<PolicyConfig> mPolicyConfig;
         CommonConfig mCommonConfig;
+        std::string mBoardName;
+        int mMediaCfgId;
     };
 
  private:
@@ -446,12 +466,39 @@ class PlatformData {
     static int getXmlCameraNumber();
 
     /**
+     * get module info of sensor
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \param moduleId: the module id of sensor
+     * \param sensorId: the sensor id of sensor
+     *
+     * \return int: return OK if has module info.
+     */
+    static int getModuleInfo(int cameraId, std::string& moduleId, std::string& sensorId);
+
+    /**
      * get the sensor name
      *
      * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
      * \return char*: the sensor name string.
      */
     static const char* getSensorName(int cameraId);
+
+    /**
+     * set board name
+     *
+     * \param[in] boardName
+     */
+    static void setBoardName(const std::string& boardName);
+
+    /**
+     * get status if HDRnet tuning used
+     *
+     * \param[in] cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \param[out] boardConfig: set true if configured
+     * \return true if HDRnet tuning used, otherwise return false.
+     */
+    static bool isHDRnetTuningUsed(int cameraId, bool& boardConfig);
 
     /**
      * get the sensor description
@@ -476,6 +523,40 @@ class PlatformData {
      * \return int: the Lens HW type
      */
     static int getLensHwType(int cameraId);
+
+    /**
+     * get sensor mode
+     *
+     * \param[in] cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return SensorMode.
+     */
+    static SensorMode getSensorMode(int cameraId);
+
+    /**
+     * set sensor mode
+     *
+     * \param[in] cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \param[in] sensorMode: SensorMode
+     */
+    static void setSensorMode(int cameraId, SensorMode sensorMode);
+
+    /**
+     * check if binning mode supported
+     *
+     * \param[in] cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return true if binning mode supported, otherwise return false.
+     */
+    static bool isBinningModeSupport(int cameraId);
+
+    /**
+     * get sensitivity range by TuningMode
+     *
+     * \param[in] cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \param[out] range: SensitivityRange
+     * \return OK if found, otherwise return NAME_NOT_FOUND.
+     */
+    static int getSensitivityRangeByTuningMode(int cameraId, TuningMode mode,
+                                               SensitivityRange& range);
 
     /**
      * check if PDAF is supported or not
@@ -734,6 +815,14 @@ class PlatformData {
     static unsigned int getInitialSkipFrame(int cameraId);
 
     /**
+     * Get initial pending frame number
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return the value of initial pending frame number
+     */
+    static unsigned int getInitialPendingFrame(int cameraId);
+
+    /**
      * Get max raw data number
      *
      * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
@@ -870,6 +959,14 @@ class PlatformData {
     static bool psysAlignWithSof(int cameraId);
 
     /**
+     * Get time interval to align psys processing
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return time interval.
+     */
+    static int getMsOfPsysAlignWithSystem(int cameraId);
+
+    /**
      * Check running psys bundle with aic is enabled or not
      *
      * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
@@ -930,21 +1027,22 @@ class PlatformData {
      * \param[in] cameraId: [0, MAX_CAMERA_NUMBER - 1]
      * \param[in] totalGain: total gain
      * \param[in] hdrRatio: hdr ratio
+     * \param[in] mode: TuningMode
      * \param[out] setting: EdgeNrSetting setting
      *
      * \return OK if setting is available, otherwise return NAME_NOT_FOUND.
      */
     static int getEdgeNrSetting(int cameraId, float totalGain, float hdrRatio,
-                                EdgeNrSetting& setting);
+                                TuningMode mode, EdgeNrSetting& setting);
 
     /**
      * Get the executor policy config.
      *
-     * \param[in] graphId: the graph id
+     * \param[in] graphIds: the graph ids
      *
      * \return PolicyConfig* object if found, otherwise return nullptr.
      */
-    static PolicyConfig* getExecutorPolicyConfig(int graphId);
+    static PolicyConfig* getExecutorPolicyConfig(const std::set<int>& graphIds);
 
     /**
      * According to stream info to select MC
@@ -1411,14 +1509,14 @@ class PlatformData {
     static camera_resolution_t* getPslOutputForRotation(int width, int height, int cameraId);
 
     /**
-     * Get preferred output size for still
+     * Get preferred output size
      *
      * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
      * \param width:    The width of user requirement
      * \param height:   The height of user requirement
      * \return the output resolution if provides it in xml file, otherwise return nullptr.
      */
-    const static camera_resolution_t* getPreferStillOutput(int width, int height, int cameraId);
+    const static camera_resolution_t* getPreferOutput(int width, int height, int cameraId);
 
     /**
      * Check if test pattern is supported or not
@@ -1603,8 +1701,10 @@ class PlatformData {
 
     /**
      * Check if support to update tuning data or not
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
      */
-    static bool supportUpdateTuning();
+    static bool supportUpdateTuning(int cameraId);
 
     /**
      * Check if support hardware jpeg encode or not
@@ -1667,6 +1767,12 @@ class PlatformData {
      */
     static bool isDummyStillSink(int cameraId);
 
+    /**
+     * get the tnr resolution list
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     */
+    static void getTnrThresholdSizes(int cameraId, std::vector<camera_resolution_t>& resolutions);
     /*
      * check if removing cache flush output buffer
      *
@@ -1735,6 +1841,29 @@ class PlatformData {
      * \return timeout interval for dqbuf in ns (2000000000 for 2s)
      */
     static int64_t getReqWaitTimeout(int cameraId);
+
+    /**
+     * Get V4L2 buffer type
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return V4L2 buffer type
+     */
+    static v4l2_buf_type getV4L2BufType(int cameraId);
+
+    /**
+     * Set V4L2 buffer type
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \param v4l2BufType：V4L2 buffer type
+     */
+    static void setV4L2BufType(int cameraId, v4l2_buf_type v4l2BufType);
+
+    /**
+     * Get media configuration ID
+     *
+     * \return media configuration ID
+     */
+    static int getMediaCfgId();
 
     // LEVEL0_ICBM_S
     /**

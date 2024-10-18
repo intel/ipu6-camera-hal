@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Intel Corporation.
+ * Copyright (C) 2023-2024 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,7 +46,7 @@ static char gPciId[8];
             LOGE("@%s: LOADING: " #fnName "failed: %s", __func__, dlerror());                \
             return;                                                                          \
         }                                                                                    \
-        LOG2("@%s: LOADING: " #fnName "= %x", __func__, gCameraHalAdaptor.member);           \
+        LOG2("@%s: LOADING: " #fnName "= %p", __func__, gCameraHalAdaptor.member);           \
     } while (0)
 
 static bool get_ipu_info(const std::string& path) {
@@ -97,18 +97,23 @@ static void load_camera_hal_library() {
     if (strstr(gPciId, "0xa75d") != nullptr /* RPL */ ||
         strstr(gPciId, "0x462e") != nullptr /* ADLN */ ||
         strstr(gPciId, "0x465d") != nullptr /* ADLP */) {
-        libName += "ipu6ep.so";
+        libName += "ipu6ep";
     } else if (strstr(gPciId, "0x7d19") != nullptr /* MTL */) {
-        libName += "ipu6epmtl.so";
+        libName += "ipu6epmtl";
     } else if (strstr(gPciId, "0x645d") != nullptr /* LNL */) {
-        libName += "ipu7.so";
+        libName += "ipu7x";
+    } else if (strstr(gPciId, "0xb05d") != nullptr /* PTL */) {
+        libName += "ipu75xa";
     } else if (strstr(gPciId, "0x9a19") != nullptr /* TGL */) {
-        libName += "ipu6.so";
+        libName += "ipu6";
+    } else if (strstr(gPciId, "0x4e19") != nullptr /* JSL */) {
+        libName += "ipu6sepla";
     } else {
         LOGE("%s, Not support the PCI device %s for hal adaptor API", __func__, gPciId);
-        return VOID_VALUE;
+        return;
     }
 
+    libName += ".so";
     LOG1("%s, the library name: %s", __func__, libName.c_str());
 
     gCameraHalLib = dlopen(libName.c_str(), RTLD_NOW);

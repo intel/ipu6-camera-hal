@@ -74,6 +74,7 @@ struct CameraModuleInfo {
 #define CAMERA_MODULE_INFO_OFFSET 32
 #define CAMERA_MODULE_INFO_SIZE 32
 #define DEFAULT_MODULE_NAME "default"
+#define IPU_ISYS_CAPTURE_ID_MAX 8
 /**
  * \class CameraParser
  *
@@ -96,6 +97,15 @@ class CameraParser : public ParserBase {
     int mCurrentSensor;
     std::string mI2CBus;
     std::string mCsiPort;
+
+    /**
+     * mCaptureId is used to store Intel IPU6 ISYS Capture Id for each sensor.
+     * When parse Link, if it has video capture, mCaptureIdLinkIndex will add, and put value
+     * into mCaptureId. Otherwise, mCaptureIdIndex will add and get value from mCaptureId.
+     */
+    int mCaptureId[IPU_ISYS_CAPTURE_ID_MAX];
+    int mCaptureIdLinkIndex;
+    int mCaptureIdIndex;
     struct AvailableSensorInfo {
         std::string sinkEntityName;
         bool sensorFlag;
@@ -103,6 +113,7 @@ class CameraParser : public ParserBase {
     std::unordered_map<std::string, AvailableSensorInfo> mAvailableSensor;
     PlatformData::StaticCfg::CameraInfo* pCurrentCam;
     bool mInMediaCtlCfg;
+    bool mSkipMediaCtlCfg;
     bool mInStaticMetadata;
     MediaControl* mMC;
     CameraMetadata mMetadata;
@@ -131,7 +142,8 @@ class CameraParser : public ParserBase {
                          char** endptr = nullptr);
 
     std::vector<std::string> getAvailableSensors(const std::string& ipuName,
-                                                 const std::vector<std::string>& sensorsList);
+                                                 const std::vector<std::string>& sensorsList,
+                                                 int mediaCfgId);
     void getSensorDataFromXmlFile(void);
     void getCsiPortAndI2CBus(CameraParser* profiles);
     void checkField(CameraParser* profiles, const char* name, const char** atts);
@@ -174,9 +186,9 @@ class CameraParser : public ParserBase {
 
     void parseOutputMap(const char* str, std::vector<UserToPslOutputMap>& outputMap);
 
-    std::string replaceStringInXml(CameraParser* profiles, const char* value);
+    std::string replaceStringInXml(CameraParser* profiles, const char* value, const char* name);
     void getNVMDirectory(CameraParser* profiles);
-    int getCameraModuleNameFromEEPROM(const std::string& nvmDir, std::string* cameraModule);
+    int getCameraModuleNameFromEEPROM(PlatformData::StaticCfg::CameraInfo* cam);
 
  private:
     DISALLOW_COPY_AND_ASSIGN(CameraParser);

@@ -64,7 +64,9 @@ PipeLiteExecutor::PipeLiteExecutor(int cameraId, const ExecutorPolicy& policy,
           mLastStatsSequence(-1),
           mExclusivePGs(exclusivePGs),
           mPSysDag(psysDag),
-          mkernelsCountWithStats(0) {
+          mkernelsCountWithStats(0),
+          mMsOfPsysAlignWithSystem(0) {
+    mMsOfPsysAlignWithSystem = PlatformData::getMsOfPsysAlignWithSystem(mCameraId);
 }
 
 PipeLiteExecutor::~PipeLiteExecutor() {
@@ -627,6 +629,25 @@ int PipeLiteExecutor::processNewFrame() {
     }
     // HDR_FEATURE_E
 
+    // Check if system scheduling
+// Allow +/- 3ms delay
+#define SYS_TRIGGER_DELTA    (3)
+    if (mMsOfPsysAlignWithSystem) {
+        timeval curTime;
+        gettimeofday(&curTime, nullptr);
+        int64_t ms = (curTime.tv_usec / 1000) % mMsOfPsysAlignWithSystem;
+        int64_t waitMs = 0;
+
+        if ((ms <= SYS_TRIGGER_DELTA) || ((mMsOfPsysAlignWithSystem - ms) <= SYS_TRIGGER_DELTA))
+            waitMs = 0;
+        else
+            waitMs  = mMsOfPsysAlignWithSystem - ms;
+
+        LOG1("%s: current %ld (%ld), need wait %ld to trigger", mName.c_str(),
+             curTime.tv_usec / 1000, ms, waitMs);
+        if (waitMs) usleep(waitMs * 1000);
+    }
+
     LOG2("%s:Id:%d run pipe start for buffer:%ld", mName.c_str(), mCameraId, inBufSequence);
 
     // FRAME_SYNC_S
@@ -780,7 +801,7 @@ int PipeLiteExecutor::runPipe(map<Port, shared_ptr<CameraBuffer>>& inBuffers,
         unit.inputBuffers.begin()->second->setSequence(sequence);
         // Currently PG handles one stats buffer only
         ret = unit.pg->iterate(unit.inputBuffers, unit.outputBuffers,
-                               (statsCount > 0) ? pgStatsDatas[0] : nullptr, ipuParameters);
+                               pgStatsDatas.empty() ? nullptr : pgStatsDatas[0], ipuParameters);
         CheckAndLogError((ret != OK), ret, "%s: pipe iteration error %d", mName.c_str(), ret);
 
         if (CameraDump::isDumpTypeEnable(DUMP_PSYS_INTERM_BUFFER)) {

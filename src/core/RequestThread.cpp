@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2023 Intel Corporation.
+ * Copyright (C) 2015-2024 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -144,7 +144,8 @@ bool RequestThread::blockRequest() {
      * 2. Too many requests in flight;
      * 3. if no trigger event is available.
      */
-    return ((mBlockRequest && (mLastRequestId >= 0)) ||
+    return ((mBlockRequest &&
+             (mLastRequestId >= PlatformData::getInitialPendingFrame(mCameraId))) ||
             (mRequestsInProcessing >= PlatformData::getMaxRequestsInflight(mCameraId)) ||
             (mPerframeControlSupport && (mRequestTriggerEvent == NONE_EVENT)));
 }
@@ -176,8 +177,10 @@ int RequestThread::processRequest(int bufferNum, camera_buffer_t** ubuffer,
         mActive = true;
     }
 
-    mRequestTriggerEvent |= NEW_REQUEST;
-    mRequestSignal.signal();
+    if (mRequestsInProcessing == 0) {
+        mRequestTriggerEvent |= NEW_REQUEST;
+        mRequestSignal.signal();
+    }
     return OK;
 }
 
@@ -244,7 +247,7 @@ void RequestThread::handleEvent(EventData eventData) {
                 mRequestsInProcessing--;
             }
             // Just in case too many requests are pending in mPendingRequests.
-            if (!mPendingRequests.empty()) {
+            if (!mPendingRequests.empty() && (mRequestsInProcessing == 0)) {
                 mRequestTriggerEvent |= NEW_FRAME;
                 mRequestSignal.signal();
             }
@@ -261,8 +264,10 @@ void RequestThread::handleEvent(EventData eventData) {
         case EVENT_ISYS_SOF: {
             AutoMutex l(mPendingReqLock);
             mLastSofSeq = eventData.data.sync.sequence;
-            mRequestTriggerEvent |= NEW_SOF;
-            mRequestSignal.signal();
+            if (mLastSofSeq > mLastAppliedSeq) {
+                mRequestTriggerEvent |= NEW_SOF;
+                mRequestSignal.signal();
+            }
         } break;
         case EVENT_FRAME_AVAILABLE: {
             if (eventData.buffer->getUserBuffer() != &mFakeReqBuf) {
@@ -282,7 +287,7 @@ void RequestThread::handleEvent(EventData eventData) {
             AutoMutex l(mPendingReqLock);
             // Insert fake request if no any request in the HAL to keep 3A running
             if (mGet3AStatWithFakeRequest && eventData.buffer->getSequence() >= mLastEffectSeq &&
-                mPendingRequests.empty()) {
+                mPendingRequests.empty() && (mRequestsInProcessing == 0)) {
                 LOGW("No request, insert fake req after req %ld to keep 3A stats update",
                      mLastRequestId);
                 CameraRequest fakeRequest;

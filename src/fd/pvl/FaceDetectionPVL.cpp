@@ -227,6 +227,7 @@ void FaceDetectionPVL::getResultFor3A(cca::cca_face_state* faceState) {
     faceState->is_video_conf = true;
     faceState->updated = mResult.faceUpdated;
     faceState->num_faces = pvlResult->faceNum;
+    faceState->fd_algo = PVL;
     mResult.faceUpdated = false;
 
     for (int i = 0; i < pvlResult->faceNum; i++) {

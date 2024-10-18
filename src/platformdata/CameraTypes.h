@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2023 Intel Corporation.
+ * Copyright (C) 2015-2024 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,12 @@ enum {
 };
 
 enum { LENS_VCM_HW = 0, LENS_NONE_HW };
+
+typedef enum {
+    SENSOR_MODE_UNKNOWN = 0,
+    SENSOR_MODE_FULL,
+    SENSOR_MODE_BINNING
+} SensorMode;
 
 enum {
     SENSOR_EXPOSURE_SINGLE = 0,      /* sensor is single exposure */
@@ -164,7 +170,7 @@ struct ExecutorDepth {
 typedef std::pair<std::string, int32_t> ShareReferIdDesc;
 
 struct PolicyConfig {
-    int graphId;
+    std::set<int> graphIds;
     std::string policyDescription;
     std::vector<ExecutorPolicy> pipeExecutorVec;
     std::vector<std::string> exclusivePgs;
@@ -173,7 +179,6 @@ struct PolicyConfig {
     bool enableBundleInSdv;
 
     PolicyConfig() {
-        graphId = -1;
         enableBundleInSdv = true;
     }
 };
@@ -238,6 +243,11 @@ struct MultiExpRange {
     ExpRange SHS2;
     ExpRange RHS2;
     ExpRange SHS3;
+};
+
+struct SensitivityRange {
+    int32_t min;
+    int32_t max;
 };
 
 struct UserToPslOutputMap {

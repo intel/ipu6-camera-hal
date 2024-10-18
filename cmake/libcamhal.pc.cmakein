@@ -1,11 +1,11 @@
 prefix=@CMAKE_INSTALL_PREFIX@
 exec_prefix=${prefix}
-libdir=${exec_prefix}/lib
+libdir=${exec_prefix}/@CMAKE_INSTALL_LIBDIR@
 includedir=${prefix}/include/libcamhal
 
 Name: libcamhal
 Description: Camera HAL Library
 URL:
 Version: @VERSION@
-Libs: -L${libdir} -lcamhal@CAMHAL_NAME_SUFFIX@
+Libs: -L${libdir} -lcamhal
 Cflags: -I${includedir} -I${includedir}/api -I${includedir}/utils
