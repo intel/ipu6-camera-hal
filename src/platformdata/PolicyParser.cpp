@@ -59,8 +59,8 @@ void PolicyParser::checkField(PolicyParser* profiles, const char* name, const ch
             const char* key = atts[idx];
             const char* val = atts[idx + 1];
             LOG2("@%s, name:%s, atts[%d]:%s, atts[%d]:%s", __func__, name, idx, key, idx + 1, val);
-            if (strcmp(key, "id") == 0 || strcmp(key, "video") == 0 || strcmp(key, "still") == 0) {
-                profiles->pCurrentConf->graphIds.insert(atoi(val));
+            if (strcmp(key, "id") == 0) {
+                profiles->pCurrentConf->graphId = atoi(val);
             } else if (strcmp(key, "description") == 0) {
                 profiles->pCurrentConf->policyDescription = val;
             }
@@ -272,7 +272,7 @@ void PolicyParser::endParseElement(void* userData, const char* name) {
     PolicyParser* profiles = reinterpret_cast<PolicyParser*>(userData);
 
     if (strcmp(name, "graph") == 0) {
-        LOG2("@%s, add policyConf", __func__);
+        LOG2("@%s, add policyConf, graphId: %d", __func__, profiles->pCurrentConf->graphId);
         profiles->mStaticCfg->mPolicyConfig.push_back(*(profiles->pCurrentConf));
         delete profiles->pCurrentConf;
         profiles->pCurrentConf = nullptr;

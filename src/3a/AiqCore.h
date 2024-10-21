@@ -200,7 +200,6 @@ class AiqCore {
 
     float mHyperFocalDistance;  // in millimeters
 
-    bool mLowPowerMode;
     TuningMode mTuningMode;
     camera_shading_mode_t mShadingMode;
     camera_lens_shading_map_mode_type_t mLensShadingMapMode;

@@ -20,36 +20,36 @@
             <format name="imx390 a" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="TI960 a" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="TI960 a" pad="4" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 0" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 0" pad="1" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 1" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 1" pad="1" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="Intel IPU6 CSI2 BE SOC 0" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="Intel IPU6 CSI2 BE SOC 0" pad="1" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
 
             <link srcName="imx390 a" srcPad="0" sinkName="TI960 a" sinkPad="0" enable="true"/>
-            <link srcName="TI960 a" srcPad="4" sinkName="Intel IPU6 CSI-2 0" sinkPad="0" enable="true"/>
-            <link srcName="Intel IPU6 CSI-2 0" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 0" sinkPad="0" enable="true"/>
+            <link srcName="TI960 a" srcPad="4" sinkName="Intel IPU6 CSI-2 1" sinkPad="0" enable="true"/>
+            <link srcName="Intel IPU6 CSI-2 1" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 0" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC 0" srcPad="1" sinkName="Intel IPU6 BE SOC capture 0" sinkPad="0" enable="true"/>
 
             <videonode name="Intel IPU6 BE SOC capture 0" videoNodeType="VIDEO_GENERIC"/>
-            <videonode name="Intel IPU6 CSI-2 0" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+            <videonode name="Intel IPU6 CSI-2 1" videoNodeType="VIDEO_ISYS_RECEIVER"/>
             <videonode name="imx390 a" videoNodeType="VIDEO_PIXEL_ARRAY"/>
         </MediaCtlConfig>
         <MediaCtlConfig id="1" ConfigMode="AUTO" outputWidth="1280" outputHeight="960" format="V4L2_PIX_FMT_SGRBG12">
             <format name="imx390 a" pad="0" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="TI960 a" pad="0" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="TI960 a" pad="4" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 0" pad="0" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 0" pad="1" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 1" pad="0" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 1" pad="1" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="Intel IPU6 CSI2 BE SOC 0" pad="0" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="Intel IPU6 CSI2 BE SOC 0" pad="1" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
 
             <link srcName="imx390 a" srcPad="0" sinkName="TI960 a" sinkPad="0" enable="true"/>
-            <link srcName="TI960 a" srcPad="4" sinkName="Intel IPU6 CSI-2 0" sinkPad="0" enable="true"/>
-            <link srcName="Intel IPU6 CSI-2 0" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 0" sinkPad="0" enable="true"/>
+            <link srcName="TI960 a" srcPad="4" sinkName="Intel IPU6 CSI-2 1" sinkPad="0" enable="true"/>
+            <link srcName="Intel IPU6 CSI-2 1" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 0" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC 0" srcPad="1" sinkName="Intel IPU6 BE SOC capture 0" sinkPad="0" enable="true"/>
 
             <videonode name="Intel IPU6 BE SOC capture 0" videoNodeType="VIDEO_GENERIC"/>
-            <videonode name="Intel IPU6 CSI-2 0" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+            <videonode name="Intel IPU6 CSI-2 1" videoNodeType="VIDEO_ISYS_RECEIVER"/>
             <videonode name="imx390 a" videoNodeType="VIDEO_PIXEL_ARRAY"/>
         </MediaCtlConfig>
         <StaticMetadata>
@@ -73,8 +73,8 @@
             <supportedAwbMode value="AUTO,INCANDESCENT,FLUORESCENT,DAYLIGHT,FULL_OVERCAST,PARTLY_OVERCAST,SUNSET,VIDEO_CONFERENCE,MANUAL_CCT_RANGE,MANUAL_WHITE_POINT,MANUAL_GAIN,MANUAL_COLOR_TRANSFORM"/>
             <supportedAfMode value="OFF"/>
         </StaticMetadata>
-        <supportedTuningConfig value="NORMAL,VIDEO,IMX390_HDR_ADL,
-                                      STILL_CAPTURE,VIDEO,IMX390_HDR_ADL"/>
+        <supportedTuningConfig value="NORMAL,VIDEO,IMX390_HDR_TGL,
+                                      STILL_CAPTURE,VIDEO,IMX390_HDR_TGL"/>
         <!-- The lard tags configuration. Every tag should be 4-characters. -->
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
         <lardTags value="VIDEO,DFLT,DFLT,DFLT,DFLT"/>
@@ -108,36 +108,36 @@
             <format name="imx390 b" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="TI960 a" pad="1" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="TI960 a" pad="4" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 0" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 0" pad="1" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 1" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 1" pad="1" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="Intel IPU6 CSI2 BE SOC 0" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="Intel IPU6 CSI2 BE SOC 0" pad="2" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
 
             <link srcName="imx390 b" srcPad="0" sinkName="TI960 a" sinkPad="1" enable="true"/>
-            <link srcName="TI960 a" srcPad="4" sinkName="Intel IPU6 CSI-2 0" sinkPad="0" enable="true"/>
-            <link srcName="Intel IPU6 CSI-2 0" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 0" sinkPad="0" enable="true"/>
+            <link srcName="TI960 a" srcPad="4" sinkName="Intel IPU6 CSI-2 1" sinkPad="0" enable="true"/>
+            <link srcName="Intel IPU6 CSI-2 1" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 0" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC 0" srcPad="2" sinkName="Intel IPU6 BE SOC capture 1" sinkPad="0" enable="true"/>
 
             <videonode name="Intel IPU6 BE SOC capture 1" videoNodeType="VIDEO_GENERIC"/>
-            <videonode name="Intel IPU6 CSI-2 0" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+            <videonode name="Intel IPU6 CSI-2 1" videoNodeType="VIDEO_ISYS_RECEIVER"/>
             <videonode name="imx390 b" videoNodeType="VIDEO_PIXEL_ARRAY"/>
         </MediaCtlConfig>
         <MediaCtlConfig id="1" ConfigMode="AUTO" outputWidth="1280" outputHeight="960" format="V4L2_PIX_FMT_SGRBG12">
             <format name="imx390 b" pad="0" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="TI960 a" pad="1" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="TI960 a" pad="4" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 0" pad="0" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 0" pad="1" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 1" pad="0" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 1" pad="1" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="Intel IPU6 CSI2 BE SOC 0" pad="0" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="Intel IPU6 CSI2 BE SOC 0" pad="2" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
 
             <link srcName="imx390 b" srcPad="0" sinkName="TI960 a" sinkPad="1" enable="true"/>
-            <link srcName="TI960 a" srcPad="4" sinkName="Intel IPU6 CSI-2 0" sinkPad="0" enable="true"/>
-            <link srcName="Intel IPU6 CSI-2 0" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 0" sinkPad="0" enable="true"/>
+            <link srcName="TI960 a" srcPad="4" sinkName="Intel IPU6 CSI-2 1" sinkPad="0" enable="true"/>
+            <link srcName="Intel IPU6 CSI-2 1" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 0" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC 0" srcPad="2" sinkName="Intel IPU6 BE SOC capture 1" sinkPad="0" enable="true"/>
 
             <videonode name="Intel IPU6 BE SOC capture 1" videoNodeType="VIDEO_GENERIC"/>
-            <videonode name="Intel IPU6 CSI-2 0" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+            <videonode name="Intel IPU6 CSI-2 1" videoNodeType="VIDEO_ISYS_RECEIVER"/>
             <videonode name="imx390 b" videoNodeType="VIDEO_PIXEL_ARRAY"/>
         </MediaCtlConfig>
         <StaticMetadata>
@@ -161,8 +161,8 @@
             <supportedAwbMode value="AUTO,INCANDESCENT,FLUORESCENT,DAYLIGHT,FULL_OVERCAST,PARTLY_OVERCAST,SUNSET,VIDEO_CONFERENCE,MANUAL_CCT_RANGE,MANUAL_WHITE_POINT,MANUAL_GAIN,MANUAL_COLOR_TRANSFORM"/>
             <supportedAfMode value="OFF"/>
         </StaticMetadata>
-        <supportedTuningConfig value="NORMAL,VIDEO,IMX390_HDR_ADL,
-                                      STILL_CAPTURE,VIDEO,IMX390_HDR_ADL"/>
+        <supportedTuningConfig value="NORMAL,VIDEO,IMX390_HDR_TGL,
+                                      STILL_CAPTURE,VIDEO,IMX390_HDR_TGL"/>
         <!-- The lard tags configuration. Every tag should be 4-characters. -->
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
         <lardTags value="VIDEO,DFLT,DFLT,DFLT,DFLT"/>
@@ -196,36 +196,36 @@
             <format name="imx390 c" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="TI960 a" pad="2" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="TI960 a" pad="4" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 0" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 0" pad="1" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 1" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 1" pad="1" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="Intel IPU6 CSI2 BE SOC 0" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="Intel IPU6 CSI2 BE SOC 0" pad="3" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
 
             <link srcName="imx390 c" srcPad="0" sinkName="TI960 a" sinkPad="2" enable="true"/>
-            <link srcName="TI960 a" srcPad="4" sinkName="Intel IPU6 CSI-2 0" sinkPad="0" enable="true"/>
-            <link srcName="Intel IPU6 CSI-2 0" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 0" sinkPad="0" enable="true"/>
+            <link srcName="TI960 a" srcPad="4" sinkName="Intel IPU6 CSI-2 1" sinkPad="0" enable="true"/>
+            <link srcName="Intel IPU6 CSI-2 1" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 0" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC 0" srcPad="3" sinkName="Intel IPU6 BE SOC capture 2" sinkPad="0" enable="true"/>
 
             <videonode name="Intel IPU6 BE SOC capture 2" videoNodeType="VIDEO_GENERIC"/>
-            <videonode name="Intel IPU6 CSI-2 0" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+            <videonode name="Intel IPU6 CSI-2 1" videoNodeType="VIDEO_ISYS_RECEIVER"/>
             <videonode name="imx390 c" videoNodeType="VIDEO_PIXEL_ARRAY"/>
         </MediaCtlConfig>
         <MediaCtlConfig id="1" ConfigMode="AUTO" outputWidth="1280" outputHeight="960" format="V4L2_PIX_FMT_SGRBG12">
             <format name="imx390 c" pad="0" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="TI960 a" pad="2" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="TI960 a" pad="4" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 0" pad="0" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 0" pad="1" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 1" pad="0" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 1" pad="1" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="Intel IPU6 CSI2 BE SOC 0" pad="0" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="Intel IPU6 CSI2 BE SOC 0" pad="3" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
 
             <link srcName="imx390 c" srcPad="0" sinkName="TI960 a" sinkPad="2" enable="true"/>
-            <link srcName="TI960 a" srcPad="4" sinkName="Intel IPU6 CSI-2 0" sinkPad="0" enable="true"/>
-            <link srcName="Intel IPU6 CSI-2 0" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 0" sinkPad="0" enable="true"/>
+            <link srcName="TI960 a" srcPad="4" sinkName="Intel IPU6 CSI-2 1" sinkPad="0" enable="true"/>
+            <link srcName="Intel IPU6 CSI-2 1" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 0" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC 0" srcPad="3" sinkName="Intel IPU6 BE SOC capture 2" sinkPad="0" enable="true"/>
 
             <videonode name="Intel IPU6 BE SOC capture 2" videoNodeType="VIDEO_GENERIC"/>
-            <videonode name="Intel IPU6 CSI-2 0" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+            <videonode name="Intel IPU6 CSI-2 1" videoNodeType="VIDEO_ISYS_RECEIVER"/>
             <videonode name="imx390 c" videoNodeType="VIDEO_PIXEL_ARRAY"/>
         </MediaCtlConfig>
         <StaticMetadata>
@@ -249,8 +249,8 @@
             <supportedAwbMode value="AUTO,INCANDESCENT,FLUORESCENT,DAYLIGHT,FULL_OVERCAST,PARTLY_OVERCAST,SUNSET,VIDEO_CONFERENCE,MANUAL_CCT_RANGE,MANUAL_WHITE_POINT,MANUAL_GAIN,MANUAL_COLOR_TRANSFORM"/>
             <supportedAfMode value="OFF"/>
         </StaticMetadata>
-        <supportedTuningConfig value="NORMAL,VIDEO,IMX390_HDR_ADL,
-                                      STILL_CAPTURE,VIDEO,IMX390_HDR_ADL"/>
+        <supportedTuningConfig value="NORMAL,VIDEO,IMX390_HDR_TGL,
+                                      STILL_CAPTURE,VIDEO,IMX390_HDR_TGL"/>
         <!-- The lard tags configuration. Every tag should be 4-characters. -->
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
         <lardTags value="VIDEO,DFLT,DFLT,DFLT,DFLT"/>
@@ -284,36 +284,36 @@
             <format name="imx390 d" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="TI960 a" pad="3" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="TI960 a" pad="4" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 0" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 0" pad="1" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 1" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 1" pad="1" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="Intel IPU6 CSI2 BE SOC 0" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="Intel IPU6 CSI2 BE SOC 0" pad="4" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
 
             <link srcName="imx390 d" srcPad="0" sinkName="TI960 a" sinkPad="3" enable="true"/>
-            <link srcName="TI960 a" srcPad="4" sinkName="Intel IPU6 CSI-2 0" sinkPad="0" enable="true"/>
-            <link srcName="Intel IPU6 CSI-2 0" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 0" sinkPad="0" enable="true"/>
+            <link srcName="TI960 a" srcPad="4" sinkName="Intel IPU6 CSI-2 1" sinkPad="0" enable="true"/>
+            <link srcName="Intel IPU6 CSI-2 1" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 0" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC 0" srcPad="4" sinkName="Intel IPU6 BE SOC capture 3" sinkPad="0" enable="true"/>
 
             <videonode name="Intel IPU6 BE SOC capture 3" videoNodeType="VIDEO_GENERIC"/>
-            <videonode name="Intel IPU6 CSI-2 0" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+            <videonode name="Intel IPU6 CSI-2 1" videoNodeType="VIDEO_ISYS_RECEIVER"/>
             <videonode name="imx390 d" videoNodeType="VIDEO_PIXEL_ARRAY"/>
         </MediaCtlConfig>
         <MediaCtlConfig id="1" ConfigMode="AUTO" outputWidth="1280" outputHeight="960" format="V4L2_PIX_FMT_SGRBG12">
             <format name="imx390 d" pad="0" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="TI960 a" pad="3" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="TI960 a" pad="4" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 0" pad="0" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 0" pad="1" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 1" pad="0" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 1" pad="1" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="Intel IPU6 CSI2 BE SOC 0" pad="0" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="Intel IPU6 CSI2 BE SOC 0" pad="4" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
 
             <link srcName="imx390 d" srcPad="0" sinkName="TI960 a" sinkPad="3" enable="true"/>
-            <link srcName="TI960 a" srcPad="4" sinkName="Intel IPU6 CSI-2 0" sinkPad="0" enable="true"/>
-            <link srcName="Intel IPU6 CSI-2 0" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 0" sinkPad="0" enable="true"/>
+            <link srcName="TI960 a" srcPad="4" sinkName="Intel IPU6 CSI-2 1" sinkPad="0" enable="true"/>
+            <link srcName="Intel IPU6 CSI-2 1" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 0" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC 0" srcPad="4" sinkName="Intel IPU6 BE SOC capture 3" sinkPad="0" enable="true"/>
 
             <videonode name="Intel IPU6 BE SOC capture 3" videoNodeType="VIDEO_GENERIC"/>
-            <videonode name="Intel IPU6 CSI-2 0" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+            <videonode name="Intel IPU6 CSI-2 1" videoNodeType="VIDEO_ISYS_RECEIVER"/>
             <videonode name="imx390 d" videoNodeType="VIDEO_PIXEL_ARRAY"/>
         </MediaCtlConfig>
         <StaticMetadata>
@@ -337,8 +337,8 @@
             <supportedAwbMode value="AUTO,INCANDESCENT,FLUORESCENT,DAYLIGHT,FULL_OVERCAST,PARTLY_OVERCAST,SUNSET,VIDEO_CONFERENCE,MANUAL_CCT_RANGE,MANUAL_WHITE_POINT,MANUAL_GAIN,MANUAL_COLOR_TRANSFORM"/>
             <supportedAfMode value="OFF"/>
         </StaticMetadata>
-        <supportedTuningConfig value="NORMAL,VIDEO,IMX390_HDR_ADL,
-                                      STILL_CAPTURE,VIDEO,IMX390_HDR_ADL"/>
+        <supportedTuningConfig value="NORMAL,VIDEO,IMX390_HDR_TGL,
+                                      STILL_CAPTURE,VIDEO,IMX390_HDR_TGL"/>
         <!-- The lard tags configuration. Every tag should be 4-characters. -->
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
         <lardTags value="VIDEO,DFLT,DFLT,DFLT,DFLT"/>
@@ -372,36 +372,36 @@
             <format name="imx390 e" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="TI960 b" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="TI960 b" pad="4" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 4" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 4" pad="1" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 2" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 2" pad="1" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="Intel IPU6 CSI2 BE SOC 1" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="Intel IPU6 CSI2 BE SOC 1" pad="1" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
 
             <link srcName="imx390 e" srcPad="0" sinkName="TI960 b" sinkPad="0" enable="true"/>
-            <link srcName="TI960 b" srcPad="4" sinkName="Intel IPU6 CSI-2 4" sinkPad="0" enable="true"/>
-            <link srcName="Intel IPU6 CSI-2 4" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 1" sinkPad="0" enable="true"/>
+            <link srcName="TI960 b" srcPad="4" sinkName="Intel IPU6 CSI-2 2" sinkPad="0" enable="true"/>
+            <link srcName="Intel IPU6 CSI-2 2" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 1" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC 1" srcPad="1" sinkName="Intel IPU6 BE SOC 1 capture 0" sinkPad="0" enable="true"/>
 
             <videonode name="Intel IPU6 BE SOC 1 capture 0" videoNodeType="VIDEO_GENERIC"/>
-            <videonode name="Intel IPU6 CSI-2 4" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+            <videonode name="Intel IPU6 CSI-2 2" videoNodeType="VIDEO_ISYS_RECEIVER"/>
             <videonode name="imx390 e" videoNodeType="VIDEO_PIXEL_ARRAY"/>
         </MediaCtlConfig>
         <MediaCtlConfig id="1" ConfigMode="AUTO" outputWidth="1280" outputHeight="960" format="V4L2_PIX_FMT_SGRBG12">
             <format name="imx390 e" pad="0" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="TI960 b" pad="0" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="TI960 b" pad="4" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 4" pad="0" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 4" pad="1" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 2" pad="0" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 2" pad="1" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="Intel IPU6 CSI2 BE SOC 1" pad="0" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="Intel IPU6 CSI2 BE SOC 1" pad="1" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
 
             <link srcName="imx390 e" srcPad="0" sinkName="TI960 b" sinkPad="0" enable="true"/>
-            <link srcName="TI960 b" srcPad="4" sinkName="Intel IPU6 CSI-2 4" sinkPad="0" enable="true"/>
-            <link srcName="Intel IPU6 CSI-2 4" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 1" sinkPad="0" enable="true"/>
+            <link srcName="TI960 b" srcPad="4" sinkName="Intel IPU6 CSI-2 2" sinkPad="0" enable="true"/>
+            <link srcName="Intel IPU6 CSI-2 2" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 1" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC 1" srcPad="1" sinkName="Intel IPU6 BE SOC 1 capture 0" sinkPad="0" enable="true"/>
 
             <videonode name="Intel IPU6 BE SOC 1 capture 0" videoNodeType="VIDEO_GENERIC"/>
-            <videonode name="Intel IPU6 CSI-2 4" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+            <videonode name="Intel IPU6 CSI-2 2" videoNodeType="VIDEO_ISYS_RECEIVER"/>
             <videonode name="imx390 e" videoNodeType="VIDEO_PIXEL_ARRAY"/>
         </MediaCtlConfig>
         <StaticMetadata>
@@ -425,8 +425,8 @@
             <supportedAwbMode value="AUTO,INCANDESCENT,FLUORESCENT,DAYLIGHT,FULL_OVERCAST,PARTLY_OVERCAST,SUNSET,VIDEO_CONFERENCE,MANUAL_CCT_RANGE,MANUAL_WHITE_POINT,MANUAL_GAIN,MANUAL_COLOR_TRANSFORM"/>
             <supportedAfMode value="OFF"/>
         </StaticMetadata>
-        <supportedTuningConfig value="NORMAL,VIDEO,IMX390_HDR_ADL,
-                                      STILL_CAPTURE,VIDEO,IMX390_HDR_ADL"/>
+        <supportedTuningConfig value="NORMAL,VIDEO,IMX390_HDR_TGL,
+                                      STILL_CAPTURE,VIDEO,IMX390_HDR_TGL"/>
         <!-- The lard tags configuration. Every tag should be 4-characters. -->
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
         <lardTags value="VIDEO,DFLT,DFLT,DFLT,DFLT"/>
@@ -460,36 +460,36 @@
             <format name="imx390 f" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="TI960 b" pad="1" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="TI960 b" pad="4" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 4" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 4" pad="1" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 2" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 2" pad="1" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="Intel IPU6 CSI2 BE SOC 1" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="Intel IPU6 CSI2 BE SOC 1" pad="2" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
 
             <link srcName="imx390 f" srcPad="0" sinkName="TI960 b" sinkPad="1" enable="true"/>
-            <link srcName="TI960 b" srcPad="4" sinkName="Intel IPU6 CSI-2 4" sinkPad="0" enable="true"/>
-            <link srcName="Intel IPU6 CSI-2 4" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 1" sinkPad="0" enable="true"/>
+            <link srcName="TI960 b" srcPad="4" sinkName="Intel IPU6 CSI-2 2" sinkPad="0" enable="true"/>
+            <link srcName="Intel IPU6 CSI-2 2" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 1" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC 1" srcPad="2" sinkName="Intel IPU6 BE SOC 1 capture 1" sinkPad="0" enable="true"/>
 
             <videonode name="Intel IPU6 BE SOC 1 capture 1" videoNodeType="VIDEO_GENERIC"/>
-            <videonode name="Intel IPU6 CSI-2 4" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+            <videonode name="Intel IPU6 CSI-2 2" videoNodeType="VIDEO_ISYS_RECEIVER"/>
             <videonode name="imx390 f" videoNodeType="VIDEO_PIXEL_ARRAY"/>
         </MediaCtlConfig>
         <MediaCtlConfig id="1" ConfigMode="AUTO" outputWidth="1280" outputHeight="960" format="V4L2_PIX_FMT_SGRBG12">
             <format name="imx390 f" pad="0" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="TI960 b" pad="1" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="TI960 b" pad="4" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 4" pad="0" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 4" pad="1" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 2" pad="0" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 2" pad="1" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="Intel IPU6 CSI2 BE SOC 1" pad="0" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="Intel IPU6 CSI2 BE SOC 1" pad="2" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
 
             <link srcName="imx390 f" srcPad="0" sinkName="TI960 b" sinkPad="1" enable="true"/>
-            <link srcName="TI960 b" srcPad="4" sinkName="Intel IPU6 CSI-2 4" sinkPad="0" enable="true"/>
-            <link srcName="Intel IPU6 CSI-2 4" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 1" sinkPad="0" enable="true"/>
+            <link srcName="TI960 b" srcPad="4" sinkName="Intel IPU6 CSI-2 2" sinkPad="0" enable="true"/>
+            <link srcName="Intel IPU6 CSI-2 2" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 1" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC 1" srcPad="2" sinkName="Intel IPU6 BE SOC 1 capture 1" sinkPad="0" enable="true"/>
 
             <videonode name="Intel IPU6 BE SOC 1 capture 1" videoNodeType="VIDEO_GENERIC"/>
-            <videonode name="Intel IPU6 CSI-2 4" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+            <videonode name="Intel IPU6 CSI-2 2" videoNodeType="VIDEO_ISYS_RECEIVER"/>
             <videonode name="imx390 f" videoNodeType="VIDEO_PIXEL_ARRAY"/>
         </MediaCtlConfig>
         <StaticMetadata>
@@ -513,8 +513,8 @@
             <supportedAwbMode value="AUTO,INCANDESCENT,FLUORESCENT,DAYLIGHT,FULL_OVERCAST,PARTLY_OVERCAST,SUNSET,VIDEO_CONFERENCE,MANUAL_CCT_RANGE,MANUAL_WHITE_POINT,MANUAL_GAIN,MANUAL_COLOR_TRANSFORM"/>
             <supportedAfMode value="OFF"/>
         </StaticMetadata>
-        <supportedTuningConfig value="NORMAL,VIDEO,IMX390_HDR_ADL,
-                                      STILL_CAPTURE,VIDEO,IMX390_HDR_ADL"/>
+        <supportedTuningConfig value="NORMAL,VIDEO,IMX390_HDR_TGL,
+                                      STILL_CAPTURE,VIDEO,IMX390_HDR_TGL"/>
         <!-- The lard tags configuration. Every tag should be 4-characters. -->
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
         <lardTags value="VIDEO,DFLT,DFLT,DFLT,DFLT"/>
@@ -603,8 +603,8 @@
             <supportedAwbMode value="AUTO,INCANDESCENT,FLUORESCENT,DAYLIGHT,FULL_OVERCAST,PARTLY_OVERCAST,SUNSET,VIDEO_CONFERENCE,MANUAL_CCT_RANGE,MANUAL_WHITE_POINT,MANUAL_GAIN,MANUAL_COLOR_TRANSFORM"/>
             <supportedAfMode value="OFF"/>
         </StaticMetadata>
-        <supportedTuningConfig value="NORMAL,VIDEO,IMX390_HDR_ADL,
-                                      STILL_CAPTURE,VIDEO,IMX390_HDR_ADL"/>
+        <supportedTuningConfig value="NORMAL,VIDEO,IMX390_HDR_TGL,
+                                      STILL_CAPTURE,VIDEO,IMX390_HDR_TGL"/>
         <!-- The lard tags configuration. Every tag should be 4-characters. -->
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
         <lardTags value="VIDEO,DFLT,DFLT,DFLT,DFLT"/>
@@ -693,8 +693,8 @@
             <supportedAwbMode value="AUTO,INCANDESCENT,FLUORESCENT,DAYLIGHT,FULL_OVERCAST,PARTLY_OVERCAST,SUNSET,VIDEO_CONFERENCE,MANUAL_CCT_RANGE,MANUAL_WHITE_POINT,MANUAL_GAIN,MANUAL_COLOR_TRANSFORM"/>
             <supportedAfMode value="OFF"/>
         </StaticMetadata>
-        <supportedTuningConfig value="NORMAL,VIDEO,IMX390_HDR_ADL,
-                                      STILL_CAPTURE,VIDEO,IMX390_HDR_ADL"/>
+        <supportedTuningConfig value="NORMAL,VIDEO,IMX390_HDR_TGL,
+                                      STILL_CAPTURE,VIDEO,IMX390_HDR_TGL"/>
         <!-- The lard tags configuration. Every tag should be 4-characters. -->
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
         <lardTags value="VIDEO,DFLT,DFLT,DFLT,DFLT"/>
@@ -783,8 +783,8 @@
             <supportedAwbMode value="AUTO,INCANDESCENT,FLUORESCENT,DAYLIGHT,FULL_OVERCAST,PARTLY_OVERCAST,SUNSET,VIDEO_CONFERENCE,MANUAL_CCT_RANGE,MANUAL_WHITE_POINT,MANUAL_GAIN,MANUAL_COLOR_TRANSFORM"/>
             <supportedAfMode value="OFF"/>
         </StaticMetadata>
-        <supportedTuningConfig value="NORMAL,VIDEO,IMX390_HDR_ADL,
-                                      STILL_CAPTURE,VIDEO,IMX390_HDR_ADL"/>
+        <supportedTuningConfig value="NORMAL,VIDEO,IMX390_HDR_TGL,
+                                      STILL_CAPTURE,VIDEO,IMX390_HDR_TGL"/>
         <!-- The lard tags configuration. Every tag should be 4-characters. -->
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
         <lardTags value="VIDEO,DFLT,DFLT,DFLT,DFLT"/>
@@ -873,8 +873,8 @@
             <supportedAwbMode value="AUTO,INCANDESCENT,FLUORESCENT,DAYLIGHT,FULL_OVERCAST,PARTLY_OVERCAST,SUNSET,VIDEO_CONFERENCE,MANUAL_CCT_RANGE,MANUAL_WHITE_POINT,MANUAL_GAIN,MANUAL_COLOR_TRANSFORM"/>
             <supportedAfMode value="OFF"/>
         </StaticMetadata>
-        <supportedTuningConfig value="NORMAL,VIDEO,IMX390_HDR_ADL,
-                                      STILL_CAPTURE,VIDEO,IMX390_HDR_ADL"/>
+        <supportedTuningConfig value="NORMAL,VIDEO,IMX390_HDR_TGL,
+                                      STILL_CAPTURE,VIDEO,IMX390_HDR_TGL"/>
         <!-- The lard tags configuration. Every tag should be 4-characters. -->
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
         <lardTags value="VIDEO,DFLT,DFLT,DFLT,DFLT"/>
@@ -963,8 +963,8 @@
             <supportedAwbMode value="AUTO,INCANDESCENT,FLUORESCENT,DAYLIGHT,FULL_OVERCAST,PARTLY_OVERCAST,SUNSET,VIDEO_CONFERENCE,MANUAL_CCT_RANGE,MANUAL_WHITE_POINT,MANUAL_GAIN,MANUAL_COLOR_TRANSFORM"/>
             <supportedAfMode value="OFF"/>
         </StaticMetadata>
-        <supportedTuningConfig value="NORMAL,VIDEO,IMX390_HDR_ADL,
-                                      STILL_CAPTURE,VIDEO,IMX390_HDR_ADL"/>
+        <supportedTuningConfig value="NORMAL,VIDEO,IMX390_HDR_TGL,
+                                      STILL_CAPTURE,VIDEO,IMX390_HDR_TGL"/>
         <!-- The lard tags configuration. Every tag should be 4-characters. -->
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
         <lardTags value="VIDEO,DFLT,DFLT,DFLT,DFLT"/>
@@ -1053,8 +1053,8 @@
             <supportedAwbMode value="AUTO,INCANDESCENT,FLUORESCENT,DAYLIGHT,FULL_OVERCAST,PARTLY_OVERCAST,SUNSET,VIDEO_CONFERENCE,MANUAL_CCT_RANGE,MANUAL_WHITE_POINT,MANUAL_GAIN,MANUAL_COLOR_TRANSFORM"/>
             <supportedAfMode value="OFF"/>
         </StaticMetadata>
-        <supportedTuningConfig value="NORMAL,VIDEO,IMX390_HDR_ADL,
-                                      STILL_CAPTURE,VIDEO,IMX390_HDR_ADL"/>
+        <supportedTuningConfig value="NORMAL,VIDEO,IMX390_HDR_TGL,
+                                      STILL_CAPTURE,VIDEO,IMX390_HDR_TGL"/>
         <!-- The lard tags configuration. Every tag should be 4-characters. -->
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
         <lardTags value="VIDEO,DFLT,DFLT,DFLT,DFLT"/>

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Intel Corporation.
+ * Copyright (C) 2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -535,7 +535,6 @@ int ia_css_process_group_print(
     ia_css_rbm_t routing_bitmap;
 
     NOT_USED(fid);
-    NOT_USED(routing_bitmap);
 
     IA_CSS_TRACE_0(PSYSAPI_DYNAMIC, VERBOSE,
         "ia_css_process_group_print(): enter:\n");
@@ -692,7 +691,6 @@ bool ia_css_can_process_group_submit(
     int retval = -1;
     uint8_t    terminal_count =
         ia_css_process_group_get_terminal_count(process_group);
-    NOT_USED(retval);
 
     IA_CSS_TRACE_0(PSYSAPI_DYNAMIC, INFO,
         "ia_css_can_process_group_submit(): enter:\n");
@@ -703,7 +701,6 @@ bool ia_css_can_process_group_submit(
         ia_css_terminal_t *terminal =
             ia_css_process_group_get_terminal(process_group, i);
         vied_vaddress_t buffer;
-        NOT_USED(buffer);
         ia_css_buffer_state_t buffer_state;
 
         verifexitval(terminal != NULL, EINVAL);
@@ -776,7 +773,6 @@ bool ia_css_can_enqueue_buffer_set(
     bool can_enqueue = false;
     int retval = -1;
     uint8_t    terminal_count;
-    NOT_USED(retval);
 
     IA_CSS_TRACE_0(PSYSAPI_DYNAMIC, INFO,
         "ia_css_can_enqueue_buffer_set(): enter:\n");
@@ -800,7 +796,6 @@ bool ia_css_can_enqueue_buffer_set(
             ia_css_process_group_get_terminal(process_group, i);
         vied_vaddress_t buffer;
         ia_css_buffer_state_t buffer_state;
-        NOT_USED(buffer);
 
         verifexitval(terminal != NULL, EINVAL);
 
@@ -860,7 +855,6 @@ bool ia_css_can_process_group_start(
     bool can_start = false;
     int retval = -1;
     uint8_t    terminal_count;
-    NOT_USED(retval);
 
     IA_CSS_TRACE_0(PSYSAPI_DYNAMIC, INFO,
         "ia_css_can_process_group_start(): enter:\n");

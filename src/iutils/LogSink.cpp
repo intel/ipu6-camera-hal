@@ -30,10 +30,12 @@
 #include "iutils/LogSink.h"
 #include "iutils/Utils.h"
 
+#ifdef CAMERA_SYS_LOG
 #include <stdarg.h>
 #include <syslog.h>
 #include <map>
 #include <iostream>
+#endif
 namespace icamera {
 extern const char* cameraDebugLogToString(int level);
 #define CAMERA_DEBUG_LOG_ERR (1 << 5)
@@ -128,8 +130,6 @@ const char* FileLogSink::getName() const {
 }
 
 void FileLogSink::sendOffLog(LogItem logItem) {
-    if (mFp == nullptr) return;
-
     char timeInfo[TIME_BUF_SIZE];
     setLogTime(timeInfo);
     fprintf(mFp, "[%s] CamHAL[%s] %s:%s\n", timeInfo,
@@ -137,10 +137,7 @@ void FileLogSink::sendOffLog(LogItem logItem) {
     fflush(mFp);
 }
 
-FileLogSink::~FileLogSink() {
-    if (mFp) fclose(mFp);
-}
-
+#ifdef CAMERA_SYS_LOG
 SysLogSink::SysLogSink() {}
 
 SysLogSink::~SysLogSink() {}
@@ -164,5 +161,6 @@ void SysLogSink::sendOffLog(LogItem logItem) {
     syslog(levelMap[levelStr], "%s", logMsg);
     closelog();
 }
+#endif
 
 };  // namespace icamera

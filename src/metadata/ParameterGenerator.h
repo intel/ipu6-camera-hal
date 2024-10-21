@@ -108,7 +108,6 @@ class ParameterGenerator {
     int32_t mTonemapMaxCurvePoints;
 
     camera_color_transform_t mPaCcm;
-    camera_range_t mSensitivityRange;
 };
 
 } /* namespace icamera */

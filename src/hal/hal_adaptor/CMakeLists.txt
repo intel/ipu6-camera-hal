@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2023-2024 Intel Corporation
+#  Copyright (C) 2023 Intel Corporation
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -14,25 +14,62 @@
 #  limitations under the License.
 #
 
+cmake_minimum_required(VERSION 2.8)
+project(hal_adaptor)
+
 # Source directories
 set(ROOT_DIR        ${CMAKE_CURRENT_LIST_DIR}/../../../)
 set(METADATA_DIR    ${ROOT_DIR}/src/metadata)
 set(IUTILS_DIR      ${ROOT_DIR}/src/iutils)
 set(HAL_ADAPTOR_DIR ${ROOT_DIR}/src/hal/hal_adaptor)
 
-set(HAL_ADAPTOR_INCLUDEDIRS
-    ${ROOT_DIR}/include
-    ${ROOT_DIR}/include/api
-    ${ROOT_DIR}/include/utils
-    ${ROOT_DIR}/src/metadata
-    ${ROOT_DIR}/src/iutils
-    ${ROOT_DIR}/src/core
-    ${ROOT_DIR}/src/platformdata
-    ${ROOT_DIR}/src/isp_control
-    ${ROOT_DIR}/src
-    ${ROOT_DIR}/modules/v4l2
-    ${ROOT_DIR}
-    )
+include_directories(${ROOT_DIR}/include
+                    ${ROOT_DIR}/include/api
+                    ${ROOT_DIR}/include/utils
+                    ${ROOT_DIR}/src/metadata
+                    ${ROOT_DIR}/src/iutils
+                    ${ROOT_DIR}/src/core
+                    ${ROOT_DIR}/src/platformdata
+                    ${ROOT_DIR}/src/isp_control
+                    ${ROOT_DIR}/src
+                    ${ROOT_DIR}/modules/v4l2
+                    ${ROOT_DIR}
+                    )
+
+# Install directories
+# CMAKE_INSTALL_PREFIX is defined when executing cmake.
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    set(CMAKE_INSTALL_PREFIX "${PROJECT_BINARY_DIR}" CACHE PATH "Target location for install command." FORCE)
+endif()
+message(STATUS "install prefix: " ${CMAKE_INSTALL_PREFIX})
+
+include(GNUInstallDirs)
+
+# Set the aligned flag
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+include(CheckCXXCompilerFlag)
+CHECK_CXX_COMPILER_FLAG(-faligned-new COMPILER_SUPPORTS_ALIGNED_NEW)
+if (COMPILER_SUPPORTS_ALIGNED_NEW)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -faligned-new")
+endif()
+
+# Set the CXX to 11
+set (CMAKE_CXX_STANDARD 11)
+add_compile_options(-Wall -Werror
+                    -fstack-protector
+                    -fPIE -fPIC
+                    -DDCHECK_ALWAYS_ON
+                    -Wformat -Wformat-security
+                    )
+
+add_definitions(-D__STDC_FORMAT_MACROS
+                -DHAVE_PTHREADS
+                -DHAVE_LINUX_OS
+                -DCAMHAL_PLUGIN_DIR=\"${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/libcamhal/plugins/\"
+                )
+
+set(HAL_ADAPTOR_LD_FLAGS "-fPIE -fPIC -Wformat -Wformat-security -Wl,-z,relro -Wl,-z,now")
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${HAL_ADAPTOR_LD_FLAGS}")
 
 set(HAL_ADAPTOR_SRCS
     ${METADATA_DIR}/icamera_metadata_base.cpp
@@ -50,13 +87,6 @@ set(HAL_ADAPTOR_SRCS
 )
 
 add_library(hal_adaptor SHARED ${HAL_ADAPTOR_SRCS})
-target_include_directories(hal_adaptor PRIVATE ${HAL_ADAPTOR_INCLUDEDIRS})
-target_compile_definitions(hal_adaptor PRIVATE
-                           -D__STDC_FORMAT_MACROS
-                           -DHAVE_PTHREADS
-                           -DHAVE_LINUX_OS
-                           "-DCAMHAL_PLUGIN_DIR=\"${CMAKE_INSTALL_FULL_LIBDIR}/libcamhal/plugins/\""
-                           )
 set_target_properties(hal_adaptor PROPERTIES OUTPUT_NAME camhal)
 set_target_properties(hal_adaptor PROPERTIES SOVERSION 0)
 set_target_properties(hal_adaptor PROPERTIES VERSION "0.0.0")
@@ -69,9 +99,9 @@ target_link_libraries(hal_adaptor ${CMAKE_DL_LIBS})
 target_link_libraries(hal_adaptor rt)
 
 # Install headers
-install(DIRECTORY ${ROOT_DIR}/include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/libcamhal)
+install(DIRECTORY ${ROOT_DIR}/include/ DESTINATION include/libcamhal)
 if (SUPPORT_LIVE_TUNING)
-    install(FILES ${ROOT_DIR}/modules/livetune/LiveTuning.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/libcamhal/api)
+    install(FILES ${ROOT_DIR}/modules/livetune/LiveTuning.h DESTINATION include/libcamhal/api)
 endif()
 
 # Install libraries
@@ -85,7 +115,10 @@ else()
 endif()
 
 # Install package config file
-configure_file(${PROJECT_SOURCE_DIR}/cmake/libcamhal.pc.cmakein
+configure_file(${PROJECT_SOURCE_DIR}/hal_adaptor.pc.cmakein
                ${PROJECT_SOURCE_DIR}/libcamhal.pc @ONLY)
-install(FILES ${PROJECT_SOURCE_DIR}/libcamhal.pc
+install(FILES libcamhal.pc
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+
+set(CPACK_GENERATOR "RPM")
+include(CPack)

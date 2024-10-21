@@ -152,9 +152,6 @@ class DeviceBase : public EventSource {
 
     uint32_t mMaxBufferNumber;
     bool mBufferQueuing;
-#ifdef LINUX_BUILD
-     v4l2_buf_type mBufType;
-#endif
 
  private:
     DISALLOW_COPY_AND_ASSIGN(DeviceBase);

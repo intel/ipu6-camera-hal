@@ -42,13 +42,6 @@ IntelCca* IntelCca::getInstance(int cameraId, TuningMode mode) {
         }
     }
 
-#ifndef ENABLE_SANDBOXING
-    if (sCcaInstance.empty()) {
-        ia_env env = {&Log::ccaPrintInfo, &Log::ccaPrintError, &Log::ccaPrintInfo};
-        ia_log_init(&env);
-    }
-#endif
-
     IntelCca::CCAHandle handle = {};
     handle.cameraId = cameraId;
     handle.ccaHandle[mode] = new IntelCca(cameraId, mode);
@@ -119,7 +112,7 @@ ia_err IntelCca::setStatsParams(const cca::cca_stats_params& params) {
 }
 
 ia_err IntelCca::runAEC(uint64_t frameId, const cca::cca_ae_input_params& params,
-                        cca::cca_ae_results* results, bool lowPower) {
+                        cca::cca_ae_results* results) {
     CheckAndLogError(!results, ia_err_argument, "@%s, results is nullptr", __func__);
 
     ia_err ret = getIntelCCA()->runAEC(frameId, params, results);
@@ -140,7 +133,7 @@ ia_err IntelCca::runAIQ(uint64_t frameId, const cca::cca_aiq_params& params,
 
 ia_err IntelCca::runLTM(uint64_t frameId, const cca::cca_ltm_input_params& params) {
     ia_err ret = getIntelCCA()->runLTM(frameId, params);
-    LOG2("@%s, frameId: %lu, ret:%d", __func__, frameId, ret);
+    LOG2("@%s, frameId: %u, ret:%d", __func__, frameId, ret);
 
     return ret;
 }

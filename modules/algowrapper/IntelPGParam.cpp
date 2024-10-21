@@ -566,10 +566,6 @@ int IntelPGParam::encodeTerminal(ia_css_terminal_t* terminal, ia_binary_data pay
             }
         } else {
             kernelId = getKernelIdByBitmap(kernelBitmap);
-            if (kernelId >= PSYS_MAX_KERNELS_PER_PG) {
-                /* All the kernels have now been encoded. */
-                break;
-            }
         }
 
         /* Sanity check sections sizes and return the size to be used */
@@ -701,12 +697,13 @@ int IntelPGParam::decodeTerminal(ia_css_terminal_t* terminal, ia_binary_data pay
         /* Use specific ordering of kernels when available */
         if (mPgReqs.terminals[terminalIndex].kernelOrder) {
             kernelId = mPgReqs.terminals[terminalIndex].kernelOrder[kernelIndex++].id;
+            CheckAndLogError(
+                kernelId >= PSYS_MAX_KERNELS_PER_PG, css_err_internal,
+                "%s: Kernel bitmap for terminal %d covers more kernels than in manifest", __func__,
+                terminalIndex);
         } else {
             kernelId = getKernelIdByBitmap(kernelBitmap);
         }
-        CheckAndLogError(kernelId >= PSYS_MAX_KERNELS_PER_PG, css_err_internal,
-                         "%s: Kernel bitmap for terminal %d covers more kernels than in manifest",
-                         __func__, terminalIndex);
 
         switch (mPgReqs.terminals[terminalIndex].type) {
             case IA_CSS_TERMINAL_TYPE_PARAM_CACHED_OUT:

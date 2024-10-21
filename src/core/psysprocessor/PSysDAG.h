@@ -121,7 +121,7 @@ class PSysDAG {
     int bindExternalPortsToExecutor();
     void releasePipeExecutors();
 #ifdef USE_PG_LITE_PIPE
-    void configShareReferPool(std::shared_ptr<IGraphConfig> gc, PolicyConfig* cfg);
+    void configShareReferPool(std::shared_ptr<IGraphConfig> gc);
 #endif
     PipeExecutor* findExecutorProducer(PipeExecutor* consumer);
     status_t searchStreamIdsForOutputPort(PipeExecutor* executor, Port port);

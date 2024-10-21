@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2023 Intel Corporation
+ * Copyright (C) 2018-2022 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1322,7 +1322,7 @@ status_t GraphConfigPipe::portGetFormat(Node* port, IGraphType::PortFormatSettin
 
     status_t status =
         GCSS::GraphCameraUtil::portGetFourCCInfo(tmpNode, stageId, format->terminalId);
-    CheckAndLogError(status != OK, INVALID_OPERATION, "%s, Could not get port uid", __func__);
+    CheckAndLogError(status != OK, INVALID_OPERATION, "Could not get port uid", __func__);
 
     // if disabled there is no need to query the format
     if (format->enabled == 0) {
@@ -1339,19 +1339,19 @@ status_t GraphConfigPipe::portGetFormat(Node* port, IGraphType::PortFormatSettin
          * it means that we need to ask the format from the peer.
          */
         status = portGetPeer(port, &peerNode);
-        CheckAndLogError(status != OK, BAD_VALUE, "%s, Could not find peer port", __func__);
+        CheckAndLogError(status != OK, BAD_VALUE, "Could not find peer port", __func__);
         tmpNode = peerNode;
 
         ret = tmpNode->getValue(GCSS_KEY_WIDTH, format->width);
-        CheckAndLogError(ret != css_err_none, BAD_VALUE, "%s, Could not find port width", __func__);
+        CheckAndLogError(ret != css_err_none, BAD_VALUE, "Could not find port width", __func__);
     }
 
     ret = tmpNode->getValue(GCSS_KEY_HEIGHT, format->height);
-    CheckAndLogError(ret != css_err_none, BAD_VALUE, "%s, Could not find port height", __func__);
+    CheckAndLogError(ret != css_err_none, BAD_VALUE, "Could not find port height", __func__);
 
     string fourccFormat;
     ret = tmpNode->getValue(GCSS_KEY_FORMAT, fourccFormat);
-    CheckAndLogError(ret != css_err_none, BAD_VALUE, "%s, Could not find port fourcc", __func__);
+    CheckAndLogError(ret != css_err_none, BAD_VALUE, "Could not find port fourcc", __func__);
 
     const char* pFormat = fourccFormat.c_str();
     format->fourcc = CameraUtils::string2IaFourccCode(pFormat);

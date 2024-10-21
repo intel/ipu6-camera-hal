@@ -152,7 +152,6 @@ void FaceSSD::getResultFor3A(cca::cca_face_state* faceState) {
     faceState->is_video_conf = true;
     faceState->updated = mResult.faceUpdated;
     faceState->num_faces = faceSsdResult->faceNum;
-    faceState->fd_algo = GOOGLE_FD;
     mResult.faceUpdated = false;
 
     for (int i = 0; i < faceSsdResult->faceNum; i++) {

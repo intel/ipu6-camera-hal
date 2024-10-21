@@ -29,7 +29,6 @@
 
 namespace icamera {
 
-// LEVEL0_ICBM_S
 struct IOPIC2Algorithm {
     virtual ~IOPIC2Algorithm() = default;
     virtual void linkToMemoryChain(MemoryChainDescription& memoryChain) = 0;
@@ -50,7 +49,6 @@ class BackgroundBlurBuilder : public IOPIC2Algorithm {
 
     void linkToMemoryChain(MemoryChainDescription& memoryChain) override;
 };
-// LEVEL0_ICBM_E
 
 class IntelOPIC2 {
  public:

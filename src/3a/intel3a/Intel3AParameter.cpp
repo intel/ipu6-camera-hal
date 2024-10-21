@@ -247,10 +247,7 @@ void Intel3AParameter::setAeManualLimits(const aiq_parameter_t& param) {
     if (gainRange.min >= 0 && gainRange.max >= gainRange.min) {
         float isoMin = convertdBGainToISO(gainRange.min, mCMC.base_iso);
         float isoMax = convertdBGainToISO(gainRange.max, mCMC.base_iso);
-        // Cast these to doubles for this comparison, as float(INT_MAX) produces
-        // the value 2147483648, which is INT_MAX+1. Clang warns about this.
-        if (static_cast<double>(isoMin) <= INT_MAX &&
-            static_cast<double>(isoMax) <= INT_MAX) {
+        if (isoMin <= INT_MAX && isoMax <= INT_MAX) {
             limit->manual_iso_min = static_cast<int>(isoMin);
             limit->manual_iso_max = static_cast<int>(isoMax);
         }
@@ -295,16 +292,6 @@ void Intel3AParameter::setManualIso(const aiq_parameter_t& param) {
     int32_t manualIso = param.manualIso;
     if (manualIso <= 0 || param.aeDistributionPriority == DISTRIBUTION_SHUTTER) {
         return;
-    }
-
-    SensitivityRange range;
-    if (PlatformData::getSensitivityRangeByTuningMode(mCameraId, param.tuningMode, range) == OK) {
-        float ratio =
-            (manualIso - mSensitivityRange.min) / (mSensitivityRange.max - mSensitivityRange.min);
-        manualIso = range.min + ratio * (range.max - range.min);
-        manualIso = CLIP(manualIso, range.max, range.min);
-
-        LOG2("%s, param.manualIso %d, manualIso %d", __func__, param.manualIso, manualIso);
     }
 
     // Will overwrite manual_analog_gain
@@ -645,14 +632,11 @@ void Intel3AParameter::updateAfParameter(const aiq_parameter_t& param) {
         // Current only one AF metering window is supported, so use the latest one
         camera_window_t window = param.afRegions.back();
         if (window.right > window.left && window.bottom > window.top) {
-            if ((window.right - window.left) != param.resolution.width &&
-                (window.bottom - window.top) != param.resolution.height) {
-                camera_coordinate_system_t frameCoord = {0, 0, param.resolution.width,
-                                                         param.resolution.height};
-                window = AiqUtils::convertToIaWindow(frameCoord, window);
-                mAfParams.focus_metering_mode = ia_aiq_af_metering_mode_touch;
-                mAfParams.focus_rect = {window.left, window.top, window.right, window.bottom};
-            }
+            camera_coordinate_system_t frameCoord = {0, 0, param.resolution.width,
+                                                     param.resolution.height};
+            window = AiqUtils::convertToIaWindow(frameCoord, window);
+            mAfParams.focus_metering_mode = ia_aiq_af_metering_mode_touch;
+            mAfParams.focus_rect = {window.left, window.top, window.right, window.bottom};
         }
     }
 

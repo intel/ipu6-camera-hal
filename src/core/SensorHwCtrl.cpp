@@ -660,7 +660,7 @@ int SensorHwCtrl::setAWB(float r_per_g, float b_per_g) {
 // CRL_MODULE_S
 int SensorHwCtrl::setFrameRate(float fps) {
     HAL_TRACE_CALL(CAMERA_DEBUG_LOG_LEVEL2);
-    CheckAndLog1(!mSensorOutputSubdev, NO_INIT, "sensor output sub device is not set");
+    CheckAndLogError(!mSensorOutputSubdev, NO_INIT, "sensor output sub device is not set");
 
     struct v4l2_queryctrl query;
     CLEAR(query);

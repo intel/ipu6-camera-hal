@@ -51,16 +51,6 @@ struct MediaLink;
 #define MEDIA_CTL_DEV_NAME "/dev/media"
 #define MEDIA_DRIVER_NAME "intel-ipu"
 #define MEDIA_DEVICE_MAX_NUM 256
-#define IPU6_DOWNSTREAM_ENTITY "Intel IPU6 CSI-2"
-#define IPU6_UPSTREAM_ENTITY "Intel IPU6 CSI2"
-#define IPU6_DOWNSTREAM_DEV_MODEL "ipu6-downstream"
-#define IPU6_UPSTREAM_DEV_MODEL "ipu6"
-
-enum {
-    IPU6_DOWNSTREAM_MEDIA_CFG = 0,
-    IPU6_UPSTREAM_MEDIA_CFG = 1,
-    IPU6_MEDIA_CFG_MAX,
-};
 
 enum {
     FC_FORMAT = 0,
@@ -296,7 +286,6 @@ class MediaControl {
     // VIRTUAL_CHANNEL_E
 
     int getLensName(std::string* lensName);
-    bool checkAvailableSensor(const std::string& sensorEntityName);
     bool checkAvailableSensor(const std::string& sensorEntityName,
                               const std::string& sinkEntityName);
     /**
@@ -309,8 +298,6 @@ class MediaControl {
      */
     int getI2CBusAddress(const std::string& sensorEntityName, const std::string& sinkEntityName,
                          std::string* i2cBus);
-
-    int getMediaCfgId() { return mMediaCfgId; }
 
  private:
     MediaControl& operator=(const MediaControl&);
@@ -365,8 +352,6 @@ class MediaControl {
 
     static MediaControl* sInstance;
     static Mutex sLock;
-
-    int mMediaCfgId;
 };
 
 }  // namespace icamera

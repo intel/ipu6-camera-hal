@@ -25,6 +25,7 @@
             <link srcName="Intel IPU6 CSI-2 1" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC" srcPad="16" sinkName="Intel IPU6 BE SOC capture 0" sinkPad="0" enable="true"/>
 
+            <control name="ar0234 b" ctrlId="V4L2_CID_MIPI_LANES" value="2" ctrlName="set mipi lane"/>
             <control name="ar0234 b" ctrlId="V4L2_CID_VFLIP" value="1" ctrlName="set vflip"/>
             <control name="ar0234 b" ctrlId="V4L2_CID_HFLIP" value="1" ctrlName="set hflip"/>
 
@@ -41,6 +42,7 @@
             <link srcName="Intel IPU6 CSI-2 1" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC" srcPad="16" sinkName="Intel IPU6 BE SOC capture 0" sinkPad="0" enable="true"/>
 
+            <control name="ar0234 b" ctrlId="V4L2_CID_MIPI_LANES" value="2" ctrlName="set mipi lane"/>
             <control name="ar0234 b" ctrlId="V4L2_CID_VFLIP" value="1" ctrlName="set vflip"/>
             <control name="ar0234 b" ctrlId="V4L2_CID_HFLIP" value="1" ctrlName="set hflip"/>
 
@@ -84,7 +86,7 @@
         <pSysFormat value="V4L2_PIX_FMT_NV12"/>
         <initialSkipFrame value="0"/>
         <exposureLag value="2"/>
-        <gainLag value="0"/>
+        <gainLag value="1"/>
         <ltmGainLag value="1"/>
         <maxRequestsInflight value="6"/>
         <yuvColorRangeMode value="full"/> <!-- there are 2 yuv color range mode, like full, reduced. -->
@@ -104,6 +106,7 @@
             <link srcName="Intel IPU6 CSI-2 2" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC" sinkPad="1" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC" srcPad="17" sinkName="Intel IPU6 BE SOC capture 1" sinkPad="0" enable="true"/>
 
+            <control name="ar0234 c" ctrlId="V4L2_CID_MIPI_LANES" value="2" ctrlName="set mipi lane"/>
             <control name="ar0234 c" ctrlId="V4L2_CID_VFLIP" value="1" ctrlName="set vflip"/>
             <control name="ar0234 c" ctrlId="V4L2_CID_HFLIP" value="1" ctrlName="set hflip"/>
 
@@ -120,6 +123,7 @@
             <link srcName="Intel IPU6 CSI-2 2" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC" sinkPad="1" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC" srcPad="17" sinkName="Intel IPU6 BE SOC capture 1" sinkPad="0" enable="true"/>
 
+            <control name="ar0234 c" ctrlId="V4L2_CID_MIPI_LANES" value="2" ctrlName="set mipi lane"/>
             <control name="ar0234 c" ctrlId="V4L2_CID_VFLIP" value="1" ctrlName="set vflip"/>
             <control name="ar0234 c" ctrlId="V4L2_CID_HFLIP" value="1" ctrlName="set hflip"/>
 
@@ -162,7 +166,7 @@
         <pSysFormat value="V4L2_PIX_FMT_NV12"/>
         <initialSkipFrame value="0"/>
         <exposureLag value="2"/>
-        <gainLag value="0"/>
+        <gainLag value="1"/>
         <ltmGainLag value="1"/>
         <maxRequestsInflight value="6"/>
         <yuvColorRangeMode value="full"/> <!-- there are 2 yuv color range mode, like full, reduced. -->
@@ -183,6 +187,7 @@
             <link srcName="Intel IPU6 CSI-2 4" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC" sinkPad="2" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC" srcPad="18" sinkName="Intel IPU6 BE SOC capture 2" sinkPad="0" enable="true"/>
 
+            <control name="ar0234 e" ctrlId="V4L2_CID_MIPI_LANES" value="2" ctrlName="set mipi lane"/>
             <control name="ar0234 e" ctrlId="V4L2_CID_VFLIP" value="1" ctrlName="set vflip"/>
             <control name="ar0234 e" ctrlId="V4L2_CID_HFLIP" value="1" ctrlName="set hflip"/>
 
@@ -199,6 +204,7 @@
             <link srcName="Intel IPU6 CSI-2 4" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC" sinkPad="2" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC" srcPad="18" sinkName="Intel IPU6 BE SOC capture 2" sinkPad="0" enable="true"/>
 
+            <control name="ar0234 e" ctrlId="V4L2_CID_MIPI_LANES" value="2" ctrlName="set mipi lane"/>
             <control name="ar0234 e" ctrlId="V4L2_CID_VFLIP" value="1" ctrlName="set vflip"/>
             <control name="ar0234 e" ctrlId="V4L2_CID_HFLIP" value="1" ctrlName="set hflip"/>
 
@@ -241,7 +247,7 @@
         <pSysFormat value="V4L2_PIX_FMT_NV12"/>
         <initialSkipFrame value="0"/>
         <exposureLag value="2"/>
-        <gainLag value="0"/>
+        <gainLag value="1"/>
         <ltmGainLag value="1"/>
         <maxRequestsInflight value="6"/>
         <yuvColorRangeMode value="full"/> <!-- there are 2 yuv color range mode, like full, reduced. -->
@@ -261,6 +267,7 @@
             <link srcName="Intel IPU6 CSI-2 5" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC" sinkPad="3" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC" srcPad="19" sinkName="Intel IPU6 BE SOC capture 3" sinkPad="0" enable="true"/>
 
+            <control name="ar0234 f" ctrlId="V4L2_CID_MIPI_LANES" value="2" ctrlName="set mipi lane"/>
             <control name="ar0234 f" ctrlId="V4L2_CID_VFLIP" value="1" ctrlName="set vflip"/>
             <control name="ar0234 f" ctrlId="V4L2_CID_HFLIP" value="1" ctrlName="set hflip"/>
 
@@ -277,6 +284,7 @@
             <link srcName="Intel IPU6 CSI-2 5" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC" sinkPad="3" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC" srcPad="19" sinkName="Intel IPU6 BE SOC capture 3" sinkPad="0" enable="true"/>
 
+            <control name="ar0234 f" ctrlId="V4L2_CID_MIPI_LANES" value="2" ctrlName="set mipi lane"/>
             <control name="ar0234 f" ctrlId="V4L2_CID_VFLIP" value="1" ctrlName="set vflip"/>
             <control name="ar0234 f" ctrlId="V4L2_CID_HFLIP" value="1" ctrlName="set hflip"/>
 
@@ -319,7 +327,7 @@
         <pSysFormat value="V4L2_PIX_FMT_NV12"/>
         <initialSkipFrame value="0"/>
         <exposureLag value="2"/>
-        <gainLag value="0"/>
+        <gainLag value="1"/>
         <ltmGainLag value="1"/>
         <maxRequestsInflight value="6"/>
         <yuvColorRangeMode value="full"/> <!-- there are 2 yuv color range mode, like full, reduced. -->
