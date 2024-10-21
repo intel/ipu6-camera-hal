@@ -101,7 +101,7 @@ static void load_camera_hal_library() {
     } else if (strstr(gPciId, "0x7d19") != nullptr /* MTL */) {
         libName += "ipu6epmtl.so";
     } else if (strstr(gPciId, "0x645d") != nullptr /* LNL */) {
-        libName += "ipu7.so";
+        libName += "ipu7x.so";
     } else if (strstr(gPciId, "0x9a19") != nullptr /* TGL */) {
         libName += "ipu6.so";
     } else {
