@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Intel Corporation.
+ * Copyright (C) 2020-2021 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -229,9 +229,8 @@ Result Context::registerBuffer(MemoryDesc* mem) {
     mem->sysBuff = ioc_buffer;
     mem->flags |= MemoryFlag::Migrated;
 
-    LOG2("registered buffer:%p -> fd:%d len:%lu offset:%u bytes_used:%u, flags:%x", mem->cpuPtr,
-         ioc_buffer->base.fd, ioc_buffer->len, ioc_buffer->data_offset, ioc_buffer->bytes_used,
-         ioc_buffer->flags);
+    LOG2("registered buffer:%p -> fd:%d len:%lu offset:%u bytes_used:%u", mem->cpuPtr,
+         ioc_buffer->base.fd, ioc_buffer->len, ioc_buffer->data_offset, ioc_buffer->bytes_used);
 
     return res;
 }

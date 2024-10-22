@@ -203,8 +203,6 @@ class PipeLiteExecutor : public BufferQueue, public ISchedulerNode {
 
     CameraBufferPortMap mInternalOutputBuffers;
     int mkernelsCountWithStats;
-
-    int mMsOfPsysAlignWithSystem;
 };
 
 typedef PipeLiteExecutor PipeExecutor;

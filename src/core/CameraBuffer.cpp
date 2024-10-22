@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2024 Intel Corporation.
+ * Copyright (C) 2015-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,6 @@
 
 #include "CameraBuffer.h"
 
-#ifdef LIBDRM_SUPPORT_MMAP_OFFSET
-#include <xf86drm.h>
-#include <libdrm/i915_drm.h>
-#endif
-
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
@@ -37,12 +32,13 @@
 
 namespace icamera {
 CameraBuffer::CameraBuffer(int cameraId, int usage, int memory, uint32_t size, int index,
-                           int format, v4l2_buf_type v4l2BufType)
+                           int format)
         : mNumPlanes(1),
           mAllocatedMemory(false),
           mU(nullptr),
           mBufferUsage(usage),
           mSettingSequence(-1) {
+    v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
     int num_plane = 1;
 
     LOG2("<id%d>%s: construct buffer with usage:%d, memory:%d, size:%d, format:%d, index:%d",
@@ -61,22 +57,28 @@ CameraBuffer::CameraBuffer(int cameraId, int usage, int memory, uint32_t size, i
         case BUFFER_USAGE_GENERAL:
             if (PlatformData::isIsysEnabled(cameraId) &&
                 PlatformData::isCSIFrontEndCapture(cameraId)) {
+                type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
                 num_plane = CameraUtils::getNumOfPlanes(format);
+            } else {
+                type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
             }
+            break;
+        case BUFFER_USAGE_PSYS_STATS:
+            type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
             break;
         case BUFFER_USAGE_MIPI_CAPTURE:
         case BUFFER_USAGE_METADATA:
+            type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
             num_plane = CameraUtils::getNumOfPlanes(format);
             break;
         default:
             LOGE("Not supported Usage");
-            break;
     }
 
     CLEAR(mMmapAddrs);
     CLEAR(mDmaFd);
 
-    initBuffer(memory, v4l2BufType, size, index, num_plane);
+    initBuffer(memory, type, size, index, num_plane);
 }
 
 CameraBuffer::~CameraBuffer() {
@@ -97,6 +99,7 @@ void CameraBuffer::initBuffer(int memType, v4l2_buf_type bufType, uint32_t size,
     if (!V4L2_TYPE_IS_MULTIPLANAR(bufType)) {
         mV.SetOffset(0, 0);
         mV.SetLength(size, 0);
+        LOGE("SINGLE PLANE!");
     } else {
         mV.SetLength(num_plane, 0);
         mNumPlanes = num_plane;
@@ -314,62 +317,11 @@ void CameraBuffer::freeMmap() {
     }
 }
 
-#ifdef LIBDRM_SUPPORT_MMAP_OFFSET
-CameraBuffer::DeviceRender::DeviceRender() : m_handle(-1) {
-    m_handle = open("/dev/dri/renderD128", O_RDWR);
-}
-
-CameraBuffer::DeviceRender::DeviceRender(const char* path_file) : m_handle(-1) {
-    m_handle = open(path_file, O_RDWR);
-}
-
-CameraBuffer::DeviceRender::~DeviceRender() {
-    close(m_handle);
-}
-
-CameraBuffer::DeviceRender CameraBuffer::mDeviceRender("/dev/dri/renderD128");
-
-void* CameraBuffer::DeviceRender::mapDmaBufferAddr(int fd, unsigned int bufferSize) {
-    if (m_handle == -1) {
-        LOGE("open device /dev/dri/renderD128 failed!\n");
-        return MAP_FAILED;
-    }
-
-    int ret = 0;
-    struct drm_prime_handle prime_handle;
-    memset(&prime_handle, 0, sizeof(prime_handle));
-    prime_handle.fd = fd;
-    ret = drmIoctl(m_handle, DRM_IOCTL_PRIME_FD_TO_HANDLE, &prime_handle);
-    if (ret != 0) {
-        LOGE("DRM_IOCTL_PRIME_FD_TO_HANDLE failed (fd=%u)\n", prime_handle.fd);
-        return MAP_FAILED;
-    }
-
-    struct drm_i915_gem_mmap_offset gem_map = {0};
-    gem_map.handle = prime_handle.handle;
-    gem_map.flags = I915_MMAP_OFFSET_WB;
-    /* Get the fake offset back */
-    ret = drmIoctl(m_handle, DRM_IOCTL_I915_GEM_MMAP_OFFSET, &gem_map);
-    void* addr = MAP_FAILED;
-    if (ret != 0)
-        LOGE("DRM_IOCTL_I915_GEM_MMAP_OFFSET failed!");
-    else
-        addr = ::mmap(nullptr, bufferSize, PROT_READ | PROT_WRITE, MAP_SHARED, m_handle,
-                      gem_map.offset);
-
-    return addr;
-}
-#endif
-
 void* CameraBuffer::mapDmaBufferAddr(int fd, unsigned int bufferSize) {
     CheckAndLogError(fd < 0 || !bufferSize, nullptr, "%s, fd:0x%x, bufferSize:%u", __func__, fd,
                      bufferSize);
 
-#ifdef LIBDRM_SUPPORT_MMAP_OFFSET
-    return mDeviceRender.mapDmaBufferAddr(fd, bufferSize);
-#else
     return ::mmap(nullptr, bufferSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-#endif
 }
 
 void CameraBuffer::unmapDmaBufferAddr(void* addr, unsigned int bufferSize) {

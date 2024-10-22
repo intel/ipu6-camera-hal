@@ -79,7 +79,6 @@ const char* tagNames[] = {
     "Customized3A",
     "CustomizedAic",
     "CvfPrivacyChecker",
-    "DLCClient",
     "DeviceBase",
     "Dvs",
     "EXIFMaker",

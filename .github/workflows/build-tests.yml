@@ -11,7 +11,7 @@ jobs:
   build:
     strategy:
       matrix:
-        version: [ipu6]
+        version: [ipu6epmtl, ipu6ep, ipu6, hal]
         os: ["ubuntu:24.04", "ubuntu:22.04", "ubuntu:20.04"]
     runs-on: ubuntu-latest
     container: ${{ matrix.os }}
@@ -19,7 +19,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: intel/ipu6-camera-bins
-          ref: main
+          ref: dfsg
           path: bins
 
       - name: Install from intel/ipu6-camera-bins
@@ -53,35 +53,36 @@ jobs:
           apt-get update -q
           export TZ=Asia/Shanghai
           echo "" | apt-get install -qy tzdata
-          echo "" | apt-get install git build-essential cmake libexpat-dev automake libtool rpm libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libgstreamer-plugins-bad1.0-dev libdrm-dev libva-dev libunwind-dev libdrm-dev --yes
-
-      - uses: actions/checkout@v4
-        with:
-          repository: intel/icamerasrc
-          ref: icamerasrc_slim_api
-          path: icamerasrc
-
+          echo "" | apt-get install git build-essential cmake libexpat-dev automake libtool libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libunwind-dev --yes
       - name: Build test for ${{ matrix.version }} on ${{ matrix.os }}
         timeout-minutes: 10
         run: |
+          case "${{ matrix.os }}" in
+            ("ubuntu:24.04")
+              fortify_level=3
+              ;;
+            ("ubuntu:22.04"|"ubuntu:20.04")
+              fortify_level=2
+              ;;
+            (*)
+              echo "${{ matrix.os }} is unsupported yet. Please find the default fortify_level in /usr/share/perl5/Dpkg/Vendor/Ubuntu.pm or /usr/share/perl5/Dpkg/Vendor/Debian.pm."
+              exit 1
+              ;;
+          esac
           cd "${GITHUB_WORKSPACE}/hal"
 
           mkdir build && cd build
-          cmake  -DCMAKE_BUILD_TYPE=Release \
-                 -DCMAKE_INSTALL_PREFIX=/usr \
-                 -DCMAKE_INSTALL_LIBDIR=lib \
-                 -DBUILD_CAMHAL_ADAPTOR=ON \
-                 -DBUILD_CAMHAL_PLUGIN=ON \
-                 -DIPU_VERSIONS="ipu6;ipu6ep;ipu6epmtl" \
-                 -DUSE_PG_LITE_PIPE=ON \
-                 ..
-          VERBOSE=1 make -j16
-          make install
-
-          cd "${GITHUB_WORKSPACE}/icamerasrc"
-          export CHROME_SLIM_CAMHAL=ON
-          ./autogen.sh
-          ./configure --prefix=/usr
-          make -j16
-          make rpm
+          if [ "${{ matrix.version }}" = "hal" ]; then
+            cmake -DCMAKE_BUILD_TYPE=Release \
+              "-DCMAKE_CXX_FLAGS=-D_FORTIFY_SOURCE=$fortify_level" \
+              ../src/hal/hal_adaptor;
+          else
+            cmake -DCMAKE_BUILD_TYPE=Release \
+              "-DCMAKE_CXX_FLAGS=-D_FORTIFY_SOURCE=$fortify_level" \
+              -DIPU_VER="${{ matrix.version }}" \
+              -DUSE_PG_LITE_PIPE=ON \
+              -DUSE_HAL_ADAPTOR=ON \
+              ..
+          fi
+          VERBOSE=1 make
           make install

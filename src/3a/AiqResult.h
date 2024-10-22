@@ -47,8 +47,6 @@ class AiqResult {
     int64_t mSequence;
     int64_t mFrameId;  // CCA frame id
     TuningMode mTuningMode;
-    float mAnalogGainRange[2];
-    float mDigitalGainRange[2];
     float mAfDistanceDiopters;
     bool mSkip;
     camera_range_t mFocusRange;

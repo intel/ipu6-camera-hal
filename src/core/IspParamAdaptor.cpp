@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2024 Intel Corporation.
+ * Copyright (C) 2015-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -244,7 +244,7 @@ int IspParamAdaptor::configure(const stream_t& stream, ConfigMode configMode, Tu
         CheckAndLogError(ret != OK, ret, "%s, Failed to allocate isp parameter buffers", __func__);
     }
 
-    if (PlatformData::supportUpdateTuning(mCameraId)) {
+    if (PlatformData::supportUpdateTuning()) {
         for (auto& ispParamIt : mStreamIdToIspParameterMap) {
             int ispTuningIndex = mGraphConfig->getTuningModeByStreamId(ispParamIt.first);
             // Use the tuning mode in graph to update the isp tuning data
@@ -354,7 +354,6 @@ int IspParamAdaptor::decodeStatsData(TuningMode tuningMode,
         bParam.mType = M_PSYS;
         bParam.sequence = statsBuffer->getSequence();
         bParam.gParam.appendix = "p2p_decoded_stats";
-        bParam.sUsage = (streamId == VIDEO_STREAM_ID) ? 0 : 2;
         CameraDump::dumpBinary(mCameraId, hwStatsData->data, hwStatsData->size, &bParam);
     }
 
@@ -880,24 +879,19 @@ int IspParamAdaptor::runIspAdaptL(ia_isp_bxt_program_group* pgPtr, ia_isp_bxt_gd
     inputParams->stream_id = inputParams->program_group.base.run_kernels[0].stream_id;
 
     if (ispSettings) {
-        if (VIDEO_STREAM_ID == inputParams->stream_id) {
-            inputParams->nr_setting = ispSettings->nrSetting;
-            inputParams->ee_setting = ispSettings->eeSetting;
-        } else {
-            inputParams->nr_setting = ispSettings->nrStillSetting;
-            inputParams->ee_setting = ispSettings->eeStillSetting;
-        }
+        inputParams->nr_setting = ispSettings->nrSetting;
+        inputParams->ee_setting = ispSettings->eeSetting;
         LOG2("%s: ISP NR setting, level: %d, strength: %d", __func__,
-             static_cast<int>(inputParams->nr_setting.feature_level),
-             static_cast<int>(inputParams->nr_setting.strength));
-        LOG2("%s: ISP EE setting, level: %d, strength: %d", __func__,
-             inputParams->ee_setting.feature_level, inputParams->ee_setting.strength);
+             static_cast<int>(ispSettings->nrSetting.feature_level),
+             static_cast<int>(ispSettings->nrSetting.strength));
 
         inputParams->effects = ispSettings->effects;
         inputParams->manual_brightness = ispSettings->manualSettings.manualBrightness;
         inputParams->manual_contrast = ispSettings->manualSettings.manualContrast;
         inputParams->manual_hue = ispSettings->manualSettings.manualHue;
         inputParams->manual_saturation = ispSettings->manualSettings.manualSaturation;
+        LOG2("%s: ISP EE setting, level: %d, strength: %d", __func__,
+             ispSettings->eeSetting.feature_level, ispSettings->eeSetting.strength);
 
         if (ispSettings->palOverride) {
             CheckAndLogError(ispSettings->palOverride->size > cca::MAX_PAL_TUNING_SIZE, NO_MEMORY,
@@ -1019,7 +1013,7 @@ void IspParamAdaptor::updateResultFromAlgo(ia_binary_data* binaryData, int64_t s
         CheckAndLogError(tmSize < aiqResults->mGbceResults.tone_map_lut_size, VOID_VALUE,
                          "memory is mismatch to store tone map from algo");
 
-        LOG2("%s, Tonemap Curve. enable: %d, prog_shift: %d, table size: %u", __func__, TM->enable,
+        LOG2("%s, Tonemap Curve. enable: %d, prog_shift: %d, table size: %zu", __func__, TM->enable,
              TM->prog_shift, tmSize);
 
         const int shiftBase = 1 << TM->prog_shift;
@@ -1038,7 +1032,6 @@ void IspParamAdaptor::dumpIspParameter(int streamId, int64_t sequence, ia_binary
     bParam.mType = M_PSYS;
     bParam.sequence = sequence;
     bParam.gParam.appendix = ("pal_" + std::to_string(streamId)).c_str();
-    bParam.sUsage = (streamId == VIDEO_STREAM_ID) ? 0 : 2;
     CameraDump::dumpBinary(mCameraId, binaryData.data, binaryData.size, &bParam);
 }
 

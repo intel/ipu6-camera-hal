@@ -45,11 +45,9 @@ int IntelICBM::shutdown(const ICBMReqInfo& request) {
 int IntelICBM::processFrame(const ICBMReqInfo& reqInfo) {
     CheckAndLogError(mIntelOPIC2 == nullptr, UNKNOWN_ERROR, "@%s, no active ICBM session",
                      __func__);
-    // LEVEL0_ICBM_S
     if (reqInfo.reqType &
         (icamera::ICBMFeatureType::USER_FRAMING | icamera::ICBMFeatureType::BC_MODE_BB))
         return mIntelOPIC2->processFrame(reqInfo);
-    // LEVEL0_ICBM_E
     if (reqInfo.reqType & icamera::ICBMFeatureType::LEVEL0_TNR)
         return mIntelOPIC2->runTnrFrame(reqInfo);
     return 0;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Intel Corporation
+ * Copyright (C) 2022 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,28 +61,16 @@ CameraSchedulerPolicy::~CameraSchedulerPolicy() {
     LOG1("%s", __func__);
 }
 
-int32_t CameraSchedulerPolicy::setConfig(const std::set<int32_t>& graphIds) {
-    size_t graphCount = graphIds.size();
-    for (auto& item : mPolicyConfigs) {
-        if (graphCount != item.graphIds.size()) continue;
-
-        bool match = true;
-        for (auto it = graphIds.cbegin(); it != graphIds.cend(); ++it) {
-            if (item.graphIds.find(*it) == item.graphIds.end()) {
-                match = false;
-                break;
-            }
-        }
-        if (match) {
-            mActiveConfig = &item;
+int32_t CameraSchedulerPolicy::setConfig(uint32_t graphId) {
+    for (auto& iter : mPolicyConfigs) {
+        if (iter.graphId == graphId) {
+            mActiveConfig = &iter;
+            LOG1("%s: config id %u, graphId %u", __func__, iter.configId, graphId);
             return OK;
         }
     }
 
-    LOGE("%s: no config for the following graphs %lu: )", __func__, graphCount);
-    for (auto it = graphIds.cbegin(); it != graphIds.cend(); ++it) {
-        LOGE("    graph id %d", *it);
-    }
+    LOGE("%s: no config for graphId %u", __func__, graphId);
     return BAD_VALUE;
 }
 
@@ -129,9 +117,8 @@ void CameraSchedulerPolicy::checkField(CameraSchedulerPolicy* profiles, const ch
             LOG2("@%s, name:%s, atts[%d]:%s, atts[%d]:%s", __func__, name, idx, key, idx + 1, val);
             if (strcmp(key, "id") == 0) {
                 profiles->mPolicyConfigs[profiles->mCurrentConfig].configId = atoi(val);
-            } else if (strcmp(key, "graphId") == 0 ||
-                       strcmp(key, "video") == 0 || strcmp(key, "still") == 0) {
-                profiles->mPolicyConfigs[profiles->mCurrentConfig].graphIds.insert(atoi(val));
+            } else if (strcmp(key, "graphId") == 0) {
+                profiles->mPolicyConfigs[profiles->mCurrentConfig].graphId = atoi(val);
             }
             idx += 2;
         }

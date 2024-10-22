@@ -56,7 +56,7 @@ class AiqInitData {
  public:
     AiqInitData(const std::string& sensorName, const std::string& camCfgDir,
                 const std::vector<TuningConfig>& tuningCfg, const std::string& nvmDir,
-                int maxNvmSize, const std::string& camModuleName, int cameraId);
+                int maxNvmSize, const std::string& camModuleName);
     ~AiqInitData();
 
     // cpf

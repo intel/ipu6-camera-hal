@@ -42,7 +42,7 @@ class IntelCca {
     ia_err setStatsParams(const cca::cca_stats_params& params);
 
     ia_err runAEC(uint64_t frameId, const cca::cca_ae_input_params& params,
-                  cca::cca_ae_results* results, bool lowPower);
+                  cca::cca_ae_results* results);
     ia_err runAIQ(uint64_t frameId, const cca::cca_aiq_params& params,
                   cca::cca_aiq_results* results, camera_makernote_mode_t mode = MAKERNOTE_MODE_OFF);
 

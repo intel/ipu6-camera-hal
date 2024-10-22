@@ -59,9 +59,6 @@ DeviceBase::DeviceBase(int cameraId, VideoNodeType nodeType, VideoNodeDirection 
                      nodeType);
 
     mDevice = new V4L2VideoNode(devName);
-#ifdef LINUX_BUILD
-    mBufType = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
-#endif
 }
 
 DeviceBase::~DeviceBase() {
@@ -77,24 +74,7 @@ int DeviceBase::openDevice() {
         SyncManager::getInstance()->updateSyncCamNum();
     // FRAME_SYNC_E
 
-#ifdef LINUX_BUILD
-    int ret = mDevice->Open(O_RDWR);
-    if (ret)
-        return ret;
-
-    int dev_caps = mDevice->GetDeviceCaps();
-    if (dev_caps & V4L2_CAP_VIDEO_CAPTURE) {
-        mBufType = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    } else {
-        mBufType = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
-    }
-
-    PlatformData::setV4L2BufType(mCameraId, mBufType);
-
-    return OK;
-#else
     return mDevice->Open(O_RDWR);
-#endif
 }
 
 void DeviceBase::closeDevice() {
@@ -159,10 +139,6 @@ int DeviceBase::queueBuffer(int64_t sequence) {
         mBufferQueuing = true;
     }
 
-#ifdef LINUX_BUILD
-    buffer->getV4L2Buffer().SetType(mBufType);
-
-#endif
     int ret = onQueueBuffer(sequence, buffer);
     if (ret == OK) {
         ret = mDevice->PutFrame(&buffer->getV4L2Buffer());
@@ -325,6 +301,20 @@ int MainDevice::createBufferPool(const stream_t& config) {
              csiBEDeviceNodeName.c_str(), ret);
     }
 
+    bool setWithHeaderCtl = true;
+    std::string subDeviceNodeName;
+
+    if (PlatformData::getDevNameByType(mCameraId, VIDEO_ISYS_RECEIVER, subDeviceNodeName) == OK) {
+        LOG1("%s: found ISYS receiver subdevice %s", __func__, subDeviceNodeName.c_str());
+        if (PlatformData::isTPGReceiver(mCameraId)) {
+            LOG1("%s: no need to set csi header ctrl for tpg", __func__);
+            setWithHeaderCtl = false;
+        }
+    } else {
+        setWithHeaderCtl = false;
+    }
+
+    int withHeader = 1;
     struct v4l2_format v4l2fmt;
     v4l2fmt.fmt.pix_mp.field = config.field;
 
@@ -340,6 +330,13 @@ int MainDevice::createBufferPool(const stream_t& config) {
             v4l2fmt.fmt.pix_mp.plane_fmt[i].bytesperline = config.width;
             v4l2fmt.fmt.pix_mp.plane_fmt[i].sizeimage = 0;
         }
+        // The frame data is without header(MIPI STORE MODE) when
+        // format is YUV/RGB and frame output from CSI-Front-End entity.
+        if (!CameraUtils::isRaw(config.format)) {
+            LOG2("@%s, set frame without header for format: %s", __func__,
+                 CameraUtils::pixelCode2String(config.format));
+            withHeader = 0;
+        }
     } else {
         v4l2fmt.fmt.pix.width = config.width;
         v4l2fmt.fmt.pix.height = config.height;
@@ -348,11 +345,13 @@ int MainDevice::createBufferPool(const stream_t& config) {
         v4l2fmt.fmt.pix.sizeimage = 0;
     }
 
-#ifdef LINUX_BUILD
-    v4l2fmt.type = mBufType;
-#else
+    if (setWithHeaderCtl) {
+        V4L2Subdevice* receiverSubDev = V4l2DeviceFactory::getSubDev(mCameraId, subDeviceNodeName);
+        int ret = receiverSubDev->SetControl(V4L2_CID_IPU_STORE_CSI2_HEADER, withHeader);
+        CheckAndLogError(ret != OK, ret, "set v4l2 store csi2 header failed, ret=%d", ret);
+    }
+
     v4l2fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-#endif
     V4L2Format tmpbuf{v4l2fmt};
     int ret = mDevice->SetFormat(tmpbuf);
     CheckAndLogError(ret != OK, ret, "set v4l2 format failed ret=%d", ret);
@@ -386,9 +385,8 @@ int MainDevice::onDequeueBuffer(shared_ptr<CameraBuffer> buffer) {
 
     if (mNeedSkipFrame) return OK;
 
-    LOG2("camera:%d, stream:%d, <seq%d>@%s, field:%d, timestamp: sec=%ld, usec=%ld", mCameraId,
-         buffer->getStreamId(), buffer->getSequence(), __func__, buffer->getField(),
-         buffer->getTimestamp().tv_sec, buffer->getTimestamp().tv_usec);
+    LOG2("<seq%ld>@%s, field:%d, timestamp: sec=%ld, usec=%ld", buffer->getSequence(), __func__,
+         buffer->getField(), buffer->getTimestamp().tv_sec, buffer->getTimestamp().tv_usec);
 
     for (auto& consumer : mConsumers) {
         consumer->onFrameAvailable(mPort, buffer);
@@ -425,7 +423,7 @@ bool MainDevice::needQueueBack(shared_ptr<CameraBuffer> buffer) {
         sharedCamBufInfo.sof_ts = buffer->getTimestamp();
         SyncManager::getInstance()->updateCameraBufInfo(mCameraId, &sharedCamBufInfo);
         if (skipFrameAfterSyncCheck(buffer->getSequence())) {
-            LOG1("<id%d:seq%d>@%s: dropped due to frame not sync", mCameraId,
+            LOG1("<id%d:seq%ld>@%s: dropped due to frame not sync", mCameraId,
                  buffer->getSequence(), __func__);
             needSkipFrame = true;
         }
@@ -457,11 +455,7 @@ int DolCaptureDevice::createBufferPool(const stream_t& config) {
     v4l2fmt.fmt.pix.sizeimage = 0;
     v4l2fmt.fmt.pix_mp.field = 0;
 
-#ifdef LINUX_BUILD
-    v4l2fmt.type = mBufType;
-#else
     v4l2fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-#endif
     V4L2Format tmpbuf{v4l2fmt};
     int ret = mDevice->SetFormat(tmpbuf);
     CheckAndLogError(ret != OK, ret, "set DOL v4l2 format failed ret=%d", ret);

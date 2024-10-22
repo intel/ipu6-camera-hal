@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Intel Corporation
+ * Copyright (C) 2019-2022 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@
 #include <memory>
 #include <utility>
 #include <vector>
-#include <set>
 
 #include "HalStream.h"
 #include "iutils/Errors.h"
@@ -57,11 +56,7 @@ class GraphConfig : public IGraphConfig {
     status_t queryGraphSettings(const std::vector<HalStream*>& activeStreams);
     status_t configStreams(const std::vector<HalStream*>& activeStreams);
     int getSelectedMcId() { return mGraphData.mcId; }
-    virtual int getGraphIds(std::set<int32_t>& graphIds) {
-        graphIds = mGraphData.graphIds;
-        return OK;
-    }
-
+    virtual int getGraphId(void) { return mGraphData.graphId; }
     virtual void getCSIOutputResolution(camera_resolution_t& reso) { reso = mGraphData.csiReso; }
 
     virtual status_t getGdcKernelSetting(uint32_t* kernelId,

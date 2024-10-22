@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2024 Intel Corporation.
+ * Copyright (C) 2015-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@
 #include <sys/sysinfo.h>
 
 #include <memory>
-#include <vector>
 
 #include "CameraParser.h"
 #include "iutils/CameraLog.h"
@@ -62,7 +61,6 @@ PlatformData::PlatformData() {
     MediaControl* mc = MediaControl::getInstance();
     if (mc) {
         mc->initEntities();
-        mStaticCfg.mMediaCfgId = mc->getMediaCfgId();
     }
 
     CameraParser CameraParser(mc, &mStaticCfg);
@@ -98,7 +96,7 @@ int PlatformData::init() {
         AiqInitData* aiqInitData = new AiqInitData(
             staticCfg->mCameras[i].sensorName, getCameraCfgPath(),
             staticCfg->mCameras[i].mSupportedTuningConfig, staticCfg->mCameras[i].mNvmDirectory,
-            staticCfg->mCameras[i].mMaxNvmDataSize, camModuleName, i);
+            staticCfg->mCameras[i].mMaxNvmDataSize, camModuleName);
         getInstance()->mAiqInitData.push_back(aiqInitData);
 
         staticCfg->getModuleInfoFromCmc(i);
@@ -222,68 +220,21 @@ int PlatformData::queryGraphSettings(int cameraId, const stream_config_t* stream
 }
 
 int PlatformData::getEdgeNrSetting(int cameraId, float totalGain, float hdrRatio,
-                                   TuningMode mode, EdgeNrSetting& setting) {
-    LOG2("%s, tuningmode %d, totalGain %f, hdrRatio %f", __func__, mode, totalGain, hdrRatio);
+                                   EdgeNrSetting& setting) {
     const StaticCfg::CameraInfo& pCam = getInstance()->mStaticCfg.mCameras[cameraId];
+    LOG2("%s, totalGain %f, hdrRatio %f", __func__, totalGain, hdrRatio);
 
-    auto totalMap = pCam.mTotalGainHdrRatioToEdgeNrMap.find(mode);
-    if (totalMap == pCam.mTotalGainHdrRatioToEdgeNrMap.end()) return NAME_NOT_FOUND;
-
-    std::map<float, std::map<float, EdgeNrSetting>> l1SettingMap;
-    // found the l1 value
-    auto l1Map = totalMap->second.equal_range(totalGain);
-    if (l1Map.second == totalMap->second.begin()) {
-        l1SettingMap[l1Map.second->first] = l1Map.second->second;
-    } else if (l1Map.first == totalMap->second.end()) {
-        --l1Map.first;
-        l1SettingMap[l1Map.first->first] = l1Map.first->second;
-    } else if (l1Map.first != l1Map.second) {
-        l1SettingMap[l1Map.first->first] = l1Map.first->second;
-    } else {
-        --l1Map.first;
-        l1SettingMap[l1Map.first->first] = l1Map.first->second;
-        l1SettingMap[l1Map.second->first] = l1Map.second->second;
-    }
-
-    auto interpolation = [](float v, float low, float up, const EdgeNrSetting& l,
-                            const EdgeNrSetting& u) {
-        EdgeNrSetting result = l;
-        result.edgeStrength +=
-            static_cast<int8_t>((u.edgeStrength - l.edgeStrength) * (v - low) / (up - low) + 0.5);
-        result.nrStrength +=
-            static_cast<int8_t>((u.nrStrength - l.nrStrength) * (v - low) / (up - low) + 0.5);
-        return result;
-    };
-
-    for (auto& it : l1SettingMap) {
-        std::map<float, EdgeNrSetting> l2SettingMap;
-        // found the l2 values
-        auto l2Map = it.second.equal_range(hdrRatio);
-        if (l2Map.second == it.second.begin()) {
-            l2SettingMap[l2Map.second->first] = l2Map.second->second;
-        } else if (l2Map.first == it.second.end()) {
-            --l2Map.first;
-            l2SettingMap[l2Map.first->first] = l2Map.first->second;
-        } else if (l2Map.first != l2Map.second) {
-            l2SettingMap[l2Map.first->first] = l2Map.first->second;
-        } else {
-            --l2Map.first;
-            l2SettingMap[l2Map.first->first] = interpolation(hdrRatio, l2Map.first->first,
-                l2Map.second->first, l2Map.first->second, l2Map.second->second);
+    if (!pCam.mTotalGainHdrRatioToEdgeNrMap.empty()) {
+        // found the lower value in map
+        auto subMap = pCam.mTotalGainHdrRatioToEdgeNrMap.upper_bound(totalGain);
+        if (subMap != pCam.mTotalGainHdrRatioToEdgeNrMap.begin()) {
+            auto sub = (--subMap)->second;
+            auto it = sub.upper_bound(hdrRatio);
+            if (it != sub.begin()) {
+                setting = (--it)->second;
+                return OK;
+            }
         }
-
-        it.second = l2SettingMap;
-    }
-
-    if (l1SettingMap.size() == 1) {
-        setting = l1SettingMap.begin()->second.begin()->second;
-        return OK;
-    } else if (l1SettingMap.size() == 2) {
-        auto it = l1SettingMap.end();
-        --it;
-        setting = interpolation(totalGain, l1SettingMap.begin()->first, it->first,
-            l1SettingMap.begin()->second.begin()->second, it->second.begin()->second);
-        return OK;
     }
 
     return NAME_NOT_FOUND;
@@ -297,41 +248,8 @@ void PlatformData::releaseGraphConfigNodes() {
     }
 }
 
-int PlatformData::getModuleInfo(int cameraId, std::string& moduleId, std::string& sensorId) {
-    const StaticCfg::CameraInfo& pCam = getInstance()->mStaticCfg.mCameras[cameraId];
-
-    if (pCam.mModuleId.empty() || pCam.mSensorId.empty()) return NAME_NOT_FOUND;
-
-    moduleId = pCam.mModuleId;
-    sensorId = pCam.mSensorId;
-
-    return OK;
-}
-
 const char* PlatformData::getSensorName(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].sensorName.c_str();
-}
-
-void PlatformData::setBoardName(const std::string& boardName) {
-    getInstance()->mStaticCfg.mBoardName = boardName;
-}
-
-bool PlatformData::isHDRnetTuningUsed(int cameraId, bool& boardConfig) {
-    auto& boards = getInstance()->mStaticCfg.mCameras[cameraId].mDisableHDRnetBoards;
-    auto& boardName = getInstance()->mStaticCfg.mBoardName;
-
-    if (!boards.empty()) boardConfig = true;
-
-    if (boardName.empty()) return true;
-
-    for (auto& board : boards) {
-        LOG2("mBoardName %s, board %s", boardName.c_str(), board.c_str());
-        if (board == boardName) {
-            return false;
-        }
-    }
-
-    return true;
 }
 
 const char* PlatformData::getSensorDescription(int cameraId) {
@@ -344,38 +262,6 @@ const char* PlatformData::getLensName(int cameraId) {
 
 int PlatformData::getLensHwType(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mLensHwType;
-}
-
-void PlatformData::setSensorMode(int cameraId, SensorMode sensorMode) {
-    // Only change sensor mode when binning mode supported
-    if (!PlatformData::isBinningModeSupport(cameraId)) return;
-    getInstance()->mStaticCfg.mCameras[cameraId].mSensorMode = sensorMode;
-}
-
-SensorMode PlatformData::getSensorMode(int cameraId) {
-    return getInstance()->mStaticCfg.mCameras[cameraId].mSensorMode;
-}
-
-bool PlatformData::isBinningModeSupport(int cameraId) {
-    auto pCam = &getInstance()->mStaticCfg.mCameras[cameraId];
-    for (auto& cfg : pCam->mSupportedTuningConfig) {
-        if (cfg.tuningMode == TUNING_MODE_VIDEO_BINNING) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-int PlatformData::getSensitivityRangeByTuningMode(int cameraId, TuningMode mode,
-                                                  SensitivityRange& range) {
-    auto& map = getInstance()->mStaticCfg.mCameras[cameraId].mTuningModeToSensitivityMap;
-    if (map.find(mode) != map.end()) {
-        range = map[mode];
-        return OK;
-    }
-
-    return NAME_NOT_FOUND;
 }
 
 bool PlatformData::isPdafEnabled(int cameraId) {
@@ -512,10 +398,6 @@ bool PlatformData::psysAlignWithSof(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mPsysAlignWithSof;
 }
 
-int PlatformData::getMsOfPsysAlignWithSystem(int cameraId) {
-    return getInstance()->mStaticCfg.mCameras[cameraId].mMsPsysAlignWithSystem;
-}
-
 bool PlatformData::psysBundleWithAic(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mPsysBundleWithAic;
 }
@@ -621,10 +503,11 @@ bool PlatformData::updateMediaFormat(int cameraId, bool isNarrow) {
         media_format = isNarrow ? media_format_bt2100_12b_cl_narrow : media_format_bt2100_12b_cl;
         break;
     default:
-        LOG1("invalid media format, default value used.");
+        LOGE("invalid media format, default value used.");
         return false;
+        break;
     }
-    LOG1("%s, media format in tuning: %d, media format for aic %d.", __func__, tuning_media_format,
+    LOGI("%s, media format in tuning: %d, media format for aic %d.", tuning_media_format,
          media_format);
     getInstance()->mStaticCfg.mCameras[cameraId].mMediaFormat = media_format;
     return true;
@@ -677,10 +560,6 @@ unsigned int PlatformData::getInitialSkipFrame(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mInitialSkipFrame;
 }
 
-unsigned int PlatformData::getInitialPendingFrame(int cameraId) {
-    return getInstance()->mStaticCfg.mCameras[cameraId].mInitialPendingFrame;
-}
-
 unsigned int PlatformData::getMaxRawDataNum(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mMaxRawDataNum;
 }
@@ -721,37 +600,18 @@ int PlatformData::getAnalogGainLag(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mAnalogGainLag;
 }
 
-PolicyConfig* PlatformData::getExecutorPolicyConfig(const std::set<int>& graphIds) {
+PolicyConfig* PlatformData::getExecutorPolicyConfig(int graphId) {
+    size_t i = 0;
     PlatformData::StaticCfg* cfg = &getInstance()->mStaticCfg;
 
-    size_t i = 0;
-    size_t graphCount = graphIds.size();
-    PolicyConfig* pCfg = nullptr;
     for (i = 0; i < cfg->mPolicyConfig.size(); i++) {
-        PolicyConfig& policy = cfg->mPolicyConfig[i];
-        // Previous platforms only support cfg with one graph id.
-        // Find cfg according to the first graphId for them
-        if (!graphIds.empty() && (*policy.graphIds.begin() == *graphIds.begin())) pCfg = &policy;
-
-        if (policy.graphIds.size() != graphCount) continue;
-        bool match = true;
-        for (auto it = graphIds.cbegin(); it != graphIds.cend(); ++it) {
-            if (policy.graphIds.find(*it) == policy.graphIds.end()) {
-                match = false;
-                break;
-            }
-        }
-        if (match) {
-            return &policy;
+        if (graphId == cfg->mPolicyConfig[i].graphId) {
+            return &(cfg->mPolicyConfig[i]);
         }
     }
 
-    LOGW("Couldn't find the executor policy in xml, need %lu graphs:", graphIds.size());
-    for (auto it = graphIds.begin(); it != graphIds.end(); ++it) {
-        LOGW("    graph id %d", *it);
-    }
-    if (pCfg) LOGW("%s: use cfg with graph id %d", __func__, *pCfg->graphIds.begin());
-    return pCfg;
+    LOGW("Couldn't find the executor policy for graphId(%d), please check xml file", graphId);
+    return nullptr;
 }
 
 int PlatformData::numberOfCameras() {
@@ -1390,7 +1250,7 @@ int PlatformData::getConfigModesByOperationMode(int cameraId, uint32_t operation
         return INVALID_OPERATION;
     }
 
-    CheckAndLog1(getInstance()->mStaticCfg.mCameras[cameraId].mSupportedTuningConfig.empty(),
+    CheckAndLogError(getInstance()->mStaticCfg.mCameras[cameraId].mSupportedTuningConfig.empty(),
                      INVALID_OPERATION, "@%s, the tuning config in xml does not exist", __func__);
 
     if (operationMode == CAMERA_STREAM_CONFIGURATION_MODE_AUTO) {
@@ -1559,8 +1419,7 @@ bool PlatformData::isCSIBackEndCapture(int cameraId) {
     for (const auto& node : mc->videoNodes) {
         if (node.videoNodeType == VIDEO_GENERIC &&
             (node.name.find("BE capture") != string::npos ||
-             node.name.find("BE SOC capture") != string::npos ||
-             node.name.find("ISYS capture") != string::npos)) {
+             node.name.find("BE SOC capture") != string::npos)) {
             isCsiBECapture = true;
             break;
         }
@@ -1576,9 +1435,7 @@ bool PlatformData::isCSIFrontEndCapture(int cameraId) {
 
     for (const auto& node : mc->videoNodes) {
         if (node.videoNodeType == VIDEO_GENERIC &&
-            (node.name.find("CSI-2") != string::npos ||
-             node.name.find("TPG") != string::npos ||
-             node.name.find("CSI2") != string::npos)) {
+            (node.name.find("CSI-2") != string::npos || node.name.find("TPG") != string::npos)) {
             isCsiFeCapture = true;
             break;
         }
@@ -1692,13 +1549,14 @@ camera_resolution_t* PlatformData::getPslOutputForRotation(int width, int height
     return nullptr;
 }
 
-const camera_resolution_t* PlatformData::getPreferOutput(int width, int height, int cameraId) {
-    if (getInstance()->mStaticCfg.mCameras[cameraId].mPreferOutput.empty()) return nullptr;
+const camera_resolution_t* PlatformData::getPreferStillOutput(int width, int height,
+                                                              int cameraId) {
+    if (getInstance()->mStaticCfg.mCameras[cameraId].mPreferStillOutput.empty()) return nullptr;
 
     const std::vector<camera_resolution_t>& preferOutput =
-        getInstance()->mStaticCfg.mCameras[cameraId].mPreferOutput;
+        getInstance()->mStaticCfg.mCameras[cameraId].mPreferStillOutput;
     for (const auto& output : preferOutput) {
-        // get preferred output for small size
+        // get preferred still output for small size
         if ((width < output.width || height < output.height)
             && (width * output.height == height * output.width)) {
             LOG2("<id%d> the psl output: (%dx%d) for user: %dx%d", cameraId, output.width,
@@ -1882,12 +1740,8 @@ int PlatformData::getVideoStreamNum() {
     return getInstance()->mStaticCfg.mCommonConfig.videoStreamNum;
 }
 
-bool PlatformData::supportUpdateTuning(int cameraId) {
-    // Check if support UpdateTuning per platform config
-    if (getInstance()->mStaticCfg.mCommonConfig.supportIspTuningUpdate) return true;
-
-    // check if support UpdateTuning per sensor config
-    return getInstance()->mStaticCfg.mCameras[cameraId].mIspTuningUpdate;
+bool PlatformData::supportUpdateTuning() {
+    return getInstance()->mStaticCfg.mCommonConfig.supportIspTuningUpdate;
 }
 
 bool PlatformData::supportHwJpegEncode() {
@@ -1937,11 +1791,6 @@ bool PlatformData::isDummyStillSink(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mDummyStillSink;
 }
 
-void PlatformData::getTnrThresholdSizes(int cameraId,
-                                        std::vector<camera_resolution_t>& resolutions) {
-    resolutions = getInstance()->mStaticCfg.mCameras[cameraId].mTnrThresholdSizes;
-}
-
 bool PlatformData::isGpuTnrEnabled(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mGpuTnrEnabled;
 }
@@ -1984,18 +1833,6 @@ bool PlatformData::isResetLinkRoute(int cameraId) {
 
 int64_t PlatformData::getReqWaitTimeout(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mReqWaitTimeout;
-}
-
-v4l2_buf_type PlatformData::getV4L2BufType(int cameraId) {
-    return getInstance()->mStaticCfg.mCameras[cameraId].mV4l2BufType;
-}
-
-void PlatformData::setV4L2BufType(int cameraId, v4l2_buf_type v4l2BufType) {
-    getInstance()->mStaticCfg.mCameras[cameraId].mV4l2BufType = v4l2BufType;
-}
-
-int PlatformData::getMediaCfgId() {
-    return getInstance()->mStaticCfg.mMediaCfgId;
 }
 
 // LEVEL0_ICBM_S

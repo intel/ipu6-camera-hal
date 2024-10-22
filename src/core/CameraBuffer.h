@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2024 Intel Corporation.
+ * Copyright (C) 2015-2023 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,8 +54,7 @@ class CameraBuffer {
                                                 int srcWidth = -1, int srcHeight = -1);
 
  public:
-    CameraBuffer(int cameraId, int usage, int memory, uint32_t size, int index, int format = -1,
-                 v4l2_buf_type v4l2BufType = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE);
+    CameraBuffer(int cameraId, int usage, int memory, uint32_t size, int index, int format = -1);
     virtual ~CameraBuffer();
 
  public:
@@ -173,21 +172,6 @@ class CameraBuffer {
 
     void* mMmapAddrs[VIDEO_MAX_PLANES];
     int mDmaFd[VIDEO_MAX_PLANES];
-
-#ifdef LIBDRM_SUPPORT_MMAP_OFFSET
-    class DeviceRender {
-     public:
-        DeviceRender();
-        explicit DeviceRender(const char* path_file);
-        ~DeviceRender();
-        void* mapDmaBufferAddr(int fd, unsigned int bufferSize);
-
-     private:
-        int m_handle;
-    };
-
-    static DeviceRender mDeviceRender;
-#endif
 };
 
 typedef std::vector<std::shared_ptr<CameraBuffer> > CameraBufVector;

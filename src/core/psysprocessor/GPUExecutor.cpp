@@ -291,7 +291,6 @@ int GPUExecutor::getTnrExtraFrameCount(int64_t seq) {
     CheckAndLogError(ret, 0, "Failed to get total gain");
 
     if (!mStillTnrTriggerInfo.num_gains) return PlatformData::getTnrExtraFrameCount(mCameraId);
-    if (totalGain <= mStillTnrTriggerInfo.tnr7us_threshold_gain) return 0;
 
     int index = 0;
     for (int i = 1; i < mStillTnrTriggerInfo.num_gains; i++) {
@@ -569,10 +568,10 @@ int GPUExecutor::runTnrFrame(const std::shared_ptr<CameraBuffer>& inBuf,
 
     bool paramSyncUpdate = (mStreamId == VIDEO_STREAM_ID) ? false : true;
 
-#ifdef TNR7_LEVEL0
+    // LEVEL0_ICBM_S
     // no async param update in level0 tnr
     paramSyncUpdate = true;
-#endif
+    // LEVEL0_ICBM_E
 
     if (!paramSyncUpdate && mIntelTNR) {
         // request update tnr parameters before wait

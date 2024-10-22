@@ -77,14 +77,6 @@ typedef enum vendor_metadata_tag {
     INTEL_VENDOR_CAMERA_TOTAL_EXPOSURE_TARGET_RANGE,  // int64[]      | public
     INTEL_VENDOR_CAMERA_RAW_DATA_OUTPUT,              // enum         | public
     INTEL_VENDOR_CAMERA_HDR_RATIO,                    // float        | public
-    INTEL_VENDOR_CAMERA_MODULE_ID,                    // byte[]       | public
-    INTEL_VENDOR_CAMERA_SENSOR_ID,                    // byte[]       | public
-    INTEL_VENDOR_CAMERA_SENSOR_MODE,                  // enum         | public
-    INTEL_VENDOR_CAMERA_ANALOG_GAIN_RANGE,            // float[]      | public
-    INTEL_VENDOR_CAMERA_DIGITAL_GAIN_RANGE,           // float[]      | public
-    INTEL_VENDOR_CAMERA_ANALOG_GAIN,                  // float        | public
-    INTEL_VENDOR_CAMERA_DIGITAL_GAIN,                 // float        | public
-    INTEL_VENDOR_CAMERA_SENSITIVITY_RANGE,            // int32[]      | public
     INTEL_VENDOR_CAMERA_END,
 } vendor_metadata_tag_t;
 
@@ -146,10 +138,4 @@ typedef enum vendor_metadata_enum_intel_vendor_camera_raw_data_output {
     INTEL_VENDOR_CAMERA_RAW_DATA_OUTPUT_OFF,
     INTEL_VENDOR_CAMERA_RAW_DATA_OUTPUT_ON,
 } vendor_metadata_enum_intel_vendor_camera_raw_data_output_t;
-
-// INTEL_VENDOR_CAMERA_SENSOR_MODE
-typedef enum vendor_metadata_enum_intel_vendor_camera_sensor_mode {
-    INTEL_VENDOR_CAMERA_SENSOR_MODE_FULL,
-    INTEL_VENDOR_CAMERA_SENSOR_MODE_BINNING,
-} vendor_metadata_enum_intel_vendor_camera_sensor_mode_t;
 
