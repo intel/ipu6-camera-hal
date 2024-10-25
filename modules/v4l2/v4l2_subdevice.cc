@@ -46,11 +46,19 @@ V4L2Subdevice::~V4L2Subdevice() {
 }
 
 int V4L2Subdevice::Open(int flags) {
+    struct v4l2_subdev_client_capability clientcap = {};
+
     LOG1("@%s", __func__);
 
     int status = V4L2Device::Open(flags);
     if (status == 0) state_ = SubdevState::OPEN;
-    return status;
+
+    clientcap.capabilities = V4L2_SUBDEV_CLIENT_CAP_STREAMS;
+    status = ioctl(fd_, VIDIOC_SUBDEV_S_CLIENT_CAP, &clientcap);
+    if (status < 0)
+        LOG1("Failed to set client capabilities %s", strerror(errno));
+
+    return 0;
 }
 
 int V4L2Subdevice::Close() {
@@ -142,7 +150,11 @@ int V4L2Subdevice::SetRouting(v4l2_subdev_route* routes, uint32_t numRoutes) {
         return -EINVAL;
     }
 
-    v4l2_subdev_routing r = {routes, numRoutes};
+    v4l2_subdev_routing r = {};
+    r.which = V4L2_SUBDEV_FORMAT_ACTIVE;
+    r.len_routes = numRoutes;
+    r.num_routes = numRoutes;
+    r.routes = reinterpret_cast<uint64_t>(routes);
 
     int ret = ::ioctl(fd_, VIDIOC_SUBDEV_S_ROUTING, &r);
     if (ret < 0) {
@@ -162,7 +174,11 @@ int V4L2Subdevice::GetRouting(v4l2_subdev_route* routes, uint32_t* numRoutes) {
         return -EINVAL;
     }
 
-    v4l2_subdev_routing r = {routes, *numRoutes};
+    v4l2_subdev_routing r = {};
+    r.which = V4L2_SUBDEV_FORMAT_ACTIVE;
+    r.len_routes = *numRoutes;
+    r.num_routes = *numRoutes;
+    r.routes = reinterpret_cast<uint64_t>(routes);
 
     int ret = ::ioctl(fd_, VIDIOC_SUBDEV_G_ROUTING, &r);
     if (ret < 0) {

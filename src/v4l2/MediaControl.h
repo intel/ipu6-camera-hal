@@ -174,7 +174,7 @@ struct McVideoNode {
 struct MediaCtlConf {
     std::vector<McCtl> ctls;
     std::vector<McLink> links;
-    std::vector<McRoute> routes;
+    std::map<std::string, std::vector<McRoute>> routings;
     std::vector<McFormat> formats;
     std::vector<McOutput> outputs;
     std::vector<McVideoNode> videoNodes;

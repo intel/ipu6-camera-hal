@@ -78,6 +78,7 @@
         </StaticMetadata>
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
         <supportedISysFormat value="V4L2_PIX_FMT_UYVY"/>
+        <vcAggregator value="TI960 a,0"/>
         <enableAIQ value="false"/>
     </Sensor>
 
@@ -144,6 +145,7 @@
         </StaticMetadata>
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
         <supportedISysFormat value="V4L2_PIX_FMT_UYVY"/>
+        <vcAggregator value="TI960 a,1"/>
         <enableAIQ value="false"/>
     </Sensor>
 
@@ -210,6 +212,7 @@
         </StaticMetadata>
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
         <supportedISysFormat value="V4L2_PIX_FMT_UYVY"/>
+        <vcAggregator value="TI960 a,2"/>
         <enableAIQ value="false"/>
     </Sensor>
 
@@ -276,6 +279,7 @@
         </StaticMetadata>
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
         <supportedISysFormat value="V4L2_PIX_FMT_UYVY"/>
+        <vcAggregator value="TI960 a,3"/>
         <enableAIQ value="false"/>
     </Sensor>
 
@@ -342,6 +346,7 @@
         </StaticMetadata>
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
         <supportedISysFormat value="V4L2_PIX_FMT_UYVY"/>
+        <vcAggregator value="TI960 b,0"/>
         <enableAIQ value="false"/>
     </Sensor>
 
@@ -408,6 +413,7 @@
         </StaticMetadata>
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
         <supportedISysFormat value="V4L2_PIX_FMT_UYVY"/>
+        <vcAggregator value="TI960 b,1"/>
         <enableAIQ value="false"/>
     </Sensor>
 
@@ -474,6 +480,7 @@
         </StaticMetadata>
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
         <supportedISysFormat value="V4L2_PIX_FMT_UYVY"/>
+        <vcAggregator value="TI960 b,2"/>
         <enableAIQ value="false"/>
     </Sensor>
 
@@ -540,6 +547,7 @@
         </StaticMetadata>
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
         <supportedISysFormat value="V4L2_PIX_FMT_UYVY"/>
+        <vcAggregator value="TI960 b,3"/>
         <enableAIQ value="false"/>
     </Sensor>
 </CameraSettings>
