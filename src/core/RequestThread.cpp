@@ -177,7 +177,7 @@ int RequestThread::processRequest(int bufferNum, camera_buffer_t** ubuffer,
         mActive = true;
     }
 
-    if (mRequestsInProcessing == 0) {
+    if (mRequestsInProcessing == 0 || !mPerframeControlSupport) {
         mRequestTriggerEvent |= NEW_REQUEST;
         mRequestSignal.signal();
     }

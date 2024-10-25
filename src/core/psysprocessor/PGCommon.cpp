@@ -1097,6 +1097,13 @@ int PGCommon::prepareTerminalBuffers(const ia_binary_data* ipuParameters,
                  buffer->isFlagsSet(BUFFER_FLAG_NO_FLUSH))) {
                 flush = false;
             }
+#ifdef LINUX_BUILD
+            // FILE_SOURCE_S
+            if (PlatformData::isFileSourceEnabled() && buffer->getMemory() == V4L2_MEMORY_USERPTR) {
+                flush = true;
+            }
+            // FILE_SOURCE_E
+#endif
             ciprBuf =
                 (buffer->getMemory() == V4L2_MEMORY_DMABUF) ?
                     registerUserBuffer(buffer->getBufferSize(), buffer->getFd(), flush) :

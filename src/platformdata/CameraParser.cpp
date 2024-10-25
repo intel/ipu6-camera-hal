@@ -690,6 +690,8 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
         }
     } else if (strcmp(name, "isISYSCompression") == 0) {
         pCurrentCam->mISYSCompression = strcmp(atts[1], "true") == 0;
+        if (mStaticCfg->mMediaCfgId == IPU6_UPSTREAM_MEDIA_CFG)
+            pCurrentCam->mISYSCompression = false;
     } else if (strcmp(name, "isPSACompression") == 0) {
         pCurrentCam->mPSACompression = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "isOFSCompression") == 0) {
@@ -1431,7 +1433,14 @@ void CameraParser::parseRouteElement(CameraParser* profiles, const char* name, c
         idx += 2;
     }
 
-    mc.routes.push_back(route);
+    auto it = mc.routings.find(route.entityName);
+    if (it != mc.routings.end()) {
+        it->second.push_back(route);
+    } else {
+        std::vector<McRoute> routes;
+        routes.push_back(route);
+        mc.routings.insert(std::pair<std::string, std::vector<McRoute>>(route.entityName, routes));
+    }
 }
 
 void CameraParser::parseVideoElement(CameraParser* profiles, const char* name,

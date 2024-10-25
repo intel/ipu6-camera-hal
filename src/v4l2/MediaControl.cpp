@@ -810,6 +810,9 @@ int MediaControl::setFormat(int cameraId, const McFormat* format, int targetWidt
                 tmt.format = mbusfmt;
                 tmt.pad = link->sink->index;
                 tmt.which = V4L2_SUBDEV_FORMAT_ACTIVE;
+                // VIRTUAL_CHANNEL_S
+                tmt.stream = format->stream;
+                // VIRTUAL_CHANNEL_E
                 subDev->SetFormat(tmt);
             }
         }
@@ -872,17 +875,25 @@ int MediaControl::mediaCtlSetup(int cameraId, MediaCtlConf* mc, int width, int h
     int ret = OK;
     // VIRTUAL_CHANNEL_S
     /* Set routing */
-    for (auto& route : mc->routes) {
-        LOG1("<id%d> route entity:%s, sinkPad:%d, srcPad:%d, sinkStream:%d, srcStream:%d, flag:%d",
-             cameraId, route.entityName.c_str(), route.sinkPad, route.srcPad, route.sinkStream,
-             route.srcStream, route.flag);
+    for (auto& routing : mc->routings) {
+        LOG1("<id%d> route entity:%s:", cameraId, routing.first.c_str());
+        int num = routing.second.size();
+        v4l2_subdev_route* routes = new v4l2_subdev_route[num];
+        CheckAndLogError(!routes, NO_MEMORY, "Failed to alloc routes");
+        for (int i = 0; i < num; i++) {
+            const McRoute& route = routing.second[i];
+            v4l2_subdev_route r = {route.sinkPad, route.sinkStream, route.srcPad, route.srcStream,
+                                   route.flag};
+            LOG1("   sinkPad:%d, srcPad:%d, sinkStream:%d, srcStream:%d, flag:%d", r.sink_pad,
+                 r.source_pad, r.sink_stream, r.source_stream, route.flag);
 
+            routes[i] = r;
+        }
         string subDeviceNodeName;
-        CameraUtils::getSubDeviceName(route.entityName.c_str(), subDeviceNodeName);
+        CameraUtils::getSubDeviceName(routing.first.c_str(), subDeviceNodeName);
         V4L2Subdevice* subDev = V4l2DeviceFactory::getSubDev(cameraId, subDeviceNodeName);
-        v4l2_subdev_route r = {route.sinkPad, route.sinkStream, route.srcPad, route.srcStream,
-                               route.flag};
-        ret = subDev->SetRouting(&r, 1);
+        ret = subDev->SetRouting(routes, num);
+        delete[] routes;
         CheckAndLogError(ret != 0, ret, "setRouting fail, ret:%d", ret);
     }
     // VIRTUAL_CHANNEL_E
@@ -954,13 +965,25 @@ void MediaControl::mediaCtlClear(int cameraId, MediaCtlConf* mc) {
 
     // VIRTUAL_CHANNEL_S
     /* Clear routing */
-    for (auto& route : mc->routes) {
+    for (auto& routing : mc->routings) {
+        LOG1("<id%d> route entity:%s:", cameraId, routing.first.c_str());
+        int num = routing.second.size();
+        v4l2_subdev_route* routes = new v4l2_subdev_route[num];
+        CheckAndLogError(!routes, VOID_VALUE, "Failed to alloc routes");
+        for (int i = 0; i < num; i++) {
+            const McRoute& route = routing.second[i];
+            LOG1("   sinkPad:%d, srcPad:%d, sinkStream:%d, srcStream:%d, flag:%d", route.sinkPad,
+                 route.srcPad, route.sinkStream, route.srcStream, route.flag);
+            v4l2_subdev_route r = {route.sinkPad, route.sinkStream, route.srcPad, route.srcStream,
+                                   route.flag & ~V4L2_SUBDEV_ROUTE_FL_ACTIVE};
+            routes[i] = r;
+        }
+
         string subDeviceNodeName;
-        CameraUtils::getSubDeviceName(route.entityName.c_str(), subDeviceNodeName);
+        CameraUtils::getSubDeviceName(routing.first.c_str(), subDeviceNodeName);
         V4L2Subdevice* subDev = V4l2DeviceFactory::getSubDev(cameraId, subDeviceNodeName);
-        v4l2_subdev_route r = {route.sinkPad, route.sinkStream, route.srcPad, route.srcStream,
-                               route.flag & ~V4L2_SUBDEV_ROUTE_FL_ACTIVE};
-        int ret = subDev->SetRouting(&r, 1);
+        int ret = subDev->SetRouting(routes, num);
+        delete[] routes;
         CheckAndLogError(ret != 0, VOID_VALUE, "Clear routing fail, ret:%d", ret);
     }
     // VIRTUAL_CHANNEL_E
@@ -999,7 +1022,8 @@ bool MediaControl::checkHasSource(const MediaEntity* sink, const std::string& so
             // links[i] is the link to sink entity
             // pre is the link's source entity
             MediaEntity* pre = sink->links[i].source->entity;
-            if (pre->info.type == MEDIA_ENT_T_V4L2_SUBDEV_SENSOR) {
+            if (pre->info.type == MEDIA_ENT_T_V4L2_SUBDEV_SENSOR ||
+                pre->info.type == MEDIA_ENT_T_V4L2_SUBDEV) {
                 // if pre is sensor, return compare name result
                 if (strncmp(source.c_str(), pre->info.name, source.length()) == 0) return true;
             } else {

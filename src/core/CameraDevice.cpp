@@ -1127,6 +1127,7 @@ void CameraDevice::handleEvent(EventData eventData) {
             }
             break;
         }
+
         case EVENT_ISYS_ERROR: {
             if (mCallback) {
                 camera_msg_data_t data = {CAMERA_DEVICE_ERROR, {}};
