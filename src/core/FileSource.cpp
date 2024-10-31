@@ -166,6 +166,10 @@ int FileSource::stop() {
     mProduceThread->requestExitAndWait();
     mFrameFileBuffers.clear();
 
+    while (mBufferQueue.size() > 0) {
+        mBufferQueue.pop();
+    }
+
     return OK;
 }
 
