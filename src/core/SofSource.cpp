@@ -228,7 +228,8 @@ int SofSource::poll() {
     syncData.sequence = event.u.frame_sync.frame_sequence;
     syncData.timestamp.tv_sec = event.timestamp.tv_sec;
     syncData.timestamp.tv_usec = (event.timestamp.tv_nsec / 1000);
-    LOG2("<seq%ld> %s:sof event, event.id %u", syncData.sequence, __func__, event.id);
+    LOG2("camera:%d, <seq%ld> %s, timestamp:%ld, sof event, event.id %u", mCameraId,
+         syncData.sequence, __func__, TIMEVAL2USECS(syncData.timestamp), event.id);
     TRACE_LOG_POINT("SofSource", "receive sof event", MAKE_COLOR(syncData.sequence),
                     syncData.sequence);
     EventData eventData;

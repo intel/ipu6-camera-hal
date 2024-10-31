@@ -74,10 +74,11 @@
             <!-- list of stream config info. Meanings of each part is "format,widthxheight,field(0 is none, 7 is alternate),mcId" -->
             <supportedStreamConfig value="V4L2_PIX_FMT_UYVY,1920x1536,0,0,
                                           V4L2_PIX_FMT_UYVY,1920x1080,0,1,
-                                          V4L2_PIX_FMT_UYVY,1280x720,0,2,"/>
+                                          V4L2_PIX_FMT_UYVY,1280x720,0,2"/>
         </StaticMetadata>
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
         <supportedISysFormat value="V4L2_PIX_FMT_UYVY"/>
+        <vcAggregator value="TI960 a,0"/>
         <enableAIQ value="false"/>
     </Sensor>
 
@@ -140,10 +141,11 @@
             <!-- list of stream config info. Meanings of each part is "format,widthxheight,field(0 is none, 7 is alternate),mcId" -->
             <supportedStreamConfig value="V4L2_PIX_FMT_UYVY,1920x1536,0,0,
                                           V4L2_PIX_FMT_UYVY,1920x1080,0,1,
-                                          V4L2_PIX_FMT_UYVY,1280x720,0,2,"/>
+                                          V4L2_PIX_FMT_UYVY,1280x720,0,2"/>
         </StaticMetadata>
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
         <supportedISysFormat value="V4L2_PIX_FMT_UYVY"/>
+        <vcAggregator value="TI960 a,1"/>
         <enableAIQ value="false"/>
     </Sensor>
 
@@ -206,10 +208,11 @@
             <!-- list of stream config info. Meanings of each part is "format,widthxheight,field(0 is none, 7 is alternate),mcId" -->
             <supportedStreamConfig value="V4L2_PIX_FMT_UYVY,1920x1536,0,0,
                                           V4L2_PIX_FMT_UYVY,1920x1080,0,1,
-                                          V4L2_PIX_FMT_UYVY,1280x720,0,2,"/>
+                                          V4L2_PIX_FMT_UYVY,1280x720,0,2"/>
         </StaticMetadata>
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
         <supportedISysFormat value="V4L2_PIX_FMT_UYVY"/>
+        <vcAggregator value="TI960 a,2"/>
         <enableAIQ value="false"/>
     </Sensor>
 
@@ -272,10 +275,11 @@
             <!-- list of stream config info. Meanings of each part is "format,widthxheight,field(0 is none, 7 is alternate),mcId" -->
             <supportedStreamConfig value="V4L2_PIX_FMT_UYVY,1920x1536,0,0,
                                           V4L2_PIX_FMT_UYVY,1920x1080,0,1,
-                                          V4L2_PIX_FMT_UYVY,1280x720,0,2,"/>
+                                          V4L2_PIX_FMT_UYVY,1280x720,0,2"/>
         </StaticMetadata>
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
         <supportedISysFormat value="V4L2_PIX_FMT_UYVY"/>
+        <vcAggregator value="TI960 a,3"/>
         <enableAIQ value="false"/>
     </Sensor>
 
@@ -338,10 +342,11 @@
             <!-- list of stream config info. Meanings of each part is "format,widthxheight,field(0 is none, 7 is alternate),mcId" -->
             <supportedStreamConfig value="V4L2_PIX_FMT_UYVY,1920x1536,0,0,
                                           V4L2_PIX_FMT_UYVY,1920x1080,0,1,
-                                          V4L2_PIX_FMT_UYVY,1280x720,0,2,"/>
+                                          V4L2_PIX_FMT_UYVY,1280x720,0,2"/>
         </StaticMetadata>
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
         <supportedISysFormat value="V4L2_PIX_FMT_UYVY"/>
+        <vcAggregator value="TI960 b,0"/>
         <enableAIQ value="false"/>
     </Sensor>
 
@@ -404,10 +409,11 @@
             <!-- list of stream config info. Meanings of each part is "format,widthxheight,field(0 is none, 7 is alternate),mcId" -->
             <supportedStreamConfig value="V4L2_PIX_FMT_UYVY,1920x1536,0,0,
                                           V4L2_PIX_FMT_UYVY,1920x1080,0,1,
-                                          V4L2_PIX_FMT_UYVY,1280x720,0,2,"/>
+                                          V4L2_PIX_FMT_UYVY,1280x720,0,2"/>
         </StaticMetadata>
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
         <supportedISysFormat value="V4L2_PIX_FMT_UYVY"/>
+        <vcAggregator value="TI960 b,1"/>
         <enableAIQ value="false"/>
     </Sensor>
 
@@ -470,10 +476,11 @@
             <!-- list of stream config info. Meanings of each part is "format,widthxheight,field(0 is none, 7 is alternate),mcId" -->
             <supportedStreamConfig value="V4L2_PIX_FMT_UYVY,1920x1536,0,0,
                                           V4L2_PIX_FMT_UYVY,1920x1080,0,1,
-                                          V4L2_PIX_FMT_UYVY,1280x720,0,2,"/>
+                                          V4L2_PIX_FMT_UYVY,1280x720,0,2"/>
         </StaticMetadata>
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
         <supportedISysFormat value="V4L2_PIX_FMT_UYVY"/>
+        <vcAggregator value="TI960 b,2"/>
         <enableAIQ value="false"/>
     </Sensor>
 
@@ -536,10 +543,11 @@
             <!-- list of stream config info. Meanings of each part is "format,widthxheight,field(0 is none, 7 is alternate),mcId" -->
             <supportedStreamConfig value="V4L2_PIX_FMT_UYVY,1920x1536,0,0,
                                           V4L2_PIX_FMT_UYVY,1920x1080,0,1,
-                                          V4L2_PIX_FMT_UYVY,1280x720,0,2,"/>
+                                          V4L2_PIX_FMT_UYVY,1280x720,0,2"/>
         </StaticMetadata>
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
         <supportedISysFormat value="V4L2_PIX_FMT_UYVY"/>
+        <vcAggregator value="TI960 b,3"/>
         <enableAIQ value="false"/>
     </Sensor>
 </CameraSettings>

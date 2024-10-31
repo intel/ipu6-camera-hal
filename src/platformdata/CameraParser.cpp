@@ -690,6 +690,8 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
         }
     } else if (strcmp(name, "isISYSCompression") == 0) {
         pCurrentCam->mISYSCompression = strcmp(atts[1], "true") == 0;
+        if (mStaticCfg->mMediaCfgId == IPU6_UPSTREAM_MEDIA_CFG)
+            pCurrentCam->mISYSCompression = false;
     } else if (strcmp(name, "isPSACompression") == 0) {
         pCurrentCam->mPSACompression = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "isOFSCompression") == 0) {
@@ -2337,7 +2339,7 @@ void CameraParser::getNVMDirectory(CameraParser* profiles) {
  * 1. <availableSensors value="ov8856-wf-2,ov2740-uf-0,ov2740-wf-2"/>
  *     The value is "'camera name'-wf/uf-'CSI port number'".
  *     For example: camera name is "ov8856". Sensor's sink entity name is
- *      "Intel IPU6 CSI-2 2" or "Intel IPU6 CSI2 2" and it is word facing.
+ *      "Intel IPU6 CSI-2 2" or "Intel IPU6 CSI2 2" and it is world-facing.
  *      The value is ov8856-wf-2.
  * 2. <platform value="IPU6"/> the platform value must be uppercase letter.
  *
@@ -2368,7 +2370,6 @@ std::vector<std::string> CameraParser::getAvailableSensors(
                 LOG2("@%s, available usb sensor name: %s", __func__, sensor.c_str());
 #endif
             }
-
         } else {
             // sensors with suffix port number
             std::string portNum = sensor.substr(sensor.find_last_of('-') + 1);

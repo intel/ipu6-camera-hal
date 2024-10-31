@@ -1454,7 +1454,7 @@
         <runIspAlways value="true"/>
     </Sensor>
 
-    <Sensor name="imx390-15" description="imx390 sensor" virtualChannel="true" vcSeq="4" vcNum="4" vcGroupId="0">
+    <Sensor name="imx390-16" description="imx390 sensor" virtualChannel="true" vcSeq="4" vcNum="4" vcGroupId="0">
         <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1920" outputHeight="1200" format="V4L2_PIX_FMT_SGRBG12">
             <control name="imx390 h" ctrlId="V4L2_CID_TEST_PATTERN" value="1" ctrlName="set Len Shading Correction"/>
             <format name="imx390 h" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>

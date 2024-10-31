@@ -999,7 +999,8 @@ bool MediaControl::checkHasSource(const MediaEntity* sink, const std::string& so
             // links[i] is the link to sink entity
             // pre is the link's source entity
             MediaEntity* pre = sink->links[i].source->entity;
-            if (pre->info.type == MEDIA_ENT_T_V4L2_SUBDEV_SENSOR) {
+            if (pre->info.type == MEDIA_ENT_T_V4L2_SUBDEV_SENSOR ||
+                pre->info.type == MEDIA_ENT_T_V4L2_SUBDEV) {
                 // if pre is sensor, return compare name result
                 if (strncmp(source.c_str(), pre->info.name, source.length()) == 0) return true;
             } else {
