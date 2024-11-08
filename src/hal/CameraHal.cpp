@@ -168,10 +168,17 @@ void CameraHal::deviceClose(int cameraId) {
 
     if (mCameraDevices[cameraId]) {
         mCameraDevices[cameraId]->deinit();
-        delete mCameraDevices[cameraId];
-        mCameraDevices[cameraId] = nullptr;
-
+        mCameraOpenNum--;
         mCameraShm.CameraDeviceClose(cameraId);
+    }
+
+    if (mCameraOpenNum == 0) {
+        for (int i = 0; i < MAX_CAMERA_NUMBER; i++) {
+            if (mCameraDevices[i]) {
+                delete mCameraDevices[i];
+                mCameraDevices[i] = nullptr;
+            }
+        }
     }
 }
 

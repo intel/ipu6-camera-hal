@@ -772,7 +772,7 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
         char* tablePtr = strtok_r(src, ",", &savePtr);
         if (tablePtr) pCurrentCam->mVcAggregator.mName = tablePtr;
         tablePtr = strtok_r(nullptr, ",", &savePtr);
-        if (tablePtr) pCurrentCam->mVcAggregator.mIndex = atoi(tablePtr);
+        if (tablePtr) pCurrentCam->mVcAggregator.mVcId = atoi(tablePtr);
         // VIRTUAL_CHANNEL_E
     } else if (strcmp(name, "disableBLCByAGain") == 0) {
         int size = strlen(atts[1]);

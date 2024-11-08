@@ -296,6 +296,7 @@ class MediaControl {
     // VIRTUAL_CHANNEL_E
 
     int getLensName(std::string* lensName);
+    bool isMediaSourceEntity(const MediaEntity* entity);
     bool checkAvailableSensor(const std::string& sensorEntityName);
     bool checkAvailableSensor(const std::string& sensorEntityName,
                               const std::string& sinkEntityName);
