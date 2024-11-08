@@ -100,21 +100,9 @@ int SofSource::initDev() {
 
     struct VcAggregator aggregator;
     if (PlatformData::getVcAggregator(mCameraId, aggregator) == OK) {
-        std::string devName;
-        CameraUtils::getDeviceName(aggregator.mName.c_str(), devName, true);
-        if (!devName.empty()) {
-            LOG1("%s, found aggregator subdevice %s", __func__, devName.c_str());
-            mAggregatorSubDev = V4l2DeviceFactory::getSubDev(mCameraId, devName);
-
-            struct v4l2_querymenu qm = {.id = V4L2_CID_IPU_QUERY_SUB_STREAM, };
-            qm.index = aggregator.mIndex;
-            int ret = mAggregatorSubDev->QueryMenu(&qm);
-            if (ret == 0) {
-                #define SUB_STREAM_VC_ID(value) ((value) >> 56 & 0xFF)
-                mFrameSyncId = SUB_STREAM_VC_ID(qm.value);
-            }
-        }
+        mFrameSyncId = aggregator.mVcId;
     }
+
     if (mFrameSyncId >= 0) id = mFrameSyncId;
     // VIRTUAL_CHANNEL_E
 

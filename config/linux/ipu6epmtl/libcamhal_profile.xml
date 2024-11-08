@@ -22,7 +22,7 @@
         <availableSensors value="ov05c10-uf-4,ov08x40-uf-0,ov13b10-uf-0,ov13b10-wf-4,ov5675-uf-4,ov01a1s-uf-0,ov01a10-uf-0,ov01a10-uf-4,
                                  ov02c10-uf-0,ov02c10-uf-1,ov02c10-uf-4,ov02e10-uf-1,ov02e10-uf-4,
                                  hm2170-uf-0,hm2170-uf-1,hm2170-uf-4,hm2172-uf-1,hm2172-uf-4,hi556-uf-1,
-                                 imx390,imx390-1-0,imx390-2-0,imx390-3-0,imx390-4-0,imx390-5-4,imx390-6-4,ar0234-1-0,ar0234-2-4,
+                                 imx390-1-0,imx390-2-0,imx390-3-0,imx390-4-0,imx390-5-4,imx390-6-4,ar0234-1-0,ar0234-2-4,
                                  external_source,ar0234_usb,lt6911uxc,lt6911uxe-1-0,lt6911uxe-2-4"/>
     </Common>
 </CameraSettings>

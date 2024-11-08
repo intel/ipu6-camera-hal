@@ -1064,28 +1064,29 @@ void PSysProcessor::dispatchTask(CameraBufferPortMap& inBuf, CameraBufferPortMap
             EdgeNrSetting edgeNrSetting;
             CLEAR(edgeNrSetting);
 
+            auto* res = AiqResultStorage::getInstance(mCameraId)->getAiqResult(currentSequence);
             int ret = params.getHdrRatio(hdrRatio);
-            if (ret == OK) {
-                auto* res = AiqResultStorage::getInstance(mCameraId)->getAiqResult(currentSequence);
-                if (res != nullptr) {
-                    auto exposure = res->mAeResults.exposures[0].exposure[0];
-                    float totalGain = exposure.analog_gain * exposure.digital_gain;
-                    PlatformData::getEdgeNrSetting(mCameraId, totalGain, hdrRatio, mTuningMode,
-                                                   edgeNrSetting);
-                    mIspSettings.eeSetting.strength += edgeNrSetting.edgeStrength;
-                    mIspSettings.nrSetting.strength += edgeNrSetting.nrStrength;
-                    LOG2("edgeStrength %d, nrStrength %d", edgeNrSetting.edgeStrength,
-                         edgeNrSetting.nrStrength);
+            if (ret == OK && res != nullptr) {
+                auto exposure = res->mAeResults.exposures[0].exposure[0];
+                float totalGain = exposure.analog_gain * exposure.digital_gain;
+                PlatformData::getEdgeNrSetting(mCameraId, totalGain, hdrRatio, mTuningMode,
+                                               edgeNrSetting);
+                mIspSettings.eeSetting.strength += edgeNrSetting.edgeStrength;
+                mIspSettings.nrSetting.strength += edgeNrSetting.nrStrength;
+                // Limit NR strength range from EXTREME_STRENGTH_LEVEL1 to EXTREME_STRENGTH_LEVEL4
+                mIspSettings.nrSetting.strength = CLIP(mIspSettings.nrSetting.strength,
+                    EXTREME_STRENGTH_LEVEL1, EXTREME_STRENGTH_LEVEL4);
+                LOG2("edgeStrength %d, nrStrength %d", edgeNrSetting.edgeStrength,
+                     edgeNrSetting.nrStrength);
 
-                    TuningMode stillMode = (mTuningMode == TUNING_MODE_VIDEO) ?
-                                           TUNING_MODE_STILL_CAPTURE : TUNING_MODE_VIDEO_ULL;
-                    PlatformData::getEdgeNrSetting(mCameraId, totalGain, hdrRatio, stillMode,
-                                                   edgeNrSetting);
-                    mIspSettings.eeStillSetting.strength += edgeNrSetting.edgeStrength;
-                    mIspSettings.nrStillSetting.strength += edgeNrSetting.nrStrength;
-                    LOG2("Still edgeStrength %d, nrStrength %d", edgeNrSetting.edgeStrength,
-                         edgeNrSetting.nrStrength);
-                }
+                TuningMode stillMode = (mTuningMode == TUNING_MODE_VIDEO) ?
+                                       TUNING_MODE_STILL_CAPTURE : TUNING_MODE_VIDEO_ULL;
+                PlatformData::getEdgeNrSetting(mCameraId, totalGain, hdrRatio, stillMode,
+                                               edgeNrSetting);
+                mIspSettings.eeStillSetting.strength += edgeNrSetting.edgeStrength;
+                mIspSettings.nrStillSetting.strength += edgeNrSetting.nrStrength;
+                LOG2("Still edgeStrength %d, nrStrength %d", edgeNrSetting.edgeStrength,
+                     edgeNrSetting.nrStrength);
             }
 
             bool hasStill = false;

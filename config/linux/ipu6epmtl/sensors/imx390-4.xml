@@ -16,6 +16,25 @@
 
 <CameraSettings>
     <Sensor name="imx390-4" description="imx390 sensor" virtualChannel="true" vcGroupId="0">
+        <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1920" outputHeight="1200" format="V4L2_PIX_FMT_SGRBG12">
+            <format name="imx390 d" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="TI960 a" pad="3" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="TI960 a" pad="4" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 0" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 0" pad="1" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI2 BE SOC 0" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI2 BE SOC 0" pad="4" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+
+            <link srcName="imx390 d" srcPad="0" sinkName="TI960 a" sinkPad="3" enable="true"/>
+            <link srcName="TI960 a" srcPad="4" sinkName="Intel IPU6 CSI-2 0" sinkPad="0" enable="true"/>
+            <link srcName="Intel IPU6 CSI-2 0" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 0" sinkPad="0" enable="true"/>
+            <link srcName="Intel IPU6 CSI2 BE SOC 0" srcPad="4" sinkName="Intel IPU6 BE SOC capture 3" sinkPad="0" enable="true"/>
+
+            <videonode name="Intel IPU6 BE SOC capture 3" videoNodeType="VIDEO_GENERIC"/>
+            <videonode name="Intel IPU6 CSI-2 0" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+            <videonode name="imx390 d" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+        </MediaCtlConfig>
+
         <MediaCtlConfig id="0" mediaCfg="1" ConfigMode="AUTO" outputWidth="1920" outputHeight="1200" format="V4L2_PIX_FMT_SGRBG12">
             <format name="imx390 d" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12" stream="0"/>
             <format name="TI960 a" pad="3" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12" stream="3"/>

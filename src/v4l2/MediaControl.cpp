@@ -1016,18 +1016,29 @@ int MediaControl::getPrivacyDeviceName(std::string* name) {
 }
 // PRIVACY_MODE_E
 
+bool MediaControl::isMediaSourceEntity(const MediaEntity* entity) {
+    if (nullptr == entity) return false;
+    auto n_pads = entity->info.pads;
+
+    for (auto i = 0; i < n_pads; ++i) {
+        // If any sink pad in an entity, it's not the source entity
+        if (entity->pads[i].flags & MEDIA_PAD_FL_SINK) return false;
+    }
+
+    return true;
+}
+
 bool MediaControl::checkHasSource(const MediaEntity* sink, const std::string& source) {
     for (unsigned int i = 0; i < sink->numLinks; ++i) {
         if (sink->links[i].sink->entity == sink) {
             // links[i] is the link to sink entity
             // pre is the link's source entity
             MediaEntity* pre = sink->links[i].source->entity;
-            if (pre->info.type == MEDIA_ENT_T_V4L2_SUBDEV_SENSOR ||
-                pre->info.type == MEDIA_ENT_T_V4L2_SUBDEV) {
-                // if pre is sensor, return compare name result
+            if (isMediaSourceEntity(pre)) {
+                // if pre is pure source, return compare name result
                 if (strncmp(source.c_str(), pre->info.name, source.length()) == 0) return true;
             } else {
-                // if pre is not sensor, search recursively
+                // if pre is not pure source, search recursively
                 if (checkHasSource(pre, source)) return true;
             }
         }
