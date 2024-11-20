@@ -19,10 +19,10 @@ There are 4 repositories that provide the complete setup:
 
 - Build and install:
     ```
-# Please follow common cmake, make & make install flow
-cd ipu6-camera-hal
-mkdir build && cd build
-cmake -DCMAKE_BUILD_TYPE=Release \
+    # Please follow common cmake, make & make install flow
+    cd ipu6-camera-hal
+    mkdir build && cd build
+    cmake -DCMAKE_BUILD_TYPE=Release \
       -DCMAKE_INSTALL_PREFIX=/usr \
       -DCMAKE_INSTALL_LIBDIR=lib \
       -DBUILD_CAMHAL_ADAPTOR=ON \
@@ -30,6 +30,6 @@ cmake -DCMAKE_BUILD_TYPE=Release \
       -DIPU_VERSIONS="ipu6ep" \
       -DUSE_PG_LITE_PIPE=ON \
       ..
-make && sudo make install
+    make && sudo make install
      ```
 Users can specify CMAKE_INSTALL_LIBDIR per your request.
