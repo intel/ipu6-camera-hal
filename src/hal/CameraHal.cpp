@@ -47,8 +47,12 @@ CameraHal::CameraHal() : mInitTimes(0), mState(HAL_UNINIT), mCameraOpenNum(0) {
 
     CLEAR(mCameraDevices);
     // VIRTUAL_CHANNEL_S
-    CLEAR(mTotalVirtualChannelCamNum);
-    CLEAR(mConfigTimes);
+    mCurrentGroupId = -1;
+    mVcNum = 0;
+    mConfigTimes = 0;
+    for (int i = 0; i < MAX_CAMERA_NUMBER; i++) {
+        mDeviceClosing[i] = false;
+    }
     // VIRTUAL_CHANNEL_E
 }
 
@@ -70,12 +74,13 @@ int CameraHal::init() {
     CheckAndLogError(ret != OK, NO_INIT, "PlatformData init failed");
 
     // VIRTUAL_CHANNEL_S
-    for (int i = 0; i < MAX_VC_GROUP_NUMBER; i++) {
-        mTotalVirtualChannelCamNum[i] = 0;
-        mConfigTimes[i] = 0;
+    mCurrentGroupId = -1;
+    mVcNum = 0;
+    mConfigTimes = 0;
+    for (int i = 0; i < MAX_CAMERA_NUMBER; i++) {
+        mDeviceClosing[i] = false;
     }
     // VIRTUAL_CHANNEL_E
-
     mState = HAL_INIT;
 
     return OK;
@@ -92,9 +97,11 @@ int CameraHal::deinit() {
     }
 
     // VIRTUAL_CHANNEL_S
-    for (int i = 0; i < MAX_VC_GROUP_NUMBER; i++) {
-        mTotalVirtualChannelCamNum[i] = 0;
-        mConfigTimes[i] = 0;
+    mVcNum = 0;
+    mCurrentGroupId = -1;
+    mConfigTimes = 0;
+    for (int i = 0; i < MAX_CAMERA_NUMBER; i++) {
+        mDeviceClosing[i] = false;
     }
     // VIRTUAL_CHANNEL_E
 
@@ -127,18 +134,26 @@ int CameraHal::deviceOpen(int cameraId, int vcNum) {
         return INVALID_OPERATION;
     }
 
-    if (mCameraShm.CameraDeviceOpen(cameraId) != OK) return INVALID_OPERATION;
-
-    mCameraDevices[cameraId] = new CameraDevice(cameraId);
-
     // VIRTUAL_CHANNEL_S
+    CheckAndLogError(mCameraOpenNum && vcNum != mVcNum, INVALID_OPERATION,
+                     "New vcNum %d dismatch the previous %d", vcNum, mVcNum);
+
     camera_info_t info;
     CLEAR(info);
     PlatformData::getCameraInfo(cameraId, info);
-    int groupId = info.vc.group >= 0 ? info.vc.group : 0;
-    mTotalVirtualChannelCamNum[groupId] = vcNum;
+    if (info.vc.total_num) {
+        // Open as vc sensor
+        int groupId = info.vc.group >= 0 ? info.vc.group : 0;
+        CheckAndLogError(mCurrentGroupId >= 0 && groupId != mCurrentGroupId, INVALID_OPERATION,
+                         "Open group %d fail because group %d already opened!", groupId,
+                         mCurrentGroupId);
+        mCurrentGroupId = groupId;
+    }
+    mVcNum = vcNum;
     // VIRTUAL_CHANNEL_E
 
+    if (mCameraShm.CameraDeviceOpen(cameraId) != OK) return INVALID_OPERATION;
+    mCameraDevices[cameraId] = new CameraDevice(cameraId);
     // The check is to handle dual camera cases
     mCameraOpenNum = mCameraShm.cameraDeviceOpenNum();
     CheckAndLogError(mCameraOpenNum == 0, INVALID_OPERATION, "camera open num couldn't be 0");
@@ -167,12 +182,32 @@ void CameraHal::deviceClose(int cameraId) {
     AutoMutex l(mLock);
 
     if (mCameraDevices[cameraId]) {
-        mCameraDevices[cameraId]->deinit();
-        delete mCameraDevices[cameraId];
-        mCameraDevices[cameraId] = nullptr;
-
+        if (mVcNum <= 0) {
+            mCameraDevices[cameraId]->deinit();
+            delete mCameraDevices[cameraId];
+            mCameraDevices[cameraId] = nullptr;
+            mCameraOpenNum--;
+        } else if (!mDeviceClosing[cameraId]) {
+            // only deinit vc camera here
+            mCameraDevices[cameraId]->deinit();
+            mCameraOpenNum--;
+            mDeviceClosing[cameraId] = true;
+        }
         mCameraShm.CameraDeviceClose(cameraId);
     }
+    // VIRTUAL_CHANNEL_S
+    // Destroy all closed vc cameras
+    if (mVcNum > 0 && mCameraOpenNum == 0) {
+        for (int i = 0; i < MAX_CAMERA_NUMBER; i++) {
+            if (mDeviceClosing[i]) {
+                delete mCameraDevices[i];
+                mCameraDevices[i] = nullptr;
+                mDeviceClosing[i] = false;
+            }
+        }
+        mVcNum = 0;
+    }
+    // VIRTUAL_CHANNEL_E
 }
 
 void CameraHal::deviceCallbackRegister(int cameraId, const camera_callback_ops_t* callback) {
@@ -215,15 +250,10 @@ int CameraHal::deviceConfigStreams(int cameraId, stream_config_t* streamList) {
     }
 
     // VIRTUAL_CHANNEL_S
-    camera_info_t info;
-    CLEAR(info);
-    PlatformData::getCameraInfo(cameraId, info);
-    int groupId = info.vc.group >= 0 ? info.vc.group : 0;
-    if (mTotalVirtualChannelCamNum[groupId] > 0) {
-        mConfigTimes[groupId]++;
-        LOG1("<id%d> @%s, mConfigTimes:%d, before signal", cameraId, __func__,
-             mConfigTimes[groupId]);
-        mVirtualChannelSignal[groupId].signal();
+    if (mVcNum > 0) {
+        mConfigTimes++;
+        LOG1("<id%d> @%s, mConfigTimes:%d, before signal", cameraId, __func__, mConfigTimes);
+        mVirtualChannelSignal.signal();
     }
     // VIRTUAL_CHANNEL_E
 
@@ -238,22 +268,16 @@ int CameraHal::deviceStart(int cameraId) {
     checkCameraDevice(device, BAD_VALUE);
 
     // VIRTUAL_CHANNEL_S
-    camera_info_t info;
-    CLEAR(info);
-    PlatformData::getCameraInfo(cameraId, info);
-    int groupId = info.vc.group >= 0 ? info.vc.group : 0;
-    LOG1("<id%d> @%s, mConfigTimes:%d, mTotalVirtualChannelCamNum:%d", cameraId, __func__,
-         mConfigTimes[groupId], mTotalVirtualChannelCamNum[groupId]);
-
-    if (mTotalVirtualChannelCamNum[groupId] > 0) {
+    if (mVcNum > 0) {
+        LOG1("<id%d>@%s, mConfigTimes:%d, mVcNum:%d", cameraId, __func__, mConfigTimes, mVcNum);
         int timeoutCnt = 10;
-        while (mConfigTimes[groupId] < mTotalVirtualChannelCamNum[groupId]) {
-            mVirtualChannelSignal[groupId].waitRelative(lock, mWaitDuration * SLOWLY_MULTIPLIER);
+        while (mConfigTimes < mVcNum) {
+            mVirtualChannelSignal.waitRelative(lock, mWaitDuration * SLOWLY_MULTIPLIER);
             LOG1("<id%d> @%s, mConfigTimes:%d, timeoutCnt:%d", cameraId, __func__,
-                 mConfigTimes[groupId], timeoutCnt);
+                 mConfigTimes, timeoutCnt);
             --timeoutCnt;
             CheckAndLogError(!timeoutCnt, TIMED_OUT, "<id%d> mConfigTimes:%d, wait time out",
-                             cameraId, mConfigTimes[groupId]);
+                             cameraId, mConfigTimes);
         }
     }
     // VIRTUAL_CHANNEL_E

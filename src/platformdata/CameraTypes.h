@@ -286,8 +286,8 @@ typedef enum {
 
 // VIRTUAL_CHANNEL_S
 struct VcAggregator {
-    VcAggregator() { mIndex = -1; }
-    int mIndex;
+    VcAggregator() { mVcId = -1; }
+    int mVcId;
     std::string mName;
 };
 // VIRTUAL_CHANNEL_E

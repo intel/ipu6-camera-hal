@@ -1667,7 +1667,7 @@ int PlatformData::getVirtualChannelSequence(int cameraId) {
 }
 
 int PlatformData::getVcAggregator(int cameraId, struct VcAggregator& aggregator) {
-    if (getInstance()->mStaticCfg.mCameras[cameraId].mVcAggregator.mIndex >= 0) {
+    if (getInstance()->mStaticCfg.mCameras[cameraId].mVcAggregator.mVcId >= 0) {
         aggregator = getInstance()->mStaticCfg.mCameras[cameraId].mVcAggregator;
         return OK;
     }
