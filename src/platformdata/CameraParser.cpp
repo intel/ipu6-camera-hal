@@ -772,7 +772,7 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
         char* tablePtr = strtok_r(src, ",", &savePtr);
         if (tablePtr) pCurrentCam->mVcAggregator.mName = tablePtr;
         tablePtr = strtok_r(nullptr, ",", &savePtr);
-        if (tablePtr) pCurrentCam->mVcAggregator.mIndex = atoi(tablePtr);
+        if (tablePtr) pCurrentCam->mVcAggregator.mVcId = atoi(tablePtr);
         // VIRTUAL_CHANNEL_E
     } else if (strcmp(name, "disableBLCByAGain") == 0) {
         int size = strlen(atts[1]);
@@ -1433,7 +1433,14 @@ void CameraParser::parseRouteElement(CameraParser* profiles, const char* name, c
         idx += 2;
     }
 
-    mc.routes.push_back(route);
+    auto it = mc.routings.find(route.entityName);
+    if (it != mc.routings.end()) {
+        it->second.push_back(route);
+    } else {
+        std::vector<McRoute> routes;
+        routes.push_back(route);
+        mc.routings.insert(std::pair<std::string, std::vector<McRoute>>(route.entityName, routes));
+    }
 }
 
 void CameraParser::parseVideoElement(CameraParser* profiles, const char* name,

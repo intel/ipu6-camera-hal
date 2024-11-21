@@ -666,7 +666,7 @@
 
             <videonode name="Intel IPU6 BE SOC 2 capture 3" videoNodeType="VIDEO_GENERIC"/>
             <videonode name="Intel IPU6 CSI-2 2" videoNodeType="VIDEO_ISYS_RECEIVER"/>
-            <videonode name="imx390 d" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+            <videonode name="imx390 h" videoNodeType="VIDEO_PIXEL_ARRAY"/>
         </MediaCtlConfig>
         <StaticMetadata>
             <!-- list of stream config info. Meanings of each part is "format,widthxheight,field(0 is none, 7 is alternate),mcId" -->
@@ -1280,7 +1280,7 @@
             <videonode name="imx390 g" videoNodeType="VIDEO_PIXEL_ARRAY"/>
         </MediaCtlConfig>
         <MediaCtlConfig id="1" ConfigMode="AUTO" outputWidth="1280" outputHeight="960" format="V4L2_PIX_FMT_SGRBG12">
-            <control name="imx390 f" ctrlId="V4L2_CID_TEST_PATTERN" value="1" ctrlName="set Len Shading Correction"/>
+            <control name="imx390 g" ctrlId="V4L2_CID_TEST_PATTERN" value="1" ctrlName="set Len Shading Correction"/>
             <format name="imx390 g" pad="0" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="TI960 b" pad="2" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
             <format name="TI960 b" pad="4" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
@@ -1386,7 +1386,7 @@
 
             <videonode name="Intel IPU6 BE SOC 2 capture 3" videoNodeType="VIDEO_GENERIC"/>
             <videonode name="Intel IPU6 CSI-2 2" videoNodeType="VIDEO_ISYS_RECEIVER"/>
-            <videonode name="imx390 d" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+            <videonode name="imx390 h" videoNodeType="VIDEO_PIXEL_ARRAY"/>
         </MediaCtlConfig>
         <StaticMetadata>
             <!-- list of stream config info. Meanings of each part is "format,widthxheight,field(0 is none, 7 is alternate),mcId" -->
