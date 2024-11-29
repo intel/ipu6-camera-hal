@@ -908,8 +908,8 @@ status_t PSysProcessor::prepareTask(CameraBufferPortMap* srcBuffers,
     int64_t settingSequence = getSettingSequence(*dstBuffers);
     bool needRunPipe = needExecutePipe(settingSequence, inputSequence);
     bool holdOnInput = needHoldOnInputFrame(settingSequence, inputSequence);
-    LOG2("%s: dst sequence = %ld, src sequence = %ld, needRunPipe = %d, needReuseInput = %d",
-         __func__, settingSequence, inputSequence, needRunPipe, holdOnInput);
+    LOG2("<id%d>%s: dst sequence = %ld, src sequence = %ld, needRunPipe = %d, needReuseInput = %d",
+         mCameraId, __func__, settingSequence, inputSequence, needRunPipe, holdOnInput);
 
     {
         AutoMutex l(mBufferQueueLock);
