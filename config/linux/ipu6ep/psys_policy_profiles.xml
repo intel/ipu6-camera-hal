@@ -19,8 +19,6 @@ limitations under the License.
         <!-- op_modes: 0-disabled, 2-coupled. see ia_cipf_css.h in libiacss -->
         <pipe_executor name="ipu6_lb_video"  pgs="isa_lb_video"/>
         <pipe_executor name="ipu6_bb_video"  pgs="post_gdc_video"/>
-        <bundle executors="ipu6_lb_video:0,ipu6_bb_video:1"/>
-        <enableBundleInSdv name="false"/>
 
         <pipe_executor name="ipu6_full_still"  pgs="isa_lb_stills,post_gdc_stills"/>
     </graph>
