@@ -157,6 +157,8 @@ int RequestThread::processRequest(int bufferNum, camera_buffer_t** ubuffer,
     request.mBufferNum = bufferNum;
     bool hasVideoBuffer = false;
 
+    LOG2("<id%d>%s", mCameraId, __func__);
+
     for (int id = 0; id < bufferNum; id++) {
         request.mBuffer[id] = ubuffer[id];
         if (ubuffer[id]->s.usage == CAMERA_STREAM_PREVIEW ||
@@ -180,6 +182,7 @@ int RequestThread::processRequest(int bufferNum, camera_buffer_t** ubuffer,
     if (mRequestsInProcessing == 0 || !mPerframeControlSupport) {
         mRequestTriggerEvent |= NEW_REQUEST;
         mRequestSignal.signal();
+        LOG2("<id%d>%s: signal new request", mCameraId, __func__);
     }
     return OK;
 }

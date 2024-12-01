@@ -927,9 +927,8 @@ int CameraDevice::registerBuffer(camera_buffer_t** ubuffer, int bufferNum) {
 
 int CameraDevice::qbuf(camera_buffer_t** ubuffer, int bufferNum, const Parameters* settings) {
     PERF_CAMERA_ATRACE();
-    LOG2("<id%d>@%s", mCameraId, __func__);
-
-    {
+    LOG2("<id%d>@%s, bufferNum:%d, ubufferPtr:%p", mCameraId, __func__, bufferNum, ubuffer);
+{
         AutoMutex m(mDeviceLock);
         if (mState == DEVICE_CONFIGURE || mState == DEVICE_STOP) {
             // Start 3A here then the HAL can run 3A for request
