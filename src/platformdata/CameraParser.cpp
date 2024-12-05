@@ -690,6 +690,8 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
         }
     } else if (strcmp(name, "isISYSCompression") == 0) {
         pCurrentCam->mISYSCompression = strcmp(atts[1], "true") == 0;
+        if (mStaticCfg->mMediaCfgId == IPU6_UPSTREAM_MEDIA_CFG)
+            pCurrentCam->mISYSCompression = false;
     } else if (strcmp(name, "isPSACompression") == 0) {
         pCurrentCam->mPSACompression = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "isOFSCompression") == 0) {
