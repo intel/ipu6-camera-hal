@@ -421,10 +421,23 @@ static string formatBinFileName(int cameraId, const char* prefix, BinParam_t* bi
     return string(fileName);
 }
 
-int CameraDump::checkPattern(void* data, int bufferSize, int w, int h, int stride) {
+/*
+ * return 1, match the pattern
+ *
+ * pink pattern 0xffff may be padding bytes.
+ * 0xffff observed in bottom half of frame buffer.
+ * 0xffff not observed relative to Y/U/V plane.
+ * for example:
+ * Y plane may OK, U plane bottom half is 0xffff, V plane is whole 0xffff.
+ */
+int CameraDump::matchPattern(void* data, int bufferSize, int w, int h, int stride, int format) {
     uint32_t val;
     int lineStart = h - 1;
     int lineEnd = h - 1;
+
+    if (format != V4L2_PIX_FMT_UYVY) return 0;
+
+    LOG1("%s, stride %d, w %d, h %d, buffersize %d", __func__, stride, w, h, bufferSize);
 
     if (gDumpPatternLineEnabled && gDumpPatternLineMin < (uint32_t)h)
         lineStart = gDumpPatternLineMin;
@@ -471,12 +484,11 @@ void CameraDump::dumpImage(int cameraId, const shared_ptr<CameraBuffer>& camBuff
     void* pBuf = mapper.getUserPtr();
 
     if (gDumpPatternEnabled) {
-        if (!checkPattern(pBuf, bufferSize,
-                     camBuffer->getWidth(),
-                     camBuffer->getHeight(),
-                     camBuffer->getStride()))
-            return;
-        LOGI("@%s, dump pattern matched frame %d", __func__, camBuffer->getSequence());
+        if (matchPattern(pBuf, bufferSize, camBuffer->getWidth(), camBuffer->getHeight(),
+                         camBuffer->getStride(), camBuffer->getFormat()))
+            LOGI("@%s, dump pattern matched frame %d", __func__, camBuffer->getSequence());
+
+        return;
     }
     LOG1("@%s, fd:%d, buffersize:%d, buf:%p, memoryType:%d, fileName:%s", __func__, fd, bufferSize,
          pBuf, memoryType, fileName.c_str());
