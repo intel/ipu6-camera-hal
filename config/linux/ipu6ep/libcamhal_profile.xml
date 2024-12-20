@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<!-- Copyright (C) 2019-2023 Intel Corporation.
+<!-- Copyright (C) 2024 Intel Corporation.
 
      Licensed under the Apache License, Version 2.0 (the "License");
      you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@
         <!-- The value format of availableSensors is "sensor name"-wf/uf-"CSI port ID" -->
         <availableSensors value="ov13b10-wf-2,ov13b10-uf-1,ov8856-wf-2,ov8856-uf-1,ov01a10-uf-1,ov01a10-uf-2,ov02c10-uf-1,ov02c10-uf-2,
                                  ov2740-uf-1,hm2170-uf-1,hm2170-uf-2,hi556-uf-1,ov01a1s-uf-1,ov08a10-uf-1,
-                                 isx031,imx390,ar0234,external_source,ar0234_usb,lt6911uxc-1-1,lt6911uxc-2-2,lt6911uxe"/>
+                                 isx031,imx390,ar0234-1-1,ar0234-2-2,external_source,ar0234_usb,
+                                 lt6911uxc-1-1,lt6911uxc-2-2,lt6911uxc-pdata1-1,lt6911uxc-pdata2-2,lt6911uxe-1-1,lt6911uxe-2-2"/>
     </Common>
 </CameraSettings>

@@ -1406,7 +1406,6 @@ void CameraParser::parseLinkElement(CameraParser* profiles, const char* name, co
 
 void CameraParser::parseRouteElement(CameraParser* profiles, const char* name, const char** atts) {
     McRoute route;
-    MediaCtlConf& mc = profiles->pCurrentCam->mMediaCtlConfs.back();
     route.flag = MEDIA_LNK_FL_ENABLED;
 
     int idx = 0;
@@ -1432,6 +1431,8 @@ void CameraParser::parseRouteElement(CameraParser* profiles, const char* name, c
         }
         idx += 2;
     }
+    // VIRTUAL_CHANNEL_S
+    MediaCtlConf& mc = profiles->pCurrentCam->mMediaCtlConfs.back();
 
     auto it = mc.routings.find(route.entityName);
     if (it != mc.routings.end()) {
@@ -1441,6 +1442,7 @@ void CameraParser::parseRouteElement(CameraParser* profiles, const char* name, c
         routes.push_back(route);
         mc.routings.insert(std::pair<std::string, std::vector<McRoute>>(route.entityName, routes));
     }
+    // VIRTUAL_CHANNEL_E
 }
 
 void CameraParser::parseVideoElement(CameraParser* profiles, const char* name,

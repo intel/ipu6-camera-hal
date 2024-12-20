@@ -165,17 +165,19 @@ int RequestThread::processRequest(int bufferNum, camera_buffer_t** ubuffer,
         }
     }
 
-    if (mFirstRequest && !hasVideoBuffer) {
+    if (!mActive) {
+        request.mIsFirstRequest = true;
+        mActive = true;
+        LOG2("<id%d>%s: process first request.", mCameraId, __func__);
+    }
+
+    if (request.mIsFirstRequest && !hasVideoBuffer) {
         LOG2("there is no video buffer in first request, so don't block request processing.");
         mBlockRequest = false;
     }
 
     request.mRequestParam = copyRequestParams(params);
     mPendingRequests.push_back(request);
-
-    if (!mActive) {
-        mActive = true;
-    }
 
     if (mRequestsInProcessing == 0 || !mPerframeControlSupport) {
         mRequestTriggerEvent |= NEW_REQUEST;
@@ -374,7 +376,7 @@ bool RequestThread::threadLoop() {
     }
 
     if (!mActive) {
-        return false;
+        return true;
     }
 
     CameraRequest request;
@@ -448,7 +450,7 @@ void RequestThread::handleRequest(CameraRequest& request, int64_t applyingSeq) {
 
     {
         AutoMutex l(mFirstRequestLock);
-        if (mFirstRequest) {
+        if (request.mIsFirstRequest) {
             LOG1("%s: first request done", __func__);
             mFirstRequest = false;
             mFirstRequestSignal.signal();

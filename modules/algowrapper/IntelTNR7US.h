@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include <base/threading/thread.h>
 #include <pthread.h>
 
 #include <memory>
@@ -28,8 +27,11 @@ extern "C" {
 #include "CameraBuffer.h"
 #include "PlatformData.h"
 #include "TNRCommon.h"
+#include "iutils/Thread.h"
 
 #ifdef TNR7_CM
+#define HANDLE cancel_fw_pre_define
+#ifndef HAVE_ANDROID_OS
 /* the cm_rt.h has some build error with current clang build flags
  * use the ignored setting to ignore these errors, and use
  * push/pop to make the ignore only take effect on this file */
@@ -37,9 +39,11 @@ extern "C" {
 #pragma clang diagnostic ignored "-Wbitfield-constant-conversion"
 #pragma clang diagnostic ignored "-Wunused-private-field"
 // HANDLE is redefined in cm_rt.h, avoid the redefinition build error
-#define HANDLE cancel_fw_pre_define
 #include "cm_rt.h"
 #pragma clang diagnostic pop
+#else
+#include "cm_rt.h"
+#endif
 
 extern int run_tnr7us_frame(int width, int height, int stride, CmSurface2DUP*& inputSurface,
                             CmSurface2DUP*& outputSurface, tnr_scale_1_0_t* dsPtr,
@@ -99,11 +103,11 @@ class IntelTNR7US {
 };
 
 #ifdef TNR7_CM
-class IntelC4mTNR : public IntelTNR7US {
+class IntelC4mTNR : public IntelTNR7US, public icamera::Thread {
  public:
     explicit IntelC4mTNR(int cameraId) : IntelTNR7US(cameraId) {}
     virtual ~IntelC4mTNR();
-    virtual int init(int width, int height, TnrType type = TNR_INSTANCE0);
+    virtual int init(int width, int height, TnrType type = TNR_INSTANCE0) override;
     /**
      * call tnr api to calc tnr result
      *
@@ -113,12 +117,13 @@ class IntelC4mTNR : public IntelTNR7US {
      * \param fd: user output buffer file handle
      */
     virtual int runTnrFrame(const void* inBufAddr, void* outBufAddr, uint32_t inBufSize,
-                            uint32_t outBufSize, Tnr7Param* tnrParam, bool syncUpdate, int fd = -1);
-    virtual void* allocCamBuf(uint32_t bufSize, int id);
-    virtual void freeAllBufs();
-    virtual int prepareSurface(void* bufAddr, int size);
-    virtual int asyncParamUpdate(int gain, bool forceUpdate);
-    virtual int getTnrBufferSize(int width, int height, uint32_t* size);
+                            uint32_t outBufSize, Tnr7Param* tnrParam, bool syncUpdate,
+                            int fd = -1) override;
+    virtual void* allocCamBuf(uint32_t bufSize, int id) override;
+    virtual void freeAllBufs() override;
+    virtual int prepareSurface(void* bufAddr, int size) override;
+    virtual int asyncParamUpdate(int gain, bool forceUpdate) override;
+    virtual int getTnrBufferSize(int width, int height, uint32_t* size) override;
 
  private:
     /* tnr api use CmSurface2DUP object as data buffer, call this api to create
@@ -127,14 +132,21 @@ class IntelC4mTNR : public IntelTNR7US {
     int32_t destroyCMSurface(CmSurface2DUP* surface);
     // get the CmSurface object of the bufAddr in mCMSurfaceMap
     CmSurface2DUP* getBufferCMSurface(void* bufAddr);
-    /* call tnr7us API to update params */
-    void handleParamUpdate(int gain, bool forceUpdate);
     DISALLOW_COPY_AND_ASSIGN(IntelC4mTNR);
 
  private:
     // Tnr will create CMSurface for input buffers and cache them in the map
     std::unordered_map<void*, CmSurface2DUP*> mCMSurfaceMap;
-    std::unique_ptr<base::Thread> mThread;
+    virtual bool threadLoop() override;
+    std::mutex mLock;
+    std::condition_variable mRequestCondition;
+    const uint64_t kMaxDuration = 5000000000;  // 5s
+    typedef struct {
+        int gain;
+        bool forceUpdate;
+    } ParamGain;
+    std::queue<ParamGain> mParamGainRequest;
+    bool mThreadRunning;
 };
 #endif
 }  // namespace icamera
