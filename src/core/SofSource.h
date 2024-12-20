@@ -67,6 +67,7 @@ class SofSource : public EventSource {
     bool mSofDisabled;
 
     int poll();
+    int mFlushFd[2];  // Flush file descriptor
 };
 
 }  // namespace icamera

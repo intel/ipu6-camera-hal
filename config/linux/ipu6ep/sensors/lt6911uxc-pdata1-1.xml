@@ -14,7 +14,7 @@
      limitations under the License.
 -->
 <CameraSettings>
-    <Sensor name="lt6911uxc-1" description="lt6911uxc sensor">
+    <Sensor name="lt6911uxc-pdata1" description="lt6911uxc sensor">
         <MediaCtlConfig id="0">
             <!-- FE capture -->
             <format name="lt6911uxc b" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
@@ -77,53 +77,53 @@
         </MediaCtlConfig>
         <MediaCtlConfig id="0" mediaCfg="1">
             <!-- FE capture -->
-            <format name="lt6911uxc $I2CBUS" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="lt6911uxc b" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI2 $CSI_PORT" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <link srcName="lt6911uxc $I2CBUS" srcPad="0" sinkName="Intel IPU6 CSI2 $CSI_PORT" sinkPad="0" enable="true"/>
+            <link srcName="lt6911uxc b" srcPad="0" sinkName="Intel IPU6 CSI2 $CSI_PORT" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 $CSI_PORT" srcPad="1" sinkName="Intel IPU6 ISYS Capture $CAPTURE_ID" sinkPad="0" enable="true"/>
             <videonode name="Intel IPU6 ISYS Capture $CAPTURE_ID" videoNodeType="VIDEO_GENERIC"/>
             <videonode name="Intel IPU6 CSI2 $CSI_PORT" videoNodeType="VIDEO_ISYS_RECEIVER"/>
-            <videonode name="lt6911uxc $I2CBUS" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+            <videonode name="lt6911uxc b" videoNodeType="VIDEO_PIXEL_ARRAY"/>
         </MediaCtlConfig>
         <MediaCtlConfig id="1" mediaCfg="1">
             <!-- FE capture -->
-            <format name="lt6911uxc $I2CBUS" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="lt6911uxc b" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI2 $CSI_PORT" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <link srcName="lt6911uxc $I2CBUS" srcPad="0" sinkName="Intel IPU6 CSI2 $CSI_PORT" sinkPad="0" enable="true"/>
+            <link srcName="lt6911uxc b" srcPad="0" sinkName="Intel IPU6 CSI2 $CSI_PORT" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 $CSI_PORT" srcPad="1" sinkName="Intel IPU6 ISYS Capture $CAPTURE_ID" sinkPad="0" enable="true"/>
             <videonode name="Intel IPU6 ISYS Capture $CAPTURE_ID" videoNodeType="VIDEO_GENERIC"/>
             <videonode name="Intel IPU6 CSI2 $CSI_PORT" videoNodeType="VIDEO_ISYS_RECEIVER"/>
-            <videonode name="lt6911uxc $I2CBUS" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+            <videonode name="lt6911uxc b" videoNodeType="VIDEO_PIXEL_ARRAY"/>
         </MediaCtlConfig>
 	    <MediaCtlConfig id="2" mediaCfg="1">
             <!-- FE capture -->
-            <format name="lt6911uxc $I2CBUS" pad="0" width="2560" height="1440" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="lt6911uxc b" pad="0" width="2560" height="1440" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI2 $CSI_PORT" pad="0" width="2560" height="1440" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <link srcName="lt6911uxc $I2CBUS" srcPad="0" sinkName="Intel IPU6 CSI2 $CSI_PORT" sinkPad="0" enable="true"/>
+            <link srcName="lt6911uxc b" srcPad="0" sinkName="Intel IPU6 CSI2 $CSI_PORT" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 $CSI_PORT" srcPad="1" sinkName="Intel IPU6 ISYS Capture $CAPTURE_ID" sinkPad="0" enable="true"/>
             <videonode name="Intel IPU6 ISYS Capture $CAPTURE_ID" videoNodeType="VIDEO_GENERIC"/>
             <videonode name="Intel IPU6 CSI2 $CSI_PORT" videoNodeType="VIDEO_ISYS_RECEIVER"/>
-            <videonode name="lt6911uxc $I2CBUS" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+            <videonode name="lt6911uxc b" videoNodeType="VIDEO_PIXEL_ARRAY"/>
         </MediaCtlConfig>
         <MediaCtlConfig id="3" mediaCfg="1">
             <!-- FE capture -->
-            <format name="lt6911uxc $I2CBUS" pad="0" width="1920" height="2160" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="lt6911uxc b" pad="0" width="1920" height="2160" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI2 $CSI_PORT" pad="0" width="1920" height="2160" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <link srcName="lt6911uxc $I2CBUS" srcPad="0" sinkName="Intel IPU6 CSI2 $CSI_PORT" sinkPad="0" enable="true"/>
+            <link srcName="lt6911uxc b" srcPad="0" sinkName="Intel IPU6 CSI2 $CSI_PORT" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 $CSI_PORT" srcPad="1" sinkName="Intel IPU6 ISYS Capture $CAPTURE_ID" sinkPad="0" enable="true"/>
             <videonode name="Intel IPU6 ISYS Capture $CAPTURE_ID" videoNodeType="VIDEO_GENERIC"/>
             <videonode name="Intel IPU6 CSI2 $CSI_PORT" videoNodeType="VIDEO_ISYS_RECEIVER"/>
-            <videonode name="lt6911uxc $I2CBUS" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+            <videonode name="lt6911uxc b" videoNodeType="VIDEO_PIXEL_ARRAY"/>
         </MediaCtlConfig>
         <MediaCtlConfig id="4" mediaCfg="1">
             <!-- FE capture -->
-            <format name="lt6911uxc $I2CBUS" pad="0" width="3840" height="2160" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="lt6911uxc b" pad="0" width="3840" height="2160" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
             <format name="Intel IPU6 CSI2 $CSI_PORT" pad="0" width="3840" height="2160" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <link srcName="lt6911uxc $I2CBUS" srcPad="0" sinkName="Intel IPU6 CSI2 $CSI_PORT" sinkPad="0" enable="true"/>
+            <link srcName="lt6911uxc b" srcPad="0" sinkName="Intel IPU6 CSI2 $CSI_PORT" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 $CSI_PORT" srcPad="1" sinkName="Intel IPU6 ISYS Capture $CAPTURE_ID" sinkPad="0" enable="true"/>
             <videonode name="Intel IPU6 ISYS Capture $CAPTURE_ID" videoNodeType="VIDEO_GENERIC"/>
             <videonode name="Intel IPU6 CSI2 $CSI_PORT" videoNodeType="VIDEO_ISYS_RECEIVER"/>
-            <videonode name="lt6911uxc $I2CBUS" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+            <videonode name="lt6911uxc b" videoNodeType="VIDEO_PIXEL_ARRAY"/>
         </MediaCtlConfig>
 
         <StaticMetadata>
