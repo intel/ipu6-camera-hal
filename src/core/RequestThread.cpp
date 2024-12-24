@@ -374,7 +374,7 @@ bool RequestThread::threadLoop() {
     }
 
     if (!mActive) {
-        return false;
+        return true;
     }
 
     CameraRequest request;
