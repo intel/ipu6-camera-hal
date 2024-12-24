@@ -18,9 +18,6 @@
 
 #include "modules/algowrapper/IntelTNR7US.h"
 
-#include <base/functional/bind.h>
-#include <base/threading/thread.h>
-
 #include <string>
 
 #include "iutils/CameraLog.h"
@@ -34,6 +31,8 @@ namespace icamera {
 IntelTNR7US* IntelTNR7US::createIntelTNR(int cameraId) {
 #ifdef TNR7_CM
     return new IntelC4mTNR(cameraId);
+#else
+    return nullptr;
 #endif
 }
 
@@ -45,6 +44,15 @@ Tnr7Param* IntelTNR7US::allocTnr7ParamBuf() {
 
 #ifdef TNR7_CM
 IntelC4mTNR::~IntelC4mTNR() {
+    icamera::Thread::requestExit();
+    {
+        std::lock_guard<std::mutex> l(mLock);
+        mThreadRunning = false;
+        mRequestCondition.notify_one();
+    }
+
+    icamera::Thread::requestExitAndWait();
+
     for (auto surface : mCMSurfaceMap) {
         destroyCMSurface(surface.second);
     }
@@ -58,8 +66,9 @@ int IntelC4mTNR::init(int width, int height, TnrType type) {
     mTnrType = type;
 
     std::string threadName = "IntelC4mTNR" + std::to_string(type + (mCameraId << 1));
-    mThread = std::unique_ptr<base::Thread>(new base::Thread(threadName));
-    mThread->Start();
+    run(threadName);
+    mThreadRunning = true;
+
     return OK;
 }
 
@@ -116,10 +125,7 @@ int IntelC4mTNR::runTnrFrame(const void* inBufAddr, void* outBufAddr, uint32_t i
     }
     CheckAndLogError(outSurface == nullptr, UNKNOWN_ERROR,
                      "Failed to get CMSurface for output buffer");
-    struct timespec beginTime = {};
-    if (Log::isLogTagEnabled(ST_GPU_TNR, CAMERA_DEBUG_LOG_LEVEL2)) {
-        clock_gettime(CLOCK_MONOTONIC, &beginTime);
-    }
+
     /* call Tnr api to run tnr for the inSurface and store the result in outSurface */
     int ret =
         run_tnr7us_frame(mWidth, mHeight, mWidth, inSurface, outSurface, &tnrParam->scale,
@@ -127,23 +133,43 @@ int IntelC4mTNR::runTnrFrame(const void* inBufAddr, void* outBufAddr, uint32_t i
     if (fd >= 0) {
         destroyCMSurface(outSurface);
     }
-    CheckAndLogError(ret != OK, UNKNOWN_ERROR, "tnr7us process failed");
-    if (Log::isLogTagEnabled(ST_GPU_TNR, CAMERA_DEBUG_LOG_LEVEL2)) {
-        struct timespec endTime = {};
-        clock_gettime(CLOCK_MONOTONIC, &endTime);
-        uint64_t timeUsedUs = (endTime.tv_sec - beginTime.tv_sec) * 1000000 +
-                              (endTime.tv_nsec - beginTime.tv_nsec) / 1000;
-        LOG2(ST_GPU_TNR, "%s time:%lu us", __func__, timeUsedUs);
+
+    return ret;
+}
+bool IntelC4mTNR::threadLoop() {
+    {
+        std::unique_lock<std::mutex> lock(mLock);
+        if (!mThreadRunning) return false;
+        if (mParamGainRequest.empty()) {
+            std::cv_status ret = mRequestCondition.wait_for(
+                lock, std::chrono::nanoseconds(kMaxDuration * SLOWLY_MULTIPLIER));
+
+            // Already stopped
+            if (!mThreadRunning) return false;
+
+            if (ret == std::cv_status::timeout) {
+                return true;
+            }
+        }
     }
-    return OK;
+
+    ParamGain param;
+    {
+        std::lock_guard<std::mutex> l(mLock);
+        param = mParamGainRequest.front();
+        mParamGainRequest.pop();
+    }
+
+    tnr7usParamUpdate(param.gain, param.forceUpdate, mTnrType);
+
+    return true;
 }
 
 int IntelC4mTNR::asyncParamUpdate(int gain, bool forceUpdate) {
-    if (mThread->task_runner()) {
-        mThread->task_runner()->PostTask(
-            FROM_HERE, base::BindOnce(&IntelC4mTNR::handleParamUpdate, base::Unretained(this), gain,
-                                      forceUpdate));
-    }
+    std::lock_guard<std::mutex> l(mLock);
+    mParamGainRequest.push({gain, forceUpdate});
+    mRequestCondition.notify_one();
+
     return OK;
 }
 
@@ -156,24 +182,6 @@ int32_t IntelC4mTNR::getTnrBufferSize(int width, int height, uint32_t* size) {
     if (size) *size = physicalSize;
     LOG1("@%s surface size: %u", __func__, physicalSize);
     return OK;
-}
-
-void IntelC4mTNR::handleParamUpdate(int gain, bool forceUpdate) {
-    LOG2("@%s gain: %d", __func__, gain);
-    // gain value is from AE expore analog_gain * digital_gain
-    struct timespec beginTime = {};
-    if (Log::isLogTagEnabled(ST_GPU_TNR, CAMERA_DEBUG_LOG_LEVEL2)) {
-        clock_gettime(CLOCK_MONOTONIC, &beginTime);
-    }
-
-    tnr7usParamUpdate(gain, forceUpdate, mTnrType);
-    if (Log::isLogTagEnabled(ST_GPU_TNR, CAMERA_DEBUG_LOG_LEVEL2)) {
-        struct timespec endTime = {};
-        clock_gettime(CLOCK_MONOTONIC, &endTime);
-        uint64_t timeUsedUs = (endTime.tv_sec - beginTime.tv_sec) * 1000000 +
-                              (endTime.tv_nsec - beginTime.tv_nsec) / 1000;
-        LOG2(ST_GPU_TNR, "%s time:%lu us", __func__, timeUsedUs);
-    }
 }
 
 CmSurface2DUP* IntelC4mTNR::getBufferCMSurface(void* bufAddr) {
