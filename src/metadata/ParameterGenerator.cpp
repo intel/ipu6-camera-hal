@@ -542,7 +542,7 @@ int ParameterGenerator::updateCommonMetadata(Parameters* params, const AiqResult
                             3);
             }
 
-            LOG2(ST_STATS, "RGB stat %dx%d, sequence %lld, y_mean %d",
+            LOG2("RGB stat %dx%d, sequence %lld, y_mean %d",
                  outStats->rgbs_grid[0].grid_width, outStats->rgbs_grid[0].grid_height,
                  aiqResult->mSequence, size > 0 ? sumLuma / size : 0);
         }

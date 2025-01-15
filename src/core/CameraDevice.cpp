@@ -955,7 +955,7 @@ int CameraDevice::getParameters(Parameters& param, int64_t sequence) {
     LOG2("<id%d:seq%ld>@%s", mCameraId, sequence, __func__);
     AutoMutex m(mDeviceLock);
 
-#ifdef CAL_BUILD
+#if defined(HAVE_CHROME_OS) || defined(HAVE_ANDROID_OS)
     if (sequence >= 0 && mState != DEVICE_STOP) {
         // fetch target parameter and results
         return mParamGenerator->getParameters(sequence, &param);

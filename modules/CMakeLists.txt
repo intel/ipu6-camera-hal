@@ -14,10 +14,6 @@
 #  limitations under the License.
 #
 
-if (CAL_BUILD)
-    add_subdirectory(memory)
-endif() #CAL_BUILD
-
     if (ENABLE_SANDBOXING)
         add_subdirectory(sandboxing)
     else()

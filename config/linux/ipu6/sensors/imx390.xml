@@ -16,14 +16,14 @@
 
 <CameraSettings>
     <Sensor name="imx390" description="imx390 sensor" virtualChannel="true" vcSeq="1" vcNum="4" vcGroupId="0">
-        <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1920" outputHeight="1200" format="V4L2_PIX_FMT_SGRBG12">
-            <format name="imx390 a" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="TI960 a" pad="0" stream="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="TI960 a" pad="4" stream="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 1" pad="0" stream="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 1" pad="1" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI2 BE SOC" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI2 BE SOC" pad="16" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+        <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1920" outputHeight="1216" format="V4L2_PIX_FMT_SGRBG12">
+            <format name="imx390 a" pad="0" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="TI960 a" pad="0" stream="0" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="TI960 a" pad="4" stream="0" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 1" pad="0" stream="0" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 1" pad="1" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI2 BE SOC" pad="0" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI2 BE SOC" pad="16" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
 
             <route name="TI960 a" sinkPad="0" sinkStream="0" srcPad="4" srcStream="0" flag="5"/>
             <route name="Intel IPU6 CSI-2 1" sinkPad="0" sinkStream="0" srcPad="1" srcStream="0" flag="1"/>
@@ -87,7 +87,7 @@
         <!-- The lard tags configuration. Every tag should be 4-characters. -->
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
         <lardTags value="VIDEO,DFLT,DFLT,DFLT,DFLT"/>
-        <supportedISysSizes value="1280x960,1920x1200"/> <!-- ascending order request -->
+        <supportedISysSizes value="1280x960,1920x1216"/> <!-- ascending order request -->
         <supportedISysFormat value="V4L2_PIX_FMT_SGRBG12"/>
         <enableAIQ value="true"/>
         <iSysRawFormat value="V4L2_PIX_FMT_SGRBG12"/>
@@ -111,14 +111,14 @@
     </Sensor>
 
     <Sensor name="imx390-2" description="imx390 sensor" virtualChannel="true" vcSeq="2" vcNum="4" vcGroupId="0">
-        <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1920" outputHeight="1200" format="V4L2_PIX_FMT_SGRBG12">
-            <format name="imx390 b" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="TI960 a" pad="1" stream="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="TI960 a" pad="4" stream="1" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 1" pad="0" stream="1" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 1" pad="2" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI2 BE SOC" pad="1" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI2 BE SOC" pad="17" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+        <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1920" outputHeight="1216" format="V4L2_PIX_FMT_SGRBG12">
+            <format name="imx390 b" pad="0" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="TI960 a" pad="1" stream="0" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="TI960 a" pad="4" stream="1" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 1" pad="0" stream="1" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 1" pad="2" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI2 BE SOC" pad="1" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI2 BE SOC" pad="17" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
 
             <route name="TI960 a" sinkPad="1" sinkStream="0" srcPad="4" srcStream="1" flag="5"/>
             <route name="Intel IPU6 CSI-2 1" sinkPad="0" sinkStream="1" srcPad="2" srcStream="1" flag="1"/>
@@ -182,7 +182,7 @@
         <!-- The lard tags configuration. Every tag should be 4-characters. -->
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
         <lardTags value="VIDEO,DFLT,DFLT,DFLT,DFLT"/>
-        <supportedISysSizes value="1280x960,1920x1200"/> <!-- ascending order request -->
+        <supportedISysSizes value="1280x960,1920x1216"/> <!-- ascending order request -->
         <supportedISysFormat value="V4L2_PIX_FMT_SGRBG12"/>
         <enableAIQ value="true"/>
         <iSysRawFormat value="V4L2_PIX_FMT_SGRBG12"/>
@@ -206,14 +206,14 @@
     </Sensor>
 
     <Sensor name="imx390-3" description="imx390 sensor" virtualChannel="true" vcSeq="3" vcNum="4" vcGroupId="0">
-        <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1920" outputHeight="1200" format="V4L2_PIX_FMT_SGRBG12">
-            <format name="imx390 c" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="TI960 a" pad="2" stream="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="TI960 a" pad="4" stream="2" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 1" pad="0" stream="2" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 1" pad="3" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI2 BE SOC" pad="2" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI2 BE SOC" pad="18" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+        <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1920" outputHeight="1216" format="V4L2_PIX_FMT_SGRBG12">
+            <format name="imx390 c" pad="0" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="TI960 a" pad="2" stream="0" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="TI960 a" pad="4" stream="2" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 1" pad="0" stream="2" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 1" pad="3" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI2 BE SOC" pad="2" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI2 BE SOC" pad="18" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
 
             <route name="TI960 a" sinkPad="2" sinkStream="0" srcPad="4" srcStream="2" flag="5"/>
             <route name="Intel IPU6 CSI-2 1" sinkPad="0" sinkStream="2" srcPad="3" srcStream="2" flag="1"/>
@@ -277,7 +277,7 @@
         <!-- The lard tags configuration. Every tag should be 4-characters. -->
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
         <lardTags value="VIDEO,DFLT,DFLT,DFLT,DFLT"/>
-        <supportedISysSizes value="1280x960,1920x1200"/> <!-- ascending order request -->
+        <supportedISysSizes value="1280x960,1920x1216"/> <!-- ascending order request -->
         <supportedISysFormat value="V4L2_PIX_FMT_SGRBG12"/>
         <enableAIQ value="true"/>
         <iSysRawFormat value="V4L2_PIX_FMT_SGRBG12"/>
@@ -301,14 +301,14 @@
     </Sensor>
 
     <Sensor name="imx390-4" description="imx390 sensor" virtualChannel="true" vcSeq="4" vcNum="4" vcGroupId="0">
-        <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1920" outputHeight="1200" format="V4L2_PIX_FMT_SGRBG12">
-            <format name="imx390 d" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="TI960 a" pad="3" stream="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="TI960 a" pad="4" stream="3" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 1" pad="0" stream="3" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 1" pad="4" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI2 BE SOC" pad="3" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI2 BE SOC" pad="19" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+        <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1920" outputHeight="1216" format="V4L2_PIX_FMT_SGRBG12">
+            <format name="imx390 d" pad="0" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="TI960 a" pad="3" stream="0" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="TI960 a" pad="4" stream="3" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 1" pad="0" stream="3" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 1" pad="4" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI2 BE SOC" pad="3" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI2 BE SOC" pad="19" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
 
             <route name="TI960 a" sinkPad="3" sinkStream="0" srcPad="4" srcStream="3" flag="5"/>
             <route name="Intel IPU6 CSI-2 1" sinkPad="0" sinkStream="3" srcPad="4" srcStream="3" flag="1"/>
@@ -372,7 +372,7 @@
         <!-- The lard tags configuration. Every tag should be 4-characters. -->
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
         <lardTags value="VIDEO,DFLT,DFLT,DFLT,DFLT"/>
-        <supportedISysSizes value="1280x960,1920x1200"/> <!-- ascending order request -->
+        <supportedISysSizes value="1280x960,1920x1216"/> <!-- ascending order request -->
         <supportedISysFormat value="V4L2_PIX_FMT_SGRBG12"/>
         <enableAIQ value="true"/>
         <iSysRawFormat value="V4L2_PIX_FMT_SGRBG12"/>
@@ -396,14 +396,14 @@
     </Sensor>
 
     <Sensor name="imx390-5" description="imx390 sensor" virtualChannel="true" vcSeq="1" vcNum="4" vcGroupId="0">
-        <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1920" outputHeight="1200" format="V4L2_PIX_FMT_SGRBG12">
-            <format name="imx390 e" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="TI960 b" pad="0" stream="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="TI960 b" pad="4" stream="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 2" pad="0" stream="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 2" pad="1" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI2 BE SOC 2" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI2 BE SOC 2" pad="16" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+        <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1920" outputHeight="1216" format="V4L2_PIX_FMT_SGRBG12">
+            <format name="imx390 e" pad="0" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="TI960 b" pad="0" stream="0" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="TI960 b" pad="4" stream="0" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 2" pad="0" stream="0" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 2" pad="1" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI2 BE SOC 2" pad="0" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI2 BE SOC 2" pad="16" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
 
             <route name="TI960 b" sinkPad="0" sinkStream="0" srcPad="4" srcStream="0" flag="5"/>
             <route name="Intel IPU6 CSI-2 2" sinkPad="0" sinkStream="0" srcPad="1" srcStream="0" flag="1"/>
@@ -467,7 +467,7 @@
         <!-- The lard tags configuration. Every tag should be 4-characters. -->
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
         <lardTags value="VIDEO,DFLT,DFLT,DFLT,DFLT"/>
-        <supportedISysSizes value="1280x960,1920x1200"/> <!-- ascending order request -->
+        <supportedISysSizes value="1280x960,1920x1216"/> <!-- ascending order request -->
         <supportedISysFormat value="V4L2_PIX_FMT_SGRBG12"/>
         <enableAIQ value="true"/>
         <iSysRawFormat value="V4L2_PIX_FMT_SGRBG12"/>
@@ -491,14 +491,14 @@
     </Sensor>
 
     <Sensor name="imx390-6" description="imx390 sensor" virtualChannel="true" vcSeq="2" vcNum="4" vcGroupId="0">
-        <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1920" outputHeight="1200" format="V4L2_PIX_FMT_SGRBG12">
-            <format name="imx390 f" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="TI960 b" pad="1" stream="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="TI960 b" pad="4" stream="1" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 2" pad="0" stream="1" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 2" pad="2" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI2 BE SOC 2" pad="1" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI2 BE SOC 2" pad="17" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+        <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1920" outputHeight="1216" format="V4L2_PIX_FMT_SGRBG12">
+            <format name="imx390 f" pad="0" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="TI960 b" pad="1" stream="0" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="TI960 b" pad="4" stream="1" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 2" pad="0" stream="1" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 2" pad="2" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI2 BE SOC 2" pad="1" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI2 BE SOC 2" pad="17" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
 
             <route name="TI960 b" sinkPad="1" sinkStream="0" srcPad="4" srcStream="1" flag="5"/>
             <route name="Intel IPU6 CSI-2 2" sinkPad="0" sinkStream="1" srcPad="2" srcStream="1" flag="1"/>
@@ -562,7 +562,7 @@
         <!-- The lard tags configuration. Every tag should be 4-characters. -->
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
         <lardTags value="VIDEO,DFLT,DFLT,DFLT,DFLT"/>
-        <supportedISysSizes value="1280x960,1920x1200"/> <!-- ascending order request -->
+        <supportedISysSizes value="1280x960,1920x1216"/> <!-- ascending order request -->
         <supportedISysFormat value="V4L2_PIX_FMT_SGRBG12"/>
         <enableAIQ value="true"/>
         <iSysRawFormat value="V4L2_PIX_FMT_SGRBG12"/>
@@ -586,14 +586,14 @@
     </Sensor>
 
     <Sensor name="imx390-7" description="imx390 sensor" virtualChannel="true" vcSeq="3" vcNum="4" vcGroupId="0">
-        <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1920" outputHeight="1200" format="V4L2_PIX_FMT_SGRBG12">
-            <format name="imx390 g" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="TI960 b" pad="2" stream="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="TI960 b" pad="4" stream="2" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 2" pad="0" stream="2" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 2" pad="3" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI2 BE SOC 2" pad="2" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI2 BE SOC 2" pad="18" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+        <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1920" outputHeight="1216" format="V4L2_PIX_FMT_SGRBG12">
+            <format name="imx390 g" pad="0" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="TI960 b" pad="2" stream="0" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="TI960 b" pad="4" stream="2" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 2" pad="0" stream="2" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 2" pad="3" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI2 BE SOC 2" pad="2" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI2 BE SOC 2" pad="18" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
 
             <route name="TI960 b" sinkPad="2" sinkStream="0" srcPad="4" srcStream="2" flag="5"/>
             <route name="Intel IPU6 CSI-2 2" sinkPad="0" sinkStream="2" srcPad="3" srcStream="2" flag="1"/>
@@ -657,7 +657,7 @@
         <!-- The lard tags configuration. Every tag should be 4-characters. -->
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
         <lardTags value="VIDEO,DFLT,DFLT,DFLT,DFLT"/>
-        <supportedISysSizes value="1280x960,1920x1200"/> <!-- ascending order request -->
+        <supportedISysSizes value="1280x960,1920x1216"/> <!-- ascending order request -->
         <supportedISysFormat value="V4L2_PIX_FMT_SGRBG12"/>
         <enableAIQ value="true"/>
         <iSysRawFormat value="V4L2_PIX_FMT_SGRBG12"/>
@@ -681,14 +681,14 @@
     </Sensor>
 
     <Sensor name="imx390-8" description="imx390 sensor" virtualChannel="true" vcSeq="4" vcNum="4" vcGroupId="0">
-        <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1920" outputHeight="1200" format="V4L2_PIX_FMT_SGRBG12">
-            <format name="imx390 h" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="TI960 b" pad="3" stream="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="TI960 b" pad="4" stream="3" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 2" pad="0" stream="3" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 2" pad="4" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI2 BE SOC 2" pad="3" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI2 BE SOC 2" pad="19" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+        <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1920" outputHeight="1216" format="V4L2_PIX_FMT_SGRBG12">
+            <format name="imx390 h" pad="0" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="TI960 b" pad="3" stream="0" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="TI960 b" pad="4" stream="3" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 2" pad="0" stream="3" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 2" pad="4" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI2 BE SOC 2" pad="3" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI2 BE SOC 2" pad="19" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
 
             <route name="TI960 b" sinkPad="3" sinkStream="0" srcPad="4" srcStream="3" flag="5"/>
             <route name="Intel IPU6 CSI-2 2" sinkPad="0" sinkStream="3" srcPad="4" srcStream="3" flag="1"/>
@@ -752,7 +752,7 @@
         <!-- The lard tags configuration. Every tag should be 4-characters. -->
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
         <lardTags value="VIDEO,DFLT,DFLT,DFLT,DFLT"/>
-        <supportedISysSizes value="1280x960,1920x1200"/> <!-- ascending order request -->
+        <supportedISysSizes value="1280x960,1920x1216"/> <!-- ascending order request -->
         <supportedISysFormat value="V4L2_PIX_FMT_SGRBG12"/>
         <enableAIQ value="true"/>
         <iSysRawFormat value="V4L2_PIX_FMT_SGRBG12"/>
@@ -776,15 +776,15 @@
     </Sensor>
 
     <Sensor name="imx390-9" description="imx390 sensor" virtualChannel="true" vcSeq="1" vcNum="1" vcGroupId="0">
-        <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1920" outputHeight="1200" format="V4L2_PIX_FMT_SGRBG12">
+        <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1920" outputHeight="1216" format="V4L2_PIX_FMT_SGRBG12">
             <control name="imx390 a" ctrlId="V4L2_CID_TEST_PATTERN" value="1" ctrlName="set Len Shading Correction"/>
-            <format name="imx390 a" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="TI960 a" pad="0" stream="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="TI960 a" pad="4" stream="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 1" pad="0" stream="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 1" pad="1" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI2 BE SOC" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI2 BE SOC" pad="16" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="imx390 a" pad="0" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="TI960 a" pad="0" stream="0" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="TI960 a" pad="4" stream="0" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 1" pad="0" stream="0" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 1" pad="1" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI2 BE SOC" pad="0" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI2 BE SOC" pad="16" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
 
             <route name="TI960 a" sinkPad="0" sinkStream="0" srcPad="4" srcStream="0" flag="5"/>
             <route name="Intel IPU6 CSI-2 1" sinkPad="0" sinkStream="0" srcPad="1" srcStream="0" flag="1"/>
@@ -849,7 +849,7 @@
         <!-- The lard tags configuration. Every tag should be 4-characters. -->
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
         <lardTags value="VIDEO,DFLT,DFLT,DFLT,DFLT"/>
-        <supportedISysSizes value="1280x960,1920x1200"/> <!-- ascending order request -->
+        <supportedISysSizes value="1280x960,1920x1216"/> <!-- ascending order request -->
         <supportedISysFormat value="V4L2_PIX_FMT_SGRBG12"/>
         <enableAIQ value="true"/>
         <iSysRawFormat value="V4L2_PIX_FMT_SGRBG12"/>
@@ -873,15 +873,15 @@
     </Sensor>
 
     <Sensor name="imx390-10" description="imx390 sensor" virtualChannel="true" vcSeq="2" vcNum="4" vcGroupId="0">
-        <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1920" outputHeight="1200" format="V4L2_PIX_FMT_SGRBG12">
+        <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1920" outputHeight="1216" format="V4L2_PIX_FMT_SGRBG12">
             <control name="imx390 b" ctrlId="V4L2_CID_TEST_PATTERN" value="1" ctrlName="set Len Shading Correction"/>
-            <format name="imx390 b" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="TI960 a" pad="1" stream="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="TI960 a" pad="4" stream="1" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 1" pad="0" stream="1" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 1" pad="2" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI2 BE SOC" pad="1" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI2 BE SOC" pad="17" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="imx390 b" pad="0" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="TI960 a" pad="1" stream="0" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="TI960 a" pad="4" stream="1" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 1" pad="0" stream="1" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 1" pad="2" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI2 BE SOC" pad="1" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI2 BE SOC" pad="17" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
 
             <route name="TI960 a" sinkPad="1" sinkStream="0" srcPad="4" srcStream="1" flag="5"/>
             <route name="Intel IPU6 CSI-2 1" sinkPad="0" sinkStream="1" srcPad="2" srcStream="1" flag="1"/>
@@ -946,7 +946,7 @@
         <!-- The lard tags configuration. Every tag should be 4-characters. -->
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
         <lardTags value="VIDEO,DFLT,DFLT,DFLT,DFLT"/>
-        <supportedISysSizes value="1280x960,1920x1200"/> <!-- ascending order request -->
+        <supportedISysSizes value="1280x960,1920x1216"/> <!-- ascending order request -->
         <supportedISysFormat value="V4L2_PIX_FMT_SGRBG12"/>
         <enableAIQ value="true"/>
         <iSysRawFormat value="V4L2_PIX_FMT_SGRBG12"/>
@@ -970,15 +970,15 @@
     </Sensor>
 
     <Sensor name="imx390-11" description="imx390 sensor" virtualChannel="true" vcSeq="3" vcNum="4" vcGroupId="0">
-        <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1920" outputHeight="1200" format="V4L2_PIX_FMT_SGRBG12">
+        <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1920" outputHeight="1216" format="V4L2_PIX_FMT_SGRBG12">
             <control name="imx390 c" ctrlId="V4L2_CID_TEST_PATTERN" value="1" ctrlName="set Len Shading Correction"/>
-            <format name="imx390 c" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="TI960 a" pad="2" stream="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="TI960 a" pad="4" stream="2" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 1" pad="0" stream="2" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 1" pad="3" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI2 BE SOC" pad="2" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI2 BE SOC" pad="18" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="imx390 c" pad="0" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="TI960 a" pad="2" stream="0" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="TI960 a" pad="4" stream="2" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 1" pad="0" stream="2" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 1" pad="3" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI2 BE SOC" pad="2" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI2 BE SOC" pad="18" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
 
             <route name="TI960 a" sinkPad="2" sinkStream="0" srcPad="4" srcStream="2" flag="5"/>
             <route name="Intel IPU6 CSI-2 1" sinkPad="0" sinkStream="2" srcPad="3" srcStream="2" flag="1"/>
@@ -1043,7 +1043,7 @@
         <!-- The lard tags configuration. Every tag should be 4-characters. -->
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
         <lardTags value="VIDEO,DFLT,DFLT,DFLT,DFLT"/>
-        <supportedISysSizes value="1280x960,1920x1200"/> <!-- ascending order request -->
+        <supportedISysSizes value="1280x960,1920x1216"/> <!-- ascending order request -->
         <supportedISysFormat value="V4L2_PIX_FMT_SGRBG12"/>
         <enableAIQ value="true"/>
         <iSysRawFormat value="V4L2_PIX_FMT_SGRBG12"/>
@@ -1067,15 +1067,15 @@
     </Sensor>
 
     <Sensor name="imx390-12" description="imx390 sensor" virtualChannel="true" vcSeq="4" vcNum="4" vcGroupId="0">
-        <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1920" outputHeight="1200" format="V4L2_PIX_FMT_SGRBG12">
+        <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1920" outputHeight="1216" format="V4L2_PIX_FMT_SGRBG12">
             <control name="imx390 d" ctrlId="V4L2_CID_TEST_PATTERN" value="1" ctrlName="set Len Shading Correction"/>
-            <format name="imx390 d" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="TI960 a" pad="3" stream="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="TI960 a" pad="4" stream="3" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 1" pad="0" stream="3" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 1" pad="4" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI2 BE SOC" pad="3" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI2 BE SOC" pad="19" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="imx390 d" pad="0" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="TI960 a" pad="3" stream="0" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="TI960 a" pad="4" stream="3" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 1" pad="0" stream="3" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 1" pad="4" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI2 BE SOC" pad="3" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI2 BE SOC" pad="19" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
 
             <route name="TI960 a" sinkPad="3" sinkStream="0" srcPad="4" srcStream="3" flag="5"/>
             <route name="Intel IPU6 CSI-2 1" sinkPad="0" sinkStream="3" srcPad="4" srcStream="3" flag="1"/>
@@ -1140,7 +1140,7 @@
         <!-- The lard tags configuration. Every tag should be 4-characters. -->
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
         <lardTags value="VIDEO,DFLT,DFLT,DFLT,DFLT"/>
-        <supportedISysSizes value="1280x960,1920x1200"/> <!-- ascending order request -->
+        <supportedISysSizes value="1280x960,1920x1216"/> <!-- ascending order request -->
         <supportedISysFormat value="V4L2_PIX_FMT_SGRBG12"/>
         <enableAIQ value="true"/>
         <iSysRawFormat value="V4L2_PIX_FMT_SGRBG12"/>
@@ -1164,15 +1164,15 @@
     </Sensor>
 
     <Sensor name="imx390-13" description="imx390 sensor" virtualChannel="true" vcSeq="1" vcNum="4" vcGroupId="0">
-        <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1920" outputHeight="1200" format="V4L2_PIX_FMT_SGRBG12">
+        <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1920" outputHeight="1216" format="V4L2_PIX_FMT_SGRBG12">
             <control name="imx390 e" ctrlId="V4L2_CID_TEST_PATTERN" value="1" ctrlName="set Len Shading Correction"/>
-            <format name="imx390 e" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="TI960 b" pad="0" stream="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="TI960 b" pad="4" stream="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 2" pad="0" stream="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 2" pad="1" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI2 BE SOC 2" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI2 BE SOC 2" pad="16" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="imx390 e" pad="0" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="TI960 b" pad="0" stream="0" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="TI960 b" pad="4" stream="0" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 2" pad="0" stream="0" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 2" pad="1" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI2 BE SOC 2" pad="0" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI2 BE SOC 2" pad="16" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
 
             <route name="TI960 b" sinkPad="0" sinkStream="0" srcPad="4" srcStream="0" flag="5"/>
             <route name="Intel IPU6 CSI-2 2" sinkPad="0" sinkStream="0" srcPad="1" srcStream="0" flag="1"/>
@@ -1237,7 +1237,7 @@
         <!-- The lard tags configuration. Every tag should be 4-characters. -->
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
         <lardTags value="VIDEO,DFLT,DFLT,DFLT,DFLT"/>
-        <supportedISysSizes value="1280x960,1920x1200"/> <!-- ascending order request -->
+        <supportedISysSizes value="1280x960,1920x1216"/> <!-- ascending order request -->
         <supportedISysFormat value="V4L2_PIX_FMT_SGRBG12"/>
         <enableAIQ value="true"/>
         <iSysRawFormat value="V4L2_PIX_FMT_SGRBG12"/>
@@ -1261,15 +1261,15 @@
     </Sensor>
 
     <Sensor name="imx390-14" description="imx390 sensor" virtualChannel="true" vcSeq="2" vcNum="4" vcGroupId="0">
-        <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1920" outputHeight="1200" format="V4L2_PIX_FMT_SGRBG12">
+        <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1920" outputHeight="1216" format="V4L2_PIX_FMT_SGRBG12">
             <control name="imx390 f" ctrlId="V4L2_CID_TEST_PATTERN" value="1" ctrlName="set Len Shading Correction"/>
-            <format name="imx390 f" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="TI960 b" pad="1" stream="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="TI960 b" pad="4" stream="1" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 2" pad="0" stream="1" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 2" pad="2" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI2 BE SOC 2" pad="1" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI2 BE SOC 2" pad="17" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="imx390 f" pad="0" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="TI960 b" pad="1" stream="0" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="TI960 b" pad="4" stream="1" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 2" pad="0" stream="1" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 2" pad="2" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI2 BE SOC 2" pad="1" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI2 BE SOC 2" pad="17" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
 
             <route name="TI960 b" sinkPad="1" sinkStream="0" srcPad="4" srcStream="1" flag="5"/>
             <route name="Intel IPU6 CSI-2 2" sinkPad="0" sinkStream="1" srcPad="2" srcStream="1" flag="1"/>
@@ -1334,7 +1334,7 @@
         <!-- The lard tags configuration. Every tag should be 4-characters. -->
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
         <lardTags value="VIDEO,DFLT,DFLT,DFLT,DFLT"/>
-        <supportedISysSizes value="1280x960,1920x1200"/> <!-- ascending order request -->
+        <supportedISysSizes value="1280x960,1920x1216"/> <!-- ascending order request -->
         <supportedISysFormat value="V4L2_PIX_FMT_SGRBG12"/>
         <enableAIQ value="true"/>
         <iSysRawFormat value="V4L2_PIX_FMT_SGRBG12"/>
@@ -1358,15 +1358,15 @@
     </Sensor>
 
     <Sensor name="imx390-15" description="imx390 sensor" virtualChannel="true" vcSeq="3" vcNum="4" vcGroupId="0">
-        <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1920" outputHeight="1200" format="V4L2_PIX_FMT_SGRBG12">
+        <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1920" outputHeight="1216" format="V4L2_PIX_FMT_SGRBG12">
             <control name="imx390 g" ctrlId="V4L2_CID_TEST_PATTERN" value="1" ctrlName="set Len Shading Correction"/>
-            <format name="imx390 g" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="TI960 b" pad="2" stream="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="TI960 b" pad="4" stream="2" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 2" pad="0" stream="2" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 2" pad="3" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI2 BE SOC 2" pad="2" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI2 BE SOC 2" pad="18" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="imx390 g" pad="0" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="TI960 b" pad="2" stream="0" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="TI960 b" pad="4" stream="2" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 2" pad="0" stream="2" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 2" pad="3" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI2 BE SOC 2" pad="2" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI2 BE SOC 2" pad="18" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
 
             <route name="TI960 b" sinkPad="2" sinkStream="0" srcPad="4" srcStream="2" flag="5"/>
             <route name="Intel IPU6 CSI-2 2" sinkPad="0" sinkStream="2" srcPad="3" srcStream="2" flag="1"/>
@@ -1431,7 +1431,7 @@
         <!-- The lard tags configuration. Every tag should be 4-characters. -->
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
         <lardTags value="VIDEO,DFLT,DFLT,DFLT,DFLT"/>
-        <supportedISysSizes value="1280x960,1920x1200"/> <!-- ascending order request -->
+        <supportedISysSizes value="1280x960,1920x1216"/> <!-- ascending order request -->
         <supportedISysFormat value="V4L2_PIX_FMT_SGRBG12"/>
         <enableAIQ value="true"/>
         <iSysRawFormat value="V4L2_PIX_FMT_SGRBG12"/>
@@ -1455,15 +1455,15 @@
     </Sensor>
 
     <Sensor name="imx390-16" description="imx390 sensor" virtualChannel="true" vcSeq="4" vcNum="4" vcGroupId="0">
-        <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1920" outputHeight="1200" format="V4L2_PIX_FMT_SGRBG12">
+        <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1920" outputHeight="1216" format="V4L2_PIX_FMT_SGRBG12">
             <control name="imx390 h" ctrlId="V4L2_CID_TEST_PATTERN" value="1" ctrlName="set Len Shading Correction"/>
-            <format name="imx390 h" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="TI960 b" pad="3" stream="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="TI960 b" pad="4" stream="3" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 2" pad="0" stream="3" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 2" pad="4" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI2 BE SOC 2" pad="3" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI2 BE SOC 2" pad="19" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="imx390 h" pad="0" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="TI960 b" pad="3" stream="0" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="TI960 b" pad="4" stream="3" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 2" pad="0" stream="3" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 2" pad="4" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI2 BE SOC 2" pad="3" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI2 BE SOC 2" pad="19" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
 
             <route name="TI960 b" sinkPad="3" sinkStream="0" srcPad="4" srcStream="3" flag="5"/>
             <route name="Intel IPU6 CSI-2 2" sinkPad="0" sinkStream="3" srcPad="4" srcStream="3" flag="1"/>
@@ -1528,7 +1528,7 @@
         <!-- The lard tags configuration. Every tag should be 4-characters. -->
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
         <lardTags value="VIDEO,DFLT,DFLT,DFLT,DFLT"/>
-        <supportedISysSizes value="1280x960,1920x1200"/> <!-- ascending order request -->
+        <supportedISysSizes value="1280x960,1920x1216"/> <!-- ascending order request -->
         <supportedISysFormat value="V4L2_PIX_FMT_SGRBG12"/>
         <enableAIQ value="true"/>
         <iSysRawFormat value="V4L2_PIX_FMT_SGRBG12"/>
@@ -1552,10 +1552,10 @@
     </Sensor>
 
     <Sensor name="imx390-mipi" description="imx390 sensor">
-        <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1920" outputHeight="1200" format="V4L2_PIX_FMT_SGRBG12">
-            <format name="imx390 a" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 1" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI2 BE SOC" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+        <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1920" outputHeight="1216" format="V4L2_PIX_FMT_SGRBG12">
+            <format name="imx390 a" pad="0" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 1" pad="0" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI2 BE SOC" pad="0" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
 
             <link srcName="imx390 a" srcPad="0" sinkName="Intel IPU6 CSI-2 1" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI-2 1" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC" sinkPad="0" enable="true"/>
@@ -1592,7 +1592,7 @@
         <!-- The lard tags configuration. Every tag should be 4-characters. -->
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
         <lardTags value="VIDEO,DFLT,DFLT,DFLT,DFLT"/>
-        <supportedISysSizes value="1280x960,1920x1200"/> <!-- ascending order request -->
+        <supportedISysSizes value="1280x960,1920x1216"/> <!-- ascending order request -->
         <supportedISysFormat value="V4L2_PIX_FMT_SGRBG12"/>
         <enableAIQ value="true"/>
         <iSysRawFormat value="V4L2_PIX_FMT_SGRBG12"/>
@@ -1614,10 +1614,10 @@
     </Sensor>
 
     <Sensor name="imx390-mipi-2" description="imx390 sensor">
-        <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1920" outputHeight="1200" format="V4L2_PIX_FMT_SGRBG12">
-            <format name="imx390 b" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI-2 2" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
-            <format name="Intel IPU6 CSI2 BE SOC" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+        <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1920" outputHeight="1216" format="V4L2_PIX_FMT_SGRBG12">
+            <format name="imx390 b" pad="0" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI-2 2" pad="0" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
+            <format name="Intel IPU6 CSI2 BE SOC" pad="0" width="1920" height="1216" format="V4L2_MBUS_FMT_SGRBG12_1X12"/>
 
             <link srcName="imx390 b" srcPad="0" sinkName="Intel IPU6 CSI-2 2" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI-2 2" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC" sinkPad="0" enable="true"/>
@@ -1654,7 +1654,7 @@
         <!-- The lard tags configuration. Every tag should be 4-characters. -->
         <!-- <TuningMode, cmc tag, aiq tag, isp tag, others tag>  -->
         <lardTags value="VIDEO,DFLT,DFLT,DFLT,DFLT"/>
-        <supportedISysSizes value="1280x960,1920x1200"/> <!-- ascending order request -->
+        <supportedISysSizes value="1280x960,1920x1216"/> <!-- ascending order request -->
         <supportedISysFormat value="V4L2_PIX_FMT_SGRBG12"/>
         <enableAIQ value="true"/>
         <iSysRawFormat value="V4L2_PIX_FMT_SGRBG12"/>

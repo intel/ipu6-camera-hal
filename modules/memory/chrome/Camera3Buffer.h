@@ -16,7 +16,11 @@
 
 #pragma once
 
+#ifdef HAVE_CHROME_OS
 #include <cros-camera/camera_buffer_manager.h>
+#else
+#include "camera_buffer_manager.h"
+#endif
 #include <hardware/camera3.h>
 
 #include <memory>
@@ -142,7 +146,11 @@ class Camera3Buffer {
 
  private:
     bool mRegistered; /*!< Use to track the buffer register status */
+#ifdef HAVE_CHROME_OS
     cros::CameraBufferManager* mGbmBufferManager;
+#else
+    crosIpu6::CameraBufferManager* mGbmBufferManager;
+#endif
 };
 
 namespace MemoryUtils {
