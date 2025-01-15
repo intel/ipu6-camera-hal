@@ -164,8 +164,10 @@ int DeviceBase::queueBuffer(int64_t sequence) {
 
         if (ret >= 0) {
             AutoMutex l(mBufferLock);
-            mPendingBuffers.pop_front();
-            mBuffersInDevice.push_back(buffer);
+            if (!mPendingBuffers.empty()) {
+                mPendingBuffers.pop_front();
+                mBuffersInDevice.push_back(buffer);
+            }
         } else {
             LOGE("%s, index:%u size:%u, memory:%u, used:%u", __func__, buffer->getIndex(),
                  buffer->getBufferSize(), buffer->getMemory(), buffer->getBytesused());

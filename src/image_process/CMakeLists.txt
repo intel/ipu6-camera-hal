@@ -19,23 +19,3 @@ set(IMAGE_PROCESS_SRCS
     CACHE INTERNAL "image_process sources"
     )
 
-if (CAL_BUILD)
-set(IMAGE_PROCESS_SRCS
-    ${IMAGE_PROCESS_DIR}/PostProcessorBase.cpp
-    ${IMAGE_PROCESS_DIR}/PostProcessorCore.cpp
-    CACHE INTERNAL "image_process sources"
-    )
-if (SW_POST_PROCESSING)
-    set(IMAGE_PROCESS_SRCS
-        ${IMAGE_PROCESS_SRCS}
-        ${IMAGE_PROCESS_DIR}/sw/SWPostProcessor.cpp
-        CACHE INTERNAL "image_process sources"
-       )
-else()
-    set(IMAGE_PROCESS_SRCS
-        ${IMAGE_PROCESS_SRCS}
-        ${IMAGE_PROCESS_DIR}/chrome/ImageProcessorCore.cpp
-        CACHE INTERNAL "image_process sources"
-        )
-endif() #SW_POST_PROCESSING
-endif() #CAL_BUILD

@@ -17,7 +17,7 @@
 #pragma once
 
 #include <linux/videodev2.h>
-#ifdef CAL_BUILD
+#ifdef HAVE_CHROME_OS
 #include <cros-camera/v4l2_device.h>
 #else
 #include <v4l2_device.h>
@@ -34,12 +34,21 @@ namespace icamera {
 
 typedef int64_t nsecs_t;
 
+#ifdef HAVE_ANDROID_OS
+typedef ::crosIpu6::V4L2DevicePoller V4L2DevicePoller;
+typedef ::crosIpu6::V4L2Device V4L2Device;
+typedef ::crosIpu6::V4L2VideoNode V4L2VideoNode;
+typedef ::crosIpu6::V4L2Subdevice V4L2Subdevice;
+typedef ::crosIpu6::V4L2Buffer V4L2Buffer;
+typedef ::crosIpu6::V4L2Format V4L2Format;
+#else
 typedef ::cros::V4L2DevicePoller V4L2DevicePoller;
 typedef ::cros::V4L2Device V4L2Device;
 typedef ::cros::V4L2VideoNode V4L2VideoNode;
 typedef ::cros::V4L2Subdevice V4L2Subdevice;
 typedef ::cros::V4L2Buffer V4L2Buffer;
 typedef ::cros::V4L2Format V4L2Format;
+#endif
 
 #define ALIGN(val, alignment) (((val) + (alignment)-1) & ~((alignment)-1))
 #define ALIGN_64(val) ALIGN(val, 64)
@@ -58,13 +67,11 @@ typedef ::cros::V4L2Format V4L2Format;
 #define UNUSED(param) (void)(param)
 #endif
 
-#ifdef CAL_BUILD
+#if defined(HAVE_CHROME_OS) || defined(HAVE_ANDROID_OS)
 #ifndef V4L2_PIX_FMT_P010
 #define V4L2_PIX_FMT_P010 v4l2_fourcc('P', '0', '1', '0')
 #endif
-#endif
 
-#ifdef CAL_BUILD
 #define V4L2_PIX_FMT_YUYV420_V32 v4l2_fourcc('y', '0', '3', '2')
 #define V4L2_PIX_FMT_SGRBG12V32 v4l2_fourcc('b', 'V', '0', 'K')
 #define V4L2_PIX_FMT_SGRBG10V32 v4l2_fourcc('b', 'V', '0', 'G')

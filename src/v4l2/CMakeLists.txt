@@ -22,12 +22,11 @@ set (V4L2_SRCS
     CACHE INTERNAL "v4l2 sources"
     )
 
-if (NOT CAL_BUILD)
-    set(V4L2_SRCS
-        ${V4L2_SRCS}
-        ${MODULES_DIR}/v4l2/v4l2_device.cc
-        ${MODULES_DIR}/v4l2/v4l2_subdevice.cc
-        ${MODULES_DIR}/v4l2/v4l2_video_node.cc
-        CACHE INTERNAL "v4l2 sources"
-        )
-endif()
+set(V4L2_SRCS
+    ${V4L2_SRCS}
+    ${MODULES_DIR}/v4l2/v4l2_device.cc
+    ${MODULES_DIR}/v4l2/v4l2_subdevice.cc
+    ${MODULES_DIR}/v4l2/v4l2_video_node.cc
+    CACHE INTERNAL "v4l2 sources"
+    )
+

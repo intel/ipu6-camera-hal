@@ -23,7 +23,7 @@
 #include <gcss_utils.h>
 #include <ia_pal_types_isp_ids_autogen.h>
 
-#ifdef CAL_BUILD
+#ifdef HAVE_CHROME_OS
 #include <cros-camera/v4l2_device.h>
 #else
 #include <v4l2_device.h>

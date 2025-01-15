@@ -18,7 +18,7 @@
 
 #include <limits.h>
 
-#ifdef CAL_BUILD
+#ifdef HAVE_CHROME_OS
 #include <cros-camera/v4l2_device.h>
 #else
 #include <v4l2_device.h>
@@ -69,7 +69,7 @@ namespace icamera {
  */
 #define MAX_SETTING_COUNT 40
 
-#ifdef CAL_BUILD
+#ifdef HAVE_CHROME_OS
 #define MAX_CAMERA_NUMBER 2
 #define CAMERA_CACHE_DIR "/var/cache/camera/"
 #define CAMERA_DEFAULT_CFG_PATH "/etc/camera/"
@@ -77,12 +77,12 @@ namespace icamera {
 #define CAMERA_GRAPH_SETTINGS_DIR "gcss/"
 #endif
 
-#ifdef __ANDROID__
+#ifdef HAVE_ANDROID_OS
 #define MAX_CAMERA_NUMBER 2
-#define CAMERA_CACHE_DIR "./"
-#define CAMERA_DEFAULT_CFG_PATH "/vendor/etc/"
-#define CAMERA_GRAPH_DESCRIPTOR_FILE "graph_descriptor.xml"
-#define CAMERA_GRAPH_SETTINGS_DIR ""
+#define CAMERA_CACHE_DIR "/var/cache/camera/"
+#define CAMERA_DEFAULT_CFG_PATH "/vendor/etc/camera/"
+#define CAMERA_GRAPH_DESCRIPTOR_FILE "gcss/graph_descriptor.xml"
+#define CAMERA_GRAPH_SETTINGS_DIR "gcss/"
 #endif
 
 #ifdef LINUX_BUILD

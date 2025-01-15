@@ -102,7 +102,7 @@ int SofSource::initDev() {
 
     mIsysReceiverSubDev = V4l2DeviceFactory::getSubDev(mCameraId, subDeviceNodeName);
 
-#ifdef CAL_BUILD
+#if defined(HAVE_CHROME_OS) || defined(HAVE_ANDROID_OS)
     int status = mIsysReceiverSubDev->SubscribeEvent(V4L2_EVENT_FRAME_SYNC);
     CheckAndLogError(status != OK, status, "Failed to subscribe sync event 0");
     LOG1("%s: Using SOF event id 0 for sync", __func__);
@@ -136,7 +136,7 @@ int SofSource::deinitDev() {
     if (mIsysReceiverSubDev == nullptr) return OK;
 
     int status = 0;
-#ifdef CAL_BUILD
+#if defined(HAVE_CHROME_OS) || defined(HAVE_ANDROID_OS)
     status = mIsysReceiverSubDev->UnsubscribeEvent(V4L2_EVENT_FRAME_SYNC);
     if (status == OK) {
         LOG1("%s: Unsubscribe SOF event id 0 done", __func__);
