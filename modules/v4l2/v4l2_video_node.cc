@@ -661,10 +661,14 @@ int V4L2VideoNode::ExportFrame(unsigned int index, std::vector<int>* fds) {
     }
     uint32_t num_planes = V4L2_TYPE_IS_MULTIPLANAR(buffer.Type()) ? buffer.Get()->length : 1;
     struct v4l2_exportbuffer ebuf = {};
-    ebuf.type = buffer_type_;
-    ebuf.index = index;
-    ebuf.flags = O_RDWR;
-    for (uint32_t i = 0; i < num_planes; i++) {
+
+    for (uint32_t plane = 0; plane < num_planes; plane++) {
+        memset(&ebuf, 0, sizeof(ebuf));
+        ebuf.type = buffer_type_;
+        ebuf.index = index;
+        ebuf.flags = O_RDWR;
+        ebuf.plane = plane;
+
         ret = ::ioctl(fd_, VIDIOC_EXPBUF, &ebuf);
         if (ret < 0) {
             LOGE("%s: Device node %s IOCTL VIDIOC_EXPBUF error: %s", __func__, name_.c_str(),
