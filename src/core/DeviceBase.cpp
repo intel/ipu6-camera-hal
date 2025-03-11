@@ -164,8 +164,10 @@ int DeviceBase::queueBuffer(int64_t sequence) {
 
         if (ret >= 0) {
             AutoMutex l(mBufferLock);
-            mPendingBuffers.pop_front();
-            mBuffersInDevice.push_back(buffer);
+            if (!mPendingBuffers.empty()) {
+                mPendingBuffers.pop_front();
+                mBuffersInDevice.push_back(buffer);
+            }
         } else {
             LOGE("%s, index:%u size:%u, memory:%u, used:%u", __func__, buffer->getIndex(),
                  buffer->getBufferSize(), buffer->getMemory(), buffer->getBytesused());
@@ -303,8 +305,9 @@ MainDevice::MainDevice(int cameraId, VideoNodeType nodeType, DeviceCallback* dev
 MainDevice::~MainDevice() {}
 
 int MainDevice::createBufferPool(const stream_t& config) {
-    LOG1("<id%d>%s, fmt:%s(%dx%d) field:%d", mCameraId, __func__,
-         CameraUtils::pixelCode2String(config.format), config.width, config.height, config.field);
+    LOG1("<id%d>%s, fmt:%s(%dx%d) field:%d, mBufType:%d", mCameraId, __func__,
+         CameraUtils::pixelCode2String(config.format), config.width, config.height, config.field,
+         mBufType);
 
     // Pass down ISYS compression flag to driver, which is CSI-BE output compression
     bool isISYSCompression = PlatformData::getISYSCompression(mCameraId);
@@ -320,10 +323,10 @@ int MainDevice::createBufferPool(const stream_t& config) {
              csiBEDeviceNodeName.c_str(), ret);
     }
 
-    struct v4l2_format v4l2fmt;
+    struct v4l2_format v4l2fmt = {};
     v4l2fmt.fmt.pix_mp.field = config.field;
 
-    if (PlatformData::isCSIFrontEndCapture(mCameraId)) {
+    if (V4L2_TYPE_IS_MULTIPLANAR(mBufType)) {
         int planesNum = CameraUtils::getNumOfPlanes(config.format);
         LOG1("@%s Num of planes: %d, mCameraId:%d", __func__, planesNum, mCameraId);
 

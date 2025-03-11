@@ -555,8 +555,8 @@ int GPUExecutor::runTnrFrame(const std::shared_ptr<CameraBuffer>& inBuf,
             clock_gettime(CLOCK_MONOTONIC, &endTime);
             uint64_t timeUsedUs = (endTime.tv_sec - beginTime.tv_sec) * 1000000 +
                                   (endTime.tv_nsec - beginTime.tv_nsec) / 1000;
-            LOG2(ST_GPU_TNR, "executor name:%s, sequence: %u update param time %lu us",
-                 mName.c_str(), inBuf->getSequence(), timeUsedUs);
+            LOG2("executor name:%s, sequence: %u update param time %lu us", mName.c_str(),
+                 inBuf->getSequence(), timeUsedUs);
         }
         CheckAndLogError(ret != OK, UNKNOWN_ERROR, "Failed to update TNR parameters");
     }
@@ -621,8 +621,16 @@ int GPUExecutor::runTnrFrame(const std::shared_ptr<CameraBuffer>& inBuf,
     int dstSize = bufferSize;
     int dstFd = fd;
     std::map<int64_t, void*>::iterator tnrOutBuf;
+#ifdef HAVE_CHROME_OS
     // use internal tnr buffer for ZSL and none APP buffer request usage
     bool useInternalBuffer = mUseInternalTnrBuffer || memoryType != V4L2_MEMORY_DMABUF;
+#else
+    /*
+    ** WA, Android App buffer can't be wrapped as CMSurface, use internal buffer
+    **  do tnr processing, and copy to App buffer
+    */
+    bool useInternalBuffer = true;
+#endif
     if (useInternalBuffer) {
         std::unique_lock<std::mutex> lock(mTnrOutBufMapLock);
         tnrOutBuf = mTnrOutBufMap.begin();
@@ -650,8 +658,8 @@ int GPUExecutor::runTnrFrame(const std::shared_ptr<CameraBuffer>& inBuf,
         clock_gettime(CLOCK_MONOTONIC, &endTime);
         uint64_t timeUsedUs = (endTime.tv_sec - beginTime.tv_sec) * 1000000 +
                               (endTime.tv_nsec - beginTime.tv_nsec) / 1000;
-        LOG2(ST_GPU_TNR, "%s executor name:%s, sequence: %u run tnr time %lu us", __func__,
-             mName.c_str(), inBuf->getSequence(), timeUsedUs);
+        LOG2("%s executor name:%s, sequence: %u run tnr time %lu us", __func__, mName.c_str(),
+             inBuf->getSequence(), timeUsedUs);
     }
     if (icamera::PlatformData::isStillTnrPrior()) {
         mGPULock.unlock();

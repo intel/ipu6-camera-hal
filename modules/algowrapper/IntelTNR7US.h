@@ -31,7 +31,6 @@ extern "C" {
 
 #ifdef TNR7_CM
 #define HANDLE cancel_fw_pre_define
-#ifndef HAVE_ANDROID_OS
 /* the cm_rt.h has some build error with current clang build flags
  * use the ignored setting to ignore these errors, and use
  * push/pop to make the ignore only take effect on this file */
@@ -41,9 +40,6 @@ extern "C" {
 // HANDLE is redefined in cm_rt.h, avoid the redefinition build error
 #include "cm_rt.h"
 #pragma clang diagnostic pop
-#else
-#include "cm_rt.h"
-#endif
 
 extern int run_tnr7us_frame(int width, int height, int stride, CmSurface2DUP*& inputSurface,
                             CmSurface2DUP*& outputSurface, tnr_scale_1_0_t* dsPtr,

@@ -23,7 +23,7 @@
 #endif
 
 #ifndef GPU_ALGO_SERVER
-#ifdef CAL_BUILD
+#ifdef HAVE_CHROME_OS
 #include "src/iutils/PerfettoTrace.h"
 #else
 #include "utils/ScopedAtrace.h"

@@ -165,7 +165,7 @@ namespace Log {
 #define SYSLOG_SINK "SYSLOG"
 
 static void initLogSinks() {
-#ifdef CAL_BUILD
+#ifdef HAVE_CHROME_OS
     const char* sinkName = ::getenv("logSink");
 
     if (!sinkName) {
@@ -259,7 +259,7 @@ void setDebugLevel(void) {
     char* perfLevel = getenv(PROP_CAMERA_HAL_PERF);
     if (perfLevel) {
 #ifndef GPU_ALGO_SERVER
-#ifdef CAL_BUILD
+#ifdef HAVE_CHROME_OS
         initPerfettoTrace();
 #else
         gPerfLevel = strtoul(perfLevel, nullptr, 0);

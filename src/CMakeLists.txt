@@ -23,9 +23,6 @@ add_subdirectory(metadata)
 add_subdirectory(platformdata)
 add_subdirectory(v4l2)
 add_subdirectory(image_process)
-if (CAL_BUILD)
-    add_subdirectory(jpeg)
-endif() #CAL_BUILD
 if(FACE_DETECTION)
     add_subdirectory(fd)
 endif() #FACE_DETECTION

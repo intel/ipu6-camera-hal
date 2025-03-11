@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2024 Intel Corporation
+ * Copyright (C) 2015-2025 Intel Corporation
  * Copyright 2008-2017, The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -599,6 +599,8 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
         parseSupportedTuningConfig(atts[1], pCurrentCam->mSupportedTuningConfig);
     } else if (strcmp(name, "enableAiqd") == 0) {
         pCurrentCam->mEnableAiqd = strcmp(atts[1], "true") == 0;
+    } else if (strcmp(name, "isWaitFirstStats") == 0) {
+        pCurrentCam->mWaitFirstStats = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "testPatternMap") == 0) {
         int size = strlen(atts[1]);
         char src[size + 1];

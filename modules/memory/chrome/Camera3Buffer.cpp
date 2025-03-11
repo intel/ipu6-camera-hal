@@ -151,7 +151,11 @@ Camera3Buffer::~Camera3Buffer() {
  */
 icamera::status_t Camera3Buffer::init(const camera3_stream_buffer* aBuffer, int cameraId) {
     mType = BUF_TYPE_HANDLE;
+#ifdef HAVE_CHROME_OS
     mGbmBufferManager = cros::CameraBufferManager::GetInstance();
+#else
+    mGbmBufferManager = crosIpu6::CameraBufferManager::GetInstance();
+#endif
     mHandle = *aBuffer->buffer;
     mHandlePtr = aBuffer->buffer;
     mHalBuffer.s.width = aBuffer->stream->width;
@@ -197,7 +201,11 @@ icamera::status_t Camera3Buffer::init(const camera3_stream_t* stream, buffer_han
     CheckAndLogError(!handle, UNKNOWN_ERROR, "%s, handle is nullptr", __func__);
 
     mType = BUF_TYPE_HANDLE;
+#ifdef HAVE_CHROME_OS
     mGbmBufferManager = cros::CameraBufferManager::GetInstance();
+#else
+    mGbmBufferManager = crosIpu6::CameraBufferManager::GetInstance();
+#endif
     mHandle = handle;
     mHandlePtr = &mHandle;
     mHalBuffer.s.width = stream->width;
@@ -471,7 +479,11 @@ std::shared_ptr<Camera3Buffer> allocateHeapBuffer(int w, int h, int stride, int 
 std::shared_ptr<Camera3Buffer> allocateHandleBuffer(int w, int h, int gfxFmt, int usage,
                                                     int cameraId) {
     HAL_TRACE_CALL(CAMERA_DEBUG_LOG_LEVEL1);
+#ifdef HAVE_CHROME_OS
     cros::CameraBufferManager* bufManager = cros::CameraBufferManager::GetInstance();
+#else
+    crosIpu6::CameraBufferManager* bufManager = crosIpu6::CameraBufferManager::GetInstance();
+#endif
     buffer_handle_t handle;
     uint32_t stride = 0;
 
