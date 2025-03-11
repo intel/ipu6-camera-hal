@@ -77,9 +77,12 @@ class RequestThread : public Thread, public EventSource, public EventListener {
     std::shared_ptr<CameraBuffer> mFakeBuffer;
 
     struct CameraRequest {
-        CameraRequest() : mBufferNum(0), mRequestParam(nullptr) { CLEAR(mBuffer); }
+        CameraRequest() : mBufferNum(0), mIsFirstRequest(false), mRequestParam(nullptr) {
+            CLEAR(mBuffer);
+        }
 
         int mBufferNum;
+        bool mIsFirstRequest;
         camera_buffer_t* mBuffer[MAX_STREAM_NUMBER];
         std::shared_ptr<RequestParam> mRequestParam;
     };

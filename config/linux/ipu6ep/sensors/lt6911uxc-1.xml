@@ -140,4 +140,29 @@
         <supportedISysFormat value="V4L2_PIX_FMT_UYVY"/>
         <enableAIQ value="false"/>
     </Sensor>
+    <Sensor name="lt6911uxc-split-1" description="lt6911uxc split mode">
+        <MediaCtlConfig id="3" mediaCfg="1">
+            <format name="lt6911uxc $I2CBUS" pad="0" width="1920" height="2160" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="Intel IPU6 CSI2 1" pad="0" width="1920" height="2160" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <link srcName="lt6911uxc $I2CBUS" srcPad="0" sinkName="Intel IPU6 CSI2 1" sinkPad="0" enable="true"/>
+            <link srcName="Intel IPU6 CSI2 1" srcPad="1" sinkName="Intel IPU6 ISYS Capture 8" sinkPad="0" enable="true"/>
+            <videonode name="Intel IPU6 ISYS Capture 8" videoNodeType="VIDEO_GENERIC"/>
+            <videonode name="Intel IPU6 CSI2 1" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+            <videonode name="lt6911uxc $I2CBUS" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+        </MediaCtlConfig>
+        <StaticMetadata>
+            <!-- list of stream config info. Meanings of each part is "format,widthxheight,field(0 is none, 7 is alternate),mcId" -->
+            <supportedStreamConfig value="V4L2_PIX_FMT_UYVY,1280x720,0,0,
+                                          V4L2_PIX_FMT_UYVY,1920x1080,0,1,
+                                          V4L2_PIX_FMT_UYVY,2560x1440,0,2,
+                                          V4L2_PIX_FMT_UYVY,1920x2160,0,3,
+                                          V4L2_PIX_FMT_UYVY,3840x2160,0,4"/>
+            <fpsRange value="10,30,10,60"/>
+        </StaticMetadata>
+        <supportedISysSizes value="1280x720,1920x1080,2560x1440,1920x2160,3840x2160"/>
+        <!-- ascending order request-->
+        <supportedISysFormat value="V4L2_PIX_FMT_UYVY"/>
+        <enableAIQ value="false"/>
+    </Sensor>
+
 </CameraSettings>

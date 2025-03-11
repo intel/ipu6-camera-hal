@@ -16,7 +16,7 @@
 
 #pragma once
 
-#ifdef CAL_BUILD
+#ifdef HAVE_CHROME_OS
 #include <cros-camera/v4l2_device.h>
 #else
 #include <v4l2_device.h>
@@ -138,7 +138,7 @@ class DeviceBase : public EventSource {
     /**
      * Each device has below two structures to manager its buffers.
      * And please note that:
-     * 1. Buffer to be queued into drive comes from mPendingBuffers.
+     * 1. Buffer to be queued into driver comes from mPendingBuffers.
      * 2. Buffer to be dequeued from driver comes from mBuffersInDevice.
      * 3. To make code clean, no null CameraBuffer is allowed to be put into these structures.
      * 4. The buffer cannot be in both mPendingBuffers and mBuffersInDevice.

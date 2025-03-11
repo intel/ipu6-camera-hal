@@ -197,8 +197,10 @@ int CameraBuffer::allocateMemory(V4L2VideoNode* vDevice) {
             mU->addr = getAddr();
             break;
         case V4L2_MEMORY_MMAP:
-            exportMmapDmabuf(vDevice);
+            ret = exportMmapDmabuf(vDevice);
+            CheckAndLogError(ret != OK, -1, "allocateMemory failed, ret %d", ret);
             ret = allocateMmap(vDevice);
+            CheckAndLogError(ret != OK, -1, "allocateMemory failed, ret %d", ret);
             mU->addr = getAddr();
             mAllocatedMemory = true;
             break;

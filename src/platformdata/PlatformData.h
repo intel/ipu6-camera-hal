@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2024 Intel Corporation.
+ * Copyright (C) 2015-2025 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@
 
 #include <limits.h>
 
-#ifdef CAL_BUILD
+#ifdef HAVE_CHROME_OS
 #include <cros-camera/v4l2_device.h>
 #else
 #include <v4l2_device.h>
@@ -69,7 +69,7 @@ namespace icamera {
  */
 #define MAX_SETTING_COUNT 40
 
-#ifdef CAL_BUILD
+#ifdef HAVE_CHROME_OS
 #define MAX_CAMERA_NUMBER 2
 #define CAMERA_CACHE_DIR "/var/cache/camera/"
 #define CAMERA_DEFAULT_CFG_PATH "/etc/camera/"
@@ -77,12 +77,12 @@ namespace icamera {
 #define CAMERA_GRAPH_SETTINGS_DIR "gcss/"
 #endif
 
-#ifdef __ANDROID__
+#ifdef HAVE_ANDROID_OS
 #define MAX_CAMERA_NUMBER 2
-#define CAMERA_CACHE_DIR "./"
-#define CAMERA_DEFAULT_CFG_PATH "/vendor/etc/"
-#define CAMERA_GRAPH_DESCRIPTOR_FILE "graph_descriptor.xml"
-#define CAMERA_GRAPH_SETTINGS_DIR ""
+#define CAMERA_CACHE_DIR "/var/cache/camera/"
+#define CAMERA_DEFAULT_CFG_PATH "/vendor/etc/camera/"
+#define CAMERA_GRAPH_DESCRIPTOR_FILE "gcss/graph_descriptor.xml"
+#define CAMERA_GRAPH_SETTINGS_DIR "gcss/"
 #endif
 
 #ifdef LINUX_BUILD
@@ -182,6 +182,7 @@ class PlatformData {
                       mFrameSyncCheckEnabled(false),
                       // FRAME_SYNC_E
                       mEnableAiqd(false),
+                      mWaitFirstStats(true),
                       mCurrentMcConf(nullptr),
                       mGraphSettingsType(COUPLED),
                       mDVSType(MORPH_TABLE),
@@ -301,6 +302,7 @@ class PlatformData {
             bool mFrameSyncCheckEnabled;
             // FRAME_SYNC_E
             bool mEnableAiqd;
+            bool mWaitFirstStats;
             MediaCtlConf* mCurrentMcConf;
             std::map<int, stream_array_t> mStreamToMcMap;
             Parameters mCapability;
@@ -1433,6 +1435,14 @@ class PlatformData {
      * \return true if AIQD is enabled or not
      */
     static bool isAiqdEnabled(int cameraId);
+
+    /**
+     * if wait for the first stats
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return true if wait for the first stats
+     */
+    static bool isWaitFirstStats(int cameraId);
 
     /**
      * if image from tpg
