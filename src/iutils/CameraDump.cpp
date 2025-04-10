@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2023 Intel Corporation.
+ * Copyright (C) 2015-2025 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,9 @@
 
 #include "iutils/CameraDump.h"
 
+#ifdef HAVE_ANDROID_OS
+#include <cutils/properties.h>
+#endif
 #include <dirent.h>
 #include <fcntl.h>
 #include <math.h>
@@ -45,14 +48,20 @@ using std::string;
 namespace icamera {
 
 Thread* gDumpThread = nullptr;
-
+#ifdef HAVE_ANDROID_OS
+static const char* defaultDumpPath = "/data/camera";
+constexpr char DUMP_LEVEL_PROPERTY_NAME[] = "vendor.camera.intel.dump_level_mask";
+constexpr char DUMP_PATH_PROPERTY_NAME[] = "vendor.camera.intel.dump_path";
+bool gDumpPathSet = false;
+bool gDumpLevelSet = false;
+#endif
 int gDumpType = 0;
 int gDumpFormat = 0;
 uint32_t gDumpSkipNum = 0;
 uint32_t gDumpRangeMin = 0;
 uint32_t gDumpRangeMax = 0;
 int gDumpFrequency = 1;
-char gDumpPath[50];
+char gDumpPath[100];
 bool gDumpRangeEnabled = false;
 int gDumpPatternEnabled = 0;
 uint32_t gDumpPattern = 0xffffffff;
@@ -198,6 +207,12 @@ void CameraDump::setDumpThread(void) {
 }
 
 bool CameraDump::isDumpTypeEnable(int dumpType) {
+#ifdef HAVE_ANDROID_OS
+    if (!gDumpLevelSet) {
+        gDumpLevelSet = true;
+        gDumpType = property_get_int32(DUMP_LEVEL_PROPERTY_NAME, 0);
+    }
+#endif
     return gDumpType & dumpType;
 }
 
@@ -206,6 +221,12 @@ bool CameraDump::isDumpFormatEnable(int dumpFormat) {
 }
 
 const char* CameraDump::getDumpPath(void) {
+#ifdef HAVE_ANDROID_OS
+    if (!gDumpPathSet) {
+        gDumpPathSet = true;
+        property_get(DUMP_PATH_PROPERTY_NAME, gDumpPath, defaultDumpPath);
+    }
+#endif
     return gDumpPath;
 }
 
@@ -249,6 +270,10 @@ static string getNamePrefix(int cameraId, ModuleType_t type, Port port, int sUsa
 
 static string getAiqSettingAppendix(int cameraId, int64_t sequence) {
     char settingAppendix[MAX_NAME_LEN] = {'\0'};
+
+    if (!PlatformData::isEnableAIQ(cameraId)) {
+        return string(settingAppendix);
+    }
 
     AiqResult* aiqResults =
         const_cast<AiqResult*>(AiqResultStorage::getInstance(cameraId)->getAiqResult(sequence));
