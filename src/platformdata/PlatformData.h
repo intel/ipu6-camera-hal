@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2024 Intel Corporation.
+ * Copyright (C) 2015-2025 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -182,6 +182,7 @@ class PlatformData {
                       mFrameSyncCheckEnabled(false),
                       // FRAME_SYNC_E
                       mEnableAiqd(false),
+                      mWaitFirstStats(true),
                       mCurrentMcConf(nullptr),
                       mGraphSettingsType(COUPLED),
                       mDVSType(MORPH_TABLE),
@@ -301,6 +302,7 @@ class PlatformData {
             bool mFrameSyncCheckEnabled;
             // FRAME_SYNC_E
             bool mEnableAiqd;
+            bool mWaitFirstStats;
             MediaCtlConf* mCurrentMcConf;
             std::map<int, stream_array_t> mStreamToMcMap;
             Parameters mCapability;
@@ -1433,6 +1435,14 @@ class PlatformData {
      * \return true if AIQD is enabled or not
      */
     static bool isAiqdEnabled(int cameraId);
+
+    /**
+     * if wait for the first stats
+     *
+     * \param cameraId: [0, MAX_CAMERA_NUMBER - 1]
+     * \return true if wait for the first stats
+     */
+    static bool isWaitFirstStats(int cameraId);
 
     /**
      * if image from tpg

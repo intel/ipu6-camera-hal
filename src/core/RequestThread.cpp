@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2024 Intel Corporation.
+ * Copyright (C) 2015-2025 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ RequestThread::RequestThread(int cameraId, AiqUnitBase* a3AControl, ParameterGen
           mLastEffectSeq(-1),
           mLastAppliedSeq(-1),
           mLastSofSeq(-1),
-          mBlockRequest(true),
+          mBlockRequest(PlatformData::isWaitFirstStats(cameraId)),
           mSofEnabled(false),
           mWaitFrameDurationOverride(0) {
     CLEAR(mFakeReqBuf);
@@ -89,7 +89,7 @@ void RequestThread::clearRequests() {
     mLastAppliedSeq = -1;
     mLastSofSeq = -1;
     mFirstRequest = true;
-    mBlockRequest = true;
+    mBlockRequest = PlatformData::isWaitFirstStats(mCameraId);
 }
 
 int RequestThread::configure(const stream_config_t* streamList) {
@@ -106,6 +106,12 @@ int RequestThread::configure(const stream_config_t* streamList) {
 
     // Don't block request handling if no 3A stats (from video pipe)
     mBlockRequest = PlatformData::isEnableAIQ(mCameraId) && (previewIndex >= 0 || videoIndex >= 0);
+
+    if (!PlatformData::isWaitFirstStats(mCameraId)) {
+        // Don't block request processing on Android for CTS testSharedSurfaceSwitch
+        mBlockRequest = false;
+    }
+
     LOG1("%s: user specified Configmode: %d, blockRequest: %d", __func__,
          static_cast<ConfigMode>(streamList->operation_mode), mBlockRequest);
 

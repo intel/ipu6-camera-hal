@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2023 Intel Corporation.
+ * Copyright (C) 2015-2025 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,14 +27,6 @@
 #include "CameraTypes.h"
 
 namespace icamera {
-
-/**
- * global dump level
- * This global variable is set from system properties
- * It is used to control the type of frame dump
- */
-extern int gDumpType;
-extern char gDumpPath[50];
 
 // Dump bit mask definition
 enum {
