@@ -27,7 +27,7 @@
 #include <queue>
 #include <unordered_map>
 
-#ifdef CAL_BUILD
+#ifdef HAVE_CHROME_OS
 #include "Camera3Buffer.h"
 #endif
 #include "FaceType.h"
@@ -129,7 +129,7 @@ class FaceDetection {
         return nullptr;
     }
     static void destoryInstance(int cameraId) {}
-#ifdef CAL_BUILD
+#ifdef HAVE_CHROME_OS
     void runFaceDetection(const std::shared_ptr<camera3::Camera3Buffer> ccBuf) {}
 #endif
     bool faceRunningByCondition() { return false; }

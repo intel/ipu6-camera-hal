@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2024 Intel Corporation.
+ * Copyright (C) 2015-2025 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ RequestThread::RequestThread(int cameraId, AiqUnitBase* a3AControl, ParameterGen
           mLastEffectSeq(-1),
           mLastAppliedSeq(-1),
           mLastSofSeq(-1),
-          mBlockRequest(true),
+          mBlockRequest(PlatformData::isWaitFirstStats(cameraId)),
           mSofEnabled(false),
           mWaitFrameDurationOverride(0) {
     CLEAR(mFakeReqBuf);
@@ -89,7 +89,7 @@ void RequestThread::clearRequests() {
     mLastAppliedSeq = -1;
     mLastSofSeq = -1;
     mFirstRequest = true;
-    mBlockRequest = true;
+    mBlockRequest = PlatformData::isWaitFirstStats(mCameraId);
 }
 
 int RequestThread::configure(const stream_config_t* streamList) {
@@ -106,6 +106,12 @@ int RequestThread::configure(const stream_config_t* streamList) {
 
     // Don't block request handling if no 3A stats (from video pipe)
     mBlockRequest = PlatformData::isEnableAIQ(mCameraId) && (previewIndex >= 0 || videoIndex >= 0);
+
+    if (!PlatformData::isWaitFirstStats(mCameraId)) {
+        // Don't block request processing on Android for CTS testSharedSurfaceSwitch
+        mBlockRequest = false;
+    }
+
     LOG1("%s: user specified Configmode: %d, blockRequest: %d", __func__,
          static_cast<ConfigMode>(streamList->operation_mode), mBlockRequest);
 
@@ -165,7 +171,13 @@ int RequestThread::processRequest(int bufferNum, camera_buffer_t** ubuffer,
         }
     }
 
-    if (mFirstRequest && !hasVideoBuffer) {
+    if (!mActive) {
+        request.mIsFirstRequest = true;
+        mActive = true;
+        LOG2("<id%d>%s: process first request.", mCameraId, __func__);
+    }
+
+    if (request.mIsFirstRequest && !hasVideoBuffer) {
         LOG2("there is no video buffer in first request, so don't block request processing.");
         mBlockRequest = false;
     }
@@ -173,11 +185,7 @@ int RequestThread::processRequest(int bufferNum, camera_buffer_t** ubuffer,
     request.mRequestParam = copyRequestParams(params);
     mPendingRequests.push_back(request);
 
-    if (!mActive) {
-        mActive = true;
-    }
-
-    if (mRequestsInProcessing == 0) {
+    if (mRequestsInProcessing == 0 || !mPerframeControlSupport) {
         mRequestTriggerEvent |= NEW_REQUEST;
         mRequestSignal.signal();
     }
@@ -374,7 +382,7 @@ bool RequestThread::threadLoop() {
     }
 
     if (!mActive) {
-        return false;
+        return true;
     }
 
     CameraRequest request;
@@ -448,7 +456,7 @@ void RequestThread::handleRequest(CameraRequest& request, int64_t applyingSeq) {
 
     {
         AutoMutex l(mFirstRequestLock);
-        if (mFirstRequest) {
+        if (request.mIsFirstRequest) {
             LOG1("%s: first request done", __func__);
             mFirstRequest = false;
             mFirstRequestSignal.signal();

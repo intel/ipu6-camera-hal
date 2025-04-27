@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013-2023 Intel Corporation
+ * Copyright (C) 2013-2025 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,9 @@
 
 #include <sync/sync.h>
 #include <sys/mman.h>
+#include <sys/time.h>
+#include <time.h>
+#include <string>
 #include <unistd.h>
 
 #include "Camera3Stream.h"
@@ -148,7 +151,11 @@ Camera3Buffer::~Camera3Buffer() {
  */
 icamera::status_t Camera3Buffer::init(const camera3_stream_buffer* aBuffer, int cameraId) {
     mType = BUF_TYPE_HANDLE;
+#ifdef HAVE_CHROME_OS
     mGbmBufferManager = cros::CameraBufferManager::GetInstance();
+#else
+    mGbmBufferManager = crosIpu6::CameraBufferManager::GetInstance();
+#endif
     mHandle = *aBuffer->buffer;
     mHandlePtr = aBuffer->buffer;
     mHalBuffer.s.width = aBuffer->stream->width;
@@ -194,7 +201,11 @@ icamera::status_t Camera3Buffer::init(const camera3_stream_t* stream, buffer_han
     CheckAndLogError(!handle, UNKNOWN_ERROR, "%s, handle is nullptr", __func__);
 
     mType = BUF_TYPE_HANDLE;
+#ifdef HAVE_CHROME_OS
     mGbmBufferManager = cros::CameraBufferManager::GetInstance();
+#else
+    mGbmBufferManager = crosIpu6::CameraBufferManager::GetInstance();
+#endif
     mHandle = handle;
     mHandlePtr = &mHandle;
     mHalBuffer.s.width = stream->width;
@@ -404,10 +415,21 @@ void Camera3Buffer::dumpImage(const void* data, int frameNumber, const int size,
     static unsigned int count = 0;
     count++;
 
-    std::string fileName(gDumpPath);
+    std::string fileName(CameraDump::getDumpPath());
     fileName += "dump_" + std::to_string(width) + "x" + std::to_string(height) + "_frame#" +
-                std::to_string(count) + "_req#" + std::to_string(frameNumber) + "." +
-                CameraUtils::format2string(format).c_str();
+                std::to_string(count) + "_req#" + std::to_string(frameNumber);
+
+    struct timeval tv;
+    gettimeofday(&tv, nullptr);
+    time_t nowtime = tv.tv_sec;
+    struct tm targetTm;
+    struct tm* nowtm = localtime_r(&nowtime, &targetTm);
+    if (nowtm) {
+        fileName += "_time#" + std::to_string(nowtm->tm_mday) + ":" + std::to_string(nowtm->tm_min)
+                    + ":" + std::to_string(nowtm->tm_sec) + ":" + std::to_string(tv.tv_usec / 1000);
+    }
+
+    fileName += "." + std::string(CameraUtils::format2string(format).c_str());
     LOG2("%s filename is %s", __func__, fileName.data());
 
     FILE* fp = fopen(fileName.data(), "w+");
@@ -457,7 +479,11 @@ std::shared_ptr<Camera3Buffer> allocateHeapBuffer(int w, int h, int stride, int 
 std::shared_ptr<Camera3Buffer> allocateHandleBuffer(int w, int h, int gfxFmt, int usage,
                                                     int cameraId) {
     HAL_TRACE_CALL(CAMERA_DEBUG_LOG_LEVEL1);
+#ifdef HAVE_CHROME_OS
     cros::CameraBufferManager* bufManager = cros::CameraBufferManager::GetInstance();
+#else
+    crosIpu6::CameraBufferManager* bufManager = crosIpu6::CameraBufferManager::GetInstance();
+#endif
     buffer_handle_t handle;
     uint32_t stride = 0;
 

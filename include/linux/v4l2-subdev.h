@@ -129,6 +129,8 @@ struct v4l2_subdev_selection {
 #define V4L2_SUBDEV_ROUTE_FL_ACTIVE (1 << 0)
 #define V4L2_SUBDEV_ROUTE_FL_IMMUTABLE (1 << 1)
 #define V4L2_SUBDEV_ROUTE_FL_SOURCE (1 << 2)
+#define VIDIOC_SUBDEV_G_CLIENT_CAP _IOR('V',  101, struct v4l2_subdev_client_capability)
+#define VIDIOC_SUBDEV_S_CLIENT_CAP _IOWR('V',  102, struct v4l2_subdev_client_capability)
 /**
  * struct v4l2_subdev_route - A signal route inside a subdev
  * @sink_pad: the sink pad
@@ -158,14 +160,47 @@ struct v4l2_subdev_route {
 };
 
 /**
- * struct v4l2_subdev_routing - Routing information
- * @routes: the routes array
- * @num_routes: the total number of routes in the routes array
+ * struct v4l2_subdev_routing - Subdev routing information
+ *
+ * @which: configuration type (from enum v4l2_subdev_format_whence)
+ * @len_routes: the length of the routes array, in routes; set by the user, not
+ * modified by the kernel
+ * @routes: pointer to the routes array
+ * @num_routes: the total number of routes, possibly more than fits in the
+ * routes array
+ * @reserved: drivers and applications must zero this array
  */
 struct v4l2_subdev_routing {
- struct v4l2_subdev_route *routes;
+ __u32 which;
+ __u32 len_routes;
+ __u64 routes;
  __u32 num_routes;
- __u32 reserved[5];
+ __u32 reserved[11];
+};
+
+/*
+ * The client is aware of streams. Setting this flag enables the use of 'stream'
+ * fields (referring to the stream number) with various ioctls. If this is not
+ * set (which is the default), the 'stream' fields will be forced to 0 by the
+ * kernel.
+ */
+#define V4L2_SUBDEV_CLIENT_CAP_STREAMS (1ULL << 0)
+
+/*
+ * The client is aware of the struct v4l2_subdev_frame_interval which field. If
+ * this is not set (which is the default), the which field is forced to
+ * V4L2_SUBDEV_FORMAT_ACTIVE by the kernel.
+ */
+#define V4L2_SUBDEV_CLIENT_CAP_INTERVAL_USES_WHICH (1ULL << 1)
+
+/**
+ * struct v4l2_subdev_client_capability - Capabilities of the client accessing
+ * the subdev
+ *
+ * @capabilities: A bitmask of V4L2_SUBDEV_CLIENT_CAP_* flags.
+ */
+struct v4l2_subdev_client_capability {
+ __u64 capabilities;
 };
 
 #endif

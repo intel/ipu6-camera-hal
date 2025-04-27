@@ -16,7 +16,7 @@
 
 #pragma once
 
-#ifdef CAL_BUILD
+#ifdef HAVE_CHROME_OS
 #include <cros-camera/v4l2_device.h>
 #else
 #include <v4l2_device.h>
@@ -26,7 +26,11 @@
 
 namespace icamera {
 
+#ifdef HAVE_ANDROID_OS
+typedef ::crosIpu6::V4L2Subdevice V4L2Subdevice;
+#else
 typedef ::cros::V4L2Subdevice V4L2Subdevice;
+#endif
 
 /**
  * \class LensHw

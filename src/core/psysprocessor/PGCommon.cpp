@@ -884,7 +884,7 @@ int PGCommon::iterate(CameraBufferMap& inBufs, CameraBufferMap& outBufs, ia_bina
     if (!inBufs.empty()) {
         sequence = inBufs.begin()->second->getSequence();
     }
-    LOG2("<seq%ld>%s:%s ++", sequence, getName(), __func__);
+    LOG2("<id%d><seq%ld>%s:%s ++", mCameraId, sequence, getName(), __func__);
 
     int ret = prepareTerminalBuffers(ipuParameters, inBufs, outBufs, sequence);
     CheckAndLogError((ret != OK), ret, "%s, prepareTerminalBuffers fail with %d", getName(), ret);
@@ -932,7 +932,7 @@ int PGCommon::iterate(CameraBufferMap& inBufs, CameraBufferMap& outBufs, ia_bina
     }
 
     postTerminalBuffersDone(sequence);
-    LOG2("<seq%ld>%s:%s -- ", sequence, getName(), __func__);
+    LOG2("<id%d><seq%ld>%s:%s -- ", mCameraId, sequence, getName(), __func__);
     return ret;
 }
 
@@ -1097,6 +1097,13 @@ int PGCommon::prepareTerminalBuffers(const ia_binary_data* ipuParameters,
                  buffer->isFlagsSet(BUFFER_FLAG_NO_FLUSH))) {
                 flush = false;
             }
+#ifdef LINUX_BUILD
+            // FILE_SOURCE_S
+            if (PlatformData::isFileSourceEnabled() && buffer->getMemory() == V4L2_MEMORY_USERPTR) {
+                flush = true;
+            }
+            // FILE_SOURCE_E
+#endif
             ciprBuf =
                 (buffer->getMemory() == V4L2_MEMORY_DMABUF) ?
                     registerUserBuffer(buffer->getBufferSize(), buffer->getFd(), flush) :
@@ -1247,6 +1254,8 @@ int PGCommon::handleCmd(CIPR::Command** cmd, CIPR::PSysCommandConfig* cmdCfg) {
     mEvent->getConfig(&eventCfg);
     cmdCfg->issueID = reinterpret_cast<uint64_t>(cmd);
     eventCfg.commandIssueID = cmdCfg->issueID;
+
+    LOG3("<id%d>@%s", mCameraId, __func__);
 
     CIPR::Result ret = (*cmd)->setConfig(*cmdCfg);
     CheckAndLogError((ret != CIPR::Result::OK), UNKNOWN_ERROR,

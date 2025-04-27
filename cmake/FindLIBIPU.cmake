@@ -28,26 +28,9 @@ else()
 endif()
 
 # Get include and lib paths for LIBIPU from pkgconfig
-include(FindPackageHandleStandardArgs)
 
-# Include directory
 find_package(PkgConfig)
 pkg_check_modules(LIBIPU${TARGET_SUFFIX} ${libipu_ver})
-if(NOT LIBIPU${TARGET_SUFFIX}_FOUND)
-    message(FATAL_ERROR "LIBIPU${TARGET_SUFFIX} not found")
-endif()
-
-set(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} ${LIBIPU${TARGET_SUFFIX}_LIBRARY_DIRS})
-
-# Libraries
-find_library(IPU${TARGET_SUFFIX}_LIB NAMES ${libipu_ver}.a)
-set(LIBIPU${TARGET_SUFFIX}_LIBS ${IPU${TARGET_SUFFIX}_LIB})
-
-# handle the QUIETLY and REQUIRED arguments and set EXPAT_FOUND to TRUE if
-# all listed variables are TRUE
-find_package_handle_standard_args(LIBIPU${TARGET_SUFFIX}
-                                  REQUIRED_VARS LIBIPU${TARGET_SUFFIX}_INCLUDE_DIRS LIBIPU${TARGET_SUFFIX}_LIBS)
-
 if(NOT LIBIPU${TARGET_SUFFIX}_FOUND)
     message(FATAL_ERROR "LIBIPU${TARGET_SUFFIX} not found")
 endif()

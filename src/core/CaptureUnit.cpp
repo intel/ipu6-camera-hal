@@ -415,7 +415,7 @@ int CaptureUnit::poll() {
     }
     CheckAndLogError(ret < 0, UNKNOWN_ERROR, "%s: Poll error, ret:%d", __func__, ret);
     if (ret == 0) {
-#ifdef CAL_BUILD
+#ifdef HAVE_CHROME_OS
         LOGI("<id%d>%s, timeout happens, buffer in device: %d. wait recovery", mCameraId, __func__,
              mDevices.front()->getBufferNumInDevice());
 #else

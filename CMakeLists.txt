@@ -42,13 +42,6 @@ set(ALGOWRAPPER_DIR     ${MODULES_DIR}/algowrapper)
 set(SANDBOXING_DIR      ${MODULES_DIR}/sandboxing)
 set(IMAGE_PROCESS_DIR   ${SRC_ROOT_DIR}/image_process)
 
-#AAL directories
-if (CAL_BUILD)
-    set(AAL_ROOT_DIR       ${CMAKE_CURRENT_LIST_DIR}/aal)
-    set(JPEG_DIR           ${SRC_ROOT_DIR}/jpeg)
-    set(MEMORY_DIR         ${MODULES_DIR}/memory)
-endif() #CAL_BUILD
-
 if (SUPPORT_LIVE_TUNING)
     #LiveTuning directories
     set(LIVE_TUNING_DIR         ${MODULES_DIR}/livetune)
@@ -192,68 +185,16 @@ if(ENABLE_SANDBOXING)
     set(LIBCAMHAL_LINK_LIBS ${LIBCAMHAL_LINK_LIBS} ${LIBCAB_LIBS} ${LIBMOJO_LIBS} ${LIBCAMERA_IPC_LIBS} ${CMAKE_PREFIX_PATH}/librt.a)
 endif() #ENABLE_SANDBOXING
 
-if (CAL_BUILD)
-    message("Chrome enabled ")
-    add_definitions(-DCAL_BUILD -DDUMP_IMAGE)
-    if (SW_JPEG_ENCODE)
-        add_definitions(-DSW_JPEG_ENCODE)
-        include_directories(src/jpeg/sw)
-    else ()
-        include_directories(src/jpeg/chrome)
-    endif()
-
-    if (SW_POST_PROCESSING)
-        include_directories(src/image_process/sw)
-    else ()
-        include_directories(src/image_process/chrome)
-    endif()
-
-    add_subdirectory(aal)
-
-    set(LIBCAMHAL_SRCS ${LIBCAMHAL_SRCS} ${MEMORY_SRCS} ${AAL_SRCS} ${JPEG_SRCS})
-    include_directories(include include/api include/utils include/linux
-        ${USR_INCLUDE_HEADER}/android/system/core/include/
-        ${USR_INCLUDE_HEADER}/ia_imaging
-        ${USR_INCLUDE_HEADER}/usr/lib${IPU_VER}
-        ${USR_INCLUDE_HEADER}/android/hardware/libhardware/include/
-        aal aal/chrome src/iutils src/jpeg
-        modules/memory modules/memory/chrome
-    )
-    find_package(LIBCAMERA_CLIENT)
-    find_package(LIBCAMERA_COMMON)
-    find_package(LIBCAMERA_METADATA)
-    find_package(LIBCAMERA_V4L2_DEVICE)
-    find_package(LIBSYNC)
-    find_package(LIBCBM)
-
-    include_directories(${LIBCAMERA_CLIENT_INCLUDE_DIRS} ${LIBCAMERA_COMMON_INCLUDE_DIRS}
-                        ${LIBCAMERA_METADATA_INCLUDE_DIRS} ${LIBCAMERA_V4L2_DEVICE_INCLUDE_DIRS}
-                        ${LIBSYNC_INCLUDE_DIRS}
-                        ${LIBCBM_INCLUDE_DIRS}
-                        )
-    link_directories(${CMAKE_PREFIX_PATH} ${LIBCAMERA_CLIENT_LIBS} ${LIBCAMERA_METADATA_LIBS}
-                     ${LIBCAMERA_COMMON_LIBS} ${LIBSYNC_LIBS}
-                     ${LIBCBM_LIBS}
-                     )
-
-    set(LIBCAMHAL_LINK_LIBS ${LIBCAMHAL_LINK_LIBS} ${LIBCAMERA_CLIENT_LIBS} ${LIBCAMERA_COMMON_LIBS}
-                          ${LIBCAMERA_METADATA_LIBS} ${LIBCAMERA_V4L2_DEVICE_LIBS}
-                          ${LIBSYNC_LIBS} jpeg ${CMAKE_PREFIX_PATH}/libyuv.pic.a
-                          ${LIBCBM_LIBS} camera_v4l2_device
-                          )
-endif() #CAL_BUILD
-
-if (NOT CAL_BUILD)
-    message("Linux build")
-    add_definitions(-DSUPPORT_MULTI_PROCESS)
-    add_definitions(-DLINUX_BUILD)
-    include_directories(${MODULES_DIR}/v4l2)
-    find_package(LIBDRM)
-    if(LIBDRM_FOUND AND ("${LIBDRM_VERSION}" VERSION_GREATER_EQUAL 2.4.114))
-        include_directories(${LIBDRM_INCLUDE_DIRS})
-        set(LIBCAMHAL_LINK_LIBS ${LIBCAMHAL_LINK_LIBS} ${LIBDRM_LIBS})
-        add_definitions(-DLIBDRM_SUPPORT_MMAP_OFFSET)
-    endif()
+message("Linux build")
+add_definitions(-DSUPPORT_MULTI_PROCESS)
+add_definitions(-DLINUX_BUILD)
+include_directories(${MODULES_DIR}/v4l2)
+find_package(LIBDRM)
+if(LIBDRM_FOUND AND ("${LIBDRM_VERSION}" VERSION_GREATER_EQUAL 2.4.114))
+    include_directories(${LIBDRM_INCLUDE_DIRS})
+    link_directories(${LIBDRM_LIBRARY_DIRS})
+    set(LIBCAMHAL_LINK_LIBS ${LIBCAMHAL_LINK_LIBS} ${LIBDRM_LIBRARIES})
+    add_definitions(-DLIBDRM_SUPPORT_MMAP_OFFSET)
 endif()
 
 set(LIBCAMHAL_SRCS
@@ -323,36 +264,38 @@ if (IPU_VER MATCHES "ipu6")
     endif()
 endif()
 
-if (NOT CAL_BUILD)
-    set(TARGET_DEFINITIONS ${TARGET_DEFINITIONS} "-DCAMERA_DEFAULT_CFG_PATH=\"${CMAKE_INSTALL_FULL_SYSCONFDIR}/camera/${IPU_VER}/\"")
-endif()
+set(TARGET_DEFINITIONS ${TARGET_DEFINITIONS} "-DCAMERA_DEFAULT_CFG_PATH=\"${CMAKE_INSTALL_FULL_SYSCONFDIR}/camera/${IPU_VER}/\"")
 
 # Link libraries, the building will be interrupted if libs/includes not found
     # Link ia_imaging
     find_package(IA_IMAGING)
     set(TARGET_INCLUDE ${TARGET_INCLUDE} ${IA_IMAGING${TARGET_SUFFIX}_INCLUDE_DIRS})
-    set(TARGET_LINK_LIBS ${TARGET_LINK_LIBS} ${IA_IMAGING${TARGET_SUFFIX}_LIBS})
+    set(TARGET_LINK_LIBS ${TARGET_LINK_LIBS} ${IA_IMAGING${TARGET_SUFFIX}_LIBRARIES})
+    link_directories(${IA_IMAGING${TARGET_SUFFIX}_LIBRARY_DIRS})
 
     if(USE_PG_LITE_PIPE)
         find_package(LIBGCSS)
         set(TARGET_INCLUDE ${TARGET_INCLUDE} ${LIBGCSS${TARGET_SUFFIX}_INCLUDE_DIRS})
-        set(TARGET_LINK_LIBS ${TARGET_LINK_LIBS} ${LIBGCSS${TARGET_SUFFIX}_LIBS})
+        set(TARGET_LINK_LIBS ${TARGET_LINK_LIBS} ${LIBGCSS${TARGET_SUFFIX}_LIBRARIES})
+        link_directories(${LIBGCSS${TARGET_SUFFIX}_LIBRARY_DIRS})
         # Include libipu(4) headers
         find_package(LIBIPU)
         set(TARGET_INCLUDE ${TARGET_INCLUDE} ${LIBIPU${TARGET_SUFFIX}_INCLUDE_DIRS})
-        set(TARGET_LINK_LIBS ${TARGET_LINK_LIBS} ${LIBIPU${TARGET_SUFFIX}_LIBS})
+        set(TARGET_LINK_LIBS ${TARGET_LINK_LIBS} ${LIBIPU${TARGET_SUFFIX}_LIBRARIES})
+        link_directories(${LIBIPU${TARGET_SUFFIX}_LIBRARY_DIRS})
     else()
         # Link libiacss
         find_package(LIBIACSS)
         set(TARGET_INCLUDE ${TARGET_INCLUDE} ${LIBIACSS${TARGET_SUFFIX}_INCLUDE_DIRS})
-        set(TARGET_LINK_LIBS ${TARGET_LINK_LIBS} ${LIBIACSS${TARGET_SUFFIX}_LIBS})
+        set(TARGET_LINK_LIBS ${TARGET_LINK_LIBS} ${LIBIACSS${TARGET_SUFFIX}_LIBRARIES})
+        link_directories(${LIBIACSS${TARGET_SUFFIX}_LIBRARY_DIRS})
     endif()
 
 #--------------------------- Add libcamhal target  ---------------------------
 
 if (BUILD_CAMHAL_PLUGIN)
-    set(CAMHAL_TARGET ${IPU_VER})
-    set(CAMHAL_STATIC_TARGET ${IPU_VER}_static)
+    set(CAMHAL_TARGET camhal${IPU_VER})
+    set(CAMHAL_STATIC_TARGET camhal${IPU_VER}_static)
 else()
     set(CAMHAL_TARGET camhal)
     set(CAMHAL_STATIC_TARGET camhal_static)
@@ -388,41 +331,36 @@ endif()
 
 
 #--------------------------- Install settings ---------------------------
-if (NOT CAL_BUILD)
-    if (NOT BUILD_CAMHAL_PLUGIN)
-        # Install headers
-        install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/libcamhal)
-        if (SUPPORT_LIVE_TUNING)
-            install(FILES modules/livetune/LiveTuning.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/libcamhal/api)
-        endif() #SUPPORT_LIVE_TUNING
-    endif()
-
-    # Install configure files, by default ipu4 is used
-    message("Install camera configure files for ${IPU_VER}")
-    install(DIRECTORY config/linux/${IPU_VER}/ DESTINATION ${CMAKE_INSTALL_FULL_SYSCONFDIR}/camera/${IPU_VER})
-
-    # Install libraries
-    set(CAMHAL_TARGETS ${CAMHAL_TARGET} ${CAMHAL_STATIC_TARGET})
-    if (BUILD_CAMHAL_PLUGIN)
-        set(CAMHAL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/libcamhal/plugins)
-    else()
-        set(CAMHAL_DESTINATION ${CMAKE_INSTALL_LIBDIR})
-    endif()
-    if (${CMAKE_VERSION} VERSION_LESS 3.11)
-        install(TARGETS ${CAMHAL_TARGETS}
-                LIBRARY DESTINATION ${CAMHAL_DESTINATION}
-                ARCHIVE DESTINATION ${CAMHAL_DESTINATION})
-    else()
-        install(TARGETS ${CAMHAL_TARGETS} DESTINATION ${CAMHAL_DESTINATION})
-    endif()
-    if (NOT BUILD_CAMHAL_PLUGIN)
-        # Install package config file
-        configure_file(${PROJECT_SOURCE_DIR}/cmake/libcamhal.pc.cmakein
-                       ${PROJECT_SOURCE_DIR}/libcamhal.pc @ONLY)
-        install(FILES libcamhal.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
-    endif()
-
-endif() #NOT CAL_BUILD
+if (NOT BUILD_CAMHAL_PLUGIN)
+    # Install headers
+    install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/libcamhal)
+    if (SUPPORT_LIVE_TUNING)
+        install(FILES modules/livetune/LiveTuning.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/libcamhal/api)
+    endif() #SUPPORT_LIVE_TUNING
+endif()
+# Install configure files, by default ipu4 is used
+message("Install camera configure files for ${IPU_VER}")
+install(DIRECTORY config/linux/${IPU_VER}/ DESTINATION ${CMAKE_INSTALL_FULL_SYSCONFDIR}/camera/${IPU_VER})
+# Install libraries
+set(CAMHAL_TARGETS ${CAMHAL_TARGET} ${CAMHAL_STATIC_TARGET})
+if (BUILD_CAMHAL_PLUGIN)
+    set(CAMHAL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/libcamhal/plugins)
+else()
+    set(CAMHAL_DESTINATION ${CMAKE_INSTALL_LIBDIR})
+endif()
+if (${CMAKE_VERSION} VERSION_LESS 3.11)
+    install(TARGETS ${CAMHAL_TARGETS}
+            LIBRARY DESTINATION ${CAMHAL_DESTINATION}
+            ARCHIVE DESTINATION ${CAMHAL_DESTINATION})
+else()
+    install(TARGETS ${CAMHAL_TARGETS} DESTINATION ${CAMHAL_DESTINATION})
+endif()
+if (NOT BUILD_CAMHAL_PLUGIN)
+    # Install package config file
+    configure_file(${PROJECT_SOURCE_DIR}/cmake/libcamhal.pc.cmakein
+                   ${PROJECT_SOURCE_DIR}/libcamhal.pc @ONLY)
+    install(FILES libcamhal.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+endif()
 
 endforeach() #IPU_VERSIONS
 

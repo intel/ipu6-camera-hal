@@ -21,7 +21,7 @@
 #include <string.h>
 #include <sys/stat.h>
 
-#ifdef CAL_BUILD
+#ifdef HAVE_CHROME_OS
 #include <base/logging.h>
 #endif
 
@@ -39,7 +39,7 @@ extern const char* cameraDebugLogToString(int level);
 #define CAMERA_DEBUG_LOG_ERR (1 << 5)
 #define CAMERA_DEBUG_LOG_WARNING (1 << 3)
 
-#ifdef CAL_BUILD
+#ifdef HAVE_CHROME_OS
 const char* GLogSink::getName() const {
     return "Google gLOG";
 }

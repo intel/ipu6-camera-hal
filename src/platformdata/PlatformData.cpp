@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2024 Intel Corporation.
+ * Copyright (C) 2015-2025 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1097,6 +1097,10 @@ bool PlatformData::isAiqdEnabled(int cameraId) {
     return getInstance()->mStaticCfg.mCameras[cameraId].mEnableAiqd;
 }
 
+bool PlatformData::isWaitFirstStats(int cameraId) {
+    return getInstance()->mStaticCfg.mCameras[cameraId].mWaitFirstStats;
+}
+
 int PlatformData::getFormatByDevName(int cameraId, const string& devName, McFormat& format) {
     MediaCtlConf* mc = getMediaCtlConf(cameraId);
     CheckAndLogError(!mc, BAD_VALUE, "getMediaCtlConf returns nullptr, cameraId:%d", cameraId);
@@ -1667,7 +1671,7 @@ int PlatformData::getVirtualChannelSequence(int cameraId) {
 }
 
 int PlatformData::getVcAggregator(int cameraId, struct VcAggregator& aggregator) {
-    if (getInstance()->mStaticCfg.mCameras[cameraId].mVcAggregator.mIndex >= 0) {
+    if (getInstance()->mStaticCfg.mCameras[cameraId].mVcAggregator.mVcId >= 0) {
         aggregator = getInstance()->mStaticCfg.mCameras[cameraId].mVcAggregator;
         return OK;
     }

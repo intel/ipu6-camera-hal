@@ -17,6 +17,7 @@
 
 #include "SofSource.h"
 
+#include <fcntl.h>
 #include <string>
 #include <poll.h>
 
@@ -41,6 +42,21 @@ SofSource::SofSource(int cameraId)
           mExitPending(false) {
     LOG1("%s: SofSource is constructed", __func__);
 
+    mFlushFd[0] = -1;
+    mFlushFd[1] = -1;
+
+    int ret = pipe(mFlushFd);
+    if (ret >= 0) {
+        ret = fcntl(mFlushFd[0], F_SETFL, O_NONBLOCK);
+        if (ret < 0) {
+            LOG1("failed to set flush pipe flag: %s", strerror(errno));
+            close(mFlushFd[0]);
+            close(mFlushFd[1]);
+            mFlushFd[0] = -1;
+            mFlushFd[1] = -1;
+        }
+        LOG1("%s, mFlushFd [%d-%d]", __func__, mFlushFd[0], mFlushFd[1]);
+    }
     mSofDisabled = !PlatformData::isIsysEnabled(cameraId);
     // FILE_SOURCE_S
     mSofDisabled = mSofDisabled || PlatformData::isFileSourceEnabled();
@@ -49,6 +65,8 @@ SofSource::SofSource(int cameraId)
 
 SofSource::~SofSource() {
     LOG1("%s: SofSource is distructed.", __func__);
+    if (mFlushFd[0] != -1) close(mFlushFd[0]);
+    if (mFlushFd[1] != -1) close(mFlushFd[1]);
 }
 
 int SofSource::init() {
@@ -84,7 +102,7 @@ int SofSource::initDev() {
 
     mIsysReceiverSubDev = V4l2DeviceFactory::getSubDev(mCameraId, subDeviceNodeName);
 
-#ifdef CAL_BUILD
+#if defined(HAVE_CHROME_OS) || defined(HAVE_ANDROID_OS)
     int status = mIsysReceiverSubDev->SubscribeEvent(V4L2_EVENT_FRAME_SYNC);
     CheckAndLogError(status != OK, status, "Failed to subscribe sync event 0");
     LOG1("%s: Using SOF event id 0 for sync", __func__);
@@ -100,21 +118,9 @@ int SofSource::initDev() {
 
     struct VcAggregator aggregator;
     if (PlatformData::getVcAggregator(mCameraId, aggregator) == OK) {
-        std::string devName;
-        CameraUtils::getDeviceName(aggregator.mName.c_str(), devName, true);
-        if (!devName.empty()) {
-            LOG1("%s, found aggregator subdevice %s", __func__, devName.c_str());
-            mAggregatorSubDev = V4l2DeviceFactory::getSubDev(mCameraId, devName);
-
-            struct v4l2_querymenu qm = {.id = V4L2_CID_IPU_QUERY_SUB_STREAM, };
-            qm.index = aggregator.mIndex;
-            int ret = mAggregatorSubDev->QueryMenu(&qm);
-            if (ret == 0) {
-                #define SUB_STREAM_VC_ID(value) ((value) >> 56 & 0xFF)
-                mFrameSyncId = SUB_STREAM_VC_ID(qm.value);
-            }
-        }
+        mFrameSyncId = aggregator.mVcId;
     }
+
     if (mFrameSyncId >= 0) id = mFrameSyncId;
     // VIRTUAL_CHANNEL_E
 
@@ -130,7 +136,7 @@ int SofSource::deinitDev() {
     if (mIsysReceiverSubDev == nullptr) return OK;
 
     int status = 0;
-#ifdef CAL_BUILD
+#if defined(HAVE_CHROME_OS) || defined(HAVE_ANDROID_OS)
     status = mIsysReceiverSubDev->UnsubscribeEvent(V4L2_EVENT_FRAME_SYNC);
     if (status == OK) {
         LOG1("%s: Unsubscribe SOF event id 0 done", __func__);
@@ -167,6 +173,12 @@ int SofSource::start() {
         return OK;
     }
 
+    if (mFlushFd[0] != -1) {
+        // read pipe just in case there is data in pipe.
+        char readBuf;
+        int readSize = read(mFlushFd[0], reinterpret_cast<void*>(&readBuf), sizeof(char));
+        LOG1("%s, readSize %d", __func__, readSize);
+    }
     int status = mPollThread->run("SofSource", PRIORITY_URGENT_AUDIO);
     mExitPending = false;
     return status;
@@ -179,40 +191,45 @@ int SofSource::stop() {
     }
 
     mExitPending = true;
+    if (mFlushFd[1] != -1) {
+        char buf = 0xf;  // random value to write to flush fd.
+        int size = write(mFlushFd[1], &buf, sizeof(char));
+        LOG1("%s, write size %d", __func__, size);
+    }
+
     int status = mPollThread->requestExitAndWait();
     return status;
 }
 
 int SofSource::poll() {
     int ret = 0;
-    const int pollTimeoutCount = 100;
-    const int pollTimeout = 100;
+    const int pollTimeoutCount = 10;
+    const int pollTimeout = 1000;
 
     std::vector<V4L2Device*> pollDevs;
     pollDevs.push_back(mIsysReceiverSubDev);
-    V4L2DevicePoller poller{pollDevs, -1};
+    V4L2DevicePoller poller{pollDevs, mFlushFd[0]};
 
     std::vector<V4L2Device*> readyDevices;
 
     int timeOutCount = pollTimeoutCount;
 
     while (timeOutCount-- && ret == 0) {
-        ret = poller.Poll(pollTimeout, POLLPRI | POLLIN | POLLOUT | POLLERR, &readyDevices);
-
-        if (ret == 0 && mExitPending) {
-            // timed out
-            LOGI("Time out or thread is not running, ret = %d", ret);
-            return BAD_VALUE;
+        if (mExitPending) {
+            LOG2("%s: mExitPending is true, exit", __func__);
+            return -1;
         }
+
+        ret = poller.Poll(pollTimeout, POLLPRI | POLLIN | POLLOUT | POLLERR, &readyDevices);
+    }
+
+    if (mExitPending) {
+        LOG2("%s: mExitPending is true, exit", __func__);
+        return -1;
     }
 
     // handle the poll error
     if (ret < 0) {
-        if (mExitPending) {
-            // Exiting, no error
-            return 0;
-        }
-
         LOGE("Poll error");
         return ret;
     } else if (ret == 0) {
@@ -228,7 +245,8 @@ int SofSource::poll() {
     syncData.sequence = event.u.frame_sync.frame_sequence;
     syncData.timestamp.tv_sec = event.timestamp.tv_sec;
     syncData.timestamp.tv_usec = (event.timestamp.tv_nsec / 1000);
-    LOG2("<seq%ld> %s:sof event, event.id %u", syncData.sequence, __func__, event.id);
+    LOG2("camera:%d, <seq%ld> %s, timestamp:%ld, sof event, event.id %u", mCameraId,
+         syncData.sequence, __func__, TIMEVAL2USECS(syncData.timestamp), event.id);
     TRACE_LOG_POINT("SofSource", "receive sof event", MAKE_COLOR(syncData.sequence),
                     syncData.sequence);
     EventData eventData;
