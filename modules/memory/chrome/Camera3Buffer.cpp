@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013-2024 Intel Corporation
+ * Copyright (C) 2013-2025 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -415,7 +415,7 @@ void Camera3Buffer::dumpImage(const void* data, int frameNumber, const int size,
     static unsigned int count = 0;
     count++;
 
-    std::string fileName(gDumpPath);
+    std::string fileName(CameraDump::getDumpPath());
     fileName += "dump_" + std::to_string(width) + "x" + std::to_string(height) + "_frame#" +
                 std::to_string(count) + "_req#" + std::to_string(frameNumber);
 
