@@ -17,38 +17,37 @@
 <CameraSettings>
     <Sensor name="ar0234-1" description="ar0234 sensor">
         <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1280" outputHeight="960" format="V4L2_PIX_FMT_SGRBG10">
-            <format name="ar0234 a" pad="0" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
-            <format name="Intel IPU6 CSI-2 0" pad="0" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
+            <format name="ar0234 b" pad="0" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
+            <format name="Intel IPU6 CSI-2 1" pad="0" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
             <format name="Intel IPU6 CSI2 BE SOC 0" pad="0" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
 
-            <link srcName="ar0234 a" srcPad="0" sinkName="Intel IPU6 CSI-2 0" sinkPad="0" enable="true"/>
-            <link srcName="Intel IPU6 CSI-2 0" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 0" sinkPad="0" enable="true"/>
+            <link srcName="ar0234 b" srcPad="0" sinkName="Intel IPU6 CSI-2 1" sinkPad="0" enable="true"/>
+            <link srcName="Intel IPU6 CSI-2 1" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 0" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC 0" srcPad="1" sinkName="Intel IPU6 BE SOC capture 0" sinkPad="0" enable="true"/>
 
-            <control name="ar0234 a" ctrlId="V4L2_CID_VFLIP" value="1" ctrlName="set vflip"/>
-            <control name="ar0234 a" ctrlId="V4L2_CID_HFLIP" value="1" ctrlName="set hflip"/>
+            <control name="ar0234 b" ctrlId="V4L2_CID_VFLIP" value="1" ctrlName="set vflip"/>
+            <control name="ar0234 b" ctrlId="V4L2_CID_HFLIP" value="1" ctrlName="set hflip"/>
 
             <videonode name="Intel IPU6 BE SOC capture 0" videoNodeType="VIDEO_GENERIC"/>
-            <videonode name="Intel IPU6 CSI-2 0" videoNodeType="VIDEO_ISYS_RECEIVER"/>
-            <videonode name="ar0234 a" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+            <videonode name="Intel IPU6 CSI-2 1" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+            <videonode name="ar0234 b" videoNodeType="VIDEO_PIXEL_ARRAY"/>
         </MediaCtlConfig>
         <MediaCtlConfig id="1" ConfigMode="AUTO" outputWidth="1920" outputHeight="1200" format="V4L2_PIX_FMT_SGRBG10">
-            <format name="ar0234 a" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
-            <format name="Intel IPU6 CSI-2 0" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
+            <format name="ar0234 b" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
+            <format name="Intel IPU6 CSI-2 1" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
             <format name="Intel IPU6 CSI2 BE SOC 0" pad="0" width="1920" height="1200" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
 
-            <link srcName="ar0234 a" srcPad="0" sinkName="Intel IPU6 CSI-2 0" sinkPad="0" enable="true"/>
-            <link srcName="Intel IPU6 CSI-2 0" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 0" sinkPad="0" enable="true"/>
+            <link srcName="ar0234 b" srcPad="0" sinkName="Intel IPU6 CSI-2 1" sinkPad="0" enable="true"/>
+            <link srcName="Intel IPU6 CSI-2 1" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 0" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC 0" srcPad="1" sinkName="Intel IPU6 BE SOC capture 0" sinkPad="0" enable="true"/>
 
-            <control name="ar0234 a" ctrlId="V4L2_CID_VFLIP" value="1" ctrlName="set vflip"/>
-            <control name="ar0234 a" ctrlId="V4L2_CID_HFLIP" value="1" ctrlName="set hflip"/>
+            <control name="ar0234 b" ctrlId="V4L2_CID_VFLIP" value="1" ctrlName="set vflip"/>
+            <control name="ar0234 b" ctrlId="V4L2_CID_HFLIP" value="1" ctrlName="set hflip"/>
 
             <videonode name="Intel IPU6 BE SOC capture 0" videoNodeType="VIDEO_GENERIC"/>
-            <videonode name="Intel IPU6 CSI-2 0" videoNodeType="VIDEO_ISYS_RECEIVER"/>
-            <videonode name="ar0234 a" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+            <videonode name="Intel IPU6 CSI-2 1" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+            <videonode name="ar0234 b" videoNodeType="VIDEO_PIXEL_ARRAY"/>
         </MediaCtlConfig>
-
         <MediaCtlConfig id="0" mediaCfg="1" ConfigMode="AUTO" outputWidth="1280" outputHeight="960" format="V4L2_PIX_FMT_SGRBG10">
             <format name="ar0234 $I2CBUS" pad="0" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
             <format name="Intel IPU6 CSI2 $CSI_PORT" pad="0" width="1280" height="960" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
@@ -82,7 +81,6 @@
             <!-- list of stream config info. Meanings of each part is "format,widthxheight,field(0 is none, 7 is alternate),mcId" -->
             <supportedStreamConfig value="V4L2_PIX_FMT_NV12,1280x960,0,0,
                                           V4L2_PIX_FMT_NV12,1920x1200,0,1"/>
-
             <supportedFeatures value="MANUAL_EXPOSURE,
                                       MANUAL_WHITE_BALANCE,
                                       IMAGE_ENHANCEMENT,
@@ -124,5 +122,4 @@
         <useCrlModule value = "false"/>
         <forceFlushIpuBuffer value="true"/>
     </Sensor>
-
 </CameraSettings>

@@ -16,7 +16,7 @@
 
 #pragma once
 
-#ifdef CAL_BUILD
+#ifdef HAVE_CHROME_OS
 #include <cros-camera/v4l2_device.h>
 #else
 #include <v4l2_device.h>
@@ -67,6 +67,7 @@ class SofSource : public EventSource {
     bool mSofDisabled;
 
     int poll();
+    int mFlushFd[2];  // Flush file descriptor
 };
 
 }  // namespace icamera

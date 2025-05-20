@@ -475,6 +475,7 @@ void IntelPGParam::destroyPayloads() {
 
 int IntelPGParam::updatePALAndEncode(const ia_binary_data* ipuParams, int payloadCount,
                                      ia_binary_data* payloads) {
+    LOG1("@%s", __func__);
     ia_err err = ia_p2p_parse(mP2pHandle, ipuParams, mP2pCacheBuffer.data);
     CheckAndLogError(err != ia_err_none, UNKNOWN_ERROR, "Failed to parse PAL data.");
 

@@ -35,7 +35,7 @@ class LogOutputSink {
     static void setLogTime(char* timeBuf);
 };
 
-#ifdef CAL_BUILD
+#ifdef HAVE_CHROME_OS
 class GLogSink : public LogOutputSink {
  public:
     const char* getName() const override;

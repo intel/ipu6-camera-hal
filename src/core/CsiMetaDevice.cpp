@@ -377,7 +377,7 @@ int CsiMetaDevice::setFormat() {
     struct v4l2_format v4l2fmt;
     CLEAR(v4l2fmt);
 
-#ifdef CAL_BUILD
+#if defined(HAVE_CHROME_OS) || defined(HAVE_ANDROID_OS)
     v4l2fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
 #else
     int dev_caps = mCsiMetaDevice->GetDeviceCaps();

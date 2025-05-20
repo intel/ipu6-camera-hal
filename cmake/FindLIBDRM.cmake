@@ -15,25 +15,9 @@
 #
 
 # Get include and lib paths for LIBDRM from pkgconfig
-include(FindPackageHandleStandardArgs)
 
 find_package(PkgConfig)
 pkg_check_modules(LIBDRM libdrm)
 if(NOT LIBDRM_FOUND)
     message(SEND_ERROR "LIBDRM not found")
 endif()
-
-set(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} ${LIBDRM_LIBRARY_DIRS})
-
-# Libraries
-find_library(DRM_LIB drm)
-set(LIBDRM_LIBS ${DRM_LIB})
-
-# handle the QUIETLY and REQUIRED arguments and set EXPAT_FOUND to TRUE if
-# all listed variables are TRUE
-find_package_handle_standard_args(LIBDRM REQUIRED_VARS LIBDRM_INCLUDE_DIRS LIBDRM_LIBS)
-
-if(NOT LIBDRM_FOUND)
-        message(SEND_ERROR "LIBDRM not found")
-endif()
-

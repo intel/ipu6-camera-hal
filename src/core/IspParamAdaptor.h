@@ -16,7 +16,7 @@
 
 #pragma once
 
-#ifdef CAL_BUILD
+#ifdef HAVE_CHROME_OS
 #include <cros-camera/v4l2_device.h>
 #else
 #include <v4l2_device.h>
@@ -35,7 +35,7 @@
 #include "NodeInfo.h"
 
 extern "C" {
-#ifndef CAL_BUILD
+#if !defined(HAVE_CHROME_OS) && !defined(HAVE_ANDROID_OS)
 #include "ia_camera/ipu_process_group_wrapper.h"
 #endif
 }

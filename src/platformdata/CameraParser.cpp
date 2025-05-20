@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2024 Intel Corporation
+ * Copyright (C) 2015-2025 Intel Corporation
  * Copyright 2008-2017, The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -599,6 +599,8 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
         parseSupportedTuningConfig(atts[1], pCurrentCam->mSupportedTuningConfig);
     } else if (strcmp(name, "enableAiqd") == 0) {
         pCurrentCam->mEnableAiqd = strcmp(atts[1], "true") == 0;
+    } else if (strcmp(name, "isWaitFirstStats") == 0) {
+        pCurrentCam->mWaitFirstStats = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "testPatternMap") == 0) {
         int size = strlen(atts[1]);
         char src[size + 1];
@@ -772,7 +774,7 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
         char* tablePtr = strtok_r(src, ",", &savePtr);
         if (tablePtr) pCurrentCam->mVcAggregator.mName = tablePtr;
         tablePtr = strtok_r(nullptr, ",", &savePtr);
-        if (tablePtr) pCurrentCam->mVcAggregator.mIndex = atoi(tablePtr);
+        if (tablePtr) pCurrentCam->mVcAggregator.mVcId = atoi(tablePtr);
         // VIRTUAL_CHANNEL_E
     } else if (strcmp(name, "disableBLCByAGain") == 0) {
         int size = strlen(atts[1]);
@@ -1406,7 +1408,6 @@ void CameraParser::parseLinkElement(CameraParser* profiles, const char* name, co
 
 void CameraParser::parseRouteElement(CameraParser* profiles, const char* name, const char** atts) {
     McRoute route;
-    MediaCtlConf& mc = profiles->pCurrentCam->mMediaCtlConfs.back();
     route.flag = MEDIA_LNK_FL_ENABLED;
 
     int idx = 0;
@@ -1432,8 +1433,18 @@ void CameraParser::parseRouteElement(CameraParser* profiles, const char* name, c
         }
         idx += 2;
     }
+    // VIRTUAL_CHANNEL_S
+    MediaCtlConf& mc = profiles->pCurrentCam->mMediaCtlConfs.back();
 
-    mc.routes.push_back(route);
+    auto it = mc.routings.find(route.entityName);
+    if (it != mc.routings.end()) {
+        it->second.push_back(route);
+    } else {
+        std::vector<McRoute> routes;
+        routes.push_back(route);
+        mc.routings.insert(std::pair<std::string, std::vector<McRoute>>(route.entityName, routes));
+    }
+    // VIRTUAL_CHANNEL_E
 }
 
 void CameraParser::parseVideoElement(CameraParser* profiles, const char* name,

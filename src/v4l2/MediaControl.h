@@ -32,7 +32,7 @@
 #include <string>
 #include <vector>
 
-#ifdef CAL_BUILD
+#ifdef HAVE_CHROME_OS
 #include <cros-camera/v4l2_device.h>
 #else
 #include <v4l2_device.h>
@@ -174,7 +174,7 @@ struct McVideoNode {
 struct MediaCtlConf {
     std::vector<McCtl> ctls;
     std::vector<McLink> links;
-    std::vector<McRoute> routes;
+    std::map<std::string, std::vector<McRoute>> routings;
     std::vector<McFormat> formats;
     std::vector<McOutput> outputs;
     std::vector<McVideoNode> videoNodes;
@@ -296,6 +296,7 @@ class MediaControl {
     // VIRTUAL_CHANNEL_E
 
     int getLensName(std::string* lensName);
+    bool isMediaSourceEntity(const MediaEntity* entity);
     bool checkAvailableSensor(const std::string& sensorEntityName);
     bool checkAvailableSensor(const std::string& sensorEntityName,
                               const std::string& sinkEntityName);
