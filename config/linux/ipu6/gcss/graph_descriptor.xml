@@ -6061,5 +6061,59 @@
       <connection source="post_gdc_ir_video:main" sink="ir0" />
       <connection source="post_gdc_ir_video:display" sink="ir0" />
     </graph>
+    <!-- IR sensor graphs -->
+    <graph id="100041" name="IR sensor full pipe v8s8" pdaf_type="0" sensor="IR" flow="sdv" processing="yuv" stills_bpp="8" video_bpp="8">
+        <connection source="sensor:port_0" sink="csi_be:input" />
+        <!-- bpp overrides for preview/video branch -->
+        <apply target="isa_lb_video:espa_psa_h:input:bpp" value="13" />
+        <apply target="isa_lb_video:espa_psa_h:output:bpp" value="8" />
+        <apply target="post_gdc_video:gdc5:input:bpp" value="8" />
+        <apply target="post_gdc_video:gdc5:output:bpp" value="8" />
+        <apply target="post_gdc_video:tnr_6_0:output:bpp" value="8" />
+        <apply target="post_gdc_video:tnr_6_0:input:bpp" value="8" />
+        <apply target="post_gdc_video:mrc_1_0:output:bpp" value="8" />
+        <apply target="post_gdc_video:mrc_1_0:input:bpp" value="8" />
+        <apply target="post_gdc_video:ofa_2_mp:input:bpp" value="8" />
+        <apply target="post_gdc_video:ofa_2_dp:input:bpp" value="8" />
+        <apply target="post_gdc_video:ofa_2_ppp:input:bpp" value="8" />
+        <apply target="isa_lb_video:lca_1_0:enabled" value="0" />
+        <apply target="isa_lb_video:bxt_wb:enabled" value="0" />
+        <apply target="isa_lb_video:bxt_acm:enabled" value="0" />
+        <apply target="isa_lb_video:gammastar_1:enabled" value="0" />
+        <apply target="isa_lb_video:b2i_dm_1_0:enabled" value="0" />
+        <!-- preview/video branch -->
+        <connection source="csi_be:paf" sink="isa_lb_video:ext_pdaf_stats" />
+        <connection source="csi_be:output" sink="isa_lb_video:input" />
+        <connection source="isa_lb_video:main" sink="post_gdc_video:input" />
+        <connection source="isa_lb_video:sis_a" sink="sis_a" />
+        <connection source="isa_lb_video:sis_b" sink="sis_b" />
+        <connection source="post_gdc_video:main" sink="video0" />
+        <connection source="post_gdc_video:display" sink="video1" />
+        <connection source="post_gdc_video:postproc" sink="video2" />
+        <!-- still branch -->
+        <!-- bpp overrides for still branch -->
+        <apply target="isa_lb_stills:espa_psa_h:input:bpp" value="13" />
+        <apply target="isa_lb_stills:espa_psa_h:output:bpp" value="8" />
+        <apply target="post_gdc_stills:gdc5:input:bpp" value="8" />
+        <apply target="post_gdc_stills:gdc5:output:bpp" value="8" />
+        <apply target="post_gdc_stills:tnr_6_0:output:bpp" value="8" />
+        <apply target="post_gdc_stills:tnr_6_0:input:bpp" value="8" />
+        <apply target="post_gdc_stills:mrc_1_0:output:bpp" value="8" />
+        <apply target="post_gdc_stills:mrc_1_0:input:bpp" value="8" />
+        <apply target="post_gdc_stills:ofa_2_mp:input:bpp" value="8" />
+        <apply target="post_gdc_stills:ofa_2_dp:input:bpp" value="8" />
+        <apply target="post_gdc_stills:ofa_2_ppp:input:bpp" value="8" />
+        <apply target="isa_lb_stills:lca_1_0:enabled" value="0" />
+        <apply target="isa_lb_stills:bxt_demosaic:enabled" value="0" />
+        <apply target="isa_lb_stills:bxt_wb:enabled" value="0" />
+        <apply target="isa_lb_stills:bxt_acm:enabled" value="0" />
+        <apply target="isa_lb_stills:gammastar_1:enabled" value="0" />
+        <connection source="csi_be:output" sink="isa_lb_stills:input" />
+        <connection source="isa_lb_stills:main" sink="post_gdc_stills:input" />
+        <connection source="isa_lb_stills:sis_a" sink="sis_a_stills_only" />
+        <connection source="post_gdc_stills:main" sink="still0" />
+        <connection source="post_gdc_stills:display" sink="still1" />
+        <connection source="post_gdc_stills:postproc" sink="still2" />
+    </graph>
   </graphs>
 </graph_descriptor>

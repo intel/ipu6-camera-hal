@@ -384,6 +384,8 @@ int MainDevice::onDequeueBuffer(shared_ptr<CameraBuffer> buffer) {
          buffer->getStreamId(), buffer->getSequence(), __func__, buffer->getField(),
          buffer->getTimestamp().tv_sec, buffer->getTimestamp().tv_usec);
 
+    dumpFrame(buffer);
+
     for (auto& consumer : mConsumers) {
         consumer->onFrameAvailable(mPort, buffer);
     }
@@ -395,8 +397,6 @@ int MainDevice::onDequeueBuffer(shared_ptr<CameraBuffer> buffer) {
     frameData.data.frame.timestamp.tv_sec = buffer->getTimestamp().tv_sec;
     frameData.data.frame.timestamp.tv_usec = buffer->getTimestamp().tv_usec;
     notifyListeners(frameData);
-
-    dumpFrame(buffer);
 
     return OK;
 }

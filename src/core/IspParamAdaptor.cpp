@@ -1033,11 +1033,12 @@ void IspParamAdaptor::updateResultFromAlgo(ia_binary_data* binaryData, int64_t s
 void IspParamAdaptor::dumpIspParameter(int streamId, int64_t sequence, ia_binary_data binaryData) {
     if (!CameraDump::isDumpTypeEnable(DUMP_PSYS_PAL)) return;
 
+    std::string appendixVal = "pal_" + std::to_string(streamId);
     BinParam_t bParam;
     bParam.bType = BIN_TYPE_GENERAL;
     bParam.mType = M_PSYS;
     bParam.sequence = sequence;
-    bParam.gParam.appendix = ("pal_" + std::to_string(streamId)).c_str();
+    bParam.gParam.appendix = appendixVal.c_str();
     bParam.sUsage = (streamId == VIDEO_STREAM_ID) ? 0 : 2;
     CameraDump::dumpBinary(mCameraId, binaryData.data, binaryData.size, &bParam);
 }
