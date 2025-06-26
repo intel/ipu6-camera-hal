@@ -39,6 +39,7 @@
 
 using std::string;
 using std::vector;
+using std::map;
 
 #include "v4l2/NodeInfo.h"
 
@@ -492,9 +493,9 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
     } else if (strcmp(name, "enablePdaf") == 0) {
         pCurrentCam->mEnablePdaf = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "sensorAwb") == 0) {
-        pCurrentCam->mSensorAwb = strcmp(atts[1], "true") == 0;
+        parseSensorAwb(atts[1], pCurrentCam->mSensorAwb);
     } else if (strcmp(name, "sensorAe") == 0) {
-        pCurrentCam->mSensorAe = strcmp(atts[1], "true") == 0;
+        parseSensorAe(atts[1], pCurrentCam->mSensorAe);
     } else if (strcmp(name, "runIspAlways") == 0) {
         pCurrentCam->mRunIspAlways = strcmp(atts[1], "true") == 0;
     } else if (strcmp(name, "lensCloseCode") == 0) {
@@ -539,7 +540,7 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
             pCurrentCam->mSensorExposureType = SENSOR_EXPOSURE_SINGLE;
         }
     } else if (strcmp(name, "hdrExposureNum") == 0) {
-        pCurrentCam->mSensorExposureNum = atoi(atts[1]);
+        parseSensorExposureNum(atts[1], pCurrentCam->mSensorExposureNum);
     } else if (strcmp(name, "hdrStatsInputBitDepth") == 0) {
         pCurrentCam->mHdrStatsInputBitDepth = atoi(atts[1]);
     } else if (strcmp(name, "hdrStatsOutputBitDepth") == 0) {
@@ -1035,6 +1036,78 @@ void CameraParser::storeMcMappForConfig(int mcId, stream_t streamCfg) {
     streamVector.push_back(streamCfg);
 }
 
+int CameraParser::parseSensorAwb(const char* str, map<int, bool>& sensorAwbCfg) {
+    CheckAndLogError(str == nullptr, -1, "@%s, str is nullptr", __func__);
+
+    int sz = strlen(str);
+    char src[sz + 1];
+    MEMCPY_S(src, sz, str, sz);
+    src[sz] = '\0';
+
+    char* savePtr;
+    int index = 0;
+    char* value = strtok_r(src, ",", &savePtr);
+    while (value) {
+        sensorAwbCfg[index] = (strcmp(value, "true") == 0);
+
+        LOG2("@%s, mcId %d, value = %s", __func__, index, value);
+
+        if (savePtr != nullptr) savePtr = const_cast<char*>(skipWhiteSpace(savePtr));
+        value = strtok_r(nullptr, ",", &savePtr);
+        index++;
+    }
+
+    return 0;
+}
+
+int CameraParser::parseSensorAe(const char* str, map<int, bool>& sensorAeCfg) {
+    CheckAndLogError(str == nullptr, -1, "@%s, str is nullptr", __func__);
+
+    int sz = strlen(str);
+    char src[sz + 1];
+    MEMCPY_S(src, sz, str, sz);
+    src[sz] = '\0';
+
+    char* savePtr;
+    int index = 0;
+    char* value = strtok_r(src, ",", &savePtr);
+    while (value) {
+        sensorAeCfg[index] = (strcmp(value, "true") == 0);
+
+        LOG2("@%s, mcId %d, value = %s", __func__, index, value);
+
+        if (savePtr != nullptr) savePtr = const_cast<char*>(skipWhiteSpace(savePtr));
+        value = strtok_r(nullptr, ",", &savePtr);
+        index++;
+    }
+
+    return 0;
+}
+
+int CameraParser::parseSensorExposureNum(const char* str, map<int, int>& sensorExpNumCfg) {
+    CheckAndLogError(str == nullptr, -1, "@%s, str is nullptr", __func__);
+
+    int sz = strlen(str);
+    char src[sz + 1];
+    MEMCPY_S(src, sz, str, sz);
+    src[sz] = '\0';
+
+    char* savePtr;
+    int index = 0;
+    char* value = strtok_r(src, ",", &savePtr);
+    while (value) {
+        sensorExpNumCfg[index] = atoi(value);
+
+        LOG2("@%s, mcId %d, value = %s", __func__, index, value);
+
+        if (savePtr != nullptr) savePtr = const_cast<char*>(skipWhiteSpace(savePtr));
+        value = strtok_r(nullptr, ",", &savePtr);
+        index++;
+    }
+
+    return 0;
+}
+
 /**
  * \brief Parses the string with the supported stream configurations
  * a stream configuration is made of 4 necessary elements
@@ -1053,7 +1126,7 @@ void CameraParser::storeMcMappForConfig(int mcId, stream_t streamCfg) {
  * \param configs: Stream config array needs to be filled in
  *
  */
-void CameraParser::parseStreamConfig(const char* src, stream_array_t& configs) {
+void CameraParser::parseStreamConfig(char* src, stream_array_t& configs) {
     HAL_TRACE_CALL(1);
 
     int mcId = -1;
@@ -1074,7 +1147,7 @@ void CameraParser::parseStreamConfig(const char* src, stream_array_t& configs) {
         // Get the next segement for necessary element
         // Get the next segement for optional element if it exist
         if (parseStep <= NUM_ELEMENTS_NECESSARY || (!lastElement && (*src == '('))) {
-            separatorPtr = const_cast<char*>(strchr(src, ','));
+            separatorPtr = strchr(src, ',');
             if (separatorPtr) {
                 *separatorPtr = 0;
             } else {
@@ -1110,7 +1183,7 @@ void CameraParser::parseStreamConfig(const char* src, stream_array_t& configs) {
         if (!lastElement) {
             // Move to the next element
             src = separatorPtr + 1;
-            src = skipWhiteSpace(src);
+            src = const_cast<char*>(skipWhiteSpace(src));
         } else if (parseStep < NUM_ELEMENTS_NECESSARY) {
             LOGE("Malformed stream configuration, only finish step %d", parseStep);
             return;
@@ -1318,7 +1391,7 @@ int CameraParser::parseSupportedAeParamRange(const char* src, vector<int>& scene
         float max = strtof(srcTmp, &endPtr);
         maxValues.push_back(max);
 
-        if (endPtr) {
+        if (endPtr && *endPtr != '\0') {
             srcTmp = endPtr + 1;
             srcTmp = const_cast<char*>(skipWhiteSpace(srcTmp));
         }
@@ -1801,7 +1874,12 @@ void CameraParser::handleStaticMetaData(CameraParser* profiles, const char* name
          profiles->mCurrentSensor);
     if (strcmp(name, "supportedStreamConfig") == 0) {
         stream_array_t configsArray;
-        parseStreamConfig(atts[1], configsArray);
+        char* srcDup = strdup(atts[1]);
+        CheckAndLogError((srcDup == nullptr), VOID_VALUE,
+                         "Create a copy of source string failed.");
+        parseStreamConfig(srcDup, configsArray);
+        free(srcDup);
+
         const int STREAM_MEMBER_NUM = sizeof(stream_t) / sizeof(int);
         int dataSize = configsArray.size() * STREAM_MEMBER_NUM;
         int configs[dataSize];
@@ -2288,7 +2366,7 @@ void CameraParser::getNVMDirectory(CameraParser* profiles) {
                 fseek(fp, 0, SEEK_SET);
                 std::unique_ptr<char[]> ptr(new char[size + 1]);
                 size_t readSize = fread(ptr.get(), sizeof(char), size, fp);
-                ptr[readSize] = 0;
+                ptr[readSize] = '\0';
                 fclose(fp);
 
                 if (readSize > 0) {

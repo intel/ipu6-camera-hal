@@ -527,11 +527,16 @@ int PSysProcessor::processNewFrame() {
     int64_t inputSequence = -1;
     CameraBufferPortMap srcBuffers, dstBuffers;
     if (mScheduler) {
+        // Wait input buffer, use TRIGGER_MAX_MARGIN to ensure Scheduler is triggered in time.
+        int64_t delay = TRIGGER_MAX_MARGIN;
+        {
+            // Reduce wait time for the first 10 frames for better performance.
+            AutoMutex l(mSofLock);
+            if (mSofSequence < 10) delay = TRIGGER_MARGIN;
+        }
+
         {
             ConditionLock lock(mBufferQueueLock);
-            // Wait input buffer, use TRIGGER_MAX_MARGIN to ensure Scheduler is triggered in time.
-            // Reduce wait time for the first 10 frames for better performance.
-            int64_t delay = mSofSequence < 10 ? TRIGGER_MARGIN : TRIGGER_MAX_MARGIN;
             bool bufReady = waitBufferQueue(lock, mInputQueue, delay);
             // Already stopped
             if (!mThreadRunning) return -1;
@@ -1041,8 +1046,11 @@ void PSysProcessor::dispatchTask(CameraBufferPortMap& inBuf, CameraBufferPortMap
 
     int32_t userRequestId = -1;
     mParameterGenerator->getUserRequestId(currentSequence, userRequestId);
-    LOG2("<id%d:seq:%ld:req:%d>@%s, fake task %d, pending task: %zu", mCameraId, currentSequence,
-         userRequestId, __func__, fakeTask, mSequencesInflight.size());
+    {
+        AutoMutex l(mBufferQueueLock);
+        LOG2("<id%d:seq:%ld:req:%d>@%s, fake task %d, pending task: %zu", mCameraId,
+             currentSequence, userRequestId, __func__, fakeTask, mSequencesInflight.size());
+    }
 
     // Prepare the task input paramerters including input and output buffers, settings etc.
     PSysTaskData taskParam;
@@ -1115,7 +1123,10 @@ void PSysProcessor::dispatchTask(CameraBufferPortMap& inBuf, CameraBufferPortMap
         taskParam.mIspSettings = mIspSettings;
     }
 
-    if (!mThreadRunning) return;
+    {
+        AutoMutex l(mBufferQueueLock);
+        if (!mThreadRunning) return;
+    }
 
     mPSysDAGs[mCurConfigMode]->addTask(taskParam);
 }

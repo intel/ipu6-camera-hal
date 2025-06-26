@@ -397,7 +397,11 @@ bool RequestThread::threadLoop() {
 }
 
 void RequestThread::handleRequest(CameraRequest& request, int64_t applyingSeq) {
-    int64_t effectSeq = mLastEffectSeq + 1;
+    int64_t effectSeq = 0;
+    {
+        AutoMutex l(mPendingReqLock);
+        effectSeq = mLastEffectSeq + 1;
+    }
     // Raw reprocessing case, don't run 3A.
     if (request.mBuffer[0]->sequence >= 0 && request.mBuffer[0]->timestamp > 0) {
         effectSeq = request.mBuffer[0]->sequence;
