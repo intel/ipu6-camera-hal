@@ -605,7 +605,11 @@ void CameraUtils::getDeviceName(const char* entityName, string& deviceNodeName, 
             char buf[128] = {'\0'};
             int len = read(fd, buf, sizeof(buf));
             close(fd);
-            len--;  // remove "\n"
+            if (len > 0) {
+                len--;  // remove "\n"
+            } else {
+                len = 0;
+            }
             if (len == (int)strlen(entityName) && memcmp(buf, entityName, len) == 0) {
                 deviceNodeName = "/dev/";
                 deviceNodeName += dirp->d_name;

@@ -232,7 +232,7 @@ int AiqEngine::prepareStatsParams(cca::cca_stats_params* statsParams, AiqStatist
             statsParams->dvs_stats_width = resolution.output_width;
         }
 
-        statsParams->frame_id = aiqResult ? aiqResult->mFrameId : -1;
+        statsParams->frame_id = aiqResult ? aiqResult->mFrameId : 0;
         statsParams->frame_timestamp = timestamp;
         statsParams->camera_orientation = ia_aiq_camera_orientation_unknown;
     } while (0);

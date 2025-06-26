@@ -31,8 +31,9 @@
 namespace icamera {
 
 const char* ParserBase::skipWhiteSpace(const char* src) {
-    while (*src == '\n' || *src == '\t' || *src == ' ' || *src == '\v' || *src == '\r' ||
-           *src == '\f') {
+    while ((src != nullptr && *src != '\0') &&
+           (*src == '\n' || *src == '\t' || *src == ' ' ||
+            *src == '\v' || *src == '\r' || *src == '\f')) {
         src++;
     }
     return src;

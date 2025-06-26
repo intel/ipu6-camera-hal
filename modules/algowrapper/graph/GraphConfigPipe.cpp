@@ -954,7 +954,6 @@ status_t GraphConfigPipe::getScalerByStreamId(
     CheckAndLogError(!scalerInfo, UNKNOWN_ERROR, "%s, scalerInfo is nullptr", __func__);
 
     for (auto it = edgePort2Connection.begin(); it != edgePort2Connection.end(); ++it) {
-        const char* portName;
         bool mpFLag = false;
         bool dpFlag = false;
         bool pppFlag = false;
@@ -962,17 +961,17 @@ status_t GraphConfigPipe::getScalerByStreamId(
         float scalerH = 1;
 
         IGraphType::PipelineConnection connection = it->second;
-        portName = NODE_NAME(it->first);
+        string portName = getNodeName(it->first);
         CheckAndLogError(!connection.stream, UNKNOWN_ERROR, "%s, connection.stream is null.",
                          __func__);
         int32_t streamId = connection.stream->streamId();
-        LOG2("%s, streamId:%d, portName:%s", __func__, streamId, portName);
+        LOG2("%s, streamId:%d, portName:%s", __func__, streamId, portName.c_str());
 
-        if (!strcmp("main", portName)) {
+        if (!strcmp("main", portName.c_str())) {
             mpFLag = true;
-        } else if (!strcmp("display", portName)) {
+        } else if (!strcmp("display", portName.c_str())) {
             dpFlag = true;
-        } else if (!strcmp("postproc", portName)) {
+        } else if (!strcmp("postproc", portName.c_str())) {
             pppFlag = true;
         }
         if (!mpFLag && !dpFlag && !pppFlag) continue;

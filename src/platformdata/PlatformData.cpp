@@ -383,11 +383,13 @@ bool PlatformData::isPdafEnabled(int cameraId) {
 }
 
 bool PlatformData::getSensorAwbEnable(int cameraId) {
-    return getInstance()->mStaticCfg.mCameras[cameraId].mSensorAwb;
+    int mcId = getInstance()->mStaticCfg.mCameras[cameraId].mMcId;
+    return getInstance()->mStaticCfg.mCameras[cameraId].mSensorAwb[mcId];
 }
 
 bool PlatformData::getSensorAeEnable(int cameraId) {
-    return getInstance()->mStaticCfg.mCameras[cameraId].mSensorAe;
+    int mcId = getInstance()->mStaticCfg.mCameras[cameraId].mMcId;
+    return getInstance()->mStaticCfg.mCameras[cameraId].mSensorAe[mcId];
 }
 
 bool PlatformData::getRunIspAlways(int cameraId) {
@@ -547,8 +549,9 @@ bool PlatformData::isEnableDefog(int cameraId) {
 }
 
 int PlatformData::getExposureNum(int cameraId, bool multiExposure) {
+    int mcId = getInstance()->mStaticCfg.mCameras[cameraId].mMcId;
     if (multiExposure) {
-        return getInstance()->mStaticCfg.mCameras[cameraId].mSensorExposureNum;
+        return getInstance()->mStaticCfg.mCameras[cameraId].mSensorExposureNum[mcId];
     }
 
     int exposureNum = 1;
@@ -887,6 +890,9 @@ void PlatformData::selectMcConf(int cameraId, stream_t stream, ConfigMode mode, 
 
     if (!mcConfig) {
         LOGE("No matching McConf: cameraId %d, configMode %d, mcId %d", cameraId, mode, mcId);
+    } else {
+        getInstance()->mStaticCfg.mCameras[cameraId].mMcId = mcConfig->mcId;
+        LOG1("Save mMcId %d sensor settings selection", mcConfig->mcId);
     }
 }
 

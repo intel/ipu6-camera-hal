@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!-- Copyright (C) 2025 Intel Corporation.
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+
+<CameraSettings>
+    <Sensor name="isx031-2" description="isx031 sensor" virtualChannel="true" vcGroupId="0">
+        <MediaCtlConfig id="0" mediaCfg="1" ConfigMode="AUTO" outputWidth="1920" outputHeight="1536" format="V4L2_PIX_FMT_UYVY">
+            <format name="isx031 b-1" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format name="max9295 b-1" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format name="max9295 b-1" pad="2" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="1"/>
+            <format name="max9296 b" pad="5" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="1"/>
+            <format name="max9296 b" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="1"/>
+            <format name="Intel IPU6 CSI2 1" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="1"/>
+            <format name="Intel IPU6 CSI2 1" pad="2" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="1"/>
+
+            <link srcName="isx031 b-1" srcPad="0" sinkName="max9295 b-1" sinkPad="0" enable="true"/>
+            <link srcName="max9295 b-1" srcPad="2" sinkName="max9296 b" sinkPad="5" enable="true"/>
+            <link srcName="max9296 b" srcPad="0" sinkName="Intel IPU6 CSI2 1" sinkPad="0" enable="true"/>
+            <link srcName="Intel IPU6 CSI2 1" srcPad="2" sinkName="Intel IPU6 ISYS Capture 9" sinkPad="0" enable="true"/>
+
+            <route name="max9295 b-1" sinkPad="0" sinkStream="0" srcPad="2" srcStream="1" flag="1"/>
+            <route name="max9296 b" sinkPad="5" sinkStream="1" srcPad="0" srcStream="1" flag="1"/>
+            <route name="Intel IPU6 CSI2 1" sinkPad="0" sinkStream="1" srcPad="2" srcStream="1" flag="1"/>
+
+            <videonode name="Intel IPU6 ISYS Capture 9" videoNodeType="VIDEO_GENERIC"/>
+            <videonode name="Intel IPU6 CSI2 1" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+            <videonode name="isx031 b-1" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+        </MediaCtlConfig>
+        <StaticMetadata>
+            <!-- list of stream config info. Meanings of each part is "format,widthxheight,field(0 is none, 7 is alternate),mcId" -->
+            <supportedStreamConfig value="V4L2_PIX_FMT_UYVY,1920x1536,0,0"/>
+        </StaticMetadata>
+        <supportedISysFormat value="V4L2_PIX_FMT_UYVY"/>
+        <vcAggregator value="max9296 b,1"/>
+        <enableAIQ value="false"/>
+    </Sensor>
+    <Sensor name="isx031x2-2" description="isx031 sensor" virtualChannel="true" vcGroupId="0">
+        <MediaCtlConfig id="0" mediaCfg="1" ConfigMode="AUTO" outputWidth="1920" outputHeight="1536" format="V4L2_PIX_FMT_UYVY">
+            <format name="isx031 a-1" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format name="max9295 a-1" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format name="max9295 a-1" pad="2" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format name="max9296 b" pad="4" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format name="max9296 b" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format name="Intel IPU6 CSI2 1" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format name="Intel IPU6 CSI2 1" pad="1" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format name="isx031 b-1" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format name="max9295 b-1" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format name="max9295 b-1" pad="2" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="1"/>
+            <format name="max9296 b" pad="5" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="1"/>
+            <format name="max9296 b" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="1"/>
+            <format name="Intel IPU6 CSI2 1" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="1"/>
+            <format name="Intel IPU6 CSI2 1" pad="2" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="1"/>
+
+            <link srcName="isx031 a-1" srcPad="0" sinkName="max9295 a-1" sinkPad="0" enable="true"/>
+            <link srcName="max9295 a-1" srcPad="2" sinkName="max9296 b" sinkPad="4" enable="true"/>
+            <link srcName="isx031 b-1" srcPad="0" sinkName="max9295 b-1" sinkPad="0" enable="true"/>
+            <link srcName="max9295 b-1" srcPad="2" sinkName="max9296 b" sinkPad="5" enable="true"/>
+            <link srcName="max9296 b" srcPad="0" sinkName="Intel IPU6 CSI2 1" sinkPad="0" enable="true"/>
+            <link srcName="Intel IPU6 CSI2 1" srcPad="1" sinkName="Intel IPU6 ISYS Capture 8" sinkPad="0" enable="true"/>
+            <link srcName="Intel IPU6 CSI2 1" srcPad="2" sinkName="Intel IPU6 ISYS Capture 9" sinkPad="0" enable="true"/>
+
+            <route name="max9295 a-1" sinkPad="0" sinkStream="0" srcPad="2" srcStream="0" flag="1"/>
+            <route name="max9296 b" sinkPad="4" sinkStream="0" srcPad="0" srcStream="0" flag="1"/>
+            <route name="Intel IPU6 CSI2 1" sinkPad="0" sinkStream="0" srcPad="1" srcStream="0" flag="1"/>
+            <route name="max9295 b-1" sinkPad="0" sinkStream="0" srcPad="2" srcStream="1" flag="1"/>
+            <route name="max9296 b" sinkPad="5" sinkStream="1" srcPad="0" srcStream="1" flag="1"/>
+            <route name="Intel IPU6 CSI2 1" sinkPad="0" sinkStream="1" srcPad="2" srcStream="1" flag="1"/>
+
+            <videonode name="Intel IPU6 ISYS Capture 9" videoNodeType="VIDEO_GENERIC"/>
+            <videonode name="Intel IPU6 CSI2 1" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+            <videonode name="isx031 b-1" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+        </MediaCtlConfig>
+        <StaticMetadata>
+            <!-- list of stream config info. Meanings of each part is "format,widthxheight,field(0 is none, 7 is alternate),mcId" -->
+            <supportedStreamConfig value="V4L2_PIX_FMT_UYVY,1920x1536,0,0"/>
+        </StaticMetadata>
+        <supportedISysFormat value="V4L2_PIX_FMT_UYVY"/>
+        <vcAggregator value="max9296 b,1"/>
+        <enableAIQ value="false"/>
+    </Sensor>
+    <Sensor name="isx031x4-2" description="isx031 sensor" virtualChannel="true" vcGroupId="0">
+        <MediaCtlConfig id="0" mediaCfg="1" ConfigMode="AUTO" outputWidth="1920" outputHeight="1536" format="V4L2_PIX_FMT_UYVY">
+            <videonode name="Intel IPU6 ISYS Capture 9" videoNodeType="VIDEO_GENERIC"/>
+            <videonode name="Intel IPU6 CSI2 1" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+            <videonode name="isx031 b-1" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+        </MediaCtlConfig>
+        <StaticMetadata>
+            <!-- list of stream config info. Meanings of each part is "format,widthxheight,field(0 is none, 7 is alternate),mcId" -->
+            <supportedStreamConfig value="V4L2_PIX_FMT_UYVY,1920x1536,0,0"/>
+        </StaticMetadata>
+        <supportedISysFormat value="V4L2_PIX_FMT_UYVY"/>
+        <vcAggregator value="max9296 b,1"/>
+        <enableAIQ value="false"/>
+    </Sensor>
+</CameraSettings>

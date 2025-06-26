@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <atomic>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -83,7 +84,7 @@ class CameraScheduler {
         std::vector<ISchedulerNode*> mNodes;
         std::vector<std::shared_ptr<Executor>> mListeners;
         Condition mTriggerSignal;
-        bool mActive;
+        std::atomic<bool> mActive;
         int64_t mTriggerTick;
 
      private:

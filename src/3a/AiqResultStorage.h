@@ -134,13 +134,11 @@ class AiqResultStorage {
     AiqResultStorage(int cameraId);
     ~AiqResultStorage();
 
+    static std::map<int, AiqResultStorage*>& getInstances();
+    static Mutex& getLock();
     static AiqResultStorage* getInstanceLocked(int cameraId);
 
  private:
-    static std::map<int, AiqResultStorage*> sInstances;
-    // Guard for singleton creation.
-    static Mutex sLock;
-
     int mCameraId;
     RWLock mDataLock;  // lock for all the data storage below
 
