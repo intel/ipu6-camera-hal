@@ -18,22 +18,50 @@
 
 #include "AiqResultStorage.h"
 #include "iutils/CameraLog.h"
+#ifdef HAVE_CHROME_OS
+#include <base/no_destructor.h>
+#endif
 
 namespace icamera {
 
-std::map<int, AiqResultStorage*> AiqResultStorage::sInstances;
-Mutex AiqResultStorage::sLock;
+std::map<int, AiqResultStorage*>& AiqResultStorage::getInstances() {
+#ifdef HAVE_CHROME_OS
+    static base::NoDestructor<std::map<int, AiqResultStorage*>> sInstances;
+    return *sInstances;
+#else
+    static std::map<int, AiqResultStorage*> sInstances;
+    return sInstances;
+#endif
+}
+
+Mutex& AiqResultStorage::getLock() {
+    static Mutex sLock;
+    return sLock;
+}
 
 AiqResultStorage* AiqResultStorage::getInstance(int cameraId) {
-    AutoMutex lock(sLock);
+    AutoMutex lock(getLock());
     return getInstanceLocked(cameraId);
 }
 
 void AiqResultStorage::releaseAiqResultStorage(int cameraId) {
-    AutoMutex lock(sLock);
+    AutoMutex lock(getLock());
     AiqResultStorage* storage = getInstanceLocked(cameraId);
-    sInstances.erase(cameraId);
+    getInstances().erase(cameraId);
     delete storage;
+}
+
+/**
+ * Private function with no lock in it, must be called with lock protection
+ */
+AiqResultStorage* AiqResultStorage::getInstanceLocked(int cameraId) {
+    auto& sInstances = getInstances();
+    if (sInstances.find(cameraId) != sInstances.end()) {
+        return sInstances[cameraId];
+    }
+
+    sInstances[cameraId] = new AiqResultStorage(cameraId);
+    return sInstances[cameraId];
 }
 
 AiqResultStorage::AiqResultStorage(int cameraId) : mCameraId(cameraId) {
@@ -160,18 +188,6 @@ bool AiqResultStorage::isDvsRun(int64_t sequence) {
     }
 
     return false;
-}
-
-/**
- * Private function with no lock in it, must be called with lock protection
- */
-AiqResultStorage* AiqResultStorage::getInstanceLocked(int cameraId) {
-    if (sInstances.find(cameraId) != sInstances.end()) {
-        return sInstances[cameraId];
-    }
-
-    sInstances[cameraId] = new AiqResultStorage(cameraId);
-    return sInstances[cameraId];
 }
 
 }  // namespace icamera

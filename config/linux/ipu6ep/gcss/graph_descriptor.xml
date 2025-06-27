@@ -14152,7 +14152,6 @@
             <apply target="isa_lb_stills:bxt_demosaic:enabled" value="0" />
             <apply target="isa_lb_stills:bxt_wb:enabled" value="0" />
             <apply target="isa_lb_stills:bxt_acm:enabled" value="0" />
-            <apply target="isa_lb_stills:gammatm_v3:enabled" value="0" />
             <apply target="isa_lb_stills:gammastar_1:enabled" value="0" />
 
             <connection source="csi_be:output" sink="isa_lb_stills:input"/>

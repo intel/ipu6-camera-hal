@@ -133,8 +133,6 @@ class PlatformData {
                       mLensHwType(LENS_NONE_HW),
                       mSensorMode(SENSOR_MODE_UNKNOWN),
                       mEnablePdaf(false),
-                      mSensorAwb(false),
-                      mSensorAe(false),
                       mRunIspAlways(false),
                       // HDR_FEATURE_S
                       mHdrStatsInputBitDepth(0),
@@ -142,7 +140,6 @@ class PlatformData {
                       mUseFixedHdrExposureInfo(true),
                       // HDR_FEATURE_E
                       mLtmEnabled(false),
-                      mSensorExposureNum(2),
                       mSensorExposureType(SENSOR_EXPOSURE_SINGLE),
                       mSensorGainType(SENSOR_GAIN_NONE),
                       mLensCloseCode(0),
@@ -219,7 +216,8 @@ class PlatformData {
                       mDisableBLCAGainHigh(-1),
                       mResetLinkRoute(true),
                       mReqWaitTimeout(0),
-                      mV4l2BufType(V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE) {}
+                      mV4l2BufType(V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE),
+                      mMcId(0) {}
 
             std::vector<MediaCtlConf> mMediaCtlConfs;
 
@@ -237,8 +235,8 @@ class PlatformData {
             std::map<TuningMode, SensitivityRange> mTuningModeToSensitivityMap;
             SensorMode mSensorMode;
             bool mEnablePdaf;
-            bool mSensorAwb;
-            bool mSensorAe;
+            std::map<int, bool> mSensorAwb;
+            std::map<int, bool> mSensorAe;
             bool mRunIspAlways;
             // HDR_FEATURE_S
             int mHdrStatsInputBitDepth;
@@ -246,7 +244,7 @@ class PlatformData {
             bool mUseFixedHdrExposureInfo;
             // HDR_FEATURE_E
             bool mLtmEnabled;
-            int mSensorExposureNum;
+            std::map<int, int> mSensorExposureNum;
             int mSensorExposureType;
             int mSensorGainType;
             int mLensCloseCode;
@@ -373,6 +371,7 @@ class PlatformData {
             /* mReqWaitTimeout is used to override dqbuf timeout (ns) */
             int64_t mReqWaitTimeout;
             v4l2_buf_type mV4l2BufType;
+            int mMcId;
         };
 
         /**

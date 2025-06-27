@@ -132,7 +132,7 @@ CameraScheduler::Executor::~Executor() {
 void CameraScheduler::Executor::addNode(ISchedulerNode* node) {
     std::lock_guard<std::mutex> l(mNodeLock);
     mNodes.push_back(node);
-    LOG1("%s: %s added to %s, pos %d", __func__, node->getName(), getName(), mNodes.size());
+    LOG1("%s: %s added to %s, pos %lu", __func__, node->getName(), getName(), mNodes.size());
 }
 
 void CameraScheduler::Executor::removeNode(ISchedulerNode* node) {

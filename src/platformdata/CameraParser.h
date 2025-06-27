@@ -151,7 +151,7 @@ class CameraParser : public ParserBase {
     void handleSensor(CameraParser* profiles, const char* name, const char** atts);
     void handleCommon(CameraParser* profiles, const char* name, const char** atts);
 
-    void parseStreamConfig(const char* src, stream_array_t& configs);
+    void parseStreamConfig(char* src, stream_array_t& configs);
     void parseSupportedFeatures(const char* src, camera_features_list_t& features);
     void parseSupportedIspControls(const char* src, std::vector<uint32_t>& features);
     int parseSupportedVideoStabilizationMode(const char* str,
@@ -181,6 +181,9 @@ class CameraParser : public ParserBase {
 
     int parseSupportedTuningConfig(const char* str, std::vector<TuningConfig>& config);
     int parseLardTags(const char* str, std::vector<LardTagConfig>& lardTags);
+    int parseSensorAwb(const char* str, std::map<int, bool>& sensorAwbCfg);
+    int parseSensorAe(const char* str, std::map<int, bool>& sensorAeCfg);
+    int parseSensorExposureNum(const char* str, std::map<int, int>& sensorExpNumCfg);
 
     void dumpSensorInfo(void);
 
