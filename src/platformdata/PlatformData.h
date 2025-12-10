@@ -380,6 +380,9 @@ class PlatformData {
         void getModuleInfoFromCmc(int cameraId);
 
         std::vector<CameraInfo> mCameras;
+// VIRTUAL_CHANNEL_S
+        std::vector<CameraInfo> mCamCommonConfig;
+// VIRTUAL_CHANNEL_E
         std::vector<PolicyConfig> mPolicyConfig;
         CommonConfig mCommonConfig;
         std::string mBoardName;

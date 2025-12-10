@@ -186,6 +186,9 @@ struct MediaCtlConf {
     // DOL_FEATURE_S
     int vbp;  // Vertical blanking period
     // DOL_FEATURE_E
+// VIRTUAL_CHANNEL_S
+    struct MediaCtlConf* mMc;
+// VIRTUAL_CHANNEL_E
     /*
      * The outputWidth or outputHeight is 0 if there isn't this setting
      * in MediaCtlConf. It means the isys output size is dynamic, and
@@ -199,6 +202,9 @@ struct MediaCtlConf {
         // DOL_FEATURE_S
         vbp = -1;
         // DOL_FEATURE_E
+// VIRTUAL_CHANNEL_S
+        mMc = nullptr;
+// VIRTUAL_CHANNEL_E
     }
 };
 
@@ -345,6 +351,9 @@ class MediaControl {
     int setMediaMcLink(std::vector<McLink> links);
     int setFormat(int cameraId, const McFormat* format, int targetWidth, int targetHeight,
                   int field);
+// VIRTUAL_CHANNEL_S
+    int setVideoNodeFormat(const McFormat* format, int field);
+// VIRTUAL_CHANNEL_E
     int setSelection(int cameraId, const McFormat* format, int targetWidth, int targetHeight);
 
     /* Dump functions */
@@ -361,12 +370,20 @@ class MediaControl {
     // DUMP_ENTITY_TOPOLOGY_E
     void setSensorOrientation(int cameraId);
 
+// VIRTUAL_CHANNEL_S
+    // set MediaCtlConf video node format
+    int setVideoNodesFormat(MediaCtlConf* mainMc, MediaCtlConf* commonMc, int field);
+
+// VIRTUAL_CHANNEL_E
     std::string mDevName;
     std::vector<MediaEntity> mEntities;
 
     static MediaControl* sInstance;
     static Mutex sLock;
 
+// VIRTUAL_CHANNEL_S
+    bool mIsMediaCtlSetup;
+// VIRTUAL_CHANNEL_E
     int mMediaCfgId;
 };
 

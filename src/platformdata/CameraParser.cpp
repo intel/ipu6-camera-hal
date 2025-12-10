@@ -229,6 +229,20 @@ void CameraParser::checkField(CameraParser* profiles, const char* name, const ch
     if (strcmp(name, "CameraSettings") == 0) {
         profiles->mCurrentDataField = FIELD_INVALID;
         return;
+// VIRTUAL_CHANNEL_S
+    } else if (strcmp(name, "SensorCommonConfig") == 0) {
+        profiles->mCurrentDataField = FIELD_SENSOR_COMMON_CONFIG;
+        profiles->pCurrentCam = new PlatformData::StaticCfg::CameraInfo;
+
+        for (int idx = 0; atts[idx]; idx += 2) {
+            const char* key = atts[idx];
+            const char* val = atts[idx + 1];
+            if (strcmp(key, "name") == 0 && strlen(val) > 0) {
+                profiles->pCurrentCam->sensorName = atts[idx + 1];
+            }
+        }
+        return;
+// VIRTUAL_CHANNEL_E
     } else if (strcmp(name, "Sensor") == 0) {
         // If it already has a available sensor, it doesn't need to parser others
         if (profiles->mIsAvailableSensor) {
@@ -866,6 +880,9 @@ void CameraParser::parseMediaCtlConfigElement(CameraParser* profiles, const char
     MediaCtlConf mc;
     bool skipMediaCtlCfg = true;
     int idx = 0;
+// VIRTUAL_CHANNEL_S
+    std::string sensorCommonConfig;
+// VIRTUAL_CHANNEL_E
 
     while (atts[idx]) {
         const char* key = atts[idx];
@@ -890,6 +907,13 @@ void CameraParser::parseMediaCtlConfigElement(CameraParser* profiles, const char
                 profiles->mSkipMediaCtlCfg = true;
                 return;
             }
+// VIRTUAL_CHANNEL_S
+        } else if (strcmp(key, "sensorCommonConfig") == 0) {
+            if (profiles->mCurrentDataField != FIELD_SENSOR_COMMON_CONFIG &&
+                strlen(atts[idx + 1]) != 0) {
+                sensorCommonConfig = atts[idx + 1];
+            }
+// VIRTUAL_CHANNEL_E
         }
         idx += 2;
     }
@@ -901,6 +925,22 @@ void CameraParser::parseMediaCtlConfigElement(CameraParser* profiles, const char
     }
 
     LOG2("@%s, name:%s, atts[0]:%s, id: %d", __func__, name, atts[0], mc.mcId);
+// VIRTUAL_CHANNEL_S
+    if (profiles->mCurrentDataField == FIELD_SENSOR) {
+        if (!sensorCommonConfig.empty()) {
+            for (auto it = profiles->mStaticCfg->mCamCommonConfig.rbegin();
+                 it != profiles->mStaticCfg->mCamCommonConfig.rend(); ++it) {
+                if (!it->sensorName.compare(sensorCommonConfig)) {
+                    for (auto& mc_ : it->mMediaCtlConfs) {
+                        if (mc_.mcId == mc.mcId) {
+                            mc.mMc = &mc_;
+                        }
+                    }
+                }
+            }
+        }
+    }
+// VIRTUAL_CHANNEL_E
     // Add a new empty MediaControl Configuration
     profiles->pCurrentCam->mMediaCtlConfs.push_back(mc);
 }
@@ -2147,6 +2187,9 @@ void CameraParser::startParseElement(void* userData, const char* name, const cha
     }
 
     switch (profiles->mCurrentDataField) {
+// VIRTUAL_CHANNEL_S
+        case FIELD_SENSOR_COMMON_CONFIG:
+// VIRTUAL_CHANNEL_E
         case FIELD_SENSOR:
             if (strcmp(name, "MediaCtlConfig") == 0) {
                 profiles->mInMediaCtlCfg = true;
@@ -2199,6 +2242,15 @@ void CameraParser::endParseElement(void* userData, const char* name) {
     LOG2("@%s %s", __func__, name);
 
     CameraParser* profiles = reinterpret_cast<CameraParser*>(userData);
+// VIRTUAL_CHANNEL_S
+
+    if (strcmp(name, "SensorCommonConfig") == 0) {
+        profiles->mCurrentDataField = FIELD_INVALID;
+        profiles->mStaticCfg->mCamCommonConfig.push_back(*profiles->pCurrentCam);
+        delete profiles->pCurrentCam;
+        profiles->pCurrentCam = nullptr;
+    }
+// VIRTUAL_CHANNEL_E
 
     if (strcmp(name, "Sensor") == 0) {
         profiles->mCurrentDataField = FIELD_INVALID;

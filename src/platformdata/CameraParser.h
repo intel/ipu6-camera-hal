@@ -92,7 +92,15 @@ class CameraParser : public ParserBase {
  private:
     PlatformData::StaticCfg* mStaticCfg;
 
-    enum DataField { FIELD_INVALID = 0, FIELD_SENSOR, FIELD_COMMON } mCurrentDataField;
+    enum DataField {
+        FIELD_INVALID = 0,
+// VIRTUAL_CHANNEL_S
+        FIELD_SENSOR_COMMON_CONFIG,
+// VIRTUAL_CHANNEL_E
+        FIELD_SENSOR,
+        FIELD_COMMON
+    } mCurrentDataField;
+
     int mSensorNum;
     int mCurrentSensor;
     std::string mI2CBus;
