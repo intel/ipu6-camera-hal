@@ -129,6 +129,9 @@ void MediaControl::releaseInstance() {
 
 MediaControl::MediaControl(const char* devName)
         : mDevName(devName),
+// VIRTUAL_CHANNEL_S
+          mIsMediaCtlSetup(false),
+// VIRTUAL_CHANNEL_E
           mMediaCfgId(IPU6_DOWNSTREAM_MEDIA_CFG) {
     LOG1("@%s device: %s", __func__, devName);
 }
@@ -748,6 +751,64 @@ int MediaControl::setMediaMcLink(vector<McLink> links) {
     }
     return OK;
 }
+// VIRTUAL_CHANNEL_S
+
+int MediaControl::setVideoNodeFormat(const McFormat* format, int field) {
+    PERF_CAMERA_ATRACE();
+    MediaEntity* entity = getEntityById(format->entity);
+    CheckAndLogError(!entity, -EINVAL, "@%s %s: failed to get video entity!", __func__,
+                     format->entityName.c_str());
+    V4L2VideoNode* device = new V4L2VideoNode(entity->devname);
+    CheckAndLogError(!device, -EINVAL, "@%s %s: failed to create video device!", __func__,
+                     format->entityName.c_str());
+
+    struct v4l2_format v4l2fmt = {};
+    int buffer_type;
+    int ret = OK;
+
+    ret = device->Open(O_RDWR);
+    CheckAndLogError(ret != OK, ret, "@%s %s: failed to open video device!", __func__,
+                     format->entityName.c_str());
+
+    int dev_caps = device->GetDeviceCaps();
+
+    if (dev_caps & V4L2_CAP_VIDEO_CAPTURE) {
+        buffer_type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    } else {
+        buffer_type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
+    }
+
+    v4l2fmt.type = buffer_type;
+    v4l2fmt.fmt.pix_mp.field = field;
+
+    if (V4L2_TYPE_IS_MULTIPLANAR(buffer_type)) {
+        int planesNum = CameraUtils::getNumOfPlanes(format->pixelCode);
+        LOG1("@%s %s: Num of planes: %d", __func__, format->entityName.c_str(), planesNum);
+
+        v4l2fmt.fmt.pix_mp.width = format->width;
+        v4l2fmt.fmt.pix_mp.height = format->height;
+        v4l2fmt.fmt.pix_mp.num_planes = planesNum;
+        v4l2fmt.fmt.pix_mp.pixelformat = format->pixelCode;
+        for (int i = 0; i < v4l2fmt.fmt.pix_mp.num_planes; i++) {
+            v4l2fmt.fmt.pix_mp.plane_fmt[i].bytesperline = format->width;
+            v4l2fmt.fmt.pix_mp.plane_fmt[i].sizeimage = 0;
+        }
+    } else {
+        v4l2fmt.fmt.pix.width = format->width;
+        v4l2fmt.fmt.pix.height = format->height;
+        v4l2fmt.fmt.pix.pixelformat = format->pixelCode;
+        v4l2fmt.fmt.pix.bytesperline = format->width;
+        v4l2fmt.fmt.pix.sizeimage = 0;
+    }
+
+    V4L2Format tmpbuf{v4l2fmt};
+    ret = device->SetFormat(tmpbuf);
+    delete device;
+    CheckAndLogError(ret != OK, ret, "@%s %s: set v4l2 format failed ret=%d", __func__,
+                     format->entityName.c_str(), ret);
+    return OK;
+}
+// VIRTUAL_CHANNEL_E
 
 int MediaControl::setFormat(int cameraId, const McFormat* format, int targetWidth, int targetHeight,
                             int field) {
@@ -867,16 +928,55 @@ int MediaControl::setSelection(int cameraId, const McFormat* format, int targetW
 
     return OK;
 }
+// VIRTUAL_CHANNEL_S
+
+int MediaControl::setVideoNodesFormat(MediaCtlConf* mainMc, MediaCtlConf* commonMc, int field) {
+    int ret = OK;
+
+    for (auto& link : commonMc->links) {
+        MediaEntity* entity = getEntityById(link.sinkEntity);
+        if (entity->info.type == MEDIA_ENT_T_V4L2_VIDEO) {
+            McFormat fmt;
+            fmt.entity = entity->info.id;
+            fmt.width = mainMc->outputWidth;
+            fmt.height = mainMc->outputHeight;
+            fmt.pixelCode = mainMc->format;
+            ret = setVideoNodeFormat(&fmt, field);
+            CheckAndLogError(ret != OK, ret, "set %s format fail, ret:%d", entity->info.name, ret);
+        }
+    }
+
+    return ret;
+}
+// VIRTUAL_CHANNEL_E
 
 int MediaControl::mediaCtlSetup(int cameraId, MediaCtlConf* mc, int width, int height, int field) {
     LOG1("<id%d> %s", cameraId, __func__);
+
+    MediaCtlConf* commonMc = mc;
+
+// VIRTUAL_CHANNEL_S
+
+    commonMc = (mc->mMc == nullptr ? mc : mc->mMc);
+
+    AutoMutex lock(sLock);
+
+    if (!commonMc->routings.empty()) {
+        if (mIsMediaCtlSetup) {
+            return OK;
+        } else {
+            mIsMediaCtlSetup = true;
+        }
+    }
+
+// VIRTUAL_CHANNEL_E
     /* Setup controls in format Configuration */
-    setMediaMcCtl(cameraId, mc->ctls);
+    setMediaMcCtl(cameraId, commonMc->ctls);
 
     int ret = OK;
     // VIRTUAL_CHANNEL_S
     /* Set routing */
-    for (auto& routing : mc->routings) {
+    for (auto& routing : commonMc->routings) {
         LOG1("<id%d> route entity:%s:", cameraId, routing.first.c_str());
         int num = routing.second.size();
         v4l2_subdev_route* routes = new v4l2_subdev_route[num];
@@ -900,13 +1000,19 @@ int MediaControl::mediaCtlSetup(int cameraId, MediaCtlConf* mc, int width, int h
     // VIRTUAL_CHANNEL_E
 
     /* Set format & selection in format Configuration */
-    for (auto& fmt : mc->formats) {
+    for (auto& fmt : commonMc->formats) {
         if (fmt.formatType == FC_FORMAT) {
             setFormat(cameraId, &fmt, width, height, field);
         } else if (fmt.formatType == FC_SELECTION) {
             setSelection(cameraId, &fmt, width, height);
         }
     }
+// VIRTUAL_CHANNEL_S
+
+    ret = setVideoNodesFormat(mc, commonMc, field);
+    if (ret != OK)
+        return ret;
+// VIRTUAL_CHANNEL_E
 
     MediaEntity* ivsc = getEntityByName(ivscName.c_str());
     if (ivsc) {
@@ -915,7 +1021,7 @@ int MediaControl::mediaCtlSetup(int cameraId, MediaCtlConf* mc, int width, int h
                 MediaEntity* sensor = ivsc->links[i].source->entity;
                 int sensor_entity_id = sensor->info.id;
                 LOG1("@%s, found %s -> %s", __func__, sensor->info.name, ivscName.c_str());
-                for (McLink& link : mc->links) {
+                for (McLink& link : commonMc->links) {
                     if (link.srcEntity == sensor_entity_id) {
                         LOG1("@%s, skip %s, link %s -> %s", __func__, link.srcEntityName.c_str(),
                              ivscName.c_str(), link.sinkEntityName.c_str());
@@ -936,7 +1042,7 @@ int MediaControl::mediaCtlSetup(int cameraId, MediaCtlConf* mc, int width, int h
     }
 
     /* Set link in format Configuration */
-    ret = setMediaMcLink(mc->links);
+    ret = setMediaMcLink(commonMc->links);
     CheckAndLogError(ret != OK, ret, "set MediaCtlConf McLink failed: ret = %d", ret);
 
     // DUMP_ENTITY_TOPOLOGY_S
