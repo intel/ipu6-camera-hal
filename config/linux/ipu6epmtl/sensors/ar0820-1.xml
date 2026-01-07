@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!-- Copyright (C) 2025 Intel Corporation.
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+
+<CameraSettings>
+    <Sensor name="ar0820-1" description="AR0820 GMSL (Sensing) Sensor 1" virtualChannel="true" vcGroupId="0">
+        <MediaCtlConfig id="0" mediaCfg="1" ConfigMode="AUTO" outputWidth="3840" outputHeight="2160" format="V4L2_PIX_FMT_UYVY">
+            <format name="ar0820 a" pad="0" width="3840" height="2160" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format name="max9x a-0" pad="0" width="3840" height="2160" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format name="max9x a-0" pad="2" width="3840" height="2160" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format name="max9x a" pad="0" width="3840" height="2160" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format name="max9x a" pad="4" width="3840" height="2160" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format name="Intel IPU6 CSI2 0" pad="0" width="3840" height="2160" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format name="Intel IPU6 CSI2 0" pad="1" width="3840" height="2160" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <link srcName="ar0820 a" srcPad="0" sinkName="max9x a-0" sinkPad="0" enable="true"/>
+            <link srcName="max9x a-0" srcPad="2" sinkName="max9x a" sinkPad="4" enable="true"/>
+            <link srcName="max9x a" srcPad="0" sinkName="Intel IPU6 CSI2 0" sinkPad="0" enable="true"/>
+            <link srcName="Intel IPU6 CSI2 0" srcPad="1" sinkName="Intel IPU6 ISYS Capture 0" sinkPad="0" enable="true"/>
+            <route name="max9x a-0" sinkPad="0" sinkStream="0" srcPad="2" srcStream="0" flag="1"/>
+            <route name="max9x a" sinkPad="4" sinkStream="0" srcPad="0" srcStream="0" flag="1"/>
+            <route name="Intel IPU6 CSI2 0" sinkPad="0" sinkStream="0" srcPad="1" srcStream="0" flag="1"/>
+            <videonode name="Intel IPU6 ISYS Capture 0" videoNodeType="VIDEO_GENERIC"/>
+            <videonode name="Intel IPU6 CSI2 0" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+            <videonode name="ar0820 a" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+        </MediaCtlConfig>
+        <StaticMetadata>
+            <!-- format,widthxheight,field(none:0,alternate:7),mcId -->
+            <supportedStreamConfig value="V4L2_PIX_FMT_UYVY,3840x2160,0,0"/>
+        </StaticMetadata>
+        <supportedISysFormat value="V4L2_PIX_FMT_UYVY"/>
+        <vcAggregator value="max9x a,0"/>
+        <enableAIQ value="false"/>
+    </Sensor>
+</CameraSettings>

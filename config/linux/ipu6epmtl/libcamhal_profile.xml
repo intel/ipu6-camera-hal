@@ -30,6 +30,7 @@
                                  imx390-5-4,imx390-6-4,ar0234-1-0,ar0234-2-4,
                                  isx031,
                                  lt6911uxc,lt6911uxe-1-0,lt6911uxe-2-4,
+                                 ar0820-1-0, ar0830-1-0, ar0830-2-4,
                                  external_source,ar0234_usb"/>
     </Common>
 </CameraSettings>
