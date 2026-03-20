@@ -740,14 +740,16 @@ void MediaControl::setMediaMcCtl(int cameraId, vector<McCtl> ctls) {
 
 int MediaControl::setMediaMcLink(vector<McLink> links) {
     for (auto& link : links) {
-        LOG1("setup Link %s [%d:%d] ==> %s [%dx%d] enable %d.", link.srcEntityName.c_str(),
-             link.srcEntity, link.srcPad, link.sinkEntityName.c_str(), link.sinkEntity,
-             link.sinkPad, link.enable);
         int ret =
             setupLink(link.srcEntity, link.srcPad, link.sinkEntity, link.sinkPad, link.enable);
-        CheckAndLogError(ret < 0, ret, "setup Link %s [%d:%d] ==> %s [%dx%d] enable %d failed.",
-                         link.srcEntityName.c_str(), link.srcEntity, link.srcPad,
-                         link.sinkEntityName.c_str(), link.sinkEntity, link.sinkPad, link.enable);
+        if (ret < 0)
+            LOGW("failed to setup Link %s [%d:%d] ==> %s [%d:%d] %s.", link.srcEntityName.c_str(),
+                 link.srcEntity, link.srcPad, link.sinkEntityName.c_str(), link.sinkEntity,
+                 link.sinkPad, link.enable ? "enable" : "disable");
+        else
+            LOG1("succeed to setup Link %s [%d:%d] ==> %s [%d:%d] %s.", link.srcEntityName.c_str(),
+                 link.srcEntity, link.srcPad, link.sinkEntityName.c_str(), link.sinkEntity,
+                 link.sinkPad, link.enable ? "enable" : "disable");
     }
     return OK;
 }
@@ -934,6 +936,7 @@ int MediaControl::setVideoNodesFormat(MediaCtlConf* mainMc, MediaCtlConf* common
     int ret = OK;
 
     for (auto& link : commonMc->links) {
+        if (link.sinkEntity < 0) continue;
         MediaEntity* entity = getEntityById(link.sinkEntity);
         if (entity->info.type == MEDIA_ENT_T_V4L2_VIDEO) {
             McFormat fmt;
@@ -978,6 +981,12 @@ int MediaControl::mediaCtlSetup(int cameraId, MediaCtlConf* mc, int width, int h
     /* Set routing */
     for (auto& routing : commonMc->routings) {
         LOG1("<id%d> route entity:%s:", cameraId, routing.first.c_str());
+
+        string subDeviceNodeName;
+        CameraUtils::getSubDeviceName(routing.first.c_str(), subDeviceNodeName);
+        if (subDeviceNodeName.empty()) continue;
+        V4L2Subdevice* subDev = V4l2DeviceFactory::getSubDev(cameraId, subDeviceNodeName);
+
         int num = routing.second.size();
         v4l2_subdev_route* routes = new v4l2_subdev_route[num];
         CheckAndLogError(!routes, NO_MEMORY, "Failed to alloc routes");
@@ -990,9 +999,6 @@ int MediaControl::mediaCtlSetup(int cameraId, MediaCtlConf* mc, int width, int h
 
             routes[i] = r;
         }
-        string subDeviceNodeName;
-        CameraUtils::getSubDeviceName(routing.first.c_str(), subDeviceNodeName);
-        V4L2Subdevice* subDev = V4l2DeviceFactory::getSubDev(cameraId, subDeviceNodeName);
         ret = subDev->SetRouting(routes, num);
         delete[] routes;
         CheckAndLogError(ret != 0, ret, "setRouting fail, ret:%d", ret);
