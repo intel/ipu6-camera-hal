@@ -14,16 +14,16 @@
      limitations under the License.
 -->
 <CameraSettings>
-    <Sensor name="ar0830-1" description="ar0830 sensor">
+    <Sensor name="ar0830-2" description="AR0830 MIPI CSI-2 Sensor 2">
         <MediaCtlConfig id="0">
             <!-- FE capture -->
-            <format name="ar0830 1-003c" pad="0" width="3840" height="2160" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <format name="Intel IPU6 CSI2 0" pad="0" width="3840" height="2160" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
-            <link srcName="ar0830 1-003c" srcPad="0" sinkName="Intel IPU6 CSI2 0" sinkPad="0" enable="true"/>
-            <link srcName="Intel IPU6 CSI2 0" srcPad="1" sinkName="Intel IPU6 ISYS Capture 0" sinkPad="0" enable="true"/>
-            <videonode name="Intel IPU6 ISYS Capture 0" videoNodeType="VIDEO_GENERIC"/>
-            <videonode name="Intel IPU6 CSI2 0" videoNodeType="VIDEO_ISYS_RECEIVER"/>
-            <videonode name="ar0830 1-003c" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+            <format name="ar0830 0-003c" pad="0" width="3840" height="2160" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="Intel IPU6 CSI2 4" pad="0" width="3840" height="2160" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <link srcName="ar0830 0-003c" srcPad="0" sinkName="Intel IPU6 CSI2 4" sinkPad="0" enable="true"/>
+            <link srcName="Intel IPU6 CSI2 4" srcPad="1" sinkName="Intel IPU6 ISYS Capture 32" sinkPad="0" enable="true"/>
+            <videonode name="Intel IPU6 ISYS Capture 32" videoNodeType="VIDEO_GENERIC"/>
+            <videonode name="Intel IPU6 CSI2 4" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+            <videonode name="ar0830 0-003c" videoNodeType="VIDEO_PIXEL_ARRAY"/>
         </MediaCtlConfig>
         <MediaCtlConfig id="0" mediaCfg="1">
             <!-- FE capture -->

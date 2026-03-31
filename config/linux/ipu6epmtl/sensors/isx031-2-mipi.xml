@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!-- Copyright (C) 2025 Intel Corporation.
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+
+<CameraSettings>
+    <Sensor name="isx031-2" description="ISX031 MIPI CSI-2 Sensor 2">
+        <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="1920" outputHeight="1080" format="V4L2_PIX_FMT_UYVY">
+            <format name="isx031 3-001a" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="Intel IPU6 CSI2 2" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="Intel IPU6 ISYS Capture 16" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <link srcName="isx031 3-001a" srcPad="0" sinkName="Intel IPU6 CSI2 2" sinkPad="0" enable="true"/>
+            <link srcName="Intel IPU6 CSI2 2" srcPad="1" sinkName="Intel IPU6 ISYS Capture 16" sinkPad="0" enable="true"/>
+            <videonode name="Intel IPU6 ISYS Capture 16" videoNodeType="VIDEO_GENERIC"/>
+            <videonode name="Intel IPU6 CSI2 2" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+            <videonode name="isx031 3-001a" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+        </MediaCtlConfig>
+
+        <MediaCtlConfig id="0" mediaCfg="1" ConfigMode="AUTO" outputWidth="1920" outputHeight="1080" format="V4L2_PIX_FMT_UYVY">
+            <format name="isx031 $I2CBUS" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="Intel IPU6 CSI2 $CSI_PORT" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <format name="Intel IPU6 ISYS Capture $CAPTURE_ID" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16"/>
+            <link srcName="isx031 $I2CBUS" srcPad="0" sinkName="Intel IPU6 CSI2 $CSI_PORT" sinkPad="0" enable="true"/>
+            <link srcName="Intel IPU6 CSI2 $CSI_PORT" srcPad="1" sinkName="Intel IPU6 ISYS Capture $CAPTURE_ID" sinkPad="0" enable="true"/>
+            <videonode name="Intel IPU6 ISYS Capture $CAPTURE_ID" videoNodeType="VIDEO_GENERIC"/>
+            <videonode name="Intel IPU6 CSI2 $CSI_PORT" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+            <videonode name="isx031 $I2CBUS" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+        </MediaCtlConfig>
+
+        <StaticMetadata>
+            <!-- format,widthxheight,field(none:0,alternate:7),mcId -->
+            <supportedStreamConfig value="V4L2_PIX_FMT_UYVY,1920x1080,0,0"/>
+            <fpsRange value="10,30"/>
+        </StaticMetadata>
+
+        <supportedISysSizes value="1920x1080"/>
+        <supportedISysFormat value="V4L2_PIX_FMT_UYVY"/>
+        <enableAIQ value="false"/>
+        <resetLinkRoute value="false"/>
+    </Sensor>
+</CameraSettings>
