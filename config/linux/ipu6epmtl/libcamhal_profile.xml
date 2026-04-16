@@ -31,6 +31,7 @@
                                  isx031,
                                  lt6911uxc,lt6911uxe-1-0,lt6911uxe-2-4,
                                  external_source,ar0234_usb,
-                                 imx586-a-0,imx586-b-4"/>
+                                 imx586-a-0,imx586-b-4,
+                                 imx415-a-0,imx415-b-4"/>
     </Common>
 </CameraSettings>
