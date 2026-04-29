@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<!-- Copyright (C) 2024-2025 Intel Corporation.
+<!-- Copyright (C) 2024-2026 Intel Corporation.
 
      Licensed under the Apache License, Version 2.0 (the "License");
      you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@
                                  imx390-5-4,imx390-6-4,ar0234-1-0,ar0234-2-4,
                                  isx031,
                                  lt6911uxc,lt6911uxe-1-0,lt6911uxe-2-4,
-                                 external_source,ar0234_usb"/>
+                                 external_source,ar0234_usb,
+                                 imx586-a-0,imx586-b-4"/>
     </Common>
 </CameraSettings>
