@@ -999,6 +999,39 @@ int MediaControl::mediaCtlSetup(int cameraId, MediaCtlConf* mc, int width, int h
 
             routes[i] = r;
         }
+
+        // VIDIOC_SUBDEV_S_ROUTING resets all stream states on the subdev, which can disrupt
+        // other processes or camera instances sharing the same subdev. Compare current hardware
+        // state with the desired configuration and skip SetRouting when the hardware already
+        // reflects the exact routes we need.
+        {
+            uint32_t numCurrentRoutes = static_cast<uint32_t>(num);
+            v4l2_subdev_route* currentRoutes = new v4l2_subdev_route[numCurrentRoutes]();
+            int gret = subDev->GetRouting(currentRoutes, &numCurrentRoutes);
+            bool skip = (gret == 0 && numCurrentRoutes == static_cast<uint32_t>(num));
+            for (int i = 0; i < num && skip; i++) {
+                bool found = false;
+                for (uint32_t j = 0; j < numCurrentRoutes; j++) {
+                    if (routes[i].sink_pad == currentRoutes[j].sink_pad &&
+                        routes[i].sink_stream == currentRoutes[j].sink_stream &&
+                        routes[i].source_pad == currentRoutes[j].source_pad &&
+                        routes[i].source_stream == currentRoutes[j].source_stream &&
+                        routes[i].flags == currentRoutes[j].flags) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) skip = false;
+            }
+            delete[] currentRoutes;
+            if (skip) {
+                LOG1("<id%d> Routes already match for entity:%s, skipping SetRouting", cameraId,
+                     routing.first.c_str());
+                delete[] routes;
+                continue;
+            }
+        }
+
         ret = subDev->SetRouting(routes, num);
         delete[] routes;
         CheckAndLogError(ret != 0, ret, "setRouting fail, ret:%d", ret);
@@ -1077,28 +1110,14 @@ void MediaControl::mediaCtlClear(int cameraId, MediaCtlConf* mc) {
     LOG1("<id%d> %s", cameraId, __func__);
 
     // VIRTUAL_CHANNEL_S
-    /* Clear routing */
-    for (auto& routing : mc->routings) {
-        LOG1("<id%d> route entity:%s:", cameraId, routing.first.c_str());
-        int num = routing.second.size();
-        v4l2_subdev_route* routes = new v4l2_subdev_route[num];
-        CheckAndLogError(!routes, VOID_VALUE, "Failed to alloc routes");
-        for (int i = 0; i < num; i++) {
-            const McRoute& route = routing.second[i];
-            LOG1("   sinkPad:%d, srcPad:%d, sinkStream:%d, srcStream:%d, flag:%d", route.sinkPad,
-                 route.srcPad, route.sinkStream, route.srcStream, route.flag);
-            v4l2_subdev_route r = {route.sinkPad, route.sinkStream, route.srcPad, route.srcStream,
-                                   route.flag & ~V4L2_SUBDEV_ROUTE_FL_ACTIVE};
-            routes[i] = r;
-        }
-
-        string subDeviceNodeName;
-        CameraUtils::getSubDeviceName(routing.first.c_str(), subDeviceNodeName);
-        V4L2Subdevice* subDev = V4l2DeviceFactory::getSubDev(cameraId, subDeviceNodeName);
-        int ret = subDev->SetRouting(routes, num);
-        delete[] routes;
-        CheckAndLogError(ret != 0, VOID_VALUE, "Clear routing fail, ret:%d", ret);
-    }
+    /* Do not disable routes on close.  VIDIOC_SUBDEV_S_ROUTING resets stream states, so
+     * clearing routes here would disrupt other processes or camera instances that share the
+     * same subdev and are still streaming.  Routes are left active on the hardware; the next
+     * open() will skip SetRouting if the routes already match (see setRouting).
+     * Remove the receiver from the in-process tracking set so that a subsequent open() in
+     * this process re-evaluates the full setup (formats, links), even though SetRouting itself
+     * will be skipped when routes are still correctly configured.
+     */
     // VIRTUAL_CHANNEL_E
 }
 
