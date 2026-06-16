@@ -306,6 +306,9 @@ class MediaControl {
     bool checkAvailableSensor(const std::string& sensorEntityName);
     bool checkAvailableSensor(const std::string& sensorEntityName,
                               const std::string& sinkEntityName);
+
+    bool checkAvailableAcpiSensor(const std::string& sinkEntityName);
+    bool checkAvailableAcpiSensor();
     /**
      * Getting I2C bus address by the name of sensor entity and the name of sensor's sink entity.
      *
@@ -316,6 +319,9 @@ class MediaControl {
      */
     int getI2CBusAddress(const std::string& sensorEntityName, const std::string& sinkEntityName,
                          std::string* i2cBus);
+
+    std::string acpiName2EntityName(const std::string& acpiName,
+                                    const std::string& subEntity = "");
 
     int getMediaCfgId() { return mMediaCfgId; }
 
@@ -338,6 +344,7 @@ class MediaControl {
     MediaEntity* getEntityById(uint32_t id);
     MediaEntity* getEntityByName(const char* name);
     bool checkHasSource(const MediaEntity* sink, const std::string& source);
+    bool checkHasAcpiSource(const MediaEntity* sink);
 
     // set up entity link.
 
