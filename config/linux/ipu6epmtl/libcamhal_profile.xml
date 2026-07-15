@@ -36,6 +36,6 @@
                                  ar0233-1-0,ar0234-a-0,ar0234-b-4,
                                  ar0820-1-0,ar0830-a-0,ar0830-b-4,
                                  isx031-a-0,isx031-b-4,
-                                 acpi"/>
+                                 acpi,d4xx"/>
     </Common>
 </CameraSettings>
