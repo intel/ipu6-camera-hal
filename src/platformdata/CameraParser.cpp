@@ -952,6 +952,8 @@ void CameraParser::parseControlElement(CameraParser* profiles, const char* name,
     McCtl ctl;
     MediaCtlConf& mc = profiles->pCurrentCam->mMediaCtlConfs.back();
 
+    std::string acpiName;
+    std::string subEntity;
     int idx = 0;
     while (atts[idx]) {
         const char* key = atts[idx];
@@ -962,6 +964,10 @@ void CameraParser::parseControlElement(CameraParser* profiles, const char* name,
             if (profiles->mMC) {
                 ctl.entity = profiles->mMC->getEntityIdByName(ctl.entityName.c_str());
             }
+        } else if (strcmp(key, "acpiName") == 0) {
+            acpiName = val;
+        } else if (strcmp(key, "subEntity") == 0) {
+            subEntity = val;
         } else if (strcmp(key, "ctrlId") == 0) {
             if (!strcmp(val, "V4L2_CID_LINK_FREQ")) {
                 ctl.ctlCmd = V4L2_CID_LINK_FREQ;
@@ -1015,6 +1021,11 @@ void CameraParser::parseControlElement(CameraParser* profiles, const char* name,
         idx += 2;
     }
 
+    if (!acpiName.empty() && profiles->mMC) {
+        ctl.entityName = profiles->mMC->acpiName2EntityName(acpiName, subEntity);
+        ctl.entity = profiles->mMC->getEntityIdByName(ctl.entityName.c_str());
+    }
+
     mc.ctls.push_back(ctl);
 }
 
@@ -1029,6 +1040,8 @@ void CameraParser::parseSelectionElement(CameraParser* profiles, const char* nam
     sel.height = 0;  // height is not specified, need to be calc later.
     sel.formatType = FC_SELECTION;
 
+    std::string acpiName;
+    std::string subEntity;
     int idx = 0;
     while (atts[idx]) {
         const char* key = atts[idx];
@@ -1039,6 +1052,10 @@ void CameraParser::parseSelectionElement(CameraParser* profiles, const char* nam
             if (profiles->mMC) {
                 sel.entity = profiles->mMC->getEntityIdByName(sel.entityName.c_str());
             }
+        } else if (strcmp(key, "acpiName") == 0) {
+            acpiName = val;
+        } else if (strcmp(key, "subEntity") == 0) {
+            subEntity = val;
         } else if (strcmp(key, "pad") == 0) {
             sel.pad = strtoul(val, nullptr, 10);
         } else if (strcmp(key, "target") == 0) {
@@ -1057,6 +1074,11 @@ void CameraParser::parseSelectionElement(CameraParser* profiles, const char* nam
             sel.height = strtoul(val, nullptr, 10);
         }
         idx += 2;
+    }
+
+    if (!acpiName.empty() && profiles->mMC) {
+        sel.entityName = profiles->mMC->acpiName2EntityName(acpiName, subEntity);
+        sel.entity = profiles->mMC->getEntityIdByName(sel.entityName.c_str());
     }
 
     mc.formats.push_back(sel);
@@ -1565,8 +1587,29 @@ void CameraParser::parseVideoElement(CameraParser* profiles, const char* name,
     McVideoNode videoNode;
     MediaCtlConf& mc = profiles->pCurrentCam->mMediaCtlConfs.back();
 
-    videoNode.name = replaceStringInXml(profiles, atts[1], name);
-    videoNode.videoNodeType = GetNodeType(atts[3]);
+    std::string acpiName;
+    std::string subEntity;
+    int idx = 0;
+    while (atts[idx]) {
+        const char* key = atts[idx];
+        const char* val = atts[idx + 1];
+        LOG2("@%s, name:%s, atts[%d]:%s, atts[%d]:%s", __func__, name, idx, key, idx + 1, val);
+        if (strcmp(key, "name") == 0) {
+            videoNode.name = replaceStringInXml(profiles, val, name);
+        } else if (strcmp(key, "acpiName") == 0) {
+            acpiName = val;
+        } else if (strcmp(key, "subEntity") == 0) {
+            subEntity = val;
+        } else if (strcmp(key, "videoNodeType") == 0) {
+            videoNode.videoNodeType = GetNodeType(val);
+        }
+        idx += 2;
+    }
+
+    if (!acpiName.empty() && profiles->mMC) {
+        videoNode.name = profiles->mMC->acpiName2EntityName(acpiName, subEntity);
+    }
+
     LOG2("@%s, name:%s, videoNodeType:%d", __func__, videoNode.name.c_str(),
          videoNode.videoNodeType);
 
@@ -2505,12 +2548,22 @@ std::vector<std::string> CameraParser::getAvailableSensors(
             if (mMC && mMC->checkAvailableSensor(sensor)) {
                 availableSensors.push_back(sensor);
                 LOG2("@%s, available sensor name: %s", __func__, sensor.c_str());
+                continue;
+            }
+            // Look for ACPI-described sensors: any pure-source entity in
+            // the media graph that exposes a non-empty firmware_node/path is
+            // treated as ACPI-described.
+            else if (mMC && mMC->checkAvailableAcpiSensor()) {
+                availableSensors.push_back(sensor);
+                LOG2("@%s, found ACPI-described sensor %s", __func__, sensor.c_str());
+                continue;
+            }
 #ifdef LINUX_BUILD
-            } else if (sensor.find("_usb") != string::npos) {
+            else if (sensor.find("_usb") != string::npos) {
                 availableSensors.push_back(sensor);
                 LOG2("@%s, available usb sensor name: %s", __func__, sensor.c_str());
-#endif
             }
+#endif
         } else {
             // sensors with suffix port number
             std::string portNum = sensor.substr(sensor.find_last_of('-') + 1);

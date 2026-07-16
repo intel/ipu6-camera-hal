@@ -1,0 +1,256 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright (C) 2026 Intel Corporation.
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+<CameraSettings>
+  <Sensor name="d4xx-1-depth" description="D4XX depth sensor on DES0 Link A" virtualChannel="true" vcGroupId="0">
+    <MediaCtlConfig id="0" mediaCfg="1" ConfigMode="AUTO" outputWidth="640" outputHeight="480" format="V4L2_PIX_FMT_UYVY">
+      <videonode name="Intel IPU6 ISYS Capture 0" videoNodeType="VIDEO_GENERIC"/>
+      <videonode name="Intel IPU6 CSI2 0" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+      <videonode acpiName="\_SB_.PC00.DES0.CH00.SER0.CAM0" subEntity="D4XX depth" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+    </MediaCtlConfig>
+    <StaticMetadata>
+      <supportedStreamConfig value="V4L2_PIX_FMT_UYVY,640x480,0,0"/>
+    </StaticMetadata>
+    <supportedISysSizes value="640x480"/>
+    <supportedISysFormat value="V4L2_PIX_FMT_UYVY"/>
+    <enableAIQ value="false"/>
+    <resetLinkRoute value="false"/>
+  </Sensor>
+
+  <Sensor name="d4xx-1-rgb" description="D4XX RGB sensor on DES0 Link A" virtualChannel="true" vcGroupId="0">
+    <MediaCtlConfig id="0" mediaCfg="1" ConfigMode="AUTO" outputWidth="640" outputHeight="480" format="V4L2_PIX_FMT_YUYV">
+      <videonode name="Intel IPU6 ISYS Capture 4" videoNodeType="VIDEO_GENERIC"/>
+      <videonode name="Intel IPU6 CSI2 0" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+      <videonode acpiName="\_SB_.PC00.DES0.CH00.SER0.CAM0" subEntity="D4XX rgb" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+    </MediaCtlConfig>
+    <StaticMetadata>
+      <supportedStreamConfig value="V4L2_PIX_FMT_YUYV,640x480,0,0"/>
+    </StaticMetadata>
+    <supportedISysSizes value="640x480"/>
+    <supportedISysFormat value="V4L2_PIX_FMT_YUYV"/>
+    <enableAIQ value="false"/>
+    <resetLinkRoute value="false"/>
+  </Sensor>
+
+  <Sensor name="d4xx-2-depth" description="D4XX depth sensor on DES0 Link B" virtualChannel="true" vcGroupId="0">
+    <MediaCtlConfig id="0" mediaCfg="1" ConfigMode="AUTO" outputWidth="640" outputHeight="480" format="V4L2_PIX_FMT_UYVY">
+      <videonode name="Intel IPU6 ISYS Capture 1" videoNodeType="VIDEO_GENERIC"/>
+      <videonode name="Intel IPU6 CSI2 0" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+      <videonode acpiName="\_SB_.PC00.DES0.CH01.SER1.CAM1" subEntity="D4XX depth" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+    </MediaCtlConfig>
+    <StaticMetadata>
+      <supportedStreamConfig value="V4L2_PIX_FMT_UYVY,640x480,0,0"/>
+    </StaticMetadata>
+    <supportedISysSizes value="640x480"/>
+    <supportedISysFormat value="V4L2_PIX_FMT_UYVY"/>
+    <enableAIQ value="false"/>
+    <resetLinkRoute value="false"/>
+  </Sensor>
+
+  <Sensor name="d4xx-2-rgb" description="D4XX RGB sensor on DES0 Link B" virtualChannel="true" vcGroupId="0">
+    <MediaCtlConfig id="0" mediaCfg="1" ConfigMode="AUTO" outputWidth="640" outputHeight="480" format="V4L2_PIX_FMT_YUYV">
+      <videonode name="Intel IPU6 ISYS Capture 5" videoNodeType="VIDEO_GENERIC"/>
+      <videonode name="Intel IPU6 CSI2 0" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+      <videonode acpiName="\_SB_.PC00.DES0.CH01.SER1.CAM1" subEntity="D4XX rgb" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+    </MediaCtlConfig>
+    <StaticMetadata>
+      <supportedStreamConfig value="V4L2_PIX_FMT_YUYV,640x480,0,0"/>
+    </StaticMetadata>
+    <supportedISysSizes value="640x480"/>
+    <supportedISysFormat value="V4L2_PIX_FMT_YUYV"/>
+    <enableAIQ value="false"/>
+    <resetLinkRoute value="false"/>
+  </Sensor>
+
+  <Sensor name="d4xx-3-depth" description="D4XX depth sensor on DES0 Link C" virtualChannel="true" vcGroupId="0">
+    <MediaCtlConfig id="0" mediaCfg="1" ConfigMode="AUTO" outputWidth="640" outputHeight="480" format="V4L2_PIX_FMT_UYVY">
+      <videonode name="Intel IPU6 ISYS Capture 2" videoNodeType="VIDEO_GENERIC"/>
+      <videonode name="Intel IPU6 CSI2 0" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+      <videonode acpiName="\_SB_.PC00.DES0.CH02.SER2.CAM2" subEntity="D4XX depth" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+    </MediaCtlConfig>
+    <StaticMetadata>
+      <supportedStreamConfig value="V4L2_PIX_FMT_UYVY,640x480,0,0"/>
+    </StaticMetadata>
+    <supportedISysSizes value="640x480"/>
+    <supportedISysFormat value="V4L2_PIX_FMT_UYVY"/>
+    <enableAIQ value="false"/>
+    <resetLinkRoute value="false"/>
+  </Sensor>
+
+  <Sensor name="d4xx-3-rgb" description="D4XX RGB sensor on DES0 Link C" virtualChannel="true" vcGroupId="0">
+    <MediaCtlConfig id="0" mediaCfg="1" ConfigMode="AUTO" outputWidth="640" outputHeight="480" format="V4L2_PIX_FMT_YUYV">
+      <videonode name="Intel IPU6 ISYS Capture 6" videoNodeType="VIDEO_GENERIC"/>
+      <videonode name="Intel IPU6 CSI2 0" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+      <videonode acpiName="\_SB_.PC00.DES0.CH02.SER2.CAM2" subEntity="D4XX rgb" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+    </MediaCtlConfig>
+    <StaticMetadata>
+      <supportedStreamConfig value="V4L2_PIX_FMT_YUYV,640x480,0,0"/>
+    </StaticMetadata>
+    <supportedISysSizes value="640x480"/>
+    <supportedISysFormat value="V4L2_PIX_FMT_YUYV"/>
+    <enableAIQ value="false"/>
+    <resetLinkRoute value="false"/>
+  </Sensor>
+
+  <Sensor name="d4xx-4-depth" description="D4XX depth sensor on DES0 Link D" virtualChannel="true" vcGroupId="0">
+    <MediaCtlConfig id="0" mediaCfg="1" ConfigMode="AUTO" outputWidth="640" outputHeight="480" format="V4L2_PIX_FMT_UYVY">
+      <videonode name="Intel IPU6 ISYS Capture 3" videoNodeType="VIDEO_GENERIC"/>
+      <videonode name="Intel IPU6 CSI2 0" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+      <videonode acpiName="\_SB_.PC00.DES0.CH03.SER3.CAM3" subEntity="D4XX depth" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+    </MediaCtlConfig>
+    <StaticMetadata>
+      <supportedStreamConfig value="V4L2_PIX_FMT_UYVY,640x480,0,0"/>
+    </StaticMetadata>
+    <supportedISysSizes value="640x480"/>
+    <supportedISysFormat value="V4L2_PIX_FMT_UYVY"/>
+    <enableAIQ value="false"/>
+    <resetLinkRoute value="false"/>
+  </Sensor>
+
+  <Sensor name="d4xx-4-rgb" description="D4XX RGB sensor on DES0 Link D" virtualChannel="true" vcGroupId="0">
+    <MediaCtlConfig id="0" mediaCfg="1" ConfigMode="AUTO" outputWidth="640" outputHeight="480" format="V4L2_PIX_FMT_YUYV">
+      <videonode name="Intel IPU6 ISYS Capture 7" videoNodeType="VIDEO_GENERIC"/>
+      <videonode name="Intel IPU6 CSI2 0" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+      <videonode acpiName="\_SB_.PC00.DES0.CH03.SER3.CAM3" subEntity="D4XX rgb" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+    </MediaCtlConfig>
+    <StaticMetadata>
+      <supportedStreamConfig value="V4L2_PIX_FMT_YUYV,640x480,0,0"/>
+    </StaticMetadata>
+    <supportedISysSizes value="640x480"/>
+    <supportedISysFormat value="V4L2_PIX_FMT_YUYV"/>
+    <enableAIQ value="false"/>
+    <resetLinkRoute value="false"/>
+  </Sensor>
+
+  <Sensor name="d4xx-5-depth" description="D4XX depth sensor on DES1 Link A" virtualChannel="true" vcGroupId="0">
+    <MediaCtlConfig id="0" mediaCfg="1" ConfigMode="AUTO" outputWidth="640" outputHeight="480" format="V4L2_PIX_FMT_UYVY">
+      <videonode name="Intel IPU6 ISYS Capture 32" videoNodeType="VIDEO_GENERIC"/>
+      <videonode name="Intel IPU6 CSI2 4" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+      <videonode acpiName="\_SB_.PC00.DES1.CH00.SER0.CAM0" subEntity="D4XX depth" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+    </MediaCtlConfig>
+    <StaticMetadata>
+      <supportedStreamConfig value="V4L2_PIX_FMT_UYVY,640x480,0,0"/>
+    </StaticMetadata>
+    <supportedISysSizes value="640x480"/>
+    <supportedISysFormat value="V4L2_PIX_FMT_UYVY"/>
+    <enableAIQ value="false"/>
+    <resetLinkRoute value="false"/>
+  </Sensor>
+
+  <Sensor name="d4xx-5-rgb" description="D4XX RGB sensor on DES1 Link A" virtualChannel="true" vcGroupId="0">
+    <MediaCtlConfig id="0" mediaCfg="1" ConfigMode="AUTO" outputWidth="640" outputHeight="480" format="V4L2_PIX_FMT_YUYV">
+      <videonode name="Intel IPU6 ISYS Capture 36" videoNodeType="VIDEO_GENERIC"/>
+      <videonode name="Intel IPU6 CSI2 4" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+      <videonode acpiName="\_SB_.PC00.DES1.CH00.SER0.CAM0" subEntity="D4XX rgb" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+    </MediaCtlConfig>
+    <StaticMetadata>
+      <supportedStreamConfig value="V4L2_PIX_FMT_YUYV,640x480,0,0"/>
+    </StaticMetadata>
+    <supportedISysSizes value="640x480"/>
+    <supportedISysFormat value="V4L2_PIX_FMT_YUYV"/>
+    <enableAIQ value="false"/>
+    <resetLinkRoute value="false"/>
+  </Sensor>
+
+  <Sensor name="d4xx-6-depth" description="D4XX depth sensor on DES1 Link B" virtualChannel="true" vcGroupId="0">
+    <MediaCtlConfig id="0" mediaCfg="1" ConfigMode="AUTO" outputWidth="640" outputHeight="480" format="V4L2_PIX_FMT_UYVY">
+      <videonode name="Intel IPU6 ISYS Capture 33" videoNodeType="VIDEO_GENERIC"/>
+      <videonode name="Intel IPU6 CSI2 4" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+      <videonode acpiName="\_SB_.PC00.DES1.CH01.SER1.CAM1" subEntity="D4XX depth" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+    </MediaCtlConfig>
+    <StaticMetadata>
+      <supportedStreamConfig value="V4L2_PIX_FMT_UYVY,640x480,0,0"/>
+    </StaticMetadata>
+    <supportedISysSizes value="640x480"/>
+    <supportedISysFormat value="V4L2_PIX_FMT_UYVY"/>
+    <enableAIQ value="false"/>
+    <resetLinkRoute value="false"/>
+  </Sensor>
+
+  <Sensor name="d4xx-6-rgb" description="D4XX RGB sensor on DES1 Link B" virtualChannel="true" vcGroupId="0">
+    <MediaCtlConfig id="0" mediaCfg="1" ConfigMode="AUTO" outputWidth="640" outputHeight="480" format="V4L2_PIX_FMT_YUYV">
+      <videonode name="Intel IPU6 ISYS Capture 37" videoNodeType="VIDEO_GENERIC"/>
+      <videonode name="Intel IPU6 CSI2 4" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+      <videonode acpiName="\_SB_.PC00.DES1.CH01.SER1.CAM1" subEntity="D4XX rgb" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+    </MediaCtlConfig>
+    <StaticMetadata>
+      <supportedStreamConfig value="V4L2_PIX_FMT_YUYV,640x480,0,0"/>
+    </StaticMetadata>
+    <supportedISysSizes value="640x480"/>
+    <supportedISysFormat value="V4L2_PIX_FMT_YUYV"/>
+    <enableAIQ value="false"/>
+    <resetLinkRoute value="false"/>
+  </Sensor>
+
+  <Sensor name="d4xx-7-depth" description="D4XX depth sensor on DES1 Link C" virtualChannel="true" vcGroupId="0">
+    <MediaCtlConfig id="0" mediaCfg="1" ConfigMode="AUTO" outputWidth="640" outputHeight="480" format="V4L2_PIX_FMT_UYVY">
+      <videonode name="Intel IPU6 ISYS Capture 34" videoNodeType="VIDEO_GENERIC"/>
+      <videonode name="Intel IPU6 CSI2 4" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+      <videonode acpiName="\_SB_.PC00.DES1.CH02.SER2.CAM2" subEntity="D4XX depth" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+    </MediaCtlConfig>
+    <StaticMetadata>
+      <supportedStreamConfig value="V4L2_PIX_FMT_UYVY,640x480,0,0"/>
+    </StaticMetadata>
+    <supportedISysSizes value="640x480"/>
+    <supportedISysFormat value="V4L2_PIX_FMT_UYVY"/>
+    <enableAIQ value="false"/>
+    <resetLinkRoute value="false"/>
+  </Sensor>
+
+  <Sensor name="d4xx-7-rgb" description="D4XX RGB sensor on DES1 Link C" virtualChannel="true" vcGroupId="0">
+    <MediaCtlConfig id="0" mediaCfg="1" ConfigMode="AUTO" outputWidth="640" outputHeight="480" format="V4L2_PIX_FMT_YUYV">
+      <videonode name="Intel IPU6 ISYS Capture 38" videoNodeType="VIDEO_GENERIC"/>
+      <videonode name="Intel IPU6 CSI2 4" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+      <videonode acpiName="\_SB_.PC00.DES1.CH02.SER2.CAM2" subEntity="D4XX rgb" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+    </MediaCtlConfig>
+    <StaticMetadata>
+      <supportedStreamConfig value="V4L2_PIX_FMT_YUYV,640x480,0,0"/>
+    </StaticMetadata>
+    <supportedISysSizes value="640x480"/>
+    <supportedISysFormat value="V4L2_PIX_FMT_YUYV"/>
+    <enableAIQ value="false"/>
+    <resetLinkRoute value="false"/>
+  </Sensor>
+
+  <Sensor name="d4xx-8-depth" description="D4XX depth sensor on DES1 Link D" virtualChannel="true" vcGroupId="0">
+    <MediaCtlConfig id="0" mediaCfg="1" ConfigMode="AUTO" outputWidth="640" outputHeight="480" format="V4L2_PIX_FMT_UYVY">
+      <videonode name="Intel IPU6 ISYS Capture 35" videoNodeType="VIDEO_GENERIC"/>
+      <videonode name="Intel IPU6 CSI2 4" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+      <videonode acpiName="\_SB_.PC00.DES1.CH03.SER3.CAM3" subEntity="D4XX depth" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+    </MediaCtlConfig>
+    <StaticMetadata>
+      <supportedStreamConfig value="V4L2_PIX_FMT_UYVY,640x480,0,0"/>
+    </StaticMetadata>
+    <supportedISysSizes value="640x480"/>
+    <supportedISysFormat value="V4L2_PIX_FMT_UYVY"/>
+    <enableAIQ value="false"/>
+    <resetLinkRoute value="false"/>
+  </Sensor>
+
+  <Sensor name="d4xx-8-rgb" description="D4XX RGB sensor on DES1 Link D" virtualChannel="true" vcGroupId="0">
+    <MediaCtlConfig id="0" mediaCfg="1" ConfigMode="AUTO" outputWidth="640" outputHeight="480" format="V4L2_PIX_FMT_YUYV">
+      <videonode name="Intel IPU6 ISYS Capture 39" videoNodeType="VIDEO_GENERIC"/>
+      <videonode name="Intel IPU6 CSI2 4" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+      <videonode acpiName="\_SB_.PC00.DES1.CH03.SER3.CAM3" subEntity="D4XX rgb" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+    </MediaCtlConfig>
+    <StaticMetadata>
+      <supportedStreamConfig value="V4L2_PIX_FMT_YUYV,640x480,0,0"/>
+    </StaticMetadata>
+    <supportedISysSizes value="640x480"/>
+    <supportedISysFormat value="V4L2_PIX_FMT_YUYV"/>
+    <enableAIQ value="false"/>
+    <resetLinkRoute value="false"/>
+  </Sensor>
+</CameraSettings>
