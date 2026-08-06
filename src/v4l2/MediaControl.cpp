@@ -63,7 +63,9 @@ struct MediaEntity {
     char devname[32];
 };
 
-static const string ivscName = "Intel IVSC CSI";
+static const string ivscName = "Intel CVS";
+static const string ivscLegacyName = "Intel IVSC CSI";
+
 MediaControl* MediaControl::sInstance = nullptr;
 Mutex MediaControl::sLock;
 
@@ -909,18 +911,20 @@ int MediaControl::mediaCtlSetup(int cameraId, MediaCtlConf* mc, int width, int h
     }
 
     MediaEntity* ivsc = getEntityByName(ivscName.c_str());
+    if (!ivsc) ivsc = getEntityByName(ivscLegacyName.c_str());
     if (ivsc) {
         for (uint32_t i = 0; i < ivsc->numLinks; ++i) {
             if (ivsc->links[i].sink->entity == ivsc) {
                 MediaEntity* sensor = ivsc->links[i].source->entity;
                 int sensor_entity_id = sensor->info.id;
-                LOG1("@%s, found %s -> %s", __func__, sensor->info.name, ivscName.c_str());
+                LOG1("@%s, found %s -> %s", __func__, sensor->info.name, ivsc->info.name);
                 for (McLink& link : mc->links) {
-                    if (link.srcEntity == sensor_entity_id) {
+                    if (link.srcEntity == sensor_entity_id &&
+                        link.sinkEntity != static_cast<int>(ivsc->info.id)) {
                         LOG1("@%s, skip %s, link %s -> %s", __func__, link.srcEntityName.c_str(),
-                             ivscName.c_str(), link.sinkEntityName.c_str());
+                             ivsc->info.name, link.sinkEntityName.c_str());
                         link.srcEntity = ivsc->info.id;
-                        link.srcEntityName = ivscName;
+                        link.srcEntityName = ivsc->info.name;
                         for (uint32_t j = 0; j < ivsc->info.pads; ++j) {
                             if (ivsc->pads[j].flags & MEDIA_PAD_FL_SOURCE) {
                                 link.srcPad = j;
@@ -1008,6 +1012,7 @@ int MediaControl::getLensName(string* lensName) {
 int MediaControl::getPrivacyDeviceName(std::string* name) {
     CheckAndLogError(!name, UNKNOWN_ERROR, "nullptr input");
     MediaEntity* ivsc = getEntityByName(ivscName.c_str());
+    if (!ivsc) ivsc = getEntityByName(ivscLegacyName.c_str());
 
     if (!ivsc) {
         return BAD_VALUE;
@@ -1093,8 +1098,12 @@ int MediaControl::getI2CBusAddress(const string& sensorEntityName, const string&
         for (int i = 0; i < linksCount; i++) {
             if (strcmp(links[i].sink->entity->info.name, sinkEntityName.c_str()) == 0) {
                 entityName = entity.info.name;
-                if (strcmp(entityName, ivscName.c_str()) == 0) {
-                    return getI2CBusAddress(sensorEntityName, ivscName, i2cBus);
+		if ((strcmp(entityName, ivscName.c_str()) == 0) ||
+			(strcmp(entityName, ivscLegacyName.c_str()) == 0)) {
+			std::string matchedIvscName =
+			(strcmp(entityName, ivscName.c_str()) == 0) ? ivscName : ivscLegacyName;
+
+                    return getI2CBusAddress(sensorEntityName, matchedIvscName, i2cBus);
                 }
                 break;
             }

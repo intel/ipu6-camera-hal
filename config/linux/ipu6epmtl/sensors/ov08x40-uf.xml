@@ -15,10 +15,13 @@
     <Sensor name="ov08x40-uf" description="ov08x40 as sensor.">
         <MediaCtlConfig id="0" ConfigMode="AUTO" outputWidth="3856" outputHeight="2176" format="V4L2_PIX_FMT_SGRBG10"> <!-- RAW10 BE capture -->
             <format name="ov08x40 $I2CBUS" pad="0" width="3856" height="2176" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
+            <format name="Intel CVS" pad="0" width="3856" height="2176" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
+            <format name="Intel CVS" pad="1" width="3856" height="2176" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
             <format name="Intel IPU6 CSI-2 $CSI_PORT" pad="0" width="3856" height="2176" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
             <format name="Intel IPU6 CSI2 BE SOC 0" pad="0" width="3856" height="2176" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
             <!--format name="Intel IPU6 CSI2 BE SOC 0" pad="1" width="3856" height="2176" format="V4L2_MBUS_FMT_SGRBG10_1X10"/ -->
-            <link srcName="ov08x40 $I2CBUS" srcPad="0" sinkName="Intel IPU6 CSI-2 $CSI_PORT" sinkPad="0" enable="true"/>
+            <link srcName="ov08x40 $I2CBUS" srcPad="0" sinkName="Intel CVS" sinkPad="0" enable="true"/>
+            <link srcName="Intel CVS" srcPad="1" sinkName="Intel IPU6 CSI-2 $CSI_PORT" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI-2 $CSI_PORT" srcPad="1" sinkName="Intel IPU6 CSI2 BE SOC 0" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 BE SOC 0" srcPad="1" sinkName="Intel IPU6 BE SOC capture 0" sinkPad="0" enable="true"/>
 
@@ -28,9 +31,12 @@
         </MediaCtlConfig>
         <MediaCtlConfig id="0" mediaCfg="1" ConfigMode="AUTO" outputWidth="3856" outputHeight="2176" format="V4L2_PIX_FMT_SGRBG10"> <!-- RAW10 BE capture -->
             <format name="ov08x40 $I2CBUS" pad="0" width="3856" height="2176" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
+            <format name="Intel CVS" pad="0" width="3856" height="2176" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
+            <format name="Intel CVS" pad="1" width="3856" height="2176" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
             <format name="Intel IPU6 CSI2 $CSI_PORT" pad="0" width="3856" height="2176" format="V4L2_MBUS_FMT_SGRBG10_1X10"/>
 
-            <link srcName="ov08x40 $I2CBUS" srcPad="0" sinkName="Intel IPU6 CSI2 $CSI_PORT" sinkPad="0" enable="true"/>
+            <link srcName="ov08x40 $I2CBUS" srcPad="0" sinkName="Intel CVS" sinkPad="0" enable="true"/>
+            <link srcName="Intel CVS" srcPad="1" sinkName="Intel IPU6 CSI2 $CSI_PORT" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 $CSI_PORT" srcPad="1" sinkName="Intel IPU6 ISYS Capture $CAPTURE_ID" sinkPad="0" enable="true"/>
 
             <videonode name="Intel IPU6 ISYS Capture $CAPTURE_ID" videoNodeType="VIDEO_GENERIC"/>
