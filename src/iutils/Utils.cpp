@@ -584,6 +584,19 @@ void CameraUtils::getDeviceName(const char* entityName, string& deviceNodeName, 
     const char* dirPath = "/sys/class/video4linux/";
     if (isSubDev) filePrefix = "v4l-subdev";
 
+    string expectedName = entityName ? entityName : "";
+    string expectedSensorPrefix;
+    if (isSubDev && expectedName.rfind("Intel ", 0) != 0) {
+        string::size_type sep = expectedName.find(' ');
+        if (sep != string::npos && sep + 1 < expectedName.size() &&
+            expectedName.find('-', sep + 1) != string::npos) {
+            // Sensor subdev names often take the form "<sensor> <bus>-<addr>".
+            // Match by sensor prefix as a fallback so media entity bus renumbering
+            // does not break profile lookup.
+            expectedSensorPrefix = expectedName.substr(0, sep);
+        }
+    }
+
     DIR* dp = opendir(dirPath);
     CheckAndLogError((dp == nullptr), VOID_VALUE, "@%s, Fail open : %s", __func__, dirPath);
 
@@ -610,10 +623,20 @@ void CameraUtils::getDeviceName(const char* entityName, string& deviceNodeName, 
             } else {
                 len = 0;
             }
-            if (len == (int)strlen(entityName) && memcmp(buf, entityName, len) == 0) {
+            if (len == static_cast<int>(expectedName.size()) &&
+                memcmp(buf, expectedName.c_str(), len) == 0) {
                 deviceNodeName = "/dev/";
                 deviceNodeName += dirp->d_name;
                 break;
+            }
+
+            if (!expectedSensorPrefix.empty() && deviceNodeName.empty()) {
+                string actualName(buf, len);
+                if (actualName.rfind(expectedSensorPrefix + " ", 0) == 0 &&
+                    actualName.find('-', expectedSensorPrefix.size() + 1) != string::npos) {
+                    deviceNodeName = "/dev/";
+                    deviceNodeName += dirp->d_name;
+                }
             }
         }
     }
