@@ -506,7 +506,8 @@ bool PipeLiteExecutor::isSameStreamConfig(const stream_t& internal, const stream
      *     PG use its kernel to crop to GRBG
      */
     if ((internalFormat == V4L2_PIX_FMT_SGRBG10 || internalFormat == V4L2_PIX_FMT_SGRBG12) &&
-        (external.format == V4L2_PIX_FMT_SRGGB10 || external.format == V4L2_PIX_FMT_SRGGB12)) {
+        (external.format == V4L2_PIX_FMT_SRGGB10 || external.format == V4L2_PIX_FMT_SRGGB12 ||
+         external.format == V4L2_PIX_FMT_SBGGR10 || external.format == V4L2_PIX_FMT_SBGGR12)) {
         return true;
     }
 
