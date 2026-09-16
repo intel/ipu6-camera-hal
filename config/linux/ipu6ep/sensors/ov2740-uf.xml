@@ -93,8 +93,9 @@
         <enableAiqd value = "true"/>
         <useCrlModule value = "false"/>
         <maxRequestsInflight value="6"/>
-        <supportPrivacy value="2"/> <!-- privacy mode, 0: off, 1: CVF privacy 2: AE-based privacy -->
+        <supportPrivacy value="0"/> <!-- privacy mode, 0: off, 1: CVF privacy 2: AE-based privacy -->
         <privacyModeThreshold value="10"/> <!-- AE-based privacy mode luminance threshold -->
         <privacyModeFrameDelay value="5"/> <!-- AE-based privacy mode frame delay -->
+        <reqWaitTimeoutNs value="2000000000"/>
     </Sensor>
 </CameraSettings>
