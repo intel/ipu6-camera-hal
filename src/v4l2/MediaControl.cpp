@@ -901,8 +901,16 @@ int MediaControl::mediaCtlSetup(int cameraId, MediaCtlConf* mc, int width, int h
     }
     // VIRTUAL_CHANNEL_E
 
+    MediaEntity* ivsc = getEntityByName(ivscName.c_str());
+    if (!ivsc) ivsc = getEntityByName(ivscLegacyName.c_str());
+
     /* Set format & selection in format Configuration */
     for (auto& fmt : mc->formats) {
+        if (fmt.entityName == ivscName || fmt.entityName == ivscLegacyName) {
+            if (!ivsc) continue;
+            fmt.entity = ivsc->info.id;
+            fmt.entityName = ivsc->info.name;
+        }
         if (fmt.formatType == FC_FORMAT) {
             setFormat(cameraId, &fmt, width, height, field);
         } else if (fmt.formatType == FC_SELECTION) {
@@ -910,8 +918,6 @@ int MediaControl::mediaCtlSetup(int cameraId, MediaCtlConf* mc, int width, int h
         }
     }
 
-    MediaEntity* ivsc = getEntityByName(ivscName.c_str());
-    if (!ivsc) ivsc = getEntityByName(ivscLegacyName.c_str());
     if (ivsc) {
         for (uint32_t i = 0; i < ivsc->numLinks; ++i) {
             if (ivsc->links[i].sink->entity == ivsc) {
