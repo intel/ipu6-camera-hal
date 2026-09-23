@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<!-- Copyright (C) 2025 Intel Corporation.
+<!-- Copyright (C) 2025-2026 Intel Corporation.
 
      Licensed under the Apache License, Version 2.0 (the "License");
      you may not use this file except in compliance with the License.
@@ -17,192 +17,192 @@
 <CameraSettings>
     <SensorCommonConfig name="max9x">
         <MediaCtlConfig id="0" mediaCfg="1">
-            <format name="isx031 a-0" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
-            <format name="max9x a-0" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
-            <format name="max9x a-0" pad="2" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
-            <format name="max9x a" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
-            <format name="max9x a" pad="4" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES0.CH00.SER0.CAM0" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES0.CH00.SER0" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES0.CH00.SER0" pad="1" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES0" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES0" pad="2" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
             <format name="Intel IPU6 CSI2 0" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
             <format name="Intel IPU6 CSI2 0" pad="1" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
 
-            <format name="isx031 b-0" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
-            <format name="max9x b-0" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
-            <format name="max9x b-0" pad="2" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="1"/>
-            <format name="max9x a" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="1"/>
-            <format name="max9x a" pad="5" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="1"/>
+            <format acpiName="\_SB_.PC00.DES0.CH01.SER1.CAM1" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES0.CH01.SER1" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES0.CH01.SER1" pad="1" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES0" pad="1" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES0" pad="2" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="1"/>
             <format name="Intel IPU6 CSI2 0" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="1"/>
             <format name="Intel IPU6 CSI2 0" pad="2" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="1"/>
 
-            <format name="isx031 a-4" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
-            <format name="max9x a-4" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
-            <format name="max9x a-4" pad="2" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
-            <format name="max9x e" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
-            <format name="max9x e" pad="4" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES1.CH00.SER0.CAM0" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES1.CH00.SER0" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES1.CH00.SER0" pad="1" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES1" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES1" pad="2" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
             <format name="Intel IPU6 CSI2 4" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
             <format name="Intel IPU6 CSI2 4" pad="1" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
 
-            <format name="isx031 b-4" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
-            <format name="max9x b-4" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
-            <format name="max9x b-4" pad="2" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="1"/>
-            <format name="max9x e" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="1"/>
-            <format name="max9x e" pad="5" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="1"/>
+            <format acpiName="\_SB_.PC00.DES1.CH01.SER1.CAM1" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES1.CH01.SER1" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES1.CH01.SER1" pad="1" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES1" pad="1" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES1" pad="2" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="1"/>
             <format name="Intel IPU6 CSI2 4" pad="0" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="1"/>
             <format name="Intel IPU6 CSI2 4" pad="2" width="1920" height="1536" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="1"/>
 
-            <link srcName="isx031 a-0" srcPad="0" sinkName="max9x a-0" sinkPad="0" enable="true"/>
-            <link srcName="max9x a-0" srcPad="2" sinkName="max9x a" sinkPad="4" enable="true"/>
-            <link srcName="isx031 b-0" srcPad="0" sinkName="max9x b-0" sinkPad="0" enable="true"/>
-            <link srcName="max9x b-0" srcPad="2" sinkName="max9x a" sinkPad="5" enable="true"/>
-            <link srcName="max9x a" srcPad="0" sinkName="Intel IPU6 CSI2 0" sinkPad="0" enable="true"/>
+            <link srcAcpiName="\_SB_.PC00.DES0.CH00.SER0.CAM0" srcPad="0" sinkAcpiName="\_SB_.PC00.DES0.CH00.SER0" sinkPad="0" enable="true"/>
+            <link srcAcpiName="\_SB_.PC00.DES0.CH00.SER0" srcPad="1" sinkAcpiName="\_SB_.PC00.DES0" sinkPad="0" enable="true"/>
+            <link srcAcpiName="\_SB_.PC00.DES0.CH01.SER1.CAM1" srcPad="0" sinkAcpiName="\_SB_.PC00.DES0.CH01.SER1" sinkPad="0" enable="true"/>
+            <link srcAcpiName="\_SB_.PC00.DES0.CH01.SER1" srcPad="1" sinkAcpiName="\_SB_.PC00.DES0" sinkPad="1" enable="true"/>
+            <link srcAcpiName="\_SB_.PC00.DES0" srcPad="2" sinkName="Intel IPU6 CSI2 0" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 0" srcPad="1" sinkName="Intel IPU6 ISYS Capture 0" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 0" srcPad="2" sinkName="Intel IPU6 ISYS Capture 1" sinkPad="0" enable="true"/>
 
-            <link srcName="isx031 a-4" srcPad="0" sinkName="max9x a-4" sinkPad="0" enable="true"/>
-            <link srcName="max9x a-4" srcPad="2" sinkName="max9x e" sinkPad="4" enable="true"/>
-            <link srcName="isx031 b-4" srcPad="0" sinkName="max9x b-4" sinkPad="0" enable="true"/>
-            <link srcName="max9x b-4" srcPad="2" sinkName="max9x e" sinkPad="5" enable="true"/>
-            <link srcName="max9x e" srcPad="0" sinkName="Intel IPU6 CSI2 4" sinkPad="0" enable="true"/>
+            <link srcAcpiName="\_SB_.PC00.DES1.CH00.SER0.CAM0" srcPad="0" sinkAcpiName="\_SB_.PC00.DES1.CH00.SER0" sinkPad="0" enable="true"/>
+            <link srcAcpiName="\_SB_.PC00.DES1.CH00.SER0" srcPad="1" sinkAcpiName="\_SB_.PC00.DES1" sinkPad="0" enable="true"/>
+            <link srcAcpiName="\_SB_.PC00.DES1.CH01.SER1.CAM1" srcPad="0" sinkAcpiName="\_SB_.PC00.DES1.CH01.SER1" sinkPad="0" enable="true"/>
+            <link srcAcpiName="\_SB_.PC00.DES1.CH01.SER1" srcPad="1" sinkAcpiName="\_SB_.PC00.DES1" sinkPad="1" enable="true"/>
+            <link srcAcpiName="\_SB_.PC00.DES1" srcPad="2" sinkName="Intel IPU6 CSI2 4" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 4" srcPad="1" sinkName="Intel IPU6 ISYS Capture 32" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 4" srcPad="2" sinkName="Intel IPU6 ISYS Capture 33" sinkPad="0" enable="true"/>
 
-            <route name="max9x a-0" sinkPad="0" sinkStream="0" srcPad="2" srcStream="0" flag="1"/>
-            <route name="max9x a" sinkPad="4" sinkStream="0" srcPad="0" srcStream="0" flag="1"/>
+            <route acpiName="\_SB_.PC00.DES0.CH00.SER0" sinkPad="0" sinkStream="0" srcPad="1" srcStream="0" flag="1"/>
+            <route acpiName="\_SB_.PC00.DES0" sinkPad="0" sinkStream="0" srcPad="2" srcStream="0" flag="1"/>
             <route name="Intel IPU6 CSI2 0" sinkPad="0" sinkStream="0" srcPad="1" srcStream="0" flag="1"/>
-            <route name="max9x b-0" sinkPad="0" sinkStream="0" srcPad="2" srcStream="1" flag="1"/>
-            <route name="max9x a" sinkPad="5" sinkStream="1" srcPad="0" srcStream="1" flag="1"/>
+            <route acpiName="\_SB_.PC00.DES0.CH01.SER1" sinkPad="0" sinkStream="0" srcPad="1" srcStream="0" flag="1"/>
+            <route acpiName="\_SB_.PC00.DES0" sinkPad="1" sinkStream="0" srcPad="2" srcStream="1" flag="1"/>
             <route name="Intel IPU6 CSI2 0" sinkPad="0" sinkStream="1" srcPad="2" srcStream="1" flag="1"/>
 
-            <route name="max9x a-4" sinkPad="0" sinkStream="0" srcPad="2" srcStream="0" flag="1"/>
-            <route name="max9x e" sinkPad="4" sinkStream="0" srcPad="0" srcStream="0" flag="1"/>
+            <route acpiName="\_SB_.PC00.DES1.CH00.SER0" sinkPad="0" sinkStream="0" srcPad="1" srcStream="0" flag="1"/>
+            <route acpiName="\_SB_.PC00.DES1" sinkPad="0" sinkStream="0" srcPad="2" srcStream="0" flag="1"/>
             <route name="Intel IPU6 CSI2 4" sinkPad="0" sinkStream="0" srcPad="1" srcStream="0" flag="1"/>
-            <route name="max9x b-4" sinkPad="0" sinkStream="0" srcPad="2" srcStream="1" flag="1"/>
-            <route name="max9x e" sinkPad="5" sinkStream="1" srcPad="0" srcStream="1" flag="1"/>
+            <route acpiName="\_SB_.PC00.DES1.CH01.SER1" sinkPad="0" sinkStream="0" srcPad="1" srcStream="0" flag="1"/>
+            <route acpiName="\_SB_.PC00.DES1" sinkPad="1" sinkStream="0" srcPad="2" srcStream="1" flag="1"/>
             <route name="Intel IPU6 CSI2 4" sinkPad="0" sinkStream="1" srcPad="2" srcStream="1" flag="1"/>
         </MediaCtlConfig>
         <MediaCtlConfig id="1" mediaCfg="1">
-            <format name="isx031 a-0" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
-            <format name="max9x a-0" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
-            <format name="max9x a-0" pad="2" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
-            <format name="max9x a" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
-            <format name="max9x a" pad="4" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES0.CH00.SER0.CAM0" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES0.CH00.SER0" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES0.CH00.SER0" pad="1" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES0" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES0" pad="2" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
             <format name="Intel IPU6 CSI2 0" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
             <format name="Intel IPU6 CSI2 0" pad="1" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
 
-            <format name="isx031 b-0" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
-            <format name="max9x b-0" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
-            <format name="max9x b-0" pad="2" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="1"/>
-            <format name="max9x a" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="1"/>
-            <format name="max9x a" pad="5" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="1"/>
+            <format acpiName="\_SB_.PC00.DES0.CH01.SER1.CAM1" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES0.CH01.SER1" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES0.CH01.SER1" pad="1" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES0" pad="1" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES0" pad="2" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="1"/>
             <format name="Intel IPU6 CSI2 0" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="1"/>
             <format name="Intel IPU6 CSI2 0" pad="2" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="1"/>
 
-            <format name="isx031 a-4" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
-            <format name="max9x a-4" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
-            <format name="max9x a-4" pad="2" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
-            <format name="max9x e" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
-            <format name="max9x e" pad="4" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES1.CH00.SER0.CAM0" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES1.CH00.SER0" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES1.CH00.SER0" pad="1" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES1" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES1" pad="2" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
             <format name="Intel IPU6 CSI2 4" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
             <format name="Intel IPU6 CSI2 4" pad="1" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
 
-            <format name="isx031 b-4" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
-            <format name="max9x b-4" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
-            <format name="max9x b-4" pad="2" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="1"/>
-            <format name="max9x e" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="1"/>
-            <format name="max9x e" pad="5" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="1"/>
+            <format acpiName="\_SB_.PC00.DES1.CH01.SER1.CAM1" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES1.CH01.SER1" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES1.CH01.SER1" pad="1" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES1" pad="1" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES1" pad="2" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="1"/>
             <format name="Intel IPU6 CSI2 4" pad="0" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="1"/>
             <format name="Intel IPU6 CSI2 4" pad="2" width="1920" height="1080" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="1"/>
 
-            <link srcName="isx031 a-0" srcPad="0" sinkName="max9x a-0" sinkPad="0" enable="true"/>
-            <link srcName="max9x a-0" srcPad="2" sinkName="max9x a" sinkPad="4" enable="true"/>
-            <link srcName="isx031 b-0" srcPad="0" sinkName="max9x b-0" sinkPad="0" enable="true"/>
-            <link srcName="max9x b-0" srcPad="2" sinkName="max9x a" sinkPad="5" enable="true"/>
-            <link srcName="max9x a" srcPad="0" sinkName="Intel IPU6 CSI2 0" sinkPad="0" enable="true"/>
+            <link srcAcpiName="\_SB_.PC00.DES0.CH00.SER0.CAM0" srcPad="0" sinkAcpiName="\_SB_.PC00.DES0.CH00.SER0" sinkPad="0" enable="true"/>
+            <link srcAcpiName="\_SB_.PC00.DES0.CH00.SER0" srcPad="1" sinkAcpiName="\_SB_.PC00.DES0" sinkPad="0" enable="true"/>
+            <link srcAcpiName="\_SB_.PC00.DES0.CH01.SER1.CAM1" srcPad="0" sinkAcpiName="\_SB_.PC00.DES0.CH01.SER1" sinkPad="0" enable="true"/>
+            <link srcAcpiName="\_SB_.PC00.DES0.CH01.SER1" srcPad="1" sinkAcpiName="\_SB_.PC00.DES0" sinkPad="1" enable="true"/>
+            <link srcAcpiName="\_SB_.PC00.DES0" srcPad="2" sinkName="Intel IPU6 CSI2 0" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 0" srcPad="1" sinkName="Intel IPU6 ISYS Capture 0" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 0" srcPad="2" sinkName="Intel IPU6 ISYS Capture 1" sinkPad="0" enable="true"/>
 
-            <link srcName="isx031 a-4" srcPad="0" sinkName="max9x a-4" sinkPad="0" enable="true"/>
-            <link srcName="max9x a-4" srcPad="2" sinkName="max9x e" sinkPad="4" enable="true"/>
-            <link srcName="isx031 b-4" srcPad="0" sinkName="max9x b-4" sinkPad="0" enable="true"/>
-            <link srcName="max9x b-4" srcPad="2" sinkName="max9x e" sinkPad="5" enable="true"/>
-            <link srcName="max9x e" srcPad="0" sinkName="Intel IPU6 CSI2 4" sinkPad="0" enable="true"/>
+            <link srcAcpiName="\_SB_.PC00.DES1.CH00.SER0.CAM0" srcPad="0" sinkAcpiName="\_SB_.PC00.DES1.CH00.SER0" sinkPad="0" enable="true"/>
+            <link srcAcpiName="\_SB_.PC00.DES1.CH00.SER0" srcPad="1" sinkAcpiName="\_SB_.PC00.DES1" sinkPad="0" enable="true"/>
+            <link srcAcpiName="\_SB_.PC00.DES1.CH01.SER1.CAM1" srcPad="0" sinkAcpiName="\_SB_.PC00.DES1.CH01.SER1" sinkPad="0" enable="true"/>
+            <link srcAcpiName="\_SB_.PC00.DES1.CH01.SER1" srcPad="1" sinkAcpiName="\_SB_.PC00.DES1" sinkPad="1" enable="true"/>
+            <link srcAcpiName="\_SB_.PC00.DES1" srcPad="2" sinkName="Intel IPU6 CSI2 4" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 4" srcPad="1" sinkName="Intel IPU6 ISYS Capture 32" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 4" srcPad="2" sinkName="Intel IPU6 ISYS Capture 33" sinkPad="0" enable="true"/>
 
-            <route name="max9x a-0" sinkPad="0" sinkStream="0" srcPad="2" srcStream="0" flag="1"/>
-            <route name="max9x a" sinkPad="4" sinkStream="0" srcPad="0" srcStream="0" flag="1"/>
+            <route acpiName="\_SB_.PC00.DES0.CH00.SER0" sinkPad="0" sinkStream="0" srcPad="1" srcStream="0" flag="1"/>
+            <route acpiName="\_SB_.PC00.DES0" sinkPad="0" sinkStream="0" srcPad="2" srcStream="0" flag="1"/>
             <route name="Intel IPU6 CSI2 0" sinkPad="0" sinkStream="0" srcPad="1" srcStream="0" flag="1"/>
-            <route name="max9x b-0" sinkPad="0" sinkStream="0" srcPad="2" srcStream="1" flag="1"/>
-            <route name="max9x a" sinkPad="5" sinkStream="1" srcPad="0" srcStream="1" flag="1"/>
+            <route acpiName="\_SB_.PC00.DES0.CH01.SER1" sinkPad="0" sinkStream="0" srcPad="1" srcStream="0" flag="1"/>
+            <route acpiName="\_SB_.PC00.DES0" sinkPad="1" sinkStream="0" srcPad="2" srcStream="1" flag="1"/>
             <route name="Intel IPU6 CSI2 0" sinkPad="0" sinkStream="1" srcPad="2" srcStream="1" flag="1"/>
 
-            <route name="max9x a-4" sinkPad="0" sinkStream="0" srcPad="2" srcStream="0" flag="1"/>
-            <route name="max9x e" sinkPad="4" sinkStream="0" srcPad="0" srcStream="0" flag="1"/>
+            <route acpiName="\_SB_.PC00.DES1.CH00.SER0" sinkPad="0" sinkStream="0" srcPad="1" srcStream="0" flag="1"/>
+            <route acpiName="\_SB_.PC00.DES1" sinkPad="0" sinkStream="0" srcPad="2" srcStream="0" flag="1"/>
             <route name="Intel IPU6 CSI2 4" sinkPad="0" sinkStream="0" srcPad="1" srcStream="0" flag="1"/>
-            <route name="max9x b-4" sinkPad="0" sinkStream="0" srcPad="2" srcStream="1" flag="1"/>
-            <route name="max9x e" sinkPad="5" sinkStream="1" srcPad="0" srcStream="1" flag="1"/>
+            <route acpiName="\_SB_.PC00.DES1.CH01.SER1" sinkPad="0" sinkStream="0" srcPad="1" srcStream="0" flag="1"/>
+            <route acpiName="\_SB_.PC00.DES1" sinkPad="1" sinkStream="0" srcPad="2" srcStream="1" flag="1"/>
             <route name="Intel IPU6 CSI2 4" sinkPad="0" sinkStream="1" srcPad="2" srcStream="1" flag="1"/>
         </MediaCtlConfig>
         <MediaCtlConfig id="2" mediaCfg="1">
-            <format name="isx031 a-0" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
-            <format name="max9x a-0" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
-            <format name="max9x a-0" pad="2" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
-            <format name="max9x a" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
-            <format name="max9x a" pad="4" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES0.CH00.SER0.CAM0" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES0.CH00.SER0" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES0.CH00.SER0" pad="1" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES0" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES0" pad="2" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
             <format name="Intel IPU6 CSI2 0" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
             <format name="Intel IPU6 CSI2 0" pad="1" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
 
-            <format name="isx031 b-0" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
-            <format name="max9x b-0" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
-            <format name="max9x b-0" pad="2" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="1"/>
-            <format name="max9x a" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="1"/>
-            <format name="max9x a" pad="5" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="1"/>
+            <format acpiName="\_SB_.PC00.DES0.CH01.SER1.CAM1" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES0.CH01.SER1" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES0.CH01.SER1" pad="1" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES0" pad="1" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES0" pad="2" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="1"/>
             <format name="Intel IPU6 CSI2 0" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="1"/>
             <format name="Intel IPU6 CSI2 0" pad="2" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="1"/>
 
-            <format name="isx031 a-4" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
-            <format name="max9x a-4" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
-            <format name="max9x a-4" pad="2" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
-            <format name="max9x e" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
-            <format name="max9x e" pad="4" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES1.CH00.SER0.CAM0" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES1.CH00.SER0" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES1.CH00.SER0" pad="1" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES1" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES1" pad="2" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
             <format name="Intel IPU6 CSI2 4" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
             <format name="Intel IPU6 CSI2 4" pad="1" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
 
-            <format name="isx031 b-4" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
-            <format name="max9x b-4" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
-            <format name="max9x b-4" pad="2" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="1"/>
-            <format name="max9x e" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="1"/>
-            <format name="max9x e" pad="5" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="1"/>
+            <format acpiName="\_SB_.PC00.DES1.CH01.SER1.CAM1" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES1.CH01.SER1" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES1.CH01.SER1" pad="1" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES1" pad="1" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="0"/>
+            <format acpiName="\_SB_.PC00.DES1" pad="2" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="1"/>
             <format name="Intel IPU6 CSI2 4" pad="0" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="1"/>
             <format name="Intel IPU6 CSI2 4" pad="2" width="1280" height="720" format="V4L2_MBUS_FMT_UYVY8_1X16" stream="1"/>
 
-            <link srcName="isx031 a-0" srcPad="0" sinkName="max9x a-0" sinkPad="0" enable="true"/>
-            <link srcName="max9x a-0" srcPad="2" sinkName="max9x a" sinkPad="4" enable="true"/>
-            <link srcName="isx031 b-0" srcPad="0" sinkName="max9x b-0" sinkPad="0" enable="true"/>
-            <link srcName="max9x b-0" srcPad="2" sinkName="max9x a" sinkPad="5" enable="true"/>
-            <link srcName="max9x a" srcPad="0" sinkName="Intel IPU6 CSI2 0" sinkPad="0" enable="true"/>
+            <link srcAcpiName="\_SB_.PC00.DES0.CH00.SER0.CAM0" srcPad="0" sinkAcpiName="\_SB_.PC00.DES0.CH00.SER0" sinkPad="0" enable="true"/>
+            <link srcAcpiName="\_SB_.PC00.DES0.CH00.SER0" srcPad="1" sinkAcpiName="\_SB_.PC00.DES0" sinkPad="0" enable="true"/>
+            <link srcAcpiName="\_SB_.PC00.DES0.CH01.SER1.CAM1" srcPad="0" sinkAcpiName="\_SB_.PC00.DES0.CH01.SER1" sinkPad="0" enable="true"/>
+            <link srcAcpiName="\_SB_.PC00.DES0.CH01.SER1" srcPad="1" sinkAcpiName="\_SB_.PC00.DES0" sinkPad="1" enable="true"/>
+            <link srcAcpiName="\_SB_.PC00.DES0" srcPad="2" sinkName="Intel IPU6 CSI2 0" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 0" srcPad="1" sinkName="Intel IPU6 ISYS Capture 0" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 0" srcPad="2" sinkName="Intel IPU6 ISYS Capture 1" sinkPad="0" enable="true"/>
 
-            <link srcName="isx031 a-4" srcPad="0" sinkName="max9x a-4" sinkPad="0" enable="true"/>
-            <link srcName="max9x a-4" srcPad="2" sinkName="max9x e" sinkPad="4" enable="true"/>
-            <link srcName="isx031 b-4" srcPad="0" sinkName="max9x b-4" sinkPad="0" enable="true"/>
-            <link srcName="max9x b-4" srcPad="2" sinkName="max9x e" sinkPad="5" enable="true"/>
-            <link srcName="max9x e" srcPad="0" sinkName="Intel IPU6 CSI2 4" sinkPad="0" enable="true"/>
+            <link srcAcpiName="\_SB_.PC00.DES1.CH00.SER0.CAM0" srcPad="0" sinkAcpiName="\_SB_.PC00.DES1.CH00.SER0" sinkPad="0" enable="true"/>
+            <link srcAcpiName="\_SB_.PC00.DES1.CH00.SER0" srcPad="1" sinkAcpiName="\_SB_.PC00.DES1" sinkPad="0" enable="true"/>
+            <link srcAcpiName="\_SB_.PC00.DES1.CH01.SER1.CAM1" srcPad="0" sinkAcpiName="\_SB_.PC00.DES1.CH01.SER1" sinkPad="0" enable="true"/>
+            <link srcAcpiName="\_SB_.PC00.DES1.CH01.SER1" srcPad="1" sinkAcpiName="\_SB_.PC00.DES1" sinkPad="1" enable="true"/>
+            <link srcAcpiName="\_SB_.PC00.DES1" srcPad="2" sinkName="Intel IPU6 CSI2 4" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 4" srcPad="1" sinkName="Intel IPU6 ISYS Capture 32" sinkPad="0" enable="true"/>
             <link srcName="Intel IPU6 CSI2 4" srcPad="2" sinkName="Intel IPU6 ISYS Capture 33" sinkPad="0" enable="true"/>
 
-            <route name="max9x a-0" sinkPad="0" sinkStream="0" srcPad="2" srcStream="0" flag="1"/>
-            <route name="max9x a" sinkPad="4" sinkStream="0" srcPad="0" srcStream="0" flag="1"/>
+            <route acpiName="\_SB_.PC00.DES0.CH00.SER0" sinkPad="0" sinkStream="0" srcPad="1" srcStream="0" flag="1"/>
+            <route acpiName="\_SB_.PC00.DES0" sinkPad="0" sinkStream="0" srcPad="2" srcStream="0" flag="1"/>
             <route name="Intel IPU6 CSI2 0" sinkPad="0" sinkStream="0" srcPad="1" srcStream="0" flag="1"/>
-            <route name="max9x b-0" sinkPad="0" sinkStream="0" srcPad="2" srcStream="1" flag="1"/>
-            <route name="max9x a" sinkPad="5" sinkStream="1" srcPad="0" srcStream="1" flag="1"/>
+            <route acpiName="\_SB_.PC00.DES0.CH01.SER1" sinkPad="0" sinkStream="0" srcPad="1" srcStream="0" flag="1"/>
+            <route acpiName="\_SB_.PC00.DES0" sinkPad="1" sinkStream="0" srcPad="2" srcStream="1" flag="1"/>
             <route name="Intel IPU6 CSI2 0" sinkPad="0" sinkStream="1" srcPad="2" srcStream="1" flag="1"/>
 
-            <route name="max9x a-4" sinkPad="0" sinkStream="0" srcPad="2" srcStream="0" flag="1"/>
-            <route name="max9x e" sinkPad="4" sinkStream="0" srcPad="0" srcStream="0" flag="1"/>
+            <route acpiName="\_SB_.PC00.DES1.CH00.SER0" sinkPad="0" sinkStream="0" srcPad="1" srcStream="0" flag="1"/>
+            <route acpiName="\_SB_.PC00.DES1" sinkPad="0" sinkStream="0" srcPad="2" srcStream="0" flag="1"/>
             <route name="Intel IPU6 CSI2 4" sinkPad="0" sinkStream="0" srcPad="1" srcStream="0" flag="1"/>
-            <route name="max9x b-4" sinkPad="0" sinkStream="0" srcPad="2" srcStream="1" flag="1"/>
-            <route name="max9x e" sinkPad="5" sinkStream="1" srcPad="0" srcStream="1" flag="1"/>
+            <route acpiName="\_SB_.PC00.DES1.CH01.SER1" sinkPad="0" sinkStream="0" srcPad="1" srcStream="0" flag="1"/>
+            <route acpiName="\_SB_.PC00.DES1" sinkPad="1" sinkStream="0" srcPad="2" srcStream="1" flag="1"/>
             <route name="Intel IPU6 CSI2 4" sinkPad="0" sinkStream="1" srcPad="2" srcStream="1" flag="1"/>
         </MediaCtlConfig>
     </SensorCommonConfig>
@@ -210,17 +210,17 @@
         <MediaCtlConfig id="0" mediaCfg="1" sensorCommonConfig="max9x" ConfigMode="AUTO" outputWidth="1920" outputHeight="1536" format="V4L2_PIX_FMT_UYVY">
             <videonode name="Intel IPU6 ISYS Capture 0" videoNodeType="VIDEO_GENERIC"/>
             <videonode name="Intel IPU6 CSI2 0" videoNodeType="VIDEO_ISYS_RECEIVER"/>
-            <videonode name="isx031 a-0" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+            <videonode acpiName="\_SB_.PC00.DES0.CH00.SER0.CAM0" videoNodeType="VIDEO_PIXEL_ARRAY"/>
         </MediaCtlConfig>
         <MediaCtlConfig id="1" mediaCfg="1" sensorCommonConfig="max9x" ConfigMode="AUTO" outputWidth="1920" outputHeight="1080" format="V4L2_PIX_FMT_UYVY">
             <videonode name="Intel IPU6 ISYS Capture 0" videoNodeType="VIDEO_GENERIC"/>
             <videonode name="Intel IPU6 CSI2 0" videoNodeType="VIDEO_ISYS_RECEIVER"/>
-            <videonode name="isx031 a-0" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+            <videonode acpiName="\_SB_.PC00.DES0.CH00.SER0.CAM0" videoNodeType="VIDEO_PIXEL_ARRAY"/>
         </MediaCtlConfig>
         <MediaCtlConfig id="2" mediaCfg="1" sensorCommonConfig="max9x" ConfigMode="AUTO" outputWidth="1280" outputHeight="720" format="V4L2_PIX_FMT_UYVY">
             <videonode name="Intel IPU6 ISYS Capture 0" videoNodeType="VIDEO_GENERIC"/>
             <videonode name="Intel IPU6 CSI2 0" videoNodeType="VIDEO_ISYS_RECEIVER"/>
-            <videonode name="isx031 a-0" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+            <videonode acpiName="\_SB_.PC00.DES0.CH00.SER0.CAM0" videoNodeType="VIDEO_PIXEL_ARRAY"/>
         </MediaCtlConfig>
         <StaticMetadata>
             <!-- list of stream config info. Meanings of each part is "format,widthxheight,field(0 is none, 7 is alternate),mcId" -->
@@ -229,24 +229,24 @@
                                           V4L2_PIX_FMT_UYVY,1280x720,0,0"/>
         </StaticMetadata>
         <supportedISysFormat value="V4L2_PIX_FMT_UYVY"/>
-        <vcAggregator value="max9x a,0"/>
+        <vcAggregator acpiValue="\_SB_.PC00.DES0,0"/>
         <enableAIQ value="false"/>
     </Sensor>
     <Sensor name="isx031-2" description="isx031 sensor" virtualChannel="true" vcGroupId="0">
         <MediaCtlConfig id="0" mediaCfg="1" sensorCommonConfig="max9x" ConfigMode="AUTO" outputWidth="1920" outputHeight="1536" format="V4L2_PIX_FMT_UYVY">
             <videonode name="Intel IPU6 ISYS Capture 1" videoNodeType="VIDEO_GENERIC"/>
             <videonode name="Intel IPU6 CSI2 0" videoNodeType="VIDEO_ISYS_RECEIVER"/>
-            <videonode name="isx031 b-0" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+            <videonode acpiName="\_SB_.PC00.DES0.CH01.SER1.CAM1" videoNodeType="VIDEO_PIXEL_ARRAY"/>
         </MediaCtlConfig>
         <MediaCtlConfig id="1" mediaCfg="1" sensorCommonConfig="max9x" ConfigMode="AUTO" outputWidth="1920" outputHeight="1080" format="V4L2_PIX_FMT_UYVY">
             <videonode name="Intel IPU6 ISYS Capture 1" videoNodeType="VIDEO_GENERIC"/>
             <videonode name="Intel IPU6 CSI2 0" videoNodeType="VIDEO_ISYS_RECEIVER"/>
-            <videonode name="isx031 b-0" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+            <videonode acpiName="\_SB_.PC00.DES0.CH01.SER1.CAM1" videoNodeType="VIDEO_PIXEL_ARRAY"/>
         </MediaCtlConfig>
         <MediaCtlConfig id="2" mediaCfg="1" sensorCommonConfig="max9x" ConfigMode="AUTO" outputWidth="1280" outputHeight="720" format="V4L2_PIX_FMT_UYVY">
             <videonode name="Intel IPU6 ISYS Capture 1" videoNodeType="VIDEO_GENERIC"/>
             <videonode name="Intel IPU6 CSI2 0" videoNodeType="VIDEO_ISYS_RECEIVER"/>
-            <videonode name="isx031 b-0" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+            <videonode acpiName="\_SB_.PC00.DES0.CH01.SER1.CAM1" videoNodeType="VIDEO_PIXEL_ARRAY"/>
         </MediaCtlConfig>
         <StaticMetadata>
             <!-- list of stream config info. Meanings of each part is "format,widthxheight,field(0 is none, 7 is alternate),mcId" -->
@@ -255,24 +255,24 @@
                                           V4L2_PIX_FMT_UYVY,1280x720,0,0"/>
         </StaticMetadata>
         <supportedISysFormat value="V4L2_PIX_FMT_UYVY"/>
-        <vcAggregator value="max9x a,1"/>
+        <vcAggregator acpiValue="\_SB_.PC00.DES0,1"/>
         <enableAIQ value="false"/>
     </Sensor>
     <Sensor name="isx031-3" description="isx031 sensor" virtualChannel="true" vcGroupId="0">
         <MediaCtlConfig id="0" mediaCfg="1" sensorCommonConfig="max9x" ConfigMode="AUTO" outputWidth="1920" outputHeight="1536" format="V4L2_PIX_FMT_UYVY">
             <videonode name="Intel IPU6 ISYS Capture 32" videoNodeType="VIDEO_GENERIC"/>
             <videonode name="Intel IPU6 CSI2 4" videoNodeType="VIDEO_ISYS_RECEIVER"/>
-            <videonode name="isx031 a-4" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+            <videonode acpiName="\_SB_.PC00.DES1.CH00.SER0.CAM0" videoNodeType="VIDEO_PIXEL_ARRAY"/>
         </MediaCtlConfig>
         <MediaCtlConfig id="1" mediaCfg="1" sensorCommonConfig="max9x" ConfigMode="AUTO" outputWidth="1920" outputHeight="1080" format="V4L2_PIX_FMT_UYVY">
             <videonode name="Intel IPU6 ISYS Capture 32" videoNodeType="VIDEO_GENERIC"/>
             <videonode name="Intel IPU6 CSI2 4" videoNodeType="VIDEO_ISYS_RECEIVER"/>
-            <videonode name="isx031 a-4" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+            <videonode acpiName="\_SB_.PC00.DES1.CH00.SER0.CAM0" videoNodeType="VIDEO_PIXEL_ARRAY"/>
         </MediaCtlConfig>
         <MediaCtlConfig id="2" mediaCfg="1" sensorCommonConfig="max9x" ConfigMode="AUTO" outputWidth="1280" outputHeight="720" format="V4L2_PIX_FMT_UYVY">
             <videonode name="Intel IPU6 ISYS Capture 32" videoNodeType="VIDEO_GENERIC"/>
             <videonode name="Intel IPU6 CSI2 4" videoNodeType="VIDEO_ISYS_RECEIVER"/>
-            <videonode name="isx031 a-4" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+            <videonode acpiName="\_SB_.PC00.DES1.CH00.SER0.CAM0" videoNodeType="VIDEO_PIXEL_ARRAY"/>
         </MediaCtlConfig>
         <StaticMetadata>
             <!-- list of stream config info. Meanings of each part is "format,widthxheight,field(0 is none, 7 is alternate),mcId" -->
@@ -281,24 +281,24 @@
                                           V4L2_PIX_FMT_UYVY,1280x720,0,0"/>
         </StaticMetadata>
         <supportedISysFormat value="V4L2_PIX_FMT_UYVY"/>
-        <vcAggregator value="max9x e,0"/>
+        <vcAggregator acpiValue="\_SB_.PC00.DES1,0"/>
         <enableAIQ value="false"/>
     </Sensor>
     <Sensor name="isx031-4" description="isx031 sensor" virtualChannel="true" vcGroupId="0">
         <MediaCtlConfig id="0" mediaCfg="1" sensorCommonConfig="max9x" ConfigMode="AUTO" outputWidth="1920" outputHeight="1536" format="V4L2_PIX_FMT_UYVY">
             <videonode name="Intel IPU6 ISYS Capture 33" videoNodeType="VIDEO_GENERIC"/>
             <videonode name="Intel IPU6 CSI2 4" videoNodeType="VIDEO_ISYS_RECEIVER"/>
-            <videonode name="isx031 b-4" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+            <videonode acpiName="\_SB_.PC00.DES1.CH01.SER1.CAM1" videoNodeType="VIDEO_PIXEL_ARRAY"/>
         </MediaCtlConfig>
         <MediaCtlConfig id="1" mediaCfg="1" sensorCommonConfig="max9x" ConfigMode="AUTO" outputWidth="1920" outputHeight="1080" format="V4L2_PIX_FMT_UYVY">
             <videonode name="Intel IPU6 ISYS Capture 33" videoNodeType="VIDEO_GENERIC"/>
             <videonode name="Intel IPU6 CSI2 4" videoNodeType="VIDEO_ISYS_RECEIVER"/>
-            <videonode name="isx031 b-4" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+            <videonode acpiName="\_SB_.PC00.DES1.CH01.SER1.CAM1" videoNodeType="VIDEO_PIXEL_ARRAY"/>
         </MediaCtlConfig>
         <MediaCtlConfig id="2" mediaCfg="1" sensorCommonConfig="max9x" ConfigMode="AUTO" outputWidth="1280" outputHeight="720" format="V4L2_PIX_FMT_UYVY">
             <videonode name="Intel IPU6 ISYS Capture 33" videoNodeType="VIDEO_GENERIC"/>
             <videonode name="Intel IPU6 CSI2 4" videoNodeType="VIDEO_ISYS_RECEIVER"/>
-            <videonode name="isx031 b-4" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+            <videonode acpiName="\_SB_.PC00.DES1.CH01.SER1.CAM1" videoNodeType="VIDEO_PIXEL_ARRAY"/>
         </MediaCtlConfig>
         <StaticMetadata>
             <!-- list of stream config info. Meanings of each part is "format,widthxheight,field(0 is none, 7 is alternate),mcId" -->
@@ -307,7 +307,7 @@
                                           V4L2_PIX_FMT_UYVY,1280x720,0,0"/>
         </StaticMetadata>
         <supportedISysFormat value="V4L2_PIX_FMT_UYVY"/>
-        <vcAggregator value="max9x e,1"/>
+        <vcAggregator acpiValue="\_SB_.PC00.DES1,1"/>
         <enableAIQ value="false"/>
     </Sensor>
 </CameraSettings>

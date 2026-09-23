@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2025 Intel Corporation
+ * Copyright (C) 2015-2026 Intel Corporation
  * Copyright 2008-2017, The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -356,7 +356,11 @@ void CameraParser::handleCommon(CameraParser* profiles, const char* name, const 
  * \param atts: the element's attribute.
  */
 void CameraParser::handleSensor(CameraParser* profiles, const char* name, const char** atts) {
-    CheckAndLogError(strcmp(atts[0], "value") != 0 || (atts[1] == nullptr), VOID_VALUE,
+    CheckAndLogError((strcmp(atts[0], "value") != 0 &&
+                      (strcmp(name, "vcAggregator") != 0 ||
+                       strcmp(atts[0], "acpiValue") != 0)) ||
+                         (atts[1] == nullptr),
+                     VOID_VALUE,
                      "@%s, name:%s, atts[0]:%s or atts[1] is nullptr, xml format wrong", __func__,
                      name, atts[0]);
 
@@ -787,7 +791,11 @@ void CameraParser::handleSensor(CameraParser* profiles, const char* name, const 
         src[size] = '\0';
         char* savePtr = nullptr;
         char* tablePtr = strtok_r(src, ",", &savePtr);
-        if (tablePtr) pCurrentCam->mVcAggregator.mName = tablePtr;
+        if (tablePtr) {
+            pCurrentCam->mVcAggregator.mName = strcmp(atts[0], "acpiValue") == 0 && mMC
+                                                    ? mMC->acpiName2EntityName(tablePtr)
+                                                    : tablePtr;
+        }
         tablePtr = strtok_r(nullptr, ",", &savePtr);
         if (tablePtr) pCurrentCam->mVcAggregator.mVcId = atoi(tablePtr);
         // VIRTUAL_CHANNEL_E
@@ -957,10 +965,13 @@ void CameraParser::parseControlElement(CameraParser* profiles, const char* name,
         const char* key = atts[idx];
         const char* val = atts[idx + 1];
         LOG2("@%s, name:%s, atts[%d]:%s, atts[%d]:%s", __func__, name, idx, key, idx + 1, val);
-        if (strcmp(key, "name") == 0) {
-            ctl.entityName = replaceStringInXml(profiles, val, name);
+        if (strcmp(key, "name") == 0 || strcmp(key, "acpiName") == 0) {
+            ctl.entityName = strcmp(key, "acpiName") == 0 && profiles->mMC
+                                 ? profiles->mMC->acpiName2EntityName(val)
+                                 : replaceStringInXml(profiles, val, name);
             if (profiles->mMC) {
                 ctl.entity = profiles->mMC->getEntityIdByName(ctl.entityName.c_str());
+                if (ctl.entity < 0) return;
             }
         } else if (strcmp(key, "ctrlId") == 0) {
             if (!strcmp(val, "V4L2_CID_LINK_FREQ")) {
@@ -1034,10 +1045,13 @@ void CameraParser::parseSelectionElement(CameraParser* profiles, const char* nam
         const char* key = atts[idx];
         const char* val = atts[idx + 1];
         LOG2("@%s, name:%s, atts[%d]:%s, atts[%d]:%s", __func__, name, idx, key, idx + 1, val);
-        if (strcmp(key, "name") == 0) {
-            sel.entityName = replaceStringInXml(profiles, val, name);
+        if (strcmp(key, "name") == 0 || strcmp(key, "acpiName") == 0) {
+            sel.entityName = strcmp(key, "acpiName") == 0 && profiles->mMC
+                                 ? profiles->mMC->acpiName2EntityName(val)
+                                 : replaceStringInXml(profiles, val, name);
             if (profiles->mMC) {
                 sel.entity = profiles->mMC->getEntityIdByName(sel.entityName.c_str());
+                if (sel.entity < 0) return;
             }
         } else if (strcmp(key, "pad") == 0) {
             sel.pad = strtoul(val, nullptr, 10);
@@ -1449,10 +1463,13 @@ void CameraParser::parseFormatElement(CameraParser* profiles, const char* name, 
         const char* key = atts[idx];
         const char* val = atts[idx + 1];
         LOG2("@%s, name:%s, atts[%d]:%s, atts[%d]:%s", __func__, name, idx, key, idx + 1, val);
-        if (strcmp(key, "name") == 0) {
-            fmt.entityName = replaceStringInXml(profiles, val, name);
+        if (strcmp(key, "name") == 0 || strcmp(key, "acpiName") == 0) {
+            fmt.entityName = strcmp(key, "acpiName") == 0 && profiles->mMC
+                                 ? profiles->mMC->acpiName2EntityName(val)
+                                 : replaceStringInXml(profiles, val, name);
             if (profiles->mMC) {
                 fmt.entity = profiles->mMC->getEntityIdByName(fmt.entityName.c_str());
+                if (fmt.entity < 0) return;
             }
         } else if (strcmp(key, "pad") == 0) {
             fmt.pad = strtoul(val, nullptr, 10);
@@ -1495,17 +1512,23 @@ void CameraParser::parseLinkElement(CameraParser* profiles, const char* name, co
         const char* key = atts[idx];
         const char* val = atts[idx + 1];
         LOG2("@%s, name:%s, atts[%d]:%s, atts[%d]:%s", __func__, name, idx, key, idx + 1, val);
-        if (strcmp(key, "srcName") == 0) {
-            link.srcEntityName = replaceStringInXml(profiles, val, name);
+        if (strcmp(key, "srcName") == 0 || strcmp(key, "srcAcpiName") == 0) {
+            link.srcEntityName = strcmp(key, "srcAcpiName") == 0 && profiles->mMC
+                                     ? profiles->mMC->acpiName2EntityName(val)
+                                     : replaceStringInXml(profiles, val, name);
             if (profiles->mMC) {
                 link.srcEntity = profiles->mMC->getEntityIdByName(link.srcEntityName.c_str());
+                if (link.srcEntity < 0) return;
             }
         } else if (strcmp(key, "srcPad") == 0) {
             link.srcPad = strtoul(val, nullptr, 10);
-        } else if (strcmp(key, "sinkName") == 0) {
-            link.sinkEntityName = replaceStringInXml(profiles, val, name);
+        } else if (strcmp(key, "sinkName") == 0 || strcmp(key, "sinkAcpiName") == 0) {
+            link.sinkEntityName = strcmp(key, "sinkAcpiName") == 0 && profiles->mMC
+                                      ? profiles->mMC->acpiName2EntityName(val)
+                                      : replaceStringInXml(profiles, val, name);
             if (profiles->mMC) {
                 link.sinkEntity = profiles->mMC->getEntityIdByName(link.sinkEntityName.c_str());
+                if (link.sinkEntity < 0) return;
             }
         } else if (strcmp(key, "sinkPad") == 0) {
             link.sinkPad = strtoul(val, nullptr, 10);
@@ -1528,10 +1551,13 @@ void CameraParser::parseRouteElement(CameraParser* profiles, const char* name, c
         const char* key = atts[idx];
         const char* val = atts[idx + 1];
         LOG2("@%s, name:%s, atts[%d]:%s, atts[%d]:%s", __func__, name, idx, key, idx + 1, val);
-        if (strcmp(key, "name") == 0) {
-            route.entityName = replaceStringInXml(profiles, val, name);
+        if (strcmp(key, "name") == 0 || strcmp(key, "acpiName") == 0) {
+            route.entityName = strcmp(key, "acpiName") == 0 && profiles->mMC
+                                   ? profiles->mMC->acpiName2EntityName(val)
+                                   : replaceStringInXml(profiles, val, name);
             if (profiles->mMC) {
                 route.entity = profiles->mMC->getEntityIdByName(route.entityName.c_str());
+                if (route.entity < 0) return;
             }
         } else if (strcmp(key, "srcPad") == 0) {
             route.srcPad = strtoul(val, nullptr, 10);
@@ -1565,7 +1591,10 @@ void CameraParser::parseVideoElement(CameraParser* profiles, const char* name,
     McVideoNode videoNode;
     MediaCtlConf& mc = profiles->pCurrentCam->mMediaCtlConfs.back();
 
-    videoNode.name = replaceStringInXml(profiles, atts[1], name);
+    videoNode.name = strcmp(atts[0], "acpiName") == 0 && profiles->mMC
+                         ? profiles->mMC->acpiName2EntityName(atts[1])
+                         : replaceStringInXml(profiles, atts[1], name);
+    if (profiles->mMC && profiles->mMC->getEntityIdByName(videoNode.name.c_str()) < 0) return;
     videoNode.videoNodeType = GetNodeType(atts[3]);
     LOG2("@%s, name:%s, videoNodeType:%d", __func__, videoNode.name.c_str(),
          videoNode.videoNodeType);

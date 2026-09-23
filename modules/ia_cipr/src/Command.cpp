@@ -78,6 +78,10 @@ Result Command::getConfig(PSysCommandConfig* cfg) {
 Result Command::updateKernel(const PSysCommandConfig& cfg, const MemoryDesc& memory) {
     ProcessGroupCommand* ppg_command_ext = reinterpret_cast<ProcessGroupCommand*>(memory.cpuPtr);
 
+    CheckAndLogError(!ppg_command_ext || memory.size < sizeof(PSysCmdExtHeader),
+                     Result::InvaildArg, "Invalid command extension buffer received! (%p)",
+                     cfg.extBuf);
+
     CheckAndLogError(ppg_command_ext->header.size != memory.size ||
                          ppg_command_ext->header.offset != sizeof(PSysCmdExtHeader) ||
                          (ppg_command_ext->header.version != psys_command_ext_ppg_0 &&

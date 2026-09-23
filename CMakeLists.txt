@@ -14,7 +14,7 @@
 #  limitations under the License.
 #
 
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 2.8...4.2.3)
 
 project(libcamhal)
 
@@ -340,7 +340,10 @@ if (NOT BUILD_CAMHAL_PLUGIN)
 endif()
 # Install configure files, by default ipu4 is used
 message("Install camera configure files for ${IPU_VER}")
-install(DIRECTORY config/linux/${IPU_VER}/ DESTINATION ${CMAKE_INSTALL_FULL_SYSCONFDIR}/camera/${IPU_VER})
+install(DIRECTORY config/linux/${IPU_VER}/ DESTINATION ${CMAKE_INSTALL_FULL_SYSCONFDIR}/camera/${IPU_VER}
+        PATTERN "config/linux/*/sensors/*.img" EXCLUDE)
+install(DIRECTORY config/linux/${IPU_VER}/sensors/ DESTINATION /boot
+        FILES_MATCHING PATTERN "config/linux/${IPU_VER}/sensors/*.img")
 # Install libraries
 set(CAMHAL_TARGETS ${CAMHAL_TARGET} ${CAMHAL_STATIC_TARGET})
 if (BUILD_CAMHAL_PLUGIN)
