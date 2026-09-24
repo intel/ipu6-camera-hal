@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2011 The Android Open Source Project
- * Copyright (C) 2015-2021 Intel Corporation
+ * Copyright (C) 2015-2026 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,6 +61,7 @@ struct MediaEntity {
     unsigned int numLinks;
 
     char devname[32];
+    char acpiname[64];
 };
 
 static const string ivscName = "Intel IVSC CSI";
@@ -186,6 +187,16 @@ int MediaControl::getEntityIdByName(const char* name) {
     }
 
     return entity->info.id;
+}
+
+std::string MediaControl::acpiName2EntityName(const std::string& acpiName) {
+    for (auto& entity : mEntities) {
+        if (strcmp(entity.acpiname, acpiName.c_str()) == 0) {
+            return std::string(entity.info.name);
+        }
+    }
+
+    return "";
 }
 
 int MediaControl::resetAllLinks() {
@@ -464,7 +475,7 @@ int MediaControl::enumEntities(int fd, media_device_info& devInfo) {
 
         entity.pads = new MediaPad[entity.info.pads];
         entity.links = new MediaLink[entity.maxLinks];
-        getDevnameFromSysfs(&entity);
+        populateEntityNamesFromSysfs(&entity);
         mEntities.push_back(entity);
 
         /* Note: carefully to move the follow setting. It must be behind of
@@ -496,7 +507,7 @@ int MediaControl::enumEntities(int fd, media_device_info& devInfo) {
     return OK;
 }
 
-int MediaControl::getDevnameFromSysfs(MediaEntity* entity) {
+int MediaControl::populateEntityNamesFromSysfs(MediaEntity* entity) {
     char sysName[MAX_SYS_NAME] = {'\0'};
     char target[MAX_TARGET_NAME] = {'\0'};
     int ret;
@@ -540,6 +551,23 @@ int MediaControl::getDevnameFromSysfs(MediaEntity* entity) {
     } else {
         snprintf(entity->devname, sizeof(entity->devname), "/dev/%s", d);
     }
+
+    strlcat(sysName, "/device/firmware_node/path", sizeof(sysName));
+    FILE* fp = fopen(sysName, "rb");
+    if (fp) {
+        if (!fgets(entity->acpiname, sizeof(entity->acpiname), fp)) {
+            entity->acpiname[0] = '\0';
+        }
+
+        size_t len = strlen(entity->acpiname);
+        if (len > 0 && entity->acpiname[len - 1] == '\n') {
+            entity->acpiname[len - 1] = '\0';
+        }
+
+        fclose(fp);
+    }
+    LOG1("name %s devname %s acpiname %s", entity->info.name, entity->devname,
+         entity->acpiname);
 
     return 0;
 }
@@ -769,8 +797,8 @@ int MediaControl::setVideoNodeFormat(const McFormat* format, int field) {
     int ret = OK;
 
     ret = device->Open(O_RDWR);
-    CheckAndLogError(ret != OK, ret, "@%s %s: failed to open video device!", __func__,
-                     format->entityName.c_str());
+    CheckAndClean(ret != OK, ret, delete device, "@%s %s: failed to open video device!",
+                  __func__, format->entityName.c_str());
 
     int dev_caps = device->GetDeviceCaps();
 
@@ -1000,36 +1028,34 @@ int MediaControl::mediaCtlSetup(int cameraId, MediaCtlConf* mc, int width, int h
             routes[i] = r;
         }
 
+        // When enabling routes, compare current hardware state with the desired configuration.
         // VIDIOC_SUBDEV_S_ROUTING resets all stream states on the subdev, which can disrupt
-        // other processes or camera instances sharing the same subdev. Compare current hardware
-        // state with the desired configuration and skip SetRouting when the hardware already
-        // reflects the exact routes we need.
-        {
-            uint32_t numCurrentRoutes = static_cast<uint32_t>(num);
-            v4l2_subdev_route* currentRoutes = new v4l2_subdev_route[numCurrentRoutes]();
-            int gret = subDev->GetRouting(currentRoutes, &numCurrentRoutes);
-            bool skip = (gret == 0 && numCurrentRoutes == static_cast<uint32_t>(num));
-            for (int i = 0; i < num && skip; i++) {
-                bool found = false;
-                for (uint32_t j = 0; j < numCurrentRoutes; j++) {
-                    if (routes[i].sink_pad == currentRoutes[j].sink_pad &&
-                        routes[i].sink_stream == currentRoutes[j].sink_stream &&
-                        routes[i].source_pad == currentRoutes[j].source_pad &&
-                        routes[i].source_stream == currentRoutes[j].source_stream &&
-                        routes[i].flags == currentRoutes[j].flags) {
-                        found = true;
-                        break;
-                    }
+        // other processes or camera instances sharing the same subdev.  Skip SetRouting when
+        // the hardware already reflects the exact routes we need.
+        uint32_t numCurrentRoutes = static_cast<uint32_t>(num);
+        v4l2_subdev_route* currentRoutes = new v4l2_subdev_route[numCurrentRoutes]();
+        int gret = subDev->GetRouting(currentRoutes, &numCurrentRoutes);
+        bool skip = (gret == 0 && numCurrentRoutes == static_cast<uint32_t>(num));
+        for (int i = 0; i < num && skip; i++) {
+            bool found = false;
+            for (uint32_t j = 0; j < numCurrentRoutes; j++) {
+                if (routes[i].sink_pad == currentRoutes[j].sink_pad &&
+                    routes[i].sink_stream == currentRoutes[j].sink_stream &&
+                    routes[i].source_pad == currentRoutes[j].source_pad &&
+                    routes[i].source_stream == currentRoutes[j].source_stream &&
+                    routes[i].flags == currentRoutes[j].flags) {
+                    found = true;
+                    break;
                 }
-                if (!found) skip = false;
             }
-            delete[] currentRoutes;
-            if (skip) {
-                LOG1("<id%d> Routes already match for entity:%s, skipping SetRouting", cameraId,
-                     routing.first.c_str());
-                delete[] routes;
-                continue;
-            }
+            if (!found) skip = false;
+        }
+        delete[] currentRoutes;
+        if (skip) {
+            LOG1("<id%d> Routes already match for entity:%s, skipping SetRouting", cameraId,
+                 routing.first.c_str());
+            delete[] routes;
+            continue;
         }
 
         ret = subDev->SetRouting(routes, num);

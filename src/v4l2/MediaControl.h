@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Intel Corporation.
+ * Copyright (C) 2015-2026 Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -251,6 +251,8 @@ class MediaControl {
      */
     int getEntityIdByName(const char* name);
 
+    std::string acpiName2EntityName(const std::string& acpiName);
+
     /**
      * \brief Get VCM I2C bus address
      *
@@ -334,7 +336,7 @@ class MediaControl {
     int enumEntities(int fd, media_device_info& devInfo);
 
     // get entity info.
-    int getDevnameFromSysfs(MediaEntity* entity);
+    int populateEntityNamesFromSysfs(MediaEntity* entity);
     MediaEntity* getEntityById(uint32_t id);
     MediaEntity* getEntityByName(const char* name);
     bool checkHasSource(const MediaEntity* sink, const std::string& source);
