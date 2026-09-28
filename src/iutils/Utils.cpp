@@ -392,6 +392,9 @@ int32_t CameraUtils::getBpl(int32_t format, int32_t width) {
         case GET_FOURCC_FMT('b', 'V', '0', 'K'):  // BV0K
         case GET_FOURCC_FMT('B', 'A', '1', '0'):  // BA10
         case GET_FOURCC_FMT('G', 'R', '1', '0'):  // GR10
+        case GET_FOURCC_FMT('B', 'G', '1', '0'):  // BG10 (BGGR bayer, e.g. OV5693 vflip)
+        case GET_FOURCC_FMT('R', 'G', '1', '0'):  // RG10
+        case GET_FOURCC_FMT('G', 'B', '1', '0'):  // GB10
         case GET_FOURCC_FMT('B', 'A', '1', '2'):  // BA12
         case GET_FOURCC_FMT('P', '0', '1', '0'):  // P010
         case GET_FOURCC_FMT('P', '0', '1', 'L'):  // P010_LSB

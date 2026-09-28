@@ -232,6 +232,9 @@ int getStride(int cssFmt, int width) {
     int stride = width;
     switch (cssFmt) {
         case IA_CSS_DATA_FORMAT_BAYER_GRBG:  // GR10
+        case IA_CSS_DATA_FORMAT_BAYER_BGGR:  // BG10 (e.g. OV5693 with sensor vflip)
+        case IA_CSS_DATA_FORMAT_BAYER_RGGB:
+        case IA_CSS_DATA_FORMAT_BAYER_GBRG:
         case IA_CSS_DATA_FORMAT_RAW:         // BA10
             stride = ALIGN_64(width * 2);
             break;
