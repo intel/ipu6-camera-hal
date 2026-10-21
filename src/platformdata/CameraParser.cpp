@@ -2534,6 +2534,9 @@ std::vector<std::string> CameraParser::getAvailableSensors(
             if (mMC && mMC->checkAvailableSensor(sensor)) {
                 availableSensors.push_back(sensor);
                 LOG2("@%s, available sensor name: %s", __func__, sensor.c_str());
+            } else if (sensor == "acpi") {
+                availableSensors.push_back(sensor);
+                LOG2("@%s, available ACPI sensor profile", __func__);
 #ifdef LINUX_BUILD
             } else if (sensor.find("_usb") != string::npos) {
                 availableSensors.push_back(sensor);
