@@ -20,12 +20,22 @@
       <videonode name="Intel IPU6 CSI2 0" videoNodeType="VIDEO_ISYS_RECEIVER"/>
       <videonode acpiName="\_SB_.PC00.DES0.CH00.SER0.CAM0" videoNodeType="VIDEO_PIXEL_ARRAY"/>
     </MediaCtlConfig>
-    <MediaCtlConfig id="1" mediaCfg="1" ConfigMode="AUTO" outputWidth="1920" outputHeight="1080" format="V4L2_PIX_FMT_UYVY">
+    <MediaCtlConfig id="1" mediaCfg="1" ConfigMode="AUTO" outputWidth="1920" outputHeight="1440" format="V4L2_PIX_FMT_UYVY">
       <videonode name="Intel IPU6 ISYS Capture 0" videoNodeType="VIDEO_GENERIC"/>
       <videonode name="Intel IPU6 CSI2 0" videoNodeType="VIDEO_ISYS_RECEIVER"/>
       <videonode acpiName="\_SB_.PC00.DES0.CH00.SER0.CAM0" videoNodeType="VIDEO_PIXEL_ARRAY"/>
     </MediaCtlConfig>
-    <MediaCtlConfig id="2" ConfigMode="AUTO" outputWidth="1280" outputHeight="720" format="V4L2_PIX_FMT_UYVY">
+    <MediaCtlConfig id="2" mediaCfg="1" ConfigMode="AUTO" outputWidth="1920" outputHeight="1080" format="V4L2_PIX_FMT_UYVY">
+      <videonode name="Intel IPU6 ISYS Capture 0" videoNodeType="VIDEO_GENERIC"/>
+      <videonode name="Intel IPU6 CSI2 0" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+      <videonode acpiName="\_SB_.PC00.DES0.CH00.SER0.CAM0" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+    </MediaCtlConfig>
+    <MediaCtlConfig id="3" mediaCfg="1" ConfigMode="AUTO" outputWidth="1280" outputHeight="960" format="V4L2_PIX_FMT_UYVY">
+      <videonode name="Intel IPU6 ISYS Capture 0" videoNodeType="VIDEO_GENERIC"/>
+      <videonode name="Intel IPU6 CSI2 0" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+      <videonode acpiName="\_SB_.PC00.DES0.CH00.SER0.CAM0" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+    </MediaCtlConfig>
+    <MediaCtlConfig id="4" mediaCfg="1" ConfigMode="AUTO" outputWidth="1280" outputHeight="720" format="V4L2_PIX_FMT_UYVY">
       <videonode name="Intel IPU6 ISYS Capture 0" videoNodeType="VIDEO_GENERIC"/>
       <videonode name="Intel IPU6 CSI2 0" videoNodeType="VIDEO_ISYS_RECEIVER"/>
       <videonode acpiName="\_SB_.PC00.DES0.CH00.SER0.CAM0" videoNodeType="VIDEO_PIXEL_ARRAY"/>
@@ -33,9 +43,12 @@
     <StaticMetadata>
       <!-- list of stream config info. Meanings of each part is "format,widthxheight,field(0 is none, 7 is alternate),mcId" -->
       <supportedStreamConfig value="V4L2_PIX_FMT_UYVY,1920x1536,0,0,
-                                    V4L2_PIX_FMT_UYVY,1920x1080,0,1,
-                                    V4L2_PIX_FMT_UYVY,1280x720,0,2"/>
+                                    V4L2_PIX_FMT_UYVY,1920x1440,0,1,
+                                    V4L2_PIX_FMT_UYVY,1920x1080,0,2,
+                                    V4L2_PIX_FMT_UYVY,1280x960,0,3,
+                                    V4L2_PIX_FMT_UYVY,1280x720,0,4"/>
     </StaticMetadata>
+    <supportedISysSizes value="1280x720,1280x960,1920x1080,1920x1440,1920x1536"/>
     <supportedISysFormat value="V4L2_PIX_FMT_UYVY"/>
     <enableAIQ value="false"/>
     <resetLinkRoute value="false"/>
@@ -48,22 +61,34 @@
       <videonode name="Intel IPU6 CSI2 0" videoNodeType="VIDEO_ISYS_RECEIVER"/>
       <videonode acpiName="\_SB_.PC00.DES0.CH01.SER1.CAM1" videoNodeType="VIDEO_PIXEL_ARRAY"/>
     </MediaCtlConfig>
-    <MediaCtlConfig id="1" ConfigMode="AUTO" outputWidth="1920" outputHeight="1080" format="V4L2_PIX_FMT_UYVY">
+    <MediaCtlConfig id="1" mediaCfg="1" ConfigMode="AUTO" outputWidth="1920" outputHeight="1440" format="V4L2_PIX_FMT_UYVY">
       <videonode name="Intel IPU6 ISYS Capture 1" videoNodeType="VIDEO_GENERIC"/>
       <videonode name="Intel IPU6 CSI2 0" videoNodeType="VIDEO_ISYS_RECEIVER"/>
       <videonode acpiName="\_SB_.PC00.DES0.CH01.SER1.CAM1" videoNodeType="VIDEO_PIXEL_ARRAY"/>
     </MediaCtlConfig>
-    <MediaCtlConfig id="2" mediaCfg="1" ConfigMode="AUTO" outputWidth="1280" outputHeight="720" format="V4L2_PIX_FMT_UYVY">
+    <MediaCtlConfig id="2" mediaCfg="1" ConfigMode="AUTO" outputWidth="1920" outputHeight="1080" format="V4L2_PIX_FMT_UYVY">
+      <videonode name="Intel IPU6 ISYS Capture 1" videoNodeType="VIDEO_GENERIC"/>
+      <videonode name="Intel IPU6 CSI2 0" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+      <videonode acpiName="\_SB_.PC00.DES0.CH01.SER1.CAM1" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+    </MediaCtlConfig>
+    <MediaCtlConfig id="3" mediaCfg="1" ConfigMode="AUTO" outputWidth="1280" outputHeight="960" format="V4L2_PIX_FMT_UYVY">
+      <videonode name="Intel IPU6 ISYS Capture 1" videoNodeType="VIDEO_GENERIC"/>
+      <videonode name="Intel IPU6 CSI2 0" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+      <videonode acpiName="\_SB_.PC00.DES0.CH01.SER1.CAM1" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+    </MediaCtlConfig>
+    <MediaCtlConfig id="4" mediaCfg="1" ConfigMode="AUTO" outputWidth="1280" outputHeight="720" format="V4L2_PIX_FMT_UYVY">
       <videonode name="Intel IPU6 ISYS Capture 1" videoNodeType="VIDEO_GENERIC"/>
       <videonode name="Intel IPU6 CSI2 0" videoNodeType="VIDEO_ISYS_RECEIVER"/>
       <videonode acpiName="\_SB_.PC00.DES0.CH01.SER1.CAM1" videoNodeType="VIDEO_PIXEL_ARRAY"/>
     </MediaCtlConfig>
     <StaticMetadata>
       <supportedStreamConfig value="V4L2_PIX_FMT_UYVY,1920x1536,0,0,
-                                    V4L2_PIX_FMT_UYVY,1920x1080,0,1,
-                                    V4L2_PIX_FMT_UYVY,1280x720,0,2"/>
+                                    V4L2_PIX_FMT_UYVY,1920x1440,0,1,
+                                    V4L2_PIX_FMT_UYVY,1920x1080,0,2,
+                                    V4L2_PIX_FMT_UYVY,1280x960,0,3,
+                                    V4L2_PIX_FMT_UYVY,1280x720,0,4"/>
     </StaticMetadata>
-    <supportedISysSizes value="1280x720,1920x1080,1920x1536"/>
+    <supportedISysSizes value="1280x720,1280x960,1920x1080,1920x1440,1920x1536"/>
     <supportedISysFormat value="V4L2_PIX_FMT_UYVY"/>
     <enableAIQ value="false"/>
     <resetLinkRoute value="false"/>
@@ -76,22 +101,34 @@
       <videonode name="Intel IPU6 CSI2 0" videoNodeType="VIDEO_ISYS_RECEIVER"/>
       <videonode acpiName="\_SB_.PC00.DES0.CH02.SER2.CAM2" videoNodeType="VIDEO_PIXEL_ARRAY"/>
     </MediaCtlConfig>
-    <MediaCtlConfig id="1" mediaCfg="1" ConfigMode="AUTO" outputWidth="1920" outputHeight="1080" format="V4L2_PIX_FMT_UYVY">
+    <MediaCtlConfig id="1" mediaCfg="1" ConfigMode="AUTO" outputWidth="1920" outputHeight="1440" format="V4L2_PIX_FMT_UYVY">
       <videonode name="Intel IPU6 ISYS Capture 2" videoNodeType="VIDEO_GENERIC"/>
       <videonode name="Intel IPU6 CSI2 0" videoNodeType="VIDEO_ISYS_RECEIVER"/>
       <videonode acpiName="\_SB_.PC00.DES0.CH02.SER2.CAM2" videoNodeType="VIDEO_PIXEL_ARRAY"/>
     </MediaCtlConfig>
-    <MediaCtlConfig id="2" mediaCfg="1" ConfigMode="AUTO" outputWidth="1280" outputHeight="720" format="V4L2_PIX_FMT_UYVY">
+    <MediaCtlConfig id="2" mediaCfg="1" ConfigMode="AUTO" outputWidth="1920" outputHeight="1080" format="V4L2_PIX_FMT_UYVY">
+      <videonode name="Intel IPU6 ISYS Capture 2" videoNodeType="VIDEO_GENERIC"/>
+      <videonode name="Intel IPU6 CSI2 0" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+      <videonode acpiName="\_SB_.PC00.DES0.CH02.SER2.CAM2" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+    </MediaCtlConfig>
+    <MediaCtlConfig id="3" mediaCfg="1" ConfigMode="AUTO" outputWidth="1280" outputHeight="960" format="V4L2_PIX_FMT_UYVY">
+      <videonode name="Intel IPU6 ISYS Capture 2" videoNodeType="VIDEO_GENERIC"/>
+      <videonode name="Intel IPU6 CSI2 0" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+      <videonode acpiName="\_SB_.PC00.DES0.CH02.SER2.CAM2" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+    </MediaCtlConfig>
+    <MediaCtlConfig id="4" mediaCfg="1" ConfigMode="AUTO" outputWidth="1280" outputHeight="720" format="V4L2_PIX_FMT_UYVY">
       <videonode name="Intel IPU6 ISYS Capture 2" videoNodeType="VIDEO_GENERIC"/>
       <videonode name="Intel IPU6 CSI2 0" videoNodeType="VIDEO_ISYS_RECEIVER"/>
       <videonode acpiName="\_SB_.PC00.DES0.CH02.SER2.CAM2" videoNodeType="VIDEO_PIXEL_ARRAY"/>
     </MediaCtlConfig>
     <StaticMetadata>
       <supportedStreamConfig value="V4L2_PIX_FMT_UYVY,1920x1536,0,0,
-                                    V4L2_PIX_FMT_UYVY,1920x1080,0,1,
-                                    V4L2_PIX_FMT_UYVY,1280x720,0,2"/>
+                                    V4L2_PIX_FMT_UYVY,1920x1440,0,1,
+                                    V4L2_PIX_FMT_UYVY,1920x1080,0,2,
+                                    V4L2_PIX_FMT_UYVY,1280x960,0,3,
+                                    V4L2_PIX_FMT_UYVY,1280x720,0,4"/>
     </StaticMetadata>
-    <supportedISysSizes value="1280x720,1920x1080,1920x1536"/>
+    <supportedISysSizes value="1280x720,1280x960,1920x1080,1920x1440,1920x1536"/>
     <supportedISysFormat value="V4L2_PIX_FMT_UYVY"/>
     <enableAIQ value="false"/>
     <resetLinkRoute value="false"/>
@@ -104,22 +141,34 @@
       <videonode name="Intel IPU6 CSI2 0" videoNodeType="VIDEO_ISYS_RECEIVER"/>
       <videonode acpiName="\_SB_.PC00.DES0.CH03.SER3.CAM3" videoNodeType="VIDEO_PIXEL_ARRAY"/>
     </MediaCtlConfig>
-    <MediaCtlConfig id="1" mediaCfg="1" ConfigMode="AUTO" outputWidth="1920" outputHeight="1080" format="V4L2_PIX_FMT_UYVY">
+    <MediaCtlConfig id="1" mediaCfg="1" ConfigMode="AUTO" outputWidth="1920" outputHeight="1440" format="V4L2_PIX_FMT_UYVY">
       <videonode name="Intel IPU6 ISYS Capture 3" videoNodeType="VIDEO_GENERIC"/>
       <videonode name="Intel IPU6 CSI2 0" videoNodeType="VIDEO_ISYS_RECEIVER"/>
       <videonode acpiName="\_SB_.PC00.DES0.CH03.SER3.CAM3" videoNodeType="VIDEO_PIXEL_ARRAY"/>
     </MediaCtlConfig>
-    <MediaCtlConfig id="2" mediaCfg="1" ConfigMode="AUTO" outputWidth="1280" outputHeight="720" format="V4L2_PIX_FMT_UYVY">
+    <MediaCtlConfig id="2" mediaCfg="1" ConfigMode="AUTO" outputWidth="1920" outputHeight="1080" format="V4L2_PIX_FMT_UYVY">
+      <videonode name="Intel IPU6 ISYS Capture 3" videoNodeType="VIDEO_GENERIC"/>
+      <videonode name="Intel IPU6 CSI2 0" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+      <videonode acpiName="\_SB_.PC00.DES0.CH03.SER3.CAM3" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+    </MediaCtlConfig>
+    <MediaCtlConfig id="3" mediaCfg="1" ConfigMode="AUTO" outputWidth="1280" outputHeight="960" format="V4L2_PIX_FMT_UYVY">
+      <videonode name="Intel IPU6 ISYS Capture 3" videoNodeType="VIDEO_GENERIC"/>
+      <videonode name="Intel IPU6 CSI2 0" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+      <videonode acpiName="\_SB_.PC00.DES0.CH03.SER3.CAM3" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+    </MediaCtlConfig>
+    <MediaCtlConfig id="4" mediaCfg="1" ConfigMode="AUTO" outputWidth="1280" outputHeight="720" format="V4L2_PIX_FMT_UYVY">
       <videonode name="Intel IPU6 ISYS Capture 3" videoNodeType="VIDEO_GENERIC"/>
       <videonode name="Intel IPU6 CSI2 0" videoNodeType="VIDEO_ISYS_RECEIVER"/>
       <videonode acpiName="\_SB_.PC00.DES0.CH03.SER3.CAM3" videoNodeType="VIDEO_PIXEL_ARRAY"/>
     </MediaCtlConfig>
     <StaticMetadata>
       <supportedStreamConfig value="V4L2_PIX_FMT_UYVY,1920x1536,0,0,
-                                    V4L2_PIX_FMT_UYVY,1920x1080,0,1,
-                                    V4L2_PIX_FMT_UYVY,1280x720,0,2"/>
+                                    V4L2_PIX_FMT_UYVY,1920x1440,0,1,
+                                    V4L2_PIX_FMT_UYVY,1920x1080,0,2,
+                                    V4L2_PIX_FMT_UYVY,1280x960,0,3,
+                                    V4L2_PIX_FMT_UYVY,1280x720,0,4"/>
     </StaticMetadata>
-    <supportedISysSizes value="1280x720,1920x1080,1920x1536"/>
+    <supportedISysSizes value="1280x720,1280x960,1920x1080,1920x1440,1920x1536"/>
     <supportedISysFormat value="V4L2_PIX_FMT_UYVY"/>
     <enableAIQ value="false"/>
     <resetLinkRoute value="false"/>
@@ -132,22 +181,34 @@
       <videonode name="Intel IPU6 CSI2 4" videoNodeType="VIDEO_ISYS_RECEIVER"/>
       <videonode acpiName="\_SB_.PC00.DES1.CH00.SER0.CAM4" videoNodeType="VIDEO_PIXEL_ARRAY"/>
     </MediaCtlConfig>
-    <MediaCtlConfig id="1" mediaCfg="1" ConfigMode="AUTO" outputWidth="1920" outputHeight="1080" format="V4L2_PIX_FMT_UYVY">
+    <MediaCtlConfig id="1" mediaCfg="1" ConfigMode="AUTO" outputWidth="1920" outputHeight="1440" format="V4L2_PIX_FMT_UYVY">
       <videonode name="Intel IPU6 ISYS Capture 32" videoNodeType="VIDEO_GENERIC"/>
       <videonode name="Intel IPU6 CSI2 4" videoNodeType="VIDEO_ISYS_RECEIVER"/>
       <videonode acpiName="\_SB_.PC00.DES1.CH00.SER0.CAM4" videoNodeType="VIDEO_PIXEL_ARRAY"/>
     </MediaCtlConfig>
-    <MediaCtlConfig id="2" mediaCfg="1" ConfigMode="AUTO" outputWidth="1280" outputHeight="720" format="V4L2_PIX_FMT_UYVY">
+    <MediaCtlConfig id="2" mediaCfg="1" ConfigMode="AUTO" outputWidth="1920" outputHeight="1080" format="V4L2_PIX_FMT_UYVY">
+      <videonode name="Intel IPU6 ISYS Capture 32" videoNodeType="VIDEO_GENERIC"/>
+      <videonode name="Intel IPU6 CSI2 4" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+      <videonode acpiName="\_SB_.PC00.DES1.CH00.SER0.CAM4" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+    </MediaCtlConfig>
+    <MediaCtlConfig id="3" mediaCfg="1" ConfigMode="AUTO" outputWidth="1280" outputHeight="960" format="V4L2_PIX_FMT_UYVY">
+      <videonode name="Intel IPU6 ISYS Capture 32" videoNodeType="VIDEO_GENERIC"/>
+      <videonode name="Intel IPU6 CSI2 4" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+      <videonode acpiName="\_SB_.PC00.DES1.CH00.SER0.CAM4" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+    </MediaCtlConfig>
+    <MediaCtlConfig id="4" mediaCfg="1" ConfigMode="AUTO" outputWidth="1280" outputHeight="720" format="V4L2_PIX_FMT_UYVY">
       <videonode name="Intel IPU6 ISYS Capture 32" videoNodeType="VIDEO_GENERIC"/>
       <videonode name="Intel IPU6 CSI2 4" videoNodeType="VIDEO_ISYS_RECEIVER"/>
       <videonode acpiName="\_SB_.PC00.DES1.CH00.SER0.CAM4" videoNodeType="VIDEO_PIXEL_ARRAY"/>
     </MediaCtlConfig>
     <StaticMetadata>
       <supportedStreamConfig value="V4L2_PIX_FMT_UYVY,1920x1536,0,0,
-                                    V4L2_PIX_FMT_UYVY,1920x1080,0,1,
-                                    V4L2_PIX_FMT_UYVY,1280x720,0,2"/>
+                                    V4L2_PIX_FMT_UYVY,1920x1440,0,1,
+                                    V4L2_PIX_FMT_UYVY,1920x1080,0,2,
+                                    V4L2_PIX_FMT_UYVY,1280x960,0,3,
+                                    V4L2_PIX_FMT_UYVY,1280x720,0,4"/>
     </StaticMetadata>
-    <supportedISysSizes value="1280x720,1920x1080,1920x1536"/>
+    <supportedISysSizes value="1280x720,1280x960,1920x1080,1920x1440,1920x1536"/>
     <supportedISysFormat value="V4L2_PIX_FMT_UYVY"/>
     <enableAIQ value="false"/>
     <resetLinkRoute value="false"/>
@@ -160,22 +221,34 @@
       <videonode name="Intel IPU6 CSI2 4" videoNodeType="VIDEO_ISYS_RECEIVER"/>
       <videonode acpiName="\_SB_.PC00.DES1.CH01.SER1.CAM5" videoNodeType="VIDEO_PIXEL_ARRAY"/>
     </MediaCtlConfig>
-    <MediaCtlConfig id="1" mediaCfg="1" ConfigMode="AUTO" outputWidth="1920" outputHeight="1080" format="V4L2_PIX_FMT_UYVY">
+    <MediaCtlConfig id="1" mediaCfg="1" ConfigMode="AUTO" outputWidth="1920" outputHeight="1440" format="V4L2_PIX_FMT_UYVY">
       <videonode name="Intel IPU6 ISYS Capture 33" videoNodeType="VIDEO_GENERIC"/>
       <videonode name="Intel IPU6 CSI2 4" videoNodeType="VIDEO_ISYS_RECEIVER"/>
       <videonode acpiName="\_SB_.PC00.DES1.CH01.SER1.CAM5" videoNodeType="VIDEO_PIXEL_ARRAY"/>
     </MediaCtlConfig>
-    <MediaCtlConfig id="2" mediaCfg="1" ConfigMode="AUTO" outputWidth="1280" outputHeight="720" format="V4L2_PIX_FMT_UYVY">
+    <MediaCtlConfig id="2" mediaCfg="1" ConfigMode="AUTO" outputWidth="1920" outputHeight="1080" format="V4L2_PIX_FMT_UYVY">
+      <videonode name="Intel IPU6 ISYS Capture 33" videoNodeType="VIDEO_GENERIC"/>
+      <videonode name="Intel IPU6 CSI2 4" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+      <videonode acpiName="\_SB_.PC00.DES1.CH01.SER1.CAM5" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+    </MediaCtlConfig>
+    <MediaCtlConfig id="3" mediaCfg="1" ConfigMode="AUTO" outputWidth="1280" outputHeight="960" format="V4L2_PIX_FMT_UYVY">
+      <videonode name="Intel IPU6 ISYS Capture 33" videoNodeType="VIDEO_GENERIC"/>
+      <videonode name="Intel IPU6 CSI2 4" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+      <videonode acpiName="\_SB_.PC00.DES1.CH01.SER1.CAM5" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+    </MediaCtlConfig>
+    <MediaCtlConfig id="4" mediaCfg="1" ConfigMode="AUTO" outputWidth="1280" outputHeight="720" format="V4L2_PIX_FMT_UYVY">
       <videonode name="Intel IPU6 ISYS Capture 33" videoNodeType="VIDEO_GENERIC"/>
       <videonode name="Intel IPU6 CSI2 4" videoNodeType="VIDEO_ISYS_RECEIVER"/>
       <videonode acpiName="\_SB_.PC00.DES1.CH01.SER1.CAM5" videoNodeType="VIDEO_PIXEL_ARRAY"/>
     </MediaCtlConfig>
     <StaticMetadata>
       <supportedStreamConfig value="V4L2_PIX_FMT_UYVY,1920x1536,0,0,
-                                    V4L2_PIX_FMT_UYVY,1920x1080,0,1,
-                                    V4L2_PIX_FMT_UYVY,1280x720,0,2"/>
+                                    V4L2_PIX_FMT_UYVY,1920x1440,0,1,
+                                    V4L2_PIX_FMT_UYVY,1920x1080,0,2,
+                                    V4L2_PIX_FMT_UYVY,1280x960,0,3,
+                                    V4L2_PIX_FMT_UYVY,1280x720,0,4"/>
     </StaticMetadata>
-    <supportedISysSizes value="1280x720,1920x1080,1920x1536"/>
+    <supportedISysSizes value="1280x720,1280x960,1920x1080,1920x1440,1920x1536"/>
     <supportedISysFormat value="V4L2_PIX_FMT_UYVY"/>
     <enableAIQ value="false"/>
     <resetLinkRoute value="false"/>
@@ -188,22 +261,34 @@
       <videonode name="Intel IPU6 CSI2 4" videoNodeType="VIDEO_ISYS_RECEIVER"/>
       <videonode acpiName="\_SB_.PC00.DES1.CH02.SER2.CAM6" videoNodeType="VIDEO_PIXEL_ARRAY"/>
     </MediaCtlConfig>
-    <MediaCtlConfig id="1" mediaCfg="1" ConfigMode="AUTO" outputWidth="1920" outputHeight="1080" format="V4L2_PIX_FMT_UYVY">
+    <MediaCtlConfig id="1" mediaCfg="1" ConfigMode="AUTO" outputWidth="1920" outputHeight="1440" format="V4L2_PIX_FMT_UYVY">
       <videonode name="Intel IPU6 ISYS Capture 34" videoNodeType="VIDEO_GENERIC"/>
       <videonode name="Intel IPU6 CSI2 4" videoNodeType="VIDEO_ISYS_RECEIVER"/>
       <videonode acpiName="\_SB_.PC00.DES1.CH02.SER2.CAM6" videoNodeType="VIDEO_PIXEL_ARRAY"/>
     </MediaCtlConfig>
-    <MediaCtlConfig id="2" mediaCfg="1" ConfigMode="AUTO" outputWidth="1280" outputHeight="720" format="V4L2_PIX_FMT_UYVY">
+    <MediaCtlConfig id="2" mediaCfg="1" ConfigMode="AUTO" outputWidth="1920" outputHeight="1080" format="V4L2_PIX_FMT_UYVY">
+      <videonode name="Intel IPU6 ISYS Capture 34" videoNodeType="VIDEO_GENERIC"/>
+      <videonode name="Intel IPU6 CSI2 4" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+      <videonode acpiName="\_SB_.PC00.DES1.CH02.SER2.CAM6" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+    </MediaCtlConfig>
+    <MediaCtlConfig id="3" mediaCfg="1" ConfigMode="AUTO" outputWidth="1280" outputHeight="960" format="V4L2_PIX_FMT_UYVY">
+      <videonode name="Intel IPU6 ISYS Capture 34" videoNodeType="VIDEO_GENERIC"/>
+      <videonode name="Intel IPU6 CSI2 4" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+      <videonode acpiName="\_SB_.PC00.DES1.CH02.SER2.CAM6" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+    </MediaCtlConfig>
+    <MediaCtlConfig id="4" mediaCfg="1" ConfigMode="AUTO" outputWidth="1280" outputHeight="720" format="V4L2_PIX_FMT_UYVY">
       <videonode name="Intel IPU6 ISYS Capture 34" videoNodeType="VIDEO_GENERIC"/>
       <videonode name="Intel IPU6 CSI2 4" videoNodeType="VIDEO_ISYS_RECEIVER"/>
       <videonode acpiName="\_SB_.PC00.DES1.CH02.SER2.CAM6" videoNodeType="VIDEO_PIXEL_ARRAY"/>
     </MediaCtlConfig>
     <StaticMetadata>
       <supportedStreamConfig value="V4L2_PIX_FMT_UYVY,1920x1536,0,0,
-                                    V4L2_PIX_FMT_UYVY,1920x1080,0,1,
-                                    V4L2_PIX_FMT_UYVY,1280x720,0,2"/>
+                                    V4L2_PIX_FMT_UYVY,1920x1440,0,1,
+                                    V4L2_PIX_FMT_UYVY,1920x1080,0,2,
+                                    V4L2_PIX_FMT_UYVY,1280x960,0,3,
+                                    V4L2_PIX_FMT_UYVY,1280x720,0,4"/>
     </StaticMetadata>
-    <supportedISysSizes value="1280x720,1920x1080,1920x1536"/>
+    <supportedISysSizes value="1280x720,1280x960,1920x1080,1920x1440,1920x1536"/>
     <supportedISysFormat value="V4L2_PIX_FMT_UYVY"/>
     <enableAIQ value="false"/>
     <resetLinkRoute value="false"/>
@@ -216,27 +301,118 @@
       <videonode name="Intel IPU6 CSI2 4" videoNodeType="VIDEO_ISYS_RECEIVER"/>
       <videonode acpiName="\_SB_.PC00.DES1.CH03.SER3.CAM7" videoNodeType="VIDEO_PIXEL_ARRAY"/>
     </MediaCtlConfig>
-    <MediaCtlConfig id="1" mediaCfg="1" ConfigMode="AUTO" outputWidth="1920" outputHeight="1080" format="V4L2_PIX_FMT_UYVY">
+    <MediaCtlConfig id="1" mediaCfg="1" ConfigMode="AUTO" outputWidth="1920" outputHeight="1440" format="V4L2_PIX_FMT_UYVY">
       <videonode name="Intel IPU6 ISYS Capture 35" videoNodeType="VIDEO_GENERIC"/>
       <videonode name="Intel IPU6 CSI2 4" videoNodeType="VIDEO_ISYS_RECEIVER"/>
       <videonode acpiName="\_SB_.PC00.DES1.CH03.SER3.CAM7" videoNodeType="VIDEO_PIXEL_ARRAY"/>
     </MediaCtlConfig>
-    <MediaCtlConfig id="2" mediaCfg="1" ConfigMode="AUTO" outputWidth="1280" outputHeight="720" format="V4L2_PIX_FMT_UYVY">
+    <MediaCtlConfig id="2" mediaCfg="1" ConfigMode="AUTO" outputWidth="1920" outputHeight="1080" format="V4L2_PIX_FMT_UYVY">
+      <videonode name="Intel IPU6 ISYS Capture 35" videoNodeType="VIDEO_GENERIC"/>
+      <videonode name="Intel IPU6 CSI2 4" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+      <videonode acpiName="\_SB_.PC00.DES1.CH03.SER3.CAM7" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+    </MediaCtlConfig>
+    <MediaCtlConfig id="3" mediaCfg="1" ConfigMode="AUTO" outputWidth="1280" outputHeight="960" format="V4L2_PIX_FMT_UYVY">
+      <videonode name="Intel IPU6 ISYS Capture 35" videoNodeType="VIDEO_GENERIC"/>
+      <videonode name="Intel IPU6 CSI2 4" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+      <videonode acpiName="\_SB_.PC00.DES1.CH03.SER3.CAM7" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+    </MediaCtlConfig>
+    <MediaCtlConfig id="4" mediaCfg="1" ConfigMode="AUTO" outputWidth="1280" outputHeight="720" format="V4L2_PIX_FMT_UYVY">
       <videonode name="Intel IPU6 ISYS Capture 35" videoNodeType="VIDEO_GENERIC"/>
       <videonode name="Intel IPU6 CSI2 4" videoNodeType="VIDEO_ISYS_RECEIVER"/>
       <videonode acpiName="\_SB_.PC00.DES1.CH03.SER3.CAM7" videoNodeType="VIDEO_PIXEL_ARRAY"/>
     </MediaCtlConfig>
     <StaticMetadata>
       <supportedStreamConfig value="V4L2_PIX_FMT_UYVY,1920x1536,0,0,
-                                    V4L2_PIX_FMT_UYVY,1920x1080,0,1,
-                                    V4L2_PIX_FMT_UYVY,1280x720,0,2"/>
+                                    V4L2_PIX_FMT_UYVY,1920x1440,0,1,
+                                    V4L2_PIX_FMT_UYVY,1920x1080,0,2,
+                                    V4L2_PIX_FMT_UYVY,1280x960,0,3,
+                                    V4L2_PIX_FMT_UYVY,1280x720,0,4"/>
     </StaticMetadata>
-    <supportedISysSizes value="1280x720,1920x1080,1920x1536"/>
+    <supportedISysSizes value="1280x720,1280x960,1920x1080,1920x1440,1920x1536"/>
     <supportedISysFormat value="V4L2_PIX_FMT_UYVY"/>
     <enableAIQ value="false"/>
     <resetLinkRoute value="false"/>
     <vcAggregator value="maxim-serdes,3"/>
   </Sensor>
+
+  <Sensor name="acpi-a" description="acpi MIPI sensor CAM0">
+    <MediaCtlConfig id="0" mediaCfg="1" ConfigMode="AUTO" outputWidth="1920" outputHeight="1536" format="V4L2_PIX_FMT_UYVY">
+      <videonode name="Intel IPU6 ISYS Capture 0" videoNodeType="VIDEO_GENERIC"/>
+      <videonode name="Intel IPU6 CSI2 0" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+      <videonode acpiName="\_SB_.PC00.CAM0" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+    </MediaCtlConfig>
+    <MediaCtlConfig id="1" mediaCfg="1" ConfigMode="AUTO" outputWidth="1920" outputHeight="1440" format="V4L2_PIX_FMT_UYVY">
+      <videonode name="Intel IPU6 ISYS Capture 0" videoNodeType="VIDEO_GENERIC"/>
+      <videonode name="Intel IPU6 CSI2 0" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+      <videonode acpiName="\_SB_.PC00.CAM0" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+    </MediaCtlConfig>
+    <MediaCtlConfig id="2" mediaCfg="1" ConfigMode="AUTO" outputWidth="1920" outputHeight="1080" format="V4L2_PIX_FMT_UYVY">
+      <videonode name="Intel IPU6 ISYS Capture 0" videoNodeType="VIDEO_GENERIC"/>
+      <videonode name="Intel IPU6 CSI2 0" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+      <videonode acpiName="\_SB_.PC00.CAM0" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+    </MediaCtlConfig>
+    <MediaCtlConfig id="3" mediaCfg="1" ConfigMode="AUTO" outputWidth="1280" outputHeight="960" format="V4L2_PIX_FMT_UYVY">
+      <videonode name="Intel IPU6 ISYS Capture 0" videoNodeType="VIDEO_GENERIC"/>
+      <videonode name="Intel IPU6 CSI2 0" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+      <videonode acpiName="\_SB_.PC00.CAM0" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+    </MediaCtlConfig>
+    <MediaCtlConfig id="4" mediaCfg="1" ConfigMode="AUTO" outputWidth="1280" outputHeight="720" format="V4L2_PIX_FMT_UYVY">
+      <videonode name="Intel IPU6 ISYS Capture 0" videoNodeType="VIDEO_GENERIC"/>
+      <videonode name="Intel IPU6 CSI2 0" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+      <videonode acpiName="\_SB_.PC00.CAM0" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+    </MediaCtlConfig>
+    <StaticMetadata>
+      <supportedStreamConfig value="V4L2_PIX_FMT_UYVY,1920x1536,0,0,
+                                    V4L2_PIX_FMT_UYVY,1920x1440,0,1,
+                                    V4L2_PIX_FMT_UYVY,1920x1080,0,2,
+                                    V4L2_PIX_FMT_UYVY,1280x960,0,3,
+                                    V4L2_PIX_FMT_UYVY,1280x720,0,4"/>
+    </StaticMetadata>
+    <supportedISysSizes value="1280x720,1280x960,1920x1080,1920x1440,1920x1536"/>
+    <supportedISysFormat value="V4L2_PIX_FMT_UYVY"/>
+    <enableAIQ value="false"/>
+    <resetLinkRoute value="false"/>
+  </Sensor>
+
+  <Sensor name="acpi-b" description="acpi MIPI sensor CAM1">
+    <MediaCtlConfig id="0" mediaCfg="1" ConfigMode="AUTO" outputWidth="1920" outputHeight="1536" format="V4L2_PIX_FMT_UYVY">
+      <videonode name="Intel IPU6 ISYS Capture 32" videoNodeType="VIDEO_GENERIC"/>
+      <videonode name="Intel IPU6 CSI2 4" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+      <videonode acpiName="\_SB_.PC00.CAM1" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+    </MediaCtlConfig>
+    <MediaCtlConfig id="1" mediaCfg="1" ConfigMode="AUTO" outputWidth="1920" outputHeight="1440" format="V4L2_PIX_FMT_UYVY">
+      <videonode name="Intel IPU6 ISYS Capture 32" videoNodeType="VIDEO_GENERIC"/>
+      <videonode name="Intel IPU6 CSI2 4" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+      <videonode acpiName="\_SB_.PC00.CAM1" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+    </MediaCtlConfig>
+    <MediaCtlConfig id="2" mediaCfg="1" ConfigMode="AUTO" outputWidth="1920" outputHeight="1080" format="V4L2_PIX_FMT_UYVY">
+      <videonode name="Intel IPU6 ISYS Capture 32" videoNodeType="VIDEO_GENERIC"/>
+      <videonode name="Intel IPU6 CSI2 4" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+      <videonode acpiName="\_SB_.PC00.CAM1" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+    </MediaCtlConfig>
+    <MediaCtlConfig id="3" mediaCfg="1" ConfigMode="AUTO" outputWidth="1280" outputHeight="960" format="V4L2_PIX_FMT_UYVY">
+      <videonode name="Intel IPU6 ISYS Capture 32" videoNodeType="VIDEO_GENERIC"/>
+      <videonode name="Intel IPU6 CSI2 4" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+      <videonode acpiName="\_SB_.PC00.CAM1" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+    </MediaCtlConfig>
+    <MediaCtlConfig id="4" mediaCfg="1" ConfigMode="AUTO" outputWidth="1280" outputHeight="720" format="V4L2_PIX_FMT_UYVY">
+      <videonode name="Intel IPU6 ISYS Capture 32" videoNodeType="VIDEO_GENERIC"/>
+      <videonode name="Intel IPU6 CSI2 4" videoNodeType="VIDEO_ISYS_RECEIVER"/>
+      <videonode acpiName="\_SB_.PC00.CAM1" videoNodeType="VIDEO_PIXEL_ARRAY"/>
+    </MediaCtlConfig>
+    <StaticMetadata>
+      <supportedStreamConfig value="V4L2_PIX_FMT_UYVY,1920x1536,0,0,
+                                    V4L2_PIX_FMT_UYVY,1920x1440,0,1,
+                                    V4L2_PIX_FMT_UYVY,1920x1080,0,2,
+                                    V4L2_PIX_FMT_UYVY,1280x960,0,3,
+                                    V4L2_PIX_FMT_UYVY,1280x720,0,4"/>
+    </StaticMetadata>
+    <supportedISysSizes value="1280x720,1280x960,1920x1080,1920x1440,1920x1536"/>
+    <supportedISysFormat value="V4L2_PIX_FMT_UYVY"/>
+    <enableAIQ value="false"/>
+    <resetLinkRoute value="false"/>
+  </Sensor>
+
   <Sensor name="d4xx-1-depth" description="D4XX GMSL Depth sensor on DES0 Link 0" virtualChannel="true" vcGroupId="0">
     <MediaCtlConfig id="0" mediaCfg="1" ConfigMode="AUTO" outputWidth="1280" outputHeight="720" format="V4L2_PIX_FMT_UYVY">
       <videonode name="Intel IPU6 ISYS Capture 0" videoNodeType="VIDEO_GENERIC"/>
